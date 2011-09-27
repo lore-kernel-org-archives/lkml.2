@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab1I0NGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:06:55 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2766 "EHLO mms1.broadcom.com"
+	id S1751878Ab1I0NIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:08:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22491 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab1I0NGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:06:54 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-cc: "Jean Delvare" <khali@linux-fr.org>, "Ben Dooks" <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Qi Wang" <qi.wang@intel.com>,
-        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
-        "joel.clark@intel.com" <joel.clark@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
-        "Aaron Smith" <aarons@broadcom.com>
-Date: Tue, 27 Sep 2011 06:06:46 -0700
-Subject: RE: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-Thread-Topic: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-Thread-Index: Acx8qSohfAQ7k4GPQzymCkCemd7jVgAbR+aA
-Message-ID: <B6A520E9CD57404AAFC0831E4FB39541A98073B6D2@IRVEXCHCCR02.corp.ad.broadcom.com>
-References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com>
- <B6A520E9CD57404AAFC0831E4FB39541A98073AC7E@IRVEXCHCCR02.corp.ad.broadcom.com>
- <4E7A7DBA.3020406@dsn.okisemi.com>
- <B6A520E9CD57404AAFC0831E4FB39541A98073AF26@IRVEXCHCCR02.corp.ad.broadcom.com>
- <4E811338.2030005@dsn.okisemi.com>
-In-Reply-To: <4E811338.2030005@dsn.okisemi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1751003Ab1I0NIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:08:48 -0400
+Date: Tue, 27 Sep 2011 09:08:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Maxim Patlasov <maxim.patlasov@gmail.com>
+Subject: Re: [patch]cfq-iosched: delete deep seeky queue idle logic
+Message-ID: <20110927130843.GA24673@redhat.com>
+References: <1316142577.29510.130.camel@sli10-conroe>
+ <CADX3swqrpz+=JSk8gQf6tDRZ25Z9FOnJbTyiCrZAM6LiJSmoGA@mail.gmail.com>
+ <1316155239.29510.148.camel@sli10-conroe>
+ <CADX3swqAq=zpFtWogbuRnARjjZK753esKihs3tzLQkbiRE2y0Q@mail.gmail.com>
+ <1316603780.2001.12.camel@shli-laptop>
+ <20110923132441.GA10289@redhat.com>
+ <CADX3swpctg-yENZE0178x5SS3PTKB3qZE+=vEfNJwqydxLJ95g@mail.gmail.com>
 MIME-Version: 1.0
-X-WSS-ID: 629F14743D01898057-01-01
-Content-Type: text/plain;
- charset=utf-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADX3swpctg-yENZE0178x5SS3PTKB3qZE+=vEfNJwqydxLJ95g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8RD7A5S024465
 
-http://www.engadget.com/2011/09/26/broadcom-unveils-smaller-more-power-efficient-40nm-nfc-chips/ 
+On Sun, Sep 25, 2011 at 09:34:16AM +0200, Corrado Zoccolo wrote:
 
------Original Message-----
-From: Tomoya MORINAGA [mailto:tomoya-linux@dsn.okisemi.com] 
-Sent: Monday, September 26, 2011 8:05 PM
-To: Jeffrey (Sheng-Hui) Chu
-Cc: Jean Delvare; Ben Dooks; linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Qi Wang; yong.y.wang@intel.com; joel.clark@intel.com; kok.howg.ewe@intel.com; toshiharu-linux@dsn.okisemi.com; Aaron Smith
-Subject: Re: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
+[..]
+> >
+> > Anyway, what's wrong with the idea I suggested in other mail of expiring
+> > a sync-noidle queue afer few reuqest dispatches so that it does not
+> > starve other sync-noidle queues.
+> I don't know the current state of the code. Are the noidle queues
+> sorted in some tree, by sector number?
+> If that is the case, then even an expired queue could still be in
+> front of the tree.
 
-(2011/09/23 2:49), Jeffrey (Sheng-Hui) Chu wrote:
-> The device is BCM20791.  Please contact Aaron Smith (aarons@broadcom.com) for evaluation.
-Though googling the device, I can't find the device.
-Broadcom website too.
+I am not aware of any queue sorting based on sector number on sync-noidle
+tree. So we should just be able to do round robin.
 
->
-> By the way, the existing handling of 10-bit address in the patch you intended to delete does not work.  You'll need to fix that before you can test with the device successfully.
->
-> For the write operation, it's a easy fix:
->
-> @@ -410,25 +408,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
->   	}
->
->   	if (msgs->flags&  I2C_M_TEN) {
-> -		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7);
-> +		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7)&  0x06;
->
->
-> For the read operation, static s32 pch_i2c_readbytes(), you'll need to do a write followed by a restart and a read...  please refer to the i2c spec...
->
-> Regards,
-
-Thank you for your indication.
-We will update this after supporting 10bit access.
-
-Thanks,
-tomoya
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks
+Vivek
