@@ -1,99 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab1I0SfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 14:35:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25328 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab1I0SfL (ORCPT
+	id S1753021Ab1I0Sfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 14:35:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18977 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab1I0Sfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 14:35:11 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=KHOl1h9NWSlAhaFcoHg2i/QOh3yyquQMAZ0MbPbfUKIs53MkTW9mvFVldReexC2IW
-	KSVOiqh/UUscG1xgGHJLQ==
-Date: Tue, 27 Sep 2011 11:35:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] oom: thaw threads if oom killed thread is frozen before
- deferring
-In-Reply-To: <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
-Message-ID: <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
-References: <cover.1317110948.git.mhocko@suse.cz> <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 27 Sep 2011 14:35:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 27 Sep 2011 11:35:31 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v3 1/3] arm/tegra: prepare Seaboard pinmux code for derived boards
+Date: Tue, 27 Sep 2011 21:35:22 +0300
+Message-ID: <1317148524-28528-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1317148524-28528-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1317148524-28528-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011, Michal Hocko wrote:
+This patch splits out the common part of pinmux and GPIO initialization for
+seaboard and derived boards. This code is based on work done by Jong Kim
+<jongk@nvidia.com>.
 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 626303b..c419a7e 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -32,6 +32,7 @@
->  #include <linux/mempolicy.h>
->  #include <linux/security.h>
->  #include <linux/ptrace.h>
-> +#include <linux/freezer.h>
->  
->  int sysctl_panic_on_oom;
->  int sysctl_oom_kill_allocating_task;
-> @@ -451,10 +452,15 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
->  				task_pid_nr(q), q->comm);
->  			task_unlock(q);
->  			force_sig(SIGKILL, q);
-> +
-> +			if (frozen(q))
-> +				thaw_process(q);
->  		}
->  
->  	set_tsk_thread_flag(p, TIF_MEMDIE);
->  	force_sig(SIGKILL, p);
-> +	if (frozen(p))
-> +		thaw_process(p);
->  
->  	return 0;
->  }
-
-Also needs this...
-
-
-oom: thaw threads if oom killed thread is frozen before deferring
-
-If a thread has been oom killed and is frozen, thaw it before returning
-to the page allocator.  Otherwise, it can stay frozen indefinitely and
-no memory will be freed.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
+Change-Id: I861db37c727a7118d38885c4bcb6f4acce3d4133
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- mm/oom_kill.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ arch/arm/mach-tegra/board-seaboard-pinmux.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -318,8 +318,11 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 		 * blocked waiting for another task which itself is waiting
- 		 * for memory. Is there a better alternative?
- 		 */
--		if (test_tsk_thread_flag(p, TIF_MEMDIE))
-+		if (test_tsk_thread_flag(p, TIF_MEMDIE)) {
-+			if (unlikely(frozen(p)))
-+				thaw_process(p);
- 			return ERR_PTR(-1UL);
-+		}
- 		if (!p->mm)
- 			continue;
+diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+index 74f78b7..b31c765 100644
+--- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
++++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+@@ -1,5 +1,6 @@
+ /*
+- * Copyright (C) 2010 NVIDIA Corporation
++ * Copyright (C) 2010,2011 NVIDIA Corporation
++ * Copyright (C) 2011 Google, Inc.
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -160,7 +161,7 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
  
+ 
+ 
+-static struct tegra_gpio_table gpio_table[] = {
++static struct tegra_gpio_table common_gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
+ 	{ .gpio = TEGRA_GPIO_SD2_WP,		.enable = true },
+ 	{ .gpio = TEGRA_GPIO_SD2_POWER,		.enable = true },
+@@ -171,12 +172,17 @@ static struct tegra_gpio_table gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
+ };
+ 
+-void __init seaboard_pinmux_init(void)
++static void __init seaboard_common_pinmux_init(void)
+ {
+ 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
+ 
+ 	tegra_drive_pinmux_config_table(seaboard_drive_pinmux,
+ 					ARRAY_SIZE(seaboard_drive_pinmux));
+ 
+-	tegra_gpio_config(gpio_table, ARRAY_SIZE(gpio_table));
++	tegra_gpio_config(common_gpio_table, ARRAY_SIZE(common_gpio_table));
++}
++
++void __init seaboard_pinmux_init(void)
++{
++	seaboard_common_pinmux_init();
+ }
+-- 
+1.7.0.4
+
