@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1I0N5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 09:57:36 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:37624
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753322Ab1I0N5e (ORCPT
+	id S1753472Ab1I0N5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:57:49 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:55038
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753063Ab1I0N5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 09:57:34 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz1803Mzz1202hzz8275bhz32i668h839h61h)
+	Tue, 27 Sep 2011 09:57:47 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LS6PFM-02-EBN-02
+X-FB-SS: 0,
+X-WSS-ID: 0LS6PFM-02-EBP-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/4] PCI: Move ATS implementation into own file
-Date: Tue, 27 Sep 2011 15:57:13 +0200
-Message-ID: <1317131836-11822-2-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 3/4] PCI: Add implementation for PRI capability
+Date: Tue, 27 Sep 2011 15:57:15 +0200
+Message-ID: <1317131836-11822-4-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
 References: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
@@ -31,376 +32,305 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATS does not depend on IOV support, so move the code into
-its own file. This file will also include support for the
-PRI and PASID capabilities later.
-Also give ATS its own Kconfig variable to allow selecting it
-without IOV support.
+Implement the necessary functions to handle PRI capabilities
+on PCIe devices. With PRI devices behind an IOMMU can signal
+page fault conditions to software and recover from such
+faults.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/pci/Kconfig     |    4 +
- drivers/pci/Makefile    |    1 +
- drivers/pci/ats.c       |  155 +++++++++++++++++++++++++++++++++++++++++++++++
- drivers/pci/iov.c       |  142 -------------------------------------------
- include/linux/pci-ats.h |    2 +
- 5 files changed, 162 insertions(+), 142 deletions(-)
- create mode 100644 drivers/pci/ats.c
+ drivers/pci/Kconfig      |    9 +++
+ drivers/pci/ats.c        |  167 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pci-ats.h  |   42 ++++++++++++
+ include/linux/pci_regs.h |   12 +++
+ 4 files changed, 230 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 0fa466a..1d8ce83 100644
+index 1d8ce83..fb1e9707 100644
 --- a/drivers/pci/Kconfig
 +++ b/drivers/pci/Kconfig
-@@ -71,9 +71,13 @@ config HT_IRQ
+@@ -85,6 +85,15 @@ config PCI_IOV
  
- 	   If unsure say Y.
+ 	  If unsure, say N.
  
-+config PCI_ATS
-+	bool
-+
- config PCI_IOV
- 	bool "PCI IOV support"
- 	depends on PCI
++config PCI_PRI
++	bool "PCI PRI support"
 +	select PCI_ATS
- 	help
- 	  I/O Virtualization is a PCI feature supported by some devices
- 	  which allows them to create virtual devices which share their
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index 6fadae3..083a49f 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_PCI_MSI) += msi.o
- # Build the Hypertransport interrupt support
- obj-$(CONFIG_HT_IRQ) += htirq.o
- 
-+obj-$(CONFIG_PCI_ATS) += ats.o
- obj-$(CONFIG_PCI_IOV) += iov.o
- 
- #
++	help
++	  PRI is the PCI Page Request Interface. It allows PCI devices that are
++	  behind an IOMMU to recover from page faults.
++
++	  If unsure, say N.
++
+ config PCI_IOAPIC
+ 	bool
+ 	depends on PCI
 diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
-new file mode 100644
-index 0000000..ae4bf87
---- /dev/null
+index 5ceff3e..bf892a0 100644
+--- a/drivers/pci/ats.c
 +++ b/drivers/pci/ats.c
-@@ -0,0 +1,155 @@
-+/*
-+ * drivers/pci/ats.c
-+ *
-+ * Copyright (C) 2009 Intel Corporation, Yu Zhao <yu.zhao@intel.com>
-+ *
-+ * PCI Express I/O Virtualization (IOV) support.
-+ *   Address Translation Service 1.0
-+ */
+@@ -2,9 +2,11 @@
+  * drivers/pci/ats.c
+  *
+  * Copyright (C) 2009 Intel Corporation, Yu Zhao <yu.zhao@intel.com>
++ * Copyright (C) 2011 Advanced Micro Devices,
+  *
+  * PCI Express I/O Virtualization (IOV) support.
+  *   Address Translation Service 1.0
++ *   Page Request Interface added by Joerg Roedel <joerg.roedel@amd.com>
+  */
+ 
+ #include <linux/pci-ats.h>
+@@ -156,3 +158,168 @@ int pci_ats_queue_depth(struct pci_dev *dev)
+ 				       PCI_ATS_MAX_QDEP;
+ }
+ EXPORT_SYMBOL_GPL(pci_ats_queue_depth);
 +
-+#include <linux/pci-ats.h>
-+#include <linux/pci.h>
-+
-+#include "pci.h"
-+
-+static int ats_alloc_one(struct pci_dev *dev, int ps)
-+{
-+	int pos;
-+	u16 cap;
-+	struct pci_ats *ats;
-+
-+	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS);
-+	if (!pos)
-+		return -ENODEV;
-+
-+	ats = kzalloc(sizeof(*ats), GFP_KERNEL);
-+	if (!ats)
-+		return -ENOMEM;
-+
-+	ats->pos = pos;
-+	ats->stu = ps;
-+	pci_read_config_word(dev, pos + PCI_ATS_CAP, &cap);
-+	ats->qdep = PCI_ATS_CAP_QDEP(cap) ? PCI_ATS_CAP_QDEP(cap) :
-+					    PCI_ATS_MAX_QDEP;
-+	dev->ats = ats;
-+
-+	return 0;
-+}
-+
-+static void ats_free_one(struct pci_dev *dev)
-+{
-+	kfree(dev->ats);
-+	dev->ats = NULL;
-+}
-+
++#ifdef CONFIG_PCI_PRI
 +/**
-+ * pci_enable_ats - enable the ATS capability
-+ * @dev: the PCI device
-+ * @ps: the IOMMU page shift
++ * pci_enable_pri - Enable PRI capability
++ * @ pdev: PCI device structure
 + *
-+ * Returns 0 on success, or negative on failure.
++ * Returns 0 on success, negative value on error
 + */
-+int pci_enable_ats(struct pci_dev *dev, int ps)
++int pci_enable_pri(struct pci_dev *pdev, u32 reqs)
 +{
-+	int rc;
-+	u16 ctrl;
++	u16 control, status;
++	u32 max_requests;
++	int pos;
 +
-+	BUG_ON(dev->ats && dev->ats->is_enabled);
-+
-+	if (ps < PCI_ATS_MIN_STU)
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
 +		return -EINVAL;
 +
-+	if (dev->is_physfn || dev->is_virtfn) {
-+		struct pci_dev *pdev = dev->is_physfn ? dev : dev->physfn;
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
++	if ((control & PCI_PRI_ENABLE) || !(status & PCI_PRI_STATUS_STOPPED))
++		return -EBUSY;
 +
-+		mutex_lock(&pdev->sriov->lock);
-+		if (pdev->ats)
-+			rc = pdev->ats->stu == ps ? 0 : -EINVAL;
-+		else
-+			rc = ats_alloc_one(pdev, ps);
++	pci_read_config_dword(pdev, pos + PCI_PRI_MAX_REQ_OFF, &max_requests);
++	reqs = min(max_requests, reqs);
++	pci_write_config_dword(pdev, pos + PCI_PRI_ALLOC_REQ_OFF, reqs);
 +
-+		if (!rc)
-+			pdev->ats->ref_cnt++;
-+		mutex_unlock(&pdev->sriov->lock);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	if (!dev->is_physfn) {
-+		rc = ats_alloc_one(dev, ps);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	ctrl = PCI_ATS_CTRL_ENABLE;
-+	if (!dev->is_virtfn)
-+		ctrl |= PCI_ATS_CTRL_STU(ps - PCI_ATS_MIN_STU);
-+	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl);
-+
-+	dev->ats->is_enabled = 1;
++	control |= PCI_PRI_ENABLE;
++	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(pci_enable_pri);
 +
 +/**
-+ * pci_disable_ats - disable the ATS capability
-+ * @dev: the PCI device
-+ */
-+void pci_disable_ats(struct pci_dev *dev)
-+{
-+	u16 ctrl;
-+
-+	BUG_ON(!dev->ats || !dev->ats->is_enabled);
-+
-+	pci_read_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, &ctrl);
-+	ctrl &= ~PCI_ATS_CTRL_ENABLE;
-+	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl);
-+
-+	dev->ats->is_enabled = 0;
-+
-+	if (dev->is_physfn || dev->is_virtfn) {
-+		struct pci_dev *pdev = dev->is_physfn ? dev : dev->physfn;
-+
-+		mutex_lock(&pdev->sriov->lock);
-+		pdev->ats->ref_cnt--;
-+		if (!pdev->ats->ref_cnt)
-+			ats_free_one(pdev);
-+		mutex_unlock(&pdev->sriov->lock);
-+	}
-+
-+	if (!dev->is_physfn)
-+		ats_free_one(dev);
-+}
-+
-+/**
-+ * pci_ats_queue_depth - query the ATS Invalidate Queue Depth
-+ * @dev: the PCI device
++ * pci_disable_pri - Disable PRI capability
++ * @pdev: PCI device structure
 + *
-+ * Returns the queue depth on success, or negative on failure.
-+ *
-+ * The ATS spec uses 0 in the Invalidate Queue Depth field to
-+ * indicate that the function can accept 32 Invalidate Request.
-+ * But here we use the `real' values (i.e. 1~32) for the Queue
-+ * Depth; and 0 indicates the function shares the Queue with
-+ * other functions (doesn't exclusively own a Queue).
++ * Only clears the enabled-bit, regardless of its former value
 + */
-+int pci_ats_queue_depth(struct pci_dev *dev)
++void pci_disable_pri(struct pci_dev *pdev)
 +{
++	u16 control;
 +	int pos;
-+	u16 cap;
 +
-+	if (dev->is_virtfn)
-+		return 0;
-+
-+	if (dev->ats)
-+		return dev->ats->qdep;
-+
-+	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS);
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
 +	if (!pos)
-+		return -ENODEV;
++		return;
 +
-+	pci_read_config_word(dev, pos + PCI_ATS_CAP, &cap);
-+
-+	return PCI_ATS_CAP_QDEP(cap) ? PCI_ATS_CAP_QDEP(cap) :
-+				       PCI_ATS_MAX_QDEP;
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	control &= ~PCI_PRI_ENABLE;
++	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
 +}
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 42fae47..9b4e88c 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -722,145 +722,3 @@ int pci_num_vf(struct pci_dev *dev)
- 		return dev->sriov->nr_virtfn;
- }
- EXPORT_SYMBOL_GPL(pci_num_vf);
--
--static int ats_alloc_one(struct pci_dev *dev, int ps)
--{
--	int pos;
--	u16 cap;
--	struct pci_ats *ats;
--
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS);
--	if (!pos)
--		return -ENODEV;
--
--	ats = kzalloc(sizeof(*ats), GFP_KERNEL);
--	if (!ats)
--		return -ENOMEM;
--
--	ats->pos = pos;
--	ats->stu = ps;
--	pci_read_config_word(dev, pos + PCI_ATS_CAP, &cap);
--	ats->qdep = PCI_ATS_CAP_QDEP(cap) ? PCI_ATS_CAP_QDEP(cap) :
--					    PCI_ATS_MAX_QDEP;
--	dev->ats = ats;
--
--	return 0;
--}
--
--static void ats_free_one(struct pci_dev *dev)
--{
--	kfree(dev->ats);
--	dev->ats = NULL;
--}
--
--/**
-- * pci_enable_ats - enable the ATS capability
-- * @dev: the PCI device
-- * @ps: the IOMMU page shift
-- *
-- * Returns 0 on success, or negative on failure.
-- */
--int pci_enable_ats(struct pci_dev *dev, int ps)
--{
--	int rc;
--	u16 ctrl;
--
--	BUG_ON(dev->ats && dev->ats->is_enabled);
--
--	if (ps < PCI_ATS_MIN_STU)
--		return -EINVAL;
--
--	if (dev->is_physfn || dev->is_virtfn) {
--		struct pci_dev *pdev = dev->is_physfn ? dev : dev->physfn;
--
--		mutex_lock(&pdev->sriov->lock);
--		if (pdev->ats)
--			rc = pdev->ats->stu == ps ? 0 : -EINVAL;
--		else
--			rc = ats_alloc_one(pdev, ps);
--
--		if (!rc)
--			pdev->ats->ref_cnt++;
--		mutex_unlock(&pdev->sriov->lock);
--		if (rc)
--			return rc;
--	}
--
--	if (!dev->is_physfn) {
--		rc = ats_alloc_one(dev, ps);
--		if (rc)
--			return rc;
--	}
--
--	ctrl = PCI_ATS_CTRL_ENABLE;
--	if (!dev->is_virtfn)
--		ctrl |= PCI_ATS_CTRL_STU(ps - PCI_ATS_MIN_STU);
--	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl);
--
--	dev->ats->is_enabled = 1;
--
--	return 0;
--}
--
--/**
-- * pci_disable_ats - disable the ATS capability
-- * @dev: the PCI device
-- */
--void pci_disable_ats(struct pci_dev *dev)
--{
--	u16 ctrl;
--
--	BUG_ON(!dev->ats || !dev->ats->is_enabled);
--
--	pci_read_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, &ctrl);
--	ctrl &= ~PCI_ATS_CTRL_ENABLE;
--	pci_write_config_word(dev, dev->ats->pos + PCI_ATS_CTRL, ctrl);
--
--	dev->ats->is_enabled = 0;
--
--	if (dev->is_physfn || dev->is_virtfn) {
--		struct pci_dev *pdev = dev->is_physfn ? dev : dev->physfn;
--
--		mutex_lock(&pdev->sriov->lock);
--		pdev->ats->ref_cnt--;
--		if (!pdev->ats->ref_cnt)
--			ats_free_one(pdev);
--		mutex_unlock(&pdev->sriov->lock);
--	}
--
--	if (!dev->is_physfn)
--		ats_free_one(dev);
--}
--
--/**
-- * pci_ats_queue_depth - query the ATS Invalidate Queue Depth
-- * @dev: the PCI device
-- *
-- * Returns the queue depth on success, or negative on failure.
-- *
-- * The ATS spec uses 0 in the Invalidate Queue Depth field to
-- * indicate that the function can accept 32 Invalidate Request.
-- * But here we use the `real' values (i.e. 1~32) for the Queue
-- * Depth; and 0 indicates the function shares the Queue with
-- * other functions (doesn't exclusively own a Queue).
-- */
--int pci_ats_queue_depth(struct pci_dev *dev)
--{
--	int pos;
--	u16 cap;
--
--	if (dev->is_virtfn)
--		return 0;
--
--	if (dev->ats)
--		return dev->ats->qdep;
--
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ATS);
--	if (!pos)
--		return -ENODEV;
--
--	pci_read_config_word(dev, pos + PCI_ATS_CAP, &cap);
--
--	return PCI_ATS_CAP_QDEP(cap) ? PCI_ATS_CAP_QDEP(cap) :
--				       PCI_ATS_MAX_QDEP;
--}
++EXPORT_SYMBOL_GPL(pci_disable_pri);
++
++/**
++ * pci_pri_enabled - Checks if PRI capability is enabled
++ * @pdev: PCI device structure
++ *
++ * Returns true if PRI is enabled on the device, false otherwise
++ */
++bool pci_pri_enabled(struct pci_dev *pdev)
++{
++	u16 control;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
++		return false;
++
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++
++	return (control & PCI_PRI_ENABLE) ? true : false;
++}
++EXPORT_SYMBOL_GPL(pci_pri_enabled);
++
++/**
++ * pci_reset_pri - Resets device's PRI state
++ * @pdev: PCI device structure
++ *
++ * The PRI capability must be disabled before this function is called.
++ * Returns 0 on success, negative value on error.
++ */
++int pci_reset_pri(struct pci_dev *pdev)
++{
++	u16 control;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
++		return -EINVAL;
++
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	if (control & PCI_PRI_ENABLE)
++		return -EBUSY;
++
++	control |= PCI_PRI_RESET;
++
++	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pci_reset_pri);
++
++/**
++ * pci_pri_stopped - Checks whether the PRI capability is stopped
++ * @pdev: PCI device structure
++ *
++ * Returns true if the PRI capability on the device is disabled and the
++ * device has no outstanding PRI requests, false otherwise. The device
++ * indicates this via the STOPPED bit in the status register of the
++ * capability.
++ * The device internal state can be cleared by resetting the PRI state
++ * with pci_reset_pri(). This can force the capability into the STOPPED
++ * state.
++ */
++bool pci_pri_stopped(struct pci_dev *pdev)
++{
++	u16 control, status;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
++		return true;
++
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
++
++	if (control & PCI_PRI_ENABLE)
++		return false;
++
++	return (status & PCI_PRI_STATUS_STOPPED) ? true : false;
++}
++EXPORT_SYMBOL_GPL(pci_pri_stopped);
++
++/**
++ * pci_pri_status - Request PRI status of a device
++ * @pdev: PCI device structure
++ *
++ * Returns negative value on failure, status on success. The status can
++ * be checked against status-bits. Supported bits are currently:
++ * PCI_PRI_STATUS_RF:      Response failure
++ * PCI_PRI_STATUS_UPRGI:   Unexpected Page Request Group Index
++ * PCI_PRI_STATUS_STOPPED: PRI has stopped
++ */
++int pci_pri_status(struct pci_dev *pdev)
++{
++	u16 status, control;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
++		return -EINVAL;
++
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	pci_read_config_word(pdev, pos + PCI_PRI_STATUS_OFF,  &status);
++
++	/* Stopped bit is undefined when enable == 1, so clear it */
++	if (control & PCI_PRI_ENABLE)
++		status &= ~PCI_PRI_STATUS_STOPPED;
++
++	return status;
++}
++EXPORT_SYMBOL_GPL(pci_pri_status);
++#endif /* CONFIG_PCI_PRI */
 diff --git a/include/linux/pci-ats.h b/include/linux/pci-ats.h
-index 655824f..4eab42b 100644
+index 4eab42b..0713952 100644
 --- a/include/linux/pci-ats.h
 +++ b/include/linux/pci-ats.h
-@@ -1,6 +1,8 @@
- #ifndef LINUX_PCI_ATS_H
- #define LINUX_PCI_ATS_H
- 
-+#include <linux/pci.h>
+@@ -17,6 +17,7 @@ struct pci_ats {
+ extern int pci_enable_ats(struct pci_dev *dev, int ps);
+ extern void pci_disable_ats(struct pci_dev *dev);
+ extern int pci_ats_queue_depth(struct pci_dev *dev);
 +
- /* Address Translation Service */
- struct pci_ats {
- 	int pos;        /* capability position */
+ /**
+  * pci_ats_enabled - query the ATS status
+  * @dev: the PCI device
+@@ -51,4 +52,45 @@ static inline int pci_ats_enabled(struct pci_dev *dev)
+ 
+ #endif /* CONFIG_PCI_IOV */
+ 
++#ifdef CONFIG_PCI_PRI
++
++extern int  pci_enable_pri(struct pci_dev *pdev, u32 reqs);
++extern void pci_disable_pri(struct pci_dev *pdev);
++extern bool pci_pri_enabled(struct pci_dev *pdev);
++extern int  pci_reset_pri(struct pci_dev *pdev);
++extern bool pci_pri_stopped(struct pci_dev *pdev);
++extern int  pci_pri_status(struct pci_dev *pdev);
++
++#else /* CONFIG_PCI_PRI */
++
++static inline int pci_enable_pri(struct pci_dev *pdev, u32 reqs)
++{
++	return -ENODEV;
++}
++
++static inline void pci_disable_pri(struct pci_dev *pdev)
++{
++}
++
++static inline bool pci_pri_enabled(struct pci_dev *pdev)
++{
++	return false;
++}
++
++static inline int pci_reset_pri(struct pci_dev *pdev)
++{
++	return -ENODEV;
++}
++
++static inline bool pci_pri_stopped(struct pci_dev *pdev)
++{
++	return true;
++}
++
++static inline int pci_pri_status(struct pci_dev *pdev)
++{
++	return -ENODEV;
++}
++#endif /* CONFIG_PCI_PRI */
++
+ #endif /* LINUX_PCI_ATS_H*/
+diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
+index e884096..7fc32af 100644
+--- a/include/linux/pci_regs.h
++++ b/include/linux/pci_regs.h
+@@ -663,6 +663,18 @@
+ #define  PCI_ATS_CTRL_STU(x)	((x) & 0x1f)	/* Smallest Translation Unit */
+ #define  PCI_ATS_MIN_STU	12	/* shift of minimum STU block */
+ 
++/* Page Request Interface */
++#define PCI_PRI_CAP		0x13    /* PRI capability ID */
++#define PCI_PRI_CONTROL_OFF	0x04	/* Offset of control register */
++#define PCI_PRI_STATUS_OFF	0x06	/* Offset of status register */
++#define PCI_PRI_ENABLE		0x0001	/* Enable mask */
++#define PCI_PRI_RESET		0x0002	/* Reset bit mask */
++#define PCI_PRI_STATUS_RF	0x0001  /* Request Failure */
++#define PCI_PRI_STATUS_UPRGI	0x0002  /* Unexpected PRG index */
++#define PCI_PRI_STATUS_STOPPED	0x0100  /* PRI Stopped */
++#define PCI_PRI_MAX_REQ_OFF	0x08	/* Cap offset for max reqs supported */
++#define PCI_PRI_ALLOC_REQ_OFF	0x0c	/* Cap offset for max reqs allowed */
++
+ /* Single Root I/O Virtualization */
+ #define PCI_SRIOV_CAP		0x04	/* SR-IOV Capabilities */
+ #define  PCI_SRIOV_CAP_VFM	0x01	/* VF Migration Capable */
 -- 
 1.7.4.1
 
