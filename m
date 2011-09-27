@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab1I0Bid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 21:38:33 -0400
-Received: from cltv.tinp.net.tw ([58.99.32.3]:36785 "EHLO cltv.tinp.net.tw"
+	id S1751973Ab1I0Bjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 21:39:32 -0400
+Received: from cltv.tinp.net.tw ([58.99.32.3]:37288 "EHLO cltv.tinp.net.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab1I0Bic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 21:38:32 -0400
-X-Greylist: delayed 1779 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Sep 2011 21:38:31 EDT
-Message-ID: <20110927093500.4604h2cm4ggo400g@cltv.tinp.net.tw>
-Date: Tue, 27 Sep 2011 09:35:00 +0800
+	id S1751708Ab1I0Bjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Sep 2011 21:39:31 -0400
+Message-ID: <20110927090824.2132yw75wgss48s0@cltv.tinp.net.tw>
+Date: Tue, 27 Sep 2011 09:08:24 +0800
 From: United Nation Donation <info@unf.org>
 Reply-to: torobindesk@blumail.org
 To: undisclosed-recipients:;
@@ -25,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+CONGRATULATION!!!
 
 We are pleased to inform you that You have been chosen by the U.N  
 Foundation to
