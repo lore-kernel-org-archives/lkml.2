@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab1I0Hws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 03:52:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33065 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab1I0Hwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 03:52:47 -0400
-Date: Tue, 27 Sep 2011 09:52:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/2] oom: do not live lock on frozen tasks
-Message-ID: <20110927075245.GA25807@tiehlicka.suse.cz>
-References: <20110825151818.GA4003@redhat.com>
- <alpine.DEB.2.00.1109260154510.1389@chino.kir.corp.google.com>
- <20110926091440.GE10156@tiehlicka.suse.cz>
- <201109261751.40688.rjw@sisk.pl>
- <alpine.DEB.2.00.1109261801150.8510@chino.kir.corp.google.com>
+	id S1752126Ab1I0IA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 04:00:59 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:45489 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab1I0IA6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 04:00:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1109261801150.8510@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
+References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B7321777@HQMAIL01.nvidia.com>
+	<CACRpkdY5ETbJxSpwJL-7KZhjOnhwrdT1=djwByek75ye=S9L9w@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
+Date: Tue, 27 Sep 2011 10:00:56 +0200
+Message-ID: <CACRpkdbiWUFPfF9vKV5YpSW68ZTdjwb8NhWZ_9WDoY5Q+aVfvQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-09-11 18:03:26, David Rientjes wrote:
-> On Mon, 26 Sep 2011, Rafael J. Wysocki wrote:
-> 
-> > > Konstantin Khlebnikov has reported (https://lkml.org/lkml/2011/8/23/45)
-> > > that OOM can end up in a live lock if select_bad_process picks up a frozen
-> > > task.
-> > > Unfortunately we cannot mark such processes as unkillable to ignore them
-> > > because we could panic the system even though there is a chance that
-> > > somebody could thaw the process so we can make a forward process (e.g. a
-> > > process from another cpuset or with a different nodemask).
-> > > 
-> > > Let's thaw an OOM selected frozen process right after we've sent fatal
-> > > signal from oom_kill_task.
-> > > Thawing is safe if the frozen task doesn't access any suspended device
-> > > (e.g. by ioctl) on the way out to the userspace where we handle the
-> > > signal and die. Note, we are not interested in the kernel threads because
-> > > they are not oom killable.
-> > > 
-> > > Accessing suspended devices by a userspace processes shouldn't be an
-> > > issue because devices are suspended only after userspace is already
-> > > frozen and oom is disabled at that time.
-> > > 
-> > > run_guest (drivers/lguest/core.c) calls try_to_freeze with an user
-> > > context but it seems it is able to cope with signals because it
-> > > explicitly checks for pending signals so we should be safe.
-> > > 
-> > > Other than that userspace accesses the fridge only from the
-> > > signal handling routines so we are able to handle SIGKILL without any
-> > > negative side effects.
-> > > 
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > > Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > 
-> > Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> 
-> Acked-by: David Rientjes <rientjes@google.com>
+On Wed, Sep 21, 2011 at 9:39 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Wednesday, September 21, 2011 2:25 AM:
+>> On Wed, Sep 21, 2011 at 12:15 AM, Stephen Warren <swarren@nvidia.com> wrote:
+>> > Linus Walleij wrote at Friday, September 16, 2011 6:14 AM:
+>> >> +     for (i = 0; i < ARRAY_SIZE(u300_mux_hogs); i++) {
+>> >> +             struct pinmux *pmx;
+>> >> +             int ret;
+>> >> +
+>> >> +             pmx = pinmux_get(u300_mux_hogs[i].dev, NULL);
+>> >> +             if (IS_ERR(pmx)) {
+>> >> +                     pr_err("u300: could not get pinmux hog %s\n",
+>> >> +                            u300_mux_hogs[i].name);
+>> >> +                     continue;
+>> >> +             }
+>> >> +             ret = pinmux_enable(pmx);
+>> >> +             if (ret) {
+>> >> +                     pr_err("u300: could enable pinmux hog %s\n",
+>> >> +                            u300_mux_hogs[i].name);
+>> >> +                     continue;
+>> >> +             }
+>> >> +             u300_mux_hogs[i].pmx = pmx;
+>> >> +     }
+>> >> +     return 0;
+>> >> +}
+>> >> +subsys_initcall(u300_pinmux_fetch);
+>> >
+>> > Why not just have the pinmux core support hogging on non-"system" mapping
+>> > entries; then everything I quoted above except u300_pinmux_map[] could
+>> > be deleted, and the "hog" flag set on the last 3 u300_pinmux_map[] entries.
+>>
+>> Very good question, luckily I have a good answer.
+>>
+>> There is no way for the pinmux core to traverse the system and look
+>> up the apropriate struct device * pointers.
+>
+> It's unclear to me why that would be needed.
+>
+> For non-system mappings, either the device-driver in question will be
+> get'ing and enabling them (this case isn't relevant to this discussion),
+> or they'll be hogged. In the hog case, I doubt anything would ever want
+> to disable them and switch the device to a different mapping entry; if
+> that were the case, the entries shouldn't be hogged, but get/enabled by
+> the device anyway. Hence, I don't see the need for an activation of a
+> hog'd non-system mapping entry to care about the device fields that are
+> in the mapping table at all; they could just be ignored couldn't they?
 
-Thanks!
+I don't think so, atleast not in this case. I think it is helpful for the system
+to know which device is related to the specific hog, so it turns up in
+debugfs etc "aha, it is hogged for that device" etc. Not doing that
+makes the subsystem loose relevant information.
 
-> 
-> Although this still seems to be problematic if the chosen thread gets 
-> frozen before the SIGKILL can be handled.  We don't have any checks for 
-> fatal_signal_pending() when freezing threads and waiting for them to exit?
+So for that reason I prefer to pass in the relevant struct device *
+pointers, atleast when they're readily available as in this boardfile.
 
-I guess you mean a situation when select_bad_process picks up a process
-which is not marked as frozen yet but we send SIGKILL right before
-schedule is called in refrigerator. 
-In that case either schedule should catch it by signal_pending_state
-check or we will pick it up next OOM round when we pick up the same
-process (if nothing else is eligible). Or am I missing something?
- 
-> Michal, could you send Andrew your revised patch with all the acked-bys?
+If they are not available, or hard to get at, we could just redefine
+them as system mappings and remove the device fields, but
+in this case I'd say let's keep it around.
 
-Yes I will. I would just like to hear back from Konstantin who
-originally reported the issue. Maybe he has a test case.
-
-> 
-> Thanks!
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Yours,
+Linus Walleij
