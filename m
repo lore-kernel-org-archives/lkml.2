@@ -1,232 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668Ab1I0Axd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:53:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47987 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1I0Ax3 convert rfc822-to-8bit (ORCPT
+	id S1751480Ab1I0A4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:56:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65124 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab1I0A4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:53:29 -0400
+	Mon, 26 Sep 2011 20:56:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <1317044445.26514.5.camel@gandalf.stny.rr.com>
-References: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
-	<1317044445.26514.5.camel@gandalf.stny.rr.com>
-Date: Tue, 27 Sep 2011 08:53:28 +0800
-Message-ID: <CACVXFVPQokm21c+do5+DaOvUAme2LaNiwrNw_Tm66KuOxPb1jA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] PM/runtime: introduce trace points for tracing
- rpm_* functions
-From: Ming Lei <tom.leiming@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fweisbec@gmail.com
+In-Reply-To: <CAK=WgbYzZKTRRf6hk=L5ZvXmFAUpq66Ud3F7xh2-8j6zSvAq9g@mail.gmail.com>
+References: <15669786.49881316849426265.JavaMail.weblogic@epml24>
+	<CAK=WgbYnGjPKs6_nmFRGfMnbh_7wDR-0QcptAGaqDKVOo-x3cg@mail.gmail.com>
+	<CAHQjnOOtVHUS3KmBz7LdO88fLQyLA6f-w3ye9nAH0Bx+zh38XA@mail.gmail.com>
+	<CAK=Wgbazwz9PRJSpZjopwxJ-PO88FtajmbXL=pVKDHOr1t61fQ@mail.gmail.com>
+	<CAHQjnON7dksupFeAYLuYXX2PhgjX-GXEGJiy0dRTmpoBjbURVg@mail.gmail.com>
+	<CAK=WgbaOwe8Q19tpZMeHdvyCj8fcV194zA-oSD20tF7j7_MvpQ@mail.gmail.com>
+	<CAHQjnOM_KTiqzYnePScMHQ3bg5X1wqa4zu6=1A1z7UWeDxVZvQ@mail.gmail.com>
+	<CAK=WgbYzZKTRRf6hk=L5ZvXmFAUpq66Ud3F7xh2-8j6zSvAq9g@mail.gmail.com>
+Date: Tue, 27 Sep 2011 09:56:14 +0900
+X-Google-Sender-Auth: r3jYtbEw_a6L-pTrsWuFhOx5Kes
+Message-ID: <CAHQjnOPdsf-QB3st94WRSH325j8WPOLLe4rqv0WN1qK1KYWtmA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] iommu/exynos: Add iommu driver for Exynos4 Platforms
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        =?UTF-8?B?7J207IOB7ZiE?= <sanghyun75.lee@samsung.com>,
+        =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
+        =?UTF-8?B?6rmA7JiB6529?= <younglak1004.kim@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Sep 26, 2011 at 9:40 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2011-09-22 at 12:11 +0800, tom.leiming@gmail.com wrote:
->> From: Ming Lei <tom.leiming@gmail.com>
->>
->> This patch introduces 3 trace points to prepare for tracing
->> rpm_idle/rpm_suspend/rpm_resume functions, so we can use these
->> trace points to replace the current dev_dbg().
->>
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> ---
->>  include/trace/events/rpm.h |   98 ++++++++++++++++++++++++++++++++++++++++++++
->>  kernel/trace/Makefile      |    1 +
->>  kernel/trace/rpm-traces.c  |   21 +++++++++
->>  3 files changed, 120 insertions(+), 0 deletions(-)
->>  create mode 100644 include/trace/events/rpm.h
->>  create mode 100644 kernel/trace/rpm-traces.c
->>
->> diff --git a/include/trace/events/rpm.h b/include/trace/events/rpm.h
->> new file mode 100644
->> index 0000000..ecd40bb
->> --- /dev/null
->> +++ b/include/trace/events/rpm.h
->> @@ -0,0 +1,98 @@
->> +
->> +#undef TRACE_SYSTEM
->> +#define TRACE_SYSTEM rpm
->> +
->> +#if !defined(_TRACE_RUNTIME_POWER_H) || defined(TRACE_HEADER_MULTI_READ)
->> +#define _TRACE_RUNTIME_POWER_H
->> +
->> +#include <linux/ktime.h>
->> +#include <linux/tracepoint.h>
->> +#include <linux/device.h>
->> +
->> +/*
->> + * The rpm_internal events are used for tracing some important
->> + * runtime pm internal functions.
->> + */
->> +DECLARE_EVENT_CLASS(rpm_internal,
->> +
->> +     TP_PROTO(struct device *dev, int flags),
->> +
->> +     TP_ARGS(dev, flags),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(        const char *,   name            )
->> +             __field(        int,            flags           )
->> +             __field(        int ,           usage_count     )
->> +             __field(        int ,           disable_depth   )
->> +             __field(        int ,           runtime_auto    )
->> +             __field(        int ,           request_pending )
->> +             __field(        int ,           irq_safe        )
->> +             __field(        int ,           child_count     )
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->name = dev_name(dev);
+On Tue, Sep 27, 2011 at 12:59 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Mon, Sep 26, 2011 at 5:48 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
+>> I am sorry but I still think that
+>> installing default fault handler is quite simple and straightforward.
 >
-> Don't use pointers, you must copy the name here. Otherwise, if the trace
-> is read after the device has left, you will be referencing a invalid
-> pointer and possible crash the kernel.
-
-Yes, you right, but __get_str() may introduce some extra loading, could
-it be changed to below just like what dev_printk does?
-
-                   __entry->name = dev ? dev_name(dev) : NULL;
+> ... and abusing the IOMMU API.
+>
+> Please don't do that. Interfaces are written for specific goals, and
+> this one was added for IOMMU users, not drivers. Just like all the
+> other map/unmap/attach/... APIs.
+>
+> By using this from the IOMMU driver itself, you are adding burden on
+> future development and evolution of this API. As use cases
+> materialize, we will have to change it to support them, while
+> considering existing use cases. Using this API inappropriately will
+> make our life harder later on.
+I didn't think about this case.
+It can be a problem if IOMMU driver is dependent upon the change of
+IOMMU API as you told above.
 
 >
-> We have ways to express dynamic string fields. Use them.
+> Moreover, I'm really not sure how exactly are you going to use this.
 >
->> +             __entry->flags = flags;
->> +             __entry->usage_count = atomic_read(
->> +                     &dev->power.usage_count);
->> +             __entry->disable_depth = dev->power.disable_depth;
->> +             __entry->runtime_auto = dev->power.runtime_auto;
->> +             __entry->request_pending = dev->power.request_pending;
->> +             __entry->irq_safe = dev->power.irq_safe;
->> +             __entry->child_count = atomic_read(
->> +                     &dev->power.child_count);
->> +     ),
->> +
->> +     TP_printk("%s flags-%x cnt-%-2d dep-%-2d auto-%-1d p-%-1d"
->> +                     " irq-%-1d child-%d",
->> +                     __entry->name, __entry->flags,
->> +                     __entry->usage_count,
->> +                     __entry->disable_depth,
->> +                     __entry->runtime_auto,
->> +                     __entry->request_pending,
->> +                     __entry->irq_safe,
->> +                     __entry->child_count
->> +              )
->> +);
->> +DEFINE_EVENT(rpm_internal, rpm_suspend,
->> +
->> +     TP_PROTO(struct device *dev, int flags),
->> +
->> +     TP_ARGS(dev, flags)
->> +);
->> +DEFINE_EVENT(rpm_internal, rpm_resume,
->> +
->> +     TP_PROTO(struct device *dev, int flags),
->> +
->> +     TP_ARGS(dev, flags)
->> +);
->> +DEFINE_EVENT(rpm_internal, rpm_idle,
->> +
->> +     TP_PROTO(struct device *dev, int flags),
->> +
->> +     TP_ARGS(dev, flags)
->> +);
->> +
->> +TRACE_EVENT(rpm_return_int,
->> +     TP_PROTO(struct device *dev, const char *func, int ret),
->> +     TP_ARGS(dev, func, ret),
->> +
->> +     TP_STRUCT__entry(
->> +             __field(        const char *,           name            )
->> +             __field(        const char *,           func            )
->> +             __field(        int,                    ret             )
->> +     ),
->> +
->> +     TP_fast_assign(
->> +             __entry->name = dev_name(dev);
->
-> Same here.
->
->> +             __entry->ret = ret;
->> +             __entry->func = func;
->
-> And here. But as this is just __func__, you could use %pS and save the
-> pointer to the function. This is acceptable as kallsyms will will used
-> to find the function, and instead pass in __THIS_IP__ to the tracepoint.
+> If you're having an IOMMU user which installs its own fault handler,
+> then this is all moot since the default behavior you provide here will
+> be overridden.
+Yes, this is what I really want.
+I wanted the IOMMU driver to provide default fault handler to its users
+that does not provide fault handler for debugging purpose.
+If a user want to handle MMU fault, IOMMU driver welcomes to overwrite
+the existing 'default' fault handler.
 
-IMO, __func__ is better than %pS here because %pS will dump some
-offset info (such as runtime_suspend+0x0/0x158), but which is
-not needed in this case.( we just need to make return value to match the
-previous function name, such as below)
+> If you're not having an IOMMU user which installs its own fault
+> handler, then just provide the default behavior in your irq handler,
+> regardless whether you report the fault to the IOMMU core or not. Or
+> only when it fails. and yes, we can provide different error values for
+> different scenarios. it's not rocket science :).
+>
+> Really, there's a myriad of ways to do this right. Please explain your
+> exact settings/use-case and I'll gladly help you find a clean
+> solution.
+>
+Thank you.
 
-          rpm_suspend: omap_hsmmc.0 flags=9
-          ...
-          rpm_return_int: rpm_suspend:omap_hsmmc.0 ret=0
+As I explained before, MMU fault in our system is abnormal and
+the situation cannot be recovered because mapping information is set up
+completely before System MMU starts address translation with the mapping
+information.
+However we have to capture the MMU fault for debugging purpose.
+That's why our fault handler just prints debugging messages and
+generates kernel OOPS
 
->
-> -- Steve
->
->
->> +     ),
->> +
->> +     TP_printk("%s:%s ret=%d", __entry->func, __entry->name, __entry->ret)
->> +);
->> +
->> +#endif /* _TRACE_RUNTIME_POWER_H */
->> +
->> +/* This part must be outside protection */
->> +#include <trace/define_trace.h>
->> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
->> index 761c510..56bdab5 100644
->> --- a/kernel/trace/Makefile
->> +++ b/kernel/trace/Makefile
->> @@ -53,6 +53,7 @@ endif
->>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
->>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
->>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
->> +obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
->>  ifeq ($(CONFIG_TRACING),y)
->>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
->>  endif
->> diff --git a/kernel/trace/rpm-traces.c b/kernel/trace/rpm-traces.c
->> new file mode 100644
->> index 0000000..998949e
->> --- /dev/null
->> +++ b/kernel/trace/rpm-traces.c
->> @@ -0,0 +1,21 @@
->> +/*
->> + * Power trace points
->> + *
->> + * Copyright (C) 2009 Ming Lei <tom.leiming@gmail.com>
->> + */
->> +
->> +#include <linux/string.h>
->> +#include <linux/types.h>
->> +#include <linux/workqueue.h>
->> +#include <linux/sched.h>
->> +#include <linux/module.h>
->> +#include <linux/usb.h>
->> +
->> +#define CREATE_TRACE_POINTS
->> +#include <trace/events/rpm.h>
->> +
->> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_return_int);
->> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_idle);
->> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_suspend);
->> +EXPORT_TRACEPOINT_SYMBOL_GPL(rpm_resume);
->> +
->
->
->
+A user of IOMMU may handle MMU faults due to the following reason:
+ - Its IOMMU sees the virtual address space of the user process (IOMMU
+refers the page table of CPU)
+   and virtual memory region allocated by userspace is not filled with
+physical memory.
+   Device driver which is user of IOMMU does not call get_user_pages()
+for the region but
+   handle page fault generated by IOMMU.
+ - A device driver working in the Monitor mode in ARM processors need
+to protect a memory region
+   from access in the Normal mode. If it happens, the device driver
+must catch the situation,
+   stop the current operation and inform the problem to the userspace.
 
+For the above reasons, some user of IOMMU may override the default
+fault handler.
 
-thanks,
--- 
-Ming Lei
+> Thanks,
+> Ohad.
+
+Thanks and regards,
+Cho KyongHo.
