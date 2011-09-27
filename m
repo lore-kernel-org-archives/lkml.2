@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1I0JaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 05:30:10 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51420 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab1I0JaI convert rfc822-to-8bit (ORCPT
+	id S1752777Ab1I0JeR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 05:34:17 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:53560 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab1I0JeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 05:30:08 -0400
+	Tue, 27 Sep 2011 05:34:16 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Kyle Moffett <kyle@moffetthome.net>
+Subject: Re: [PATCH 04/10] drbd: Replace and remove old primitives
+Date: Tue, 27 Sep 2011 11:34:01 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        drbd-dev@lists.linbit.com
+References: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com> <1316788285-17433-5-git-send-email-philipp.reisner@linbit.com> <CAGZ=bqJ_b54h9xid_PNwz-Ag6aNuvyUHx2QCm5UXpdc-JvHhKQ@mail.gmail.com>
+In-Reply-To: <CAGZ=bqJ_b54h9xid_PNwz-Ag6aNuvyUHx2QCm5UXpdc-JvHhKQ@mail.gmail.com>
+X-OTRS-FollowUp-SenderType: agent
 MIME-Version: 1.0
-In-Reply-To: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
-References: <1316175203-10736-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 27 Sep 2011 11:30:08 +0200
-Message-ID: <CAOY=C6ESgRpdCYb8tCxmmdRGfjv+gqroDNiq63zyRjardVicjQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drivers: create a pin control subsystem v7
-From: Stijn Devriendt <highguy@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109271134.02299.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static int pin_request(struct pinctrl_dev *pctldev,
-> +                      int pin, const char *function, bool gpio,
-> +                      struct pinctrl_gpio_range *gpio_range)
-> +{
-> +       struct pin_desc *desc;
-> +       const struct pinmux_ops *ops = pctldev->desc->pmxops;
-> +       int status = -EINVAL;
-> +
-> +       dev_dbg(&pctldev->dev, "request pin %d for %s\n", pin, function);
-> +
-> +       if (!pin_is_valid(pctldev, pin)) {
-> +               dev_err(&pctldev->dev, "pin is invalid\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       if (!function) {
-> +               dev_err(&pctldev->dev, "no function name given\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       desc = pin_desc_get(pctldev, pin);
-> +       if (desc == NULL) {
-> +               dev_err(&pctldev->dev,
-> +                       "pin is not registered so it cannot be requested\n");
-> +               goto out;
-> +       }
-> +
-> +       spin_lock(&desc->lock);
-> +       if (desc->mux_requested) {
-> +               spin_unlock(&desc->lock);
-> +               dev_err(&pctldev->dev,
-> +                       "pin already requested\n");
-> +               goto out;
-> +       }
-> +       spin_unlock(&desc->lock);
+Am Freitag, 23. September 2011, 19:33:45 schrieb Kyle Moffett:
+> Hi!
+> 
+> On Fri, Sep 23, 2011 at 10:31, Philipp Reisner
+> 
+> <philipp.reisner@linbit.com> wrote:
+> > From: Andreas Gruenbacher <agruen@linbit.com>
+> > 
+> > Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+> > Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+> > ---
+> >  drivers/block/drbd/drbd_int.h      |   45 +----
+> >  drivers/block/drbd/drbd_main.c     |  502
+> > ++++++++++++++++-------------------- drivers/block/drbd/drbd_receiver.c
+> > |   86 ++++---
+> >  drivers/block/drbd/drbd_worker.c   |   24 +-
+> >  4 files changed, 294 insertions(+), 363 deletions(-)
+> 
+> I'm afraid this commit is waaaaay too large and complicated
+> to have a one-line commit message.
+> 
+> You should either split this up into more pieces or you should
+> write a detailed log indicated what this is supposed to be doing
+> and why it is OK.  (Or both).
+> 
 
-Now this is racing with...
+I updated the patch to the following commit message:
 
-> +
-> +       /* Let each pin increase references to this module */
-> +       if (!try_module_get(pctldev->owner)) {
-> +               dev_err(&pctldev->dev,
-> +                       "could not increase module refcount for pin %d\n",
-> +                       pin);
-> +               status = -EINVAL;
-> +               goto out;
-> +       }
-> +
-> +       /*
-> +        * If there is no kind of request function for the pin we just assume
-> +        * we got it by default and proceed.
-> +        */
-> +       if (gpio && ops->gpio_request_enable)
-> +               /* This requests and enables a single GPIO pin */
-> +               status = ops->gpio_request_enable(pctldev, gpio_range, pin);
-> +       else if (ops->request)
-> +               status = ops->request(pctldev, pin);
-> +       else
-> +               status = 0;
-> +
-> +       if (status) {
-> +               dev_err(&pctldev->dev, "->request on device %s failed "
-> +                      "for pin %d\n",
-> +                      pctldev->desc->name, pin);
-> +               goto out;
-> +       }
-> +
+Author: Andreas Gruenbacher <agruen@linbit.com>
+Date:   Mon Mar 28 14:23:08 2011 +0200
 
-... this:
+    drbd: Replace and remove old primitives
+    
+    Centralize sock->mutex locking and unlocking in [drbd|conn]_prepare_command()
+    and [drbd|conn]_send_comman().
+    
+    Therefore all *_send_* functions are touched to use these primitives instead
+    of drbd_get_data_sock()/drbd_put_data_sock() and former helper functions.
+    
+    That change makes the *_send_* functions more standardized.
+    
+    Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+    Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-> +       spin_lock(&desc->lock);
-> +       desc->mux_requested = true;
-> +       strncpy(desc->mux_function, function, sizeof(desc->mux_function));
-> +       spin_unlock(&desc->lock);
-> +
 
-2 threads can pass through when mux_requested is false and they might
-both acquire
-the pin, depending on specific driver implementation.
+The complete, updated set is available at:
+git://git.drbd.org/linux-2.6-drbd.git for-jens
 
-Regards,
-Stijn
+Best,
+ Phil
+-- 
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
