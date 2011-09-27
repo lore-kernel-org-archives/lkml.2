@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1I0RCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 13:02:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28086 "EHLO mx1.redhat.com"
+	id S1752171Ab1I0RE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 13:04:28 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:44545 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab1I0RCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 13:02:20 -0400
-Message-ID: <4E82017C.3010304@redhat.com>
-Date: Tue, 27 Sep 2011 20:01:48 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Jon Mason <mason@myri.com>
-CC: Sven Schnelle <svens@stackframe.org>, Simon Kirby <sim@hostway.ca>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [REGRESSION] e1000e failure triggered by "PCI: Remove MRRS modification
- from MPS setting code"
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751354Ab1I0RE0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 13:04:26 -0400
+X-IronPort-AV: E=Sophos;i="4.68,450,1312182000"; 
+   d="scan'208";a="585104220"
+Subject: Re: NFS client growing system CPU
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 27 Sep 2011 13:04:15 -0400
+In-Reply-To: <20110927164937.GA2690@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca>
+	 <1291845189.3067.31.camel@heimdal.trondhjem.org>
+	 <20110927003931.GB12106@hostway.ca>
+	 <1317123773.24383.1.camel@lade.trondhjem.org>
+	 <20110927164937.GA2690@hostway.ca>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1317143055.10143.2.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 27 Sep 2011 17:04:15.0761 (UTC) FILETIME=[7CD07010:01CC7D37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ed2888e906b567 (merged 3.1-rc6) causes a reproducible failure 
-with my e1000e card here.  Starting a kvm guest (which mostly consists 
-of shoving display updates over X over ssh, as far as the network is 
-concerned) locks up the card hard.
+On Tue, 2011-09-27 at 09:49 -0700, Simon Kirby wrote: 
+> On Tue, Sep 27, 2011 at 07:42:53AM -0400, Trond Myklebust wrote:
+> 
+> > On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
+> > > Hello!
+> > > 
+> > > Following up on "System CPU increasing on idle 2.6.36", this issue is
+> > > still happening even on 3.1-rc7. So, since it has been 9 months since I
+> > > reported this, I figured I'd bisect this issue. The first bisection ended
+> > > in an IPMI regression that looked like the problem, so I had to start
+> > > again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
+> > > which made it into 2.6.34-rc4.
+> > > 
+> > > With this commit, system CPU keeps rising as the log crunch box runs
+> > > (reads log files via NFS and spews out HTML files into NFS-mounted report
+> > > directories). When it finishes the daily run, the system time stays
+> > > non-zero and continues to be higher and higher after each run, until the
+> > > box never completes a run within a day due to all of the wasted cycles.
+> > 
+> > So reverting that commit fixes the problem on 3.1-rc7?
+> > 
+> > As far as I can see, doing so should be safe thanks to commit
+> > 5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
+> > in two steps) which fixes the original problem at the VFS level.
+> 
+> Hmm, I went to git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2, but
+> for some reason git left the nfs_mark_request_dirty(req); line in
+> nfs_writepage_setup(), even though the original commit had that. Is that
+> OK or should I remove that as well?
+> 
+> Once that is sorted, I'll build it and let it run for a day and let you
+> know. Thanks!
 
-The failure is easily reproducible, will gladly test patches.
+It shouldn't make any difference whether you leave it or remove it. The
+resulting second call to __set_page_dirty_nobuffers() will always be a
+no-op since the page will already be marked as dirty.
 
+Cheers
+  Trond
 -- 
-error compiling committee.c: too many arguments to function
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
