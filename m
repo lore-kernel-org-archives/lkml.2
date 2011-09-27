@@ -1,56 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1I0QnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 12:43:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34035 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab1I0QnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 12:43:18 -0400
-Date: Tue, 27 Sep 2011 18:43:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Amit Nagal <helloin.amit@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] HID: hidraw: open count should not increase if
- error
-In-Reply-To: <1317145318-19656-1-git-send-email-helloin.amit@gmail.com>
-Message-ID: <alpine.LNX.2.00.1109271843030.24692@pobox.suse.cz>
-References: <1317145318-19656-1-git-send-email-helloin.amit@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751865Ab1I0QoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 12:44:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55518 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab1I0QoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 12:44:05 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110927150555.GF20588@ponder.secretlab.ca>
+References: <20110921120148.4A81E9D401D@zog.reactivated.net>
+	<20110921124936.GA25620@sirena.org.uk>
+	<CAMLZHHQZnajC4e12MjaK3W8WcAB2ZB+6L=5kS5BBFZF=+YWicQ@mail.gmail.com>
+	<20110921131637.GF4374@opensource.wolfsonmicro.com>
+	<CAMLZHHTJaOddSj00g0-WpFQu6pUTqizKjKaQF9hLrhceEMhY1Q@mail.gmail.com>
+	<20110927150555.GF20588@ponder.secretlab.ca>
+Date: Tue, 27 Sep 2011 17:44:04 +0100
+X-Google-Sender-Auth: vypXzlBqE9Lj1dC3iXN1wscZwts
+Message-ID: <CAMLZHHQU-eMAtvBQJj6+WrMjkWWA+ET=z5NdQCEgXxh=m10d3Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
+From: Daniel Drake <dsd@laptop.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        dilinger@queued.net
+Content-Type: multipart/mixed; boundary=20cf30050d72c597e604adeefb8d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011, Amit Nagal wrote:
+--20cf30050d72c597e604adeefb8d
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> In hidraw_open, if hid_hw_power returns with error,
-> hidraw device open count should not increase.
-> 
-> Signed-off-by: Amit Nagal <helloin.amit@gmail.com>
-> ---
->  drivers/hid/hidraw.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-> index c841a8e..09bbcc9 100644
-> --- a/drivers/hid/hidraw.c
-> +++ b/drivers/hid/hidraw.c
-> @@ -271,8 +271,10 @@ static int hidraw_open(struct inode *inode, struct file *file)
->  	dev = hidraw_table[minor];
->  	if (!dev->open++) {
->  		err = hid_hw_power(dev->hid, PM_HINT_FULLON);
-> -		if (err < 0)
-> +		if (err < 0) {
-> +			dev->open--;
->  			goto out_unlock;
-> +		}
->  
->  		err = hid_hw_open(dev->hid);
->  		if (err < 0) {
+On Tue, Sep 27, 2011 at 4:05 PM, Grant Likely <grant.likely@secretlab.ca> w=
+rote:
+> What is a hard rule is that the code creating the children needs to
+> know what the binding is and populate the child's of_node
+> appropriately. =A0Similarly, the child driver needs to know something
+> about the kinds of nodes it will be passed (can be tested by the
+> compatible property).
 
-Good catch, thanks. Applied.
+Thanks for your input.
+Here is an updated patch which takes account of this hard rule.
 
--- 
-Jiri Kosina
-SUSE Labs
+It uses the dynamic mfd cell creation like before. Mark isn't keen on
+this, but its how the driver works already, so I don't think it should
+be a blocker. I don't know how else we can make the mfd framework meet
+Grant's hard rule.
+
+However, it does take Mark's suggestion into account that the mfd
+should have some clear representation in the device tree. For us it
+already did have (naturally), but this wasn't reflected in my earlier
+patch. It is now - the location of the vx855-gpio node is based on
+finding the mfd node and going from there.
+
+Comments?
+It obviously needs to be tested and split up into individual patches -
+I'll do that shortly if this doesn't get shot down.
+
+cheers
+Daniel
+
+--20cf30050d72c597e604adeefb8d
+Content-Type: text/plain; charset=US-ASCII; name="vx855-2.txt"
+Content-Disposition: attachment; filename="vx855-2.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gt348bga0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3Bpby9ncGlvLXZ4ODU1LmMgYi9kcml2ZXJzL2dwaW8vZ3Bp
+by12eDg1NS5jCmluZGV4IGVmNWFhYmQuLjJjMzAwYzkgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZ3Bp
+by9ncGlvLXZ4ODU1LmMKKysrIGIvZHJpdmVycy9ncGlvL2dwaW8tdng4NTUuYwpAQCAtMjAxLDcg
+KzIwMSw4IEBAIHN0YXRpYyBjb25zdCBjaGFyICp2eDg1NWdwaW9fbmFtZXNbTlJfVlg4NTVfR1Bd
+ID0gewogCSJWWDg1NV9HUElPMTIiLCAiVlg4NTVfR1BJTzEzIiwgIlZYODU1X0dQSU8xNCIKIH07
+CiAKLXN0YXRpYyB2b2lkIHZ4ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2
+ZykKK3N0YXRpYyB2b2lkIHZ4ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2
+ZywKKwkJCQkgc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIHsKIAlzdHJ1Y3QgZ3Bpb19j
+aGlwICpjID0gJnZnLT5ncGlvOwogCkBAIC0yMTYsNiArMjE3LDEwIEBAIHN0YXRpYyB2b2lkIHZ4
+ODU1Z3Bpb19ncGlvX3NldHVwKHN0cnVjdCB2eDg1NV9ncGlvICp2ZykKIAljLT5uZ3BpbyA9IE5S
+X1ZYODU1X0dQOwogCWMtPmNhbl9zbGVlcCA9IDA7CiAJYy0+bmFtZXMgPSB2eDg1NWdwaW9fbmFt
+ZXM7CisKKyNpZmRlZiBDT05GSUdfT0ZfR1BJTworCWMtPm9mX25vZGUgPSBwZGV2LT5kZXYub2Zf
+bm9kZTsKKyNlbmRpZgogfQogCiAvKiBUaGlzIHBsYXRmb3JtIGRldmljZSBpcyBvcmRpbmFyaWx5
+IHJlZ2lzdGVyZWQgYnkgdGhlIHZ4ODU1IG1mZCBkcml2ZXIgKi8KQEAgLTI2NCw3ICsyNjksNyBA
+QCBzdGF0aWMgX19kZXZpbml0IGludCB2eDg1NWdwaW9fcHJvYmUoc3RydWN0IHBsYXRmb3JtX2Rl
+dmljZSAqcGRldikKIAllbHNlCiAJCXZnLT5ncG9fcmVzZXJ2ZWQgPSB0cnVlOwogCi0Jdng4NTVn
+cGlvX2dwaW9fc2V0dXAodmcpOworCXZ4ODU1Z3Bpb19ncGlvX3NldHVwKHZnLCBwZGV2KTsKIAog
+CXJldCA9IGdwaW9jaGlwX2FkZCgmdmctPmdwaW8pOwogCWlmIChyZXQpIHsKZGlmZiAtLWdpdCBh
+L2RyaXZlcnMvbWZkL21mZC1jb3JlLmMgYi9kcml2ZXJzL21mZC9tZmQtY29yZS5jCmluZGV4IDA5
+MDI1MjMuLjdkMjJkY2QgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbWZkL21mZC1jb3JlLmMKKysrIGIv
+ZHJpdmVycy9tZmQvbWZkLWNvcmUuYwpAQCAtODcsNiArODcsNyBAQCBzdGF0aWMgaW50IG1mZF9h
+ZGRfZGV2aWNlKHN0cnVjdCBkZXZpY2UgKnBhcmVudCwgaW50IGlkLAogCQlnb3RvIGZhaWxfZGV2
+aWNlOwogCiAJcGRldi0+ZGV2LnBhcmVudCA9IHBhcmVudDsKKwlwZGV2LT5kZXYub2Zfbm9kZSA9
+IGNlbGwtPm9mX25vZGU7CiAKIAlpZiAoY2VsbC0+cGRhdGFfc2l6ZSkgewogCQlyZXQgPSBwbGF0
+Zm9ybV9kZXZpY2VfYWRkX2RhdGEocGRldiwKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWZkL3Z4ODU1
+LmMgYi9kcml2ZXJzL21mZC92eDg1NS5jCmluZGV4IGQ2OTg3MDMuLmQyMjM4NDAgMTAwNjQ0Ci0t
+LSBhL2RyaXZlcnMvbWZkL3Z4ODU1LmMKKysrIGIvZHJpdmVycy9tZmQvdng4NTUuYwpAQCAtMzAs
+NiArMzAsNyBAQAogI2luY2x1ZGUgPGxpbnV4L3BsYXRmb3JtX2RldmljZS5oPgogI2luY2x1ZGUg
+PGxpbnV4L3BjaS5oPgogI2luY2x1ZGUgPGxpbnV4L21mZC9jb3JlLmg+CisjaW5jbHVkZSA8bGlu
+dXgvb2YuaD4KIAogLyogb2Zmc2V0IGludG8gcGNpIGNvbmZpZyBzcGFjZSBpbmRpY2F0aW5nIHRo
+ZSAxNmJpdCByZWdpc3RlciBjb250YWluaW5nCiAgKiB0aGUgcG93ZXIgbWFuYWdlbWVudCBJTyBz
+cGFjZSBiYXNlICovCkBAIC03Miw2ICs3MywyNyBAQCBzdGF0aWMgc3RydWN0IG1mZF9jZWxsIHZ4
+ODU1X2NlbGxzW10gPSB7CiAJfSwKIH07CiAKK3N0YXRpYyBfX2RldmluaXQgdm9pZCB2eDg1NV9z
+ZXRfb2Zfbm9kZXMoc3RydWN0IHBjaV9kZXYgKnBkZXYpCit7CisjaWZkZWYgQ09ORklHX09GCisJ
+c3RydWN0IGRldmljZV9ub2RlICppc2Ffbm9kZTsKKwlzdHJ1Y3QgZGV2aWNlX25vZGUgKmNoaWxk
+OworCisJaXNhX25vZGUgPSBvZl9maW5kX2NvbXBhdGlibGVfbm9kZShOVUxMLCBOVUxMLCAidmlh
+LHZ4ODU1LWlzYSIpOworCXBkZXYtPmRldi5vZl9ub2RlID0gaXNhX25vZGU7CisKKwlpZiAoIWlz
+YV9ub2RlKQorCQlyZXR1cm47CisKKwlmb3JfZWFjaF9jaGlsZF9vZl9ub2RlKGlzYV9ub2RlLCBj
+aGlsZCkgeworCQlpZiAob2ZfZGV2aWNlX2lzX2NvbXBhdGlibGUoY2hpbGQsICJ2aWEsdng4NTUt
+Z3BpbyIpKSB7CisJCQl2eDg1NV9jZWxsc1swXS5vZl9ub2RlID0gY2hpbGQ7CisJCQlicmVhazsK
+KwkJfQorCX0KKyNlbmRpZgorfQorCiBzdGF0aWMgX19kZXZpbml0IGludCB2eDg1NV9wcm9iZShz
+dHJ1Y3QgcGNpX2RldiAqcGRldiwKIAkJCQkgY29uc3Qgc3RydWN0IHBjaV9kZXZpY2VfaWQgKmlk
+KQogewpAQCAtOTAsNiArMTEyLDggQEAgc3RhdGljIF9fZGV2aW5pdCBpbnQgdng4NTVfcHJvYmUo
+c3RydWN0IHBjaV9kZXYgKnBkZXYsCiAJCWdvdG8gb3V0OwogCX0KIAorCXZ4ODU1X3NldF9vZl9u
+b2RlcyhwZGV2KTsKKwogCS8qIG1hc2sgb3V0IHRoZSBsb3dlc3Qgc2V2ZW4gYml0cywgYXMgdGhl
+eSBhcmUgYWx3YXlzIHplcm8sIGJ1dAogCSAqIGhhcmR3YXJlIHJldHVybnMgdGhlbSBhcyAweDAx
+ICovCiAJZ3Bpb19pb19vZmZzZXQgJj0gMHhmZjgwOwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51
+eC9tZmQvY29yZS5oIGIvaW5jbHVkZS9saW51eC9tZmQvY29yZS5oCmluZGV4IDRlNzYxNjMuLjli
+ODM2ZjkgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvbWZkL2NvcmUuaAorKysgYi9pbmNsdWRl
+L2xpbnV4L21mZC9jb3JlLmgKQEAgLTE1LDYgKzE1LDcgQEAKICNkZWZpbmUgTUZEX0NPUkVfSAog
+CiAjaW5jbHVkZSA8bGludXgvcGxhdGZvcm1fZGV2aWNlLmg+CisjaW5jbHVkZSA8bGludXgvb2Yu
+aD4KIAogLyoKICAqIFRoaXMgc3RydWN0IGRlc2NyaWJlcyB0aGUgTUZEIHBhcnQgKCJjZWxsIiku
+CkBAIC0zNyw2ICszOCw5IEBAIHN0cnVjdCBtZmRfY2VsbCB7CiAJdm9pZAkJCSpwbGF0Zm9ybV9k
+YXRhOwogCXNpemVfdAkJCXBkYXRhX3NpemU7CiAKKwkvKiBhc3NvY2lhdGlvbiB3aXRoIGRldmlj
+ZSB0cmVlIG5vZGUgKG9wdGlvbmFsKSAqLworCXN0cnVjdCBkZXZpY2Vfbm9kZQkqb2Zfbm9kZTsK
+KwogCS8qCiAJICogVGhlc2UgcmVzb3VyY2VzIGNhbiBiZSBzcGVjaWZpZWQgcmVsYXRpdmUgdG8g
+dGhlIHBhcmVudCBkZXZpY2UuCiAJICogRm9yIGFjY2Vzc2luZyBoYXJkd2FyZSB5b3Ugc2hvdWxk
+IHVzZSByZXNvdXJjZXMgZnJvbSB0aGUgcGxhdGZvcm0gZGV2Cg==
+--20cf30050d72c597e604adeefb8d--
