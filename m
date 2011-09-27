@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1I0AFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:05:20 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26278 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753103Ab1I0AFQ (ORCPT
+	id S1753204Ab1I0AJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:09:33 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:33764 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab1I0AJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:05:16 -0400
-Message-ID: <4E811338.2030005@dsn.okisemi.com>
-Date: Tue, 27 Sep 2011 09:05:12 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Mon, 26 Sep 2011 20:09:32 -0400
+Message-ID: <20110926200853.54924n8u5h0toyz9@webmail.vt.edu>
+Date: Mon, 26 Sep 2011 20:08:53 -0400
+From: Mail Administrator <rjfr1954@vt.edu>
+Reply-to: verify_account_access01@cyberservices.com
+To: undisclosed-recipients:;
+Subject: WEBMAIL FINAL WARNING CENTER ADMIN
 MIME-Version: 1.0
-To: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
-CC: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Qi Wang <qi.wang@intel.com>,
-        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
-        "joel.clark@intel.com" <joel.clark@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>,
-        Aaron Smith <aarons@broadcom.com>
-Subject: Re: [PATCH 3/7] i2c-eg20t: delete 10bit access processing
-References: <1316591509-4433-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1316591509-4433-3-git-send-email-tomoya-linux@dsn.okisemi.com> <B6A520E9CD57404AAFC0831E4FB39541A98073AC7E@IRVEXCHCCR02.corp.ad.broadcom.com> <4E7A7DBA.3020406@dsn.okisemi.com> <B6A520E9CD57404AAFC0831E4FB39541A98073AF26@IRVEXCHCCR02.corp.ad.broadcom.com>
-In-Reply-To: <B6A520E9CD57404AAFC0831E4FB39541A98073AF26@IRVEXCHCCR02.corp.ad.broadcom.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+X-Mirapoint-Received-SPF: 198.82.164.219 imp-b10.cc.vt.edu rjfr1954@vt.edu 2 pass
+X-Junkmail: UCE(300)
+X-Junkmail-Status: score=300/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=confirmed,
+	refid=str=0001.0A020208.4E808C3F.018A,ss=4,sh,fgs=0,
+	ip=60.48.179.252,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/09/23 2:49), Jeffrey (Sheng-Hui) Chu wrote:
-> The device is BCM20791.  Please contact Aaron Smith (aarons@broadcom.com) for evaluation.
-Though googling the device, I can't find the device.
-Broadcom website too.
 
->
-> By the way, the existing handling of 10-bit address in the patch you intended to delete does not work.  You'll need to fix that before you can test with the device successfully.
->
-> For the write operation, it's a easy fix:
->
-> @@ -410,25 +408,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
->   	}
->
->   	if (msgs->flags&  I2C_M_TEN) {
-> -		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7);
-> +		addr_2_msb = ((addr&  I2C_MSB_2B_MSK)>>  7)&  0x06;
->
->
-> For the read operation, static s32 pch_i2c_readbytes(), you'll need to do a write followed by a restart and a read...  please refer to the i2c spec...
->
-> Regards,
+WEBMAIL FINAL WARNING CENTER ADMIN
 
-Thank you for your indication.
-We will update this after supporting 10bit access.
+Your email box is almost full.
+23 GB 20 GB
 
-Thanks,
-tomoya
+The mailbox has exceeded the storage limit of
+20GB as defined by your administrator,You are now
+working at 20.9GB,
+
+That might not be able to send or receive messages until
+you upgrade Your account.
+
+Click on the link below,fill it and click submit to update your account.
+And if the link gives you problem,copy it and paste it at your new browser.
+
+http://buzurl.com/bm46
+
+NOTE:If you are unable to re-validate your mailbox, your
+Account will be disabled!
+
+Webmail Support Team
+@ 2011
+192.168.0.1
+
+
+
+
+
