@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab1I0KOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 06:14:16 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:8448 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1I0KOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 06:14:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=sJnmJYN6bs3T8OYRDmSxauOUpO8culvLdho/AQ5GCydd7M0Oks93jaqZ6hdX01KYz
-	QOgOrPz8KPEvLKfPm6f9A==
+	id S1753262Ab1I0KQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 06:16:56 -0400
+Received: from nm25-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.185]:21382 "HELO
+	nm25-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753055Ab1I0KQz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 06:16:55 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 370417.89820.bm@omp1014.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=2+H+M893zjqfSTsF/1604Oj1JYlNqpHzT4ImR5q/3HndDMny1CKGc0pX3DLslV4OrveISL1FRXK94OdYFrvUK2KbhdjfvFF2+8ltSMaqy738yRKZPMYef9En7VRHV8QUVxDh7C//DHVjwNtMxRCyT/Dh7/HYNI++4IQ9Di+rgsw=;
+X-YMail-OSG: 5ykpN6MVM1njDZ1wUIyd2QcqdocefPoNkLABuXCmB9jRUG8
+ DP66LIW4KLW0Y5fQXaDCwle0BQfbSF22wja_IxwA9aWD5RmyxHKTIikTl3T.
+ 9MmzN24T5VovHioVt7SXUvMNHEmwTZG_AzJfaFyDmLzsNXuHxwzQM4IIFNqL
+ 8ly2BtfZlWiSod3rCGJs6nli81QaeGHsE6yTyE8zWBcdhDJvdNmQy5JEhE5S
+ 61618e12DPTdGVdyBKQayxn8lhVfhHneEWxJ0IoAxebLl3vjjRqTWJYOpydi
+ mC3ZNfGQoNLhkkwNUftOV.gUFbsRA3kaf1HxpVqsf7EhecSUNkKHU2m1i5Ah
+ ikJFJJpuRgWuWIjIjAXZkdNhhy4jfEBF8ER7oZ8JKSn7hCDX_N.ZvuzqppO9
+ PVZM3M2YpAgNPvP5sy2e109mpzDpWyWnXnCFHCXwDhD3g
+X-Mailer: YahooMailWebService/0.8.114.317681
+References: <1316478488.72684.YahooMailNeo@web130114.mail.mud.yahoo.com> <1316868946.61433.YahooMailNeo@web130123.mail.mud.yahoo.com> <yunvcsim1wk.fsf@aiko.keithp.com> <1316877222.89367.YahooMailNeo@web130124.mail.mud.yahoo.com> <yunsjnln8it.fsf@aiko.keithp.com> <1316957004.77729.YahooMailNeo@web130108.mail.mud.yahoo.com> <yun39fkpdqf.fsf@aiko.keithp.com>
+Message-ID: <1317118613.60118.YahooMailNeo@web130114.mail.mud.yahoo.com>
+Date: Tue, 27 Sep 2011 03:16:53 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re: [Regression] Laptop screen dark when lid closed and reopened.with 3.1
+To: Keith Packard <keithp@keithp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <yun39fkpdqf.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKTCnzkzdQgut96NZf3Mi2kpOWW7N3qeybets5AHy7Gp8Wj_HQ@mail.gmail.com>
-References: <1316230753-8693-1-git-send-email-walken@google.com>
-	<CAKTCnzkzdQgut96NZf3Mi2kpOWW7N3qeybets5AHy7Gp8Wj_HQ@mail.gmail.com>
-Date: Tue, 27 Sep 2011 03:14:09 -0700
-Message-ID: <CANN689G4Z21v6fcF1dt-10CpQp9V42_hGPcPP2d5FChfCon_9Q@mail.gmail.com>
-Subject: Re: [PATCH 0/8] idle page tracking / working set estimation
-From: Michel Lespinasse <walken@google.com>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michael Wolf <mjwolf@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 3:03 AM, Balbir Singh <bsingharora@gmail.com> wrote:
-> On Sat, Sep 17, 2011 at 9:09 AM, Michel Lespinasse <walken@google.com> wrote:
->> Patch 3 introduces page_referenced_kstaled(), which is similar to
->> page_referenced() but is used for idle page tracking rather than
->> for memory reclaimation. Since both functions clear the pte_young bits
->> and we don't want them to interfere with each other, two new page flags
->> are introduced that track when young pte references have been cleared by
->> each of the page_referenced variants.
+At some point, Keith Packard asked:
+>Are yo using the drm-intel-fixes branch there? That's the one with the
+>FBC disable stuff.
+PEBKAC. I must have booted another kernel. With your branch, I see the
+password dialog when I manually adjust the brightness. It is no longer
+necessary to switch to the text console.
+
+>Alternatively, you can just disable FBC manually by adding the kernel
+>argument:
 >
-> Sorry, I have trouble parsing this sentence, could you elaborate on "when"?
+>        i915.i915_enable_fbc=0
+>
 
-page_referenced() indicates if a page was accessed since the previous
-page_referenced() call.
-
-page_referenced_kstaled() indicates if a page was accessed since the
-previous page_referenced_kstaled() call.
-
-Both of the functions need to clear PTE young bits; however we don't
-want the two functions to interfere with each other. To achieve this,
-we add two page bits to indicate when a young PTE has been observed by
-one of the functions but not by the other.
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
