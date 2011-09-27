@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1I0Tfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 15:35:30 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:48082 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753271Ab1I0Tf3 (ORCPT
+	id S1752101Ab1I0TjG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 15:39:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36575 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab1I0TjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 15:35:29 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: MzDTf00VM1nDNbewPvoTMREq3mPApygX.MO7anAUoeCv8jD
- ty02blUZTatBFYNFNmbUr6SQlRI3tzS.wrMj.lJebKrslrCrxqItsQbWvCq9
- FQaeXyhwwmTtNY9CIMzU0vPURk0SzVWleU.4elLmCoxapOi7D6vXeFtr7KgH
- bYQ07kIRH4tE8P_rTQoQKOMSKk5rdvTwYglXo8dYffYQAbtaD4Wq.sMr3gty
- RbOa6b38fLqyXj0PrYnkXkwvMhKg0ZVnJZFQqc90QeAFaYfGVNpnmIUFsbpi
- 1YhcYhl64givNNQTKGI1VpIbHG2dChU9bVWOaU2dE6EUQOIcEwQQw_Vkv8Nu
- ZysLbJaLo_3J8jCXi_9l4oC3HkxoimcEMiYfC.pQBl9kg9r4pfouJsqtMm7I
- LGMWhYaHt_avBXBiDfhgAjNk-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 27 Sep 2011 14:35:25 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Valdis.Kletnieks@vt.edu,
+	Tue, 27 Sep 2011 15:39:04 -0400
+Date: Tue, 27 Sep 2011 23:38:10 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
         Linus Torvalds <torvalds@linux-foundation.org>,
         David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: restrict access to slab files under procfs and
- sysfs
-In-Reply-To: <20110927191658.GB4820@albatros>
-Message-ID: <alpine.DEB.2.00.1109271431250.13797@router.home>
-References: <20110927175453.GA3393@albatros> <alpine.DEB.2.00.1109271304470.11361@router.home> <20110927191658.GB4820@albatros>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110927193810.GA5416@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110927175642.GA3432@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011, Vasiliy Kulikov wrote:
+On Tue, Sep 27, 2011 at 21:56 +0400, Vasiliy Kulikov wrote:
+> /proc/meminfo stores information related to memory pages usage, which
+> may be used to monitor the number of objects in specific caches (and/or
+> the changes of these numbers).  This might reveal private information
+> similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
+> restrict meminfo to root.  If it is used by unprivileged daemons,
+> meminfo permissions can be altered the same way as slabinfo:
+> 
+>     groupadd meminfo
+>     usermod -a -G meminfo $MONITOR_USER
+>     chmod g+r /proc/meminfo
+>     chgrp meminfo /proc/meminfo
 
-> On Tue, Sep 27, 2011 at 13:08 -0500, Christoph Lameter wrote:
-> > Possible candidates:
-> >
-> > christoph@oldy:~/n/linux-2.6$ grep proc_create mm/*
-> > mm/swapfile.c:	proc_create("swaps", 0, NULL, &proc_swaps_operations);
-> > mm/vmstat.c:	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
-> > mm/vmstat.c:	proc_create("pagetypeinfo", S_IRUGO, NULL, &pagetypeinfo_file_ops);
-> > mm/vmstat.c:	proc_create("vmstat", S_IRUGO, NULL, &proc_vmstat_file_operations);
-> > mm/vmstat.c:	proc_create("zoneinfo", S_IRUGO, NULL, &proc_zoneinfo_file_operations);
-> >
-> > vmstat and zoneinfo in particular give similar information to what is
-> > revealed through the slab proc files.
->
-> Do you know whether these files are actively used?  I don't want to
-> break tools like "free" or "top".  In this case we'll have to discover
-> another way to limit this information.
+Just to make it clear: since this patch breaks "free", I don't propose
+it anymore.
 
-top uses per process information. Tried an strace and I see no access to
-vmstat or zoneinfo.
 
-free uses /proc/meminfo not vmstat or zoneinfo. Since you already have a
-patch that limits /proc/meminfo access there is already an issue there.
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> CC: Kees Cook <kees@ubuntu.com>
+> CC: Dave Hansen <dave@linux.vnet.ibm.com>
+> CC: Christoph Lameter <cl@gentwo.org>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Valdis.Kletnieks@vt.edu
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Alan Cox <alan@linux.intel.com>
+> ---
+>  fs/proc/meminfo.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> --
+> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+> index 5861741..949bdee 100644
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -187,7 +187,7 @@ static const struct file_operations meminfo_proc_fops = {
+>  
+>  static int __init proc_meminfo_init(void)
+>  {
+> -	proc_create("meminfo", 0, NULL, &meminfo_proc_fops);
+> +	proc_create("meminfo", S_IFREG | S_IRUSR, NULL, &meminfo_proc_fops);
+>  	return 0;
+>  }
+>  module_init(proc_meminfo_init);
 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
