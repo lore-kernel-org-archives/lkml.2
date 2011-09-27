@@ -1,63 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1I0FPH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 01:15:07 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:33209 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab1I0FPF (ORCPT
+	id S1752861Ab1I0F1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 01:27:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61748 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab1I0F13 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 01:15:05 -0400
-Date: Tue, 27 Sep 2011 15:14:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: manual merge of the rcu tree with Linus' tree
-Message-Id: <20110927151454.9892b23391f20bea20741c21@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Sep_2011_15_14_54_+1000_S6wOs8v5xOY.Jx8w"
+	Tue, 27 Sep 2011 01:27:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
+References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
+	<1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20110926165024.GA21617@e102109-lin.cambridge.arm.com>
+Date: Tue, 27 Sep 2011 13:27:28 +0800
+Message-ID: <CA+v9cxYtuY+TX_heoMEZXOvvQ6Q7xCsKWGZo67r7AbmHeeTd8w@mail.gmail.com>
+Subject: Re: Question about memory leak detector giving false positive report
+ for net/core/flow.c
+From: Huajun Li <huajun.li.lee@gmail.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Huajun Li <huajun.li.lee@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Sep_2011_15_14_54_+1000_S6wOs8v5xOY.Jx8w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2011/9/27 Catalin Marinas <Catalin.Marinas@arm.com>:
+> On Mon, Sep 26, 2011 at 05:32:54PM +0100, Eric Dumazet wrote:
+>> Le lundi 26 septembre 2011 à 23:17 +0800, Huajun Li a écrit :
+>> > Memory leak detector gives following memory leak report, it seems the
+>> > report is triggered by net/core/flow.c, but actually, it should be a
+>> > false positive report.
+>> > So, is there any idea from kmemleak side to fix/disable this false
+>> > positive report like this?
+>> > Yes, kmemleak_not_leak(...) could disable it, but is it suitable for this case ?
+> ...
+>> CC lkml and percpu maintainers (Tejun Heo & Christoph Lameter ) as well
+>>
+>> AFAIK this false positive only occurs if percpu data is allocated
+>> outside of embedded pcu space.
+>>
+>>  (grep pcpu_get_vm_areas /proc/vmallocinfo)
+>>
+>> I suspect this is a percpu/kmemleak cooperation problem (a missing
+>> kmemleak_alloc() ?)
+>>
+>> I am pretty sure kmemleak_not_leak() is not the right answer to this
+>> problem.
+>
+> kmemleak_not_leak() definitely not the write answer. The alloc_percpu()
+> call does not have any kmemleak_alloc() callback, so it doesn't scan
+> them.
+>
+> Huajun, could you please try the patch below:
+>
+> 8<--------------------------------
+> kmemleak: Handle percpu memory allocation
+>
+> From: Catalin Marinas <catalin.marinas@arm.com>
+>
+> This patch adds kmemleak callbacks from the percpu allocator, reducing a
+> number of false positives caused by kmemleak not scanning such memory
+> blocks.
+>
+> Reported-by: Huajun Li <huajun.li.lee@gmail.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  mm/percpu.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index bf80e55..c47a90b 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -67,6 +67,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/vmalloc.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/kmemleak.h>
+>
+>  #include <asm/cacheflush.h>
+>  #include <asm/sections.h>
+> @@ -833,7 +834,9 @@ fail_unlock_mutex:
+>  */
+>  void __percpu *__alloc_percpu(size_t size, size_t align)
+>  {
+> -       return pcpu_alloc(size, align, false);
+> +       void __percpu *ptr = pcpu_alloc(size, align, false);
+> +       kmemleak_alloc(ptr, size, 1, GFP_KERNEL);
+> +       return ptr;
+>  }
+>  EXPORT_SYMBOL_GPL(__alloc_percpu);
+>
+> @@ -855,7 +858,9 @@ EXPORT_SYMBOL_GPL(__alloc_percpu);
+>  */
+>  void __percpu *__alloc_reserved_percpu(size_t size, size_t align)
+>  {
+> -       return pcpu_alloc(size, align, true);
+> +       void __percpu *ptr = pcpu_alloc(size, align, true);
+> +       kmemleak_alloc(ptr, size, 1, GFP_KERNEL);
+> +       return ptr;
+>  }
+>
+>  /**
+> @@ -915,6 +920,8 @@ void free_percpu(void __percpu *ptr)
+>        if (!ptr)
+>                return;
+>
+> +       kmemleak_free(ptr);
+> +
+>        addr = __pcpu_ptr_to_addr(ptr);
+>
+>        spin_lock_irqsave(&pcpu_lock, flags);
+>
+> --
+> Catalin
+>
 
-Hi Paul,
-
-Today's linux-next merge of the rcu tree got a conflict in
-arch/x86/kernel/cpu/mcheck/mce.c between commit b77e70bf3535 ("x86, mce:
-Replace MCE_SELF_VECTOR by irq_work") from Linus' tree and commit
-ef14aea88fee ("x86: Call idle notifier after irq_enter()") from the rcu
-tree.
-
-The commit in Linus' tree seem to superced the need for the rcu tree
-patch ... so I effectively dropped the rcu tree change to this file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__27_Sep_2011_15_14_54_+1000_S6wOs8v5xOY.Jx8w
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOgVvOAAoJEDMEi1NhKgbs9ckIAICoUjk3DwhxLXFZ2iw0yYaJ
-E0HpZc7EtVj9a+WEH3i6tvK3Vk0w8BPJluQJRfjRKErCcEORwHCljip/9TlMnS8l
-8fZR5VwS5jIjuK0kAC1gcUW4y33s/0BYWbVkE6MTNLbI7VU7HmCA/oUxrhldhOpx
-MowvSqofRqdm/O/ii1nskKz3RZLqgIqlMPCI0C0QJZl6NLjbzyLtSkLYYX5QfPiX
-Ags7A1ahaoTrWoAOgAs68C6s44o3hEQw9r14YRoRJhaSlbMKhdf3TJzzrqtXUkhu
-d39KIuz1YryAU0nY7YUHSS0Y8HT+swOox9+Vp0H+qCLrEGYMhEnzBUzopiA3y1Q=
-=FtR4
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Sep_2011_15_14_54_+1000_S6wOs8v5xOY.Jx8w--
+Applied the patch and found following msg after system boot up :
+--------------------------------------------------------------------------------------------------------
+...
+[   48.040027] eth0: no IPv6 routers present
+[   69.240960] BUG: unable to handle kernel paging request at 00000000001d7270
+[   69.241010] IP: [<ffffffff81256c62>] scan_block+0x62/0x220
+[   69.241045] PGD 5f289067 PUD 5f292067 PMD 0
+[   69.241074] Oops: 0000 [#1] SMP
+[   69.241098] CPU 0
+[   69.241110] Modules linked in: binfmt_misc dm_crypt
+snd_hda_codec_analog snd_hda_intel snd_hda_codec usbhid hid snd_hwdep
+snd_pcm snd_seq_midi snd_rawmidi i915 snd_seq_midi_event hp_wmi ppdev
+sparse_keymap snd_seq snd_timer snd_seq_device ehci_hcd uhci_hcd
+drm_kms_helper usbcore tpm_infineon psmouse snd e1000e drm serio_raw
+soundcore tpm_tis snd_page_alloc tpm floppy tpm_bios parport_pc
+i2c_algo_bit video lp parport
+[   69.249303]
+[   69.250246] Pid: 47, comm: kmemleak Tainted: G          I
+3.1.0-rc7+ #24 Hewlett-Packard HP Compaq dc7800p Convertible
+Minitower/0AACh
+[   69.250246] RIP: 0010:[<ffffffff81256c62>]  [<ffffffff81256c62>]
+scan_block+0x62/0x220
+[   69.250246] RSP: 0018:ffff880073f69d90  EFLAGS: 00010012
+[   69.250246] RAX: 0000000000000000 RBX: ffff880078750858 RCX: 0000000000000000
+[   69.250246] RDX: ffff880078750858 RSI: 0000000000000001 RDI: 00000000001d7270
+[   69.250246] RBP: ffff880073f69dd0 R08: 0000000000000000 R09: 0000000000000000
+[   69.250246] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8800787508b8
+[   69.250246] R13: 00000000001d7270 R14: 00000000001d7431 R15: 0000000000000000
+[   69.250246] FS:  0000000000000000(0000) GS:ffff88007a200000(0000)
+knlGS:0000000000000000
+[   69.250246] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   69.250246] CR2: 00000000001d7270 CR3: 000000006d735000 CR4: 00000000000006f0
+[   69.250246] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   69.250246] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   69.250246] Process kmemleak (pid: 47, threadinfo ffff880073f68000,
+task ffff880073e4a460)
+[   69.250246] Stack:
+[   69.250246]  ffff880073f69dd0 ffffffff8194b49a ffffffff81256ed1
+ffff880078750858
+[   69.250246]  ffff8800787508b8 00000000001d8270 00000000001d7438
+0000000000000206
+[   69.250246]  ffff880073f69e10 ffffffff8125702a 000000000007d2af
+ffffffff81e0d120
+[   69.250246] Call Trace:
+[   69.250246]  [<ffffffff8194b49a>] ? _raw_spin_lock_irqsave+0xfa/0x110
+[   69.250246]  [<ffffffff81256ed1>] ? scan_gray_list+0xb1/0x280
+[   69.250246]  [<ffffffff8125702a>] scan_gray_list+0x20a/0x280
+[   69.250246]  [<ffffffff8125787a>] kmemleak_scan+0x44a/0xbd0
+[   69.250246]  [<ffffffff81257430>] ? kmemleak_do_cleanup+0x210/0x210
+[   69.250246]  [<ffffffff81258630>] ? kmemleak_write+0x630/0x630
+[   69.250246]  [<ffffffff812586bf>] kmemleak_scan_thread+0x8f/0x150
+[   69.250246]  [<ffffffff810dc4e6>] kthread+0xe6/0x100
+[   69.250246]  [<ffffffff8195a4c4>] kernel_thread_helper+0x4/0x10
+[   69.250246]  [<ffffffff8194ac50>] ? _raw_spin_unlock_irq+0x50/0x80
+[   69.250246]  [<ffffffff8194b874>] ? retint_restore_args+0x13/0x13
+[   69.250246]  [<ffffffff810dc400>] ? __init_kthread_worker+0x80/0x80
+[   69.250246]  [<ffffffff8195a4c0>] ? gs_change+0x13/0x13
+[   69.250246] Code: 00 00 e9 d2 01 00 00 66 90 e8 ab f4 ff ff 48 83
+05 33 ef 06 02 01 85 c0 0f 85 bb 01 00 00 48 83 05 2b ef 06 02 01 be
+01 00 00 00
+[   69.250246]  8b 7d 00 e8 c5 fc ff ff 48 85 c0 49 89 c4 0f 84 69 01 00 00
+[   69.250246] RIP  [<ffffffff81256c62>] scan_block+0x62/0x220
+[   69.250246]  RSP <ffff880073f69d90>
+[   69.250246] CR2: 00000000001d7270
+[   69.360917] ---[ end trace a7919e7f17c0a727 ]---
