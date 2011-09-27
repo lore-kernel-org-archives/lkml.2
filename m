@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1I0Awf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:52:35 -0400
-Received: from tux.laplata.gov.ar ([200.41.227.132]:53918 "EHLO
-	tux.laplata.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab1I0Awe (ORCPT
+	id S1751529Ab1I0AxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:53:11 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35180 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750765Ab1I0AxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:52:34 -0400
-Message-ID: <20110926214056.58452fh1ny4hx2f4@webmail.laplata.gov.ar>
-Date: Mon, 26 Sep 2011 21:40:56 -0300
-From: Samuel Wolton <samuelwolton@gmail.com>
-Reply-To: samuelwolton@live.hk
-To: undisclosed-recipients:;
-Subject: 
+	Mon, 26 Sep 2011 20:53:06 -0400
+X-Sasl-enc: QfC50+vWtrarDqsC0cjt6dDgTaptXBtF5JIXuUJXOOTI 1317084785
+Date: Mon, 26 Sep 2011 17:51:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: gregkh@suse.de, martyn.welch@ge.com, devel@driverdev.osuosl.org,
+        cota@braap.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] [RESEND v6] VME Framework Fixes
+Message-ID: <20110927005157.GC10447@kroah.com>
+References: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.8)
-X-MLP-MailScanner: Found to be clean
-X-MLP-MailScanner-SpamCheck: no es spam, SpamAssassin (puntaje=-0.3,
-	requerido 4, BAYES_00 -1.10, FRLP_FREEMAIL -0.70,
-	MISSING_SUBJECT 0.50, UNDISC_RECIPS 1.00)
-X-MLP-MailScanner-From: samuelwolton@gmail.com
+In-Reply-To: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 26, 2011 at 11:27:14AM +0200, Manohar Vanga wrote:
+> Hi,
+> 
+> I start by apologizing for my absence recently as I was away on vacation
+> for a few weeks. Picking up where I left off, this is the resend of the
+> two final patches along with some movement of code into additional patches.
+> 
+> Martyn, Emilio: Thanks for all the feedback :-)
 
-My name is Mr. Samuell Wolton, I work in the Euro Million Lottery.
+Martyn, care to review these so I know if you want me to apply them or
+not?
 
-I can make you a winner of 4,528,000GBP in the ongoing Euro million  
-online sweepstakes promo, you will be giving me just 40% of your  
-winnings.Just a brief, you just have to register online for the  
-lottery draws.
+thanks,
 
-If you are willing to assist me on this transaction do reply to this message.
-
-Regards,
-Samuell Wolton.
-
-
-
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
+greg k-h
