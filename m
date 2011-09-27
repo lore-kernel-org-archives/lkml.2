@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab1I0CgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 22:36:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45722 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab1I0CgX (ORCPT
+	id S1752184Ab1I0CiB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 22:38:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:54841 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab1I0CiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 22:36:23 -0400
-Message-ID: <4E813639.10907@oracle.com>
-Date: Mon, 26 Sep 2011 19:34:33 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
-References: <s5hmxdzyyzx.wl%tiwai@suse.de> <201109212048.23074.rjw@sisk.pl> <CAE9FiQVy4D0NhaN=PvPK_+L4Jv=+7huLy9U--LYW49GFZ9TyaQ@mail.gmail.com> <201109270024.55418.rjw@sisk.pl>
-In-Reply-To: <201109270024.55418.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Sep 2011 22:38:00 -0400
+X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=gtOWHpAUYCwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=kIjrna13km2bGLLR81AA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [RFC PATCH 1/2] PM/runtime: introduce trace points for tracing
+ rpm_* functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: rjw@sisk.pl, stern@rowland.harvard.edu,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fweisbec@gmail.com
+Date: Mon, 26 Sep 2011 22:37:53 -0400
+In-Reply-To: <CACVXFVN33diJAa3yZ4ASuRD+5edDnBcAA-oBntW9k8RpdQOo2w@mail.gmail.com>
+References: <1316664701-15273-1-git-send-email-tom.leiming@gmail.com>
+	 <1317044445.26514.5.camel@gandalf.stny.rr.com>
+	 <CACVXFVPQokm21c+do5+DaOvUAme2LaNiwrNw_Tm66KuOxPb1jA@mail.gmail.com>
+	 <1317085894.26514.26.camel@gandalf.stny.rr.com>
+	 <CACVXFVN33diJAa3yZ4ASuRD+5edDnBcAA-oBntW9k8RpdQOo2w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A090201.4E81364B.003D,ss=1,re=0.000,fgs=0
+Message-ID: <1317091075.26514.29.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2011 03:24 PM, Rafael J. Wysocki wrote:
+On Tue, 2011-09-27 at 09:45 +0800, Ming Lei wrote:
 
-> On Thursday, September 22, 2011, Yinghai Lu wrote:
->> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> It looks like init_memory_mapping() is sometimes called with "end"
->>> beyond the last mapped PFN and it explodes when we try to write stuff to
->>> that address during image restoration.
->>>
->>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
->>> called with a "good end" on x86_64 was overomptimistic.
->>
->> for 64bit x86, kernel_physical_mapping_init() will use
->> map_low_page()/call early_memmap() to access ram for page_table that is above
->> rather last mapped PFN.
->>
->> the point is:
->> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
->> init_memory_mapping will be called two times for them.
->> before putting page_table high,
->> page table will be two parts: one is just below 512M, and one below 2048m.
->> after putting page_table high,
->> page table will be two parts: one is just below 2048M, and one below 64G.
->>
->> one of the purposes is finding biggest continuous big range under
->> 1024m for kdump.
+> > Not to mention, this will never work with tools such as perf or
+> > trace-cmd, that will just get a pointer address and will try to read a
+> > string that points inside the kernel.
 > 
-> This is all fine so long as we can ensure that the "end" value we're
-> passing to init_memory_mapping() will always be a valid address, which
-> evidently is not the case sometimes.
-
-
-I don't understand why end is not valid could happen.
-
-end should be always valid address. one is max_low_pfn under 4g, and another one is max_pfn...
-
-
+> Ok, sounds like dev_name does not work for the case, I will update
+> the patch, but I am wondering why no such problem for dev_dbg?
+> printk still may buffer these for sometime in some cases.
 > 
-> So, in my opinion we should simply apply the Takashi's patch at this
-> point and revisit the kdump issue later, when we actually know how to do
-> the right thing.
 
 
-Takashi said: 2.6.37 with that commit is ok, only 2.6.39 somehow has the 1/20 chance has the reset problem.
+printk will push out to the console immediately. Whatever is in the
+buffer has already been processed into a string. With tracing, we save
+the data as defined by TP_fast_assign() and is printed later when the
+user asks in TP_printk().
 
-so that commit should not the cause. could be some hidden assumption from restore code ? 
+> >
+> > This will only work with reading the trace data
+> > from /debug/tracing/trace, but not from any tools. The pS *will* work
+> > with the tools as the tools load the kallsyms data, and is smart enough
+> > to figure this pointer out.
+> 
+> __func__ points to a const string, which will be stored in kernel global
+> read-only section, I think perf can read correct string from the pointer
+> anytime, don't I?
 
-Yinghai
+That would be very dangerous to let a userspace app have any access to
+reading the kernel memory. Not to mention, this data may be sent out
+over the network to another machine, which must be able to read this
+data too.
+
+-- Steve
+
+
