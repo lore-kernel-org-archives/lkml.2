@@ -1,58 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1I0A2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 20:28:46 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44411 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1I0A2p (ORCPT
+	id S1753260Ab1I0Aah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 20:30:37 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:60260 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752740Ab1I0Aag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 20:28:45 -0400
-Date: Tue, 27 Sep 2011 10:28:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Neil Brown <neilb@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error trying to fetch the md and md-current trees
-Message-Id: <20110927102821.cb00d937491f799c86a6a1fc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M"
+	Mon, 26 Sep 2011 20:30:36 -0400
+X-Sasl-enc: 3KQJPwQaCWwdYf1oFKeSqcFF0iXbW26Hj2gNfHFHCwHG 1317083435
+Date: Mon, 26 Sep 2011 17:30:10 -0700
+From: Greg KH <greg@kroah.com>
+To: Jaap Crezee <jaap@jcz.nl>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        hjanssen@microsoft.com, haiyangz@microsoft.com, kys@microsoft.com,
+        v-abkane@microsoft.com
+Subject: Re: [PATCH 3/3] Staging: hv: hv_mouse: Fixed coding style issues
+Message-ID: <20110927003010.GB1694@kroah.com>
+References: <1316642003-9703-1-git-send-email-jaap@jcz.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316642003-9703-1-git-send-email-jaap@jcz.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 21, 2011 at 11:53:23PM +0200, Jaap Crezee wrote:
+> Fixed some coding style issues
 
-Hi Neil,
+This no longer applies to the tree :(
 
-Trying to fetch the md or md-current tree produces this error:
-
-fatal: read error: Connection reset by peer
-
-I am using my previously fetched version of the trees.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOgRilAAoJEDMEi1NhKgbs0/4H/i4YaJ7QEDjutOZ3W3b8t2f5
-Y9WDA+0kS4H9sA7wpfcdYgXQsoKgElu31SnanXZne2h9gzD9vU3IFlfOTiKwE9dP
-8UBycw7iZIgD1rltMw1PiVOyCCadSKSIO71wD7719DeCCpYlJW0oQ9UQT2gBo3Cw
-XIy4AWUT/ddszXM16WK8LlDnKEPE5unKKn4HWRACig3yE14FxkV9oxifStw2wMfG
-5IyjtUR8pTIhRQtWWwDedxCC9tPNuO8HKh/ViXkONtCysSrHcfLRLfuQKyQ4+sXw
-uiQbUKvxW76o53bQDvQX1CAVQ2tMXTcvhht9OhuNRbl7wIx6Qrmh++Jj3gW58tc=
-=DPwu
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Sep_2011_10_28_21_+1000_Djj9dbTqaMRlH7=M--
