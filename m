@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1I0Cua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Sep 2011 22:50:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:64333 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab1I0Cu1 (ORCPT
+	id S1752617Ab1I0Cvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Sep 2011 22:51:39 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:41382 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab1I0Cvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Sep 2011 22:50:27 -0400
-Message-ID: <4E813986.9040400@oracle.com>
-Date: Mon, 26 Sep 2011 19:48:38 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        oneukum@suse.de, x86@kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
-References: <s5hmxdzyyzx.wl%tiwai@suse.de> <201109212048.23074.rjw@sisk.pl> <CAE9FiQVy4D0NhaN=PvPK_+L4Jv=+7huLy9U--LYW49GFZ9TyaQ@mail.gmail.com> <201109270024.55418.rjw@sisk.pl> <CA+55aFyyeRyvooTY_Gb9xnOHt6AyCoQEtNFW2NPyb=M4gvVshQ@mail.gmail.com>
-In-Reply-To: <CA+55aFyyeRyvooTY_Gb9xnOHt6AyCoQEtNFW2NPyb=M4gvVshQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Sep 2011 22:51:38 -0400
+Date: Tue, 27 Sep 2011 12:51:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: linux-next: manual merge of the net tree with the wireless-current
+ tree
+Message-Id: <20110927125132.002db8176a66f85286dcd027@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E813999.0055:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2011 03:47 PM, Linus Torvalds wrote:
+Hi all,
 
-> On Mon, Sep 26, 2011 at 3:24 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>
->> So, in my opinion we should simply apply the Takashi's patch at this
->> point and revisit the kdump issue later, when we actually know how to do
->> the right thing.
-> 
-> Applying that trivial patch certainly looks fine, especially since it
-> also avoids some arbitrary differences between x86-64 and x86-32.
-> 
-> That said, the whole code looks *very* confusing, and I have to say
-> that the commit logs there are also totally unreadable and not very
-> explanatory at all.
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/wireless/iwlwifi/iwl-scan.c between commit 6c80c39d9a69
+("iwlagn: fix dangling scan request") from the wireless-current tree and
+commits 63013ae30159 ("iwlagn: priv->status moves to iwl_shared") and
+6ac2f839b0b2 ("iwlagn: priv->mutex moves to iwl_shared") from the net
+tree.
 
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-sorry for that.
-
-> 
-> It does seem like the code is simply buggy: it "allocates" the page
-> tables from the end of memory, but it seems to want to do that before
-> they have been mapped. Which makes perfect sense, since the whole
-> point of allocating them is to be *able* to map all the memory.
-
-> 
-
-> So using that
-> 
->     good_end = max_pfn_mapped << PAGE_SHIFT;
-> 
-> would seem to be a good idea regardless. I'm not sure how the old code
-> is even supposed to work. That said - why is this a problem only for
-> S4 resume?
-
-
-and for S4 resume, according to Takashi, that commit is ok with 2.6.37. but start to have some problem (1/20 chance) from 2.6.39...
-
-will check if any other early page-table related commit could cause the problem.
-
-the main point for that commit: it will "allocate" range for page-table purpose and will use early_memremap before really accessing them.
-so could have the end above already mapped max address.
-
-so We can avoid to put page_table in the middle of low ram ( just below 512m ), and could have bigger continuous range for kdump kernel.
-
-Thanks
-
-Yinghai
-
+diff --cc drivers/net/wireless/iwlwifi/iwl-scan.c
+index 77e528f,fc5af34..0000000
+--- a/drivers/net/wireless/iwlwifi/iwl-scan.c
++++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
+@@@ -403,8 -413,19 +413,8 @@@ int iwl_mac_hw_scan(struct ieee80211_h
+  	if (req->n_channels == 0)
+  		return -EINVAL;
+  
+- 	mutex_lock(&priv->mutex);
++ 	mutex_lock(&priv->shrd->mutex);
+  
+ -	if (test_bit(STATUS_SCANNING, &priv->shrd->status) &&
+ -	    priv->scan_type != IWL_SCAN_NORMAL) {
+ -		IWL_DEBUG_SCAN(priv, "Scan already in progress.\n");
+ -		ret = -EAGAIN;
+ -		goto out_unlock;
+ -	}
+ -
+ -	/* mac80211 will only ask for one band at a time */
+ -	priv->scan_request = req;
+ -	priv->scan_vif = vif;
+ -
+  	/*
+  	 * If an internal scan is in progress, just set
+  	 * up the scan_request as per above.
+@@@ -432,7 -439,8 +442,7 @@@
+  
+  	IWL_DEBUG_MAC80211(priv, "leave\n");
+  
+- 	mutex_unlock(&priv->mutex);
+ -out_unlock:
++ 	mutex_unlock(&priv->shrd->mutex);
+  
+  	return ret;
+  }
