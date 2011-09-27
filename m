@@ -1,146 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab1I0VlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 17:41:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42576 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab1I0VlW (ORCPT
+	id S1752810Ab1I0VpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 17:45:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42196 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab1I0VpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 17:41:22 -0400
-From: jim.cromie@gmail.com
-To: joe@perches.com
-Cc: jbaron@redhat.com, greg@kroah.com, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 26/26] scx200_acb: use pr_(info|warn|err|debug) and dynamic-debug facilities
-Date: Tue, 27 Sep 2011 15:41:00 -0600
-Message-Id: <1317159660-2506-3-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1317159660-2506-1-git-send-email-jim.cromie@gmail.com>
-References: <1316725066.29447.16.camel@Joe-Laptop>
- <1317159660-2506-1-git-send-email-jim.cromie@gmail.com>
+	Tue, 27 Sep 2011 17:45:01 -0400
+Date: Tue, 27 Sep 2011 23:44:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/7] rcu: Fix preempt-unsafe debug check of rcu extended
+ quiescent state
+Message-ID: <20110927214453.GO18553@somewhere>
+References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
+ <1317032352-25571-2-git-send-email-fweisbec@gmail.com>
+ <CAG1a4rtKc0ZPZEeAsde-u7Xw9w36Oi05Zd--ueHT2XHbqRr6cg@mail.gmail.com>
+ <20110927115002.GH18553@somewhere>
+ <CAG1a4ruxzNo3TrRZTTLQWNfhVK7mB_0Mr4ff=tuK9k6CZbReDg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG1a4ruxzNo3TrRZTTLQWNfhVK7mB_0Mr4ff=tuK9k6CZbReDg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+On Tue, Sep 27, 2011 at 11:16:02AM -0400, Pavel Ivanov wrote:
+> > What matters is that we do that check by ensuring we are really
+> > checking the value of the cpu var in the CPU we are currently
+> > running and not some other random one that can change its dynticks
+> > value at the same time.
+> 
+> Define the "CPU we are currently running on" in this context. Is it
+> CPU executing call to rcu_check_extended_qs() or is it CPU executing
+> return from rcu_check_extended_qs() ? These CPUs can be different both
+> before your patch and after that. And function can return extended_qs
+> state from either of these CPUs again both before and after the patch.
+> If the calling code wants these CPUs to be the same it has to disable
+> preemption before making the call. And if it does so then additional
+> preemption disabling inside the function is pointless.
 
-Switch this driver over to using more flexible dynamic-debug by
-dropping NAME from pr_debug(NAME ": ...") calls, and adding it once
-via pr_fmt().  With previous patch and CONFIG_I2C_DEBUG_BUS=y, we
-get pr_debug()s enabled by default:
+So, like Paul said rcu_read_lock() doesn't necessary imply to disable
+preemption.
 
-root@voyage:~# modprobe scx200_acb
-root@voyage:~# grep scx200_acb /dbg/dynamic_debug/control
-drivers/i2c/busses/scx200_acb.c:419 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:408 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:399 [scx200_acb]scx200_acb_probe =p "..."
-drivers/i2c/busses/scx200_acb.c:584 [scx200_acb]scx200_acb_init =p "..."
+Hence by the time we call rcu_check_extended_qs() the current task
+can be migrated anytime before, while in the function (except
+a little part) or after.
 
-The pr_fmt() adds the KBUILD_MODNAME to pr_err(), etc outputs, the
-pr_fmt_debug() overrides that default, letting user do so selectively
-via dynamic-debug.  This override affects a non DYNAMIC_DEBUG build
-too; we could fix this by making it conditional, but doing so in
-printk.h may be better.
+The CPU I was referring to when I talked about "CPU we are currently
+running on" is the CPU we are running between the call to get_cpu_var()
+and put_cpu_var(). This one can not be changed because get_cpu_var()
+disables preemption.
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- drivers/i2c/busses/scx200_acb.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+So consider this piece of code:
 
-diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
-index 986e5f6..34d89d6 100644
---- a/drivers/i2c/busses/scx200_acb.c
-+++ b/drivers/i2c/busses/scx200_acb.c
-@@ -23,6 +23,9 @@
-     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+        struct rcu_dynticks *rdtp =
+               &get_cpu_var(rcu_dynticks);
+        bool ext_qs = true;
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#define pr_fmt_debug(fmt) fmt
-+
- #include <linux/module.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
-@@ -37,8 +40,6 @@
+        if (atomic_read(&rdtp->dynticks) & 0x1)
+                ext_qs = false;
  
- #include <linux/scx200.h>
- 
--#define NAME "scx200_acb"
--
- MODULE_AUTHOR("Christer Weinigel <wingel@nano-system.com>");
- MODULE_DESCRIPTION("NatSemi SCx200 ACCESS.bus Driver");
- MODULE_ALIAS("platform:cs5535-smb");
-@@ -398,7 +399,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 	outb(0x70, ACBCTL2);
- 
- 	if (inb(ACBCTL2) != 0x70) {
--		pr_debug(NAME ": ACBCTL2 readback failed\n");
-+		pr_debug("ACBCTL2 readback failed\n");
- 		return -ENXIO;
- 	}
- 
-@@ -406,7 +407,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 
- 	val = inb(ACBCTL1);
- 	if (val) {
--		pr_debug(NAME ": disabled, but ACBCTL1=0x%02x\n",
-+		pr_debug("disabled, but ACBCTL1=0x%02x\n",
- 			val);
- 		return -ENXIO;
- 	}
-@@ -417,7 +418,7 @@ static __devinit int scx200_acb_probe(struct scx200_acb_iface *iface)
- 
- 	val = inb(ACBCTL1);
- 	if ((val & ACBCTL1_NMINTE) != ACBCTL1_NMINTE) {
--		pr_debug(NAME ": enabled, but NMINTE won't be set, "
-+		pr_debug("enabled, but NMINTE won't be set, "
- 			 "ACBCTL1=0x%02x\n", val);
- 		return -ENXIO;
- 	}
-@@ -433,7 +434,7 @@ static __devinit struct scx200_acb_iface *scx200_create_iface(const char *text,
- 
- 	iface = kzalloc(sizeof(*iface), GFP_KERNEL);
- 	if (!iface) {
--		printk(KERN_ERR NAME ": can't allocate memory\n");
-+		pr_err("can't allocate memory\n");
- 		return NULL;
- 	}
- 
-@@ -459,14 +460,14 @@ static int __devinit scx200_acb_create(struct scx200_acb_iface *iface)
- 
- 	rc = scx200_acb_probe(iface);
- 	if (rc) {
--		printk(KERN_WARNING NAME ": probe failed\n");
-+		pr_warn("probe failed\n");
- 		return rc;
- 	}
- 
- 	scx200_acb_reset(iface);
- 
- 	if (i2c_add_adapter(adapter) < 0) {
--		printk(KERN_ERR NAME ": failed to register\n");
-+		pr_err("failed to register\n");
- 		return -ENODEV;
- 	}
- 
-@@ -493,7 +494,7 @@ static struct scx200_acb_iface * __devinit scx200_create_dev(const char *text,
- 		return NULL;
- 
- 	if (!request_region(base, 8, iface->adapter.name)) {
--		printk(KERN_ERR NAME ": can't allocate io 0x%lx-0x%lx\n",
-+		pr_err("can't allocate io 0x%lx-0x%lx\n",
- 		       base, base + 8 - 1);
- 		goto errout_free;
- 	}
-@@ -583,7 +584,7 @@ static __init void scx200_scan_isa(void)
- 
- static int __init scx200_acb_init(void)
- {
--	pr_debug(NAME ": NatSemi SCx200 ACCESS.bus Driver\n");
-+	pr_debug("NatSemi SCx200 ACCESS.bus Driver\n");
- 
- 	/* First scan for ISA-based devices */
- 	scx200_scan_isa();	/* XXX: should we care about errors? */
--- 
-1.7.4.4
+        put_cpu_var(rcu_dynticks);	
 
+What I expect from preemption disabled is that when I read the local
+CPU variable rdtp->dyntick, I'm sure this is the CPU var of the local
+CPU and the rdtp->dyntick from another CPU.
+
+If I don't disable preemption, like it was without my patch:
+
+0	struct rcu_dynticks *rdtp =
+1               &__raw_get_cpu_var(rcu_dynticks);
+2
+3        if (atomic_read(&rdtp->dynticks) & 0x1)
+4                ext_qs = false;
+5
+6        put_cpu_var(rcu_dynticks);	
+
+I can fetch rdtp of CPU 1 in line 0. Then the task migrates on CPU 2.
+So on line 3 I'm reading rdtp->dynticks of CPU 1 from CPU 2 and this is
+racy because CPU 1 can change the value of rdtp->dynticks concurrently.
+
+Now indeed it's weird because we can migrate anytime outside that preempt
+disabled section.
+
+So let's explore the two cases where this function can be called:
+
+- From the idle task. For now this is the only place where we can
+run sections of code in RCU extended quiescent state. If any use
+of RCU is made on such section, it will hit our check.
+Here there is no head-scratching about the role of disabling preemption
+because the idle tasks can't be migrated. There is one per cpu so
+the rcu_dynticks variable we look at is always the same inside a
+given idle task.
+
+- From a normal task. We assume it can be migrated anytime. But
+normal tasks aren't supposed in RCU extended quiescent state.
+Still the check can be useful there and spot for example cases where
+we exit the idle task without calling rcu_exit_nohz().
+
+Now from a normal task, when we call rcu_read_lock(), we assume
+we can read the value dynticks from any CPU, wherever we migrate
+to. So for example if we are running idle in CPU 1, then we exit
+idle without calling rcu_exit_nohz(), the next task running on this
+CPU is about to call rcu_read_lock(), but of on the last time before
+we do our check it migrates to CPU 2. It won't detect the issue in CPU 1
+then. But it doesn't matter much, soon or later there are fair
+chances there will be a call to rcu_read_lock() on CPU 1 that
+will report the issue.
+
+That's also an anticipation for future development where we may
+call rcu_enter_nohz() in more place than just idle. Like in
+the Nohz cpusets for example.
+
+Right?
