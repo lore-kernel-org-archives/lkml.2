@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1I0TNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 15:13:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3080 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab1I0TNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 15:13:52 -0400
-Date: Tue, 27 Sep 2011 20:13:43 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        dm-devel@redhat.com, Elly Jones <ellyjones@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dm: verity target
-Message-ID: <20110927191343.GA18645@agk-dp.fab.redhat.com>
-Mail-Followup-To: Will Drewry <wad@chromium.org>,
-	Mandeep Singh Baines <msb@chromium.org>,
-	Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
-	dm-devel@redhat.com, Elly Jones <ellyjones@chromium.org>,
-	Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
-References: <1316112359-6085-1-git-send-email-msb@chromium.org> <CABqD9hYWK2czEKN87xDu7YPbRcp9xrumJ5PZ8aQTzBLafrnBMw@mail.gmail.com>
+	id S1753145Ab1I0TPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 15:15:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51529 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1I0TPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 15:15:08 -0400
+Date: Tue, 27 Sep 2011 23:14:13 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: David Rientjes <rientjes@google.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110927191413.GA4820@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
+ <alpine.DEB.2.00.1109271122480.17876@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABqD9hYWK2czEKN87xDu7YPbRcp9xrumJ5PZ8aQTzBLafrnBMw@mail.gmail.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1109271122480.17876@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well I intend to look at it seriously (and dm-switch too) once we're past the
-next merge window.
+On Tue, Sep 27, 2011 at 11:27 -0700, David Rientjes wrote:
+> On Tue, 27 Sep 2011, Vasiliy Kulikov wrote:
+> 
+> > /proc/meminfo stores information related to memory pages usage, which
+> > may be used to monitor the number of objects in specific caches (and/or
+> > the changes of these numbers).  This might reveal private information
+> > similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
+> > restrict meminfo to root.  If it is used by unprivileged daemons,
+> > meminfo permissions can be altered the same way as slabinfo:
+> > 
+> >     groupadd meminfo
+> >     usermod -a -G meminfo $MONITOR_USER
+> >     chmod g+r /proc/meminfo
+> >     chgrp meminfo /proc/meminfo
+> > 
+> 
+> I guess the side-effect of this is that users without root will no longer 
+> report VM issues where "there's tons of freeable memory but my task got 
+> killed", "there's swap available but is unutilized in lowmem situations", 
+> etc. :)
 
-Until then, my priority is finalising things scheduled for the upcoming merge
-window - in particular the new thin provisioning target.
+Uhh, lost of "free" is rather significant.
 
-Alasdair
+> Seriously, though, can't we just change the granularity of /proc/meminfo 
+> to be MB instead of KB or at least provide a separate file that is 
+> readable that does that?  I can understand not exporting information on a 
+> page-level granularity but not giving users a way to determine the amount 
+> of free memory is a little extreme.
+
+Probably it is the way to go.  Users still may identify *some*
+information about the slab objects in question (ecryptfs, etc.), but it
+is more limited with MB granularity.  Though, it is probably the only
+acceptable tradeoff in sense of backward compatibility.
+
+Thank you,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
