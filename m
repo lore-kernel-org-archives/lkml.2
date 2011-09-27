@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab1I0M6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 08:58:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752252Ab1I0M6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 08:58:05 -0400
-Date: Tue, 27 Sep 2011 14:54:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Tejun Heo <htejun@gmail.com>, Luke Macken <lmacken@redhat.com>,
-        stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH stable-3.0] ptrace: don't clear GROUP_STOP_SIGMASK on
-	double-stop
-Message-ID: <20110927125407.GA2841@redhat.com>
-References: <20110926170632.GA16936@redhat.com> <20110926221511.GB19769@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926221511.GB19769@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752262Ab1I0NAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 09:00:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45185 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198Ab1I0NAj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Sep 2011 09:00:39 -0400
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        LKML <linux-kernel@vger.kernel.org>, Eric Paris <eparis@redhat.com>
+Date: Tue, 27 Sep 2011 14:59:50 +0200
+In-Reply-To: <20110927123225.GC15435@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+	 <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
+	 <1317124177.15383.46.camel@twins>
+	 <20110927123225.GC15435@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317128390.15383.58.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26, Greg KH wrote:
->
-> On Mon, Sep 26, 2011 at 07:06:32PM +0200, Oleg Nesterov wrote:
-> > https://bugzilla.redhat.com/show_bug.cgi?id=740121
-> >
-> > 1. Luke Macken triggered WARN_ON(!(group_stop & GROUP_STOP_SIGMASK))
-> >    in do_signal_stop().
-> >
-> >    This is because do_signal_stop() clears GROUP_STOP_SIGMASK part
-> >    unconditionally but doesn't update it if task_is_stopped().
-> >
-> > 2. Looking at this problem I noticed that WARN_ON_ONCE(!ptrace) is
-> >    not right, a stopped-but-resumed tracee can clone the untraced
-> >    thread in the SIGNAL_STOP_STOPPED group, the new thread can start
-> >    another group-stop.
-> >
-> >    Remove this warning, we need more fixes to make it true.
-> >
-> > Reported-by: Luke Macken <lmacken@redhat.com>
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> Is this fix in Linus's tree already?  If so, what's the git commit id?
+On Tue, 2011-09-27 at 18:02 +0530, Srikar Dronamraju wrote:
+> I used to keep the changelog after the marker after Christoph Hellwig
+> had suggested that https://lkml.org/lkml/2010/7/20/5
+> However "stg export" removes lines after the --- marker. 
 
-No. As I said, 3.1 has the similar problem. But not the same, and you
-need the quite different test-case to trigger the bug.
+That's no excuse for writing shitty changelogs. Version logs contain the
+incremental changes in each version, but the changelog should be a full
+and proper description of the patch, irrespective of how many iterations
+and changes it has undergone.
 
-We are discussing the possible fixes for 3.1, but this code was changed
-very much and it doesn't make sense to compare the fixes for 3.1 and 3.0.
-
-Oleg.
 
