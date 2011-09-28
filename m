@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab1I1WT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:19:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57381 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab1I1WTW convert rfc822-to-8bit (ORCPT
+	id S1754911Ab1I1WUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:20:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50832 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab1I1WUL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:19:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=bSR0zg7zvOT+3wLaggnTQi+Om6qqzyOPAuWdHybEZ41gxDoTdRoU66pXpcMoGxi3+
-	PPRKcnnX05YIsdtWuH0pg==
+	Wed, 28 Sep 2011 18:20:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110922143202.GC13359@shamino.rdu.redhat.com>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
- <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com> <20110922135428.GC16740@parisc-linux.org>
- <20110922143202.GC13359@shamino.rdu.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 28 Sep 2011 16:18:55 -0600
-Message-ID: <CAErSpo7LPz=oXEN6VOZ-SqG_o4+i7hxbf4+UWtyPVLOfVpaeyA@mail.gmail.com>
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Matthew Wilcox <matthew@wil.cx>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+In-Reply-To: <20110928214227.GA17628@sepie.suse.cz>
+References: <1315974254-17345-1-git-send-email-lacombar@gmail.com>
+	<20110928214227.GA17628@sepie.suse.cz>
+Date: Wed, 28 Sep 2011 18:20:09 -0400
+Message-ID: <CACqU3MX2QJV51P67iUZ4EgDFSamXYgniFSHHQdG9J-BDgNz6Gg@mail.gmail.com>
+Subject: Re: [PATCH] Kbuild: allow code re-use across different directories
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 8:32 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+On Wed, Sep 28, 2011 at 5:42 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On Wed, Sep 14, 2011 at 12:24:14AM -0400, Arnaud Lacombe wrote:
+>> Modify Kbuild to allow direct code re-use in multiple directory
+>> without having to go through a copy. Technically, Kbuild would use by
+>> default the VPATH feature
 >
-> On Thu, Sep 22, 2011 at 07:54:28AM -0600, Matthew Wilcox wrote:
-> > On Mon, Sep 19, 2011 at 11:47:15AM -0400, Neil Horman wrote:
-> > > So a while back, I wanted to provide a way for irqbalance (and other apps) to
-> > > definitively map irqs to devices, which, for msi[x] irqs is currently not really
-> > > possible in user space.  My first attempt wen't not so well:
-> > > https://lkml.org/lkml/2011/4/21/308
-> > >
-> > > It was plauged by the same issues that prior attempts were, namely that it
-> > > violated the one-file-one-value sysfs rule.  I wandered off but have recently
-> > > come back to this.  I've got a new implementation here that exports a new
-> > > subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
-> > > a variable number of numbered subdirectories, in which the number represents an
-> > > msi irq.  Each numbered subdirectory contains attributes for that irq, which
-> > > currently is only the mode it is operating in (msi vs. msix).  I think fits
-> > > within the constraints sysfs requires, and will allow irqbalance to properly map
-> > > msi irqs to devices without having to rely on rickety, best guess methods like
-> > > interface name matching.
-> >
-> > This approach feels like building bigger rockets instead of a space
-> > elevator :-)
-> >
-> In which case your comments make me think that you're trying to build the
-> Death Star instead of buying more tie fighters :)
-> https://docs.google.com/viewer?url=http://www.dau.mil/pubscats/ATL%20Docs/Sep-Oct11/Ward.pdf
+> I now found that the patch breaks headers_install and firmware_install
+> when using O=
 >
-> > What we need is to allow device drivers to ask for per-CPU interrupts,
-> > and implement them in terms of MSI-X.  I've made a couple of stabs at
-> > implementing this, but haven't got anything working yet.  It would solve
-> Yes, IIRC you were trying to do this the first time I proposed this:
-> https://lkml.org/lkml/2011/4/21/315
+d'oh, I knew I forgot something! I'll have a look later on.
+
+Thanks,
+ - Arnaud
+
+> $ mkdir build
+> $ make O=build defconfig
+> ...
+> $ make O=build headers_install
+>  CHK     include/linux/version.h
+>  UPD     include/linux/version.h
+>  HOSTCC  scripts/unifdef
+> make[3]: *** No rule to make target `scripts/headers_install.pl', needed by `/labs/mmarek/linux-2.6/build/usr/include/asm-generic/.install'.  Stop.
+> make[2]: *** [asm-generic] Error 2
+> make[1]: *** [headers_install] Error 2
+> make: *** [sub-make] Error 2
+> $ make O=build firmware_install
+>  GEN     /labs/mmarek/linux-2.6/build/Makefile
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> make[2]: *** No rule to make target `firmware/e100/d101m_ucode.bin', needed by `/lib/firmware/e100/d101m_ucode.bin'.  Stop.
+> make[1]: *** [firmware_install] Error 2
+> make: *** [sub-make] Error 2
 >
-> > a number of problems:
-> >
-> Thats great, I don't see how this precludes what I'm trying to do here.  All
-> this patch does is expose a definitive relationship between msi irqs and the pci
-> devices that allocate them.  The kernel internal model used to allocate msi
-> interrupts can change, the kobject creation and removal just has to change with
-> it (presumably to create and destroy the msi irq kobjects when the individual
-> irqs are allocated/freed, rather than in a batch).  I don't see why we should
-> block enhancements to the existing msi implementation until you get new model
-> sorted, especially when this feature works equally well, despite the model we
-> use internally.
-
-Matthew, I don't understand this issue well enough to know whether
-Neil's patch would get in the way of your planned enhancements, or
-whether it would be baggage we won't want to maintain forever.  As far
-as I can tell, the patch exposes an (IRQ -> device) mapping, which
-would still be meaningful even with per-CPU interrupts.  Can you
-educate me?
-
-Neil, why do you propose doing this just for MSI IRQs?  I would think
-it'd be useful information for *all* IRQs, regardless of type, and
-that exposing the mapping for all IRQs would make it easier for tools.
-
-Also, you have a nice long changelog, but in five years, the details
-about previous attempts and changes between v1/v2/v3 will be useless.
-Can you replace it with a short summary of what the patch *does*,
-maybe something along the lines of the
-Documentation/ABI/testing/sysfs-bus-pci update?  (BTW, that update
-contains a couple typos -- "set subdirectories," "vecotor")
-
-Bjorn
+> Michal
+>
