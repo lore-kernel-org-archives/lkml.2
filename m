@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab1I1XIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:08:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54486 "EHLO mx2.suse.de"
+	id S1756138Ab1I1XIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:08:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54468 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913Ab1I1WqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:46:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
-Message-Id: <20110928220139.143919696@clark.kroah.org>
+	id S1752649Ab1I1Wpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:49 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
+Message-Id: <20110928220138.839085793@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:35 -0700
+Date: Wed, 28 Sep 2011 15:01:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [131/244] ibmveth: Fix issue with DMA mapping failure
+        Thomas Tuttle <ttuttle@chromium.org>, Tejun Heo <tj@kernel.org>
+Subject: [128/244] workqueue: lock cwq access in drain_workqueue
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Thomas Tuttle <ttuttle@chromium.org>
 
-commit b93da27f5234198433345e40b39ff59797bc6f6e upstream.
+commit fa2563e41c3d6d6e8af437643981ed28ae0cb56d upstream.
 
-descs[].fields.address is 32bit which truncates any dma mapping
-errors so dma_mapping_error() fails to catch it.
+Take cwq->gcwq->lock to avoid racing between drain_workqueue checking to
+make sure the workqueues are empty and cwq_dec_nr_in_flight decrementing
+and then incrementing nr_active when it activates a delayed work.
 
-Use a dma_addr_t to do the comparison. With this patch I was able
-to transfer many gigabytes of data with IOMMU fault injection set
-at 10% probability.
+We discovered this when a corner case in one of our drivers resulted in
+us trying to destroy a workqueue in which the remaining work would
+always requeue itself again in the same workqueue.  We would hit this
+race condition and trip the BUG_ON on workqueue.c:3080.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/ibmveth.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/workqueue.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ibmveth.c
-+++ b/drivers/net/ibmveth.c
-@@ -929,6 +929,7 @@ static netdev_tx_t ibmveth_start_xmit(st
- 	union ibmveth_buf_desc descs[6];
- 	int last, i;
- 	int force_bounce = 0;
-+	dma_addr_t dma_addr;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3026,8 +3026,13 @@ reflush:
  
- 	/*
- 	 * veth handles a maximum of 6 segments including the header, so
-@@ -993,17 +994,16 @@ retry_bounce:
- 	}
+ 	for_each_cwq_cpu(cpu, wq) {
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++		bool drained;
  
- 	/* Map the header */
--	descs[0].fields.address = dma_map_single(&adapter->vdev->dev, skb->data,
--						 skb_headlen(skb),
--						 DMA_TO_DEVICE);
--	if (dma_mapping_error(&adapter->vdev->dev, descs[0].fields.address))
-+	dma_addr = dma_map_single(&adapter->vdev->dev, skb->data,
-+				  skb_headlen(skb), DMA_TO_DEVICE);
-+	if (dma_mapping_error(&adapter->vdev->dev, dma_addr))
- 		goto map_failed;
+-		if (!cwq->nr_active && list_empty(&cwq->delayed_works))
++		spin_lock_irq(&cwq->gcwq->lock);
++		drained = !cwq->nr_active && list_empty(&cwq->delayed_works);
++		spin_unlock_irq(&cwq->gcwq->lock);
++
++		if (drained)
+ 			continue;
  
- 	descs[0].fields.flags_len = desc_flags | skb_headlen(skb);
-+	descs[0].fields.address = dma_addr;
- 
- 	/* Map the frags */
- 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
--		unsigned long dma_addr;
- 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 
- 		dma_addr = dma_map_page(&adapter->vdev->dev, frag->page,
+ 		if (++flush_cnt == 10 ||
 
 
