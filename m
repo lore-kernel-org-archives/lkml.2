@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1I1JwD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:52:03 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:18981 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751878Ab1I1JwC (ORCPT
+	id S1751701Ab1I1JzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:55:11 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:49581 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750931Ab1I1JzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:52:02 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: sameo@linux.intel.com
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Cc: dilinger@queued.net
-Cc: broonie@opensource.wolfsonmicro.com
-Subject: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-Message-Id: <20110928090810.6ECC19D401D@zog.reactivated.net>
-Date: Wed, 28 Sep 2011 10:08:10 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=kX7dJ6wq7ZoA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=tT73m3V05PQHkF4alxAA:9 a=P5RsqFHO_RgqeV8BjlUA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 28 Sep 2011 05:55:09 -0400
+Message-ID: <4E82EEE1.3020706@st.com>
+Date: Wed, 28 Sep 2011 15:24:41 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/1] dmaengine/amba-pl08x: Add support for s3c64xx
+ DMAC
+References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com> <1317189007-23033-2-git-send-email-alim.akhtar@samsung.com> <4E82D0A1.8050203@st.com> <CAGOxZ53qZy+VUM65oK68W088QR=RgQ=cNxOCbO7_WESJesJaVQ@mail.gmail.com>
+In-Reply-To: <CAGOxZ53qZy+VUM65oK68W088QR=RgQ=cNxOCbO7_WESJesJaVQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows a mfd_cell to be linked with a device tree node, which
-then allows child drivers to have easy access to that handle.
+On 9/28/2011 2:20 PM, Alim Akhtar wrote:
+> The main difference between Primecell PL080 and samsung variant is in
+> LLI control register bit [0:11] is reserved in case of samsung pl080
+> and one extra register is add to hold the transfer size at offset
+> 0x10. The purpose of cctl1 is store the transfer_size.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/mfd/mfd-core.c   |    1 +
- include/linux/mfd/core.h |    4 ++++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+So, actually you need to modify pl08x_fill_lli_for_desc() and
+pl08x_cctl_bits() routines.
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 0902523..7d22dcd 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -87,6 +87,7 @@ static int mfd_add_device(struct device *parent, int id,
- 		goto fail_device;
- 
- 	pdev->dev.parent = parent;
-+	pdev->dev.of_node = cell->of_node;
- 
- 	if (cell->pdata_size) {
- 		ret = platform_device_add_data(pdev,
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index 4e76163..9b836f9 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -15,6 +15,7 @@
- #define MFD_CORE_H
- 
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- 
- /*
-  * This struct describes the MFD part ("cell").
-@@ -37,6 +38,9 @@ struct mfd_cell {
- 	void			*platform_data;
- 	size_t			pdata_size;
- 
-+	/* association with device tree node (optional) */
-+	struct device_node	*of_node;
-+
- 	/*
- 	 * These resources can be specified relative to the parent device.
- 	 * For accessing hardware you should use resources from the platform dev
+Updating cctl1 on the last lli will not solve your purpose,
+and transfers needing more than one lli will fail.
+BTW, did you try testing your patch for more than one LLI.
+
 -- 
-1.7.6.2
-
+viresh
