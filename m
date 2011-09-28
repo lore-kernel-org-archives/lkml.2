@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab1I1IPc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:15:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab1I1IP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:15:29 -0400
-Date: Wed, 28 Sep 2011 10:14:52 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: [PATCH] vmscan: add barrier to prevent evictable page in
- unevictable list
-Message-ID: <20110928081452.GC23535@redhat.com>
-References: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
+	id S1753776Ab1I1ISQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:18:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58094 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab1I1ISO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 04:18:14 -0400
+Date: Wed, 28 Sep 2011 10:18:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
+        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com
+Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
+In-Reply-To: <1317172798.3112.742.camel@work-vm>
+Message-ID: <alpine.LFD.2.02.1109280953000.2711@ionos>
+References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>  <1317068164.1763.39.camel@twins> <1317076065.3112.539.camel@work-vm>  <alpine.LFD.2.02.1109280145150.2711@ionos> <1317172798.3112.742.camel@work-vm>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 10:45:30AM +0900, Minchan Kim wrote:
-> When racing between putback_lru_page and shmem_unlock happens,
-> progrom execution order is as follows, but clear_bit in processor #1
-> could be reordered right before spin_unlock of processor #1.
-> Then, the page would be stranded on the unevictable list.
+On Tue, 27 Sep 2011, John Stultz wrote:
+> On Wed, 2011-09-28 at 02:09 +0200, Thomas Gleixner wrote:
+> > We have proper mechanisms in place to handle such stuff, but they need
+> > proper overall design and definitely a bit more brain usage than just
+> > yelling "wakelock".
 > 
-> spin_lock
-> SetPageLRU
-> spin_unlock
->                                 clear_bit(AS_UNEVICTABLE)
->                                 spin_lock
->                                 if PageLRU()
->                                         if !test_bit(AS_UNEVICTABLE)
->                                         	move evictable list
-> smp_mb
-> if !test_bit(AS_UNEVICTABLE)
->         move evictable list
->                                 spin_unlock
-> 
-> But, pagevec_lookup in scan_mapping_unevictable_pages has rcu_read_[un]lock so
-> it could protect reordering before reaching test_bit(AS_UNEVICTABLE) on processor #1
-> so this problem never happens. But it's a unexpected side effect and we should
-> solve this problem properly.
-> 
-> This patch adds a barrier after mapping_clear_unevictable.
-> 
-> side-note: I didn't meet this problem but just found during review.
-> 
-> Cc: Johannes Weiner <jweiner@redhat.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/shmem.c  |    1 +
->  mm/vmscan.c |   11 ++++++-----
->  2 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index 2d35772..22cb349 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -1068,6 +1068,7 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
->  		user_shm_unlock(inode->i_size, user);
->  		info->flags &= ~VM_LOCKED;
->  		mapping_clear_unevictable(file->f_mapping);
-> +		smp_mb__after_clear_bit();
->  		scan_mapping_unevictable_pages(file->f_mapping);
+> And it would be great if some of that brain usage was spent to review
+> and critique what I'm actually proposing, rather then just yelling
+> "wakelock". :P
 
-I always get nervous when I see undocumented barriers.  Maybe add a
-teensy tiny comment here?
+Working on it :)
+ 
+> I apologize for being probably too verbose in my mails, but I did
+> originally admit that the firmware update issue is a simpler problem and
+> doesn't necessarily need the same solution as the races around my
+> nightly backups. But I do think that some thought should be put into the
+> different use cases that seem to desire similar things, so that an
+> appropriate design can be created, instead of a collection of short-term
+> hacks.
 
-	/*
-	 * Ensure that a racing putback_lru_page() can see
-	 * the pages of this mapping are evictable when we
-	 * skip them due to !PageLRU during the scan.
-	 */
+Yes, we want use cases, which can actually justify something like the
+proposed.
 
-Or something like that.  Otherwise, nice catch :-)
+Firmware update is _not_ one of them because it needs a proper design
+to be completely failsafe and just preventing the box to suspend is
+not helping that goal at all. You have to deal with broken network
+connections, resets, power outage and more to make it failsafe. And
+dealing with all of that covers the unintended suspend already. It
+simply does not matter whether it happens or not.
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+And that's why I'm ranting about such arguments, as they will just
+guide people into the delusion of solving hard problems like safe
+firmware updates with the wrong mechanisms.
+
+The whole wakelock discussion has been full of delusions from the very
+beginning and we really need to eliminate the lunatic arguments so we
+can look at the real remaining ones (if any), which might justify
+them.
+
+> More brain usage, and proper design. At least with that, I think we
+> agree. :)
+
+Right, and proper design does not exclude user space. It very much
+starts there.
+
+Thanks,
+
+	tglx
