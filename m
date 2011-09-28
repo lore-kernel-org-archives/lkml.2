@@ -1,161 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab1I1QgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 12:36:24 -0400
-Received: from home.keithp.com ([63.227.221.253]:46729 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab1I1QgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 12:36:22 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH 6/9] drm/i915: Fix PCH SSC reference clock settings
-In-Reply-To: <aefc95$1m20sf@orsmga001.jf.intel.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <1317103906-4649-7-git-send-email-keithp@keithp.com> <e0d58a$1mfd94@orsmga002.jf.intel.com> <yunr531981s.fsf@aiko.keithp.com> <aefc95$1m20sf@orsmga001.jf.intel.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 28 Sep 2011 09:36:08 -0700
-Message-ID: <yuny5x87hfr.fsf@aiko.keithp.com>
+	id S1753600Ab1I1Qi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 12:38:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57206 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab1I1Qi6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 12:38:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <CA+55aFwf3iOwyDDxjKbJ0fs=fy+-8mkoFHdgsEq32nAkerXS4g@mail.gmail.com>
+References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
+	<CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
+	<CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
+	<CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com>
+	<CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
+	<CA+55aFxp8bNhLs+v69gp7XxBGq6wkmLkZKjB2_09H3qsZC_pzw@mail.gmail.com>
+	<CACqU3MUbiQW3E8GeSbzkikMqvV1VKAnF2Ro-P2BWwih=s6vABA@mail.gmail.com>
+	<CA+55aFwf3iOwyDDxjKbJ0fs=fy+-8mkoFHdgsEq32nAkerXS4g@mail.gmail.com>
+Date: Wed, 28 Sep 2011 12:38:56 -0400
+Message-ID: <CACqU3MX_OAAiuUZh-qFVLTJVGAp_jTS+d3Lc-T_E0XTj=xa=Zg@mail.gmail.com>
+Subject: Re: Linux 3.1-rc7
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Wed, 28 Sep 2011 10:09:13 +0100, Chris Wilson <chris@chris-wilson.co.uk>=
- wrote:
+On Wed, Sep 28, 2011 at 11:47 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Sep 27, 2011 at 10:34 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>
+>> <off-topic>
+>> Speaking of corruption, I'm encountering another set on an external
+>> hard-drive, connected through USB.
+>
+> I don't think it's unrelated or off-topic.
+>
+>>     The same corruption pop up (at least in those text file): a
+>> sequence of 4 bytes is replaced by 0x000000E0 at offset 0x1E4 of the
+>> start of the file for some of them, 0x3E4 for two other (same
+>> corruption though). Locating the corruption will be more tricky in
+>> binary files.
+>
+> So it's possible that it's some rogue kernel pointer. We've certainly
+> had those before. Constants offsets like that happen with some
+> structure allocation that just happens to be say 1kB in size, and the
+> rogue kernel pointer assigns at a fixed offset to something that has
+> already been free'd.
+>
+> You might want to try to compile the kernel with SLUB_DEBUG_ON set,
+> and possibly also DEBUG_PAGEALLOC.
+>
+I'll give it a try.
 
-> My understanding was that we could not enable SSC at all if we had a VGA,
-> DVI/HDMI or TV output; DP may or may not work with SSC.
+> HOWEVER. It's quite possible that it's hardware too.
+>
+Yes.
 
-Yeah, which makes no sense at all. If this were true, we'd have to turn
-off the LVDS/eDP panel whenever enabling one of the non-SSC outputs.
+>> I may not trust the drive, but the fact that only known offset are
+>> corrupted (in text files), the exact same way, sounds too much of a
+>> coincidence. Anyway, I started a long SMART self test to see if it
+>> catches anything, as there was no DMA transfer error[0].
+>
+> It *could* be the disk, but it's much more likely to be something like
+> memory or a bad cable. Which wouldn't show up with SMART, since that
+> just tests internal disk issues.
+>
+At some point I did not trust the internal disk, but SMART tests
+(`short', `'long', `conveyance') passed successfully. I'd assume that
+a bad cable issue between the USB adapter and the disk would be caught
+by the UDMA_CRC_Error_Count counter (it already did), and would be
+somehow truly random. I'm not sure if USB do any kind of data checksum
+between the host and the device. I'd assume so.
 
-> The patch says that we will want to enable SSC if we have an SSC capbable
-> LVDS or eDP, which is certainly true. And that we can always do so if we
-> remember to set a magic bit in refclk to prevent non-SSC capable outputs
-> from being upset. I have not seen anything to support that last statement,
-> but, then again, I have not seen anything that actually explains what CK5=
-05
-> is!
+> Do you get some occasional random SIGSEGV's too?
+>
+Over the last month, not much, mostly chrome (unstable version), and WIP stuff:
 
-CK505 is an Intel specification for external clock synthesizers. Here's
-an older one made by Silego:
+# sed -r '/kernel:.*segfault/!d; s/.*kernel:.* ([a-z]+)\[.*/\1/'
+/var/log/messages* | sort | uniq -c
+      4 chrome
+      5 conf
+     19 nconf
 
-http://www.silego.com/uploads/Products/product_54/xSLG8SP585r101_10062009.p=
-df
+However, the list of program which dumped core is different:
+# sed '/core dump/!d; s/.*(\(.*\)) to .*/\1/' /var/log/messages* |
+sort | uniq -c
+      1 /bin/zsh
+      1 /src/linux/linux/scripts/kconfig/conf
+     24 /src/linux/linux/scripts/kconfig/nconf
+      1 /opt/google/chrome/chrome
+      2 /usr/bin/evince
+      1 /usr/bin/mplayer
+     45 /usr/lib64/nspluginwrapper/npviewer.bin
 
-There are newer ones which provide the (required?) 120MHz output
-specified in the bspec.
+Comparatively, on another machine (F15, 2.6.40.4, chromium
+13.0.782.215), same time period:
 
-However, if you go read:
+# sed -r '/kernel:.*segfault/!d; s/.*kernel:.* ([a-z\.-]+)\[.*/\1/'
+/var/log/messages* | sort | uniq -c
+      1 aplay
+     33 chromium-browser
 
-http://www.advantech.com.tw/embcore/promotions/Whitepaper/2nd_Gen_Intel_Cor=
-e_i7_Processors.pdf
+and no specific core dump listed (my setup may be wrong).
 
-you'll see that Cougarpoint is reported to have a fully integrated
-clocking solution and not require an external CK505. Which makes the
-lack of the display_clock_mode bit in the VBIOS sources a lot more
-understandable.
+I'll try to gather more information.
 
-So, I think we should not look for a CK505 on Cougar Point systems, only
-on Ibex Peak systems, and that we probably cannot use SSC on Ibex Peak
-unless we have a CK505.
+Thanks,
+ - Arnaud
 
-> Having said that, this is an obvious improvement over the current
-> situation in that we do choose correctly in more circumstances and we do
-> not reprogram the refclk whilst active.
-
-I think we can reprogram the refclk after init time, but only if no-one
-is using it, which is something we can do later on.
-
-> As an incremental improvement [in my understanding ;-]:
-> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-
-Perhaps this patch on top of the existing patch?
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/in=
-tel_display.c
-index 1cc0962..4bf49eb 100644
-=2D-- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5122,6 +5122,8 @@ static void ironlake_init_pch_refclk(struct drm_devic=
-e *dev)
- 	bool has_cpu_edp =3D false;
- 	bool has_pch_edp =3D false;
- 	bool has_panel =3D false;
-+	bool has_ck505 =3D false;
-+	bool can_ssc =3D false;
-=20
- 	/* We need to take the global config into account */
- 	list_for_each_entry(encoder, &mode_config->encoder_list,
-@@ -5141,9 +5143,17 @@ static void ironlake_init_pch_refclk(struct drm_devi=
-ce *dev)
- 		}
- 	}
-=20
-+	if (HAS_PCH_IBX(dev)) {
-+		has_ck505 =3D dev_priv->display_clock_mode;
-+		can_ssc =3D has_ck505;
-+	} else {
-+		has_ck505 =3D false;
-+		can_ssc =3D true;
-+	}
-+
- 	DRM_DEBUG_KMS("has_panel %d has_lvds %d has_pch_edp %d has_cpu_edp %d has=
-_ck505 %d\n",
- 		      has_panel, has_lvds, has_pch_edp, has_cpu_edp,
-=2D		      dev_priv->display_clock_mode);=20=20
-+		      has_ck505);
-=20
- 	/* Ironlake: try to setup display ref clock before DPLL
- 	 * enabling. This is only under driver's control after
-@@ -5154,7 +5164,7 @@ static void ironlake_init_pch_refclk(struct drm_devic=
-e *dev)
- 	/* Always enable nonspread source */
- 	temp &=3D ~DREF_NONSPREAD_SOURCE_MASK;
-=20
-=2D	if (dev_priv->display_clock_mode)
-+	if (has_ck505)
- 		temp |=3D DREF_NONSPREAD_CK505_ENABLE;
- 	else
- 		temp |=3D DREF_NONSPREAD_SOURCE_ENABLE;
-@@ -5164,7 +5174,7 @@ static void ironlake_init_pch_refclk(struct drm_devic=
-e *dev)
- 		temp |=3D DREF_SSC_SOURCE_ENABLE;
-=20
- 		/* SSC must be turned on before enabling the CPU output  */
-=2D		if (intel_panel_use_ssc(dev_priv)) {
-+		if (intel_panel_use_ssc(dev_priv) && can_ssc) {
- 			DRM_DEBUG_KMS("Using SSC on panel\n");
- 			temp |=3D DREF_SSC1_ENABLE;
- 		}
-@@ -5178,7 +5188,7 @@ static void ironlake_init_pch_refclk(struct drm_devic=
-e *dev)
-=20
- 		/* Enable CPU source on CPU attached eDP */
- 		if (has_cpu_edp) {
-=2D			if (intel_panel_use_ssc(dev_priv)) {
-+			if (intel_panel_use_ssc(dev_priv) && can_ssc) {
- 				DRM_DEBUG_KMS("Using SSC on eDP\n");
- 				temp |=3D DREF_CPU_SOURCE_OUTPUT_DOWNSPREAD;
- 			}
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOg0z4Qp8BWwlsTdMRAsK4AKDao9zUaYAKH5v0RX6isZEmkFADiQCgs2SK
-x4eQeRhPwMr9aSJJeR1tTAw=
-=lmGq
------END PGP SIGNATURE-----
---=-=-=--
+>                        Linus
+>
