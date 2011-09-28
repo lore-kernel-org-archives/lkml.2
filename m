@@ -1,47 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092Ab1I1Sed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:34:33 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43279 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab1I1Seb (ORCPT
+	id S1755084Ab1I1Sfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:35:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44821 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab1I1Sfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:34:31 -0400
-Date: Wed, 28 Sep 2011 14:32:13 -0400 (EDT)
-Message-Id: <20110928.143213.1468578830673905204.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, stable@kernel.org, mst@redhat.com, akong@redhat.com
-Subject: Re: Possible NULL dereference caused by -stable commit
- ef81bb40bf15f350fe865f31fa42f1082772a576
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1317211749.2941.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <4E82FC4E.5010101@redhat.com>
-	<1317211749.2941.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 28 Sep 2011 11:32:16 -0700 (PDT)
+	Wed, 28 Sep 2011 14:35:30 -0400
+Date: Thu, 29 Sep 2011 03:35:20 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4 v2] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110928183520.GE1696@barrios-desktop>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
+ <20110921150328.GJ4849@suse.de>
+ <20110922090326.GB29046@redhat.com>
+ <20110922105400.GL4849@suse.de>
+ <20110923143816.GA2606@redhat.com>
+ <20110928045551.GA14561@barrios-desktop>
+ <20110928075054.GB23535@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928075054.GB23535@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Wed, 28 Sep 2011 14:09:09 +0200
-
-> 1) Discussion on current kernel :
+On Wed, Sep 28, 2011 at 09:50:54AM +0200, Johannes Weiner wrote:
+> On Wed, Sep 28, 2011 at 01:55:51PM +0900, Minchan Kim wrote:
+> > Hi Hannes,
+> > 
+> > On Fri, Sep 23, 2011 at 04:38:17PM +0200, Johannes Weiner wrote:
+> > > The amount of dirtyable pages should not include the full number of
+> > > free pages: there is a number of reserved pages that the page
+> > > allocator and kswapd always try to keep free.
+> > > 
+> > > The closer (reclaimable pages - dirty pages) is to the number of
+> > > reserved pages, the more likely it becomes for reclaim to run into
+> > > dirty pages:
+> > > 
+> > >        +----------+ ---
+> > >        |   anon   |  |
+> > >        +----------+  |
+> > >        |          |  |
+> > >        |          |  -- dirty limit new    -- flusher new
+> > >        |   file   |  |                     |
+> > >        |          |  |                     |
+> > >        |          |  -- dirty limit old    -- flusher old
+> > >        |          |                        |
+> > >        +----------+                       --- reclaim
+> > >        | reserved |
+> > >        +----------+
+> > >        |  kernel  |
+> > >        +----------+
+> > > 
+> > > This patch introduces a per-zone dirty reserve that takes both the
+> > > lowmem reserve as well as the high watermark of the zone into account,
+> > > and a global sum of those per-zone values that is subtracted from the
+> > > global amount of dirtyable pages.  The lowmem reserve is unavailable
+> > > to page cache allocations and kswapd tries to keep the high watermark
+> > > free.  We don't want to end up in a situation where reclaim has to
+> > > clean pages in order to balance zones.
+> > > 
+> > > Not treating reserved pages as dirtyable on a global level is only a
+> > > conceptual fix.  In reality, dirty pages are not distributed equally
+> > > across zones and reclaim runs into dirty pages on a regular basis.
+> > > 
+> > > But it is important to get this right before tackling the problem on a
+> > > per-zone level, where the distance between reclaim and the dirty pages
+> > > is mostly much smaller in absolute numbers.
+> > > 
+> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > > ---
+> > >  include/linux/mmzone.h |    6 ++++++
+> > >  include/linux/swap.h   |    1 +
+> > >  mm/page-writeback.c    |    6 ++++--
+> > >  mm/page_alloc.c        |   19 +++++++++++++++++++
+> > >  4 files changed, 30 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > > index 1ed4116..37a61e7 100644
+> > > --- a/include/linux/mmzone.h
+> > > +++ b/include/linux/mmzone.h
+> > > @@ -317,6 +317,12 @@ struct zone {
+> > >  	 */
+> > >  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+> > >  
+> > > +	/*
+> > > +	 * This is a per-zone reserve of pages that should not be
+> > > +	 * considered dirtyable memory.
+> > > +	 */
+> > > +	unsigned long		dirty_balance_reserve;
+> > > +
+> > >  #ifdef CONFIG_NUMA
+> > >  	int node;
+> > >  	/*
+> > > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > > index b156e80..9021453 100644
+> > > --- a/include/linux/swap.h
+> > > +++ b/include/linux/swap.h
+> > > @@ -209,6 +209,7 @@ struct swap_list_t {
+> > >  /* linux/mm/page_alloc.c */
+> > >  extern unsigned long totalram_pages;
+> > >  extern unsigned long totalreserve_pages;
+> > > +extern unsigned long dirty_balance_reserve;
+> > >  extern unsigned int nr_free_buffer_pages(void);
+> > >  extern unsigned int nr_free_pagecache_pages(void);
+> > >  
+> > > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > > index da6d263..c8acf8a 100644
+> > > --- a/mm/page-writeback.c
+> > > +++ b/mm/page-writeback.c
+> > > @@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+> > >  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+> > >  
+> > >  		x += zone_page_state(z, NR_FREE_PAGES) +
+> > > -		     zone_reclaimable_pages(z);
+> > > +		     zone_reclaimable_pages(z) -
+> > > +		     zone->dirty_balance_reserve;
+> > >  	}
+> > >  	/*
+> > >  	 * Make sure that the number of highmem pages is never larger
+> > > @@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
+> > >  {
+> > >  	unsigned long x;
+> > >  
+> > > -	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+> > > +	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+> > > +	    dirty_balance_reserve;
+> > >  
+> > >  	if (!vm_highmem_is_dirtyable)
+> > >  		x -= highmem_dirtyable_memory(x);
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 1dba05e..f8cba89 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
+> > >  
+> > >  unsigned long totalram_pages __read_mostly;
+> > >  unsigned long totalreserve_pages __read_mostly;
+> > > +/*
+> > > + * When calculating the number of globally allowed dirty pages, there
+> > > + * is a certain number of per-zone reserves that should not be
+> > > + * considered dirtyable memory.  This is the sum of those reserves
+> > > + * over all existing zones that contribute dirtyable memory.
+> > > + */
+> > > +unsigned long dirty_balance_reserve __read_mostly;
+> > > +
+> > >  int percpu_pagelist_fraction;
+> > >  gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+> > >  
+> > > @@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
+> > >  			if (max > zone->present_pages)
+> > >  				max = zone->present_pages;
+> > >  			reserve_pages += max;
+> > > +			/*
+> > > +			 * Lowmem reserves are not available to
+> > > +			 * GFP_HIGHUSER page cache allocations and
+> > > +			 * kswapd tries to balance zones to their high
+> > > +			 * watermark.  As a result, neither should be
+> > > +			 * regarded as dirtyable memory, to prevent a
+> > > +			 * situation where reclaim has to clean pages
+> > > +			 * in order to balance the zones.
+> > > +			 */
+> > 
+> > Could you put Mel's description instead of it if you don't mind?
+> > If I didn't see Mel's thing, maybe I wouldn't suggest but it looks
+> > more easier to understand.
 > 
-> All we need here is not the route but inet_peer, so that inet_getid()
-> can be called on it.
+> I changed it because it was already referring to allocation placement,
+> but at the point in time where this comment is introduced there is no
+> allocation placement based on dirty pages yet.
+
+Right. at this point, you don't introduce allocation placement yet but
+I knew about that and it seems I was too hasty.
+But I hope you add a comment about allocation placement when you introduce it.
+Of course, you added it in page_alloc.c but I like adding short summary comment
+on field as Mel does. Adding short summary comment on field helps understanding
+why the field is introduced without jumping in and out.
+
 > 
-> If no route is given to ipv6_select_ident(), at least we can try to get
-> inet_peer, and release it before exiting from ipv6_select_ident()
+> The other thing is that it said lowmem_reserves were respected to
+> prevent increasing lowmem pressure, but lowmem is protected by the
+> watermark checks during the allocation.  I took it into account to not
+> end up with a number of dirtyable pages that is bigger than the amount
+> of technically available page cache pages.  Otherwise, you could end
+> up with all page cache pages in a zone dirtied at the time reclaim
+> kicks in and we are back to square one.
+> 
+> Maybe you can fingerpoint to the part that is harder to understand so
+> I can fix it?
 
-Ok, after some auditing, there is only one call site of ipv6_select_ident()
-that can happen with a NULL route and that is udp6_ufo_fragment().
+I don't mean yours is hard to understand. It seems to be a preference.
+Mel's explanation is more straightforward, I think.
+He explained objective,  method and why we select the method in introduction briefly.
+I like such summary on the field.
 
-ipv6_gso_segment() already walks the extension headers via
-ipv6_gso_pull_exthdrs() so maybe we can calculate the true destination
-address there and get that passed down somehow into the fragment ID
-selection for an inetpeer lookup.
+But as I said, it might be a preference so if you mind it, I don't insist on it.
+
+-- 
+Kind regards,
+Minchan Kim
