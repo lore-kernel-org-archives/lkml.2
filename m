@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab1I1UoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 16:44:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50230 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab1I1UoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 16:44:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,457,1312182000"; 
-   d="scan'208";a="56703044"
-Date: Wed, 28 Sep 2011 21:52:35 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@gentwo.org>, David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-Message-ID: <20110928215235.05d4f2e5@bob.linux.org.uk>
-In-Reply-To: <1317241905.16137.516.camel@nimitz>
-References: <20110927175453.GA3393@albatros>
-	<20110927175642.GA3432@albatros>
-	<20110927193810.GA5416@albatros>
-	<alpine.DEB.2.00.1109271459180.13797@router.home>
-	<alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1109271546320.13797@router.home>
-	<1317241905.16137.516.camel@nimitz>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754951Ab1I1Uv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 16:51:27 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64703 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab1I1Uv0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 16:51:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E838581.4080803@gmail.com>
+References: <4DE6264A.2040901@gmail.com>
+	<20110601212432.2677b03a.rdunlap@xenotime.net>
+	<201106211534.10366.roucaries.bastien@gmail.com>
+	<CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+	<20110826173517.7321c086@lxorguk.ukuu.org.uk>
+	<m2ei089fwq.fsf@firstfloor.org>
+	<CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com>
+	<4E57EA84.3080405@linux.intel.com>
+	<4E838581.4080803@gmail.com>
+Date: Wed, 28 Sep 2011 15:51:25 -0500
+Message-ID: <CAKA=qzbHnqiz=CuxM1n55EDnvQpqMw42eY8FuLJrGPYN3KWgVA@mail.gmail.com>
+Subject: Re: Kerneloops.org defunct?
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011 13:31:45 -0700
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+On Wed, Sep 28, 2011 at 3:37 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
+>> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
+>>>
+>>> Is the code available somewhere, or will it need to be rewritten ?
+>>
+>> we have the code on the server/etc... if someone signs up to help he
+>> will be on the server of course
+>
+> It looks like there are some volunteers. Did you have a chance to talk
+> to each other and make any progress?
+>
+> If not, may we have at least a backup of the database published, please?
+> There are very valuable data you collected over time and I'm sure there
+> are more people than me who would appreciate that.
+>
+> thanks,
+> --
+> js
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> On Tue, 2011-09-27 at 15:47 -0500, Christoph Lameter wrote:
-> > On Tue, 27 Sep 2011, David Rientjes wrote:
-> > > It'll turn into another one of our infinite number of
-> > > capabilities.  Does anything actually care about statistics at KB
-> > > granularity these days?
-> > 
-> > Changing that to MB may also break things. It may be better to have
-> > consistent system for access control to memory management counters
-> > that are not related to a process.
-> 
-> We could also just _effectively_ make it output in MB:
-> 
-> 	foo = foo & ~(1<<20)
+Apparently kerneoops.org is hosted by kernel.org so there will be no
+progress until that fiasco is resolved. I'm still up for working on it
+if and when the site is back online.
 
-I do not think that does what you intend 8)
-
-I do like the idea - it avoids any interfaces vanishing and surprise
-breakages while only CAP_SYS_whatever needs the real numbers
+-- 
+Josh
