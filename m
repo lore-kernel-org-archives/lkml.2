@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab1I1Wk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:40:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53829 "EHLO mx2.suse.de"
+	id S1755786Ab1I1WlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:41:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53864 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932275Ab1I1Wkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:33 2011
-Message-Id: <20110928220133.310706786@clark.kroah.org>
+	id S1755729Ab1I1WlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:05 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:31 2011
+Message-Id: <20110928220131.674180699@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:40 -0700
+Date: Wed, 28 Sep 2011 15:00:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christoph Hellwig <hch@lst.de>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, NeilBrown <neilb@suse.de>
-Subject: [076/244] Avoid dereferencing a request_queue after last close.
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>
+Subject: [061/244] sched: Separate the scheduler entry for preemption
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 94007751bb02797ba87bac7aacee2731ac2039a3 upstream.
+commit c259e01a1ec90063042f758e409cd26b2a0963c8 upstream.
 
-On the last close of an 'md' device which as been stopped, the device
-is destroyed and in particular the request_queue is freed.  The free
-is done in a separate thread so it might happen a short time later.
+Block-IO and workqueues call into notifier functions from the
+scheduler core code with interrupts and preemption disabled. These
+calls should be made before entering the scheduler core.
 
-__blkdev_put calls bdev_inode_switch_bdi *after* ->release has been
-called.
+To simplify this, separate the scheduler core code into
+__schedule(). __schedule() is directly called from the places which
+set PREEMPT_ACTIVE and from schedule(). This allows us to add the work
+checks into schedule(), so they are only called when a task voluntary
+goes to sleep.
 
-Since commit f758eeabeb96f878c860e8f110f94ec8820822a9
-bdev_inode_switch_bdi will dereference the 'old' bdi, which lives
-inside a request_queue, to get a spin lock.  This causes the last
-close on an md device to sometime take a spin_lock which lives in
-freed memory - which results in an oops.
-
-So move the called to bdev_inode_switch_bdi before the call to
-->release.
-
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20110622174918.813258321@linutronix.de
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/block_dev.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/sched.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1419,6 +1419,11 @@ static int __blkdev_put(struct block_dev
- 		WARN_ON_ONCE(bdev->bd_holders);
- 		sync_blockdev(bdev);
- 		kill_bdev(bdev);
-+		/* ->release can cause the old bdi to disappear,
-+		 * so must switch it out first
-+		 */
-+		bdev_inode_switch_bdi(bdev->bd_inode,
-+					&default_backing_dev_info);
- 	}
- 	if (bdev->bd_contains == bdev) {
- 		if (disk->fops->release)
-@@ -1432,8 +1437,6 @@ static int __blkdev_put(struct block_dev
- 		disk_put_part(bdev->bd_part);
- 		bdev->bd_part = NULL;
- 		bdev->bd_disk = NULL;
--		bdev_inode_switch_bdi(bdev->bd_inode,
--					&default_backing_dev_info);
- 		if (bdev != bdev->bd_contains)
- 			victim = bdev->bd_contains;
- 		bdev->bd_contains = NULL;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4242,9 +4242,9 @@ pick_next_task(struct rq *rq)
+ }
+ 
+ /*
+- * schedule() is the main scheduler function.
++ * __schedule() is the main scheduler function.
+  */
+-asmlinkage void __sched schedule(void)
++static void __sched __schedule(void)
+ {
+ 	struct task_struct *prev, *next;
+ 	unsigned long *switch_count;
+@@ -4332,6 +4332,11 @@ need_resched:
+ 	if (need_resched())
+ 		goto need_resched;
+ }
++
++asmlinkage void schedule(void)
++{
++	__schedule();
++}
+ EXPORT_SYMBOL(schedule);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+@@ -4405,7 +4410,7 @@ asmlinkage void __sched notrace preempt_
+ 
+ 	do {
+ 		add_preempt_count_notrace(PREEMPT_ACTIVE);
+-		schedule();
++		__schedule();
+ 		sub_preempt_count_notrace(PREEMPT_ACTIVE);
+ 
+ 		/*
+@@ -4433,7 +4438,7 @@ asmlinkage void __sched preempt_schedule
+ 	do {
+ 		add_preempt_count(PREEMPT_ACTIVE);
+ 		local_irq_enable();
+-		schedule();
++		__schedule();
+ 		local_irq_disable();
+ 		sub_preempt_count(PREEMPT_ACTIVE);
+ 
+@@ -5558,7 +5563,7 @@ static inline int should_resched(void)
+ static void __cond_resched(void)
+ {
+ 	add_preempt_count(PREEMPT_ACTIVE);
+-	schedule();
++	__schedule();
+ 	sub_preempt_count(PREEMPT_ACTIVE);
+ }
+ 
 
 
