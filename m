@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab1I1Xax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:30:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53611 "EHLO mx2.suse.de"
+	id S1755570Ab1I1Wij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:38:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53574 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab1I1Wi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:38:56 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:30 2011
-Message-Id: <20110928220129.923820287@clark.kroah.org>
+	id S1755521Ab1I1Wig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:38:36 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:25 2011
+Message-Id: <20110928220125.322280930@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:08 -0700
+Date: Wed, 28 Sep 2011 14:59:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kjetil Oftedal <oftedal@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [044/244] sparc32,sun4d: Change IPI IRQ level to prevent collision between IPI and timer interrupt
+        Nishanth Aravamudan <nacc@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Fabio M. Di Nitto" <fdinitto@redhat.com>
+Subject: [001/244] kernel/printk: do not turn off bootconsole in printk_late_init() if keep_bootcon
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kjetil Oftedal <oftedal@gmail.com>
+From: Nishanth Aravamudan <nacc@us.ibm.com>
 
-commit 38f7f8f05e8239e9871f7e1c4b0a842080e85315 upstream.
+commit 4c30c6f566c0989ddaee3407da44751e340a63ed upstream.
 
-On Sun4d systems running in SMP mode, IRQ 14 is used for timer interrupts
-and has a specialized interrupt handler. IPI is currently set to use IRQ 14
-as well, which causes it to trigger the timer interrupt handler, and not the
-IPI interrupt handler.
+It seems that 7bf693951a8e ("console: allow to retain boot console via
+boot option keep_bootcon") doesn't always achieve what it aims, as when
+printk_late_init() runs it unconditionally turns off all boot consoles.
+With this patch, I am able to see more messages on the boot console in
+KVM guests than I can without, when keep_bootcon is specified.
 
-The IPI interrupt is therefore changed to IRQ 13, which is the highest
-normally handled interrupt. This IRQ is also used for SBUS interrupts,
-however there is nothing in the IPI/SBUS interrupt handlers that indicate
-that they will not handle sharing the interrupt.
-(IRQ 13 is indicated as audio interrupt, which is unlikely to be found in a
-sun4d system)
+I think it is appropriate for the relevant -stable trees.  However, it's
+more of an annoyance than a serious bug (ideally you don't need to keep
+the boot console around as console handover should be working -- I was
+encountering a situation where the console handover wasn't working and
+not having the boot console available meant I couldn't see why).
 
-Signed-off-by: Kjetil Oftedal <oftedal@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>
+Acked-by: Fabio M. Di Nitto <fdinitto@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sparc/kernel/irq.h |    2 +-
+ kernel/printk.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/irq.h
-+++ b/arch/sparc/kernel/irq.h
-@@ -88,7 +88,7 @@ BTFIXUPDEF_CALL(void, set_irq_udt, int)
- #define set_irq_udt(cpu) BTFIXUP_CALL(set_irq_udt)(cpu)
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1584,7 +1584,7 @@ static int __init printk_late_init(void)
+ 	struct console *con;
  
- /* All SUN4D IPIs are sent on this IRQ, may be shared with hard IRQs */
--#define SUN4D_IPI_IRQ 14
-+#define SUN4D_IPI_IRQ 13
- 
- extern void sun4d_ipi_interrupt(void);
- 
+ 	for_each_console(con) {
+-		if (con->flags & CON_BOOT) {
++		if (!keep_bootcon && con->flags & CON_BOOT) {
+ 			printk(KERN_INFO "turn off boot console %s%d\n",
+ 				con->name, con->index);
+ 			unregister_console(con);
 
 
