@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1I1TIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 15:08:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64271 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab1I1TH5 convert rfc822-to-8bit (ORCPT
+	id S1755175Ab1I1TKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 15:10:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47511 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab1I1TJ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 15:07:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="56869393"
-From: "Zou, Yi" <yi.zou@intel.com>
-To: Matt Domsch <Matt_Domsch@dell.com>
-CC: Michael Chan <mchan@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>
-Date: Wed, 28 Sep 2011 12:07:55 -0700
-Subject: RE: [PATCH] drivers/firmware/edd: Treat "XPRS" host bus type the
- same as "PCI"
-Thread-Topic: [PATCH] drivers/firmware/edd: Treat "XPRS" host bus type the
- same as "PCI"
-Thread-Index: Acx+EOSSFQ/QxiQLSO2IErNmFkvOYQAAGcNw
-Message-ID: <5A9BD224CEA58D4CB62235967D650C160EBFC2C6@orsmsx509.amr.corp.intel.com>
-References: <1317162728-14488-1-git-send-email-mchan@broadcom.com>
- <20110928162815.GA14031@emperor.us.dell.com> <1317232279.13696.3.camel@HP1>
- <5A9BD224CEA58D4CB62235967D650C160EBFC2A4@orsmsx509.amr.corp.intel.com>
- <20110928190028.GA15935@emperor.us.dell.com>
-In-Reply-To: <20110928190028.GA15935@emperor.us.dell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
+	Wed, 28 Sep 2011 15:09:59 -0400
+Subject: Re: [RFD 1/9] Change cpustat fields to an array.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, jbottomley@parallels.com
+Date: Wed, 28 Sep 2011 21:09:17 +0200
+In-Reply-To: <4E836546.7010004@parallels.com>
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
+	  <1316816432-9237-2-git-send-email-glommer@parallels.com>
+	 <1317157252.21836.3.camel@twins> <4E836546.7010004@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317236957.24040.62.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-09-28 at 15:19 -0300, Glauber Costa wrote:
+> On 09/27/2011 06:00 PM, Peter Zijlstra wrote:
+> > On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
+> >>   /* Must have preemption disabled for this to be meaningful. */
+> >> -#define kstat_this_cpu __get_cpu_var(kstat)
+> >> +#define kstat_this_cpu this_cpu_ptr(task_group_kstat(current))
+> >
+> > This just lost you a debug check, the former would whinge when called
+> > without preemption, the new one wont. Its part of the this_cpu feature
+> > set to make debugging impossible.
+> >
+> >> +#else
+> >> +#define kstat_cpu(cpu) per_cpu(kstat, cpu)
+> >> +#define kstat_this_cpu (&__get_cpu_var(kstat))
+> >> +#endif
+> >>
+> >>   extern unsigned long long nr_context_switches(void);
+> >>
+> >> @@ -52,8 +62,8 @@ struct irq_desc;
+> >>   static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
+> >>                                              struct irq_desc *desc)
+> >>   {
+> >> -       __this_cpu_inc(kstat.irqs[irq]);
+> >> -       __this_cpu_inc(kstat.irqs_sum);
+> >> +       kstat_this_cpu->irqs[irq]++;
+> >> +       kstat_this_cpu->irqs_sum++;
+> >
+> > It might be worth looking at the asm output of that, I think you made it
+> > worse, but I'm not quite sure how smart gcc is, it might just figure out
+> > what you meant.
 > 
-> On Wed, Sep 28, 2011 at 01:56:42PM -0500, Zou, Yi wrote:
-> > > On Wed, 2011-09-28 at 09:28 -0700, Matt Domsch wrote:
-> > > > On Tue, Sep 27, 2011 at 05:32:08PM -0500, Michael Chan wrote:
-> > > > > PCI Express devices will return "XPRS" host bus type during BIOS
-> EDD
-> > > > > call.  "XPRS" should be treated just like "PCI" so that the
-> proper
-> > > > > pci_dev symlink will be created.  Scripts such as fcoe-edd.sh
-> will
-> > > > > then work correctly.
-> > > > >
-> > > > > Cc: Matt Domsch <Matt_Domsch@dell.com>
-> > > > > Signed-off-by: Michael Chan <mchan@broadcom.com>
-> > > >
-> > > > Agreed, this looks correct.  Thanks for the patch.  Feel free to
-> > > > submit it through whichever maintainer tree is convenient for you.
-> > > >
-> > > > Reviewed-by: Matt Domsch <Matt_Domsch@dell.com>
-> > > >
-> > >
-> > > Yi, could you submit this patch through the open-fcoe tree?  Thanks.
-> > >
-> > Sure, I will pull this into open-fcoe.org's tree and queue it up for
-> next
-> > push to scsi-misc as long as edd folks are ok with it. Just curious,
-> this
-> > is from edd4.0, so might be helpful to point that out in description...
-> > I can fix that when I apply the patch to fcoe-next tree.
+> I'd say leave it alone.
+> The biggest difference is that we don't have access to task_group(), or 
+> any of the fields in struct task_group. Because of that, we end up 
+> having to export a function to do the job of dealing with it.
 > 
-> It's actually a bug from when I first wrote the code.  EDD 3.0 has the
-> "XPRS" bus type defined.
+> Users inside sched.c won't have this problem. Outside of it, we'll add a 
+> call to some paths. True, mostly handle_irq paths, but I don't think 
+> that's what's going to kill us.
 > 
-> --
-> Matt Domsch
-> Technology Strategist
-> Dell | Office of the CTO
+> Now if we really really want to save it, we'd have to move struct 
+> task_group and its friends to a more visible location like a header...
 
-Really, hmm...the one v3.0rev0.8 I have only has PCI/ISA, it's really old as
-1998. I only found XPRS in the 4.0 draft. Anyway, I will apply as is then.
+I'm not quite getting how task_group is relevant here.
 
-yi
+The above will do something like:
 
+	mov gs:$per-cpu-offset-of-kstat, reg
+	inc reg + idx*8
 
+whereas __this_cpu_inc() could end up like:
+
+	inc gs:$per-cpu-offset-of-kstat + idx*8
+
+or whatnot. Now clearly gcc could be smart and optimize the temporary
+reg thing away in the earlier case, or it might not, I really don't know
+how smart that thing is.
