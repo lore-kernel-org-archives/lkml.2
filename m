@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab1I1P51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:57:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55186 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028Ab1I1P5Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:57:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
-References: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
-Date: Wed, 28 Sep 2011 21:27:23 +0530
-Message-ID: <CADDb1s3KjMugBGwLmjoPv93hJVBCjkD81o8F0CZxJXXt+-Fk2A@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD=92s_in_?=
-	=?windows-1252?Q?scsiglue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5Ftype=29?=
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=windows-1252
+	id S1755116Ab1I1P55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:57:57 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:26554 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065Ab1I1P5z convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:4:1>);
+	Wed, 28 Sep 2011 11:57:55 -0400
+Message-Id: <4E8360200200007800058467@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 28 Sep 2011 16:57:52 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] x86-64: fix CFI data for interrupt frames
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marking mail to linux-scsi.
+The patch titled "x86: Don't use frame pointer to save old stack on irq
+entry" did not properly adjust CFI directives, so this patch is a
+follow-up to that one.
 
-Thanks Christoph.
+With the old stack pointer no longer stored in a callee-saved register
+(plus some offset), we now have to use a CFA expression to describe the
+memory location where it is being found. This requires the use of
+.cfi_escape (allowing arbitrary byte streams to be emitted into
+.eh_frame), as there is no .cfi_def_cfa_expression (which also cannot
+reasonably be expected, as it would require a full expression parser).
 
-Regards,
-Amit Sahrawat
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 
-On Wed, Sep 28, 2011 at 9:12 PM, Amit Sahrawat
-<amit.sahrawat83@gmail.com> wrote:
-> When a USB HDD is connected to the device, it invokes slave_configure
-> to configure the USB HDD. In this function, whenever there is a SCSI
-> device of type TYPE_DISK, it sets:
->        /* A number of devices have problems with MODE SENSE for
->                 * page x08, so we will skip it. */
->                sdev->skip_ms_page_8 = 1;
->
-> Now, as a part of SCSI device probing, in the function
-> sd_revalidate_disk()-->sd_read_cache_type(), there is a condition
-> if (sdp->skip_ms_page_8)
->                goto defaults;
-> which becomes always true for all the USB HDD’s – the net result is
-> that the Write Cache is never considered for USB HDD(WCE = 0) –
-> “Assuming drive cache: write through”
->
-> What’s more – the QUEUE ordering which is marked for WCE=0 is
-> QUEUE_ORDERED_DRAIN, instead of QUEUE_ORDERED_DRAIN_FLUSH
-> This means there is no flushing of USB HDD internal cache (although
-> SYNCHRONIZE_CACHE is implemented as passed as command in
-> sd_prepare_flush) – queue_flush()(called in function
-> blk_do_ordered()-->start_ordered()) does not gets called in case of
-> QUEUE_ORDERED_DRAIN.
->
-> This causes a serious impact on USB HDD’s.
->
-> Please let me know in case I have missed something in my observations.
->
-> Thanks & Regards,
-> Amit Sahrawat
->
+---
+ arch/x86/include/asm/dwarf2.h |    2 ++
+ arch/x86/kernel/entry_64.S    |   14 +++++++++-----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
+
+--- 3.1-rc8/arch/x86/include/asm/dwarf2.h
++++ 3.1-rc8-x86_64-unwind-through-interrupts/arch/x86/include/asm/dwarf2.h
+@@ -27,6 +27,7 @@
+ #define CFI_REMEMBER_STATE	.cfi_remember_state
+ #define CFI_RESTORE_STATE	.cfi_restore_state
+ #define CFI_UNDEFINED		.cfi_undefined
++#define CFI_ESCAPE		.cfi_escape
+ 
+ #ifdef CONFIG_AS_CFI_SIGNAL_FRAME
+ #define CFI_SIGNAL_FRAME	.cfi_signal_frame
+@@ -68,6 +69,7 @@
+ #define CFI_REMEMBER_STATE	cfi_ignore
+ #define CFI_RESTORE_STATE	cfi_ignore
+ #define CFI_UNDEFINED		cfi_ignore
++#define CFI_ESCAPE		cfi_ignore
+ #define CFI_SIGNAL_FRAME	cfi_ignore
+ 
+ #endif
+--- 3.1-rc8/arch/x86/kernel/entry_64.S
++++ 3.1-rc8-x86_64-unwind-through-interrupts/arch/x86/kernel/entry_64.S
+@@ -331,10 +331,15 @@ ENDPROC(native_usergs_sysret64)
+ 1:	incl PER_CPU_VAR(irq_count)
+ 	jne 2f
+ 	mov PER_CPU_VAR(irq_stack_ptr),%rsp
+-	EMPTY_FRAME 0
++	CFI_DEF_CFA_REGISTER	rsi
+ 
+ 2:	/* Store previous stack value */
+ 	pushq %rsi
++	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
++			0x77 /* DW_OP_breg7 */, 0, \
++			0x06 /* DW_OP_deref */, \
++			0x08 /* DW_OP_const1u */, SS+8-RBP, \
++			0x22 /* DW_OP_plus */
+ 	/* We entered an interrupt context - irqs are off: */
+ 	TRACE_IRQS_OFF
+ 	.endm
+@@ -788,7 +793,6 @@ END(interrupt)
+ 	subq $ORIG_RAX-RBP, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
+ 	SAVE_ARGS_IRQ
+-	PARTIAL_FRAME 0
+ 	call \func
+ 	.endm
+ 
+@@ -813,10 +817,10 @@ ret_from_intr:
+ 
+ 	/* Restore saved previous stack */
+ 	popq %rsi
+-	leaq 16(%rsi), %rsp
+-
++	CFI_DEF_CFA_REGISTER	rsi
++	leaq ARGOFFSET-RBP(%rsi), %rsp
+ 	CFI_DEF_CFA_REGISTER	rsp
+-	CFI_ADJUST_CFA_OFFSET	-16
++	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
+ 
+ exit_intr:
+ 	GET_THREAD_INFO(%rcx)
+
+
+
