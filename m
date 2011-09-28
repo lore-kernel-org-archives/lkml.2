@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab1I1Why (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:37:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53472 "EHLO mx2.suse.de"
+	id S1755460Ab1I1WiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:38:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53487 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab1I1Whw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:27 2011
-Message-Id: <20110928220127.865410474@clark.kroah.org>
+	id S1754779Ab1I1Wh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:28 2011
+Message-Id: <20110928220128.088112658@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:49 -0700
+Date: Wed, 28 Sep 2011 14:59:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Andiry Xu <andiry.xu@amd.com>
-Subject: [025/244] xhci: Fix failed enqueue in the middle of isoch TD.
+        Daniel Mack <zonque@gmail.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [027/244] xhci: Handle zero-length isochronous packets.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,163 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 522989a27c7badb608155b1f1dea3487ed431f74 upstream.
+commit 48df4a6fd8c40c0bbcbca2044f5f2bc75dcf6db1 upstream.
 
-When an isochronous transfer is enqueued, xhci_queue_isoc_tx_prepare()
-will ensure that there is enough room on the transfer rings for all of the
-isochronous TDs for that URB.  However, when xhci_queue_isoc_tx() is
-enqueueing individual isoc TDs, the prepare_transfer() function can fail
-if the endpoint state has changed to disabled, error, or some other
-unknown state.
+For a long time, the xHCI driver has had this note:
+	/* FIXME: Ignoring zero-length packets, can those happen? */
 
-With the current code, if Nth TD (not the first TD) fails, the ring is
-left in a sorry state.  The partially enqueued TDs are left on the ring,
-and the first TRB of the TD is not given back to the hardware.  The
-enqueue pointer is left on the TRB after the last successfully enqueued
-TD.  This means the ring is basically useless.  Any new transfers will be
-enqueued after the failed TDs, which the hardware will never read because
-the cycle bit indicates it does not own them.  The ring will fill up with
-untransferred TDs, and the endpoint will be basically unusable.
+It turns out that, yes, there are drivers that need to queue zero-length
+transfers for isochronous OUT transfers.  Without this patch, users will
+see kernel hang messages when a driver attempts to enqueue an isochronous
+URB with a zero length transfer (because count_isoc_trbs_needed will return
+zero for that TD, xhci_td->last_trb will never be set, and updating the
+dequeue pointer will cause an infinite loop).
 
-The untransferred TDs will also remain on the TD list.  Since the td_list
-is a FIFO, this basically means the ring handler will be waiting on TDs
-that will never be completed (or worse, dereference memory that doesn't
-exist any more).
+Matěj ran into this issue when using an NI Audio4DJ USB soundcard
+with the snd-usb-caiaq driver.  See
+	https://bugzilla.kernel.org/show_bug.cgi?id=40702
 
-Change the code to clean up the isochronous ring after a failed transfer.
-If the first TD failed, simply return and allow the xhci_urb_enqueue
-function to free the urb_priv.  If the Nth TD failed, first remove the TDs
-from the td_list.  Then convert the TRBs that were enqueued into No-op
-TRBs.  Make sure to flip the cycle bit on all enqueued TRBs (including any
-link TRBs in the middle or between TDs), but leave the cycle bit of the
-first TRB (which will show software-owned) intact.  Then move the ring
-enqueue pointer back to the first TRB and make sure to change the
-xhci_ring's cycle state to what is appropriate for that ring segment.
-
-This ensures that the No-op TRBs will be overwritten by subsequent TDs,
-and the hardware will not start executing random TRBs because the cycle
-bit was left as hardware-owned.
-
-This bug is unlikely to be hit, but it was something I noticed while
-tracking down the watchdog timer issue.  I verified that the fix works by
-injecting some errors on the 250th isochronous URB queued, although I
-could not verify that the ring is in the correct state because uvcvideo
-refused to talk to the device after the first usb_submit_urb() failed.
-Ring debugging shows that the ring looks correct, however.
+Fix count_isoc_trbs_needed() to return 1 for zero-length transfers (thanks
+Alan on the math help).  Update the various TRB field calculations to deal
+with zero-length transfers.  We're still transferring one packet with a
+zero-length data payload, so the total_packet_count should be 1. The
+Transfer Burst Count (TBC) and Transfer Last Burst Packet Count (TLBPC)
+fields should be set to zero.
 
 This patch should be backported to kernels as old as 2.6.36.
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Andiry Xu <andiry.xu@amd.com>
+Tested-by: Matěj Laitl <matej@laitl.cz>
+Cc: Daniel Mack <zonque@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |   50 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 44 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci-ring.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -516,8 +516,12 @@ void xhci_find_new_dequeue_state(struct
- 			(unsigned long long) addr);
- }
- 
-+/* flip_cycle means flip the cycle bit of all but the first and last TRB.
-+ * (The last TRB actually points to the ring enqueue pointer, which is not part
-+ * of this TD.)  This is used to remove partially enqueued isoc TDs from a ring.
-+ */
- static void td_to_noop(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
--		struct xhci_td *cur_td)
-+		struct xhci_td *cur_td, bool flip_cycle)
+@@ -2692,6 +2692,10 @@ static u32 xhci_v1_0_td_remainder(int ru
  {
- 	struct xhci_segment *cur_seg;
- 	union xhci_trb *cur_trb;
-@@ -531,6 +535,12 @@ static void td_to_noop(struct xhci_hcd *
- 			 * leave the pointers intact.
- 			 */
- 			cur_trb->generic.field[3] &= cpu_to_le32(~TRB_CHAIN);
-+			/* Flip the cycle bit (link TRBs can't be the first
-+			 * or last TRB).
-+			 */
-+			if (flip_cycle)
-+				cur_trb->generic.field[3] ^=
-+					cpu_to_le32(TRB_CYCLE);
- 			xhci_dbg(xhci, "Cancel (unchain) link TRB\n");
- 			xhci_dbg(xhci, "Address = %p (0x%llx dma); "
- 					"in seg %p (0x%llx dma)\n",
-@@ -544,6 +554,11 @@ static void td_to_noop(struct xhci_hcd *
- 			cur_trb->generic.field[2] = 0;
- 			/* Preserve only the cycle bit of this TRB */
- 			cur_trb->generic.field[3] &= cpu_to_le32(TRB_CYCLE);
-+			/* Flip the cycle bit except on the first or last TRB */
-+			if (flip_cycle && cur_trb != cur_td->first_trb &&
-+					cur_trb != cur_td->last_trb)
-+				cur_trb->generic.field[3] ^=
-+					cpu_to_le32(TRB_CYCLE);
- 			cur_trb->generic.field[3] |= cpu_to_le32(
- 				TRB_TYPE(TRB_TR_NOOP));
- 			xhci_dbg(xhci, "Cancel TRB %p (0x%llx dma) "
-@@ -722,7 +737,7 @@ static void handle_stopped_endpoint(stru
- 					cur_td->urb->stream_id,
- 					cur_td, &deq_state);
- 		else
--			td_to_noop(xhci, ep_ring, cur_td);
-+			td_to_noop(xhci, ep_ring, cur_td, false);
- remove_finished_td:
- 		/*
- 		 * The event handler won't see a completion for this TD anymore,
-@@ -3231,6 +3246,7 @@ static int xhci_queue_isoc_tx(struct xhc
- 	start_trb = &ep_ring->enqueue->generic;
- 	start_cycle = ep_ring->cycle_state;
+ 	int packets_transferred;
  
-+	urb_priv = urb->hcpriv;
- 	/* Queue the first TRB, even if it's zero-length */
- 	for (i = 0; i < num_tds; i++) {
- 		unsigned int total_packet_count;
-@@ -3254,12 +3270,13 @@ static int xhci_queue_isoc_tx(struct xhc
++	/* One TRB with a zero-length data packet. */
++	if (running_total == 0 && trb_buff_len == 0)
++		return 0;
++
+ 	/* All the TRB queueing functions don't count the current TRB in
+ 	 * running_total.
+ 	 */
+@@ -3133,20 +3137,15 @@ static int count_isoc_trbs_needed(struct
+ 		struct urb *urb, int i)
+ {
+ 	int num_trbs = 0;
+-	u64 addr, td_len, running_total;
++	u64 addr, td_len;
  
- 		ret = prepare_transfer(xhci, xhci->devs[slot_id], ep_index,
- 				urb->stream_id, trbs_per_td, urb, i, mem_flags);
--		if (ret < 0)
--			return ret;
-+		if (ret < 0) {
-+			if (i == 0)
-+				return ret;
-+			goto cleanup;
-+		}
+ 	addr = (u64) (urb->transfer_dma + urb->iso_frame_desc[i].offset);
+ 	td_len = urb->iso_frame_desc[i].length;
  
--		urb_priv = urb->hcpriv;
- 		td = urb_priv->td[i];
+-	running_total = TRB_MAX_BUFF_SIZE - (addr & (TRB_MAX_BUFF_SIZE - 1));
+-	running_total &= TRB_MAX_BUFF_SIZE - 1;
+-	if (running_total != 0)
+-		num_trbs++;
 -
- 		for (j = 0; j < trbs_per_td; j++) {
- 			u32 remainder = 0;
- 			field = TRB_TBC(burst_count) | TRB_TLBPC(residue);
-@@ -3349,6 +3366,27 @@ static int xhci_queue_isoc_tx(struct xhc
- 	giveback_first_trb(xhci, slot_id, ep_index, urb->stream_id,
- 			start_cycle, start_trb);
- 	return 0;
-+cleanup:
-+	/* Clean up a partially enqueued isoc transfer. */
-+
-+	for (i--; i >= 0; i--)
-+		list_del(&urb_priv->td[i]->td_list);
-+
-+	/* Use the first TD as a temporary variable to turn the TDs we've queued
-+	 * into No-ops with a software-owned cycle bit. That way the hardware
-+	 * won't accidentally start executing bogus TDs when we partially
-+	 * overwrite them.  td->first_trb and td->start_seg are already set.
-+	 */
-+	urb_priv->td[0]->last_trb = ep_ring->enqueue;
-+	/* Every TRB except the first & last will have its cycle bit flipped. */
-+	td_to_noop(xhci, ep_ring, urb_priv->td[0], true);
-+
-+	/* Reset the ring enqueue back to the first TRB and its cycle bit. */
-+	ep_ring->enqueue = urb_priv->td[0]->first_trb;
-+	ep_ring->enq_seg = urb_priv->td[0]->start_seg;
-+	ep_ring->cycle_state = start_cycle;
-+	usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
-+	return ret;
- }
+-	while (running_total < td_len) {
++	num_trbs = DIV_ROUND_UP(td_len + (addr & (TRB_MAX_BUFF_SIZE - 1)),
++			TRB_MAX_BUFF_SIZE);
++	if (num_trbs == 0)
+ 		num_trbs++;
+-		running_total += TRB_MAX_BUFF_SIZE;
+-	}
  
- /*
+ 	return num_trbs;
+ }
+@@ -3258,9 +3257,11 @@ static int xhci_queue_isoc_tx(struct xhc
+ 		addr = start_addr + urb->iso_frame_desc[i].offset;
+ 		td_len = urb->iso_frame_desc[i].length;
+ 		td_remain_len = td_len;
+-		/* FIXME: Ignoring zero-length packets, can those happen? */
+ 		total_packet_count = roundup(td_len,
+ 				le16_to_cpu(urb->ep->desc.wMaxPacketSize));
++		/* A zero-length transfer still involves at least one packet. */
++		if (total_packet_count == 0)
++			total_packet_count++;
+ 		burst_count = xhci_get_burst_count(xhci, urb->dev, urb,
+ 				total_packet_count);
+ 		residue = xhci_get_last_burst_packet_count(xhci,
 
 
