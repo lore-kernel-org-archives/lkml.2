@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab1I1W4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:56:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54958 "EHLO mx2.suse.de"
+	id S933440Ab1I1Wtg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:49:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54940 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933456Ab1I1Wtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:46 2011
-Message-Id: <20110928220146.131355001@clark.kroah.org>
+	id S933306Ab1I1Wtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:32 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:45 2011
+Message-Id: <20110928220145.805994694@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:41 -0700
+Date: Wed, 28 Sep 2011 15:02:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Alex Iannicelli <alex.iannicelli@emulex.com>,
         James Smart <james.smart@emulex.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [197/244] [SCSI] lpfc 8.3.25: Fabric and Target Discovery Fixes
+Subject: [194/244] [SCSI] lpfc 8.3.25: T10 DIF Fixes
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,20 +29,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: James Smart <james.smart@emulex.com>
 
-commit 5248a7498e5f6f3d6d276080466946f82f0ea56a upstream.
+commit 7c56b9fd3b6d2d933075d12abee67ceb7c90d04a upstream.
 
-Fabric and Target Discovery Fixes
+T10 DIF Fixes
 
-- Clear FC_VPORT_NEEDS_INIT_VPI flag during completion of REG_VFI mailbox
-  command.
-- Prevent SLI3 Code from unregistering the physical VPI.
-- Add an else clause to the code that checks and sets
-  sp->cmn.request_multiple_Nport to clear the bit.
-- Remove a redundant mbox free.
-- Modified lpfc_sli4_async_fip_evt to pass in physical VPI toi
-  lpfc_find_vport_by_vpid function.
-- Modified lpfc_find_vport_by_vpid to translate physical VPI to logical VPI
-  before comparing with vport VPI.
+- Fix the case where the SCSI Host supplies the CRC and driver to controller
+  protection is on.
+- Only support T10 DIF type 1. LBA always goes in ref tag and app tag is not
+  checked.
+- Change the format of the sense data passed up to the SCSI layer to match the
+  Descriptor Format Sense Data found in SPC-4 sections 4.5.2.1 and 4.5.2.2.
+- Fix Slip PDE implementation.
+- Remove BUG() in else casein lpfc_sc_to_bg_opcodes.
 
 Signed-off-by: Alex Iannicelli <alex.iannicelli@emulex.com>
 Signed-off-by: James Smart <james.smart@emulex.com>
@@ -50,115 +48,243 @@ Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/lpfc/lpfc_els.c     |   33 +++++++++++++++------------------
- drivers/scsi/lpfc/lpfc_hbadisc.c |    2 +-
- drivers/scsi/lpfc/lpfc_init.c    |    4 ++--
- 3 files changed, 18 insertions(+), 21 deletions(-)
+ drivers/scsi/lpfc/lpfc_attr.c |    4 +
+ drivers/scsi/lpfc/lpfc_scsi.c |   97 ++++++++++++------------------------------
+ 2 files changed, 33 insertions(+), 68 deletions(-)
 
---- a/drivers/scsi/lpfc/lpfc_els.c
-+++ b/drivers/scsi/lpfc/lpfc_els.c
-@@ -647,21 +647,15 @@ lpfc_cmpl_els_flogi_fabric(struct lpfc_v
- 		}
- 		lpfc_cleanup_pending_mbox(vport);
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -3678,7 +3678,9 @@ LPFC_ATTR_R(enable_bg, 0, 0, 1, "Enable
+ #	- Default will result in registering capabilities for all profiles.
+ #
+ */
+-unsigned int lpfc_prot_mask = SHOST_DIF_TYPE1_PROTECTION;
++unsigned int lpfc_prot_mask = SHOST_DIF_TYPE1_PROTECTION |
++			      SHOST_DIX_TYPE0_PROTECTION |
++			      SHOST_DIX_TYPE1_PROTECTION;
  
--		if (phba->sli_rev == LPFC_SLI_REV4)
-+		if (phba->sli_rev == LPFC_SLI_REV4) {
- 			lpfc_sli4_unreg_all_rpis(vport);
--
--		if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
- 			lpfc_mbx_unreg_vpi(vport);
- 			spin_lock_irq(shost->host_lock);
- 			vport->fc_flag |= FC_VPORT_NEEDS_REG_VPI;
--			spin_unlock_irq(shost->host_lock);
--		}
--		/*
--		 * If VPI is unreged, driver need to do INIT_VPI
--		 * before re-registering
--		 */
--		if (phba->sli_rev == LPFC_SLI_REV4) {
--			spin_lock_irq(shost->host_lock);
-+			/*
-+			* If VPI is unreged, driver need to do INIT_VPI
-+			* before re-registering
-+			*/
- 			vport->fc_flag |= FC_VPORT_NEEDS_INIT_VPI;
- 			spin_unlock_irq(shost->host_lock);
- 		}
-@@ -1096,11 +1090,14 @@ lpfc_issue_els_flogi(struct lpfc_vport *
- 			/* Set the fcfi to the fcfi we registered with */
- 			elsiocb->iocb.ulpContext = phba->fcf.fcfi;
- 		}
--	} else if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
--		sp->cmn.request_multiple_Nport = 1;
--		/* For FLOGI, Let FLOGI rsp set the NPortID for VPI 0 */
--		icmd->ulpCt_h = 1;
--		icmd->ulpCt_l = 0;
-+	} else {
-+		if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
-+			sp->cmn.request_multiple_Nport = 1;
-+			/* For FLOGI, Let FLOGI rsp set the NPortID for VPI 0 */
-+			icmd->ulpCt_h = 1;
-+			icmd->ulpCt_l = 0;
-+		} else
-+			sp->cmn.request_multiple_Nport = 0;
- 	}
- 
- 	if (phba->fc_topology != LPFC_TOPOLOGY_LOOP) {
-@@ -6608,7 +6605,7 @@ lpfc_find_vport_by_vpid(struct lpfc_hba
- {
- 	struct lpfc_vport *vport;
- 	unsigned long flags;
--	int i;
-+	int i = 0;
- 
- 	/* The physical ports are always vpi 0 - translate is unnecessary. */
- 	if (vpi > 0) {
-@@ -6631,7 +6628,7 @@ lpfc_find_vport_by_vpid(struct lpfc_hba
- 
- 	spin_lock_irqsave(&phba->hbalock, flags);
- 	list_for_each_entry(vport, &phba->port_list, listentry) {
--		if (vport->vpi == vpi) {
-+		if (vport->vpi == i) {
- 			spin_unlock_irqrestore(&phba->hbalock, flags);
- 			return vport;
- 		}
---- a/drivers/scsi/lpfc/lpfc_hbadisc.c
-+++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
-@@ -2247,7 +2247,6 @@ read_next_fcf:
- 				spin_lock_irq(&phba->hbalock);
- 				phba->fcf.fcf_flag |= FCF_REDISC_FOV;
- 				spin_unlock_irq(&phba->hbalock);
--				lpfc_sli4_mbox_cmd_free(phba, mboxq);
- 				lpfc_sli4_fcf_scan_read_fcf_rec(phba,
- 						LPFC_FCOE_FCF_GET_FIRST);
- 				return;
-@@ -2645,6 +2644,7 @@ lpfc_mbx_cmpl_reg_vfi(struct lpfc_hba *p
- 	vport->vpi_state |= LPFC_VPI_REGISTERED;
- 	vport->fc_flag |= FC_VFI_REGISTERED;
- 	vport->fc_flag &= ~FC_VPORT_NEEDS_REG_VPI;
-+	vport->fc_flag &= ~FC_VPORT_NEEDS_INIT_VPI;
- 	spin_unlock_irq(shost->host_lock);
- 
- 	if (vport->port_state == LPFC_FABRIC_CFG_LINK) {
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -3649,7 +3649,7 @@ lpfc_sli4_async_fip_evt(struct lpfc_hba
- 			" tag 0x%x\n", acqe_fip->index, acqe_fip->event_tag);
- 
- 		vport = lpfc_find_vport_by_vpid(phba,
--				acqe_fip->index - phba->vpi_base);
-+						acqe_fip->index);
- 		ndlp = lpfc_sli4_perform_vport_cvl(vport);
- 		if (!ndlp)
+ module_param(lpfc_prot_mask, uint, S_IRUGO);
+ MODULE_PARM_DESC(lpfc_prot_mask, "host protection mask");
+--- a/drivers/scsi/lpfc/lpfc_scsi.c
++++ b/drivers/scsi/lpfc/lpfc_scsi.c
+@@ -1302,13 +1302,13 @@ lpfc_sc_to_bg_opcodes(struct lpfc_hba *p
+ 		case SCSI_PROT_NORMAL:
+ 		default:
+ 			lpfc_printf_log(phba, KERN_ERR, LOG_BG,
+-				"9063 BLKGRD: Bad op/guard:%d/%d combination\n",
+-					scsi_get_prot_op(sc), guard_type);
++				"9063 BLKGRD: Bad op/guard:%d/IP combination\n",
++					scsi_get_prot_op(sc));
+ 			ret = 1;
  			break;
-@@ -4518,7 +4518,7 @@ lpfc_sli4_driver_resource_setup(struct l
+ 
  		}
+-	} else if (guard_type == SHOST_DIX_GUARD_CRC) {
++	} else {
+ 		switch (scsi_get_prot_op(sc)) {
+ 		case SCSI_PROT_READ_STRIP:
+ 		case SCSI_PROT_WRITE_INSERT:
+@@ -1324,17 +1324,18 @@ lpfc_sc_to_bg_opcodes(struct lpfc_hba *p
+ 
+ 		case SCSI_PROT_READ_INSERT:
+ 		case SCSI_PROT_WRITE_STRIP:
++			*txop = BG_OP_IN_CRC_OUT_NODIF;
++			*rxop = BG_OP_IN_NODIF_OUT_CRC;
++			break;
++
+ 		case SCSI_PROT_NORMAL:
+ 		default:
+ 			lpfc_printf_log(phba, KERN_ERR, LOG_BG,
+-				"9075 BLKGRD: Bad op/guard:%d/%d combination\n",
+-					scsi_get_prot_op(sc), guard_type);
++				"9075 BLKGRD: Bad op/guard:%d/CRC combination\n",
++					scsi_get_prot_op(sc));
+ 			ret = 1;
+ 			break;
+ 		}
+-	} else {
+-		/* unsupported format */
+-		BUG();
  	}
  
--	return rc;
-+	return 0;
+ 	return ret;
+@@ -1352,45 +1353,6 @@ lpfc_cmd_blksize(struct scsi_cmnd *sc)
+ 	return sc->device->sector_size;
+ }
  
- out_free_fcp_eq_hdl:
- 	kfree(phba->sli4_hba.fcp_eq_hdl);
+-/**
+- * lpfc_get_cmd_dif_parms - Extract DIF parameters from SCSI command
+- * @sc:             in: SCSI command
+- * @apptagmask:     out: app tag mask
+- * @apptagval:      out: app tag value
+- * @reftag:         out: ref tag (reference tag)
+- *
+- * Description:
+- *   Extract DIF parameters from the command if possible.  Otherwise,
+- *   use default parameters.
+- *
+- **/
+-static inline void
+-lpfc_get_cmd_dif_parms(struct scsi_cmnd *sc, uint16_t *apptagmask,
+-		uint16_t *apptagval, uint32_t *reftag)
+-{
+-	struct  scsi_dif_tuple *spt;
+-	unsigned char op = scsi_get_prot_op(sc);
+-	unsigned int protcnt = scsi_prot_sg_count(sc);
+-	static int cnt;
+-
+-	if (protcnt && (op == SCSI_PROT_WRITE_STRIP ||
+-				op == SCSI_PROT_WRITE_PASS)) {
+-
+-		cnt++;
+-		spt = page_address(sg_page(scsi_prot_sglist(sc))) +
+-			scsi_prot_sglist(sc)[0].offset;
+-		*apptagmask = 0;
+-		*apptagval = 0;
+-		*reftag = cpu_to_be32(spt->ref_tag);
+-
+-	} else {
+-		/* SBC defines ref tag to be lower 32bits of LBA */
+-		*reftag = (uint32_t) (0xffffffff & scsi_get_lba(sc));
+-		*apptagmask = 0;
+-		*apptagval = 0;
+-	}
+-}
+-
+ /*
+  * This function sets up buffer list for protection groups of
+  * type LPFC_PG_TYPE_NO_DIF
+@@ -1427,9 +1389,8 @@ lpfc_bg_setup_bpl(struct lpfc_hba *phba,
+ 	dma_addr_t physaddr;
+ 	int i = 0, num_bde = 0, status;
+ 	int datadir = sc->sc_data_direction;
+-	unsigned blksize;
+ 	uint32_t reftag;
+-	uint16_t apptagmask, apptagval;
++	unsigned blksize;
+ 	uint8_t txop, rxop;
+ 
+ 	status  = lpfc_sc_to_bg_opcodes(phba, sc, &txop, &rxop);
+@@ -1438,17 +1399,16 @@ lpfc_bg_setup_bpl(struct lpfc_hba *phba,
+ 
+ 	/* extract some info from the scsi command for pde*/
+ 	blksize = lpfc_cmd_blksize(sc);
+-	lpfc_get_cmd_dif_parms(sc, &apptagmask, &apptagval, &reftag);
++	reftag = scsi_get_lba(sc) & 0xffffffff;
+ 
+ 	/* setup PDE5 with what we have */
+ 	pde5 = (struct lpfc_pde5 *) bpl;
+ 	memset(pde5, 0, sizeof(struct lpfc_pde5));
+ 	bf_set(pde5_type, pde5, LPFC_PDE5_DESCRIPTOR);
+-	pde5->reftag = reftag;
+ 
+ 	/* Endianness conversion if necessary for PDE5 */
+ 	pde5->word0 = cpu_to_le32(pde5->word0);
+-	pde5->reftag = cpu_to_le32(pde5->reftag);
++	pde5->reftag = cpu_to_le32(reftag);
+ 
+ 	/* advance bpl and increment bde count */
+ 	num_bde++;
+@@ -1463,10 +1423,10 @@ lpfc_bg_setup_bpl(struct lpfc_hba *phba,
+ 	if (datadir == DMA_FROM_DEVICE) {
+ 		bf_set(pde6_ce, pde6, 1);
+ 		bf_set(pde6_re, pde6, 1);
+-		bf_set(pde6_ae, pde6, 1);
+ 	}
+ 	bf_set(pde6_ai, pde6, 1);
+-	bf_set(pde6_apptagval, pde6, apptagval);
++	bf_set(pde6_ae, pde6, 0);
++	bf_set(pde6_apptagval, pde6, 0);
+ 
+ 	/* Endianness conversion if necessary for PDE6 */
+ 	pde6->word0 = cpu_to_le32(pde6->word0);
+@@ -1551,7 +1511,6 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 	unsigned char pgdone = 0, alldone = 0;
+ 	unsigned blksize;
+ 	uint32_t reftag;
+-	uint16_t apptagmask, apptagval;
+ 	uint8_t txop, rxop;
+ 	int num_bde = 0;
+ 
+@@ -1571,7 +1530,7 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 
+ 	/* extract some info from the scsi command */
+ 	blksize = lpfc_cmd_blksize(sc);
+-	lpfc_get_cmd_dif_parms(sc, &apptagmask, &apptagval, &reftag);
++	reftag = scsi_get_lba(sc) & 0xffffffff;
+ 
+ 	split_offset = 0;
+ 	do {
+@@ -1579,11 +1538,10 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 		pde5 = (struct lpfc_pde5 *) bpl;
+ 		memset(pde5, 0, sizeof(struct lpfc_pde5));
+ 		bf_set(pde5_type, pde5, LPFC_PDE5_DESCRIPTOR);
+-		pde5->reftag = reftag;
+ 
+ 		/* Endianness conversion if necessary for PDE5 */
+ 		pde5->word0 = cpu_to_le32(pde5->word0);
+-		pde5->reftag = cpu_to_le32(pde5->reftag);
++		pde5->reftag = cpu_to_le32(reftag);
+ 
+ 		/* advance bpl and increment bde count */
+ 		num_bde++;
+@@ -1597,9 +1555,9 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 		bf_set(pde6_oprx, pde6, rxop);
+ 		bf_set(pde6_ce, pde6, 1);
+ 		bf_set(pde6_re, pde6, 1);
+-		bf_set(pde6_ae, pde6, 1);
+ 		bf_set(pde6_ai, pde6, 1);
+-		bf_set(pde6_apptagval, pde6, apptagval);
++		bf_set(pde6_ae, pde6, 0);
++		bf_set(pde6_apptagval, pde6, 0);
+ 
+ 		/* Endianness conversion if necessary for PDE6 */
+ 		pde6->word0 = cpu_to_le32(pde6->word0);
+@@ -1621,8 +1579,8 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 		memset(pde7, 0, sizeof(struct lpfc_pde7));
+ 		bf_set(pde7_type, pde7, LPFC_PDE7_DESCRIPTOR);
+ 
+-		pde7->addrHigh = le32_to_cpu(putPaddrLow(protphysaddr));
+-		pde7->addrLow = le32_to_cpu(putPaddrHigh(protphysaddr));
++		pde7->addrHigh = le32_to_cpu(putPaddrHigh(protphysaddr));
++		pde7->addrLow = le32_to_cpu(putPaddrLow(protphysaddr));
+ 
+ 		protgrp_blks = protgroup_len / 8;
+ 		protgrp_bytes = protgrp_blks * blksize;
+@@ -1632,7 +1590,7 @@ lpfc_bg_setup_bpl_prot(struct lpfc_hba *
+ 			protgroup_remainder = 0x1000 - (pde7->addrLow & 0xfff);
+ 			protgroup_offset += protgroup_remainder;
+ 			protgrp_blks = protgroup_remainder / 8;
+-			protgrp_bytes = protgroup_remainder * blksize;
++			protgrp_bytes = protgrp_blks * blksize;
+ 		} else {
+ 			protgroup_offset = 0;
+ 			curr_prot++;
+@@ -2006,16 +1964,21 @@ lpfc_parse_bg_err(struct lpfc_hba *phba,
+ 	if (lpfc_bgs_get_hi_water_mark_present(bgstat)) {
+ 		/*
+ 		 * setup sense data descriptor 0 per SPC-4 as an information
+-		 * field, and put the failing LBA in it
++		 * field, and put the failing LBA in it.
++		 * This code assumes there was also a guard/app/ref tag error
++		 * indication.
+ 		 */
+-		cmd->sense_buffer[8] = 0;     /* Information */
+-		cmd->sense_buffer[9] = 0xa;   /* Add. length */
++		cmd->sense_buffer[7] = 0xc;   /* Additional sense length */
++		cmd->sense_buffer[8] = 0;     /* Information descriptor type */
++		cmd->sense_buffer[9] = 0xa;   /* Additional descriptor length */
++		cmd->sense_buffer[10] = 0x80; /* Validity bit */
+ 		bghm /= cmd->device->sector_size;
+ 
+ 		failing_sector = scsi_get_lba(cmd);
+ 		failing_sector += bghm;
+ 
+-		put_unaligned_be64(failing_sector, &cmd->sense_buffer[10]);
++		/* Descriptor Information */
++		put_unaligned_be64(failing_sector, &cmd->sense_buffer[12]);
+ 	}
+ 
+ 	if (!ret) {
 
 
