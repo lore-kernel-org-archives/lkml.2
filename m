@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1I1Cy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 22:54:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36859 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab1I1Cyz convert rfc822-to-8bit (ORCPT
+	id S1752757Ab1I1DCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 23:02:45 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:33884
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752362Ab1I1DCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 22:54:55 -0400
+	Tue, 27 Sep 2011 23:02:30 -0400
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E828E35.6070801@am.sony.com>
+Date: Tue, 27 Sep 2011 20:02:13 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1317166589.19340.14.camel@Joe-Laptop>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
- <1316642115-20029-26-git-send-email-jim.cromie@gmail.com> <1316725066.29447.16.camel@Joe-Laptop>
- <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com> <1317166589.19340.14.camel@Joe-Laptop>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 27 Sep 2011 20:54:24 -0600
-Message-ID: <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
-Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for dynamic_pr_debug
-To: Joe Perches <joe@perches.com>
-Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "tglx@linutronix.de" <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <peterz@infradead.org>
+Subject: [PATCH] PREEMPT_RT_FULL: arm coredump fails for cpu >= 4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 5:36 PM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2011-09-27 at 14:37 -0600, Jim Cromie wrote:
->>
->> Done. Only wrinkle is wrt pr_warning() vs pr_warn()
->> I added to your suggestion:
->> +#define pr_fmt_warn pr_fmt_warning
->>
->> the imperfection is that user has 4 combos of warn/warning
->> rather than 2 pairs, but the latter seems less defensible.
->
-> I'd just use pr_fmt_warn.
->
-> Instead of all this other extra stuff:
->
 
-trouble is that pr_warn & pr_warning are synonyms,
-and not having matching synonyms for pr_fmt_warn*
-creates a few corner-case oddities that I think
-somebody will trip over eventually.
+ARM can not use SPLIT_PTLOCK_CPUS if PREEMPT_RT_FULL because
+vectors_user_mapping() creates a VM_ALWAYSDUMP mapping of the vector page,
+but no ptl->lock has been allocated for the page.  An attempt to coredump
+that page will result in a kernel NULL pointer dereference when
+follow_page() attempts to lock the page.
 
-Cleanest way is to drop the original synonym, and just use
-warn (its shorter), but that creates some churn (havent grepped to see
-how much).
+The call tree to the NULL pointer dereference is:
 
-I picked what looked like least effort & fewest corner-cases.
-ICBW..
+   do_notify_resume()
+      get_signal_to_deliver()
+         do_coredump()
+            elf_core_dump()
+               get_dump_page()
+                  __get_user_pages()
+                     follow_page()
+                        pte_offset_map_lock() <----- a #define
+                           ...
+                              rt_spin_lock()
 
+This patch is needed only if mm-shrink-the-page-frame-to-rt-size.patch is
+applied.
 
-> What did you think of avoiding all of this and
-> having __dynamic_pr_debug move the fmt pointer over
-> any initial KBUILD_MODULE ": "
->
-> int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
-> {
-> [...]
->        size_t modsize = strlen(descriptor->modname);
->        if (0 == strncmp(fmt, descriptor->modname, modsize) &&
->            0 == strncmp(fmt + modsize, ": ", 2))
->                fmt += modsize + 2;
->
->        vprintk(fmt, ...)
->
-> ?
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+---
+ mm/Kconfig |    9 	9 +	0 -	0 !
+ 1 file changed, 9 insertions(+)
 
-I was getting to that... ;-)
+Index: b/mm/Kconfig
+===================================================================
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -172,13 +172,22 @@ config PAGEFLAGS_EXTENDED
+ # page_table_lock, so that faults on different parts of the user address
+ # space can be handled with less contention: split it at this NR_CPUS.
+ # Default to 4 for wider testing, though 8 might be more appropriate.
++#
+ # ARM's adjust_pte (unused if VIPT) depends on mm-wide page_table_lock.
++#
++# ARM can not use SPLIT_PTLOCK_CPUS if PREEMPT_RT_FULL because
++# vectors_user_mapping() creates a VM_ALWAYSDUMP mapping of the vector page,
++# but no ptl->lock has been allocated for the page.  An attempt to coredump
++# that page will result in a kernel NULL pointer dereference when
++# follow_page() attempts to lock the page.
++#
+ # PA-RISC 7xxx's spinlock_t would enlarge struct page from 32 to 44 bytes.
+ # DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC spinlock_t also enlarge struct page.
+ #
+ config SPLIT_PTLOCK_CPUS
+ 	int
+ 	default "999999" if ARM && !CPU_CACHE_VIPT
++	default "999999" if ARM && PREEMPT_RT_FULL
+ 	default "999999" if PARISC && !PA20
+ 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
+ 	default "4"
 
-Im not crazy about it.  It feels like too much ..
-Its a runtime workaround for what I think is a
-problem in users' (or header's) #defines.
-
-something like this would fix it at compile time,
-similar to how I had it in dynamic-debug.h previously:
-
-#if (CONFIG_DYNAMIC_DEBUG)
-#define pr_fmt_debug(fmt) KBUILD_MODNAME ": " fmt
-#endif
-// defaulting to pr_fmt as given by user, or by printk.h
-
-without dynamic-debug, pr_debug() would get same value
-as as used by pr_info() etc.
-
-With patchset as proposed, user needs to do the above
-to get 'proper' output for both CONFIG_DYNAMIC_DEBUG=y/n.
-It may be appropriate to do that in printk.h or dynamic_debug.h
-TBDiscussed.
-
-thanks
-Jim
