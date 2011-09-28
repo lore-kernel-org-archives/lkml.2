@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab1I1P7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:59:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54882 "EHLO mx1.redhat.com"
+	id S1755124Ab1I1QAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 12:00:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2208 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab1I1P7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:59:15 -0400
-Date: Wed, 28 Sep 2011 17:55:39 +0200
+	id S1755033Ab1I1QAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 12:00:31 -0400
+Date: Wed, 28 Sep 2011 17:56:55 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Stephen Wilson <wilsons@start.ca>, linux-kernel@vger.kernel.org
+To: Stephen Wilson <wilsons@start.ca>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
 Subject: Re: Q: x86: add context tag to mark mm when running a task in
 	32-bit compatibility mode
-Message-ID: <20110928155539.GA10550@redhat.com>
-References: <20110927170448.GA15977@redhat.com> <20110927183219.GL2203@ZenIV.linux.org.uk>
+Message-ID: <20110928155655.GB10550@redhat.com>
+References: <20110927170448.GA15977@redhat.com> <20110928020724.GA4524@wicker.gateway.2wire.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110927183219.GL2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110928020724.GA4524@wicker.gateway.2wire.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27, Al Viro wrote:
+On 09/27, Stephen Wilson wrote:
 >
 > On Tue, Sep 27, 2011 at 07:04:48PM +0200, Oleg Nesterov wrote:
-> > --- x/arch/x86/kernel/process_64.c
-> > +++ x/arch/x86/kernel/process_64.c
-> > @@ -502,10 +502,6 @@ void set_personality_64bit(void)
-> >  	/* Make sure to be in 64bit mode */
-> >  	clear_thread_flag(TIF_IA32);
+> > I am asking because we probably want to backport this change and this
+> > ia32_compat looks a bit annoying, why should we waste a word?
 > >
-> > -	/* Ensure the corresponding mm is not marked. */
-> > -	if (current->mm)
-> > -		current->mm->context.ia32_compat = 0;
+> > Sure, this is very minor, but perhaps the trivial patch below makes
+> > sense?
 >
-> What happens when 32bit task does exec on 64bit binary?
+> Definitely makes sense (modulo Al's remarks).
 
-Nothing. This bit is always zero after init_mm(), it can't copy
-MMF_COMPAT.
+OK, good.
 
-But. This is wrong anyway. I forgot about fork(). We do not want to
-uglify copy_mm(), MMF_INIT_MASK should include MMF_COMPAT and then
-set_personality_64bit() needs to clear this bit.
-
-Thanks!
-
-> > -	if (current->mm)
-> > -		current->mm->context.ia32_compat = 1;
-> > +	set_bit(MMF_COMPAT, &current->mm->flags);
->
-> ... assuming current->mm is never NULL here.
-
-Yes, but it can't be NULL?
-
-SET_PERSONALITY() can only be called during exec, and it must be called
-after exec_mmap() has already installed the new mm != NULL, otherwise
-the current code is buggy anyway.
+I'll try to test (and double check) this patch, then I'll resend it
+"officially".
 
 Oleg.
 
