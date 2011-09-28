@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1I1H1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:27:08 -0400
-Received: from smtp-out-142.synserver.de ([212.40.185.142]:1110 "HELO
-	smtp-out-141.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751433Ab1I1H1H (ORCPT
+	id S1753497Ab1I1H26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:28:58 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53765 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753239Ab1I1H24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:27:07 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 17405
-Message-ID: <4E82CC34.10204@metafoo.de>
-Date: Wed, 28 Sep 2011 09:26:44 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: adau1701: Initialize codec->control_data before
- using it
-References: <1317194488.2498.2.camel@phoenix>
-In-Reply-To: <1317194488.2498.2.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Sep 2011 03:28:56 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+yTEctjYyyLBS6gV3UaFW+Xb7r32fXM4GC6ZLjz8
+	eyb/UxXpo8ufhC
+Subject: Re: x86: interrupt routing question
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1310455620.4844.29.camel@marge.simson.net>
+References: <1310455620.4844.29.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 09:28:52 +0200
+Message-ID: <1317194932.6506.94.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 09:21 AM, Axel Lin wrote:
-> Currently codec->control_data is not initialized before calling
-> process_sigma_firmware(codec->control_data, ADAU1701_FIRMWARE).
+For the next sod who gets curious about irq routing behavior difference,
+and tries to ask google.
+
+On Tue, 2011-07-12 at 09:27 +0200, Mike Galbraith wrote:
+> Greetings,
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-
-Thanks
-
-> ---
->  sound/soc/codecs/adau1701.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> I have an x3550 M3 box which shows different behavior than my Q6600
+> desktop box.  The below is the rt kernel, but it doesn't matter which
+> kernel I boot, all interrupts are on CPU0 unless I move them.  On Q6600
+> box, IRQs magically appear on every cpu in the affinity mask.  Change
+> the eth0 mask while flood pinging, numbers start/stop changing on the
+> fly.
 > 
-> diff --git a/sound/soc/codecs/adau1701.c b/sound/soc/codecs/adau1701.c
-> index b7e4cc7..8b7e1c5 100644
-> --- a/sound/soc/codecs/adau1701.c
-> +++ b/sound/soc/codecs/adau1701.c
-> @@ -458,6 +458,7 @@ static int adau1701_probe(struct snd_soc_codec *codec)
->  	int ret;
->  
->  	codec->dapm.idle_bias_off = 1;
-> +	codec->control_data = to_i2c_client(codec->dev);
->  
->  	ret = adau1701_load_firmware(codec);
->  	if (ret)
+> On x3550 M3, setting eg IRQ 63's mask to '0xe' will move irq to CPU2,
+> but nothing that I have found will make the thing behave the same as
+> trusty old Q6600 box, which seems strange.  Is this some kind of BIOS
+> thingie, or is every kernel busted on this hardware?  Busted kernel
+> seems highly doubtful.
+
+The difference is that Q6600 desktop box uses flat routing, and x3550 M3
+uses physical flat.  What the heck does that mean you (didn't) ask?
+Dunno, that's a "RTFM for all the gory technical details" thing, but if
+you rummage around in x86 source, you'll end up here..
+
+arch/kernel/x86/apic/io_apic.c::setup_ioapic_irq()
+
+        if (assign_irq_vector(irq, cfg, apic->target_cpus()))
+                return;
+
+        dest = apic->cpu_mask_to_apicid_and(cfg->domain, apic->target_cpus());
+
+        apic_printk(APIC_VERBOSE,KERN_DEBUG
+                    "IOAPIC[%d]: Set routing entry (%d-%d -> 0x%x -> "
+                    "IRQ %d Mode:%i Active:%i Dest:%d)\n",
+                    apic_id, mpc_ioapic_id(apic_id), pin, cfg->vector,
+                    irq, trigger, polarity, dest);
+
+..and see that in physical flat mode, assign_irq_vector() scribbles only
+one bit to cfg->domain.
+
+arch/kernel/x86/apic/io_apic.c:__assign_irq_vector()
+
+            for_each_cpu_and(cpu, mask, cpu_online_mask) {
+                int new_cpu;
+                int vector, offset;
+
+                apic->vector_allocation_domain(cpu, tmp_mask);
+		...
+                cpumask_copy(cfg->domain, tmp_mask);
+                err = 0;
+                break;
+        }
+
+apic.vector_allocation_domain for physical flat is..
+ 
+arch/x86/kernel/apic/apic_flat_64.c::
+
+static void physflat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+{
+        cpumask_clear(retmask);
+        cpumask_set_cpu(cpu, retmask);
+}
+
+..whereas for flat it's..
+
+static void flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
+{
+	...
+        cpumask_clear(retmask);
+        cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
+}
+
+So, while __assign_irq_vector() is called with a mask of all CPUs for
+both boxen, apic->vector_allocation_domain() ensures the mask finally
+written to cfg->domain has only one CPU bit set in physical flat mode,
+and all CPU bits set in flat mode.
+
+	-Mike
+
+P.S.  if you try that RTFM thing, strap a pillow to your forehead first
 
