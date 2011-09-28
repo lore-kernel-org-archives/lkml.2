@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab1I1Whg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:37:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53435 "EHLO mx2.suse.de"
+	id S1755406Ab1I1Whr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:37:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53460 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab1I1Whe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:25 2011
-Message-Id: <20110928220125.437794049@clark.kroah.org>
+	id S1755354Ab1I1Whp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:27 2011
+Message-Id: <20110928220127.654820372@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:26 -0700
+Date: Wed, 28 Sep 2011 14:59:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Chul Kim <chul.kim@idt.com>
-Subject: [002/244] rapidio: fix use of non-compatible registers
+        Andiry Xu <andiry.xu@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [023/244] xHCI: report USB2 port in resuming as suspend
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,160 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit 284fb68d00c56e971ed01e0b4bac5ddd4d1b74ab upstream.
+commit 8a8ff2f9399b23b968901f585ccb5a70a537c5ae upstream.
 
-Replace/remove use of RIO v.1.2 registers/bits that are not
-forward-compatible with newer versions of RapidIO specification.
+When a USB2 port initiate a remote wakeup, software shall ensure that
+resume is signaled for at least 20ms, and then write '0' to the PLS field.
+According to this, xhci driver do the following things:
 
-RapidIO specification v.1.3 removed Write Port CSR, Doorbell CSR,
-Mailbox CSR and Mailbox and Doorbell bits of the PEF CAR.
+1. When receive a remote wakeup event in irq_handler, set the resume_done
+   value as jiffies + 20ms, and modify rh_timer to poll root hub status at
+   that time;
+2. When receive a GetPortStatus request, if the jiffies is after the
+   resume_done value, clear the resume signal and resume_done.
 
-Use of removed (since RIO v.1.3) register bits affects users of
-currently available 1.3 and 2.x compliant devices who may use not so
-recent kernel versions.
+However, if usb_port_resume() is called before the rh_timer triggered, it
+will indicate the port as Suspend Cleared and skip the clear resume signal
+part. The device will fail the usb_get_status request in finish_port_resume(),
+and usbcore will try a reset-resume instead. Device will work OK after
+reset-resume, but resume_done value is not cleared in this case, and
+xhci_bus_suspend() will fail because when it finds a non-zero resume_done
+value, it will regard the port as resuming and return -EBUSY.
 
-Removing checks for unsupported bits makes corresponding routines
-compatible with all versions of RapidIO specification.  Therefore,
-backporting makes stable kernel versions compliant with RIO v.1.3 and
-later as well.
+This causes issue on some platforms that the system fail to suspend
+after remote wakeup from suspend by USB2 devices connected to xHCI port.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Chul Kim <chul.kim@idt.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+To fix this issue, report the port status as suspend if the resume is
+signaling less that 20ms, and usb_port_resume() will wait 25ms and check
+port status again, so xHCI driver can clear the resume signaling and
+resume_done value.
+
+This should be backported to kernels as old as 2.6.37.
+
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/rionet.c       |   23 ++++++++---------------
- drivers/rapidio/rio-scan.c |    3 +--
- include/linux/rio_regs.h   |   18 +++++++++---------
- 3 files changed, 18 insertions(+), 26 deletions(-)
+ drivers/usb/host/xhci-hub.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -80,13 +80,13 @@ static int rionet_capable = 1;
-  */
- static struct rio_dev **rionet_active;
- 
--#define is_rionet_capable(pef, src_ops, dst_ops)		\
--			((pef & RIO_PEF_INB_MBOX) &&		\
--			 (pef & RIO_PEF_INB_DOORBELL) &&	\
-+#define is_rionet_capable(src_ops, dst_ops)			\
-+			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
-+			 (dst_ops & RIO_DST_OPS_DATA_MSG) &&	\
- 			 (src_ops & RIO_SRC_OPS_DOORBELL) &&	\
- 			 (dst_ops & RIO_DST_OPS_DOORBELL))
- #define dev_rionet_capable(dev) \
--	is_rionet_capable(dev->pef, dev->src_ops, dev->dst_ops)
-+	is_rionet_capable(dev->src_ops, dev->dst_ops)
- 
- #define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
- #define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
-@@ -282,7 +282,6 @@ static int rionet_open(struct net_device
- {
- 	int i, rc = 0;
- 	struct rionet_peer *peer, *tmp;
--	u32 pwdcsr;
- 	struct rionet_private *rnet = netdev_priv(ndev);
- 
- 	if (netif_msg_ifup(rnet))
-@@ -332,13 +331,8 @@ static int rionet_open(struct net_device
- 			continue;
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -463,11 +463,12 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 					&& (temp & PORT_POWER))
+ 				status |= USB_PORT_STAT_SUSPEND;
  		}
- 
--		/*
--		 * If device has initialized inbound doorbells,
--		 * send a join message
--		 */
--		rio_read_config_32(peer->rdev, RIO_WRITE_PORT_CSR, &pwdcsr);
--		if (pwdcsr & RIO_DOORBELL_AVAIL)
--			rio_send_doorbell(peer->rdev, RIONET_DOORBELL_JOIN);
-+		/* Send a join message */
-+		rio_send_doorbell(peer->rdev, RIONET_DOORBELL_JOIN);
- 	}
- 
-       out:
-@@ -492,7 +486,7 @@ static int rionet_setup_netdev(struct ri
- static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
- {
- 	int rc = -ENODEV;
--	u32 lpef, lsrc_ops, ldst_ops;
-+	u32 lsrc_ops, ldst_ops;
- 	struct rionet_peer *peer;
- 	struct net_device *ndev = NULL;
- 
-@@ -515,12 +509,11 @@ static int rionet_probe(struct rio_dev *
- 	 * on later probes
- 	 */
- 	if (!rionet_check) {
--		rio_local_read_config_32(rdev->net->hport, RIO_PEF_CAR, &lpef);
- 		rio_local_read_config_32(rdev->net->hport, RIO_SRC_OPS_CAR,
- 					 &lsrc_ops);
- 		rio_local_read_config_32(rdev->net->hport, RIO_DST_OPS_CAR,
- 					 &ldst_ops);
--		if (!is_rionet_capable(lpef, lsrc_ops, ldst_ops)) {
-+		if (!is_rionet_capable(lsrc_ops, ldst_ops)) {
- 			printk(KERN_ERR
- 			       "%s: local device is not network capable\n",
- 			       DRV_NAME);
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -505,8 +505,7 @@ static struct rio_dev __devinit *rio_set
- 	rdev->dev.dma_mask = &rdev->dma_mask;
- 	rdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
- 
--	if ((rdev->pef & RIO_PEF_INB_DOORBELL) &&
--	    (rdev->dst_ops & RIO_DST_OPS_DOORBELL))
-+	if (rdev->dst_ops & RIO_DST_OPS_DOORBELL)
- 		rio_init_dbell_res(&rdev->riores[RIO_DOORBELL_RESOURCE],
- 				   0, 0xffff);
- 
---- a/include/linux/rio_regs.h
-+++ b/include/linux/rio_regs.h
-@@ -36,12 +36,12 @@
- #define  RIO_PEF_PROCESSOR		0x20000000	/* [I] Processor */
- #define  RIO_PEF_SWITCH			0x10000000	/* [I] Switch */
- #define  RIO_PEF_MULTIPORT		0x08000000	/* [VI, 2.1] Multiport */
--#define  RIO_PEF_INB_MBOX		0x00f00000	/* [II] Mailboxes */
--#define  RIO_PEF_INB_MBOX0		0x00800000	/* [II] Mailbox 0 */
--#define  RIO_PEF_INB_MBOX1		0x00400000	/* [II] Mailbox 1 */
--#define  RIO_PEF_INB_MBOX2		0x00200000	/* [II] Mailbox 2 */
--#define  RIO_PEF_INB_MBOX3		0x00100000	/* [II] Mailbox 3 */
--#define  RIO_PEF_INB_DOORBELL		0x00080000	/* [II] Doorbells */
-+#define  RIO_PEF_INB_MBOX		0x00f00000	/* [II, <= 1.2] Mailboxes */
-+#define  RIO_PEF_INB_MBOX0		0x00800000	/* [II, <= 1.2] Mailbox 0 */
-+#define  RIO_PEF_INB_MBOX1		0x00400000	/* [II, <= 1.2] Mailbox 1 */
-+#define  RIO_PEF_INB_MBOX2		0x00200000	/* [II, <= 1.2] Mailbox 2 */
-+#define  RIO_PEF_INB_MBOX3		0x00100000	/* [II, <= 1.2] Mailbox 3 */
-+#define  RIO_PEF_INB_DOORBELL		0x00080000	/* [II, <= 1.2] Doorbells */
- #define  RIO_PEF_EXT_RT			0x00000200	/* [III, 1.3] Extended route table support */
- #define  RIO_PEF_STD_RT			0x00000100	/* [III, 1.3] Standard route table support */
- #define  RIO_PEF_CTLS			0x00000010	/* [III] CTLS */
-@@ -102,7 +102,7 @@
- #define	RIO_SWITCH_RT_LIMIT	0x34	/* [III, 1.3] Switch Route Table Destination ID Limit CAR */
- #define	 RIO_RT_MAX_DESTID		0x0000ffff
- 
--#define RIO_MBOX_CSR		0x40	/* [II] Mailbox CSR */
-+#define RIO_MBOX_CSR		0x40	/* [II, <= 1.2] Mailbox CSR */
- #define  RIO_MBOX0_AVAIL		0x80000000	/* [II] Mbox 0 avail */
- #define  RIO_MBOX0_FULL			0x40000000	/* [II] Mbox 0 full */
- #define  RIO_MBOX0_EMPTY		0x20000000	/* [II] Mbox 0 empty */
-@@ -128,8 +128,8 @@
- #define  RIO_MBOX3_FAIL			0x00000008	/* [II] Mbox 3 fail */
- #define  RIO_MBOX3_ERROR		0x00000004	/* [II] Mbox 3 error */
- 
--#define RIO_WRITE_PORT_CSR	0x44	/* [I] Write Port CSR */
--#define RIO_DOORBELL_CSR	0x44	/* [II] Doorbell CSR */
-+#define RIO_WRITE_PORT_CSR	0x44	/* [I, <= 1.2] Write Port CSR */
-+#define RIO_DOORBELL_CSR	0x44	/* [II, <= 1.2] Doorbell CSR */
- #define  RIO_DOORBELL_AVAIL		0x80000000	/* [II] Doorbell avail */
- #define  RIO_DOORBELL_FULL		0x40000000	/* [II] Doorbell full */
- #define  RIO_DOORBELL_EMPTY		0x20000000	/* [II] Doorbell empty */
+-		if ((temp & PORT_PLS_MASK) == XDEV_RESUME) {
++		if ((temp & PORT_PLS_MASK) == XDEV_RESUME &&
++				!DEV_SUPERSPEED(temp)) {
+ 			if ((temp & PORT_RESET) || !(temp & PORT_PE))
+ 				goto error;
+-			if (!DEV_SUPERSPEED(temp) && time_after_eq(jiffies,
+-						bus_state->resume_done[wIndex])) {
++			if (time_after_eq(jiffies,
++					bus_state->resume_done[wIndex])) {
+ 				xhci_dbg(xhci, "Resume USB2 port %d\n",
+ 					wIndex + 1);
+ 				bus_state->resume_done[wIndex] = 0;
+@@ -487,6 +488,14 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 				xhci_ring_device(xhci, slot_id);
+ 				bus_state->port_c_suspend |= 1 << wIndex;
+ 				bus_state->suspended_ports &= ~(1 << wIndex);
++			} else {
++				/*
++				 * The resume has been signaling for less than
++				 * 20ms. Report the port status as SUSPEND,
++				 * let the usbcore check port status again
++				 * and clear resume signaling later.
++				 */
++				status |= USB_PORT_STAT_SUSPEND;
+ 			}
+ 		}
+ 		if ((temp & PORT_PLS_MASK) == XDEV_U0
 
 
