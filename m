@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab1I1Woa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:44:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54322 "EHLO mx2.suse.de"
+	id S932720Ab1I1Wom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54334 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932666Ab1I1Wo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:27 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
-Message-Id: <20110928220139.674429218@clark.kroah.org>
+	id S932695Ab1I1Woh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:37 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
+Message-Id: <20110928220139.971823843@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:40 -0700
+Date: Wed, 28 Sep 2011 15:01:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [136/244] USB: xhci: Set change bit when warm reset change is set.
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [139/244] cifs: fix possible memory corruption in CIFSFindNext
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 44f4c3ed60fb21e1d2dd98304390ac121e6c7c6d upstream.
+commit 9438fabb73eb48055b58b89fc51e0bc4db22fabd upstream.
 
-Sometimes, when a USB 3.0 device is disconnected, the Intel Panther
-Point xHCI host controller will report a link state change with the
-state set to "SS.Inactive".  This causes the xHCI host controller to
-issue a warm port reset, which doesn't finish before the USB core times
-out while waiting for it to complete.
+The name_len variable in CIFSFindNext is a signed int that gets set to
+the resume_name_len in the cifs_search_info. The resume_name_len however
+is unsigned and for some infolevels is populated directly from a 32 bit
+value sent by the server.
 
-When the warm port reset does complete, and the xHC gives back a port
-status change event, the xHCI driver kicks khubd.  However, it fails to
-set the bit indicating there is a change event for that port because the
-logic in xhci-hub.c doesn't check for the warm port reset bit.
+If the server sends a very large value for this, then that value could
+look negative when converted to a signed int. That would make that
+value pass the PATH_MAX check later in CIFSFindNext. The name_len would
+then be used as a length value for a memcpy. It would then be treated
+as unsigned again, and the memcpy scribbles over a ton of memory.
 
-After that, the warm port status change bit is never cleared by the USB
-core, and the xHC stops reporting port status change bits.  (The xHCI
-spec says it shouldn't report more port events until all change bits are
-cleared.) This means any port changes when a new device is connected
-will never be reported, and the port will seem "dead" until the xHCI
-driver is unloaded and reloaded, or the computer is rebooted.  Fix this
-by making the xHCI driver set the port change bit when a warm port reset
-change bit is set.
+Fix this by making the name_len an unsigned value in CIFSFindNext.
 
-A better solution would be to make the USB core handle warm port reset
-in differently, merging the current code with the standard port reset
-code that does an incremental backoff on the timeout, and tries to
-complete the port reset two more times before giving up.  That more
-complicated fix will be merged next window, and this fix will be
-backported to stable.
-
-This should be backported to kernels as old as 3.0, since that was the
-first kernel with commit a11496ebf375 ("xHCI: warm reset support").
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Darren Lavender <dcl@hppine99.gbr.hp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifssmb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -761,7 +761,7 @@ int xhci_hub_status_data(struct usb_hcd
- 	memset(buf, 0, retval);
- 	status = 0;
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -4079,7 +4079,8 @@ int CIFSFindNext(const int xid, struct c
+ 	T2_FNEXT_RSP_PARMS *parms;
+ 	char *response_data;
+ 	int rc = 0;
+-	int bytes_returned, name_len;
++	int bytes_returned;
++	unsigned int name_len;
+ 	__u16 params, byte_count;
  
--	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC;
-+	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC | PORT_WRC;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	/* For each port, did anything change?  If so, set that bit in buf. */
+ 	cFYI(1, "In FindNext");
 
 
