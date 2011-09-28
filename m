@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab1I1OKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:10:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63673 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab1I1OJ7 (ORCPT
+	id S1754646Ab1I1OKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:10:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:43919 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab1I1OKK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:09:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 24/24] C6X: MAINTAINERS
-Date: Wed, 28 Sep 2011 16:09:57 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-25-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-25-git-send-email-msalter@redhat.com>
+	Wed, 28 Sep 2011 10:10:10 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109281609.57287.arnd@arndb.de>
-X-Provags-ID: V02:K0:eJ1eK17PPdCiwwSWUHCtPL25/QOiOXtac8d7Ekt6Mne
- uRwo8DiiLPwzsUWZfAzPUqxBDAnuvVozyeoMvOKRagN3NDeU/c
- dzHu6MKO9+0ZArgXZ4Sfmb8w5tj5EMCIC0E1p1CV0ccZrFuA1i
- XN1Rn5NE92enUOpu3l/HITjAEFj+zOP1B+bd92DaQyY56Lkxw4
- rXzWBpZo8+ZYsTWpdODcVUAPNxvNjPoNFHTcPidR85Wmgn3Ttg
- RWycisRN+jPdT6IMSIXjcLOGnMkmTEp0Q6rEQp0wZTVKaE9T3G
- bIYYcFw7YNH3lHKKPm/YfZFGD0pokV3d9XQXWiVFVUVRZ230lf
- vTvuFU9FCPfl1mPk9EZA=
+Message-ID: <22173398-de03-43ef-abe4-a3f3231dd2e9@default>
+Date: Wed, 28 Sep 2011 07:09:18 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
+        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com,
+        levinsasha928@gmail.com
+Subject: RE: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at
+ next window)
+References: <20110915213305.GA26317@ca-server1.us.oracle.com
+ 20110928151558.dca1da5e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110928151558.dca1da5e.kamezawa.hiroyu@jp.fujitsu.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
+X-CT-RefId: str=0001.0A090203.4E832AAF.00DD,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
-> Signed-off-by: Mark Salter <msalter@redhat.com>
-> ---
->  MAINTAINERS |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
+> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
+> Sent: Wednesday, September 28, 2011 12:16 AM
+> To: Dan Magenheimer
+> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; jeremy@goop.org; hughd@google.com;
+> ngupta@vflare.org; Konrad Wilk; JBeulich@novell.com; Kurt Hackel; npiggin@kernel.dk; akpm@linux-
+> foundation.org; riel@redhat.com; hannes@cmpxchg.org; matthew@wil.cx; Chris Mason;
+> sjenning@linux.vnet.ibm.com; jackdachef@gmail.com; cyclonusj@gmail.com; levinsasha928@gmail.com
+> Subject: Re: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
 > 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> On Thu, 15 Sep 2011 14:33:05 -0700
+> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> 
+> > [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
+> >
+> > (Note: V9->V10 only change is corrections in debugfs-related code/counters)
+> >
+> > (Note to earlier reviewers:  This patchset was reorganized at V9 due
+> > to feedback from Kame Hiroyuki and Andrew Morton.  Additionally, feedback
+> > on frontswap v8 from Andrew Morton also applies to cleancache, to wit:
+> >  (1) change usage of sysfs to debugfs to avoid unnecessary kernel ABIs
+> >  (2) rename all uses of "flush" to "invalidate"
+> > As a result, additional patches (5of6 and 6of6) were added to this
+> > series at V9 to patch cleancache core code and cleancache hooks in the mm
+> > and fs subsystems and update cleancache documentation accordingly.)
+> 
+> I'm sorry I couldn't catch following... what happens at hibernation ?
+> frontswap is effectively stopped/skipped automatically ? or contents of
+> TMEM can be kept after power off and it can be read correctly when
+> resume thread reads swap ?
+> 
+> In short: no influence to hibernation ?
+> I'm sorry if I misunderstand some.
+
+Hi Kame --
+
+Hibernation would need to be handled by the tmem backend (e.g. zcache, Xen
+tmem).  In the case of Xen tmem, both save/restore and live migration are
+fully supported.  I'm not sure if zcache works across hibernation; since
+all memory is kmalloc'ed, I think it should work fine, but it would be an
+interesting experiment.
+
+Thanks,
+Dan
