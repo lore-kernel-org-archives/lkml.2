@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208Ab1I1WsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:48:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54744 "EHLO mx2.suse.de"
+	id S933233Ab1I1WsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:48:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54753 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933009Ab1I1Wr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:59 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:41 2011
-Message-Id: <20110928220141.725355989@clark.kroah.org>
+	id S933009Ab1I1WsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:05 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:46 2011
+Message-Id: <20110928220146.249298546@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:00 -0700
+Date: Wed, 28 Sep 2011 15:02:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Hannes Reinecke <hare@suse.de>
-Subject: [156/244] [SCSI] iscsi_tcp: fix locking around iscsi sk user data
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        James Smart <james.smart@emulex.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [198/244] [SCSI] lpfc 8.3.25: PCI and SR-IOV Fixes
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,145 +27,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: James Smart <james.smart@emulex.com>
 
-commit 03adb5f91280b433c3685d0ee86b2e1424af3d88 upstream.
+commit 0a96e9754d6c4a2a31e50ee6c6e36ec13f80bc25 upstream.
 
-iscsi_sw_tcp_conn_restore_callbacks could have set
-the sk_user_data field to NULL then iscsi_sw_tcp_data_ready
-could read that and try to access the NULL pointer. This
-adds some checks for NULL sk_user_data in the sk
-callback functions and it uses the sk_callback_lock to
-set/get that sk_user_data field.
+PCI and SR-IOV Fixes
 
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+- Call pci_save_state after the pci_restore_state completes.
+- After calling pci_enable_pcie_error_reporting() and checking the return
+  value for logging messages from rc, reset rc to 0 to it will not later be
+  interpreted for error.
+- Read PCI config space SR-IOV capability to get the number of VFs supported.
+- Check for the PF's supported number of VFs before invoking PCI enable sriov
+  API call and log error message that user requested number of VFs is beyond
+  the PF capability if such request is passed in.
+- Added check for Physical function with Virtual Functions attached. If so,
+  first disable all the VFs before proceeding to device reset.
+
+Signed-off-by: Alex Iannicelli <alex.iannicelli@emulex.com>
+Signed-off-by: James Smart <james.smart@emulex.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/iscsi_tcp.c |   61 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 41 insertions(+), 20 deletions(-)
+ drivers/scsi/lpfc/lpfc_attr.c |   76 +-----------------------------------------
+ drivers/scsi/lpfc/lpfc_crtn.h |    1 
+ drivers/scsi/lpfc/lpfc_init.c |   44 ++++++++++++++++++++++++
+ drivers/scsi/lpfc/lpfc_sli.c  |    1 
+ 4 files changed, 49 insertions(+), 73 deletions(-)
 
---- a/drivers/scsi/iscsi_tcp.c
-+++ b/drivers/scsi/iscsi_tcp.c
-@@ -107,10 +107,12 @@ static int iscsi_sw_tcp_recv(read_descri
-  * If the socket is in CLOSE or CLOSE_WAIT we should
-  * not close the connection if there is still some
-  * data pending.
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -1466,80 +1466,10 @@ lpfc_sriov_hw_max_virtfn_show(struct dev
+ 	struct Scsi_Host *shost = class_to_shost(dev);
+ 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
+ 	struct lpfc_hba *phba = vport->phba;
+-	struct pci_dev *pdev = phba->pcidev;
+-	union  lpfc_sli4_cfg_shdr *shdr;
+-	uint32_t shdr_status, shdr_add_status;
+-	LPFC_MBOXQ_t *mboxq;
+-	struct lpfc_mbx_get_prof_cfg *get_prof_cfg;
+-	struct lpfc_rsrc_desc_pcie *desc;
+-	uint32_t max_nr_virtfn;
+-	uint32_t desc_count;
+-	int length, rc, i;
++	uint16_t max_nr_virtfn;
+ 
+-	if ((phba->sli_rev < LPFC_SLI_REV4) ||
+-	    (bf_get(lpfc_sli_intf_if_type, &phba->sli4_hba.sli_intf) !=
+-	     LPFC_SLI_INTF_IF_TYPE_2))
+-		return -EPERM;
+-
+-	if (!pdev->is_physfn)
+-		return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+-
+-	mboxq = (LPFC_MBOXQ_t *)mempool_alloc(phba->mbox_mem_pool, GFP_KERNEL);
+-	if (!mboxq)
+-		return -ENOMEM;
+-
+-	/* get the maximum number of virtfn support by physfn */
+-	length = (sizeof(struct lpfc_mbx_get_prof_cfg) -
+-		  sizeof(struct lpfc_sli4_cfg_mhdr));
+-	lpfc_sli4_config(phba, mboxq, LPFC_MBOX_SUBSYSTEM_COMMON,
+-			 LPFC_MBOX_OPCODE_GET_PROFILE_CONFIG,
+-			 length, LPFC_SLI4_MBX_EMBED);
+-	shdr = (union lpfc_sli4_cfg_shdr *)
+-		&mboxq->u.mqe.un.sli4_config.header.cfg_shdr;
+-	bf_set(lpfc_mbox_hdr_pf_num, &shdr->request,
+-	       phba->sli4_hba.iov.pf_number + 1);
+-
+-	get_prof_cfg = &mboxq->u.mqe.un.get_prof_cfg;
+-	bf_set(lpfc_mbx_get_prof_cfg_prof_tp, &get_prof_cfg->u.request,
+-	       LPFC_CFG_TYPE_CURRENT_ACTIVE);
+-
+-	rc = lpfc_sli_issue_mbox_wait(phba, mboxq,
+-				lpfc_mbox_tmo_val(phba, MBX_SLI4_CONFIG));
+-
+-	if (rc != MBX_TIMEOUT) {
+-		/* check return status */
+-		shdr_status = bf_get(lpfc_mbox_hdr_status, &shdr->response);
+-		shdr_add_status = bf_get(lpfc_mbox_hdr_add_status,
+-					 &shdr->response);
+-		if (shdr_status || shdr_add_status || rc)
+-			goto error_out;
+-
+-	} else
+-		goto error_out;
+-
+-	desc_count = get_prof_cfg->u.response.prof_cfg.rsrc_desc_count;
+-
+-	for (i = 0; i < LPFC_RSRC_DESC_MAX_NUM; i++) {
+-		desc = (struct lpfc_rsrc_desc_pcie *)
+-			&get_prof_cfg->u.response.prof_cfg.desc[i];
+-		if (LPFC_RSRC_DESC_TYPE_PCIE ==
+-		    bf_get(lpfc_rsrc_desc_pcie_type, desc)) {
+-			max_nr_virtfn = bf_get(lpfc_rsrc_desc_pcie_nr_virtfn,
+-					       desc);
+-			break;
+-		}
+-	}
+-
+-	if (i < LPFC_RSRC_DESC_MAX_NUM) {
+-		if (rc != MBX_TIMEOUT)
+-			mempool_free(mboxq, phba->mbox_mem_pool);
+-		return snprintf(buf, PAGE_SIZE, "%d\n", max_nr_virtfn);
+-	}
+-
+-error_out:
+-	if (rc != MBX_TIMEOUT)
+-		mempool_free(mboxq, phba->mbox_mem_pool);
+-	return -EIO;
++	max_nr_virtfn = lpfc_sli_sriov_nr_virtfn_get(phba);
++	return snprintf(buf, PAGE_SIZE, "%d\n", max_nr_virtfn);
+ }
+ 
+ /**
+--- a/drivers/scsi/lpfc/lpfc_crtn.h
++++ b/drivers/scsi/lpfc/lpfc_crtn.h
+@@ -440,3 +440,4 @@ struct lpfc_node_rrq *lpfc_get_active_rr
+ int lpfc_wr_object(struct lpfc_hba *, struct list_head *, uint32_t, uint32_t *);
+ /* functions to support SR-IOV */
+ int lpfc_sli_probe_sriov_nr_virtfn(struct lpfc_hba *, int);
++uint16_t lpfc_sli_sriov_nr_virtfn_get(struct lpfc_hba *);
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -4037,6 +4037,34 @@ lpfc_reset_hba(struct lpfc_hba *phba)
+ }
+ 
+ /**
++ * lpfc_sli_sriov_nr_virtfn_get - Get the number of sr-iov virtual functions
++ * @phba: pointer to lpfc hba data structure.
 + *
-+ * Must be called with sk_callback_lock.
-  */
- static inline int iscsi_sw_sk_state_check(struct sock *sk)
- {
--	struct iscsi_conn *conn = (struct iscsi_conn*)sk->sk_user_data;
-+	struct iscsi_conn *conn = sk->sk_user_data;
- 
- 	if ((sk->sk_state == TCP_CLOSE_WAIT || sk->sk_state == TCP_CLOSE) &&
- 	    !atomic_read(&sk->sk_rmem_alloc)) {
-@@ -123,11 +125,17 @@ static inline int iscsi_sw_sk_state_chec
- 
- static void iscsi_sw_tcp_data_ready(struct sock *sk, int flag)
- {
--	struct iscsi_conn *conn = sk->sk_user_data;
--	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
-+	struct iscsi_conn *conn;
-+	struct iscsi_tcp_conn *tcp_conn;
- 	read_descriptor_t rd_desc;
- 
- 	read_lock(&sk->sk_callback_lock);
-+	conn = sk->sk_user_data;
-+	if (!conn) {
-+		read_unlock(&sk->sk_callback_lock);
-+		return;
-+	}
-+	tcp_conn = conn->dd_data;
- 
- 	/*
- 	 * Use rd_desc to pass 'conn' to iscsi_tcp_recv.
-@@ -141,11 +149,10 @@ static void iscsi_sw_tcp_data_ready(stru
- 
- 	iscsi_sw_sk_state_check(sk);
- 
--	read_unlock(&sk->sk_callback_lock);
--
- 	/* If we had to (atomically) map a highmem page,
- 	 * unmap it now. */
- 	iscsi_tcp_segment_unmap(&tcp_conn->in.segment);
-+	read_unlock(&sk->sk_callback_lock);
- }
- 
- static void iscsi_sw_tcp_state_change(struct sock *sk)
-@@ -157,8 +164,11 @@ static void iscsi_sw_tcp_state_change(st
- 	void (*old_state_change)(struct sock *);
- 
- 	read_lock(&sk->sk_callback_lock);
--
--	conn = (struct iscsi_conn*)sk->sk_user_data;
-+	conn = sk->sk_user_data;
-+	if (!conn) {
-+		read_unlock(&sk->sk_callback_lock);
-+		return;
-+	}
- 	session = conn->session;
- 
- 	iscsi_sw_sk_state_check(sk);
-@@ -178,11 +188,25 @@ static void iscsi_sw_tcp_state_change(st
-  **/
- static void iscsi_sw_tcp_write_space(struct sock *sk)
- {
--	struct iscsi_conn *conn = (struct iscsi_conn*)sk->sk_user_data;
--	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
--	struct iscsi_sw_tcp_conn *tcp_sw_conn = tcp_conn->dd_data;
-+	struct iscsi_conn *conn;
-+	struct iscsi_tcp_conn *tcp_conn;
-+	struct iscsi_sw_tcp_conn *tcp_sw_conn;
-+	void (*old_write_space)(struct sock *);
++ * This function enables the PCI SR-IOV virtual functions to a physical
++ * function. It invokes the PCI SR-IOV api with the @nr_vfn provided to
++ * enable the number of virtual functions to the physical function. As
++ * not all devices support SR-IOV, the return code from the pci_enable_sriov()
++ * API call does not considered as an error condition for most of the device.
++ **/
++uint16_t
++lpfc_sli_sriov_nr_virtfn_get(struct lpfc_hba *phba)
++{
++	struct pci_dev *pdev = phba->pcidev;
++	uint16_t nr_virtfn;
++	int pos;
 +
-+	read_lock_bh(&sk->sk_callback_lock);
-+	conn = sk->sk_user_data;
-+	if (!conn) {
-+		read_unlock_bh(&sk->sk_callback_lock);
-+		return;
++	if (!pdev->is_physfn)
++		return 0;
++
++	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_SRIOV);
++	if (pos == 0)
++		return 0;
++
++	pci_read_config_word(pdev, pos + PCI_SRIOV_TOTAL_VF, &nr_virtfn);
++	return nr_virtfn;
++}
++
++/**
+  * lpfc_sli_probe_sriov_nr_virtfn - Enable a number of sr-iov virtual functions
+  * @phba: pointer to lpfc hba data structure.
+  * @nr_vfn: number of virtual functions to be enabled.
+@@ -4051,8 +4079,17 @@ int
+ lpfc_sli_probe_sriov_nr_virtfn(struct lpfc_hba *phba, int nr_vfn)
+ {
+ 	struct pci_dev *pdev = phba->pcidev;
++	uint16_t max_nr_vfn;
+ 	int rc;
+ 
++	max_nr_vfn = lpfc_sli_sriov_nr_virtfn_get(phba);
++	if (nr_vfn > max_nr_vfn) {
++		lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
++				"3057 Requested vfs (%d) greater than "
++				"supported vfs (%d)", nr_vfn, max_nr_vfn);
++		return -EINVAL;
 +	}
 +
-+	tcp_conn = conn->dd_data;
-+	tcp_sw_conn = tcp_conn->dd_data;
-+	old_write_space = tcp_sw_conn->old_write_space;
-+	read_unlock_bh(&sk->sk_callback_lock);
+ 	rc = pci_enable_sriov(pdev, nr_vfn);
+ 	if (rc) {
+ 		lpfc_printf_log(phba, KERN_WARNING, LOG_INIT,
+@@ -9487,6 +9524,13 @@ lpfc_io_slot_reset_s4(struct pci_dev *pd
+ 	}
+ 
+ 	pci_restore_state(pdev);
 +
-+	old_write_space(sk);
- 
--	tcp_sw_conn->old_write_space(sk);
- 	ISCSI_SW_TCP_DBG(conn, "iscsi_write_space\n");
- 	iscsi_conn_queue_work(conn);
- }
-@@ -592,20 +616,17 @@ static void iscsi_sw_tcp_conn_stop(struc
- 	/* userspace may have goofed up and not bound us */
- 	if (!sock)
- 		return;
--	/*
--	 * Make sure our recv side is stopped.
--	 * Older tools called conn stop before ep_disconnect
--	 * so IO could still be coming in.
--	 */
--	write_lock_bh(&tcp_sw_conn->sock->sk->sk_callback_lock);
--	set_bit(ISCSI_SUSPEND_BIT, &conn->suspend_rx);
--	write_unlock_bh(&tcp_sw_conn->sock->sk->sk_callback_lock);
- 
- 	sock->sk->sk_err = EIO;
- 	wake_up_interruptible(sk_sleep(sock->sk));
- 
--	iscsi_conn_stop(cls_conn, flag);
-+	/* stop xmit side */
-+	iscsi_suspend_tx(conn);
++	/*
++	 * As the new kernel behavior of pci_restore_state() API call clears
++	 * device saved_state flag, need to save the restored state again.
++	 */
++	pci_save_state(pdev);
 +
-+	/* stop recv side and release socket */
- 	iscsi_sw_tcp_release_conn(conn);
-+
-+	iscsi_conn_stop(cls_conn, flag);
- }
+ 	if (pdev->is_busmaster)
+ 		pci_set_master(pdev);
  
- static int
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -5839,6 +5839,7 @@ lpfc_sli4_hba_setup(struct lpfc_hba *phb
+ 					"Advanced Error Reporting (AER)\n");
+ 			phba->cfg_aer_support = 0;
+ 		}
++		rc = 0;
+ 	}
+ 
+ 	if (!(phba->hba_flag & HBA_FCOE_MODE)) {
 
 
