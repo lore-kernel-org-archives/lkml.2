@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1I1Atp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:49:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60194 "EHLO
+	id S1753277Ab1I1AuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:50:00 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22235 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab1I1Atk (ORCPT
+	with ESMTP id S1752988Ab1I1Ato (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 20:49:40 -0400
+	Tue, 27 Sep 2011 20:49:44 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=mHsGW+ii9BRQ6Pkcxn05rr6hEyt7pZ1qR7F9N3P4Cc0n8n8oMzGKFlGJWJv2CbU5F
-	Astp1HKAhILtsMj/23PEQ==
+	b=RmWXxhOD0bGTEVDykbbw2zrv37F0eH1LrKKN4Y4rRjwi+Rj4fS2X9Vv64Q72Lylp+
+	+tnDLPsVjl29yFTx1W/MA==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 7/9] kstaled: add histogram sampling functionality
-Date: Tue, 27 Sep 2011 17:49:05 -0700
-Message-Id: <1317170947-17074-8-git-send-email-walken@google.com>
+Subject: [PATCH 8/9] kstaled: add incrementally updating stale page count
+Date: Tue, 27 Sep 2011 17:49:06 -0700
+Message-Id: <1317170947-17074-9-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1317170947-17074-1-git-send-email-walken@google.com>
 References: <1317170947-17074-1-git-send-email-walken@google.com>
@@ -34,253 +34,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add statistics for pages that have been idle for 1,2,5,15,30,60,120 or
-240 scan intervals into /dev/cgroup/*/memory.idle_page_stats
+Add an incrementally updating stale page count. A new per-cgroup
+memory.stale_page_age file is introduced. After a non-zero number of scan
+cycles is written there, pages that have been idle for at least that number
+of cycles and are currently clean are reported in memory.idle_page_stats
+as being stale. Contrary to the idle_*_clean statistic, this stale page
+count is continually updated - hooks have been added to notice pages being
+accessed or rendered unevictable, at which point the stale page count for
+that cgroup is instantly decremented. The point is to allow userspace to
+quickly respond to increased memory pressure.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/mmzone.h |    2 +
- mm/memcontrol.c        |  108 ++++++++++++++++++++++++++++++++++++++----------
- mm/memory_hotplug.c    |    6 +++
- 3 files changed, 94 insertions(+), 22 deletions(-)
+ include/linux/page-flags.h |   15 ++++++++
+ include/linux/pagemap.h    |   11 ++++--
+ mm/internal.h              |    1 +
+ mm/memcontrol.c            |   86 ++++++++++++++++++++++++++++++++++++++++++--
+ mm/mlock.c                 |    1 +
+ mm/vmscan.c                |    2 +-
+ 6 files changed, 108 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 272fbed..d8eca1b 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -633,6 +633,8 @@ typedef struct pglist_data {
- 					     range, including holes */
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index e964d98..22dbe90 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -58,6 +58,8 @@
+  *
+  * PG_idle indicates that the page has not been referenced since the last time
+  * kstaled scanned it.
++ *
++ * PG_stale indicates that the page is currently counted as stale.
+  */
+ 
+ /*
+@@ -117,6 +119,7 @@ enum pageflags {
  #ifdef CONFIG_KSTALED
- 	unsigned long node_idle_scan_pfn;
-+	u8 *node_idle_page_age;           /* number of scan intervals since
-+					     each page was referenced */
+ 	PG_young,		/* kstaled cleared pte_young */
+ 	PG_idle,		/* idle since start of kstaled interval */
++	PG_stale,		/* page is counted as stale */
  #endif
- 	int node_id;
- 	wait_queue_head_t kswapd_wait;
+ 	__NR_PAGEFLAGS,
+ 
+@@ -293,21 +296,33 @@ PAGEFLAG_FALSE(HWPoison)
+ 
+ PAGEFLAG(Young, young)
+ PAGEFLAG(Idle, idle)
++PAGEFLAG(Stale, stale) TESTSCFLAG(Stale, stale)
++
++void __set_page_nonstale(struct page *page);
++
++static inline void set_page_nonstale(struct page *page)
++{
++	if (PageStale(page))
++		__set_page_nonstale(page);
++}
+ 
+ static inline void set_page_young(struct page *page)
+ {
++	set_page_nonstale(page);
+ 	if (!PageYoung(page))
+ 		SetPageYoung(page);
+ }
+ 
+ static inline void clear_page_idle(struct page *page)
+ {
++	set_page_nonstale(page);
+ 	if (PageIdle(page))
+ 		ClearPageIdle(page);
+ }
+ 
+ #else /* !CONFIG_KSTALED */
+ 
++static inline void set_page_nonstale(struct page *page) {}
+ static inline void set_page_young(struct page *page) {}
+ static inline void clear_page_idle(struct page *page) {}
+ 
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 716875e..693dd20 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -46,11 +46,14 @@ static inline void mapping_clear_unevictable(struct address_space *mapping)
+ 	clear_bit(AS_UNEVICTABLE, &mapping->flags);
+ }
+ 
+-static inline int mapping_unevictable(struct address_space *mapping)
++static inline int mapping_unevictable(struct address_space *mapping,
++				      struct page *page)
+ {
+-	if (mapping)
+-		return test_bit(AS_UNEVICTABLE, &mapping->flags);
+-	return !!mapping;
++	if (mapping && test_bit(AS_UNEVICTABLE, &mapping->flags)) {
++		set_page_nonstale(page);
++		return 1;
++	}
++	return 0;
+ }
+ 
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+diff --git a/mm/internal.h b/mm/internal.h
+index d071d38..d1cb0d6 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -93,6 +93,7 @@ static inline int is_mlocked_vma(struct vm_area_struct *vma, struct page *page)
+ 		return 0;
+ 
+ 	if (!TestSetPageMlocked(page)) {
++		set_page_nonstale(page);
+ 		inc_zone_page_state(page, NR_MLOCK);
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 	}
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b468867..cfe812b 100644
+index cfe812b..5140add 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -207,6 +207,11 @@ struct mem_cgroup_eventfd_list {
- static void mem_cgroup_threshold(struct mem_cgroup *mem);
- static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
+@@ -292,6 +292,8 @@ struct mem_cgroup {
+ 	spinlock_t pcp_counter_lock;
  
-+#ifdef CONFIG_KSTALED
-+static const int kstaled_buckets[] = {1, 2, 5, 15, 30, 60, 120, 240};
-+#define NUM_KSTALED_BUCKETS ARRAY_SIZE(kstaled_buckets)
-+#endif
+ #ifdef CONFIG_KSTALED
++	int stale_page_age;
 +
- /*
-  * The memory controller data structure. The memory controller controls both
-  * page cache and RSS per cgroup. We would eventually like to provide
-@@ -292,7 +297,8 @@ struct mem_cgroup {
+ 	seqcount_t idle_page_stats_lock;
+ 	struct idle_page_stats {
  		unsigned long idle_clean;
- 		unsigned long idle_dirty_file;
+@@ -299,6 +301,7 @@ struct mem_cgroup {
  		unsigned long idle_dirty_swap;
--	} idle_page_stats, idle_scan_stats;
-+	} idle_page_stats[NUM_KSTALED_BUCKETS],
-+	  idle_scan_stats[NUM_KSTALED_BUCKETS];
+ 	} idle_page_stats[NUM_KSTALED_BUCKETS],
+ 	  idle_scan_stats[NUM_KSTALED_BUCKETS];
++	atomic_long_t stale_pages;
  	unsigned long idle_page_scans;
  #endif
  };
-@@ -4686,18 +4692,29 @@ static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	unsigned int seqcount;
--	struct idle_page_stats stats;
-+	struct idle_page_stats stats[NUM_KSTALED_BUCKETS];
- 	unsigned long scans;
-+	int bucket;
- 
- 	do {
- 		seqcount = read_seqcount_begin(&memcg->idle_page_stats_lock);
--		stats = memcg->idle_page_stats;
-+		memcpy(stats, memcg->idle_page_stats, sizeof(stats));
- 		scans = memcg->idle_page_scans;
- 	} while (read_seqcount_retry(&memcg->idle_page_stats_lock, seqcount));
- 
--	cb->fill(cb, "idle_clean", stats.idle_clean * PAGE_SIZE);
--	cb->fill(cb, "idle_dirty_file", stats.idle_dirty_file * PAGE_SIZE);
--	cb->fill(cb, "idle_dirty_swap", stats.idle_dirty_swap * PAGE_SIZE);
-+	for (bucket = 0; bucket < NUM_KSTALED_BUCKETS; bucket++) {
-+		char basename[32], name[32];
-+		if (!bucket)
-+			sprintf(basename, "idle");
-+		else
-+			sprintf(basename, "idle_%d", kstaled_buckets[bucket]);
-+		sprintf(name, "%s_clean", basename);
-+		cb->fill(cb, name, stats[bucket].idle_clean * PAGE_SIZE);
-+		sprintf(name, "%s_dirty_file", basename);
-+		cb->fill(cb, name, stats[bucket].idle_dirty_file * PAGE_SIZE);
-+		sprintf(name, "%s_dirty_swap", basename);
-+		cb->fill(cb, name, stats[bucket].idle_dirty_swap * PAGE_SIZE);
-+	}
- 	cb->fill(cb, "scans", scans);
- 
- 	return 0;
-@@ -5619,12 +5636,25 @@ __setup("swapaccount=", enable_swap_account);
- static unsigned int kstaled_scan_seconds;
- static DECLARE_WAIT_QUEUE_HEAD(kstaled_wait);
- 
--static unsigned kstaled_scan_page(struct page *page)
-+static inline struct idle_page_stats *
-+kstaled_idle_stats(struct mem_cgroup *memcg, int age)
-+{
-+	int bucket = 0;
+@@ -2639,6 +2642,13 @@ static int mem_cgroup_move_account(struct page *page,
+ 		preempt_enable();
+ 	}
+ 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
 +
-+	while (age >= kstaled_buckets[bucket + 1])
-+		if (++bucket == NUM_KSTALED_BUCKETS - 1)
-+			break;
-+	return memcg->idle_scan_stats + bucket;
++#ifdef CONFIG_KSTALED
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page))
++		atomic_long_dec(&from->stale_pages);
++#endif
++
+ 	if (uncharge)
+ 		/* This is not "cancel", but cancel_charge does all we need. */
+ 		__mem_cgroup_cancel_charge(from, nr_pages);
+@@ -3067,6 +3077,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 
+ 	mem_cgroup_charge_statistics(mem, PageCgroupCache(pc), -nr_pages);
+ 
++#ifdef CONFIG_KSTALED
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page))
++		atomic_long_dec(&mem->stale_pages);
++#endif
++
+ 	ClearPageCgroupUsed(pc);
+ 	/*
+ 	 * pc->mem_cgroup is not cleared here. It will be accessed when it's
+@@ -4716,6 +4732,29 @@ static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
+ 		cb->fill(cb, name, stats[bucket].idle_dirty_swap * PAGE_SIZE);
+ 	}
+ 	cb->fill(cb, "scans", scans);
++	cb->fill(cb, "stale",
++		 max(atomic_long_read(&memcg->stale_pages), 0L) * PAGE_SIZE);
++
++	return 0;
 +}
 +
-+static unsigned kstaled_scan_page(struct page *page, u8 *idle_page_age)
- {
- 	bool is_locked = false;
- 	bool is_file;
- 	struct page_referenced_info info;
- 	struct page_cgroup *pc;
-+	struct mem_cgroup *memcg;
-+	int age;
- 	struct idle_page_stats *stats;
- 	unsigned nr_pages;
- 
-@@ -5704,17 +5734,25 @@ static unsigned kstaled_scan_page(struct page *page)
- 
- 	/* Find out if the page is idle. Also test for pending mlock. */
- 	page_referenced_kstaled(page, is_locked, &info);
--	if ((info.pr_flags & PR_REFERENCED) || (info.vm_flags & VM_LOCKED))
-+	if ((info.pr_flags & PR_REFERENCED) || (info.vm_flags & VM_LOCKED)) {
-+		*idle_page_age = 0;
- 		goto out;
-+	}
- 
- 	/* Locate kstaled stats for the page's cgroup. */
- 	pc = lookup_page_cgroup(page);
- 	if (!pc)
- 		goto out;
- 	lock_page_cgroup(pc);
-+	memcg = pc->mem_cgroup;
- 	if (!PageCgroupUsed(pc))
- 		goto unlock_page_cgroup_out;
--	stats = &pc->mem_cgroup->idle_scan_stats;
++static u64 mem_cgroup_stale_page_age_read(struct cgroup *cgrp,
++					  struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
 +
-+	/* Page is idle, increment its age and get the right stats bucket */
-+	age = *idle_page_age;
-+	if (age < 255)
-+		*idle_page_age = ++age;
-+	stats = kstaled_idle_stats(memcg, age);
++	return memcg->stale_page_age;
++}
++
++static int mem_cgroup_stale_page_age_write(struct cgroup *cgrp,
++					   struct cftype *cft, u64 val)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
++
++	if (val > 255)
++		return -EINVAL;
++
++	memcg->stale_page_age = val;
+ 
+ 	return 0;
+ }
+@@ -4796,6 +4835,11 @@ static struct cftype mem_cgroup_files[] = {
+ 		.name = "idle_page_stats",
+ 		.read_map = mem_cgroup_idle_page_stats_read,
+ 	},
++	{
++		.name = "stale_page_age",
++		.read_u64 = mem_cgroup_stale_page_age_read,
++		.write_u64 = mem_cgroup_stale_page_age_write,
++	},
+ #endif
+ };
+ 
+@@ -5721,7 +5765,7 @@ static unsigned kstaled_scan_page(struct page *page, u8 *idle_page_age)
+ 		 */
+ 		if (!mapping && !PageSwapCache(page))
+ 			goto out;
+-		else if (mapping_unevictable(mapping))
++		else if (mapping_unevictable(mapping, page))
+ 			goto out;
+ 		else if (PageSwapCache(page) ||
+ 			 mapping_cap_swap_backed(mapping))
+@@ -5756,13 +5800,27 @@ static unsigned kstaled_scan_page(struct page *page, u8 *idle_page_age)
  
  	/* Finally increment the correct statistic for this page. */
  	if (!(info.pr_flags & PR_DIRTY) &&
-@@ -5740,11 +5778,22 @@ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
- {
- 	unsigned long flags;
- 	unsigned long pfn, end, node_end;
-+	u8 *idle_page_age;
- 
- 	pgdat_resize_lock(pgdat, &flags);
- 
-+	if (!pgdat->node_idle_page_age) {
-+		pgdat->node_idle_page_age = vmalloc(pgdat->node_spanned_pages);
-+		if (!pgdat->node_idle_page_age) {
-+			pgdat_resize_unlock(pgdat, &flags);
-+			return false;
+-	    !PageDirty(page) && !PageWriteback(page))
++	    !PageDirty(page) && !PageWriteback(page)) {
+ 		stats->idle_clean += nr_pages;
+-	else if (is_file)
++
++		/* THP pages are currently always accounted for as dirty... */
++		VM_BUG_ON(nr_pages != 1);
++		if (memcg->stale_page_age && age >= memcg->stale_page_age) {
++			if (!PageStale(page) && !TestSetPageStale(page))
++				atomic_long_inc(&memcg->stale_pages);
++			goto unlock_page_cgroup_out;
 +		}
-+		memset(pgdat->node_idle_page_age, 0, pgdat->node_spanned_pages);
++	} else if (is_file)
+ 		stats->idle_dirty_file += nr_pages;
+ 	else
+ 		stats->idle_dirty_swap += nr_pages;
+ 
++	/* Count page as non-stale */
++	if (PageStale(page) && TestClearPageStale(page)) {
++		VM_BUG_ON(nr_pages != 1);
++		atomic_long_dec(&memcg->stale_pages);
 +	}
 +
- 	pfn = pgdat->node_start_pfn;
- 	node_end = pfn + pgdat->node_spanned_pages;
-+	idle_page_age = pgdat->node_idle_page_age - pfn;
- 	if (!reset && pfn < pgdat->node_idle_scan_pfn)
- 		pfn = pgdat->node_idle_scan_pfn;
- 	end = min(pfn + DIV_ROUND_UP(pgdat->node_spanned_pages, scan_seconds),
-@@ -5766,13 +5815,15 @@ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
- 				/* abort if the node got resized */
- 				if (pfn < pgdat->node_start_pfn ||
- 				    node_end > (pgdat->node_start_pfn +
--						pgdat->node_spanned_pages))
-+						pgdat->node_spanned_pages) ||
-+				    !pgdat->node_idle_page_age)
- 					goto abort;
- #endif
- 			}
+  unlock_page_cgroup_out:
+ 	unlock_page_cgroup(pc);
  
- 			pfn += pfn_valid(pfn) ?
--				kstaled_scan_page(pfn_to_page(pfn)) : 1;
-+				kstaled_scan_page(pfn_to_page(pfn),
-+						  idle_page_age + pfn) : 1;
- 		}
- 	}
- 
-@@ -5783,6 +5834,28 @@ abort:
- 	return pfn >= node_end;
+@@ -5774,6 +5832,28 @@ static unsigned kstaled_scan_page(struct page *page, u8 *idle_page_age)
+ 	return nr_pages;
  }
  
-+static void kstaled_update_stats(struct mem_cgroup *memcg)
++void __set_page_nonstale(struct page *page)
 +{
-+	struct idle_page_stats tot;
-+	int i;
++	struct page_cgroup *pc;
++	struct mem_cgroup *memcg;
 +
-+	memset(&tot, 0, sizeof(tot));
++	/* Locate kstaled stats for the page's cgroup. */
++	pc = lookup_page_cgroup(page);
++	if (!pc)
++		return;
++	lock_page_cgroup(pc);
++	memcg = pc->mem_cgroup;
++	if (!PageCgroupUsed(pc))
++		goto out;
 +
-+	write_seqcount_begin(&memcg->idle_page_stats_lock);
-+	for (i = NUM_KSTALED_BUCKETS - 1; i >= 0; i--) {
-+		struct idle_page_stats *idle_scan_bucket;
-+		idle_scan_bucket = memcg->idle_scan_stats + i;
-+		tot.idle_clean      += idle_scan_bucket->idle_clean;
-+		tot.idle_dirty_file += idle_scan_bucket->idle_dirty_file;
-+		tot.idle_dirty_swap += idle_scan_bucket->idle_dirty_swap;
-+		memcg->idle_page_stats[i] = tot;
-+	}
-+	memcg->idle_page_scans++;
-+	write_seqcount_end(&memcg->idle_page_stats_lock);
++	/* Count page as non-stale */
++	if (TestClearPageStale(page))
++		atomic_long_dec(&memcg->stale_pages);
 +
-+	memset(&memcg->idle_scan_stats, 0, sizeof(memcg->idle_scan_stats));
++out:
++	unlock_page_cgroup(pc);
 +}
 +
- static int kstaled(void *dummy)
+ static bool kstaled_scan_node(pg_data_t *pgdat, int scan_seconds, bool reset)
  {
- 	bool reset = true;
-@@ -5819,17 +5892,8 @@ static int kstaled(void *dummy)
- 		if (scan_done) {
- 			struct mem_cgroup *memcg;
+ 	unsigned long flags;
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 048260c..eac4c32 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -81,6 +81,7 @@ void mlock_vma_page(struct page *page)
+ 	BUG_ON(!PageLocked(page));
  
--			for_each_mem_cgroup_all(memcg) {
--				write_seqcount_begin(
--					&memcg->idle_page_stats_lock);
--				memcg->idle_page_stats =
--					memcg->idle_scan_stats;
--				memcg->idle_page_scans++;
--				write_seqcount_end(
--					&memcg->idle_page_stats_lock);
--				memset(&memcg->idle_scan_stats, 0,
--				       sizeof(memcg->idle_scan_stats));
--			}
-+			for_each_mem_cgroup_all(memcg)
-+				kstaled_update_stats(memcg);
- 		}
+ 	if (!TestSetPageMlocked(page)) {
++		set_page_nonstale(page);
+ 		inc_zone_page_state(page, NR_MLOCK);
+ 		count_vm_event(UNEVICTABLE_PGMLOCKED);
+ 		if (!isolate_lru_page(page))
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f0a8a1d..1fefc73 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3203,7 +3203,7 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ int page_evictable(struct page *page, struct vm_area_struct *vma)
+ {
  
- 		delta = jiffies - deadline;
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index c46887b..0b490ac 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -211,6 +211,12 @@ static void grow_pgdat_span(struct pglist_data *pgdat, unsigned long start_pfn,
+-	if (mapping_unevictable(page_mapping(page)))
++	if (mapping_unevictable(page_mapping(page), page))
+ 		return 0;
  
- 	pgdat->node_spanned_pages = max(old_pgdat_end_pfn, end_pfn) -
- 					pgdat->node_start_pfn;
-+#ifdef CONFIG_KSTALED
-+	if (pgdat->node_idle_page_age) {
-+		vfree(pgdat->node_idle_page_age);
-+		pgdat->node_idle_page_age = NULL;
-+	}
-+#endif
- }
- 
- static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
+ 	if (PageMlocked(page) || (vma && is_mlocked_vma(vma, page)))
 -- 
 1.7.3.1
 
