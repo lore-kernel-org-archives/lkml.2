@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1I1JK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:10:27 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:24618 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab1I1JKZ (ORCPT
+	id S1753955Ab1I1JLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:11:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38949 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab1I1JK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:10:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6482"; a="122158663"
-X-IronPort-AV: E=Sophos;i="4.68,452,1312182000"; 
-   d="scan'208";a="118635712"
-Date: Wed, 28 Sep 2011 12:10:18 +0300
-From: Jouni Malinen <jouni@qca.qualcomm.com>
+	Wed, 28 Sep 2011 05:10:59 -0400
+Date: Wed, 28 Sep 2011 13:10:05 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the wireless tree with the
- wireless-current tree
-Message-ID: <20110928091018.GC2758@jouni.qca.qualcomm.com>
-References: <20110928131917.fe58aa3efa5549a9b3a6e3da@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the akpm tree with the slab tree
+Message-ID: <20110928091005.GA7203@albatros>
+References: <20110928190158.d313ae65b9dcd0007fff0836@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110928131917.fe58aa3efa5549a9b3a6e3da@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [172.30.39.5]
+In-Reply-To: <20110928190158.d313ae65b9dcd0007fff0836@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 01:19:17PM +1000, Stephen Rothwell wrote:
-> Today's linux-next merge of the wireless tree got a conflict in
-> net/wireless/nl80211.c between commit 1b9ca0272ffa ("cfg80211: Fix
-> validation of AKM suites") from the wireless-current tree and commit
-> 6d30240e3d68 ("cfg80211: Remove strict validation of AKM suites") from
-> the wireless tree.
+On Wed, Sep 28, 2011 at 19:01 +1000, Stephen Rothwell wrote:
+> Hi Andrew,
 > 
-> The latter seems to make the former partly unneccessary, so I used that
-> (see below).
+> Today's linux-next merge of the akpm tree got a conflict in mm/slab.c
+> between commit ab067e99d22e ("mm: restrict access to slab files under
+> procfs and sysfs") from the slab tree and commit ea14c46ee4d9 ("mm:
+> restrict access to /proc/slabinfo") from the akpm tree.
+> 
+> The former is a superset of the latter, so I dropped that patch from the
+> akpm tree.
 
-The former was a semi-urgent bug fix which was the reason for pushing it
-out more quickly. The latter does indeed remove half of the fix (the
-wrong count used in the for loop), but the first part to validate
-n_akm_suites is still needed. As long as you kept that from the former,
-the latter one should indeed be used. These commits should apply cleanly
-on top of each other when applied, but I'm not sure how that ends up
-being handled for linux-next.
+Oops, sorry, Andrew, I would send the patch with /sys/kernel/slab/ only
+if I knew that you've picked the first patch (I didn't receive a tip).
+Where does -mm tree lives now?
 
- 
+Thanks,
+
 -- 
-Jouni Malinen                                            PGP id EFC895FA
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
