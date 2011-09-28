@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab1I1OdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:33:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54044 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab1I1OdN convert rfc822-to-8bit (ORCPT
+	id S1754350Ab1I1Ol5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:41:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61099 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab1I1Olz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:33:13 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v3 00/24] C6X: New architecture
-Date: Wed, 28 Sep 2011 16:33:05 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <20110928091542.9b1e35afa2075106550de7be@canb.auug.org.au>
-In-Reply-To: <20110928091542.9b1e35afa2075106550de7be@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201109281633.05583.arnd@arndb.de>
-X-Provags-ID: V02:K0:mMzFfsrUnh2EHGeH9eKW5IvQM2YoCVixFIQByxtQu4q
- ezEi2pPaQEEvAZd7AwOckd66VAUj49DdK7uDGS2F39FWCgII7u
- Wte/SZ0zAsKL27uG9BYbY0yHvEWgrCUgYNPxY0u8R/PutqolEF
- /1z5t1u5o+blloieMloZOQDiAazfBPLgbeFzAcDFbpypYCqnJy
- abXRBl3VPn7LPC3gXCQeoGu7fxNTjzRvtwc0uZS63/CbIsHg4B
- aNcKk9OYmvf4e4rZElFlp4rL+iyIIqCNC8248HNf8QNNfbCggX
- h2bvpVxCpZD6R3e4dFniruvd9ZOnaPugL08eakdE9ObAYybbf2
- IOUZhYxmxJanbz3Fn2Yo=
+	Wed, 28 Sep 2011 10:41:55 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: [PATCH v2 1/2] virtio-net: Verify page list size before fitting into  skb
+Date: Wed, 28 Sep 2011 17:40:54 +0300
+Message-Id: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 September 2011, Stephen Rothwell wrote:
->   Show Details
->   On Tue, 27 Sep 2011 16:29:41 -0400 Mark Salter <msalter@redhat.com> wrote:
-> >
-> > Here is v3 of the C6X architecture patch series. Patches are
-> > available in 'upstream-v3' branch at:
-> > 
-> >     git@linux-c6x.org:/git/projects/linux-c6x-upstreaming
-> 
-> Is it time for this to be included in linux-next (i.e. are you intending
-> to send this to Linus during the next merge window)?  If so, please send
-> a request (cc'd to here, linux-next and linux-kernel) asking for
-> inclusion.  I would prefer a publically fetchable tree (the tree above is
-> (implicitly) fetched over ssh and is so not generally available) and
-> branch name that does not change over time (like "for-next" or something)
-> but it can just be an alias for the above.
-> 
-> Arnd, do you have an opinion on this?
+This patch verifies that the length of a buffer stored in a linked list
+of pages is small enough to fit into a skb.
 
->From my perspective it can go into -next now. All the issues I have
-reported in version 2 have been fixed, and the comments I made this
-time are relatively insignificant, so I trust that Mark can fix those
-either between now and the merge window or provide updates during the
-3.2 bug fix phase. The only thing that absolutely needs to get fixed
-before 3.2.0 IMO is the ptrace ABI since we can no longer change that
-after a release, but it should also be a trivial change.
+If the size is larger than a max size of a skb, it means that we shouldn't
+go ahead building skbs anyway since we won't be able to send the buffer as
+the user requested.
 
-Thomas, you also had some important comments, please complain if you
-see those as show-stoppers for integration into linux-next.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ drivers/net/virtio_net.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-	Arnd
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 0c7321c..bde0dec 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -195,6 +195,19 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 	len -= copy;
+ 	offset += copy;
+ 
++	/*
++	 * Verify that we can indeed put this data into a skb.
++	 * This is here to handle cases when the device erroneously
++	 * tries to receive more than is possible. This is usually
++	 * the case of a broken device.
++	 */
++	if (unlikely(len > MAX_SKB_FRAGS * PAGE_SIZE)) {
++		if (net_ratelimit())
++			pr_debug("%s: too much data\n", skb->dev->name);
++		dev_kfree_skb(skb);
++		return NULL;
++	}
++
+ 	while (len) {
+ 		set_skb_frag(skb, page, offset, &len);
+ 		page = (struct page *)page->private;
+-- 
+1.7.6.1
+
