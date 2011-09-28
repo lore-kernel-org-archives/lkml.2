@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1I1MHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:07:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62698 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab1I1MHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:07:17 -0400
-Date: Wed, 28 Sep 2011 14:06:31 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Krzysztof Halasa <khc@pm.waw.pl>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: MAC firmware does not load due to (commit 288d5abe usermodehelper)
-Message-ID: <20110928120630.GB9456@netboy.at.omicron.at>
+	id S1753975Ab1I1MIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:08:50 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:50143 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752452Ab1I1MIt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 08:08:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1109260844360.13188@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
+	<CAP05o4+uwuFL8XNFG-wmUW8voYQ4kywyU9Qn-Mng7kv=TzZm9w@mail.gmail.com>
+	<alpine.DEB.2.00.1109260844360.13188@utopia.booyaka.com>
+Date: Wed, 28 Sep 2011 17:38:47 +0530
+Message-ID: <CAP05o4KbVkXgnPc7JonrvURmCpQRgjMK2K_dmjQSKzQufQhjkA@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>, Benoit Cousson <b-cousson@ti.com>
+Cc: parthab@india.ti.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, tony@atomide.com,
+        khilman@ti.com, johnstul@us.ibm.com, vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have some ARM IXP4xx based machines that use the two on chip MAC
-ports (aka NPEs). The NPE needs a firmware in order to function. Ever
-since the following commit, it is no longer possible to bring up the
-interfaces during the init scripts.
+On Mon, Sep 26, 2011 at 8:15 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> On Mon, 26 Sep 2011, Munegowda, Keshava wrote:
+>
+>> On Sat, Sep 24, 2011 at 12:45 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>> > On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+>> >
+>> >> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>> >> >
+>> >> > On Thu, 22 Sep 2011, Keshava Munegowda wrote:
+>> >> >> 4. usb_tll_hs hwmod of usbhs with the TLL base address and irq.
+>> >> >>
+>> >> >> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> >> >> Reviewed-by: Partha Basak <parthab@india.ti.com>
+>> >> >> ---
+>> >> >>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  271 ++++++++++++++++++++++++++++
+>> >> >>  1 files changed, 271 insertions(+), 0 deletions(-)
+>> >> >>
+>> >> >> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> >> >> index 59fdb9f..d79f728 100644
+>> >> >> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> >> >> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> >
+>> >> >> +static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
+>> >> >> +     .clk            = "usbhost_120m_fck",
+>> >> >
+>> >> > This doesn't look right.  This is an interface structure record, so it
+>> >> > should be associated with an interface clock.  Is the hardware really
+>> >> > using the functional clock as the interface clock?  Or, as seems more
+>> >> > likely...
+>> >>
+>> >>
+>> >> Agreed, how about:
+>> >>
+>> >> main clock: usbhost_120m_fck
+>> >> optional f clock: usbhost_48m_fck
+>> >
+>> > Assuming the interface clock is enabled, which one of these clocks is
+>> > needed for UHH register accesses to complete successfully?
+>>
+>> it is usbhost_48m_fck ;
+>> so,
+>> main clock: usbhost_48m_fck
+>> optional clock : usbhost_120m_fck
+>>
+>> do you agree?
+>
+> Yes.
 
-    commit 288d5abec8314ae50fe6692f324b0444acae8486
-    Author: Linus Torvalds <torvalds@linux-foundation.org>
-    Date:   Wed Aug 3 22:03:29 2011 -1000
+Thanks paul,
 
-    Boot up with usermodehelper disabled
+But In USB Host case, there is a challenge!
 
-A warning appears on the console, shown below.  I don't know what
-commit 288d5abe was trying to fix, but it sure made a regression for
-me. It probably would also spoil using NFS boot, too.
+I need both usbhost_48m_fck and usbhost_120m_fck to be turned on when
+I invoke pm_runtime_get_sync ; so there are couple of options to do this
 
-Any ideas what to do about this?
+1. use clk_get with hard coded  usbhost_120m_fck name in  usbhs driver
+       enable this clock after invoking pm_runtime_get_sync
 
-Thanks,
-Richard
+2. add an additional flag in hwmod ; so that pm_runtime_get_sync will enable
+           main clock as well as optional clocks
+
+please comment on these two approaches..
 
 
-------------[ cut here ]------------
-WARNING: at /home/richard/git/linux/drivers/base/firmware_class.c:537 _request_firmware+0xc8/0x3b8()
-Modules linked in:
-Backtrace: 
-[<c000bee0>] (dump_backtrace+0x0/0x114) from [<c000c3dc>] (dump_stack+0x18/0x1c)
-[<c000c3c4>] (dump_stack+0x0/0x1c) from [<c001a778>] (warn_slowpath_common+0x58/0x70)
-[<c001a720>] (warn_slowpath_common+0x0/0x70) from [<c001a7b4>] (warn_slowpath_null+0x24/0x2c)
-[<c001a790>] (warn_slowpath_null+0x0/0x2c) from [<c0142710>] (_request_firmware+0xc8/0x3b8)
-[<c0142648>] (_request_firmware+0x0/0x3b8) from [<c0142a20>] (request_firmware+0x20/0x28)
-[<c0142a00>] (request_firmware+0x0/0x28) from [<c0012c98>] (npe_load_firmware+0x1c/0x488)
-[<c0012c7c>] (npe_load_firmware+0x0/0x488) from [<c015dbe8>] (eth_open+0x44/0x6c0)
-[<c015dba4>] (eth_open+0x0/0x6c0) from [<c017bf88>] (__dev_open+0xbc/0x114)
-[<c017becc>] (__dev_open+0x0/0x114) from [<c017a044>] (__dev_change_flags+0x98/0x124)
-[<c0179fac>] (__dev_change_flags+0x0/0x124) from [<c017b8e4>] (dev_change_flags+0x1c/0x50)
-[<c017b8c8>] (dev_change_flags+0x0/0x50) from [<c01c2cd0>] (devinet_ioctl+0x2c4/0x674)
-[<c01c2a0c>] (devinet_ioctl+0x0/0x674) from [<c01c395c>] (inet_ioctl+0xcc/0x104)
-[<c01c3890>] (inet_ioctl+0x0/0x104) from [<c016cb3c>] (sock_ioctl+0x1f8/0x254)
-[<c016c944>] (sock_ioctl+0x0/0x254) from [<c0082c28>] (vfs_ioctl+0x28/0x44)
-[<c0082c00>] (vfs_ioctl+0x0/0x44) from [<c00832c8>] (do_vfs_ioctl+0x49c/0x4ec)
-[<c0082e2c>] (do_vfs_ioctl+0x0/0x4ec) from [<c0083358>] (sys_ioctl+0x40/0x64)
-[<c0083318>] (sys_ioctl+0x0/0x64) from [<c0009040>] (ret_fast_syscall+0x0/0x2c)
----[ end trace 6083e7c78b321b84 ]---
+regards
+keshava
