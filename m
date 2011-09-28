@@ -1,158 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1I1T2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 15:28:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34481 "EHLO ogre.sisk.pl"
+	id S1753949Ab1I1Taf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 15:30:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34500 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab1I1T2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 15:28:16 -0400
+	id S1751947Ab1I1Tae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 15:30:34 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
-Date: Wed, 28 Sep 2011 21:30:28 +0200
+To: Ming Lei <ming.lei@canonical.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Wed, 28 Sep 2011 21:32:46 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-References: <s5hmxdzyyzx.wl%tiwai@suse.de> <s5hr530abc9.wl%tiwai@suse.de> <s5h39fgczjv.wl%tiwai@suse.de>
-In-Reply-To: <s5h39fgczjv.wl%tiwai@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au> <201109281558.05289.rjw@sisk.pl> <CACVXFVMLBHu+CY1pgQnY04S_3iLN1z5S2vPiMdN6rsW=gBdWog@mail.gmail.com>
+In-Reply-To: <CACVXFVMLBHu+CY1pgQnY04S_3iLN1z5S2vPiMdN6rsW=gBdWog@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109282130.28459.rjw@sisk.pl>
+Message-Id: <201109282132.46887.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 28, 2011, Takashi Iwai wrote:
-> At Wed, 28 Sep 2011 18:19:34 +0200,
-> Takashi Iwai wrote:
-> > 
-> > At Wed, 28 Sep 2011 16:45:45 +0200,
-> > Takashi Iwai wrote:
-> > > 
-> > > At Wed, 28 Sep 2011 16:45:48 +0200,
-> > > Rafael J. Wysocki wrote:
-> > > > 
-> > > > On Wednesday, September 28, 2011, Takashi Iwai wrote:
-> > > > > At Wed, 28 Sep 2011 15:28:12 +0200,
-> > > > > Takashi Iwai wrote:
-> > > > > > 
-> > > > > > At Wed, 28 Sep 2011 15:26:19 +0200,
-> > > > > > Rafael J. Wysocki wrote:
-> > > > > > > 
-> > > > > > > On Wednesday, September 28, 2011, Takashi Iwai wrote:
-> > > > > > > > At Tue, 27 Sep 2011 18:56:44 +0200,
-> > > > > > > > Rafael J. Wysocki wrote:
-> > > > > > > > > 
-> > > > > > > > > On Tuesday, September 27, 2011, Takashi Iwai wrote:
-> > > > > > > > > > At Mon, 26 Sep 2011 19:26:44 -0700,
-> > > > > > > > > > Yinghai Lu wrote:
-> > > > > > > > > > > 
-> > > > > > > > > > > On 09/22/2011 11:11 AM, Takashi Iwai wrote:
-> > > > > > > > > > > 
-> > > > > > > > > > > > At Thu, 22 Sep 2011 07:33:17 -0700,
-> > > > > > > > > > > > Yinghai Lu wrote:
-> > > > > > > > > > > >>
-> > > > > > > > > > > >> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > > > > > > > > > >>> It looks like init_memory_mapping() is sometimes called with "end"
-> > > > > > > > > > > >>> beyond the last mapped PFN and it explodes when we try to write stuff to
-> > > > > > > > > > > >>> that address during image restoration.
-> > > > > > > > > > > >>>
-> > > > > > > > > > > >>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
-> > > > > > > > > > > >>> called with a "good end" on x86_64 was overomptimistic.
-> > > > > > > > > > > >>
-> > > > > > > > > > > >> for 64bit x86, kernel_physical_mapping_init() will use
-> > > > > > > > > > > >> map_low_page()/call early_memmap() to access ram for page_table that is above
-> > > > > > > > > > > >> rather last mapped PFN.
-> > > > > > > > > > > >>
-> > > > > > > > > > > >> the point is:
-> > > > > > > > > > > >> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
-> > > > > > > > > > > >> init_memory_mapping will be called two times for them.
-> > > > > > > > > > > >> before putting page_table high,
-> > > > > > > > > > > >> page table will be two parts: one is just below 512M, and one below 2048m.
-> > > > > > > > > > > >> after putting page_table high,
-> > > > > > > > > > > >> page table will be two parts: one is just below 2048M, and one below 64G.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > So, how can this change break S4 resume?
-> > > > > > > > > > > 
-> > > > > > > > > > > 
-> > > > > > > > > > > not sure.
-> > > > > > > > > > > 
-> > > > > > > > > > > seems resume has it's own page table during transition...
-> > > > > > > > > > > 
-> > > > > > > > > > > 
-> > > > > > > > > > > > Any hint for further debugging?
-> > > > > > > > > > > 
-> > > > > > > > > > > 
-> > > > > > > > > > > you may try to insert dead loop in arch/x86/power/hibernate_asm_64.S::restore_image or core_restore_code
-> > > > > > > > > > > 
-> > > > > > > > > > > to see which part cause reset.
-> > > > > > > > > > 
-> > > > > > > > > > That's the answer I was afraid of :)
-> > > > > > > > > 
-> > > > > > > > > I wonder.  Does hibernation work on the machine in question with
-> > > > > > > > > acpi_sleep=nonvs and if so, is the problem reproducible with this
-> > > > > > > > > setting?
-> > > > > > > > 
-> > > > > > > > It still shows the same problem.  Reboots after a few S4 cycles.
-> > > > > > > > I'll test kernel S4.
-> > > > > > > 
-> > > > > > > This most likely means that NVS is not involved.
-> > > > > > 
-> > > > > > Indeed, kernel S4 also failed both with and without acpi_sleep=nonvs.
-> > > > > > 
-> > > > > > > Have you tried to revert commit d1ee433 (x86, trampoline: Use the unified
-> > > > > > > trampoline setup for ACPI wakeup)?
-> > > > > > 
-> > > > > > Not yet.  I'll check it later.
-> > > > > 
-> > > > > Unfortunately the commit can't be reverted cleanly.
-> > > > > The commits around it seem mixed up together.
-> > > > > 
-> > > > > If you have a patch applicable to 3.0 or 3.1 kernel, let me know.
-> > > > 
-> > > > No, I don't, but can you simply go back to that commit and see
-> > > > if the issue is reproducible with HEAD = d1ee433, and if it is,
-> > > > see if it still will be reproducible after going one commit back from there?
-> > > 
-> > > Ah, that should be easy.  I'll give it a try.
-> > 
-> > It turned out to be non-trivial.  At the commit d1ee4335
-> >   [x86, trampoline: Use the unified trampoline setup for ACPI wakeup],
-> > I can build by cherry-picking the binutils fix commit 2ae9d293
-> >   [x86: Fix binutils-2.21 symbol related build failures],
-> > then merge Yinghai's patch series, the commit d2137d5af.
-> > The test failed, as expected; S4 resume reboots.
-> > 
-> > Then going back to the commit 4822b7fc
-> >   [x86, trampoline: Common infrastructure for low memory trampolines]
-> > it's no longer buildable.  This commit alone breaks too many things
-> > and requires the stuff in the commit above d1ee4335.
-> > 
-> > Backing off one would go to 2.6.38-rc5.  Hmm.
-> > 
-> > Anyway I try to check whether 2.6.38-rc5 + merge d2137d5af would cause
-> > any issue.
+On Wednesday, September 28, 2011, Ming Lei wrote:
+> Hi,
 > 
-> Surprisingly this causes also the same problem.
+> 2011/9/28 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Wednesday, September 28, 2011, Ming Lei wrote:
+> >> Hi Stephen and Rafael,
+> >>
+> >> Sorry, the attachment patch can fix the build failure, which is
+> >> caused by unset CONFIG_RUNTIME_PM.
+> >
+> > First off, that's CONFIG_PM_RUNTIME.  Second, why do you want to build
+> > rpm-traces.c at all if CONFIG_PM_RUNTIME is unset?
+> >
 > 
-> If my previous test -- 2.6.37+Yinghai's patches didn't show the
-> problem -- is correct, it means that some change in 2.6.38 reacted
-> badly with Yinghai's patches, not about 2.6.39.  I'll check tomorrow
-> again whether this observation is really correct.
+> Yes, you are right,  follows the correct fix:
+> 
+> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+> index 56bdab5..f49405f 100644
+> --- a/kernel/trace/Makefile
+> +++ b/kernel/trace/Makefile
+> @@ -53,7 +53,9 @@ endif
+>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+> +ifeq ($(CONFIG_PM_RUNTIME),y)
+>  obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+> +endif
+>  ifeq ($(CONFIG_TRACING),y)
+>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+>  endif
 
-Yes, that would be good to know, thanks for doing this!
+Well, this still is kind of ugly.  I'd prefer my patch sent in this thread.
 
-If that turns out to be the case, there are the following commits
-looking like worth checking:
-
-d344e38 x86, nx: Mark the ACPI resume trampoline code as +x
-884b821 ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
-d551d81 ACPI / PM: Call suspend_nvs_free() earlier during resume
-2d6d9fd ACPI: Introduce acpi_os_ioremap()
-
-Thanks,
 Rafael
