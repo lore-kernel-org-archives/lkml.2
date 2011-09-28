@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab1I1OTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:19:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58590 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1I1OTL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:19:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 21/24] C6X: general SoC support
-Date: Wed, 28 Sep 2011 16:19:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-22-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-22-git-send-email-msalter@redhat.com>
+	id S1754095Ab1I1OTw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:19:52 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47015 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752322Ab1I1OTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 10:19:51 -0400
+Date: Wed, 28 Sep 2011 19:47:01 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
+Message-ID: <20110928141701.GF8593@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20110926115049.GA22604@linux.vnet.ibm.com>
+ <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
+ <20110928043427.GI4357@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109281619.07213.arnd@arndb.de>
-X-Provags-ID: V02:K0:DhPqitORzeg9Y4q2H4DcySFPJQFDgABB5RQkX2VmugN
- 8UBDvfKn5OzVgJPsoP/gJoG/s5c8w/7mszX6iYOePbgTHuLFft
- Hf8HVsurj5UCSAfjaKmAtb7FmhXokTTjIdkQwyfKCaQz5z7rl9
- UUW5xsnlghr9Xyhza53L4GQfEQGByRMaJ+avZzqk3RWEzjPWfY
- Led+GQVv4I/BFDUYfHiDd42/0EWlWEXd9FoLh5EDBn0b/anaQL
- /OejezCn2zCq+zNh4CXJNUAELutxDY1UN+ARnqKS7pd3yuMo8Q
- GMc/uQ4AXJCoYIDruFDr7qZblOF20iCNHbKvNFJn9Yh3PXabTL
- WKuchbW+fhvR3l9c/vM8=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110928043427.GI4357@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
-> +int soc_mac_addr(unsigned int index, u8 *addr)
-> +{
-> +       int i, have_cmdline_mac = 0, have_fuse_mac = 0;
-> +
-> +       for (i = 0; i < 6; i++) {
-> +               if (cmdline_mac[i])
-> +                       have_cmdline_mac = 1;
-> +               if (c6x_fuse_mac[i])
-> +                       have_fuse_mac = 1;
-> +       }
-> +
-> +       /* cmdline overrides hardware fuse MAC */
-> +       if (have_cmdline_mac)
-> +               memcpy(addr, cmdline_mac, 6);
-> +       else if (have_fuse_mac)
-> +               memcpy(addr, c6x_fuse_mac, 6);
-> +       else
-> +               return 0;
+* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-28 10:04:27]:
 
-IMHO it's more important to let the user override the MAC address through
-the device tree than the command line, although if you allow both, the
-command line should take precedence. If you think you need to keep the
-command line option, please add a way to read it from the device tree
-as a fallback before falling back to the fused mac address.
+> > Especially with higher number of logical CPUs. Likely cleaner way is to clear
+> > first_pick, second_pick on idle instead of clearing on tickless.
+> 
+> I think I tried that (cleared first/second_pick_cpu in
+> nohz_kick_needed() upon idle) but didn't get the best results. Let me
+> try that again and post idle time numbers.
 
-Also, a final fallback on random_mac_address() would be reasonable here.
+So made some changes so that first/second_pick_cpu identifiers are
+cleared when corresponding cpus become idle. They are cleared in
+pick_next_task_idle() ..
 
-Finally, how about passing a struct device pointer from the driver, rather
-than the index? That would seem more logical and make it easier to get
-to the device tree properties.
+With that change, I don't see additional benefit of having a third busy
+cpu kick ilb_cpu when it has > 1 task.
 
-> +       /* adjust for specific EMAC device */
-> +       addr[5] += index * c6x_num_cores;
-> +       return 1;
-> +}
-> +EXPORT_SYMBOL(soc_mac_addr);
 
-EXPORT_SYMBOL_GPL()
+Idle time -> 			Avg.	Std.Dev   Min   Max
+W/o third busy cpu kicking	4.57%   0.9	  3%    8%   
+With third busy cpu kicking	4.78%   1.1%      3%    8%
 
-	Arnd
+So will go with your suggestion in the next version!
+
+- vatsa
