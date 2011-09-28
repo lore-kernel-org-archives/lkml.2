@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1I1Udo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 16:33:44 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:35934 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab1I1Udn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 16:33:43 -0400
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1109271546320.13797@router.home>
-References: <20110927175453.GA3393@albatros>
-	 <20110927175642.GA3432@albatros> <20110927193810.GA5416@albatros>
-	 <alpine.DEB.2.00.1109271459180.13797@router.home>
-	 <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1109271546320.13797@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 13:31:45 -0700
-Message-ID: <1317241905.16137.516.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754448Ab1I1Uh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 16:37:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43152 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1I1Uh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 16:37:26 -0400
+Message-ID: <4E838581.4080803@gmail.com>
+Date: Wed, 28 Sep 2011 22:37:21 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
+MIME-Version: 1.0
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: Kerneloops.org defunct?
+References: <4DE6264A.2040901@gmail.com> <20110601212432.2677b03a.rdunlap@xenotime.net> <201106211534.10366.roucaries.bastien@gmail.com> <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com> <20110826173517.7321c086@lxorguk.ukuu.org.uk> <m2ei089fwq.fsf@firstfloor.org> <CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com> <4E57EA84.3080405@linux.intel.com>
+In-Reply-To: <4E57EA84.3080405@linux.intel.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 11092820-6078-0000-0000-000001449A5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 15:47 -0500, Christoph Lameter wrote:
-> On Tue, 27 Sep 2011, David Rientjes wrote:
-> > It'll turn into another one of our infinite number of capabilities.  Does
-> > anything actually care about statistics at KB granularity these days?
+On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
+> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
+>>
+>> Is the code available somewhere, or will it need to be rewritten ?
 > 
-> Changing that to MB may also break things. It may be better to have
-> consistent system for access control to memory management counters that
-> are not related to a process.
+> we have the code on the server/etc... if someone signs up to help he
+> will be on the server of course
 
-We could also just _effectively_ make it output in MB:
+It looks like there are some volunteers. Did you have a chance to talk
+to each other and make any progress?
 
-	foo = foo & ~(1<<20)
+If not, may we have at least a backup of the database published, please?
+There are very valuable data you collected over time and I'm sure there
+are more people than me who would appreciate that.
 
-or align-up.  We could also give the imprecise numbers to unprivileged
-users and let privileged ones see the page-level ones.
-
--- Dave
-
+thanks,
+-- 
+js
