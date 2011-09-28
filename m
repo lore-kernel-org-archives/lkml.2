@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1I1NUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:20:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49546 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab1I1NUM (ORCPT
+	id S1754223Ab1I1NUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:20:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54409 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752977Ab1I1NUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:20:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 01/24] fix default __strnlen_user macro
-Date: Wed, 28 Sep 2011 15:20:09 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-2-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-2-git-send-email-msalter@redhat.com>
+	Wed, 28 Sep 2011 09:20:44 -0400
+Date: Wed, 28 Sep 2011 14:20:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+Message-ID: <20110928132042.GL3279@opensource.wolfsonmicro.com>
+References: <20110922184614.25419.84606.stgit@ponder>
+ <20110927210849.GD3994@ponder.secretlab.ca>
+ <20110927221308.GA2674@opensource.wolfsonmicro.com>
+ <201109281504.34560.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109281520.09981.arnd@arndb.de>
-X-Provags-ID: V02:K0:TA8tByiIeCYWNuvDmnc7a2o3eVFkqCIud/yTpbHhgBY
- izmt+IliJl16OoaTw9jA/kjKZZMX51ySceaXnsUXZ0zLLHL+Fn
- bETSZhp0PM2ksW7jZd0oLF+hFDw5j6L/S90gQa5bkDRoG4Ewn9
- KM4BcMy+9rDg2xvhIGFi1Gw77lGXOalGQ0i8lyuYmMaH1K27VX
- a1MCNvzR3yXu/GhO1Nq0+Fh/yYOrOunkqNMmDW4SHIrKuz5yDa
- OHdwMzNwqeVojqm2J7Nz4UXcWAKhBUi3VPj8q3dQyX0YoAqfM8
- UfoVN8Y07cjRysSAwSuo0QtQE23F3wJKUkJFO7ydMidTBi9asE
- sJ9ZoVFDEWbO36UOSzXE=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109281504.34560.arnd@arndb.de>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
-> The existing __strnlen_user macro simply resolved to strnlen. However, the
-> count returned by strnlen_user should include the NULL byte. This patch
-> fixes the __strnlen_user macro to include the NULL byte in the count.
-> 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
+On Wed, Sep 28, 2011 at 03:04:34PM +0200, Arnd Bergmann wrote:
+> On Wednesday 28 September 2011, Mark Brown wrote:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > Note that I'm not sure this answers the issue I was raising - the issue
+> > isn't that the caller doesn't know what the error code means, the issue
+> > is that in some cases the driver needs to take a decision about what
+> > failure to get a resource means.  Does it mean that the driver can work
+> > fine and be slightly less featureful or should it cause a deferral?
+
+> Can you think of cases where this information cannot be put into the
+> device tree or platform_data? If a board provides an optional feature,
+> I think that should be a property of the device that the driver gets,
+> so it can return an error when that feature is not around, or continue
+> when it knows that the feature will never become available.
+
+Not off the top of my head, most of the cases I'm aware of were cases
+where the supply is mandatory but soft control is optional so don't need
+to make this decision in the driver at all.  In the MMC case I didn't
+push this as working with the people concerned was extremely painful.
