@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393Ab1I1W6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:58:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54916 "EHLO mx2.suse.de"
+	id S1755977Ab1I1W6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:58:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54904 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933370Ab1I1WtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:18 -0400
+	id S933365Ab1I1WtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:11 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:48 2011
-Message-Id: <20110928220148.353345074@clark.kroah.org>
+Message-Id: <20110928220148.246489564@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:02 -0700
+Date: Wed, 28 Sep 2011 15:03:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [218/244] [SCSI] bnx2fc: Fix kernel panic when deleting NPIV ports
+        Michael Chan <mchan@broadcom.com>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [217/244] cnic, bnx2: Check iSCSI support early in bnx2_init_one()
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,200 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit d36b3279e157641c345b12eddb3db78fb42da80f upstream.
+commit 7625eb2f2fff7bfae41d3119b472c20b48874895 upstream.
 
-Deleting NPIV port causes a kernel panic when the NPIV port is in the same zone
-as the physical port and shares the same LUN. This happens due to the fact that
-vport destroy and unsolicited ELS are scheduled to run on the same workqueue,
-and vport destroy destroys the lport and the unsolicited ELS tries to access
-the invalid lport.  This patch fixes this issue by maintaining a list of valid
-lports and verifying if the lport is valid or not before accessing it.
+Based on earlier patch from Neil Horman <nhorman@tuxdriver.com>
 
-Signed-off-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+If iSCSI is not supported on a bnx2 device, bnx2_cnic_probe() will
+return NULL and the cnic device will not be visible to bnx2i.  This
+will prevent bnx2i from registering and then unregistering during
+cnic_start() and cause the warning message:
+
+bnx2 0003:01:00.1: eth1: Failed waiting for ULP up call to complete
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/bnx2fc/bnx2fc.h      |    8 +++++++-
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c |   28 +++++++++++++++++++++++++++-
- drivers/scsi/bnx2fc/bnx2fc_hwi.c  |   24 +++++++++++++++++++++++-
- 3 files changed, 57 insertions(+), 3 deletions(-)
+ drivers/net/bnx2.c |    7 +++++++
+ drivers/net/cnic.c |   12 ++----------
+ 2 files changed, 9 insertions(+), 10 deletions(-)
 
---- a/drivers/scsi/bnx2fc/bnx2fc.h
-+++ b/drivers/scsi/bnx2fc/bnx2fc.h
-@@ -152,7 +152,6 @@ struct bnx2fc_percpu_s {
- 	spinlock_t fp_work_lock;
- };
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -416,6 +416,9 @@ struct cnic_eth_dev *bnx2_cnic_probe(str
+ 	struct bnx2 *bp = netdev_priv(dev);
+ 	struct cnic_eth_dev *cp = &bp->cnic_eth_dev;
  
--
- struct bnx2fc_hba {
- 	struct list_head link;
- 	struct cnic_dev *cnic;
-@@ -179,6 +178,7 @@ struct bnx2fc_hba {
- 		#define BNX2FC_CTLR_INIT_DONE		1
- 		#define BNX2FC_CREATE_DONE		2
- 	struct fcoe_ctlr ctlr;
-+	struct list_head vports;
- 	u8 vlan_enabled;
- 	int vlan_id;
- 	u32 next_conn_id;
-@@ -232,6 +232,11 @@ struct bnx2fc_hba {
- 
- #define bnx2fc_from_ctlr(fip) container_of(fip, struct bnx2fc_hba, ctlr)
- 
-+struct bnx2fc_lport {
-+	struct list_head list;
-+	struct fc_lport *lport;
-+};
-+
- struct bnx2fc_cmd_mgr {
- 	struct bnx2fc_hba *hba;
- 	u16 next_idx;
-@@ -423,6 +428,7 @@ struct bnx2fc_work {
- struct bnx2fc_unsol_els {
- 	struct fc_lport *lport;
- 	struct fc_frame *fp;
-+	struct bnx2fc_hba *hba;
- 	struct work_struct unsol_els_work;
- };
- 
---- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-@@ -1225,6 +1225,7 @@ static int bnx2fc_interface_setup(struct
- 	hba->ctlr.get_src_addr = bnx2fc_get_src_mac;
- 	set_bit(BNX2FC_CTLR_INIT_DONE, &hba->init_done);
- 
-+	INIT_LIST_HEAD(&hba->vports);
- 	rc = bnx2fc_netdev_setup(hba);
- 	if (rc)
- 		goto setup_err;
-@@ -1261,8 +1262,15 @@ static struct fc_lport *bnx2fc_if_create
- 	struct fcoe_port	*port;
- 	struct Scsi_Host	*shost;
- 	struct fc_vport		*vport = dev_to_vport(parent);
-+	struct bnx2fc_lport	*blport;
- 	int			rc = 0;
- 
-+	blport = kzalloc(sizeof(struct bnx2fc_lport), GFP_KERNEL);
-+	if (!blport) {
-+		BNX2FC_HBA_DBG(hba->ctlr.lp, "Unable to alloc bnx2fc_lport\n");
++	if (!cp->max_iscsi_conn)
 +		return NULL;
-+	}
 +
- 	/* Allocate Scsi_Host structure */
- 	if (!npiv)
- 		lport = libfc_host_alloc(&bnx2fc_shost_template, sizeof(*port));
-@@ -1271,7 +1279,7 @@ static struct fc_lport *bnx2fc_if_create
+ 	cp->drv_owner = THIS_MODULE;
+ 	cp->chip_id = bp->chip_id;
+ 	cp->pdev = bp->pdev;
+@@ -8177,6 +8180,10 @@ bnx2_init_board(struct pci_dev *pdev, st
+ 	bp->timer.data = (unsigned long) bp;
+ 	bp->timer.function = bnx2_timer;
  
- 	if (!lport) {
- 		printk(KERN_ERR PFX "could not allocate scsi host structure\n");
--		return NULL;
-+		goto free_blport;
++#ifdef BCM_CNIC
++	bp->cnic_eth_dev.max_iscsi_conn =
++		bnx2_reg_rd_ind(bp, BNX2_FW_MAX_ISCSI_CONN);
++#endif
+ 	pci_save_state(pdev);
+ 
+ 	return 0;
+--- a/drivers/net/cnic.c
++++ b/drivers/net/cnic.c
+@@ -4225,14 +4225,6 @@ static void cnic_enable_bnx2_int(struct
+ 		BNX2_PCICFG_INT_ACK_CMD_INDEX_VALID | cp->last_status_idx);
+ }
+ 
+-static void cnic_get_bnx2_iscsi_info(struct cnic_dev *dev)
+-{
+-	u32 max_conn;
+-
+-	max_conn = cnic_reg_rd_ind(dev, BNX2_FW_MAX_ISCSI_CONN);
+-	dev->max_iscsi_conn = max_conn;
+-}
+-
+ static void cnic_disable_bnx2_int_sync(struct cnic_dev *dev)
+ {
+ 	struct cnic_local *cp = dev->cnic_priv;
+@@ -4557,8 +4549,6 @@ static int cnic_start_bnx2_hw(struct cni
+ 		return err;
  	}
- 	shost = lport->host;
- 	port = lport_priv(lport);
-@@ -1327,12 +1335,20 @@ static struct fc_lport *bnx2fc_if_create
- 	}
  
- 	bnx2fc_interface_get(hba);
-+
-+	spin_lock_bh(&hba->hba_lock);
-+	blport->lport = lport;
-+	list_add_tail(&blport->list, &hba->vports);
-+	spin_unlock_bh(&hba->hba_lock);
-+
- 	return lport;
- 
- shost_err:
- 	scsi_remove_host(shost);
- lp_config_err:
- 	scsi_host_put(lport->host);
-+free_blport:
-+	kfree(blport);
- 	return NULL;
+-	cnic_get_bnx2_iscsi_info(dev);
+-
+ 	return 0;
  }
  
-@@ -1348,6 +1364,7 @@ static void bnx2fc_if_destroy(struct fc_
- {
- 	struct fcoe_port *port = lport_priv(lport);
- 	struct bnx2fc_hba *hba = port->priv;
-+	struct bnx2fc_lport *blport, *tmp;
+@@ -5224,6 +5214,8 @@ static struct cnic_dev *init_bnx2_cnic(s
+ 	cdev->pcidev = pdev;
+ 	cp->chip_id = ethdev->chip_id;
  
- 	BNX2FC_HBA_DBG(hba->ctlr.lp, "ENTERED bnx2fc_if_destroy\n");
- 	/* Stop the transmit retry timer */
-@@ -1372,6 +1389,15 @@ static void bnx2fc_if_destroy(struct fc_
- 	/* Free memory used by statistical counters */
- 	fc_lport_free_stats(lport);
- 
-+	spin_lock_bh(&hba->hba_lock);
-+	list_for_each_entry_safe(blport, tmp, &hba->vports, list) {
-+		if (blport->lport == lport) {
-+			list_del(&blport->list);
-+			kfree(blport);
-+		}
-+	}
-+	spin_unlock_bh(&hba->hba_lock);
++	cdev->max_iscsi_conn = ethdev->max_iscsi_conn;
 +
- 	/* Release Scsi_Host */
- 	scsi_host_put(lport->host);
- 
---- a/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-@@ -480,16 +480,36 @@ int bnx2fc_send_session_destroy_req(stru
- 	return rc;
- }
- 
-+static bool is_valid_lport(struct bnx2fc_hba *hba, struct fc_lport *lport)
-+{
-+	struct bnx2fc_lport *blport;
-+
-+	spin_lock_bh(&hba->hba_lock);
-+	list_for_each_entry(blport, &hba->vports, list) {
-+		if (blport->lport == lport) {
-+			spin_unlock_bh(&hba->hba_lock);
-+			return true;
-+		}
-+	}
-+	spin_unlock_bh(&hba->hba_lock);
-+	return false;
-+
-+}
-+
-+
- static void bnx2fc_unsol_els_work(struct work_struct *work)
- {
- 	struct bnx2fc_unsol_els *unsol_els;
- 	struct fc_lport *lport;
-+	struct bnx2fc_hba *hba;
- 	struct fc_frame *fp;
- 
- 	unsol_els = container_of(work, struct bnx2fc_unsol_els, unsol_els_work);
- 	lport = unsol_els->lport;
- 	fp = unsol_els->fp;
--	fc_exch_recv(lport, fp);
-+	hba = unsol_els->hba;
-+	if (is_valid_lport(hba, lport))
-+		fc_exch_recv(lport, fp);
- 	kfree(unsol_els);
- }
- 
-@@ -499,6 +519,7 @@ void bnx2fc_process_l2_frame_compl(struc
- {
- 	struct fcoe_port *port = tgt->port;
- 	struct fc_lport *lport = port->lport;
-+	struct bnx2fc_hba *hba = port->priv;
- 	struct bnx2fc_unsol_els *unsol_els;
- 	struct fc_frame_header *fh;
- 	struct fc_frame *fp;
-@@ -559,6 +580,7 @@ void bnx2fc_process_l2_frame_compl(struc
- 		fr_eof(fp) = FC_EOF_T;
- 		fr_crc(fp) = cpu_to_le32(~crc);
- 		unsol_els->lport = lport;
-+		unsol_els->hba = hba;
- 		unsol_els->fp = fp;
- 		INIT_WORK(&unsol_els->unsol_els_work, bnx2fc_unsol_els_work);
- 		queue_work(bnx2fc_wq, &unsol_els->unsol_els_work);
+ 	cp->cnic_ops = &cnic_bnx2_ops;
+ 	cp->start_hw = cnic_start_bnx2_hw;
+ 	cp->stop_hw = cnic_stop_bnx2_hw;
 
 
