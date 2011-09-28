@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab1I1All (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:41:41 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:52619
+	id S1752233Ab1I1Ar3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:47:29 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:52642
 	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab1I1Alk (ORCPT
+	with ESMTP id S1751804Ab1I1ArY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 20:41:40 -0400
-Message-ID: <4E826D3B.7080805@kernel.dk>
-Date: Tue, 27 Sep 2011 18:41:31 -0600
+	Tue, 27 Sep 2011 20:47:24 -0400
+Date: Wed, 28 Sep 2011 02:47:23 +0200
 From: Jens Axboe <axboe@kernel.dk>
+To: Hannes Reinecke <hare@suse.de>
+Cc: James Bottomley <James.Bottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
+Message-ID: <20110928004722.GA27421@kernel.dk>
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: James Bottomley <jbottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block fixes for 3.1-rc
-References: <4E79D65A.6070406@kernel.dk> <CA+55aFxWHBEBaWfWcdOHucAiMHnTH+y1WRq6gik+=NGA1FNh=Q@mail.gmail.com>
-In-Reply-To: <CA+55aFxWHBEBaWfWcdOHucAiMHnTH+y1WRq6gik+=NGA1FNh=Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109221318.p8MDIXPP020015@pentland.suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-27 17:52, Linus Torvalds wrote:
-> On Wed, Sep 21, 2011 at 5:19 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>
->> Final round of patches for 3.1.
+On Thu, Sep 22 2011, Hannes Reinecke wrote:
 > 
-> Apparently better not.
-> 
-> The "block layer oopses on USB device removal" is still there, it seems.
-> 
-> I can even find a patch from it from Alan Stern:
-> 
->    https://lkml.org/lkml/2011/9/18/63
-> 
-> and the reason I found that was that my wife's machine just saw what
-> looks very much like that bug in elv_put_request().
-> 
-> The call chain on that particular machine was:
-> 
->  - __blk_put_request
->   blk_put_request
->   scsi_execute
->   scsi_execute_req
->   sd_check_events
->   disk_events_workfn
->   process_one_work
-> 
-> in one of the kthread helpers. It sounds like something either
-> generates disk events after the unplug event (despite a "safely
-> remove" thing), or doesn't properly wait for the disk events to have
-> flushed before the elevator is cleared.
-> 
-> The "things go oops at USB removal" reports have been with us for a
-> *loong* time now. Can we please get this fixed already, and have
-> somebody really look at it?
-> 
-> And if you can't figure out why it happens, at least apply Alan's
-> patch (or ack it).
+> A kernel crash is observed when a mounted ext3/ext4 filesystem
+> is physically removed.
+> The problem is that blk_cleanup_queue() frees up some resources
+> eg by calling elevator_exit(), which are not checked for in
+> normal operation.
+> So we should rather move these calls to the destructor function
+> blk_release_queue() as at that point all remaining references
+> are gone.
+> However, in doing so we have to ensure that any externally
+> supplied queue_lock is disconnected as the driver might
+> free up the lock after the call of blk_cleanup_queue(),
 
-The whole thing is a bit of a mess, it was introduced by changes meant
-to clean it up, which didn't get to the root of the problem (and
-seemingly only made it worse). We need the queue clearly referenced and
-released, not just pointed to. That would be the more invasive and real
-fix. I will apply Alan's fix for a happier 3.1.
+Do we have acks from the people who saw this oops, that this really does
+fix it for them? I ask since this fix is vastly cleaner than the other
+patch floating around, so I'd much rather pull this one in.
 
 -- 
 Jens Axboe
