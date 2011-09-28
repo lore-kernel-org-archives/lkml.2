@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1I1R1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:27:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64800 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754404Ab1I1R1n (ORCPT
+	id S1754425Ab1I1R2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:28:50 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1302 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab1I1R2t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:27:43 -0400
-Date: Wed, 28 Sep 2011 18:23:43 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Huajun Li <huajun.li.lee@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: Question about memory leak detector giving false positive
- report for net/core/flow.c
-Message-ID: <20110928172342.GH23559@e102109-lin.cambridge.arm.com>
-References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com>
- <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110926165024.GA21617@e102109-lin.cambridge.arm.com>
- <1317066395.2796.11.camel@edumazet-laptop>
+	Wed, 28 Sep 2011 13:28:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 28 Sep 2011 10:28:44 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>
+Date: Wed, 28 Sep 2011 10:28:43 -0700
+Subject: RE: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
+Thread-Topic: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
+Thread-Index: Acx91f3nm4PhNBOsRiqLDwWncbVLMgALbJ+g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17395557FD@HQMAIL01.nvidia.com>
+References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B7321777@HQMAIL01.nvidia.com>
+	<CACRpkdY5ETbJxSpwJL-7KZhjOnhwrdT1=djwByek75ye=S9L9w@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
+	<CACRpkdbiWUFPfF9vKV5YpSW68ZTdjwb8NhWZ_9WDoY5Q+aVfvQ@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF17395556DC@HQMAIL01.nvidia.com>
+ <CACRpkdYx-iKPJisP7PgNynu9z3tu7s6KieFAoAOU2YO_5X2iqA@mail.gmail.com>
+In-Reply-To: <CACRpkdYx-iKPJisP7PgNynu9z3tu7s6KieFAoAOU2YO_5X2iqA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1317066395.2796.11.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 26, 2011 at 08:46:35PM +0100, Eric Dumazet wrote:
-> Le lundi 26 septembre 2011 à 17:50 +0100, Catalin Marinas a écrit :
-> > kmemleak_not_leak() definitely not the write answer. The alloc_percpu()
-> > call does not have any kmemleak_alloc() callback, so it doesn't scan
-> > them.
-> > 
-> > Huajun, could you please try the patch below:
-...
-> Hmm, you need to call kmemleak_alloc() for each chunk allocated per
-> possible cpu.
+Linus Walleij wrote at Wednesday, September 28, 2011 5:59 AM:
+> On Wed, Sep 28, 2011 at 2:15 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> > But can't debugfs just get its information from the device name field in
+> > the mapping table? I'm not sure why the need to use that information for
+> > debugfs prevents the having entries with both the hog flag set and a
+> > device name set?
+> 
+> That feels unsafe - then you have some string claiming to represent the
+> device for that pinmux, but the system has not matched that string
+> against dev_name() for any real device, so it could be a lie, any string
+> like "foo" would do.
+> 
+> What I do now for U300 is complete resolution by matching dev_name
+> in the mapping to dev_name(device) on the struct device * actually
+> instantiated, which means you're 100% sure it is really mapped
+> to that very device.
+> 
+> I like this since it's much more stringent...
 
-I tried this but it's tricky. The problem is that the percpu pointer
-returned by alloc_percpu() does not directly point to the per-cpu chunks
-and kmemleak would report most percpu allocations as leaks. So far the
-workaround is to simply mark the alloc_percpu() objects as never leaking
-and at least we avoid false positives in other areas. See the patch
-below (note that you have to increase the CONFIG_KMEMLEAK_EARLY_LOG_SIZE
-as there are many alloc_percpu() calls before kmemleak is fully
-initialised):
+OK, I can see the advantage, and I suppose one could still move
+u300_pinmux_fetch() into the pinmux core as a helper function in the
+future if needed without too much issue. If it's hard for some other
+machine to set up the .dev entries in the table the function uses, one
+can always fall back on system/non-device hog entries in the main
+mapping table.
 
-------------8<------------------------------------
-
-kmemleak: Handle percpu memory allocation
-
-From: Catalin Marinas <catalin.marinas@arm.com>
-
-This patch adds kmemleak callbacks from the percpu allocator, reducing a
-number of false positives caused by kmemleak not scanning such memory
-blocks.
-
-Reported-by: Huajun Li <huajun.li.lee@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>,
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- mm/percpu.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
-
-diff --git a/mm/percpu.c b/mm/percpu.c
-index bf80e55..ece9f85 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -67,6 +67,7 @@
- #include <linux/spinlock.h>
- #include <linux/vmalloc.h>
- #include <linux/workqueue.h>
-+#include <linux/kmemleak.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/sections.h>
-@@ -709,6 +710,8 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
- 	const char *err;
- 	int slot, off, new_alloc;
- 	unsigned long flags;
-+	void __percpu *ptr;
-+	unsigned int cpu;
- 
- 	if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZE)) {
- 		WARN(true, "illegal size (%zu) or align (%zu) for "
-@@ -801,7 +804,16 @@ area_found:
- 	mutex_unlock(&pcpu_alloc_mutex);
- 
- 	/* return address relative to base address */
--	return __addr_to_pcpu_ptr(chunk->base_addr + off);
-+	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
-+
-+	/*
-+	 * Percpu allocations are currently reported as leaks (kmemleak false
-+	 * positives). To avoid this, just set min_count to 0.
-+	 */
-+	for_each_possible_cpu(cpu)
-+		kmemleak_alloc(per_cpu_ptr(ptr, cpu), size, 0, GFP_KERNEL);
-+
-+	return ptr;
- 
- fail_unlock:
- 	spin_unlock_irqrestore(&pcpu_lock, flags);
-@@ -911,10 +923,14 @@ void free_percpu(void __percpu *ptr)
- 	struct pcpu_chunk *chunk;
- 	unsigned long flags;
- 	int off;
-+	unsigned int cpu;
- 
- 	if (!ptr)
- 		return;
- 
-+	for_each_possible_cpu(cpu)
-+		kmemleak_free(per_cpu_ptr(ptr, cpu));
-+
- 	addr = __pcpu_ptr_to_addr(ptr);
- 
- 	spin_lock_irqsave(&pcpu_lock, flags);
-@@ -1619,6 +1635,8 @@ int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
- 			rc = -ENOMEM;
- 			goto out_free_areas;
- 		}
-+		/* kmemleak tracks the percpu allocations separately */
-+		kmemleak_free(ptr);
- 		areas[group] = ptr;
- 
- 		base = min(ptr, base);
-@@ -1733,6 +1751,8 @@ int __init pcpu_page_first_chunk(size_t reserved_size,
- 					   "for cpu%u\n", psize_str, cpu);
- 				goto enomem;
- 			}
-+			/* kmemleak tracks the percpu allocations separately */
-+			kmemleak_free(ptr);
- 			pages[j++] = virt_to_page(ptr);
- 		}
- 
+So I'll drop my objection to this.
 
 -- 
-Catalin
+nvpublic
+
