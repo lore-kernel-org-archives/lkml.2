@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab1I1Wlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:41:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53947 "EHLO mx2.suse.de"
+	id S932432Ab1I1Wl5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:41:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53978 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932309Ab1I1Wlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
-Message-Id: <20110928220134.703436286@clark.kroah.org>
+	id S932401Ab1I1Wlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:52 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:35 2011
+Message-Id: <20110928220134.912503295@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:53 -0700
+Date: Wed, 28 Sep 2011 15:00:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [089/244] irda: fix smsc-ircc2 section mismatch warning
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [091/244] iommu/amd: Make sure iommu->need_sync contains correct value
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit f470e5ae34d68880a38aa79ee5c102ebc2a1aef6 upstream.
+commit f1ca1512e765337a7c09eb875eedef8ea4e07654 upstream.
 
-Fix section mismatch warning:
+The value is only set to true but never set back to false,
+which causes to many completion-wait commands to be sent to
+hardware. Fix it with this patch.
 
-WARNING: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open()
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/irda/smsc-ircc2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/amd_iommu.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/net/irda/smsc-ircc2.c
-+++ b/drivers/net/irda/smsc-ircc2.c
-@@ -515,7 +515,7 @@ static const struct net_device_ops smsc_
-  *    Try to open driver instance
-  *
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -531,7 +531,9 @@ static void build_inv_all(struct iommu_c
+  * Writes the command to the IOMMUs command buffer and informs the
+  * hardware about the new command.
   */
--static int __init smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
-+static int __devinit smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
+-static int iommu_queue_command(struct amd_iommu *iommu, struct iommu_cmd *cmd)
++static int iommu_queue_command_sync(struct amd_iommu *iommu,
++				    struct iommu_cmd *cmd,
++				    bool sync)
  {
- 	struct smsc_ircc_cb *self;
- 	struct net_device *dev;
+ 	u32 left, tail, head, next_tail;
+ 	unsigned long flags;
+@@ -565,13 +567,18 @@ again:
+ 	copy_cmd_to_buffer(iommu, cmd, tail);
+ 
+ 	/* We need to sync now to make sure all commands are processed */
+-	iommu->need_sync = true;
++	iommu->need_sync = sync;
+ 
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ 
+ 	return 0;
+ }
+ 
++static int iommu_queue_command(struct amd_iommu *iommu, struct iommu_cmd *cmd)
++{
++	return iommu_queue_command_sync(iommu, cmd, true);
++}
++
+ /*
+  * This function queues a completion wait command into the command
+  * buffer of an IOMMU
+@@ -587,7 +594,7 @@ static int iommu_completion_wait(struct
+ 
+ 	build_completion_wait(&cmd, (u64)&sem);
+ 
+-	ret = iommu_queue_command(iommu, &cmd);
++	ret = iommu_queue_command_sync(iommu, &cmd, false);
+ 	if (ret)
+ 		return ret;
+ 
 
 
