@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab1I1Sp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:45:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53540 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab1I1Sp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:45:26 -0400
-Date: Wed, 28 Sep 2011 20:41:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Wilson <wilsons@start.ca>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: [PATCH] x86: replace mm_context_t.ia32_compat by MMF_COMPAT
-Message-ID: <20110928184149.GA31060@redhat.com>
-References: <20110927170448.GA15977@redhat.com> <20110928020724.GA4524@wicker.gateway.2wire.net> <20110928155655.GB10550@redhat.com>
+	id S1755132Ab1I1SuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:50:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34795 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab1I1SuS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 14:50:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928155655.GB10550@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201109282008.17722.stephan.diestelhorst@amd.com>
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
+ <4E835851.7070502@zytor.com> <4E835E50.2020307@goop.org> <201109282008.17722.stephan.diestelhorst@amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Sep 2011 11:49:56 -0700
+X-Google-Sender-Auth: bHq8L02SAruJtvz77tWX1LPjbZg
+Message-ID: <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kill mm_context_t.ia32_compat in favour of arch-independent MMF_COMPAT
-flag. This saves a word in mm_struct, and the new flag can be probably
-use outside of arch/x86/.
+On Wed, Sep 28, 2011 at 11:08 AM, Stephan Diestelhorst
+<stephan.diestelhorst@amd.com> wrote:
+>
+> I must have missed the part when this turned into the propose-the-
+> craziest-way-that-this-still-works.contest :)
 
-Also, remove the "if (current->mm)" check from set_personality_*().
-This can only be called after exec_mmap() installs the new mm != NULL.
+So doing it just with the "lock addb" probably works fine, but I have
+to say that I personally shudder at the "surround the locked addb by
+reads from the word, in order to approximate an atomic read of the
+upper bits".
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+Because what you get is not really an "atomic read of the upper bits",
+it's a "ok, we'll get the worst case of somebody modifying the upper
+bits at the same time".
 
- include/linux/sched.h        |    5 ++++-
- arch/x86/include/asm/mmu.h   |    5 -----
- arch/x86/kernel/process_64.c |    8 ++------
- arch/x86/mm/init_64.c        |    2 +-
- arch/x86/ia32/ia32_aout.c    |    2 +-
- 5 files changed, 8 insertions(+), 14 deletions(-)
+Which certainly should *work*, but from a conceptual standpoint, isn't
+it just *much* nicer to say "we actually know *exactly* what the upper
+bits were".
 
---- 3.1/include/linux/sched.h~MMF_C	2011-09-28 19:53:26.000000000 +0200
-+++ 3.1/include/linux/sched.h	2011-09-28 19:57:06.000000000 +0200
-@@ -436,7 +436,10 @@ extern int get_dumpable(struct mm_struct
- #define MMF_VM_MERGEABLE	16	/* KSM may merge identical pages */
- #define MMF_VM_HUGEPAGE		17	/* set when VM_HUGEPAGE is set on vma */
- 
--#define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
-+#define MMF_COMPAT		18	/* this task runs in compat mode. */
-+
-+#define MMF_INIT_MASK	\
-+	((1 << MMF_COMPAT) | MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
- 
- struct sighand_struct {
- 	atomic_t		count;
---- 3.1/arch/x86/include/asm/mmu.h~MMF_C	2011-09-28 19:53:26.000000000 +0200
-+++ 3.1/arch/x86/include/asm/mmu.h	2011-09-28 19:53:49.000000000 +0200
-@@ -12,11 +12,6 @@ typedef struct {
- 	void *ldt;
- 	int size;
- 
--#ifdef CONFIG_X86_64
--	/* True if mm supports a task running in 32 bit compatibility mode. */
--	unsigned short ia32_compat;
--#endif
--
- 	struct mutex lock;
- 	void *vdso;
- } mm_context_t;
---- 3.1/arch/x86/kernel/process_64.c~MMF_C	2011-09-28 19:53:26.000000000 +0200
-+++ 3.1/arch/x86/kernel/process_64.c	2011-09-28 19:59:39.000000000 +0200
-@@ -501,10 +501,7 @@ void set_personality_64bit(void)
- 
- 	/* Make sure to be in 64bit mode */
- 	clear_thread_flag(TIF_IA32);
--
--	/* Ensure the corresponding mm is not marked. */
--	if (current->mm)
--		current->mm->context.ia32_compat = 0;
-+	clear_bit(MMF_COMPAT, &current->mm->flags);
- 
- 	/* TBD: overwrites user setup. Should have two bits.
- 	   But 64bit processes have always behaved this way,
-@@ -522,8 +519,7 @@ void set_personality_ia32(void)
- 	current->personality |= force_personality32;
- 
- 	/* Mark the associated mm as containing 32-bit tasks. */
--	if (current->mm)
--		current->mm->context.ia32_compat = 1;
-+	set_bit(MMF_COMPAT, &current->mm->flags);
- 
- 	/* Prepare the first "return" to user space */
- 	current_thread_info()->status |= TS_COMPAT;
---- 3.1/arch/x86/mm/init_64.c~MMF_C	2011-09-28 19:53:26.000000000 +0200
-+++ 3.1/arch/x86/mm/init_64.c	2011-09-28 19:53:49.000000000 +0200
-@@ -860,7 +860,7 @@ static struct vm_area_struct gate_vma = 
- struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
- {
- #ifdef CONFIG_IA32_EMULATION
--	if (!mm || mm->context.ia32_compat)
-+	if (!mm || test_bit(MMF_COMPAT, &mm->flags))
- 		return NULL;
- #endif
- 	return &gate_vma;
---- 3.1/arch/x86/ia32/ia32_aout.c~MMF_C	2011-09-28 19:53:26.000000000 +0200
-+++ 3.1/arch/x86/ia32/ia32_aout.c	2011-09-28 19:53:49.000000000 +0200
-@@ -298,7 +298,7 @@ static int load_aout_binary(struct linux
- 	/* OK, This is the point of no return */
- 	set_personality(PER_LINUX);
- 	set_thread_flag(TIF_IA32);
--	current->mm->context.ia32_compat = 1;
-+	set_bit(MMF_COMPAT, &current->mm->flags);
- 
- 	setup_new_exec(bprm);
- 
+But I don't care all *that* deeply. I do agree that the xaddw trick is
+pretty tricky. I just happen to think that it's actually *less* tricky
+than "read the upper bits separately and depend on subtle ordering
+issues with another writer that happens at the same time on another
+CPU".
 
+So I can live with either form - as long as it works. I think it might
+be easier to argue that the xaddw is guaranteed to work, because all
+values at all points are unarguably atomic (yeah, we read the lower
+bits nonatomically, but as the owner of the lock we know that nobody
+else can write them).
+
+                                 Linus
