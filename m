@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1I1XY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:24:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53836 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932310Ab1I1Wkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:33 2011
-Message-Id: <20110928220133.424676349@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:41 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [077/244] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1756183Ab1I1XYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:24:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65053 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab1I1XYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 19:24:39 -0400
+Date: Wed, 28 Sep 2011 18:11:12 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3 07/24] C6X: devicetree support
+Message-ID: <20110928231112.GE2838@ponder.secretlab.ca>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
+ <1317155405-26235-8-git-send-email-msalter@redhat.com>
+ <201109281531.36792.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109281531.36792.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Sep 28, 2011 at 03:31:36PM +0200, Arnd Bergmann wrote:
+> On Tuesday 27 September 2011, Mark Salter wrote:
+> > diff --git a/arch/c6x/boot/install-dtb.c b/arch/c6x/boot/install-dtb.c
+> > new file mode 100644
+> > index 0000000..fa979ce
+> > --- /dev/null
+> > +++ b/arch/c6x/boot/install-dtb.c
+> > @@ -0,0 +1,333 @@
+> > +/*
+> > + * Program to hack in a DTB to an ELF file having a placeholder
+> > + * section named __fst_blob.
+> > + *
+> > + * This allows for building multiple images with builtin DTBs
+> > + * using a single vmlinux image. This is only necessary until
+> > + * bootloader support exists.
+> > + *
+> > + * Copyright 2011 Texas Instruments Incorporated
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version
+> > + * 2 of the License, or (at your option) any later version.
+> > + *
+> > + * Usage: install-dtb <image.dtb> <kernel.elf>
+> > + */
+> 
+> Other architectures allow simply appending the device tree to the
+> kernel image file, which is more convenient for users and does
+> not require much kernel support. Have you tried this?
+> 
+> > diff --git a/arch/c6x/platforms/platform.c b/arch/c6x/platforms/platform.c
+> > new file mode 100644
+> > index 0000000..ad4651c
+> > --- /dev/null
+> > +++ b/arch/c6x/platforms/platform.c
+> > @@ -0,0 +1,17 @@
+> > +
+> > +static int __init c6x_device_probe(void)
+> > +{
+> > +       of_platform_bus_probe(NULL, of_default_bus_match_table, NULL);
+> > +       return 0;
+> > +}
+> > +device_initcall(c6x_device_probe);
+> 
+> device_initcall is run rather late. I think it would be more useful
+> to run this as early as possible, in order to make it possible to
+> have more of the core services probed through the device tree.
+> 
+> I also think that for probing the device tree root, you should be
+> using of_platform_populate instead of of_platform_bus_probe
+> nowadays. Maybe Grant can provide more information on this.
 
-------------------
+Yes.  Use of_platform_populate().  It's better.
 
-From: NeilBrown <neilb@suse.de>
-
-commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
-
-0.90 metadata uses an unsigned 32bit number to count the number of
-kilobytes used from each device.
-This should allow up to 4TB per device.
-However we multiply this by 2 (to get sectors) before casting to a
-larger type, so sizes above 2TB get truncated.
-
-Also we allow rdev->sectors to be larger than 4TB, so it is possible
-for the array to be resized larger than the metadata can handle.
-So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
-used.
-
-Also the sanity check at the end of super_90_load should include level
-1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
-
-Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/md/md.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1084,8 +1084,11 @@ static int super_90_load(mdk_rdev_t *rde
- 			ret = 0;
- 	}
- 	rdev->sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that */
-+	if (rdev->sectors >= (2ULL << 32))
-+		rdev->sectors = (2ULL << 32) - 2;
- 
--	if (rdev->sectors < sb->size * 2 && sb->level > 1)
-+	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
- 		/* "this cannot possibly happen" ... */
- 		ret = -EINVAL;
- 
-@@ -1119,7 +1122,7 @@ static int super_90_validate(mddev_t *md
- 		mddev->clevel[0] = 0;
- 		mddev->layout = sb->layout;
- 		mddev->raid_disks = sb->raid_disks;
--		mddev->dev_sectors = sb->size * 2;
-+		mddev->dev_sectors = ((sector_t)sb->size) * 2;
- 		mddev->events = ev1;
- 		mddev->bitmap_info.offset = 0;
- 		mddev->bitmap_info.default_offset = MD_SB_BYTES >> 9;
-@@ -1361,6 +1364,11 @@ super_90_rdev_size_change(mdk_rdev_t *rd
- 	rdev->sb_start = calc_dev_sboffset(rdev);
- 	if (!num_sectors || num_sectors > rdev->sb_start)
- 		num_sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that.
-+	 * 4TB == 2^32 KB, or 2*2^32 sectors.
-+	 */
-+	if (num_sectors >= (2ULL << 32))
-+		num_sectors = (2ULL << 32) - 2;
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
-
+g.
 
