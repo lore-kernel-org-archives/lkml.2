@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1I1NCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:02:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63964 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab1I1NCf (ORCPT
+	id S1754195Ab1I1NDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:03:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57058 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1I1NDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:02:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317196456.1998.24.camel@shrek.rexursive.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com>
-	<CAOJsxLGam5htmwtTZOuPka02+CZ1Fkv1b+SuYMJ8x9VRntFzRQ@mail.gmail.com>
-	<1317194947.1998.18.camel@shrek.rexursive.com>
-	<CAOJsxLFGpU53AQRw-nKsz_Lz_QMDP+RDUD5J3bYzbAA_+ngaAA@mail.gmail.com>
-	<1317196456.1998.24.camel@shrek.rexursive.com>
-Date: Wed, 28 Sep 2011 16:02:34 +0300
-X-Google-Sender-Auth: Xz0YQMqGa5FvJ_03OC8RoP3ZRxw
-Message-ID: <CAOJsxLGUmV=5+fOJShbfc+kELcPS9pnE+DkNY9+TBS33VmzRFg@mail.gmail.com>
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Sep 2011 09:03:47 -0400
+Subject: Re: [PATCH] PREEMPT_RT_FULL: arm coredump fails for cpu >= 4
+From: Peter Zijlstra <peterz@infradead.org>
+To: frank.rowand@am.sony.com
+Cc: "tglx@linutronix.de" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Date: Wed, 28 Sep 2011 15:03:13 +0200
+In-Reply-To: <4E828E35.6070801@am.sony.com>
+References: <4E828E35.6070801@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317214993.24040.16.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 10:54 AM, Bojan Smojver <bojan@rexursive.com> wrote:
-> I'm guessing here that you mean that parts of the kernel other than
-> hibernation code itself can do this (i.e. set the flag for the thread to
-> stop, so kthread_should_stop() returns true). Correct?
+On Tue, 2011-09-27 at 20:02 -0700, Frank Rowand wrote:
+> 
+> ARM can not use SPLIT_PTLOCK_CPUS if PREEMPT_RT_FULL because
+> vectors_user_mapping() creates a VM_ALWAYSDUMP mapping of the vector page,
+> but no ptl->lock has been allocated for the page.  An attempt to coredump
+> that page will result in a kernel NULL pointer dereference when
+> follow_page() attempts to lock the page.
 
-Sorry, I'm not familiar this code. However, if you're checking for the
-condition..
 
-[snip]
+> 
+> This patch is needed only if mm-shrink-the-page-frame-to-rt-size.patch is
+> applied. 
 
-> Right now, this would result in - well I don't know what exactly - most
-> likely corrupted data on disk or on memory.
+Yeah, vile hackery that is.. why isn't pgtable_page_ctor() called on
+those pages?
 
-...this is not really an option for handling it.
-
-                         Pekka
+Not that I care too much about split_pte_lock on ARM, they're mostly all
+tiny machines anyway so the gain is marginal, but it would be good to
+find out why the pgtable constructor isn't called properly.
