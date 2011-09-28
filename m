@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab1I1Pv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:51:59 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47849 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754896Ab1I1Pv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:51:57 -0400
-Message-ID: <1317225116.23682.6.camel@Joe-Laptop>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-From: Joe Perches <joe@perches.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 28 Sep 2011 08:51:56 -0700
-In-Reply-To: <20110928192220.6d85ae23a2f2ef316139a310@canb.auug.org.au>
-References: <20110928192220.6d85ae23a2f2ef316139a310@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.92- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755021Ab1I1Pws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:52:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45905 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753346Ab1I1Pwr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:52:47 -0400
+Date: Wed, 28 Sep 2011 16:52:45 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/7] regmap: Add a mutex to guard the sync operation
+Message-ID: <20110928155245.GA21137@opensource.wolfsonmicro.com>
+References: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com> <1317206627-6673-3-git-send-email-dp@opensource.wolfsonmicro.com> <20110928125249.GH3279@opensource.wolfsonmicro.com> <20110928142406.GA12438@opensource.wolfsonmicro.com> <20110928151937.GM3279@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928151937.GM3279@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 19:22 +1000, Stephen Rothwell wrote:
-> After merging the akpm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+On Wed, Sep 28, 2011 at 04:19:37PM +0100, Mark Brown wrote:
+> On Wed, Sep 28, 2011 at 03:24:06PM +0100, Dimitris Papastamos wrote:
+> > On Wed, Sep 28, 2011 at 01:52:50PM +0100, Mark Brown wrote:
 > 
-> In file included from arch/powerpc/boot/stdio.c:12:0:
-> arch/powerpc/boot/stdio.h:10:17: error: expected declaration specifiers or '...' before numeric constant
-[]
-> And went down hill from there (it produced hundreds of errors).
+> > > Shouldn't we either be taking the regmap lock when doing the sync or
+> > > otherwise guarding against something other than a cache sync?
+> 
+> > Em the main issue is that the sync() implementation will use
+> > regmap_write() which will grab map->lock.  To avoid this we could have
+> > gone and used directly the lockless _regmap_write() but that's
+> > static.  To be honest, it feels cleaner to have only 1 lock to guard
+> > the map so maybe we should get rid of map->sync_lock.
+> 
+> Making _regmap_write() global seems fine, it's not an externally visible
+> API but the cache code is part of the infrastructure.
 
-Well, I did say it was completely untested...
+Okay, so I'll go forth and revert the use of map->sync_lock
+and just grab map->lock.
 
-> Caused by commit a52af697aaeb ("treewide: use __printf not __attribute__
-> ((format(printf,...)))").  Maybe because some of these files are part of
-> the boot wrappers and are built (effectively) independently of the kernel
-> itself.  Notice that arch/powerpc/boot/stdio.h does not include any
-> kernel headers ...
-
-The conversion was too comprehensive.
-
-Probably most of the arch/... changes should be removed.
-The arch/frv and arch/s390 changes look safe as they
-are after #includes of kernel.h.
-
- arch/alpha/boot/misc.c                       |    3 +-
- arch/alpha/include/asm/console.h             |    3 +-
- arch/frv/include/asm/system.h                |    2 +-
- arch/ia64/include/asm/mca.h                  |    3 +-
- arch/m68k/include/asm/natfeat.h              |    3 +-
- arch/mn10300/include/asm/gdb-stub.h          |    5 +-
- arch/powerpc/boot/ps3.c                      |    3 +-
- arch/powerpc/boot/stdio.h                    |    5 +-
- arch/powerpc/include/asm/udbg.h              |    3 +-
- arch/s390/include/asm/debug.h                |   11 +--
- arch/um/include/shared/user.h                |    8 +-
-
-
+Thanks,
+Dimitris
