@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab1I1Wtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:49:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54968 "EHLO mx2.suse.de"
+	id S933488Ab1I1Wt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:49:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54982 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933383Ab1I1Wtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:47 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:45 2011
-Message-Id: <20110928220145.172568539@clark.kroah.org>
+	id S933383Ab1I1Wtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:55 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:49 2011
+Message-Id: <20110928220149.611851528@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:32 -0700
+Date: Wed, 28 Sep 2011 15:03:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [188/244] xfrm: Perform a replay check after return from async codepaths
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Subject: [230/244] memcg: fix vmscan count in small memcgs
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +27,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+commit 4508378b9523e22a2a0175d8bf64d932fb10a67d upstream.
 
-[ Upstream commit bcf66bf54aabffc150acd1c99e0f4bc51935eada ]
+Commit 246e87a93934 ("memcg: fix get_scan_count() for small targets")
+fixes the memcg/kswapd behavior against small targets and prevent vmscan
+priority too high.
 
-When asyncronous crypto algorithms are used, there might be many
-packets that passed the xfrm replay check, but the replay advance
-function is not called yet for these packets. So the replay check
-function would accept a replay of all of these packets. Also the
-system might crash if there are more packets in async processing
-than the size of the anti replay window, because the replay advance
-function would try to update the replay window beyond the bounds.
+But the implementation is too naive and adds another problem to small
+memcg.  It always force scan to 32 pages of file/anon and doesn't handle
+swappiness and other rotate_info.  It makes vmscan to scan anon LRU
+regardless of swappiness and make reclaim bad.  This patch fixes it by
+adjusting scanning count with regard to swappiness at el.
 
-This pach adds a second replay check after resuming from the async
-processing to fix these issues.
+At a test "cat 1G file under 300M limit." (swappiness=20)
+ before patch
+        scanned_pages_by_limit 360919
+        scanned_anon_pages_by_limit 180469
+        scanned_file_pages_by_limit 180450
+        rotated_pages_by_limit 31
+        rotated_anon_pages_by_limit 25
+        rotated_file_pages_by_limit 6
+        freed_pages_by_limit 180458
+        freed_anon_pages_by_limit 19
+        freed_file_pages_by_limit 180439
+        elapsed_ns_by_limit 429758872
+ after patch
+        scanned_pages_by_limit 180674
+        scanned_anon_pages_by_limit 24
+        scanned_file_pages_by_limit 180650
+        rotated_pages_by_limit 35
+        rotated_anon_pages_by_limit 24
+        rotated_file_pages_by_limit 11
+        freed_pages_by_limit 180634
+        freed_anon_pages_by_limit 0
+        freed_file_pages_by_limit 180634
+        elapsed_ns_by_limit 367119089
+        scanned_pages_by_system 0
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+the numbers of scanning anon are decreased(as expected), and elapsed time
+reduced. By this patch, small memcgs will work better.
+(*) Because the amount of file-cache is much bigger than anon,
+    recalaim_stat's rotate-scan counter make scanning files more.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Ying Han <yinghan@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/xfrm/xfrm_input.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/net/xfrm/xfrm_input.c
-+++ b/net/xfrm/xfrm_input.c
-@@ -212,6 +212,11 @@ resume:
- 		/* only the first xfrm gets the encap type */
- 		encap_type = 0;
+---
+ mm/vmscan.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1748,6 +1748,7 @@ static void get_scan_count(struct zone *
+ 	enum lru_list l;
+ 	int noswap = 0;
+ 	int force_scan = 0;
++	unsigned long nr_force_scan[2];
  
-+		if (async && x->repl->check(x, skb, seq)) {
-+			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
-+			goto drop_unlock;
-+		}
-+
- 		x->repl->advance(x, seq);
  
- 		x->curlft.bytes += skb->len;
+ 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+@@ -1770,6 +1771,8 @@ static void get_scan_count(struct zone *
+ 		fraction[0] = 0;
+ 		fraction[1] = 1;
+ 		denominator = 1;
++		nr_force_scan[0] = 0;
++		nr_force_scan[1] = SWAP_CLUSTER_MAX;
+ 		goto out;
+ 	}
+ 
+@@ -1781,6 +1784,8 @@ static void get_scan_count(struct zone *
+ 			fraction[0] = 1;
+ 			fraction[1] = 0;
+ 			denominator = 1;
++			nr_force_scan[0] = SWAP_CLUSTER_MAX;
++			nr_force_scan[1] = 0;
+ 			goto out;
+ 		}
+ 	}
+@@ -1829,6 +1834,11 @@ static void get_scan_count(struct zone *
+ 	fraction[0] = ap;
+ 	fraction[1] = fp;
+ 	denominator = ap + fp + 1;
++	if (force_scan) {
++		unsigned long scan = SWAP_CLUSTER_MAX;
++		nr_force_scan[0] = div64_u64(scan * ap, denominator);
++		nr_force_scan[1] = div64_u64(scan * fp, denominator);
++	}
+ out:
+ 	for_each_evictable_lru(l) {
+ 		int file = is_file_lru(l);
+@@ -1849,12 +1859,8 @@ out:
+ 		 * memcg, priority drop can cause big latency. So, it's better
+ 		 * to scan small amount. See may_noscan above.
+ 		 */
+-		if (!scan && force_scan) {
+-			if (file)
+-				scan = SWAP_CLUSTER_MAX;
+-			else if (!noswap)
+-				scan = SWAP_CLUSTER_MAX;
+-		}
++		if (!scan && force_scan)
++			scan = nr_force_scan[file];
+ 		nr[l] = scan;
+ 	}
+ }
 
 
