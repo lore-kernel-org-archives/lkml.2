@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab1I1Su2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:50:28 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:49260 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755134Ab1I1SuZ (ORCPT
+	id S1755155Ab1I1Szh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:55:37 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:32980 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab1I1Szf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:50:25 -0400
-Subject: Re: Oops in ecryptfs (apparently) with 3.1-rc6
-From: Luciano Coelho <coelho@ti.com>
-To: ecryptfs@vger.kernel.org
-Cc: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1316781869.4051.7.camel@cumari>
-References: <1316781869.4051.7.camel@cumari>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 21:50:15 +0300
-Message-ID: <1317235816.2171.158.camel@cumari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 14:55:35 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Matthew Garrett <mjg@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Wed, 28 Sep 2011 14:55:16 -0400
+Subject: RE: [RFC][PATCH -next] pstore: replace spin_lock with
+ spin_trylock_irqsave in panic path
+Thread-Topic: [RFC][PATCH -next] pstore: replace spin_lock with
+ spin_trylock_irqsave in panic path
+Thread-Index: Acx96EHEQqSOWIL5TS2QX3gl7H50ugAJ4Nkw
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5700CA5D@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B823@USINDEVS01.corp.hds.com>
+ <20110927173413.GJ5795@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE4211E3@orsmsx505.amr.corp.intel.com>
+ <20110927175919.GK5795@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE421365@orsmsx505.amr.corp.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B8AD@USINDEVS01.corp.hds.com>
+ <20110928140933.GR5795@redhat.com>
+In-Reply-To: <20110928140933.GR5795@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1109280222
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 15:44 +0300, Luciano Coelho wrote: 
-> I just got this oops on my PC, while running 3.1-rc6 normally:
-> 
-> [255264.517298] Oops: 0000 [#1] SMP 
-> [255264.517301] CPU 4 
-> [255264.517303] Modules linked in: nls_iso8859_1 nls_cp437 vfat fat dm_crypt pl2303 ftdi_sio usbserial cryptd aes_x86_64 aes_generic binfmt_misc snd_hda_codec_analog nvidia(P) snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi psmouse snd_rawmidi snd_seq_midi_event snd_seq snd_timer dell_wmi nfsd exportfs snd_seq_device serio_raw nfs sparse_keymap snd soundcore snd_page_alloc i7core_edac edac_core ppdev lp dcdbas lockd fscache auth_rpcgss nfs_acl sunrpc parport_pc parport usb_storage usbhid hid tg3
-> [255264.517341] 
-> [255264.517343] Pid: 18110, comm: cat Tainted: P            3.1.0-rc6-custom #2 Dell Inc. Precision WorkStation T3500  /09KPNV
-> [255264.517348] RIP: 0010:[<ffffffff8125dddd>]  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
-> [255264.517353] RSP: 0018:ffff88031c03db78  EFLAGS: 00010246
-> [255264.517356] RAX: 0000000000000000 RBX: ffff88031c03db88 RCX: 0000000000000000
-> [255264.517358] RDX: 0000000000000010 RSI: ffff880170bd1ae0 RDI: 0000000000000000
-> [255264.517361] RBP: ffff88031c03dc38 R08: 0000000000000000 R09: ffff88031c03db88
-> [255264.517363] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880170bd1a70
-> [255264.517366] R13: 0000000000001000 R14: ffffea0008351cc0 R15: ffff880170bd1b60
-> [255264.517369] FS:  00002b38b966bb20(0000) GS:ffff880333280000(0000) knlGS:0000000000000000
-> [255264.517372] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [255264.517374] CR2: 0000000000000010 CR3: 000000010b9e6000 CR4: 00000000000006e0
-> [255264.517377] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [255264.517379] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [255264.517382] Process cat (pid: 18110, threadinfo ffff88031c03c000, task ffff88005f920000)
-> [255264.517385] Stack:
-> [255264.517386]  0000000000000000 0000000000000000 ffffea0008351cc2 0000100000000000
-> [255264.517391]  0000000000000000 0000000000000000 ffffea000964c302 0000100000000000
-> [255264.517395]  0000000000000000 0000000000000000 0000000000000000 ffff88031c03dbe8
-> [255264.517399] Call Trace:
-> [255264.517406]  [<ffffffff81163f35>] ? vfs_read+0xc5/0x190
-> [255264.517409]  [<ffffffff8125e0b2>] ecryptfs_decrypt_page+0xb2/0x190
-> [255264.517413]  [<ffffffff8125bb08>] ecryptfs_readpage+0xd8/0x120
-> [255264.517418]  [<ffffffff8110daf4>] generic_file_aio_read+0x234/0x740
-> [255264.517424]  [<ffffffff8125863c>] ecryptfs_read_update_atime+0x1c/0x60
-> [255264.517428]  [<ffffffff811637fa>] do_sync_read+0xda/0x120
-> [255264.517434]  [<ffffffff81286a3b>] ? security_file_permission+0x8b/0x90
-> [255264.517438]  [<ffffffff81163f35>] vfs_read+0xc5/0x190
-> [255264.517441]  [<ffffffff81164101>] sys_read+0x51/0x90
-> [255264.517446]  [<ffffffff815dc082>] system_call_fastpath+0x16/0x1b
-> [255264.517448] Code: 98 41 0f af c5 89 85 58 ff ff ff 49 8b 44 24 40 48 89 45 90 e8 c5 4d 37 00 49 8b 44 24 40 49 8b 54 24 20 49 8d 74 24 70 48 89 c7 <ff> 50 10 85 c0 0f 85 40 01 00 00 31 c0 44 89 ea 48 c7 c6 50 cf 
-> [255264.517481] RIP  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
-> [255264.517485]  RSP <ffff88031c03db78>
-> [255264.517487] CR2: 0000000000000010
-> [255264.517490] ---[ end trace 6beaa9aa4bd67546 ]---
+Hi Don,
 
-Did anyone else get a similar oops? Or does anyone have any clue what
-this is about? I haven't seen any fix that could be related to this, so
-I'm still really wary of using 3.1-rc*. ;)
+>[reads the kernel/panic.c code] oh, I see this already exists, you would
+>just move the smp_send_stop() command up a couple lines of code.
+>
+>[Side note] perhaps we should change the behaviour of smp_send_stop to use
+>NMI and create a blacklist of machines to use the IRQ line instead.  I
+>assume the list of broken machines is small as Red Hat has been kdumping
+>kernels since 2.6.18 with little evidence that machines were failing
+>because NMI wasn't working properly.
 
--- 
-Cheers,
-Luca.
+OK. I will develop a patch in accordance with your comment above.
+In addition to that, I have to improve mtdoops/ramoops because
+There are some blocking codes in them.
 
+Seiji
