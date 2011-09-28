@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1I1SVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:21:50 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59509 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753855Ab1I1SVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:21:49 -0400
-Message-ID: <4E836546.7010004@parallels.com>
-Date: Wed, 28 Sep 2011 15:19:50 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754840Ab1I1SWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:22:50 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65309 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab1I1SWt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 14:22:49 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>
-Subject: Re: [RFD 1/9] Change cpustat fields to an array.
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-2-git-send-email-glommer@parallels.com> <1317157252.21836.3.camel@twins>
-In-Reply-To: <1317157252.21836.3.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.46.180.55]
+In-Reply-To: <1317103906-4649-1-git-send-email-keithp@keithp.com>
+References: <yunbou6lxb4.fsf@aiko.keithp.com>
+	<1317103906-4649-1-git-send-email-keithp@keithp.com>
+Date: Wed, 28 Sep 2011 15:22:48 -0300
+Message-ID: <CA+gsUGTZfxt2L9mT-kYGGKiYhtRKn2xO5tXperwAWLVi2mKeOQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] PCH reference clock cleanups
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2011 06:00 PM, Peter Zijlstra wrote:
-> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->>   /* Must have preemption disabled for this to be meaningful. */
->> -#define kstat_this_cpu __get_cpu_var(kstat)
->> +#define kstat_this_cpu this_cpu_ptr(task_group_kstat(current))
+2011/9/27 Keith Packard <keithp@keithp.com>:
+> Here's a patch sequence which cleans up a bunch of PCH refclk related
+> bits.
+
+For the series: Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+
+Tested all the patches on Ironlake (LVDS + VGA). Fixes fd.o bug #38750 for me.
+
+I also tested the patch you sent today 1 hour ago (inline in one of
+the emails) and things still work with it. I'll keep using these
+patches since they fix my laptop. Any problem will be reported.
+
+Maybe my email client/server is ruining things, but I believe patch 7
+includes whitespace errors.
+
+> There are a couple of questionable patches that I'd like to see
+> people look at:
 >
-> This just lost you a debug check, the former would whinge when called
-> without preemption, the new one wont. Its part of the this_cpu feature
-> set to make debugging impossible.
+>  [PATCH 6/9] drm/i915: Fix PCH SSC reference clock settings
+>  [PATCH 9/9] drm/i915: Initialize PCH refclks at modeset init time
 >
->> +#else
->> +#define kstat_cpu(cpu) per_cpu(kstat, cpu)
->> +#define kstat_this_cpu (&__get_cpu_var(kstat))
->> +#endif
->>
->>   extern unsigned long long nr_context_switches(void);
->>
->> @@ -52,8 +62,8 @@ struct irq_desc;
->>   static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
->>                                              struct irq_desc *desc)
->>   {
->> -       __this_cpu_inc(kstat.irqs[irq]);
->> -       __this_cpu_inc(kstat.irqs_sum);
->> +       kstat_this_cpu->irqs[irq]++;
->> +       kstat_this_cpu->irqs_sum++;
+> Here's the main patch -- this looks at the global set of encoders and
+> figures out what the refclk should be to make all of those work
+> correctly. Nothing is dependent on the active configuration, so we
+> aren't reprogramming this register during run-time. The last patch in
+> the sequence moves the setting of this register from modeset time to
+> init time.
 >
-> It might be worth looking at the asm output of that, I think you made it
-> worse, but I'm not quite sure how smart gcc is, it might just figure out
-> what you meant.
+>  [PATCH 7/9] drm/i915: Use CK505 as non-SSC source where available
+>
+> This is a small piece straight from Jesse's patch; just uses the VBT
+> configuration for CK505 clock sources.
+>
+>  [PATCH 8/9] drm/i915: All PCH refclks are 120MHz
+>
+> Ok, so I'd love to know where in any PCH reference matter someone has
+> found a place where the reference clock for any of the PLLs is
+> anything other than 120MHz. Can someone find a reference for other frequencies?
+>
+> --
+> keith.packard@intel.com
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+>
 
-I'd say leave it alone.
-The biggest difference is that we don't have access to task_group(), or 
-any of the fields in struct task_group. Because of that, we end up 
-having to export a function to do the job of dealing with it.
-
-Users inside sched.c won't have this problem. Outside of it, we'll add a 
-call to some paths. True, mostly handle_irq paths, but I don't think 
-that's what's going to kill us.
-
-Now if we really really want to save it, we'd have to move struct 
-task_group and its friends to a more visible location like a header...
-
-
+-- 
+Paulo Zanoni
