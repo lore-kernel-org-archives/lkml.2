@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab1I1Wpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54465 "EHLO mx2.suse.de"
+	id S932917Ab1I1WqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:46:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54480 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab1I1Wpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:46 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
-Message-Id: <20110928220138.727122597@clark.kroah.org>
+	id S932904Ab1I1Wp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
+Message-Id: <20110928220139.049624112@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:31 -0700
+Date: Wed, 28 Sep 2011 15:01:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Dave Jones <davej@codemonkey.org.uk>, Len Brown <lenb@kernel.org>
-Subject: [127/244] drivers/cpufreq/pcc-cpufreq.c: avoid NULL pointer dereference
+        Brian King <brking@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [130/244] ibmveth: Fix DMA unmap error
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+From: Brian King <brking@linux.vnet.ibm.com>
 
-commit e71f5cc402ecb42b407ae52add7b173bf1c53daa upstream.
+commit 33a48ab105a75d37021e422a0a3283241099b142 upstream.
 
-per_cpu(processors, n) can be NULL, resulting in:
+Commit 6e8ab30ec677 (ibmveth: Add scatter-gather support) introduced a
+DMA mapping API inconsistency resulting in dma_unmap_page getting
+called on memory mapped via dma_map_single. This was seen when
+CONFIG_DMA_API_DEBUG was enabled. Fix up this API usage inconsistency.
 
-  Loading CPUFreq modules[  437.661360] BUG: unable to handle kernel NULL pointer dereference at (null)
-  IP: [<ffffffffa0434314>] pcc_cpufreq_cpu_init+0x74/0x220 [pcc_cpufreq]
-
-It's better to avoid the oops by failing the driver, and allowing the
-system to boot.
-
-Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Cc: Dave Jones <davej@codemonkey.org.uk>
-Cc: Len Brown <lenb@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/cpufreq/pcc-cpufreq.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ibmveth.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/pcc-cpufreq.c
-+++ b/drivers/cpufreq/pcc-cpufreq.c
-@@ -261,6 +261,9 @@ static int pcc_get_offset(int cpu)
- 	pr = per_cpu(processors, cpu);
- 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
+--- a/drivers/net/ibmveth.c
++++ b/drivers/net/ibmveth.c
+@@ -1025,7 +1025,12 @@ retry_bounce:
+ 		netdev->stats.tx_bytes += skb->len;
+ 	}
  
-+	if (!pr)
-+		return -ENODEV;
+-	for (i = 0; i < skb_shinfo(skb)->nr_frags + 1; i++)
++	dma_unmap_single(&adapter->vdev->dev,
++			 descs[0].fields.address,
++			 descs[0].fields.flags_len & IBMVETH_BUF_LEN_MASK,
++			 DMA_TO_DEVICE);
 +
- 	status = acpi_evaluate_object(pr->handle, "PCCP", NULL, &buffer);
- 	if (ACPI_FAILURE(status))
- 		return -ENODEV;
++	for (i = 1; i < skb_shinfo(skb)->nr_frags + 1; i++)
+ 		dma_unmap_page(&adapter->vdev->dev, descs[i].fields.address,
+ 			       descs[i].fields.flags_len & IBMVETH_BUF_LEN_MASK,
+ 			       DMA_TO_DEVICE);
 
 
