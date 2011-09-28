@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab1I1PPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:15:14 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:43519 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab1I1PPL (ORCPT
+	id S1754749Ab1I1PPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:15:47 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:45309 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab1I1PPq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:15:11 -0400
-Subject: Re: [PATCH] Smack: fix domain transfer issues
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <1317206909-24443-1-git-send-email-jarkko.sakkinen@intel.com>
-References: <1317206909-24443-1-git-send-email-jarkko.sakkinen@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Wed, 28 Sep 2011 11:15:04 -0400
-Message-ID: <1317222904.20139.20.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 11:15:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1317200618.1573.1765.camel@vkoul-udesk3>
+References: <1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+Date: Wed, 28 Sep 2011 20:45:45 +0530
+Message-ID: <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        rmk@arm.linux.org.uk, 21cnbao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 13:48 +0300, Jarkko Sakkinen wrote:
-> When domain changes, Smack should check for ptracing
-> and shared state. Additionally, it should clear unsafe
-> personality bits and turn on the secureexec bit. This
-> patch addresses these issues.
-> 
-> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-> ---
->  security/smack/smack.h     |    5 ++++
->  security/smack/smack_lsm.c |   46 ++++++++++++++++++++++++++++++++++---------
->  2 files changed, 41 insertions(+), 10 deletions(-)
-> 
-> diff --git a/security/smack/smack.h b/security/smack/smack.h
-> index 174d3be..7b37615 100644
-> --- a/security/smack/smack.h
-> +++ b/security/smack/smack.h
-> @@ -187,6 +187,11 @@ struct smack_known {
->  #define SMK_NUM_ACCESS_TYPE 4
->  
->  /*
-> + * Passed in the bprm->unsafe field
-> + */
-> +#define SMK_SECUREEXEC_NEEDED 0x8000
+On 28 September 2011 14:33, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Wed, 2011-09-28 at 12:09 +0530, Jassi Brar wrote:
 
-Did I miss something or did you find a rationale for using bprm->unsafe
-in this manner?  It isn't private to your security module yet you are
-claiming a bit for your own private use without reserving it in any way
-globally (consider implications for any future stacking), and setting
-new bits in it will have side effects on the capabilities logic.  I
-already mentioned this on your first patch and you seemed to acknowledge
-it then.  Pass it via bprm->cred->security if you need to pass it as a
-flag, or re-test the condition in the secureexec hook otherwise.
+>>
+>> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+>> +             struct dma_chan *chan, struct dmaxfer_template *xt,
+>> +             unsigned long flags);
+> what's the flags used for?
+Same as for device_prep_slave_sg, device_prep_dma_sg, device_prep_dma_interrupt,
+device_prep_dma_memset etc. Usually for flagging buffer map/unmap'ing
+in this case.
+Btw, this was present in v3 as well.
 
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 2e71c3f..b3766ac 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -455,22 +462,40 @@ static int smack_bprm_set_creds(struct linux_binprm *bprm)
->  	if (bprm->cred_prepared)
->  		return 0;
->  
-> -	if (bprm->file == NULL || bprm->file->f_dentry == NULL)
-> -		return 0;
-> -
-> -	dp = bprm->file->f_dentry;
-> +	isp = inode->i_security;
->  
-> -	if (dp->d_inode == NULL)
-> +	if (isp->smk_task == NULL || isp->smk_task == tsp->smk_task)
->  		return 0;
->  
-> -	isp = dp->d_inode->i_security;
-> +	if (bprm->unsafe & LSM_UNSAFE_SHARE)
-> +		return -EPERM;
->  
-> -	if (isp->smk_task != NULL)
-> -		tsp->smk_task = isp->smk_task;
-> +	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP))
-> +		return -EPERM;
 
-Why not just:
-	if (bprm->unsafe)
-		return -EPERM;
-if you aren't going to distinguish them via permission checks or
-anything?
+>> +enum xfer_direction {
+>> +     MEM_TO_MEM,
+>> +     MEM_TO_DEV,
+>> +     DEV_TO_MEM,
+>> +     DEV_TO_DEV,
+> Use/update dma_data_direction.
+dma_data_direction is the mapping attribute of a buffer.
+While that info is what some dmac driver might need ultimately, our main
+aim here is to tell exactly if Src and Dst is Memory or a device's FIFO.
 
-I take it you've decided you don't need any of the other checks or
-sanitization applied by SELinux?
+Mapping attribute of src/dst buffers could be very well deducted from
+xfer_direction, but dma_data_direction isn't meant to tell if Src and Dst
+is Mem or FIFO.
+Also, for (SLAVE && !src_inc && !dst_inc) we need to disambiguate three
+options  Mem->Fifo,  Fifo->Mem,  *Fifo->Fifo*(not impossible)
+So while using dma_data_direction would work today, that sure is hacky
+and not future-proof.
 
--- 
-Stephen Smalley
-National Security Agency
 
+>> +/**
+>> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
+>> + *    and attributes.
+>> + * @src_start: Bus address of source for the first chunk.
+>> + * @dst_start: Bus address of destination for the first chunk.
+>> + * @dir: Specifies the type of Source and Destination.
+>> + * @src_inc: If the source address increments after reading from it.
+>> + * @dst_inc: If the destination address increments after writing to it.
+>> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+>> + *           Otherwise, source is read contiguously (icg ignored).
+>> + *           Ignored if src_inc is false.
+>> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+>> + *           Otherwise, destination is filled contiguously (icg ignored).
+>> + *           Ignored if dst_inc is false.
+>> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+> I thought you were going to remove this?
+Yes, I just forgot.
