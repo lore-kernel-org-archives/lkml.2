@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab1I1Wp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54415 "EHLO mx2.suse.de"
+	id S1755964Ab1I1Wpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:45:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54465 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932820Ab1I1WpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:41 2011
-Message-Id: <20110928220141.226715400@clark.kroah.org>
+	id S932896Ab1I1Wpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
+Message-Id: <20110928220138.727122597@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:55 -0700
+Date: Wed, 28 Sep 2011 15:01:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [151/244] xen/e820: if there is no dom0_mem=, dont tweak extra_pages.
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Dave Jones <davej@codemonkey.org.uk>, Len Brown <lenb@kernel.org>
+Subject: [127/244] drivers/cpufreq/pcc-cpufreq.c: avoid NULL pointer dereference
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
 
-commit e3b73c4a25e9a5705b4ef28b91676caf01f9bc9f upstream.
+commit e71f5cc402ecb42b407ae52add7b173bf1c53daa upstream.
 
-The patch "xen: use maximum reservation to limit amount of usable RAM"
-(d312ae878b6aed3912e1acaaf5d0b2a9d08a4f11) breaks machines that
-do not use 'dom0_mem=' argument with:
+per_cpu(processors, n) can be NULL, resulting in:
 
-reserve RAM buffer: 000000133f2e2000 - 000000133fffffff
-(XEN) mm.c:4976:d0 Global bit is set to kernel page fffff8117e
-(XEN) domain_crash_sync called from entry.S
-(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
-...
+  Loading CPUFreq modules[  437.661360] BUG: unable to handle kernel NULL pointer dereference at (null)
+  IP: [<ffffffffa0434314>] pcc_cpufreq_cpu_init+0x74/0x220 [pcc_cpufreq]
 
-The reason being that the last E820 entry is created using the
-'extra_pages' (which is based on how many pages have been freed).
-The mentioned git commit sets the initial value of 'extra_pages'
-using a hypercall which returns the number of pages (if dom0_mem
-has been used) or -1 otherwise. If the later we return with
-MAX_DOMAIN_PAGES as basis for calculation:
+It's better to avoid the oops by failing the driver, and allowing the
+system to boot.
 
-    return min(max_pages, MAX_DOMAIN_PAGES);
-
-and use it:
-
-     extra_limit = xen_get_max_pages();
-     if (extra_limit >= max_pfn)
-             extra_pages = extra_limit - max_pfn;
-     else
-             extra_pages = 0;
-
-which means we end up with extra_pages = 128GB in PFNs (33554432)
-- 8GB in PFNs (2097152, on this specific box, can be larger or smaller),
-and then we add that value to the E820 making it:
-
-  Xen: 00000000ff000000 - 0000000100000000 (reserved)
-  Xen: 0000000100000000 - 000000133f2e2000 (usable)
-
-which is clearly wrong. It should look as so:
-
-  Xen: 00000000ff000000 - 0000000100000000 (reserved)
-  Xen: 0000000100000000 - 000000027fbda000 (usable)
-
-Naturally this problem does not present itself if dom0_mem=max:X
-is used.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Cc: Dave Jones <davej@codemonkey.org.uk>
+Cc: Len Brown <lenb@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/setup.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/cpufreq/pcc-cpufreq.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -307,10 +307,12 @@ char * __init xen_memory_setup(void)
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+--- a/drivers/cpufreq/pcc-cpufreq.c
++++ b/drivers/cpufreq/pcc-cpufreq.c
+@@ -261,6 +261,9 @@ static int pcc_get_offset(int cpu)
+ 	pr = per_cpu(processors, cpu);
+ 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
  
- 	extra_limit = xen_get_max_pages();
--	if (extra_limit >= max_pfn)
--		extra_pages = extra_limit - max_pfn;
--	else
--		extra_pages = 0;
-+	if (max_pfn + extra_pages > extra_limit) {
-+		if (extra_limit > max_pfn)
-+			extra_pages = extra_limit - max_pfn;
-+		else
-+			extra_pages = 0;
-+	}
- 
- 	extra_pages += xen_return_unused_memory(xen_start_info->nr_pages, &e820);
- 
++	if (!pr)
++		return -ENODEV;
++
+ 	status = acpi_evaluate_object(pr->handle, "PCCP", NULL, &buffer);
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
 
 
