@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab1I1Wdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:33:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36003 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178Ab1I1Wdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:33:39 -0400
-Date: Thu, 29 Sep 2011 00:33:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dimitri Sivanich <sivanich@sgi.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: mmtimer - posixtimer abuse
-Message-ID: <alpine.LFD.2.02.1109290031300.2711@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755208Ab1I1WfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:35:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab1I1WfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:35:02 -0400
+Date: Wed, 28 Sep 2011 18:34:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+Message-ID: <20110928223449.GD21628@redhat.com>
+References: <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
+ <4E832A55.30709@kernel.dk>
+ <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
+ <4E832BD2.50409@kernel.dk>
+ <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
+ <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
+ <20110928174859.GA21628@redhat.com>
+ <20110928175304.GA3985@infradead.org>
+ <20110928180905.GB21628@redhat.com>
+ <20110928181649.GA27441@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928181649.GA27441@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dimitry,
+On Wed, Sep 28, 2011 at 02:16:49PM -0400, Christoph Hellwig wrote:
+> On Wed, Sep 28, 2011 at 02:09:05PM -0400, Vivek Goyal wrote:
+> > I had thought of implementing a separate lock for throttling. Then I
+> > noticed few operations like checking for queue flags where I would
+> > be required to hold queue locks.
+> 
+> Can you do a writeup of these issues?  E.g. if the flags are throtteling
+> specific we can move them to a separate flags field, if not we can
+> see if we can make them atomic or similar.
 
-I'm fixing a few odds and ends in the posix timer code and stumbled
-over drivers/char/mmtimer.c
+Sure. I am going through the code and trying to list down some of the
+dependencies.
 
-I have seen lots of crap in my life, but this stuff is broken beyond
-everything.
+But before that I would say that tyring to optimize the throttling code
+to reduce the queue lock contention should be last on the priority list.
+The simple reason being that in common case it does not incur any locking
+cost. One needs to have IO cgroup configured and needs to have some
+throttling rules put in place only then queue lock cost will come into
+picture. And for most of the people, I don't think that's the common
+case.
 
-1) Locking issues vs. timer delivery, i.e. posix_timer_event() is
-   called w/o tmr->it_lock held.
+Now coming back to question of dependencies. We take some services from
+request queue which needs to happen under queue lock.
 
-2) overrun accounting for periodic timers is completely broken
+- Looks like in current code I am only accessing QUEUE_FLAG_DEAD. I see
+  that flag is not synchronized using queue lock. So it probably is not
+  a concern.
 
-3) timer_del() can deadlock
+- I am using tracing functionality. blk_add_trace_msg(). I guess it is
+  not required to take queue lock for this. But I am not sure.
 
-4) clock_set()/clock_get()
+- I am accessing q->backing_dev_info to get to associated devices's
+  major and minor number.
 
-   What the hell are you doing with that offset? It's just used in
-   those functions - of course unlocked and has nothing to with the
-   actual expiry time of the timers.
+That's it I guess. That's what a quick look tells me. So looks like
+it is not too hard to convert existing blk throttle code to use its
+own lock. That will also get rid of dependency on queue lock and
+in turn uncertainity associated with queue lock being valid (if
+driver provided the lock).
 
-   What's the point of this ????
-
-5) The whole notion of struct mmtimer is completely ass backwards
-
-   Instead of adding the proper fields to k_itimer.it.mmtimer you
-   allocate a separate data structure with separate lifetime rules.
-
-   That makes you do a reverse lookup dance through the rbtree in
-   timer_del() and random points where you actually kfree that extra
-   thing.
-
-6) As far as I can tell from looking at timer_set() this clock tries
-   to resemble CLOCK_REALTIME, but lacks any checks of timers expiring
-   early. It does not handle when the clock was set 
-
-7) Periodic timers are subject to random rounding errors and the
-   MMTIMER_INTERVAL_RETRY_INCREMENT_DEFAULT hackery which was
-   introduced in commit dcade5ed16 just proves how broken that whole
-   thing is. Why the hell does it not rearm the timers in the signal
-   delivery path and do proper forwarding instead of using disgusting
-   heuristics to work around the rounding problems.
-   
-7) Why is that using a tasklet? 
-
-8) Why does it expire each timer seperately instead of looking at all
-   expired timers and bulk expire them.
-
-Is actually anyone using this trainwreck or can we simply kill it
-entirely?
-
-If it's used and wants to be supported, then please explain what the
-properties of CLOCK_SGI should be, so we can fix that mess.
-
-Please do that fast, as I don't see any reason to hold off
-improvements and fixes for the core and the sane users for something
-which should have never been merged in the first place.
-
-Thanks,
-
-	tglx
+Thanks
+Vivek
