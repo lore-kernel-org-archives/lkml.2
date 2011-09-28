@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab1I1SuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:50:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34795 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab1I1SuS (ORCPT
+	id S1755147Ab1I1Su2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:50:28 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:49260 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755134Ab1I1SuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:50:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <201109282008.17722.stephan.diestelhorst@amd.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
- <4E835851.7070502@zytor.com> <4E835E50.2020307@goop.org> <201109282008.17722.stephan.diestelhorst@amd.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Sep 2011 11:49:56 -0700
-X-Google-Sender-Auth: bHq8L02SAruJtvz77tWX1LPjbZg
-Message-ID: <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
-To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Sep 2011 14:50:25 -0400
+Subject: Re: Oops in ecryptfs (apparently) with 3.1-rc6
+From: Luciano Coelho <coelho@ti.com>
+To: ecryptfs@vger.kernel.org
+Cc: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1316781869.4051.7.camel@cumari>
+References: <1316781869.4051.7.camel@cumari>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 21:50:15 +0300
+Message-ID: <1317235816.2171.158.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 11:08 AM, Stephan Diestelhorst
-<stephan.diestelhorst@amd.com> wrote:
->
-> I must have missed the part when this turned into the propose-the-
-> craziest-way-that-this-still-works.contest :)
+On Fri, 2011-09-23 at 15:44 +0300, Luciano Coelho wrote: 
+> I just got this oops on my PC, while running 3.1-rc6 normally:
+> 
+> [255264.517298] Oops: 0000 [#1] SMP 
+> [255264.517301] CPU 4 
+> [255264.517303] Modules linked in: nls_iso8859_1 nls_cp437 vfat fat dm_crypt pl2303 ftdi_sio usbserial cryptd aes_x86_64 aes_generic binfmt_misc snd_hda_codec_analog nvidia(P) snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi psmouse snd_rawmidi snd_seq_midi_event snd_seq snd_timer dell_wmi nfsd exportfs snd_seq_device serio_raw nfs sparse_keymap snd soundcore snd_page_alloc i7core_edac edac_core ppdev lp dcdbas lockd fscache auth_rpcgss nfs_acl sunrpc parport_pc parport usb_storage usbhid hid tg3
+> [255264.517341] 
+> [255264.517343] Pid: 18110, comm: cat Tainted: P            3.1.0-rc6-custom #2 Dell Inc. Precision WorkStation T3500  /09KPNV
+> [255264.517348] RIP: 0010:[<ffffffff8125dddd>]  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
+> [255264.517353] RSP: 0018:ffff88031c03db78  EFLAGS: 00010246
+> [255264.517356] RAX: 0000000000000000 RBX: ffff88031c03db88 RCX: 0000000000000000
+> [255264.517358] RDX: 0000000000000010 RSI: ffff880170bd1ae0 RDI: 0000000000000000
+> [255264.517361] RBP: ffff88031c03dc38 R08: 0000000000000000 R09: ffff88031c03db88
+> [255264.517363] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880170bd1a70
+> [255264.517366] R13: 0000000000001000 R14: ffffea0008351cc0 R15: ffff880170bd1b60
+> [255264.517369] FS:  00002b38b966bb20(0000) GS:ffff880333280000(0000) knlGS:0000000000000000
+> [255264.517372] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [255264.517374] CR2: 0000000000000010 CR3: 000000010b9e6000 CR4: 00000000000006e0
+> [255264.517377] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [255264.517379] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [255264.517382] Process cat (pid: 18110, threadinfo ffff88031c03c000, task ffff88005f920000)
+> [255264.517385] Stack:
+> [255264.517386]  0000000000000000 0000000000000000 ffffea0008351cc2 0000100000000000
+> [255264.517391]  0000000000000000 0000000000000000 ffffea000964c302 0000100000000000
+> [255264.517395]  0000000000000000 0000000000000000 0000000000000000 ffff88031c03dbe8
+> [255264.517399] Call Trace:
+> [255264.517406]  [<ffffffff81163f35>] ? vfs_read+0xc5/0x190
+> [255264.517409]  [<ffffffff8125e0b2>] ecryptfs_decrypt_page+0xb2/0x190
+> [255264.517413]  [<ffffffff8125bb08>] ecryptfs_readpage+0xd8/0x120
+> [255264.517418]  [<ffffffff8110daf4>] generic_file_aio_read+0x234/0x740
+> [255264.517424]  [<ffffffff8125863c>] ecryptfs_read_update_atime+0x1c/0x60
+> [255264.517428]  [<ffffffff811637fa>] do_sync_read+0xda/0x120
+> [255264.517434]  [<ffffffff81286a3b>] ? security_file_permission+0x8b/0x90
+> [255264.517438]  [<ffffffff81163f35>] vfs_read+0xc5/0x190
+> [255264.517441]  [<ffffffff81164101>] sys_read+0x51/0x90
+> [255264.517446]  [<ffffffff815dc082>] system_call_fastpath+0x16/0x1b
+> [255264.517448] Code: 98 41 0f af c5 89 85 58 ff ff ff 49 8b 44 24 40 48 89 45 90 e8 c5 4d 37 00 49 8b 44 24 40 49 8b 54 24 20 49 8d 74 24 70 48 89 c7 <ff> 50 10 85 c0 0f 85 40 01 00 00 31 c0 44 89 ea 48 c7 c6 50 cf 
+> [255264.517481] RIP  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
+> [255264.517485]  RSP <ffff88031c03db78>
+> [255264.517487] CR2: 0000000000000010
+> [255264.517490] ---[ end trace 6beaa9aa4bd67546 ]---
 
-So doing it just with the "lock addb" probably works fine, but I have
-to say that I personally shudder at the "surround the locked addb by
-reads from the word, in order to approximate an atomic read of the
-upper bits".
+Did anyone else get a similar oops? Or does anyone have any clue what
+this is about? I haven't seen any fix that could be related to this, so
+I'm still really wary of using 3.1-rc*. ;)
 
-Because what you get is not really an "atomic read of the upper bits",
-it's a "ok, we'll get the worst case of somebody modifying the upper
-bits at the same time".
+-- 
+Cheers,
+Luca.
 
-Which certainly should *work*, but from a conceptual standpoint, isn't
-it just *much* nicer to say "we actually know *exactly* what the upper
-bits were".
-
-But I don't care all *that* deeply. I do agree that the xaddw trick is
-pretty tricky. I just happen to think that it's actually *less* tricky
-than "read the upper bits separately and depend on subtle ordering
-issues with another writer that happens at the same time on another
-CPU".
-
-So I can live with either form - as long as it works. I think it might
-be easier to argue that the xaddw is guaranteed to work, because all
-values at all points are unarguably atomic (yeah, we read the lower
-bits nonatomically, but as the owner of the lock we know that nobody
-else can write them).
-
-                                 Linus
