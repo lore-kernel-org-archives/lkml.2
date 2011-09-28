@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259Ab1I1WbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:31:16 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:34054 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754904Ab1I1WbN (ORCPT
+	id S1755166Ab1I1Wde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:33:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2159 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab1I1Wdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:31:13 -0400
-Message-ID: <4E83A02F.2020309@xenotime.net>
-Date: Wed, 28 Sep 2011 15:31:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Wed, 28 Sep 2011 18:33:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=V3VGR/04JMOXP+4nmfluILiRGKZ871Y/s1yAmoDJMlZtNekgOvPybXZ0lTGigE1L4
+	kjT/fAlt28HYaWzHCaOfg==
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for Sept 28 (media/video/mt9p031.c)
-References: <20110928200404.6ed0d6c34161d233be8994fd@canb.auug.org.au> <4E839FCB.7050403@xenotime.net>
-In-Reply-To: <4E839FCB.7050403@xenotime.net>
+In-Reply-To: <1316597339-29861-55-git-send-email-yong.zhang0@gmail.com>
+References: <1316597339-29861-1-git-send-email-yong.zhang0@gmail.com> <1316597339-29861-55-git-send-email-yong.zhang0@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 28 Sep 2011 16:33:08 -0600
+Message-ID: <CAErSpo7EUw_4sKXXd2pYkTuqvBFOHgZ1zwrv68K3OU57-QE2Dw@mail.gmail.com>
+Subject: Re: [PATCH 54/57] Documentation: irq: Change documents related to IRQF_DISABLED
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/11 15:29, Randy Dunlap wrote:
-> On 09/28/11 03:04, Stephen Rothwell wrote:
->> Hi all,
-> 
-> 
-> a.  Source file needs <linux/module.h> added to it unless the dropping
-> of the moduleh tree for today already contained that patch.
-> 
-> b.  Build errors after adding <linux/module.h>:
-> 
-> when CONFIG_MEDIA_CONTROLLER is not enabled
-> and CONFIG_VIDEO_V4L2_SUBDEV_API is not enabled:
-> 
-> 
-> drivers/media/video/mt9p031.c:443:3: error: implicit declaration of function 'v4l2_subdev_get_try_format'
-> drivers/media/video/mt9p031.c:457:3: error: implicit declaration of function 'v4l2_subdev_get_try_crop'
-> drivers/media/video/mt9p031.c:888:42: error: 'struct v4l2_subdev' has no member named 'entity'
+On Wed, Sep 21, 2011 at 3:28 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> IRQF_DISABLED is a NOOP now, place where suggest to use this
+> flag also doesn't make sense any more.
+>
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 
+I assume this will be applied via some non-PCI tree (let me know if
+otherwise).  The MSI-HOWTO.txt change looks fine to me.
 
-Similar problems with drivers/media/video/mt9t001.c.
+> --- a/Documentation/scsi/ncr53c8xx.txt
+> +++ b/Documentation/scsi/ncr53c8xx.txt
+> @@ -786,7 +786,9 @@ port address 0x1400.
+>         irqm:1     same as initial settings (assumed BIOS settings)
+>         irqm:2     always totem pole
+>         irqm:0x10  driver will not use IRQF_SHARED flag when requesting irq
+> -        irqm:0x20  driver will not use IRQF_DISABLED flag when requesting irq
+> +        irqm:0x20  driver will not use IRQF_DISABLED (does not make sense
+> +                  any more since genirq will keep irq disabled and the flag
+> +                  is dead from linux-2.6.35) flag when requesting irq
+>
+>     (Bits 0x10 and 0x20 can be combined with hardware irq mode option)
 
+The new text doesn't make sense to me.  I think it should say something like:
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+    irqm:0x20  driver will not use IRQF_DISABLED flag when requesting
+irq (only useful for linux-2.6.34 and earlier)
+
+Bjorn
