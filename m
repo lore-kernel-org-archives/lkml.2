@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1I1NZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:25:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46609 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079Ab1I1NZw convert rfc822-to-8bit (ORCPT
+	id S1754209Ab1I1N0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:26:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51509 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1I1N0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:25:52 -0400
-Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venki Pallipadi <venki@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Sep 2011 15:25:15 +0200
-In-Reply-To: <CABeCy1Zn0GbAzFBYk1mkDvfEwr4L8DZ-ZhweXaUwWN=3sJnmSQ@mail.gmail.com>
-References: <1316804080-6396-1-git-send-email-venki@google.com>
-	 <1316807718.9084.48.camel@twins>
-	 <CABeCy1Zn0GbAzFBYk1mkDvfEwr4L8DZ-ZhweXaUwWN=3sJnmSQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317216315.24040.20.camel@twins>
-Mime-Version: 1.0
+	Wed, 28 Sep 2011 09:26:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 06/24] C6X: early boot code
+Date: Wed, 28 Sep 2011 15:26:07 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-7-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-7-git-send-email-msalter@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109281526.07969.arnd@arndb.de>
+X-Provags-ID: V02:K0:LlL3TgdPzTre5alyyyFIbkhqvSUAHLS79PoQo53xGx6
+ 5602ESEPG53s53UCXrnjBQ08gHD6zZq83LSrCw6NQ5rX7/VJcZ
+ LrxINJJ0PwigJw5iT5t/S7KybYmiFMqQYSve7xWlsCSsY+xGYz
+ P6xOGZ3ENiBgQYNezOyAYsYV9D0tShZGPTPRnGxZ+t1Fo8Xro5
+ Sag13ZsE/QHFwYrRNm+KgxR20kLPLVGkURUz7a54V3eApF/EdD
+ 6K1JLrRly3ZZDggHDl7CwWWle0R4qJOAOT+vCBJY+6bz3d33bo
+ S8O1lG289uIpeAGOOb0emd1+WQxL+o5bHUu4EFEXo8HqmDzx00
+ Ajr7/pp2Q4gWmha6SD/c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-23 at 16:41 -0700, Venki Pallipadi wrote:
-> On Fri, Sep 23, 2011 at 12:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2011-09-23 at 11:54 -0700, Venkatesh Pallipadi wrote:
-> >> Comments?
-> >
-> > One of the reasons we didn't do it before was added cost to
-> > hrtimer_{add,del}, did you measure workloads that are heavy on  that?
-> >
-> 
-> I haven't seen any measurable overhead with workloads I have tried.
-> But, I don't think I have hit that path hard enough. Do you have any
-> particular workload in mind?
+On Tuesday 27 September 2011, Mark Salter wrote:
 
-Not really, I asked tglx if he knew a particular workload to test this,
-but he didn't have anything either.
+> +int c6x_num_cores;
+> +EXPORT_SYMBOL(c6x_num_cores);
+> +
+> +unsigned int c6x_silicon_rev;
+> +EXPORT_SYMBOL(c6x_silicon_rev);
+> +
+> +/*
+> + * Device status register. This holds information
+> + * about device configuration needed by some drivers.
+> + */
+> +unsigned int c6x_devstat;
+> +EXPORT_SYMBOL(c6x_devstat);
 
+> +unsigned int ticks_per_ns_scaled;
+> +EXPORT_SYMBOL(ticks_per_ns_scaled);
+> +
+> +unsigned int c6x_core_freq;
+> +EXPORT_SYMBOL(c6x_core_freq);
 
+These all look like they are used internally (maybe not
+ticks_per_ns_scaled) so it would be more appropriate to make
+them EXPORT_SYMBOL_GPL.
+
+	Arnd
