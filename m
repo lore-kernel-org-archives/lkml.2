@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1I1Gc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 02:32:56 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53445 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab1I1Gcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 02:32:55 -0400
-Date: Wed, 28 Sep 2011 08:31:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: Could you reinstate ticketlock cleanups in tip.git
-Message-ID: <20110928063115.GA24510@elte.hu>
-References: <alpine.LFD.2.02.1109280209430.2711@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1109280209430.2711@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.9
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.1 AWL                    AWL: From: address is in the auto white-list
+	id S1751589Ab1I1GeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 02:34:14 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:50817 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab1I1GeM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 02:34:12 -0400
+Date: Wed, 28 Sep 2011 16:34:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavel Roskin <proski@gnu.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the moduleh tree with the net tree
+Message-Id: <20110928163406.843e4be56b42dca280d85489@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Paul,
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Today's linux-next merge of the moduleh tree got a conflict in
+drivers/net/wireless/ath/ath5k/debug.c between commit 931be260ed54
+("ath5k: clean up base.h and its use") from the net tree and commits
+9ec3f961e31a ("drivers/net: Add export.h to files using
+EXPORT_SYMBOL/THIS_MODULE") and 0cccb17382f1 ("drivers/net: Add
+moduleparam.h to drivers as required") from the moduleh tree.
 
-> Hi Thomas,
-> 
-> Could you reinstate the ticketlock cleanup series in tip.git (I think it
-> was in x86/spinlocks) from
->     git://github.com/jsgf/linux-xen.git upstream/ticketlock-cleanup
-> 
-> This branch is the final result of all the discussions and revisions and
-> is ready for the next merge window.  It's the one that's been in
-> linux-next for a couple of weeks (at least), and won't cause any
-> conflicts there.
-> 
-> Or if you prefer I can submit it myself for next merge window.
-> 
-> Thanks,
->     J
+I fixed it up (see below) and can carry the fix as necessary.  (I am
+pretty sure that this file doesn't need module.h, but not completely).
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'd prefer if this went via x86/spinlocks. Could you please send a 
-proper pull request with diffstat, shortlog, etc?
-
-Thanks,
-
-	Ingo
+diff --cc drivers/net/wireless/ath/ath5k/debug.c
+index fce8c90,1051ede..0000000
+--- a/drivers/net/wireless/ath/ath5k/debug.c
++++ b/drivers/net/wireless/ath/ath5k/debug.c
+@@@ -58,13 -58,9 +58,15 @@@
+   * THE POSSIBILITY OF SUCH DAMAGES.
+   */
+  
+ +#include <linux/module.h>
++ #include <linux/moduleparam.h>
+ -#include "base.h"
+++#include <linux/export.h>
+ +#include <linux/seq_file.h>
+ +#include <linux/list.h>
+  #include "debug.h"
+ +#include "ath5k.h"
+ +#include "reg.h"
+ +#include "base.h"
+  
+  static unsigned int ath5k_debug;
+  module_param_named(debug, ath5k_debug, uint, 0);
