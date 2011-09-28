@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab1I1Wnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54198 "EHLO mx2.suse.de"
+	id S932521Ab1I1Wnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:43:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54204 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500Ab1I1WnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:24 -0400
+	id S932469Ab1I1Wn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:28 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:37 2011
-Message-Id: <20110928220137.657830411@clark.kroah.org>
+Message-Id: <20110928220137.759518202@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:21 -0700
+Date: Wed, 28 Sep 2011 15:01:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [117/244] genirq: Make irq_shutdown() symmetric vs. irq_startup again
+        George <george0505@realtek.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [118/244] rtlwifi: rtl8192su: Fix problem connecting to HT-enabled AP
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: George <george0505@realtek.com>
 
-commit ed585a651681e822089087b426e6ebfb6d3d9873 upstream.
+commit 3401dc6eba788ebc7c14ce51018d775b1c263399 upstream.
 
-If an irq_chip provides .irq_shutdown(), but neither of .irq_disable() or
-.irq_mask(), free_irq() crashes when jumping to NULL.
-Fix this by only trying .irq_disable() and .irq_mask() if there's no
-.irq_shutdown() provided.
+The driver fails to connect to 802.11n-enabled APs. The patch fixes
+Bug #42262.
 
-This revives the symmetry with irq_startup(), which tries .irq_startup(),
-.irq_enable(), and irq_unmask(), and makes it consistent with the comment for
-irq_chip.irq_shutdown() in <linux/irq.h>, which says:
-
- * @irq_shutdown:	shut down the interrupt (defaults to ->disable if NULL)
-
-This is also how __free_irq() behaved before the big overhaul, cfr. e.g.
-3b56f0585fd4c02d047dc406668cb40159b2d340 ("genirq: Remove bogus conditional"),
-where the core interrupt code always overrode .irq_shutdown() to
-.irq_disable() if .irq_shutdown() was NULL.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@lists.linux-m68k.org
-Link: http://lkml.kernel.org/r/1315742394-16036-2-git-send-email-geert@linux-m68k.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: George <george0505@realtek.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/chip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -178,7 +178,7 @@ void irq_shutdown(struct irq_desc *desc)
- 	desc->depth = 1;
- 	if (desc->irq_data.chip->irq_shutdown)
- 		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
--	if (desc->irq_data.chip->irq_disable)
-+	else if (desc->irq_data.chip->irq_disable)
- 		desc->irq_data.chip->irq_disable(&desc->irq_data);
- 	else
- 		desc->irq_data.chip->irq_mask(&desc->irq_data);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -549,15 +549,16 @@ void rtl92cu_tx_fill_desc(struct ieee802
+ 			       (tcb_desc->rts_use_shortpreamble ? 1 : 0)
+ 			       : (tcb_desc->rts_use_shortgi ? 1 : 0)));
+ 	if (mac->bw_40) {
+-		if (tcb_desc->packet_bw) {
++		if (rate_flag & IEEE80211_TX_RC_DUP_DATA) {
+ 			SET_TX_DESC_DATA_BW(txdesc, 1);
+ 			SET_TX_DESC_DATA_SC(txdesc, 3);
++		} else if(rate_flag & IEEE80211_TX_RC_40_MHZ_WIDTH){
++			SET_TX_DESC_DATA_BW(txdesc, 1);
++			SET_TX_DESC_DATA_SC(txdesc, mac->cur_40_prime_sc);
+ 		} else {
+ 			SET_TX_DESC_DATA_BW(txdesc, 0);
+-				if (rate_flag & IEEE80211_TX_RC_DUP_DATA)
+-					SET_TX_DESC_DATA_SC(txdesc,
+-							  mac->cur_40_prime_sc);
+-			}
++			SET_TX_DESC_DATA_SC(txdesc, 0);
++		}
+ 	} else {
+ 		SET_TX_DESC_DATA_BW(txdesc, 0);
+ 		SET_TX_DESC_DATA_SC(txdesc, 0);
 
 
