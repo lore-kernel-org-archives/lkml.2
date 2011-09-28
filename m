@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933561Ab1I1Wy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:54:27 -0400
-Received: from mta21.charter.net ([216.33.127.81]:53608 "EHLO
-	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175Ab1I1WyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:54:18 -0400
-X-Authority-Analysis: v=1.1 cv=6DnK9SlspjQUafU6MzYmZAt1wpB1MUaNH28Mo/Kfxqk=
- c=1 sm=1 a=5sNWC5IPD1MA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=bQGSju9SlZelt66lsl0A:9 a=6-vhtJTMLOjaaoOPM4gA:7
- a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Gregory.Dietsche@cuw.edu
-To: wey-yi.w.guy@intel.com
-Cc: ilw@linux.intel.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH] iwlagn: iwl-agn-rs: remove unnecessary null check for sta and lq_sta
-Date: Wed, 28 Sep 2011 17:54:04 -0500
-Message-Id: <1317250444-2248-1-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.6.4
+	id S1755984Ab1I1WuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:50:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55034 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752895Ab1I1WuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:50:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:50 2011
+Message-Id: <20110928220150.366481638@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 28 Sep 2011 15:03:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [237/244] ath9k_hw: Fix Rx DMA stuck for AR9003 chips
+In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-both sta and lq_sta are guaranteed to be not null in the
-calling function so we don't need to check them here.
+------------------
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+
+commit e9f9530bb697f53dd620df290102359a3325bb23 upstream.
+
+During the endurance testing, rx frames are not getting DMAd from
+MAC whereas pcu rx frame counters are getting updated properly.
+As per systems team input updated the initval to fix rx dma stuck
+issue.
+
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-index 3789ff4..e5ea33b 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -2269,9 +2269,6 @@ static void rs_rate_scale_perform(struct iwl_priv *priv,
- 	    info->flags & IEEE80211_TX_CTL_NO_ACK)
- 		return;
- 
--	if (!sta || !lq_sta)
--		return;
--
- 	lq_sta->supp_rates = sta->supp_rates[lq_sta->band];
- 
- 	tid = rs_tl_add_packet(lq_sta, hdr);
--- 
-1.7.6.4
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -1516,7 +1516,7 @@ static const u32 ar9300_2p2_mac_core[][2
+ 	{0x00008258, 0x00000000},
+ 	{0x0000825c, 0x40000000},
+ 	{0x00008260, 0x00080922},
+-	{0x00008264, 0x9bc00010},
++	{0x00008264, 0x9d400010},
+ 	{0x00008268, 0xffffffff},
+ 	{0x0000826c, 0x0000ffff},
+ 	{0x00008270, 0x00000000},
+
 
