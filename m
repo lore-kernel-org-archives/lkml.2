@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab1I1PPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:15:47 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:45309 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab1I1PPq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:15:46 -0400
+	id S1754790Ab1I1PP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:15:58 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48879 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754748Ab1I1PP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:15:57 -0400
+Message-ID: <4E8339EA.7070700@parallels.com>
+Date: Wed, 28 Sep 2011 12:14:50 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <1317200618.1573.1765.camel@vkoul-udesk3>
-References: <1316520730-3655-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-Date: Wed, 28 Sep 2011 20:45:45 +0530
-Message-ID: <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        rmk@arm.linux.org.uk, 21cnbao@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <jbottomley@parallels.com>
+Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-4-git-send-email-glommer@parallels.com> <1317160096.21836.14.camel@twins>
+In-Reply-To: <1317160096.21836.14.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.46.219.221]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 September 2011 14:33, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, 2011-09-28 at 12:09 +0530, Jassi Brar wrote:
+On 09/27/2011 06:48 PM, Peter Zijlstra wrote:
+> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
+>> +static inline void task_cgroup_account_field(struct task_struct *p,
+>> +                                            cputime64_t tmp, int index)
+>> +{
+>> +       struct kernel_stat *kstat;
+>> +       struct task_group *tg = task_group(p);
+>> +
+>> +       do {
+>> +               kstat = this_cpu_ptr(tg->cpustat);
+>> +               kstat->cpustat[index] = cputime64_add(kstat->cpustat[index],
+>> +                                                     tmp);
+>
+> So aside from the cputime64_t nonsense you could actually write that as:
+>
+> 		__this_cpu_add(tg->cpustat[index], tmp);
+>
+> which should yield better asm I think, a quick grep seems to confirm
+> cputime64_t is indeed a u64 all over so its fair to just ignore that.
 
->>
->> +     struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->> +             struct dma_chan *chan, struct dmaxfer_template *xt,
->> +             unsigned long flags);
-> what's the flags used for?
-Same as for device_prep_slave_sg, device_prep_dma_sg, device_prep_dma_interrupt,
-device_prep_dma_memset etc. Usually for flagging buffer map/unmap'ing
-in this case.
-Btw, this was present in v3 as well.
-
-
->> +enum xfer_direction {
->> +     MEM_TO_MEM,
->> +     MEM_TO_DEV,
->> +     DEV_TO_MEM,
->> +     DEV_TO_DEV,
-> Use/update dma_data_direction.
-dma_data_direction is the mapping attribute of a buffer.
-While that info is what some dmac driver might need ultimately, our main
-aim here is to tell exactly if Src and Dst is Memory or a device's FIFO.
-
-Mapping attribute of src/dst buffers could be very well deducted from
-xfer_direction, but dma_data_direction isn't meant to tell if Src and Dst
-is Mem or FIFO.
-Also, for (SLAVE && !src_inc && !dst_inc) we need to disambiguate three
-options  Mem->Fifo,  Fifo->Mem,  *Fifo->Fifo*(not impossible)
-So while using dma_data_direction would work today, that sure is hacky
-and not future-proof.
-
-
->> +/**
->> + * struct dmaxfer_template - Template to convey DMAC the transfer pattern
->> + *    and attributes.
->> + * @src_start: Bus address of source for the first chunk.
->> + * @dst_start: Bus address of destination for the first chunk.
->> + * @dir: Specifies the type of Source and Destination.
->> + * @src_inc: If the source address increments after reading from it.
->> + * @dst_inc: If the destination address increments after writing to it.
->> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
->> + *           Otherwise, source is read contiguously (icg ignored).
->> + *           Ignored if src_inc is false.
->> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
->> + *           Otherwise, destination is filled contiguously (icg ignored).
->> + *           Ignored if dst_inc is false.
->> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
-> I thought you were going to remove this?
-Yes, I just forgot.
+Ok, It would indeed be better.
