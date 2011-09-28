@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab1I1Wso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:48:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54833 "EHLO mx2.suse.de"
+	id S933339Ab1I1Wsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:48:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54848 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933195Ab1I1Wsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:48:41 -0400
+	id S1755961Ab1I1Wsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:51 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:47 2011
-Message-Id: <20110928220147.283039386@clark.kroah.org>
+Message-Id: <20110928220147.617483478@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:52 -0700
+Date: Wed, 28 Sep 2011 15:02:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [208/244] drm/radeon/kms: fix DDIA enable on some rs690 systems
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Grazvydas Ignotas <notasas@gmail.com>
+Subject: [211/244] btrfs: fix d_off in the first dirent
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-commit fdfc61594e6de21c23f955818ef78bcab9bafe40 upstream.
+commit 3765fefaee2da83f10829fa64a74e6b7360350cb upstream.
 
-DVOOutputControl checks the value of of bios scratch reg 3
-on some tables and assumes the encoder is already enabled
-if the DFP2_ACTIVE bit is set.  Clear that bit so the table
-sets the DDIA enable bit properly.
+Since the d_off in the first dirent for "." (that originates from
+the 4th argument "offset" of filldir() for the 2nd dirent for "..")
+is wrongly assigned in btrfs_real_readdir(), telldir returns same
+offset for different locations.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+ | # mkfs.btrfs /dev/sdb1
+ | # mount /dev/sdb1 fs0
+ | # cd fs0
+ | # touch file0 file1
+ | # ../test
+ | telldir: 0
+ | readdir: d_off = 2, d_name = "."
+ | telldir: 2
+ | readdir: d_off = 2, d_name = ".."
+ | telldir: 2
+ | readdir: d_off = 3, d_name = "file0"
+ | telldir: 3
+ | readdir: d_off = 2147483647, d_name = "file1"
+ | telldir: 2147483647
+
+To fix this problem, pass filp->f_pos (which is loff_t) instead.
+
+ | # ../test
+ | telldir: 0
+ | readdir: d_off = 1, d_name = "."
+ | telldir: 1
+ | readdir: d_off = 2, d_name = ".."
+ | telldir: 2
+ | readdir: d_off = 3, d_name = "file0"
+ :
+
+At the moment the "offset" for "." is unused because there is no
+preceding dirent, however it is better to pass filp->f_pos to follow
+grammatical usage.
+
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_encoders.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/btrfs/inode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -1507,7 +1507,14 @@ radeon_atom_encoder_dpms(struct drm_enco
- 		switch (mode) {
- 		case DRM_MODE_DPMS_ON:
- 			args.ucAction = ATOM_ENABLE;
--			atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+			/* workaround for DVOOutputControl on some RS690 systems */
-+			if (radeon_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_DDI) {
-+				u32 reg = RREG32(RADEON_BIOS_3_SCRATCH);
-+				WREG32(RADEON_BIOS_3_SCRATCH, reg & ~ATOM_S3_DFP2I_ACTIVE);
-+				atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+				WREG32(RADEON_BIOS_3_SCRATCH, reg);
-+			} else
-+				atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
- 			if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
- 				args.ucAction = ATOM_LCD_BLON;
- 				atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4124,7 +4124,8 @@ static int btrfs_real_readdir(struct fil
+ 
+ 	/* special case for "." */
+ 	if (filp->f_pos == 0) {
+-		over = filldir(dirent, ".", 1, 1, btrfs_ino(inode), DT_DIR);
++		over = filldir(dirent, ".", 1,
++			       filp->f_pos, btrfs_ino(inode), DT_DIR);
+ 		if (over)
+ 			return 0;
+ 		filp->f_pos = 1;
+@@ -4133,7 +4134,7 @@ static int btrfs_real_readdir(struct fil
+ 	if (filp->f_pos == 1) {
+ 		u64 pino = parent_ino(filp->f_path.dentry);
+ 		over = filldir(dirent, "..", 2,
+-			       2, pino, DT_DIR);
++			       filp->f_pos, pino, DT_DIR);
+ 		if (over)
+ 			return 0;
+ 		filp->f_pos = 2;
 
 
