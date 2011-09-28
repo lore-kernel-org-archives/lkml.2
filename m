@@ -1,105 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1I1Mnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:43:35 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:37936 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab1I1Mne (ORCPT
+	id S1754132Ab1I1Mop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:44:45 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65513 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1I1Moo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:43:34 -0400
-Date: Wed, 28 Sep 2011 14:42:18 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
-        jbottomley@parallels.com, Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [RFD 4/9] Make total_forks per-cgroup
-Message-ID: <20110928144218.6a4882e5@de.ibm.com>
-In-Reply-To: <1317206124.20318.6.camel@twins>
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
-	<1316816432-9237-5-git-send-email-glommer@parallels.com>
-	<1317160837.21836.21.camel@twins>
-	<20110928101357.5a90c2ab@de.ibm.com>
-	<1317206124.20318.6.camel@twins>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 08:44:44 -0400
+Date: Wed, 28 Sep 2011 14:44:38 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Pavel Ivanov <paivanof@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/7] rcu: Fix preempt-unsafe debug check of rcu extended
+ quiescent state
+Message-ID: <20110928124436.GQ18553@somewhere>
+References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
+ <1317032352-25571-2-git-send-email-fweisbec@gmail.com>
+ <CAG1a4rtKc0ZPZEeAsde-u7Xw9w36Oi05Zd--ueHT2XHbqRr6cg@mail.gmail.com>
+ <20110927115002.GH18553@somewhere>
+ <CAG1a4ruxzNo3TrRZTTLQWNfhVK7mB_0Mr4ff=tuK9k6CZbReDg@mail.gmail.com>
+ <20110927214453.GO18553@somewhere>
+ <20110928031740.GA21042@zhy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928031740.GA21042@zhy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011 12:35:24 +0200
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Wed, 2011-09-28 at 10:13 +0200, Martin Schwidefsky wrote:
-> > On Wed, 28 Sep 2011 00:00:37 +0200
-> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Wed, Sep 28, 2011 at 11:17:40AM +0800, Yong Zhang wrote:
+> On Tue, Sep 27, 2011 at 11:44:56PM +0200, Frederic Weisbecker wrote:
+> > On Tue, Sep 27, 2011 at 11:16:02AM -0400, Pavel Ivanov wrote:
+> > > > What matters is that we do that check by ensuring we are really
+> > > > checking the value of the cpu var in the CPU we are currently
+> > > > running and not some other random one that can change its dynticks
+> > > > value at the same time.
+> > > 
+> > > Define the "CPU we are currently running on" in this context. Is it
+> > > CPU executing call to rcu_check_extended_qs() or is it CPU executing
+> > > return from rcu_check_extended_qs() ? These CPUs can be different both
+> > > before your patch and after that. And function can return extended_qs
+> > > state from either of these CPUs again both before and after the patch.
+> > > If the calling code wants these CPUs to be the same it has to disable
+> > > preemption before making the call. And if it does so then additional
+> > > preemption disabling inside the function is pointless.
 > > 
-> > > On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
-> > > > @@ -1039,6 +1035,8 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
-> > > >         INIT_LIST_HEAD(&tsk->cpu_timers[2]);
-> > > >  }
-> > > >  
-> > > > +struct task_group *task_group(struct task_struct *p);
-> > > 
-> > > That doesn't appear to be actually used in this file..
-> > > 
-> > > Also, since there's already a for_each_possible_cpu() loop in that
-> > > proc/stat function, would it yield some code improvement to make
-> > > total_forks a cpu_usage_stat?
-> > > 
-> > > I guess the whole cputime64_t crap gets in the way of that being
-> > > natural... 
-> > > 
-> > > We could of course kill off the cputime64_t thing, its pretty pointless
-> > > and its a u64 all over the board. I think Martin or Heiko created this
-> > > stuff (although I might be wrong, my git tree doesn't go back that far).
+> > So, like Paul said rcu_read_lock() doesn't necessary imply to disable
+> > preemption.
 > > 
-> > The reason to introduce cputime_t has been that different architecture
-> > needed differently sized integers for their respective representation
-> > of cputime. On x86-32 the number of ticks is recorded in a u32, on s390
-> > we needed a u64 for the cpu timer values. cputime64_t is needed for
-> > cpustat and other sums of cputime that would overflow a cputime_t
-> > (in particular on x86-32 with the u32 cputime_t and the u64 cputime64_t).
+> > Hence by the time we call rcu_check_extended_qs() the current task
+> > can be migrated anytime before, while in the function (except
+> > a little part) or after.
 > > 
-> > Now we would convert everything to u64 but that would cause x86-32 to
-> > use 64-bit arithmetic for the tick counter. If that is acceptable I
-> > can't say.
+> > The CPU I was referring to when I talked about "CPU we are currently
+> > running on" is the CPU we are running between the call to get_cpu_var()
+> > and put_cpu_var(). This one can not be changed because get_cpu_var()
+> > disables preemption.
+> > 
+> > So consider this piece of code:
+> > 
+> >         struct rcu_dynticks *rdtp =
+> >                &get_cpu_var(rcu_dynticks);
+> >         bool ext_qs = true;
+> >  
+> >         if (atomic_read(&rdtp->dynticks) & 0x1)
+> >                 ext_qs = false;
+> >  
+> >         put_cpu_var(rcu_dynticks);	
+> > 
+> > What I expect from preemption disabled is that when I read the local
+> > CPU variable rdtp->dyntick, I'm sure this is the CPU var of the local
+> > CPU and the rdtp->dyntick from another CPU.
+> > 
+> > If I don't disable preemption, like it was without my patch:
+> > 
+> > 0	struct rcu_dynticks *rdtp =
+> > 1               &__raw_get_cpu_var(rcu_dynticks);
+> > 2
+> > 3        if (atomic_read(&rdtp->dynticks) & 0x1)
+> > 4                ext_qs = false;
+> > 5
+> > 6        put_cpu_var(rcu_dynticks);	
+> > 
+> > I can fetch rdtp of CPU 1 in line 0. Then the task migrates on CPU 2.
+> > So on line 3 I'm reading rdtp->dynticks of CPU 1 from CPU 2 and this is
+> > racy because CPU 1 can change the value of rdtp->dynticks concurrently.
+> > 
+> > Now indeed it's weird because we can migrate anytime outside that preempt
+> > disabled section.
+> > 
+> > So let's explore the two cases where this function can be called:
+> > 
+> > - From the idle task. For now this is the only place where we can
+> > run sections of code in RCU extended quiescent state. If any use
+> > of RCU is made on such section, it will hit our check.
+> > Here there is no head-scratching about the role of disabling preemption
+> > because the idle tasks can't be migrated. There is one per cpu so
+> > the rcu_dynticks variable we look at is always the same inside a
+> > given idle task.
 > 
-> Right, so the main point was about cputime64_t, we might as well use a
-> u64 for that throughout and ditch the silly cputime64_$op() accessors
-> and write normal code.
+> Yeah.
 > 
-> But even if cputime_t differs between 32 and 64 bit machines, there is
-> no reason actually use cputime_add(), C can do this.
+> > 
+> > - From a normal task. We assume it can be migrated anytime. But
+> > normal tasks aren't supposed in RCU extended quiescent state.
+> > Still the check can be useful there and spot for example cases where
+> > we exit the idle task without calling rcu_exit_nohz().
+> > 
+> > Now from a normal task, when we call rcu_read_lock(), we assume
+> > we can read the value dynticks from any CPU, wherever we migrate
+> > to. So for example if we are running idle in CPU 1, then we exit
+> > idle without calling rcu_exit_nohz(), the next task running on this
+> > CPU is about to call rcu_read_lock(), but of on the last time before
+> > we do our check it migrates to CPU 2. It won't detect the issue in CPU 1
+> > then. But it doesn't matter much, soon or later there are fair
+> > chances there will be a call to rcu_read_lock() on CPU 1 that
+> > will report the issue.
 > 
-> The only reason to use things like cputime_add() is if you use a non
-> simple type, but that doesn't seem to be the case.
-> 
-> So I think we can simplify the code lots by doing away with cputime64_t
-> and all the cputime_*() functions. We can keep cputime_t, or we can use
-> unsigned long, which I think will end up doing pretty much the same.
-> 
-> That is, am I missing some added value of all this cputime*() foo?
+> So the main usage is to detect unbalanced rcu_enter_nohz()/rcu_exit_nohz(),
+> right?
 
-C can do the math as long as the encoding of the cputime is simple enough.
-Can we demand that a cputime value needs to be an integral type ?
+In fact the primary and main goal is to detect rcu uses between the calls
+to rcu_enter_nohz() and rcu_exit_nohz(). We found several of these bugs in idle
+code.
 
-What I did when I wrote all that stuff is to define cputime_t as a struct
-that contains a single u64. That way I found all the places in the kernel
-that used a cputime and could convert the code accordingly.
+But it might find other things like unbalanced rcu_enter_nohz()/rcu_exit_nohz().
 
-My fear is that if the cputime_xxx operations are removed, code will
-sneak in again that just uses an unsigned long instead of a cputime_t.
-That would break any arch that requires something bigger than a u32 for
-its cputime. I really have to find my old debugging patch and see if we
-already have bit rot in regard to cputime_t.
+Also rcu_enter_nohz() is used only in idle for now but that may find
+broader uses in the future. So we want this check everywhere.
 
--- 
-blue skies,
-   Martin.
+> If so, I suggest this should be commented somewhere, like the commit log;
+> because I was focusing on the idle task before then think it's harmless
+> with/without this patch :)
 
-"Reality continues to ruin my life." - Calvin.
+You're right, I'll add a comment to explain that.
 
+Thanks.
