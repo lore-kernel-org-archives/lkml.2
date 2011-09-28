@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab1I1X1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:27:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53745 "EHLO mx2.suse.de"
+	id S932144Ab1I1Wj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:39:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53727 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932116Ab1I1WkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:03 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:28 2011
-Message-Id: <20110928220128.730613837@clark.kroah.org>
+	id S932127Ab1I1Wj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:39:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:31 2011
+Message-Id: <20110928220131.468883156@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:57 -0700
+Date: Wed, 28 Sep 2011 15:00:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [033/244] rt2x00: do not drop usb dev reference counter on suspend
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [059/244] alarmtimers: Avoid possible denial of service with high freq periodic timers
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,80 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 543cc38c8fe86deba4169977c61eb88491036837 upstream.
+commit 6af7e471e5a7746b8024d70b4363d3dfe41d36b8 upstream.
 
-When hibernating ->resume may not be called by usb core, but disconnect
-and probe instead, so we do not increase the counter after decreasing
-it in ->supend. As a result we free memory early, and get crash when
-unplugging usb dongle.
+Its possible to jam up the alarm timers by setting very small interval
+timers, which will cause the alarmtimer subsystem to spend all of its time
+firing and restarting timers. This can effectivly lock up a box.
 
-BUG: unable to handle kernel paging request at 6b6b6b9f
-IP: [<c06909b0>] driver_sysfs_remove+0x10/0x30
-*pdpt = 0000000034f21001 *pde = 0000000000000000
-Pid: 20, comm: khubd Not tainted 3.1.0-rc1-wl+ #20 LENOVO 6369CTO/6369CTO
-EIP: 0060:[<c06909b0>] EFLAGS: 00010202 CPU: 1
-EIP is at driver_sysfs_remove+0x10/0x30
-EAX: 6b6b6b6b EBX: f52bba34 ECX: 00000000 EDX: 6b6b6b6b
-ESI: 6b6b6b6b EDI: c0a0ea20 EBP: f61c9e68 ESP: f61c9e64
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process khubd (pid: 20, ti=f61c8000 task=f6138270 task.ti=f61c8000)
-Call Trace:
- [<c06909ef>] __device_release_driver+0x1f/0xa0
- [<c0690b20>] device_release_driver+0x20/0x40
- [<c068fd64>] bus_remove_device+0x84/0xe0
- [<c068e12a>] ? device_remove_attrs+0x2a/0x80
- [<c068e267>] device_del+0xe7/0x170
- [<c06d93d4>] usb_disconnect+0xd4/0x180
- [<c06d9d61>] hub_thread+0x691/0x1600
- [<c0473260>] ? wake_up_bit+0x30/0x30
- [<c0442a39>] ? complete+0x49/0x60
- [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
- [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
- [<c0472eb4>] kthread+0x74/0x80
- [<c0472e40>] ? kthread_worker_fn+0x150/0x150
- [<c0809b3e>] kernel_thread_helper+0x6/0x10
+A deeper fix is needed, closely mimicking the hrtimer code, but for now
+just cap the interval to 100us to avoid userland hanging the system.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00usb.c |   14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ kernel/time/alarmtimer.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -870,18 +870,8 @@ int rt2x00usb_suspend(struct usb_interfa
- {
- 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
--	int retval;
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -481,6 +481,15 @@ static int alarm_timer_set(struct k_itim
+ 	if (!rtcdev)
+ 		return -ENOTSUPP;
  
--	retval = rt2x00lib_suspend(rt2x00dev, state);
--	if (retval)
--		return retval;
--
--	/*
--	 * Decrease usbdev refcount.
--	 */
--	usb_put_dev(interface_to_usbdev(usb_intf));
--
--	return 0;
-+	return rt2x00lib_suspend(rt2x00dev, state);
- }
- EXPORT_SYMBOL_GPL(rt2x00usb_suspend);
++	/*
++	 * XXX HACK! Currently we can DOS a system if the interval
++	 * period on alarmtimers is too small. Cap the interval here
++	 * to 100us and solve this properly in a future patch! -jstultz
++	 */
++	if ((new_setting->it_interval.tv_sec == 0) &&
++			(new_setting->it_interval.tv_nsec < 100000))
++		new_setting->it_interval.tv_nsec = 100000;
++
+ 	if (old_setting)
+ 		alarm_timer_get(timr, old_setting);
  
-@@ -890,8 +880,6 @@ int rt2x00usb_resume(struct usb_interfac
- 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
- 
--	usb_get_dev(interface_to_usbdev(usb_intf));
--
- 	return rt2x00lib_resume(rt2x00dev);
- }
- EXPORT_SYMBOL_GPL(rt2x00usb_resume);
 
 
