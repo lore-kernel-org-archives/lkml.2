@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1I1JAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:00:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60476 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab1I1JAT convert rfc822-to-8bit (ORCPT
+	id S1753933Ab1I1JAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:00:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42832 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1I1JAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:00:19 -0400
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, markgross@thegnar.org,
-        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
-        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 28 Sep 2011 10:59:19 +0200
-In-Reply-To: <1317164216.3112.711.camel@work-vm>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-	 <1317068164.1763.39.camel@twins> <1317076065.3112.539.camel@work-vm>
-	 <1317119870.15383.29.camel@twins> <1317164216.3112.711.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317200359.5781.47.camel@twins>
+	Wed, 28 Sep 2011 05:00:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Sep 2011 17:59:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
+Message-Id: <20110928175947.d3af52f0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<1317170947-17074-7-git-send-email-walken@google.com>
+	<20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
+	<CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 15:56 -0700, John Stultz wrote:
+On Wed, 28 Sep 2011 01:19:50 -0700
+Michel Lespinasse <walken@google.com> wrote:
+
+> On Wed, Sep 28, 2011 at 1:13 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Tue, 27 Sep 2011 17:49:04 -0700
+> > Michel Lespinasse <walken@google.com> wrote:
+> >
+> >> Scan some number of pages from each node every second, instead of trying to
+> >> scan the entime memory at once and being idle for the rest of the configured
+> >> interval.
+> >>
+> >> In addition to spreading the CPU usage over the entire scanning interval,
+> >> this also reduces the jitter between two consecutive scans of the same page.
+> >>
+> >>
+> >> Signed-off-by: Michel Lespinasse <walken@google.com>
+> >
+> > Does this scan thread need to be signle thread ?
 > 
-> But I also want to separate my specific solution from the problem at
-> large. I do think that there are issues that my proposal and wakelocks
-> address that the hand-wavy "just do it in userspace" rebuttals don't
-> deal with (again specifically: wakeup event consumption in userland
-> before the next suspend). 
+> It tends to perform worse if we try making it multithreaded. What
+> happens is that the scanning threads call page_referenced() a lot, and
+> if they both try scanning pages that belong to the same file that
+> causes the mapping's i_mmap_mutex lock to bounce. Same things happens
+> if they try scanning pages that belong to the same anon VMA too.
+> 
 
-You know, once you drop the whole suspend notion that race goes away.
+Hmm. with brief thinking, if you can scan list of page tables,
+you can set young flags without any locks. 
+For inode pages, you can hook page lookup, I think.
 
-Esp. on the mobile hardware there really isn't anything different
-between a deep idle state and suspend.
+You only need to clear Young flag by scanning [pfn, end_pfn].
+Then, multi-threaded. ?
 
-So just make the thing idle and your suspend race goes away.
 
-There's still things like the cgroup-freezer if you really want to force
-stuff down, but really your core system should be sane and not actually
-do anything unless asked.
+Thanks,
+-Kame
 
-Also, I'm all for aggressive enforcement, if it doesn't obey they rules,
-kill it. Don't mess about with freezing it, that never does the users
-any favour.
 
-If they find their app dies a lot, they'll complain to the dev, if the
-dev doesn't fix his stuff, the app gets a shitty rating and nobody will
-bother installing it again, problem sorted.
 
-We don't try to be friendly in the face of memory protection violations
-either.
