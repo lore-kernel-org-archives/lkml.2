@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab1I1WuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:50:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55034 "EHLO mx2.suse.de"
+	id S933571Ab1I1Wzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:55:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55029 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895Ab1I1WuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:50:20 -0400
+	id S933447Ab1I1WuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:50:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:50 2011
-Message-Id: <20110928220150.366481638@clark.kroah.org>
+Message-Id: <20110928220150.261147197@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:21 -0700
+Date: Wed, 28 Sep 2011 15:03:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [237/244] ath9k_hw: Fix Rx DMA stuck for AR9003 chips
+Subject: [236/244] cfg80211: Fix validation of AKM suites
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Jouni Malinen <jouni@qca.qualcomm.com>
 
-commit e9f9530bb697f53dd620df290102359a3325bb23 upstream.
+commit 1b9ca0272ffae212e726380f66777b30a56ed7a5 upstream.
 
-During the endurance testing, rx frames are not getting DMAd from
-MAC whereas pcu rx frame counters are getting updated properly.
-As per systems team input updated the initval to fix rx dma stuck
-issue.
+Incorrect variable was used in validating the akm_suites array from
+NL80211_ATTR_AKM_SUITES. In addition, there was no explicit
+validation of the array length (we only have room for
+NL80211_MAX_NR_AKM_SUITES).
 
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+This can result in a buffer write overflow for stack variables with
+arbitrary data from user space. The nl80211 commands using the affected
+functionality require GENL_ADMIN_PERM, so this is only exposed to admin
+users.
+
+Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/wireless/nl80211.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
-@@ -1516,7 +1516,7 @@ static const u32 ar9300_2p2_mac_core[][2
- 	{0x00008258, 0x00000000},
- 	{0x0000825c, 0x40000000},
- 	{0x00008260, 0x00080922},
--	{0x00008264, 0x9bc00010},
-+	{0x00008264, 0x9d400010},
- 	{0x00008268, 0xffffffff},
- 	{0x0000826c, 0x0000ffff},
- 	{0x00008270, 0x00000000},
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -4044,9 +4044,12 @@ static int nl80211_crypto_settings(struc
+ 		if (len % sizeof(u32))
+ 			return -EINVAL;
+ 
++		if (settings->n_akm_suites > NL80211_MAX_NR_AKM_SUITES)
++			return -EINVAL;
++
+ 		memcpy(settings->akm_suites, data, len);
+ 
+-		for (i = 0; i < settings->n_ciphers_pairwise; i++)
++		for (i = 0; i < settings->n_akm_suites; i++)
+ 			if (!nl80211_valid_akm_suite(settings->akm_suites[i]))
+ 				return -EINVAL;
+ 	}
 
 
