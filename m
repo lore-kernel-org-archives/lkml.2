@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab1I1Wu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:50:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55090 "EHLO mx2.suse.de"
+	id S1756043Ab1I1WvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:51:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55097 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755978Ab1I1Wuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:50:55 -0400
+	id S933594Ab1I1Wu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:50:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:48 2011
-Message-Id: <20110928220148.763469921@clark.kroah.org>
+Message-Id: <20110928220148.884066566@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:06 -0700
+Date: Wed, 28 Sep 2011 15:03:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [222/244] ARM: 7091/1: errata: D-cache line maintenance operation by MVA may not succeed
+Subject: [223/244] ARM: 7099/1: futex: preserve oldval in SMP __futex_atomic_op
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,134 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit f630c1bdfbf8fe423325beaf60027cfc7fd7c610 upstream.
+commit df77abcafc8dc881b6c9347548651777088e4b27 upstream.
 
-This patch implements a workaround for erratum 764369 affecting
-Cortex-A9 MPCore with two or more processors (all current revisions).
-Under certain timing circumstances, a data cache line maintenance
-operation by MVA targeting an Inner Shareable memory region may fail to
-proceed up to either the Point of Coherency or to the Point of
-Unification of the system. This workaround adds a DSB instruction before
-the relevant cache maintenance functions and sets a specific bit in the
-diagnostic control register of the SCU.
+The SMP implementation of __futex_atomic_op clobbers oldval with the
+status flag from the exclusive store. This causes it to always read as
+zero when performing the FUTEX_OP_CMP_* operation.
 
+This patch updates the ARM __futex_atomic_op implementations to take a
+tmp argument, allowing us to store the strex status flag without
+overwriting the register containing oldval.
+
+Reported-by: Minho Ban <mhban@samsung.com>
+Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/Kconfig          |   14 ++++++++++++++
- arch/arm/kernel/smp_scu.c |   10 ++++++++++
- arch/arm/mm/cache-v7.S    |   20 ++++++++++++++++++++
- 3 files changed, 44 insertions(+)
+ arch/arm/include/asm/futex.h |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1298,6 +1298,20 @@ source "drivers/pci/Kconfig"
+--- a/arch/arm/include/asm/futex.h
++++ b/arch/arm/include/asm/futex.h
+@@ -25,17 +25,17 @@
  
- source "drivers/pcmcia/Kconfig"
+ #ifdef CONFIG_SMP
  
-+config ARM_ERRATA_764369
-+	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
-+	depends on CPU_V7 && SMP
-+	help
-+	  This option enables the workaround for erratum 764369
-+	  affecting Cortex-A9 MPCore with two or more processors (all
-+	  current revisions). Under certain timing circumstances, a data
-+	  cache line maintenance operation by MVA targeting an Inner
-+	  Shareable memory region may fail to proceed up to either the
-+	  Point of Coherency or to the Point of Unification of the
-+	  system. This workaround adds a DSB instruction before the
-+	  relevant cache maintenance functions and sets a specific bit
-+	  in the diagnostic control register of the SCU.
-+
- endmenu
+-#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg)	\
++#define __futex_atomic_op(insn, ret, oldval, tmp, uaddr, oparg)	\
+ 	smp_mb();						\
+ 	__asm__ __volatile__(					\
+-	"1:	ldrex	%1, [%2]\n"				\
++	"1:	ldrex	%1, [%3]\n"				\
+ 	"	" insn "\n"					\
+-	"2:	strex	%1, %0, [%2]\n"				\
+-	"	teq	%1, #0\n"				\
++	"2:	strex	%2, %0, [%3]\n"				\
++	"	teq	%2, #0\n"				\
+ 	"	bne	1b\n"					\
+ 	"	mov	%0, #0\n"				\
+-	__futex_atomic_ex_table("%4")				\
+-	: "=&r" (ret), "=&r" (oldval)				\
++	__futex_atomic_ex_table("%5")				\
++	: "=&r" (ret), "=&r" (oldval), "=&r" (tmp)		\
+ 	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
+ 	: "cc", "memory")
  
- menu "Kernel Features"
---- a/arch/arm/kernel/smp_scu.c
-+++ b/arch/arm/kernel/smp_scu.c
-@@ -13,6 +13,7 @@
+@@ -73,14 +73,14 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
+ #include <linux/preempt.h>
+ #include <asm/domain.h>
  
- #include <asm/smp_scu.h>
- #include <asm/cacheflush.h>
-+#include <asm/cputype.h>
+-#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg)	\
++#define __futex_atomic_op(insn, ret, oldval, tmp, uaddr, oparg)	\
+ 	__asm__ __volatile__(					\
+-	"1:	" T(ldr) "	%1, [%2]\n"			\
++	"1:	" T(ldr) "	%1, [%3]\n"			\
+ 	"	" insn "\n"					\
+-	"2:	" T(str) "	%0, [%2]\n"			\
++	"2:	" T(str) "	%0, [%3]\n"			\
+ 	"	mov	%0, #0\n"				\
+-	__futex_atomic_ex_table("%4")				\
+-	: "=&r" (ret), "=&r" (oldval)				\
++	__futex_atomic_ex_table("%5")				\
++	: "=&r" (ret), "=&r" (oldval), "=&r" (tmp)		\
+ 	: "r" (uaddr), "r" (oparg), "Ir" (-EFAULT)		\
+ 	: "cc", "memory")
  
- #define SCU_CTRL		0x00
- #define SCU_CONFIG		0x04
-@@ -36,6 +37,15 @@ void __init scu_enable(void __iomem *scu
- {
- 	u32 scu_ctrl;
+@@ -117,7 +117,7 @@ futex_atomic_op_inuser (int encoded_op,
+ 	int cmp = (encoded_op >> 24) & 15;
+ 	int oparg = (encoded_op << 8) >> 20;
+ 	int cmparg = (encoded_op << 20) >> 20;
+-	int oldval = 0, ret;
++	int oldval = 0, ret, tmp;
  
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	/* Cortex-A9 only */
-+	if ((read_cpuid(CPUID_ID) & 0xff0ffff0) == 0x410fc090) {
-+		scu_ctrl = __raw_readl(scu_base + 0x30);
-+		if (!(scu_ctrl & 1))
-+			__raw_writel(scu_ctrl | 0x1, scu_base + 0x30);
-+	}
-+#endif
-+
- 	scu_ctrl = __raw_readl(scu_base + SCU_CTRL);
- 	/* already enabled? */
- 	if (scu_ctrl & 1)
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -174,6 +174,10 @@ ENTRY(v7_coherent_user_range)
- 	dcache_line_size r2, r3
- 	sub	r3, r2, #1
- 	bic	r12, r0, r3
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	ALT_SMP(W(dsb))
-+	ALT_UP(W(nop))
-+#endif
- 1:
-  USER(	mcr	p15, 0, r12, c7, c11, 1	)	@ clean D line to the point of unification
- 	add	r12, r12, r2
-@@ -223,6 +227,10 @@ ENTRY(v7_flush_kern_dcache_area)
- 	add	r1, r0, r1
- 	sub	r3, r2, #1
- 	bic	r0, r0, r3
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	ALT_SMP(W(dsb))
-+	ALT_UP(W(nop))
-+#endif
- 1:
- 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D line / unified line
- 	add	r0, r0, r2
-@@ -247,6 +255,10 @@ v7_dma_inv_range:
- 	sub	r3, r2, #1
- 	tst	r0, r3
- 	bic	r0, r0, r3
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	ALT_SMP(W(dsb))
-+	ALT_UP(W(nop))
-+#endif
- 	mcrne	p15, 0, r0, c7, c14, 1		@ clean & invalidate D / U line
+ 	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
+ 		oparg = 1 << oparg;
+@@ -129,19 +129,19 @@ futex_atomic_op_inuser (int encoded_op,
  
- 	tst	r1, r3
-@@ -270,6 +282,10 @@ v7_dma_clean_range:
- 	dcache_line_size r2, r3
- 	sub	r3, r2, #1
- 	bic	r0, r0, r3
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	ALT_SMP(W(dsb))
-+	ALT_UP(W(nop))
-+#endif
- 1:
- 	mcr	p15, 0, r0, c7, c10, 1		@ clean D / U line
- 	add	r0, r0, r2
-@@ -288,6 +304,10 @@ ENTRY(v7_dma_flush_range)
- 	dcache_line_size r2, r3
- 	sub	r3, r2, #1
- 	bic	r0, r0, r3
-+#ifdef CONFIG_ARM_ERRATA_764369
-+	ALT_SMP(W(dsb))
-+	ALT_UP(W(nop))
-+#endif
- 1:
- 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D / U line
- 	add	r0, r0, r2
+ 	switch (op) {
+ 	case FUTEX_OP_SET:
+-		__futex_atomic_op("mov	%0, %3", ret, oldval, uaddr, oparg);
++		__futex_atomic_op("mov	%0, %4", ret, oldval, tmp, uaddr, oparg);
+ 		break;
+ 	case FUTEX_OP_ADD:
+-		__futex_atomic_op("add	%0, %1, %3", ret, oldval, uaddr, oparg);
++		__futex_atomic_op("add	%0, %1, %4", ret, oldval, tmp, uaddr, oparg);
+ 		break;
+ 	case FUTEX_OP_OR:
+-		__futex_atomic_op("orr	%0, %1, %3", ret, oldval, uaddr, oparg);
++		__futex_atomic_op("orr	%0, %1, %4", ret, oldval, tmp, uaddr, oparg);
+ 		break;
+ 	case FUTEX_OP_ANDN:
+-		__futex_atomic_op("and	%0, %1, %3", ret, oldval, uaddr, ~oparg);
++		__futex_atomic_op("and	%0, %1, %4", ret, oldval, tmp, uaddr, ~oparg);
+ 		break;
+ 	case FUTEX_OP_XOR:
+-		__futex_atomic_op("eor	%0, %1, %3", ret, oldval, uaddr, oparg);
++		__futex_atomic_op("eor	%0, %1, %4", ret, oldval, tmp, uaddr, oparg);
+ 		break;
+ 	default:
+ 		ret = -ENOSYS;
 
 
