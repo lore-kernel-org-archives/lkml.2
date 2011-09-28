@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab1I1TS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 15:18:26 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52506 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab1I1TSZ (ORCPT
+	id S1754171Ab1I1T21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 15:28:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29397 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab1I1T2Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 15:18:25 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] PCI: Add support for PASID capability
-In-Reply-To: Your message of "Tue, 27 Sep 2011 00:15:39 +0200."
-             <20110926221539.GG15002@8bytes.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com> <1316706551-16138-5-git-send-email-joerg.roedel@amd.com> <CAErSpo7Vb7avbsP3eG=3huCewW4QBL7oMoXr2TjMCaWEvFgB0Q@mail.gmail.com>
-            <20110926221539.GG15002@8bytes.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317237495_2944P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 28 Sep 2011 15:18:15 -0400
-Message-ID: <15060.1317237495@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4E8372F8.00DB,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 28 Sep 2011 15:28:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Xusifu6EXck539KCzka6UYpZlMkeFBc5FeZbm4+MK+WIOITJk26Vbwc5FEj+K3aGL
+	5EewoeCfSf9j8Grrsjx6A==
+MIME-Version: 1.0
+In-Reply-To: <201109280001.28857.rjw@sisk.pl>
+References: <201109280001.28857.rjw@sisk.pl>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 28 Sep 2011 13:27:58 -0600
+Message-ID: <CAErSpo4CpEWaKkh280Kb_nNSVWfYKGZ06HQOrpLar=T40TyDZQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317237495_2944P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Sep 27, 2011 at 4:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> The error variable in acpi_dev_run_wake() is not really used, so
+> remove it.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/pci/pci-acpi.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> Index: linux/drivers/pci/pci-acpi.c
+> ===================================================================
+> --- linux.orig/drivers/pci/pci-acpi.c
+> +++ linux/drivers/pci/pci-acpi.c
+> @@ -282,7 +282,6 @@ static int acpi_dev_run_wake(struct devi
+>  {
+>        struct acpi_device *dev;
+>        acpi_handle handle;
+> -       int error = -ENODEV;
+>
+>        if (!device_run_wake(phys_dev))
+>                return -EINVAL;
+> @@ -302,7 +301,7 @@ static int acpi_dev_run_wake(struct devi
+>                acpi_disable_wakeup_device_power(dev);
+>        }
+>
+> -       return error;
+> +       return 0;
+>  }
+>
+>  static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
 
-On Tue, 27 Sep 2011 00:15:39 +0200, Joerg Roedel said:
+This looks like the right thing to do, but the current changelog
+suggests that we're just removing unused code.
 
-> PASID stands for Process Address Space ID, it basically allows a PCI
-> device to access multiple IO address spaces at the same time using an
-> IOMMU. Users should enable it when they want to compile an IOMMU driver
-> into the kernel that supports PASIDs for the translated devices.
-> I'll add all that information to the Kconfig help. Thanks a lot for your
-> feedback :)
+But in fact, we'll now return 0 (success) when we used to return
+-ENODEV, so the behavior of the callers will change (probably fixing
+some bugs).  Do you want to mention that in the changelog as well?
 
-Is this a case where the PCI device drivers in question should be doing a
-'select' or 'depends on' if they support talking to an IOMMU using PASID?
+I'm assuming this is for the 3.2 merge window, since it doesn't look
+like a regression fix.
 
---==_Exmh_1317237495_2944P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOg3L3cC3lWbTT17ARAgPiAKCRBQJ4KjD/sNFXHqFDBQKeLfG7VwCdHV6G
-rQR9ODIW9z9rI/AQdMlf9U4=
-=Sghw
------END PGP SIGNATURE-----
-
---==_Exmh_1317237495_2944P--
-
+Bjorn
