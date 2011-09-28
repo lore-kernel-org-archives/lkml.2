@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab1I1Wns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54245 "EHLO mx2.suse.de"
+	id S932615Ab1I1WoB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54262 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab1I1Wnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:45 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
-Message-Id: <20110928220138.177777619@clark.kroah.org>
+	id S1755911Ab1I1Wn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:35 2011
+Message-Id: <20110928220135.572017891@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:26 -0700
+Date: Wed, 28 Sep 2011 15:01:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [122/244] ALSA: HDA: Cirrus - fix "Surround Speaker" volume control name
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [097/244] fs/9p: Always ask new inode in lookup for cache mode disabled
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 2e1210bc3d065a6e26ff5fef228a9a7e08921d2c upstream.
+commit 73f507171cfa407b19f254aef95cbb058c8180cf upstream.
 
-This patch fixes "Surround Speaker Playback Volume" being cut off.
-(Commit b4dabfc452a10 was probably meant to fix this, but it fixed
-only the "Switch" name, not the "Volume" name.)
+This make sure we don't end up reusing the unlinked inode object.
+The ideal way is to use inode i_generation. But i_generation is
+not available in userspace always.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_cirrus.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/9p/vfs_inode.c |   28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -508,7 +508,7 @@ static int add_volume(struct hda_codec *
- 		      int index, unsigned int pval, int dir,
- 		      struct snd_kcontrol **kctlp)
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -799,6 +799,7 @@ static int v9fs_vfs_mkdir(struct inode *
+ struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
+ 				      struct nameidata *nameidata)
  {
--	char tmp[32];
-+	char tmp[44];
- 	struct snd_kcontrol_new knew =
- 		HDA_CODEC_VOLUME_IDX(tmp, index, 0, 0, HDA_OUTPUT);
- 	knew.private_value = pval;
++	struct dentry *res;
+ 	struct super_block *sb;
+ 	struct v9fs_session_info *v9ses;
+ 	struct p9_fid *dfid, *fid;
+@@ -830,22 +831,35 @@ struct dentry *v9fs_vfs_lookup(struct in
+ 
+ 		return ERR_PTR(result);
+ 	}
+-
+-	inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
++	/*
++	 * Make sure we don't use a wrong inode due to parallel
++	 * unlink. For cached mode create calls request for new
++	 * inode. But with cache disabled, lookup should do this.
++	 */
++	if (v9ses->cache)
++		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
++	else
++		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
+ 	if (IS_ERR(inode)) {
+ 		result = PTR_ERR(inode);
+ 		inode = NULL;
+ 		goto error;
+ 	}
+-
+ 	result = v9fs_fid_add(dentry, fid);
+ 	if (result < 0)
+ 		goto error_iput;
+-
+ inst_out:
+-	d_add(dentry, inode);
+-	return NULL;
+-
++	/*
++	 * If we had a rename on the server and a parallel lookup
++	 * for the new name, then make sure we instantiate with
++	 * the new name. ie look up for a/b, while on server somebody
++	 * moved b under k and client parallely did a lookup for
++	 * k/b.
++	 */
++	res = d_materialise_unique(dentry, inode);
++	if (!IS_ERR(res))
++		return res;
++	result = PTR_ERR(res);
+ error_iput:
+ 	iput(inode);
+ error:
 
 
