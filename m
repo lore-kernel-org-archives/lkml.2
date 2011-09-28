@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1I1Sck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:32:40 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56437 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754906Ab1I1Scj (ORCPT
+	id S1755064Ab1I1SdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:33:24 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:55512 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1I1SdW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:32:39 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Vmk8/xdqr7qb5ag7vRE9p
-Date: Wed, 28 Sep 2011 11:32:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Kyle Manna <kyle@kylemanna.com>, Russell King <linux@arm.linux.org.uk>,
-        Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Fixes to twl4030-madc and add BeagleBoard
- support
-Message-ID: <20110928183230.GD6324@atomide.com>
-References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
- <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
- <20110822135530.GR4607@sortiz-mobl>
+	Wed, 28 Sep 2011 14:33:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110822135530.GR4607@sortiz-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <201109281516.42513.arnd@arndb.de>
+References: <1317171902-14736-1-git-send-email-pdeschrijver@nvidia.com>
+	<1317171902-14736-4-git-send-email-pdeschrijver@nvidia.com>
+	<201109281516.42513.arnd@arndb.de>
+Date: Wed, 28 Sep 2011 11:33:21 -0700
+Message-ID: <CAOesGMgv5wqZPMZPS4UKO4owgxBRLP9T6NPSFAVVcLd3vPYkiQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] arm/tegra: device tree support for ventana board
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Samuel Ortiz <sameo@linux.intel.com> [110822 06:20]:
-> Hi Kyle,
-> 
-> On Thu, Aug 11, 2011 at 10:33:11PM -0500, Kyle Manna wrote:
-> > These patches add basic functionality to the twl4030-madc driver to make
-> > it work on the BeagleBoard xM.
-> > 
-> > Version 2 adds fixes per Grazvydas Ignotas and the check for NULL pointer patch.
-> > 
-> > Kyle Manna (4):
-> >   mfd: twl4030-madc: copy the device pointer
-> >   mfd: twl4030-madc: turn on the MADC clock
-> >   mfd: twl4030-madc: check for NULL pointer
-> >   arm: BeagleBoard: add support for the twl4030-madc
-> Tony, are you ok with the BeagleBoard changes ?
-> The MFD ones look fine to me, I'd like to apply them.
+On Wed, Sep 28, 2011 at 6:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 28 September 2011, Peter De Schrijver wrote:
+>> --- a/arch/arm/mach-tegra/board-dt.c
+>> +++ b/arch/arm/mach-tegra/board-dt.c
+>> @@ -47,7 +47,7 @@
+>>
+>>  void harmony_pinmux_init(void);
+>>  void seaboard_pinmux_init(void);
+>> -
+>> +void ventana_pinmux_init(void);
+>>
+>>  struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+>>         OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
+>> @@ -95,6 +95,8 @@ static void __init tegra_dt_init(void)
+>>                 harmony_pinmux_init();
+>>         else if (of_machine_is_compatible("nvidia,seaboard"))
+>>                 seaboard_pinmux_init();
+>> +       else if (of_machine_is_compatible("nvidia,ventana"))
+>> +               ventana_pinmux_init();
+>
+> Are you (Peter, Colin, Olof) confident that this is not getting out
+> of hand before it's getting better?
+>
+> If we are keeping the per-board pinmux configuration in the kernel
+> for longer, I think it would be better to do this table-driven than
+> having a list of top-level of_machine_is_compatible() statements
+> and do something like:
+>
+> static struct {
+>        const char *machine;
+>        struct tegra_pingroup_config *config[];
+> } pinmux_configs[] __initdata = {
+>        { "nvidia,ventana", &ventana_pinmux },
+>        { "nvidia,seaboard, &seaboard_pinmux },
+> };
 
-Yes sorry for the delay in replying. I acked it, maybe
-you can just copy the subject to have a proper description
-for the patch.
+That is definitely a nicer solution. I didn't see a strong need to
+switch to that model now since it should hopefully be a temporary
+thing, but given Stephen's mention of Cardhu, I think it does make
+sense.
 
-Tony
+Peter, care to respin this patch with the above solution instead?
+Also, please print a warning if no match is found.
+
+
+Thanks,
+
+-Olof
