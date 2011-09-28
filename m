@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933198Ab1I1Wr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:47:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54733 "EHLO mx2.suse.de"
+	id S933208Ab1I1WsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:48:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54744 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab1I1Wrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:42 2011
-Message-Id: <20110928220142.593500295@clark.kroah.org>
+	id S933009Ab1I1Wr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:41 2011
+Message-Id: <20110928220141.725355989@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:08 -0700
+Date: Wed, 28 Sep 2011 15:02:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matt Carlson <mcarlson@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [164/244] tg3: Fix int selftest for recent devices.
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [156/244] [SCSI] iscsi_tcp: fix locking around iscsi sk user data
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Carlson <mcarlson@broadcom.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 3aa1cdf87c0b3f2345e75c474acc32ebbf0a4724 upstream.
+commit 03adb5f91280b433c3685d0ee86b2e1424af3d88 upstream.
 
-This patch fixes interrupt selftest failures for recent devices (57765,
-5717, 5718. 5719, 5720) by disabling MSI one-shot mode and applying the
-status tag workaround to the selftest code.
+iscsi_sw_tcp_conn_restore_callbacks could have set
+the sk_user_data field to NULL then iscsi_sw_tcp_data_ready
+could read that and try to access the NULL pointer. This
+adds some checks for NULL sk_user_data in the sk
+callback functions and it uses the sk_callback_lock to
+set/get that sk_user_data field.
 
-Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-Reviewed-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/tg3.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/scsi/iscsi_tcp.c |   61 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 41 insertions(+), 20 deletions(-)
 
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -8982,7 +8982,7 @@ static int tg3_test_interrupt(struct tg3
- 	 * Turn off MSI one shot mode.  Otherwise this test has no
- 	 * observable way to know whether the interrupt was delivered.
- 	 */
--	if (tg3_flag(tp, 57765_PLUS) && tg3_flag(tp, USING_MSI)) {
-+	if (tg3_flag(tp, 57765_PLUS)) {
- 		val = tr32(MSGINT_MODE) | MSGINT_MODE_ONE_SHOT_DISABLE;
- 		tw32(MSGINT_MODE, val);
- 	}
-@@ -9010,6 +9010,10 @@ static int tg3_test_interrupt(struct tg3
- 			break;
- 		}
+--- a/drivers/scsi/iscsi_tcp.c
++++ b/drivers/scsi/iscsi_tcp.c
+@@ -107,10 +107,12 @@ static int iscsi_sw_tcp_recv(read_descri
+  * If the socket is in CLOSE or CLOSE_WAIT we should
+  * not close the connection if there is still some
+  * data pending.
++ *
++ * Must be called with sk_callback_lock.
+  */
+ static inline int iscsi_sw_sk_state_check(struct sock *sk)
+ {
+-	struct iscsi_conn *conn = (struct iscsi_conn*)sk->sk_user_data;
++	struct iscsi_conn *conn = sk->sk_user_data;
  
-+		if (tg3_flag(tp, 57765_PLUS) &&
-+		    tnapi->hw_status->status_tag != tnapi->last_tag)
-+			tw32_mailbox_f(tnapi->int_mbox, tnapi->last_tag << 24);
+ 	if ((sk->sk_state == TCP_CLOSE_WAIT || sk->sk_state == TCP_CLOSE) &&
+ 	    !atomic_read(&sk->sk_rmem_alloc)) {
+@@ -123,11 +125,17 @@ static inline int iscsi_sw_sk_state_chec
+ 
+ static void iscsi_sw_tcp_data_ready(struct sock *sk, int flag)
+ {
+-	struct iscsi_conn *conn = sk->sk_user_data;
+-	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
++	struct iscsi_conn *conn;
++	struct iscsi_tcp_conn *tcp_conn;
+ 	read_descriptor_t rd_desc;
+ 
+ 	read_lock(&sk->sk_callback_lock);
++	conn = sk->sk_user_data;
++	if (!conn) {
++		read_unlock(&sk->sk_callback_lock);
++		return;
++	}
++	tcp_conn = conn->dd_data;
+ 
+ 	/*
+ 	 * Use rd_desc to pass 'conn' to iscsi_tcp_recv.
+@@ -141,11 +149,10 @@ static void iscsi_sw_tcp_data_ready(stru
+ 
+ 	iscsi_sw_sk_state_check(sk);
+ 
+-	read_unlock(&sk->sk_callback_lock);
+-
+ 	/* If we had to (atomically) map a highmem page,
+ 	 * unmap it now. */
+ 	iscsi_tcp_segment_unmap(&tcp_conn->in.segment);
++	read_unlock(&sk->sk_callback_lock);
+ }
+ 
+ static void iscsi_sw_tcp_state_change(struct sock *sk)
+@@ -157,8 +164,11 @@ static void iscsi_sw_tcp_state_change(st
+ 	void (*old_state_change)(struct sock *);
+ 
+ 	read_lock(&sk->sk_callback_lock);
+-
+-	conn = (struct iscsi_conn*)sk->sk_user_data;
++	conn = sk->sk_user_data;
++	if (!conn) {
++		read_unlock(&sk->sk_callback_lock);
++		return;
++	}
+ 	session = conn->session;
+ 
+ 	iscsi_sw_sk_state_check(sk);
+@@ -178,11 +188,25 @@ static void iscsi_sw_tcp_state_change(st
+  **/
+ static void iscsi_sw_tcp_write_space(struct sock *sk)
+ {
+-	struct iscsi_conn *conn = (struct iscsi_conn*)sk->sk_user_data;
+-	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
+-	struct iscsi_sw_tcp_conn *tcp_sw_conn = tcp_conn->dd_data;
++	struct iscsi_conn *conn;
++	struct iscsi_tcp_conn *tcp_conn;
++	struct iscsi_sw_tcp_conn *tcp_sw_conn;
++	void (*old_write_space)(struct sock *);
 +
- 		msleep(10);
- 	}
++	read_lock_bh(&sk->sk_callback_lock);
++	conn = sk->sk_user_data;
++	if (!conn) {
++		read_unlock_bh(&sk->sk_callback_lock);
++		return;
++	}
++
++	tcp_conn = conn->dd_data;
++	tcp_sw_conn = tcp_conn->dd_data;
++	old_write_space = tcp_sw_conn->old_write_space;
++	read_unlock_bh(&sk->sk_callback_lock);
++
++	old_write_space(sk);
  
-@@ -9024,7 +9028,7 @@ static int tg3_test_interrupt(struct tg3
+-	tcp_sw_conn->old_write_space(sk);
+ 	ISCSI_SW_TCP_DBG(conn, "iscsi_write_space\n");
+ 	iscsi_conn_queue_work(conn);
+ }
+@@ -592,20 +616,17 @@ static void iscsi_sw_tcp_conn_stop(struc
+ 	/* userspace may have goofed up and not bound us */
+ 	if (!sock)
+ 		return;
+-	/*
+-	 * Make sure our recv side is stopped.
+-	 * Older tools called conn stop before ep_disconnect
+-	 * so IO could still be coming in.
+-	 */
+-	write_lock_bh(&tcp_sw_conn->sock->sk->sk_callback_lock);
+-	set_bit(ISCSI_SUSPEND_BIT, &conn->suspend_rx);
+-	write_unlock_bh(&tcp_sw_conn->sock->sk->sk_callback_lock);
  
- 	if (intr_ok) {
- 		/* Reenable MSI one shot mode. */
--		if (tg3_flag(tp, 57765_PLUS) && tg3_flag(tp, USING_MSI)) {
-+		if (tg3_flag(tp, 57765_PLUS)) {
- 			val = tr32(MSGINT_MODE) & ~MSGINT_MODE_ONE_SHOT_DISABLE;
- 			tw32(MSGINT_MODE, val);
- 		}
+ 	sock->sk->sk_err = EIO;
+ 	wake_up_interruptible(sk_sleep(sock->sk));
+ 
+-	iscsi_conn_stop(cls_conn, flag);
++	/* stop xmit side */
++	iscsi_suspend_tx(conn);
++
++	/* stop recv side and release socket */
+ 	iscsi_sw_tcp_release_conn(conn);
++
++	iscsi_conn_stop(cls_conn, flag);
+ }
+ 
+ static int
 
 
