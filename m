@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab1I1Wrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:47:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54683 "EHLO mx2.suse.de"
+	id S933174Ab1I1Wrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:47:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933046Ab1I1Wr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:28 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:45 2011
-Message-Id: <20110928220144.946434220@clark.kroah.org>
+	id S933121Ab1I1Wrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:42 2011
+Message-Id: <20110928220142.271677339@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:30 -0700
+Date: Wed, 28 Sep 2011 15:02:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Waychison <mikew@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [186/244] tcp: initialize variable ecn_ok in syncookies path
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [161/244] writeback: update dirtied_when for synced inode to prevent livelock
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-From: Mike Waychison <mikew@google.com>
+commit 94c3dcbb0b0cdfd82cedd21705424d8044edc42c upstream.
 
-[ Upstream commit f0e3d0689da401f7d1981c2777a714ba295ea5ff ]
+Explicitly update .dirtied_when on synced inodes, so that they are no
+longer considered for writeback in the next round.
 
-Using a gcc 4.4.3, warnings are emitted for a possibly uninitialized use
-of ecn_ok.
+It can prevent both of the following livelock schemes:
 
-This can happen if cookie_check_timestamp() returns due to not having
-seen a timestamp.  Defaulting to ecn off seems like a reasonable thing
-to do in this case, so initialized ecn_ok to false.
+- while true; do echo data >> f; done
+- while true; do touch f;        done (in theory)
 
-Signed-off-by: Mike Waychison <mikew@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The exact livelock condition is, during sync(1):
+
+(1) no new inodes are dirtied
+(2) an inode being actively dirtied
+
+On (2), the inode will be tagged and synced with .nr_to_write=LONG_MAX.
+When finished, it will be redirty_tail()ed because it's still dirty
+and (.nr_to_write > 0). redirty_tail() won't update its ->dirtied_when
+on condition (1). The sync work will then revisit it on the next
+queue_io() and find it eligible again because its old ->dirtied_when
+predates the sync work start time.
+
+We'll do more aggressive "keep writeback as long as we wrote something"
+logic in wb_writeback(). The "use LONG_MAX .nr_to_write" trick in commit
+b9543dac5bbc ("writeback: avoid livelocking WB_SYNC_ALL writeback") will
+no longer be enough to stop sync livelock.
+
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/syncookies.c |    2 +-
- net/ipv6/syncookies.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -276,7 +276,7 @@ struct sock *cookie_v4_check(struct sock
- 	int mss;
- 	struct rtable *rt;
- 	__u8 rcv_wscale;
--	bool ecn_ok;
-+	bool ecn_ok = false;
- 
- 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
- 		goto out;
---- a/net/ipv6/syncookies.c
-+++ b/net/ipv6/syncookies.c
-@@ -165,7 +165,7 @@ struct sock *cookie_v6_check(struct sock
- 	int mss;
- 	struct dst_entry *dst;
- 	__u8 rcv_wscale;
--	bool ecn_ok;
-+	bool ecn_ok = false;
- 
- 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
- 		goto out;
+---
+ fs/fs-writeback.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -419,6 +419,15 @@ writeback_single_inode(struct inode *ino
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_state &= ~I_SYNC;
+ 	if (!(inode->i_state & I_FREEING)) {
++		/*
++		 * Sync livelock prevention. Each inode is tagged and synced in
++		 * one shot. If still dirty, it will be redirty_tail()'ed below.
++		 * Update the dirty time to prevent enqueue and sync it again.
++		 */
++		if ((inode->i_state & I_DIRTY) &&
++		    (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages))
++			inode->dirtied_when = jiffies;
++
+ 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+ 			/*
+ 			 * We didn't write back all the pages.  nfs_writepages()
 
 
