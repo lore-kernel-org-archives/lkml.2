@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1I1KoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 06:44:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50439 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751282Ab1I1Knz (ORCPT
+	id S1753893Ab1I1KpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 06:45:08 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39568 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab1I1KpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 06:43:55 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3/7] regmap: Add a mutex to guard the sync operation
-Date: Wed, 28 Sep 2011 11:43:43 +0100
-Message-Id: <1317206627-6673-3-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com>
-References: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com>
+	Wed, 28 Sep 2011 06:45:04 -0400
+Date: Wed, 28 Sep 2011 12:45:06 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
+        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
+        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
+Message-ID: <20110928104506.GB22878@gere.osrc.amd.com>
+References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
+ <1317068164.1763.39.camel@twins>
+ <1317076065.3112.539.camel@work-vm>
+ <1317119870.15383.29.camel@twins>
+ <1317164216.3112.711.camel@work-vm>
+ <1317201399.18012.4.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317201399.18012.4.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/internal.h |    1 +
- drivers/base/regmap/regcache.c |    4 ++++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+On Wed, Sep 28, 2011 at 11:16:39AM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-09-27 at 15:56 -0700, John Stultz wrote:
+> > 
+> > 
+> > I do think my idea is neat, so we can spend/burn time debating it, but
+> > if you have viable suggestions (and honestly, I think rewriting all of
+> > userland isn't viable) on solving the larger problem, I'm all ears.
+> > 
+> And yet, rewriting all of userspace is exactly what Android did, they
+> had the perfect opportunity of doing it right, but they came up with the
+> worst solution ever.
+> 
+> As for my laptop, I really would like the firefox guys to add a
+> 'feature' that stops JS on non-visible tabs and preferably also drop all
+> data after a little while.
+> 
+> firefox is the #1 wakeup thing on my machine and its mostly invisible
+> (minimized) and when its not, I can only stare at a single tab anyway.
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 2d51b1b..a0b931d 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -32,6 +32,7 @@ struct regmap_format {
- 
- struct regmap {
- 	struct mutex lock;
-+	struct mutex sync_lock;
- 
- 	struct device *dev; /* Device we do I/O on */
- 	void *work_buf;     /* Scratch buffer used to format I/O */
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index f46e247..b843b5f 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -130,6 +130,8 @@ int regcache_init(struct regmap *map)
- 	if (!map->max_register)
- 		map->max_register = map->num_reg_defaults_raw;
- 
-+	mutex_init(&map->sync_lock);
-+
- 	if (map->cache_ops->init) {
- 		dev_dbg(map->dev, "Initializing %s cache\n",
- 			map->cache_ops->name);
-@@ -230,6 +232,7 @@ int regcache_sync(struct regmap *map)
- 
- 	BUG_ON(!map->cache_ops);
- 
-+	mutex_lock(&map->sync_lock);
- 	dev_dbg(map->dev, "Syncing %s cache\n",
- 		map->cache_ops->name);
- 	name = map->cache_ops->name;
-@@ -254,6 +257,7 @@ int regcache_sync(struct regmap *map)
- 	}
- out:
- 	trace_regcache_sync(map->dev, name, "stop");
-+	mutex_unlock(&map->sync_lock);
- 
- 	return ret;
- }
+Oh yeah, same here.
+
+I even went so far as to do
+
+kill -STOP $(pidof firefox-bin)
+
+at times simply because the thing was getting out of control. And to be
+honest, the moment a thinner browser comes out with authors who actually
+do care about not bloating the crap out of it, I'm jumping on it.
+
 -- 
-1.7.6.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
