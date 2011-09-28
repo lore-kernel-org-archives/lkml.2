@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab1I1Wko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:40:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53812 "EHLO mx2.suse.de"
+	id S932303Ab1I1Wkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:40:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53823 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab1I1Wkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:41 -0400
+	id S932275Ab1I1Wks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:40:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:33 2011
-Message-Id: <20110928220132.997093807@clark.kroah.org>
+Message-Id: <20110928220133.207497459@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:37 -0700
+Date: Wed, 28 Sep 2011 15:00:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: [073/244] ARM: davinci: da850 EVM: read mac address from SPI flash
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [075/244] drm/nouveau: properly handle allocation failure in nouveau_sgdma_populate
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,94 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 810198bc9c109489dfadc57131c5183ce6ad2d7d upstream.
+commit 17c8b960930da3599e47801a54ac0ea1070545d2 upstream.
 
-DA850/OMAP-L138 EMAC driver uses random mac address instead of
-a fixed one because the mac address is not stuffed into EMAC
-platform data.
+Not cleaning after alloc failure would result in crash on destroy,
+because nouveau_sgdma_clear assumes "ttm_alloced" to be not null when
+"pages" is not null.
 
-This patch provides a function which reads the mac address
-stored in SPI flash (registered as MTD device) and populates the
-EMAC platform data. The function which reads the mac address is
-registered as a callback which gets called upon addition of MTD
-device.
-
-NOTE: In case the MAC address stored in SPI flash is erased, follow
-the instructions at [1] to restore it.
-
-[1] http://processors.wiki.ti.com/index.php/GSG:_OMAP-L138_DVEVM_Additional_Procedures#Restoring_MAC_address_on_SPI_Flash
-
-Modifications in v2:
-Guarded registering the mtd_notifier only when MTD is enabled.
-Earlier this was handled using mtd_has_partitions() call, but
-this has been removed in Linux v3.0.
-
-Modifications in v3:
-a. Guarded da850_evm_m25p80_notify_add() function and
-   da850evm_spi_notifier structure with CONFIG_MTD macros.
-b. Renamed da850_evm_register_mtd_user() function to
-   da850_evm_setup_mac_addr() and removed the struct mtd_notifier
-   argument to this function.
-c. Passed the da850evm_spi_notifier structure to register_mtd_user()
-   function.
-
-Modifications in v4:
-Moved the da850_evm_setup_mac_addr() function within the first
-CONFIG_MTD ifdef construct.
-
-Signed-off-by: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-davinci/board-da850-evm.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -115,6 +115,32 @@ static struct spi_board_info da850evm_sp
- 	},
- };
+--- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
++++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+@@ -37,8 +37,11 @@ nouveau_sgdma_populate(struct ttm_backen
+ 		return -ENOMEM;
  
-+#ifdef CONFIG_MTD
-+static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
-+{
-+	char *mac_addr = davinci_soc_info.emac_pdata->mac_addr;
-+	size_t retlen;
-+
-+	if (!strcmp(mtd->name, "MAC-Address")) {
-+		mtd->read(mtd, 0, ETH_ALEN, &retlen, mac_addr);
-+		if (retlen == ETH_ALEN)
-+			pr_info("Read MAC addr from SPI Flash: %pM\n",
-+				mac_addr);
+ 	nvbe->ttm_alloced = kmalloc(sizeof(bool) * num_pages, GFP_KERNEL);
+-	if (!nvbe->ttm_alloced)
++	if (!nvbe->ttm_alloced) {
++		kfree(nvbe->pages);
++		nvbe->pages = NULL;
+ 		return -ENOMEM;
 +	}
-+}
-+
-+static struct mtd_notifier da850evm_spi_notifier = {
-+	.add	= da850_evm_m25p80_notify_add,
-+};
-+
-+static void da850_evm_setup_mac_addr(void)
-+{
-+	register_mtd_user(&da850evm_spi_notifier);
-+}
-+#else
-+static void da850_evm_setup_mac_addr(void) { }
-+#endif
-+
- static struct mtd_partition da850_evm_norflash_partition[] = {
- 	{
- 		.name           = "bootloaders + env",
-@@ -1237,6 +1263,8 @@ static __init void da850_evm_init(void)
- 	if (ret)
- 		pr_warning("da850_evm_init: spi 1 registration failed: %d\n",
- 				ret);
-+
-+	da850_evm_setup_mac_addr();
- }
  
- #ifdef CONFIG_SERIAL_8250_CONSOLE
+ 	nvbe->nr_pages = 0;
+ 	while (num_pages--) {
 
 
