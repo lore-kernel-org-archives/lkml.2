@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab1I1Mil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:38:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33992 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1I1Mik (ORCPT
+	id S1754121Ab1I1Mnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:43:35 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:37936 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1I1Mne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:38:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-Date: Wed, 28 Sep 2011 14:38:39 +0200
-Message-ID: <CAOVSwNEmhh8wbo79EY_MKOkGy9pVXZVALujBbBYAVg06_YuukQ@mail.gmail.com>
-Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
-From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Sep 2011 08:43:34 -0400
+Date: Wed, 28 Sep 2011 14:42:18 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
+        jbottomley@parallels.com, Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [RFD 4/9] Make total_forks per-cgroup
+Message-ID: <20110928144218.6a4882e5@de.ibm.com>
+In-Reply-To: <1317206124.20318.6.camel@twins>
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>
+	<1316816432-9237-5-git-send-email-glommer@parallels.com>
+	<1317160837.21836.21.camel@twins>
+	<20110928101357.5a90c2ab@de.ibm.com>
+	<1317206124.20318.6.camel@twins>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping :)
+On Wed, 28 Sep 2011 12:35:24 +0200
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-On Wed, Sep 28, 2011 at 1:06 AM, Tadeus (Eus) Prastowo
-<0x657573@googlemail.com> wrote:
-> Hi!
->
-> When a SCHED_RR task with RT priority X blocks on a
-> priority-inheriting mutex held by a SCHED_NORMAL task with nice value
-> Y, RT-Mutex code will change the SCHED_NORMAL task priority to that of
-> the SCHED_RR task and based on the new priority, will change the
-> scheduling class too. But, each task retains its own scheduling
-> policy.
->
-> This means that the task inheriting the SCHED_RR priority will be
-> scheduled using SCHED_FIFO policy because task_tick_rt does not
-> enforce the SCHED_RR time slice when the task policy is not SCHED_RR.
->
-> Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
-> task get the privilege of SCHED_FIFO task for running as long as it
-> wishes even when the task giving the inheritance does not have such
-> privilege?
->
-> Thank you very much.
->
-> Please kindly put me in the CC since I am not subscribed to the list.
->
-> --
-> Eus
+> On Wed, 2011-09-28 at 10:13 +0200, Martin Schwidefsky wrote:
+> > On Wed, 28 Sep 2011 00:00:37 +0200
+> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > 
+> > > On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
+> > > > @@ -1039,6 +1035,8 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
+> > > >         INIT_LIST_HEAD(&tsk->cpu_timers[2]);
+> > > >  }
+> > > >  
+> > > > +struct task_group *task_group(struct task_struct *p);
+> > > 
+> > > That doesn't appear to be actually used in this file..
+> > > 
+> > > Also, since there's already a for_each_possible_cpu() loop in that
+> > > proc/stat function, would it yield some code improvement to make
+> > > total_forks a cpu_usage_stat?
+> > > 
+> > > I guess the whole cputime64_t crap gets in the way of that being
+> > > natural... 
+> > > 
+> > > We could of course kill off the cputime64_t thing, its pretty pointless
+> > > and its a u64 all over the board. I think Martin or Heiko created this
+> > > stuff (although I might be wrong, my git tree doesn't go back that far).
+> > 
+> > The reason to introduce cputime_t has been that different architecture
+> > needed differently sized integers for their respective representation
+> > of cputime. On x86-32 the number of ticks is recorded in a u32, on s390
+> > we needed a u64 for the cpu timer values. cputime64_t is needed for
+> > cpustat and other sums of cputime that would overflow a cputime_t
+> > (in particular on x86-32 with the u32 cputime_t and the u64 cputime64_t).
+> > 
+> > Now we would convert everything to u64 but that would cause x86-32 to
+> > use 64-bit arithmetic for the tick counter. If that is acceptable I
+> > can't say.
+> 
+> Right, so the main point was about cputime64_t, we might as well use a
+> u64 for that throughout and ditch the silly cputime64_$op() accessors
+> and write normal code.
+> 
+> But even if cputime_t differs between 32 and 64 bit machines, there is
+> no reason actually use cputime_add(), C can do this.
+> 
+> The only reason to use things like cputime_add() is if you use a non
+> simple type, but that doesn't seem to be the case.
+> 
+> So I think we can simplify the code lots by doing away with cputime64_t
+> and all the cputime_*() functions. We can keep cputime_t, or we can use
+> unsigned long, which I think will end up doing pretty much the same.
+> 
+> That is, am I missing some added value of all this cputime*() foo?
+
+C can do the math as long as the encoding of the cputime is simple enough.
+Can we demand that a cputime value needs to be an integral type ?
+
+What I did when I wrote all that stuff is to define cputime_t as a struct
+that contains a single u64. That way I found all the places in the kernel
+that used a cputime and could convert the code accordingly.
+
+My fear is that if the cputime_xxx operations are removed, code will
+sneak in again that just uses an unsigned long instead of a cputime_t.
+That would break any arch that requires something bigger than a u32 for
+its cputime. I really have to find my old debugging patch and see if we
+already have bit rot in regard to cputime_t.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
