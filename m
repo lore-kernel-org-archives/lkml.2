@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153Ab1I1LVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 07:21:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42750 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab1I1LVf convert rfc822-to-8bit (ORCPT
+	id S1752590Ab1I1Lws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 07:52:48 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56702 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1I1Lwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 07:21:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1316840820-2014-1-git-send-email-linkinjeon@gmail.com>
-References: <1316840820-2014-1-git-send-email-linkinjeon@gmail.com>
-Date: Wed, 28 Sep 2011 13:21:34 +0200
-Message-ID: <CACRpkdZM-F-E_RUu4JTd-1J8UeQWXiekBcnMf7Jp7m07B8SYVQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc : general purpose partition support.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        Per Forlin <per.forlin@stericsson.com>, johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Sep 2011 07:52:47 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: trond.myklebust@netapp.com, smfrench@gmail.com, pavel@ucw.cz, rjw@sisk.pl
+Cc: linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, john@Calva.COM,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] allow freezing of tasks with netfs calls in flight
+Date: Wed, 28 Sep 2011 07:52:37 -0400
+Message-Id: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 24, 2011 at 7:07 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+We've had a number of reports recently of people with NFS and CIFS
+mounts that were unable to suspend or hibernate their machines. Here
+are a couple of Fedora bugs that illustrate the problem:
 
-> It allows gerneral purpose partitions in MMC Device.
-> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
-> After patching, we can see general purpose partitions like this.
->> cat /proc/partitions
->          179 0 847872 mmcblk0
->          179 192 4096 mmcblk0gp4
->          179 160 4096 mmcblk0gp3
->          179 128 4096 mmcblk0gp2
->          179 96  1052672 mmcblk0gp1
+    https://bugzilla.redhat.com/show_bug.cgi?id=712088
+    https://bugzilla.redhat.com/show_bug.cgi?id=717735
 
-We notice there are 32 minors between 128 and 96,
-how are these allocated?
+When it occurs the problem is pretty clear. We have a task that's
+sleeping in the kernel in TASK_KILLABLE sleep, generally waiting
+for a reply to come in. Often though, userspace has already taken
+down the interface so that reply will never come. The process then
+fails to freeze and the suspend fails.
 
->          179 64  1024 mmcblk0boot1
->          179 32  1024 mmcblk0boot0
+This patch fixes this by allowing the TASK_KILLABLE sleeps in NFS and
+CIFS to be awoken by the freezer and then to try to freeze. If a freeze
+event does occur, then the code will treat it as if a schedule() has
+already occured.
 
-Does this mean that each GP-partition can contain an MBR and thus several
-subpartitions so we get things like:
+I've had a number of people test versions of this set and the results
+have been positive. Part of the problem though is that there are
+sometimes still unrelated problems with suspend/resume that seem to
+cloud the results. As best we can tell though, this patchset does work
+as advertised.
 
-mmcblk0gp1p1, mmcblk0gp1p2...
+Jeff Layton (4):
+  freezer: make fake_signal_wake_up wake TASK_KILLABLE tasks too
+  cifs, freezer: add wait_event_freezekillable and have cifs use it
+  sunrpc: make rpc_wait_bit_killable handle freeze events
+  nfs: make TASK_KILLABLE sleeps attempt to freeze
 
-?
+ fs/cifs/transport.c     |    3 ++-
+ fs/nfs/inode.c          |    4 +++-
+ fs/nfs/nfs3proc.c       |    3 ++-
+ fs/nfs/nfs4proc.c       |   12 ++++++++----
+ fs/nfs/proc.c           |    3 ++-
+ include/linux/freezer.h |   19 +++++++++++++++++--
+ kernel/freezer.c        |    2 +-
+ net/sunrpc/sched.c      |    4 +++-
+ 8 files changed, 38 insertions(+), 12 deletions(-)
 
-Yours,
-Linus Walleij
+-- 
+1.7.6.2
+
