@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab1I1OHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:07:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53299 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab1I1OHP (ORCPT
+	id S1754588Ab1I1OIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:08:31 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:56189
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab1I1OI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:07:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 19/24] C6X: headers
-Date: Wed, 28 Sep 2011 16:07:11 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-20-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-20-git-send-email-msalter@redhat.com>
+	Wed, 28 Sep 2011 10:08:29 -0400
+Message-ID: <4E832A55.30709@kernel.dk>
+Date: Wed, 28 Sep 2011 08:08:21 -0600
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>  <20110928004722.GA27421@kernel.dk>  <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>  <4E82751C.9050908@kernel.dk>  <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com> <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
+In-Reply-To: <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109281607.11228.arnd@arndb.de>
-X-Provags-ID: V02:K0:gwGAO6dadq7lkKpjGU9Q1IBbo6w7IrAuY+v4v3QudN/
- 091CJWn/2zgw6eJFjzvWxN2vYKi4a1HDsWTESiDBST3rjdTGyi
- T0mgYuhELpPD8duSazoIjS9BzLqFKjbvSKbbA3PhuKABF/ZbqA
- IPTAVkeV8GppmkEipGReQIw1wc06SM7qoOY9qHfTNQfgJ4iMIa
- N0W4FsAgdhYxAVELi0rTyFL+98cS8Mo1Yo18LgEMGywZbquZCG
- YvYZc2brn6NoDQnmH89tzsjyYPdQ0L4UXnJmDlUBi2FaMnwneb
- Hv1YqUTkLBtVcicjkR68LyTKgVeuLoE9KDKdGw8ibqRMJdRzoU
- wOxx+jXKDFeSCUJSq3+0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
+On 2011-09-27 22:10, James Bottomley wrote:
+> On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
+>> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>
+>>>> But if you forward the actual patch to me (the one I see on lkml seems
+>>>> to be broken and doesn't compile cleanly because it's assiging a
+>>>> structure to a pointer), I'll try it out anyway.
+>>>
+>>> Thanks, that would be great. It's inlined below.
+>>
+>> Well, I did several USB eject events, and nothing bad happened.
+>>
+>> But as mentioned, I don't think that means much. Have you tried this
+>> with slub debugging and poisoning? It might be worth some extra
+>> testing that way.
+> 
+> I've been testing a simpler version:
+> 
+> http://marc.info/?l=linux-kernel&m=131300594629839
+> 
+> For a long time now with great success.  The only difference is the
+> locking cleanup, but SCSI doesn't need that since it doesn't supply its
+> own lock, so I've been voting for this as the final fix for a while now.
 
-> +
-> +static inline void __delay(unsigned long loops)
-> +{
-> +	uint32_t tmp;
-> +
-> +	/* 6 cycles per loop */
-> +	asm volatile ("        mv    .s1  %0,%1\n"
-> +		      "0: [%1] b     .s1  0b\n"
-> +		      "        add   .l1  -6,%0,%0\n"
-> +		      "        cmplt .l1  1,%0,%1\n"
-> +		      "        nop   3\n"
-> +		      : "+a"(loops), "=A"(tmp));
-> +}
-> +
-> +static inline void _c6x_tickdelay(unsigned int x)
-> +{
-> +	uint32_t cnt, endcnt;
-> +
-> +	asm volatile ("        mvc   .s2   TSCL,%0\n"
-> +		      "        add   .s2x  %0,%1,%2\n"
-> +		      " ||     mvk   .l2   1,B0\n"
-> +		      "0: [B0] b     .s2   0b\n"
-> +		      "        mvc   .s2   TSCL,%0\n"
-> +		      "        sub   .s2   %0,%2,%0\n"
-> +		      "        cmpgt .l2   0,%0,B0\n"
-> +		      "        nop   2\n"
-> +		      : "=b"(cnt), "+a"(x), "=b"(endcnt) : : "B0");
-> +}
+The locking cleanup looks good, though, for devices that do use the
+embedded lock. But functionally they should be the same for SCSI, so if
+you had great success with it, then that's a good data point.
 
-Do you actually need to provide the __delay function here?
-I think it's really only used by the calibrate_delay() function
-that you don't need.
+-- 
+Jens Axboe
 
-> diff --git a/arch/c6x/include/asm/unaligned.h b/arch/c6x/include/asm/unaligned.h
-> new file mode 100644
-> index 0000000..1dcb006
-> --- /dev/null
-> +++ b/arch/c6x/include/asm/unaligned.h
-> @@ -0,0 +1,288 @@
-> +/*
-> + *  Port on Texas Instruments TMS320C6x architecture
-
-This file basically just optimizes unaligned endianess conversion, but
-you don't provide an optimized swab.h, which is the regular endianess
-conversion.
-
-I think it would less code and more useful to provide your own swab.h
-and use the generic unaligned.h.
-
-	Arnd
