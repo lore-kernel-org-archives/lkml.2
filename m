@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1I1Nzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:55:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33758 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417Ab1I1Nzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:55:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <ming.lei@canonical.com>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Wed, 28 Sep 2011 15:58:05 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au> <CACVXFVMrPNZupCQnBMBXsSA1OH=15m9QBKhXT1Of+LghZbKn0Q@mail.gmail.com>
-In-Reply-To: <CACVXFVMrPNZupCQnBMBXsSA1OH=15m9QBKhXT1Of+LghZbKn0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1754467Ab1I1N5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:57:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37679 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab1I1N47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 09:56:59 -0400
+Subject: [PATCH] ASoC: tlv320aic3x: Use driver_data field of struct
+ i2c_device_id to identify models
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vladimir Barinov <vova.barinov@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 21:56:48 +0800
+Message-ID: <1317218208.8008.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109281558.05289.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 28, 2011, Ming Lei wrote:
-> Hi Stephen and Rafael,
-> 
-> Sorry, the attachment patch can fix the build failure, which is
-> caused by unset CONFIG_RUNTIME_PM.
+Save model information in driver_data so we can simplify the implementation.
 
-First off, that's CONFIG_PM_RUNTIME.  Second, why do you want to build
-rpm-traces.c at all if CONFIG_PM_RUNTIME is unset?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/tlv320aic3x.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
 
-Rafael
+diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
+index 0963c4c..597abb9 100644
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -1495,9 +1495,9 @@ static struct snd_soc_codec_driver soc_codec_dev_aic3x = {
+  */
+ 
+ static const struct i2c_device_id aic3x_i2c_id[] = {
+-	[AIC3X_MODEL_3X] = { "tlv320aic3x", 0 },
+-	[AIC3X_MODEL_33] = { "tlv320aic33", 0 },
+-	[AIC3X_MODEL_3007] = { "tlv320aic3007", 0 },
++	{ "tlv320aic3x", AIC3X_MODEL_3X },
++	{ "tlv320aic33", AIC3X_MODEL_33 },
++	{ "tlv320aic3007", AIC3X_MODEL_3007 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, aic3x_i2c_id);
+@@ -1512,7 +1512,6 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
+ 	struct aic3x_pdata *pdata = i2c->dev.platform_data;
+ 	struct aic3x_priv *aic3x;
+ 	int ret;
+-	const struct i2c_device_id *tbl;
+ 
+ 	aic3x = kzalloc(sizeof(struct aic3x_priv), GFP_KERNEL);
+ 	if (aic3x == NULL) {
+@@ -1531,11 +1530,7 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
+ 		aic3x->gpio_reset = -1;
+ 	}
+ 
+-	for (tbl = aic3x_i2c_id; tbl->name[0]; tbl++) {
+-		if (!strcmp(tbl->name, id->name))
+-			break;
+-	}
+-	aic3x->model = tbl - aic3x_i2c_id;
++	aic3x->model = id->driver_data;
+ 
+ 	ret = snd_soc_register_codec(&i2c->dev,
+ 			&soc_codec_dev_aic3x, &aic3x_dai, 1);
+-- 
+1.7.4.1
 
 
-> On Wed, Sep 28, 2011 at 12:51 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi Rafael,
-> >
-> > After merging the pm tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> >
-> > In file included from include/trace/ftrace.h:567:0,
-> >                 from include/trace/define_trace.h:96,
-> >                 from include/trace/events/rpm.h:99,
-> >                 from kernel/trace/rpm-traces.c:15:
-> > include/trace/events/rpm.h: In function 'ftrace_raw_event_rpm_internal':
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'usage_count'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'disable_depth'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'runtime_auto'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'request_pending'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'irq_safe'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'child_count'
-> > In file included from include/trace/ftrace.h:771:0,
-> >                 from include/trace/define_trace.h:96,
-> >                 from include/trace/events/rpm.h:99,
-> >                 from kernel/trace/rpm-traces.c:15:
-> > include/trace/events/rpm.h: In function 'perf_trace_rpm_internal':
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'usage_count'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'disable_depth'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'runtime_auto'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'request_pending'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'irq_safe'
-> > include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member named 'child_count'
-> >
-> > Presumably caused by commit 53b615ccca56 ("PM / Runtime: Introduce trace
-> > points for tracing rpm_* functions").
-> >
-> > I have used the pm tree from next-20110927 for today.
-> > --
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > http://www.canb.auug.org.au/~sfr/
-> >
-> 
 
