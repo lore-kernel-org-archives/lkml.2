@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab1I1Wpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54438 "EHLO mx2.suse.de"
+	id S932908Ab1I1XJf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:09:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54449 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932804Ab1I1Wpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:35 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
-Message-Id: <20110928220138.628446629@clark.kroah.org>
+	id S932867Ab1I1Wpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:41 2011
+Message-Id: <20110928220141.531091944@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:30 -0700
+Date: Wed, 28 Sep 2011 15:01:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-Subject: [126/244] drivers/leds/ledtrig-timer.c: fix broken sysfs delay handling
+        Don Fry <donald.h.fry@intel.com>, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [154/244] iwlagn: workaround bug crashing some APs
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Don Fry <donald.h.fry@intel.com>
 
-commit 7a5caabd090b8f7d782c40fc1c048d798f2b6fd7 upstream.
+commit 2249b011432ca3dcce112f0f71e0f531b4bb9347 upstream.
 
-Fix regression introduced by commit 5ada28bf7675 ("led-class: always
-implement blinking") which broke sysfs delay handling by not storing the
-updated value.  Consequently it was only possible to set one of the delays
-through the sysfs interface as the other delay was automatically restored
-to it's default value.  Reading the parameters always gave the defaults.
+This patch reverts commit 9b7688328422b88a7a15dc0dc123ad9ab1a6e22d which
+was introduced in 2.6.38-rc1.  It works around a problem where the iwlagn
+driver stimulates a bug crashing (requiring power cycle to recover) some
+APs under heavy traffic.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Acked-by: Florian Fainelli <florian@openwrt.org>
-Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Don Fry <donald.h.fry@intel.com>
+SIgned-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/leds/ledtrig-timer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-agn.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/leds/ledtrig-timer.c
-+++ b/drivers/leds/ledtrig-timer.c
-@@ -41,6 +41,7 @@ static ssize_t led_delay_on_store(struct
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -2440,7 +2440,12 @@ static int iwl_mac_setup_register(struct
+ 		    IEEE80211_HW_SPECTRUM_MGMT |
+ 		    IEEE80211_HW_REPORTS_TX_ACK_STATUS;
  
- 	if (count == size) {
- 		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
-+		led_cdev->blink_delay_on = state;
- 		ret = count;
- 	}
++	/*
++	 * Including the following line will crash some AP's.  This
++	 * workaround removes the stimulus which causes the crash until
++	 * the AP software can be fixed.
+ 	hw->max_tx_aggregation_subframes = LINK_QUAL_AGG_FRAME_LIMIT_DEF;
++	 */
  
-@@ -69,6 +70,7 @@ static ssize_t led_delay_off_store(struc
- 
- 	if (count == size) {
- 		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
-+		led_cdev->blink_delay_off = state;
- 		ret = count;
- 	}
- 
+ 	hw->flags |= IEEE80211_HW_SUPPORTS_PS |
+ 		     IEEE80211_HW_SUPPORTS_DYNAMIC_PS;
 
 
