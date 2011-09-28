@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab1I1WpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54389 "EHLO mx2.suse.de"
+	id S932797Ab1I1WpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:45:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54394 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932775Ab1I1WpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:08 -0400
+	id S932779Ab1I1WpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
-Message-Id: <20110928220140.709196163@clark.kroah.org>
+Message-Id: <20110928220140.814383711@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:50 -0700
+Date: Wed, 28 Sep 2011 15:01:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [146/244] rt2800pci: Fix compiler error on PowerPC
+        Dave Hansen <dave@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [147/244] make /proc/$pid/numa_maps gather_stats() take variable page size
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit d331eb51e4d4190b2178c30fcafea54a94a577e8 upstream.
+commit eb4866d0066ffd5446751c102d64feb3318d8bd1 upstream.
 
-Using gcc 4.4.5 on a Powerbook G4 with a PPC cpu, a complicated
-if statement results in incorrect flow, whereas the equivalent switch
-statement works correctly.
+We need to teach the numa_maps code about transparent huge pages.  The
+first step is to teach gather_stats() that the pte it is dealing with
+might represent more than one page.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Note that will we use this in a moment for transparent huge pages since
+they have use a single pmd_t which _acts_ as a "surrogate" for a bunch
+of smaller pte_t's.
+
+I'm a _bit_ unhappy that this interface counts in hugetlbfs page sizes
+for hugetlbfs pages and PAGE_SIZE for normal pages.  That means that to
+figure out how many _bytes_ "dirty=1" means, you must first know the
+hugetlbfs page size.  That's easier said than done especially if you
+don't have visibility in to the mount.
+
+But, that's probably a discussion for another day especially since it
+would change behavior to fix it.  But, just in case anyone wonders why
+this patch only passes a '1' in the hugetlb case...
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2800lib.c |   30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ fs/proc/task_mmu.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -3685,19 +3685,23 @@ int rt2800_init_eeprom(struct rt2x00_dev
- 		return -ENODEV;
- 	}
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -877,30 +877,31 @@ struct numa_maps_private {
+ 	struct numa_maps md;
+ };
  
--	if (!rt2x00_rf(rt2x00dev, RF2820) &&
--	    !rt2x00_rf(rt2x00dev, RF2850) &&
--	    !rt2x00_rf(rt2x00dev, RF2720) &&
--	    !rt2x00_rf(rt2x00dev, RF2750) &&
--	    !rt2x00_rf(rt2x00dev, RF3020) &&
--	    !rt2x00_rf(rt2x00dev, RF2020) &&
--	    !rt2x00_rf(rt2x00dev, RF3021) &&
--	    !rt2x00_rf(rt2x00dev, RF3022) &&
--	    !rt2x00_rf(rt2x00dev, RF3052) &&
--	    !rt2x00_rf(rt2x00dev, RF3320) &&
--	    !rt2x00_rf(rt2x00dev, RF5370) &&
--	    !rt2x00_rf(rt2x00dev, RF5390)) {
--		ERROR(rt2x00dev, "Invalid RF chipset detected.\n");
-+	switch (rt2x00dev->chip.rf) {
-+	case RF2820:
-+	case RF2850:
-+	case RF2720:
-+	case RF2750:
-+	case RF3020:
-+	case RF2020:
-+	case RF3021:
-+	case RF3022:
-+	case RF3052:
-+	case RF3320:
-+	case RF5370:
-+	case RF5390:
-+		break;
-+	default:
-+		ERROR(rt2x00dev, "Invalid RF chipset 0x%x detected.\n",
-+		      rt2x00dev->chip.rf);
- 		return -ENODEV;
- 	}
+-static void gather_stats(struct page *page, struct numa_maps *md, int pte_dirty)
++static void gather_stats(struct page *page, struct numa_maps *md, int pte_dirty,
++			unsigned long nr_pages)
+ {
+ 	int count = page_mapcount(page);
+ 
+-	md->pages++;
++	md->pages += nr_pages;
+ 	if (pte_dirty || PageDirty(page))
+-		md->dirty++;
++		md->dirty += nr_pages;
+ 
+ 	if (PageSwapCache(page))
+-		md->swapcache++;
++		md->swapcache += nr_pages;
+ 
+ 	if (PageActive(page) || PageUnevictable(page))
+-		md->active++;
++		md->active += nr_pages;
+ 
+ 	if (PageWriteback(page))
+-		md->writeback++;
++		md->writeback += nr_pages;
+ 
+ 	if (PageAnon(page))
+-		md->anon++;
++		md->anon += nr_pages;
+ 
+ 	if (count > md->mapcount_max)
+ 		md->mapcount_max = count;
+ 
+-	md->node[page_to_nid(page)]++;
++	md->node[page_to_nid(page)] += nr_pages;
+ }
+ 
+ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+@@ -931,7 +932,7 @@ static int gather_pte_stats(pmd_t *pmd,
+ 		if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
+ 			continue;
+ 
+-		gather_stats(page, md, pte_dirty(*pte));
++		gather_stats(page, md, pte_dirty(*pte), 1);
+ 
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
+ 	pte_unmap_unlock(orig_pte, ptl);
+@@ -952,7 +953,7 @@ static int gather_hugetbl_stats(pte_t *p
+ 		return 0;
+ 
+ 	md = walk->private;
+-	gather_stats(page, md, pte_dirty(*pte));
++	gather_stats(page, md, pte_dirty(*pte), 1);
+ 	return 0;
+ }
  
 
 
