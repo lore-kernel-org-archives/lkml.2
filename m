@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1I1Wg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:36:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53370 "EHLO mx2.suse.de"
+	id S1755076Ab1I1WhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:37:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53378 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab1I1Wg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:36:58 -0400
+	id S1755238Ab1I1WhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:01 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:26 2011
-Message-Id: <20110928220126.408122698@clark.kroah.org>
+Message-Id: <20110928220126.519275887@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:35 -0700
+Date: Wed, 28 Sep 2011 14:59:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Cooper <alcooperx@gmail.com>
-Subject: [011/244] 8250: Fix race condition in serial8250_backup_timeout().
+        Axel Lin <axel.lin@gmail.com>
+Subject: [012/244] tty: Add "spi:" prefix for spi modalias
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,89 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Cooper <alcooperx@gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit dbb3b1ca5609d1f3848cd387d06cc60aaacf7f98 upstream.
+commit 8c4074cd2254606aeb788d518ccc27c9f97129e1 upstream.
 
-This is to fix an issue where output will suddenly become very slow.
-The problem occurs on 8250 UARTS with the hardware bug UART_BUG_THRE.
+Since commit e0626e38 (spi: prefix modalias with "spi:"),
+the spi modalias is prefixed with "spi:".
 
-BACKGROUND
-For normal UARTs (without UART_BUG_THRE): When the serial core layer
-gets new transmit data and the transmitter is idle, it buffers the
-data and calls the 8250s' serial8250_start_tx() routine which will
-simply enable the TX interrupt in the IER register and return. This
-should immediately fire a THRE interrupt and begin transmitting the
-data.
-For buggy UARTs (with UART_BUG_THRE): merely enabling the TX interrupt
-in IER does not necessarily generate a new THRE interrupt.
-Therefore, a background timer periodically checks to see if there is
-pending data, and starts transmission if that is the case.
+This patch adds "spi:" prefix and removes "-spi" suffix in the modalias.
 
-The bug happens on SMP systems when the system has nothing to transmit,
-the transmit interrupt is disabled and the following sequence occurs:
-- CPU0: The background timer routine serial8250_backup_timeout()
-  starts and saves the state of the interrupt enable register (IER)
-  and then disables all interrupts in IER. NOTE: The transmit interrupt
-  (TI) bit is saved as disabled.
-- CPU1: The serial core gets data to transmit, grabs the port lock and
-  calls serial8250_start_tx() which enables the TI in IER.
-- CPU0: serial8250_backup_timeout() waits for the port lock.
-- CPU1: finishes (with TI enabled) and releases the port lock.
-- CPU0: serial8250_backup_timeout() calls the interrupt routine which
-  will transmit the next fifo's worth of data and then restores the
-  IER from the previously saved value (TI disabled).
-At this point, as long as the serial core has more transmit data
-buffered, it will not call serial8250_start_tx() again and the
-background timer routine will slowly transmit the data.
-
-The fix is to have serial8250_start_tx() get the port lock before
-it saves the IER state and release it after restoring IER. This will
-prevent serial8250_start_tx() from running in parallel.
-
-Signed-off-by: Al Cooper <alcooperx@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/serial/8250.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/tty/serial/max3107-aava.c |    2 +-
+ drivers/tty/serial/max3107.c      |    2 +-
+ drivers/tty/serial/mrst_max3110.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -1819,6 +1819,8 @@ static void serial8250_backup_timeout(un
- 	unsigned int iir, ier = 0, lsr;
- 	unsigned long flags;
+--- a/drivers/tty/serial/max3107-aava.c
++++ b/drivers/tty/serial/max3107-aava.c
+@@ -340,5 +340,5 @@ module_exit(max3107_exit);
  
-+	spin_lock_irqsave(&up->port.lock, flags);
-+
- 	/*
- 	 * Must disable interrupts or else we risk racing with the interrupt
- 	 * based handler.
-@@ -1836,10 +1838,8 @@ static void serial8250_backup_timeout(un
- 	 * the "Diva" UART used on the management processor on many HP
- 	 * ia64 and parisc boxes.
- 	 */
--	spin_lock_irqsave(&up->port.lock, flags);
- 	lsr = serial_in(up, UART_LSR);
- 	up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
--	spin_unlock_irqrestore(&up->port.lock, flags);
- 	if ((iir & UART_IIR_NO_INT) && (up->ier & UART_IER_THRI) &&
- 	    (!uart_circ_empty(&up->port.state->xmit) || up->port.x_char) &&
- 	    (lsr & UART_LSR_THRE)) {
-@@ -1848,11 +1848,13 @@ static void serial8250_backup_timeout(un
- 	}
+ MODULE_DESCRIPTION("MAX3107 driver");
+ MODULE_AUTHOR("Aavamobile");
+-MODULE_ALIAS("aava-max3107-spi");
++MODULE_ALIAS("spi:aava-max3107");
+ MODULE_LICENSE("GPL v2");
+--- a/drivers/tty/serial/max3107.c
++++ b/drivers/tty/serial/max3107.c
+@@ -1209,5 +1209,5 @@ module_exit(max3107_exit);
  
- 	if (!(iir & UART_IIR_NO_INT))
--		serial8250_handle_port(up);
-+		transmit_chars(up);
+ MODULE_DESCRIPTION("MAX3107 driver");
+ MODULE_AUTHOR("Aavamobile");
+-MODULE_ALIAS("max3107-spi");
++MODULE_ALIAS("spi:max3107");
+ MODULE_LICENSE("GPL v2");
+--- a/drivers/tty/serial/mrst_max3110.c
++++ b/drivers/tty/serial/mrst_max3110.c
+@@ -917,4 +917,4 @@ module_init(serial_m3110_init);
+ module_exit(serial_m3110_exit);
  
- 	if (is_real_interrupt(up->port.irq))
- 		serial_out(up, UART_IER, ier);
- 
-+	spin_unlock_irqrestore(&up->port.lock, flags);
-+
- 	/* Standard timer interval plus 0.2s to keep the port running */
- 	mod_timer(&up->timer,
- 		jiffies + uart_poll_timeout(&up->port) + HZ / 5);
+ MODULE_LICENSE("GPL v2");
+-MODULE_ALIAS("max3110-uart");
++MODULE_ALIAS("spi:max3110-uart");
 
 
