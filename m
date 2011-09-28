@@ -1,145 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab1I1Heo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:34:44 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48554 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab1I1Hen convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:34:43 -0400
+	id S1753543Ab1I1HjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:39:17 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:54145 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752096Ab1I1HjQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 03:39:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110928064614.GN20550@pengutronix.de>
-References: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<4E824821.8040105@windriver.com>
-	<20110928064614.GN20550@pengutronix.de>
-Date: Wed, 28 Sep 2011 03:34:41 -0400
-Message-ID: <CACqU3MXO_yQKJbafD8g+kBje4y+ZWcUMsXvk_2xddrTiumSBbQ@mail.gmail.com>
-Subject: Re: [PATCH] dma/imx-sdma+imx-dma: explicitly #include <linux/module.h>
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+In-Reply-To: <20110928171835.ba767809909ac049fc53bd40@canb.auug.org.au>
+References: <20110928171835.ba767809909ac049fc53bd40@canb.auug.org.au>
+Date: Wed, 28 Sep 2011 09:39:15 +0200
+Message-ID: <CAN5iSWrBOJJEe95-PypGqOfuwd3wDixCZPPi3mJHwCh=MTBhQA@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the moduleh tree
+From: "Pihet-XID, Jean" <j-pihet@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Stephen,
 
-2011/9/28 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> [Cc: += linux-kbuild@v.k.o + Michal Marek]
+On Wed, Sep 28, 2011 at 9:18 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Paul,
 >
-> Hello,
+> After merging the moduleh tree, today's linux-next build (powerepc
+> ppc64_defconfig) produced this warning:
 >
-> On Tue, Sep 27, 2011 at 06:03:13PM -0400, Paul Gortmaker wrote:
->> On 11-09-26 02:26 AM, Uwe Kleine-König wrote:
->> > This is needed after commit
->> >
->> >     include: replace linux/module.h with "struct module" wherever possible
->> >
->> > (currently 25215aa in next).
->> >
->> > Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->> > ---
->> > Hello,
->> >
->> > maybe it's sensible for Paul to take that before his commit?
->>
->> Thanks, I'll blend it into the commit adding module.h to the other
->> drivers/dma files.  It seems the imx boards don't have a defconfig
->> in the arch/arm/configs that enables this (CONFIG_IMX_[S]DMA).
->>
->> What is really interesting (at least to me anyway) is that I
->> didn't get one iMX build in some 6000+ ARM randconfig builds....
->>
->> I would have thought it would have showed up at least a couple
->> times, given that number of builds.  Maybe randconfig doesn't
->> deal so well with "choice" Kconfig items?
->>
->> ~/git/module.h/linux-2.6.git$ ls -1 ../build-10*arm |wc -l
->> 6399
->> ~/git/module.h/linux-2.6.git$ grep CONFIG_ARCH_[A-Z0-9]*=y ../build-10*arm*/.config | sed 's/.*CON/CON/'|sort |uniq
->> CONFIG_ARCH_EBSA110=y
->> CONFIG_ARCH_H7201=y
->> CONFIG_ARCH_H7202=y
->> CONFIG_ARCH_H720X=y
->> CONFIG_ARCH_VERSATILE=y
+> drivers/base/power/qos.c:256:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:256:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:256:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:301:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:301:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:301:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:342:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:342:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:342:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:369:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:369:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:369:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:397:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:397:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:397:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:412:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:412:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:412:1: warning: parameter names (without types) in function declaration
+> drivers/base/power/qos.c:427:1: warning: data definition has no type or storage class
+> drivers/base/power/qos.c:427:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+> drivers/base/power/qos.c:427:1: warning: parameter names (without types) in function declaration
 >
-> I don't understand why you did that sed, but AFAICT it doesn't hurt,
-> too. Maybe adding -c to uniq in your command line is interesting for the
-> kbuild people?!
+> Caused by commits 91ff4cb803df ("PM QoS: Implement per-device PM QoS
+> constraints") and b66213cdb002 ("PM QoS: Add global notification
+> mechanism for device constraints") from the pm tree interacting with the
+> module.h split up.
 >
-this can be reproduced trivially:
-
-for i in $(seq 1 100); do
-    make ARCH=arm randconfig
-    sed -e '/CONFIG_ARCH_INTEGRATOR/,/CONFIG_ARCH_ZYNQ/!d;' \
-        -e '/=y/!d' .config >> arch_selected
-done
-sort arch_selected | uniq -c
-
-I may have a trivial explanation for part of the symbol, which depends
-on MMU, so if these symbols are selected, but MMU is not, it will
-fall-back on the default, VERSATILE, which should happen 50% of the
-time. However, there is plenty of symbols which have no specific
-dependency, and are still not selected.
-
-On the other side, all the result of a randconfig, on the choice alone
-(ie. without any 'select' and any other symbols) is spread
-"correctly".
-
-Taken as a whole:
-
-% cat arch_selected | sort | uniq -c | wc -l
-     3
-
-% cat arch_selected | sort | uniq -c
-      2 CONFIG_ARCH_EBSA110=y
-      4 CONFIG_ARCH_H720X=y
-    100 CONFIG_ARCH_VERSATILE=y
-
-However, when the choice is alone:
-
-% cat arch_selected | sort | uniq -c | wc -l
-     39
-
->> ~/git/module.h/linux-2.6.git$
->>
->> No ARCH_MXC, no ARCH_MXS, PXA, or any of the other 20+ variants.
->> Definitely not a random spread there, with all 6000 builds falling
->> in just 5 buckets.
-> How did you test? Generate a .config, test without your change and if
-> that succeeds test with it? If so, maybe the problem isn't that
-> randconfig doesn't generate more random configs but that you got many
-> failures in the first run?!
+> I added the following merge fixup patch.
 >
-it would seem that taken globally, the result of this particular
-choice is not random, but I'm not sure of the dynamic involved
-precisely.
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 28 Sep 2011 17:15:52 +1000
+> Subject: [PATCH] PM QoS: include export.h in qos.c for EXPORT_SYMBOL
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Thank you for fixing this. I am sorry the warning did not show up
+during the OMAP and x86 builds, probably due to the different set of
+includes for those platforms.
 
-I'm not a huge fan of the way randconfig works presently, that it by
-just iterating over all symbols and setting a value . I'd prefer to
-keep traversing all the menu, picking a random value for
-user-changeable setting, over and over until all symbol have been
-chosen. However, this is a whole lots of change...
+Regards,
+Jean
 
- - Arnaud
-
-> Best regards
-> Uwe
+> ---
+>  drivers/base/power/qos.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/base/power/qos.c b/drivers/base/power/qos.c
+> index f9215e8..7f78682 100644
+> --- a/drivers/base/power/qos.c
+> +++ b/drivers/base/power/qos.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/device.h>
+>  #include <linux/mutex.h>
+> +#include <linux/export.h>
+>
+>
+>  static DEFINE_MUTEX(dev_pm_qos_mtx);
+> --
+> 1.7.6.3
 >
 > --
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 >
