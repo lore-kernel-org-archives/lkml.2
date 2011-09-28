@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab1I1Wsz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:48:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54848 "EHLO mx2.suse.de"
+	id S933310Ab1I1Wsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:48:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54821 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab1I1Wsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:48:51 -0400
+	id S933257Ab1I1Wse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:34 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:47 2011
-Message-Id: <20110928220147.617483478@clark.kroah.org>
+Message-Id: <20110928220147.172559458@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:55 -0700
+Date: Wed, 28 Sep 2011 15:02:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Grazvydas Ignotas <notasas@gmail.com>
-Subject: [211/244] btrfs: fix d_off in the first dirent
+        Thomas Pfaff <tpfaff@gmx.net>, Takashi Iwai <tiwai@suse.de>
+Subject: [207/244] ALSA: usb-audio - clear chip->probing on error exit
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+From: Thomas Pfaff <tpfaff@gmx.net>
 
-commit 3765fefaee2da83f10829fa64a74e6b7360350cb upstream.
+commit 362e4e49abe53e89d87455dfcd7c1bbaf08a839d upstream.
 
-Since the d_off in the first dirent for "." (that originates from
-the 4th argument "offset" of filldir() for the 2nd dirent for "..")
-is wrongly assigned in btrfs_real_readdir(), telldir returns same
-offset for different locations.
+The Terratec Aureon 5.1 USB sound card support is broken since kernel
+2.6.39.
+2.6.39 introduced power management support for USB sound cards that added
+a probing flag in struct snd_usb_audio.
 
- | # mkfs.btrfs /dev/sdb1
- | # mount /dev/sdb1 fs0
- | # cd fs0
- | # touch file0 file1
- | # ../test
- | telldir: 0
- | readdir: d_off = 2, d_name = "."
- | telldir: 2
- | readdir: d_off = 2, d_name = ".."
- | telldir: 2
- | readdir: d_off = 3, d_name = "file0"
- | telldir: 3
- | readdir: d_off = 2147483647, d_name = "file1"
- | telldir: 2147483647
+During the probe of the card it gives following error message :
 
-To fix this problem, pass filp->f_pos (which is loff_t) instead.
+usb 7-2: new full speed USB device number 2 using uhci_hcd
+cannot find UAC_HEADER
+snd-usb-audio: probe of 7-2:1.3 failed with error -5
+input: USB Audio as
+/devices/pci0000:00/0000:00:1d.1/usb7/7-2/7-2:1.3/input/input6
+generic-usb 0003:0CCD:0028.0001: input: USB HID v1.00 Device [USB Audio]
+on usb-0000:00:1d.1-2/input3
 
- | # ../test
- | telldir: 0
- | readdir: d_off = 1, d_name = "."
- | telldir: 1
- | readdir: d_off = 2, d_name = ".."
- | telldir: 2
- | readdir: d_off = 3, d_name = "file0"
- :
+I can not comment about that "cannot find UAC_HEADER" error, but until
+2.6.38 the card worked anyway.
+With 2.6.39 chip->probing remains 1 on error exit, and any later ioctl
+stops in snd_usb_autoresume with -ENODEV.
 
-At the moment the "offset" for "." is unused because there is no
-preceding dirent, however it is better to pass filp->f_pos to follow
-grammatical usage.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
-Cc: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: Thomas Pfaff <tpfaff@gmx.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/btrfs/inode.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/usb/card.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4124,7 +4124,8 @@ static int btrfs_real_readdir(struct fil
- 
- 	/* special case for "." */
- 	if (filp->f_pos == 0) {
--		over = filldir(dirent, ".", 1, 1, btrfs_ino(inode), DT_DIR);
-+		over = filldir(dirent, ".", 1,
-+			       filp->f_pos, btrfs_ino(inode), DT_DIR);
- 		if (over)
- 			return 0;
- 		filp->f_pos = 1;
-@@ -4133,7 +4134,7 @@ static int btrfs_real_readdir(struct fil
- 	if (filp->f_pos == 1) {
- 		u64 pino = parent_ino(filp->f_path.dentry);
- 		over = filldir(dirent, "..", 2,
--			       2, pino, DT_DIR);
-+			       filp->f_pos, pino, DT_DIR);
- 		if (over)
- 			return 0;
- 		filp->f_pos = 2;
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -531,6 +531,7 @@ static void *snd_usb_audio_probe(struct
+  __error:
+ 	if (chip && !chip->num_interfaces)
+ 		snd_card_free(chip->card);
++	chip->probing = 0;
+ 	mutex_unlock(&register_mutex);
+  __err_val:
+ 	return NULL;
 
 
