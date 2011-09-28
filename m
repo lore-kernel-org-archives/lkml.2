@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1I1ME4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:04:56 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59669 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab1I1MEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:04:54 -0400
-Message-ID: <4E830D1B.1070503@parallels.com>
-Date: Wed, 28 Sep 2011 09:03:39 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753777Ab1I1MHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:07:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62698 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1I1MHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 08:07:17 -0400
+Date: Wed, 28 Sep 2011 14:06:31 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: MAC firmware does not load due to (commit 288d5abe usermodehelper)
+Message-ID: <20110928120630.GB9456@netboy.at.omicron.at>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>
-Subject: Re: [PATCH v3 1/7] Basic kernel memory functionality for the Memory
- Controller
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com> <1316393805-3005-2-git-send-email-glommer@parallels.com> <20110926193451.b419f630.kamezawa.hiroyu@jp.fujitsu.com> <4E81084F.9010208@parallels.com> <20110928095826.eb8ebc8c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110928095826.eb8ebc8c.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.46.173.177]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2011 09:58 PM, KAMEZAWA Hiroyuki wrote:
-> On Mon, 26 Sep 2011 20:18:39 -0300
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> On 09/26/2011 07:34 AM, KAMEZAWA Hiroyuki wrote:
->>> On Sun, 18 Sep 2011 21:56:39 -0300
->>> Glauber Costa<glommer@parallels.com>   wrote:
-> "If parent sets use_hierarchy==1, children must have the same kmem_independent value
->>> with parant's one."
->>>
->>> How do you think ? I think a hierarchy must have the same config.
->> BTW, Kame:
->>
->> Look again (I forgot myself when I first replied to you)
->> Only in the root cgroup those files get registered.
->> So shouldn't be a problem, because children won't even
->> be able to see them.
->>
->> Do you agree with this ?
->>
->
-> agreed.
->
+I have some ARM IXP4xx based machines that use the two on chip MAC
+ports (aka NPEs). The NPE needs a firmware in order to function. Ever
+since the following commit, it is no longer possible to bring up the
+interfaces during the init scripts.
 
-Actually it is the other way around, following previous suggestions...
+    commit 288d5abec8314ae50fe6692f324b0444acae8486
+    Author: Linus Torvalds <torvalds@linux-foundation.org>
+    Date:   Wed Aug 3 22:03:29 2011 -1000
 
-The root cgroup does *not* get those files registered, since we don't 
-intend to do any kernel memory limitation for it. The others get it.
-Given that, I will proceed writing some code to respect parent cgroup's
-hierarchy.
+    Boot up with usermodehelper disabled
+
+A warning appears on the console, shown below.  I don't know what
+commit 288d5abe was trying to fix, but it sure made a regression for
+me. It probably would also spoil using NFS boot, too.
+
+Any ideas what to do about this?
+
+Thanks,
+Richard
+
+
+------------[ cut here ]------------
+WARNING: at /home/richard/git/linux/drivers/base/firmware_class.c:537 _request_firmware+0xc8/0x3b8()
+Modules linked in:
+Backtrace: 
+[<c000bee0>] (dump_backtrace+0x0/0x114) from [<c000c3dc>] (dump_stack+0x18/0x1c)
+[<c000c3c4>] (dump_stack+0x0/0x1c) from [<c001a778>] (warn_slowpath_common+0x58/0x70)
+[<c001a720>] (warn_slowpath_common+0x0/0x70) from [<c001a7b4>] (warn_slowpath_null+0x24/0x2c)
+[<c001a790>] (warn_slowpath_null+0x0/0x2c) from [<c0142710>] (_request_firmware+0xc8/0x3b8)
+[<c0142648>] (_request_firmware+0x0/0x3b8) from [<c0142a20>] (request_firmware+0x20/0x28)
+[<c0142a00>] (request_firmware+0x0/0x28) from [<c0012c98>] (npe_load_firmware+0x1c/0x488)
+[<c0012c7c>] (npe_load_firmware+0x0/0x488) from [<c015dbe8>] (eth_open+0x44/0x6c0)
+[<c015dba4>] (eth_open+0x0/0x6c0) from [<c017bf88>] (__dev_open+0xbc/0x114)
+[<c017becc>] (__dev_open+0x0/0x114) from [<c017a044>] (__dev_change_flags+0x98/0x124)
+[<c0179fac>] (__dev_change_flags+0x0/0x124) from [<c017b8e4>] (dev_change_flags+0x1c/0x50)
+[<c017b8c8>] (dev_change_flags+0x0/0x50) from [<c01c2cd0>] (devinet_ioctl+0x2c4/0x674)
+[<c01c2a0c>] (devinet_ioctl+0x0/0x674) from [<c01c395c>] (inet_ioctl+0xcc/0x104)
+[<c01c3890>] (inet_ioctl+0x0/0x104) from [<c016cb3c>] (sock_ioctl+0x1f8/0x254)
+[<c016c944>] (sock_ioctl+0x0/0x254) from [<c0082c28>] (vfs_ioctl+0x28/0x44)
+[<c0082c00>] (vfs_ioctl+0x0/0x44) from [<c00832c8>] (do_vfs_ioctl+0x49c/0x4ec)
+[<c0082e2c>] (do_vfs_ioctl+0x0/0x4ec) from [<c0083358>] (sys_ioctl+0x40/0x64)
+[<c0083318>] (sys_ioctl+0x0/0x64) from [<c0009040>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace 6083e7c78b321b84 ]---
