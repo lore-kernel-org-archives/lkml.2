@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab1I1WiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:38:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53493 "EHLO mx2.suse.de"
+	id S1755527Ab1I1WiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:38:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53533 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754779Ab1I1WiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:38:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:28 2011
-Message-Id: <20110928220128.185767598@clark.kroah.org>
+	id S1754779Ab1I1WiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:38:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:26 2011
+Message-Id: <20110928220125.997085041@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:52 -0700
+Date: Wed, 28 Sep 2011 14:59:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        David Goulet <dgoulet@ev0ke.net>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [028/244] sendmmsg/sendmsg: fix unsafe user pointer access
+        Scott Jiang <scott.jiang.linux@gmail.com>,
+        Barry Song <21cnbao@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [007/244] ASoC: ad193x: fix dac word len setting
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,60 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Scott Jiang <scott.jiang.linux@gmail.com>
 
-commit bc909d9ddbf7778371e36a651d6e4194b1cc7d4c upstream.
+commit 95c93d8525ebce1024bda7316f602ae45c36cd6f upstream.
 
-Dereferencing a user pointer directly from kernel-space without going
-through the copy_from_user family of functions is a bad idea. Two of
-such usages can be found in the sendmsg code path called from sendmmsg,
-added by
+dac word len value should left shift before setting
 
-commit c71d8ebe7a4496fb7231151cb70a6baa0cb56f9a upstream.
-commit 5b47b8038f183b44d2d8ff1c7d11a5c1be706b34 in the 3.0-stable tree.
-
-Usages are performed through memcmp() and memcpy() directly. Fix those
-by using the already copied msg_sys structure instead of the __user *msg
-structure. Note that msg_sys can be set to NULL by verify_compat_iovec()
-or verify_iovec(), which requires additional NULL pointer checks.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: David Goulet <dgoulet@ev0ke.net>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: Anton Blanchard <anton@samba.org>
-CC: David S. Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
+Acked-by: Barry Song <21cnbao@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/socket.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ sound/soc/codecs/ad193x.c |    3 ++-
+ sound/soc/codecs/ad193x.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1965,8 +1965,9 @@ static int __sys_sendmsg(struct socket *
- 	 * used_address->name_len is initialized to UINT_MAX so that the first
- 	 * destination address never matches.
- 	 */
--	if (used_address && used_address->name_len == msg_sys->msg_namelen &&
--	    !memcmp(&used_address->name, msg->msg_name,
-+	if (used_address && msg_sys->msg_name &&
-+	    used_address->name_len == msg_sys->msg_namelen &&
-+	    !memcmp(&used_address->name, msg_sys->msg_name,
- 		    used_address->name_len)) {
- 		err = sock_sendmsg_nosec(sock, msg_sys, total_len);
- 		goto out_freectl;
-@@ -1978,8 +1979,9 @@ static int __sys_sendmsg(struct socket *
- 	 */
- 	if (used_address && err >= 0) {
- 		used_address->name_len = msg_sys->msg_namelen;
--		memcpy(&used_address->name, msg->msg_name,
--		       used_address->name_len);
-+		if (msg_sys->msg_name)
-+			memcpy(&used_address->name, msg_sys->msg_name,
-+			       used_address->name_len);
- 	}
+--- a/sound/soc/codecs/ad193x.c
++++ b/sound/soc/codecs/ad193x.c
+@@ -307,7 +307,8 @@ static int ad193x_hw_params(struct snd_p
+ 	snd_soc_write(codec, AD193X_PLL_CLK_CTRL0, reg);
  
- out_freectl:
+ 	reg = snd_soc_read(codec, AD193X_DAC_CTRL2);
+-	reg = (reg & (~AD193X_DAC_WORD_LEN_MASK)) | word_len;
++	reg = (reg & (~AD193X_DAC_WORD_LEN_MASK))
++		| (word_len << AD193X_DAC_WORD_LEN_SHFT);
+ 	snd_soc_write(codec, AD193X_DAC_CTRL2, reg);
+ 
+ 	reg = snd_soc_read(codec, AD193X_ADC_CTRL1);
+--- a/sound/soc/codecs/ad193x.h
++++ b/sound/soc/codecs/ad193x.h
+@@ -34,6 +34,7 @@
+ #define AD193X_DAC_LEFT_HIGH    (1 << 3)
+ #define AD193X_DAC_BCLK_INV     (1 << 7)
+ #define AD193X_DAC_CTRL2        0x804
++#define AD193X_DAC_WORD_LEN_SHFT        3
+ #define AD193X_DAC_WORD_LEN_MASK        0x18
+ #define AD193X_DAC_MASTER_MUTE  1
+ #define AD193X_DAC_CHNL_MUTE    0x805
 
 
