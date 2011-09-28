@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab1I1WnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54159 "EHLO mx2.suse.de"
+	id S1755953Ab1I1Wmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:42:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54122 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932469Ab1I1WnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:37 2011
-Message-Id: <20110928220137.141305643@clark.kroah.org>
+	id S1755927Ab1I1Wmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:42:50 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:36 2011
+Message-Id: <20110928220136.711977914@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:16 -0700
+Date: Wed, 28 Sep 2011 15:01:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [112/244] ASoC: Fix reporting of partial jack updates
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [108/244] iwlegacy: fix BUG_ON(info->control.rates[0].idx < 0)
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 747da0f80e566500421bd7760b2e050fea3fde5e upstream.
+commit 7c2510120e9b43b0caf32c3786a6ab831f7d9e87 upstream.
 
-We need to report the entire jack state to the core jack code, not just
-the bits that were being updated by the caller, otherwise the status
-reported by other detection methods will be omitted from the state seen
-by userspace.
+When trying to connect to 5GHz we can provide negative index to
+mac80211 what trigger BUG_ON. Reason of iwl-3945-rs malfunction
+on 5GHz is unknown and needs further investigation. For now, to
+do not trigger a bug, correct value and just print WARNING.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+Address bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=730653
+
+Reported-and-tested-by: Jan Teichmann <jan.teichmann@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/soc-jack.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlegacy/iwl-3945-rs.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/sound/soc/soc-jack.c
-+++ b/sound/soc/soc-jack.c
-@@ -105,7 +105,7 @@ void snd_soc_jack_report(struct snd_soc_
+--- a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
++++ b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
+@@ -822,12 +822,15 @@ static void iwl3945_rs_get_rate(void *pr
  
- 	snd_soc_dapm_sync(dapm);
+  out:
  
--	snd_jack_report(jack->jack, status);
-+	snd_jack_report(jack->jack, jack->status);
+-	rs_sta->last_txrate_idx = index;
+-	if (sband->band == IEEE80211_BAND_5GHZ)
+-		info->control.rates[0].idx = rs_sta->last_txrate_idx -
+-				IWL_FIRST_OFDM_RATE;
+-	else
++	if (sband->band == IEEE80211_BAND_5GHZ) {
++		if (WARN_ON_ONCE(index < IWL_FIRST_OFDM_RATE))
++			index = IWL_FIRST_OFDM_RATE;
++		rs_sta->last_txrate_idx = index;
++		info->control.rates[0].idx = index - IWL_FIRST_OFDM_RATE;
++	} else {
++		rs_sta->last_txrate_idx = index;
+ 		info->control.rates[0].idx = rs_sta->last_txrate_idx;
++	}
  
- out:
- 	mutex_unlock(&codec->mutex);
+ 	IWL_DEBUG_RATE(priv, "leave: %d\n", index);
+ }
 
 
