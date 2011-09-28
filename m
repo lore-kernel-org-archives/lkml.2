@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1I1Evb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:51:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60916 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751688Ab1I1Eva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:51:30 -0400
-Message-ID: <1317185489.19340.22.camel@Joe-Laptop>
-Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for
- dynamic_pr_debug
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 27 Sep 2011 21:51:29 -0700
-In-Reply-To: <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
-	 <1316642115-20029-26-git-send-email-jim.cromie@gmail.com>
-	 <1316725066.29447.16.camel@Joe-Laptop>
-	 <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
-	 <1317166589.19340.14.camel@Joe-Laptop>
-	 <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.92- 
-Content-Transfer-Encoding: 7bit
+	id S1752914Ab1I1Evw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:51:52 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:59810 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab1I1Evv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 00:51:51 -0400
+Date: Wed, 28 Sep 2011 14:51:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 20:54 -0600, Jim Cromie wrote:
-> Cleanest way is to drop the original synonym, and just use
-> warn (its shorter), but that creates some churn (havent grepped to see
-> how much).
-> I picked what looked like least effort & fewest corner-cases.
-> ICBW..
+--Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-#ifndef pr_fmt_warning
-#define pr_fmt_warning pr_fmt_warn
-#endif
+Hi Rafael,
 
-> > What did you think of avoiding all of this and
-> > having __dynamic_pr_debug move the fmt pointer over
-> > any initial KBUILD_MODULE ": "
-> >
-> > int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
-> > {
-> > [...]
-> >        size_t modsize = strlen(descriptor->modname);
-> >        if (0 == strncmp(fmt, descriptor->modname, modsize) &&
-> >            0 == strncmp(fmt + modsize, ": ", 2))
-> >                fmt += modsize + 2;
-> >        vprintk(fmt, ...)
-> > ?
-> 
-> I was getting to that... ;-)
-> Im not crazy about it.  It feels like too much ..
-> Its a runtime workaround for what I think is a
-> problem in users' (or header's) #defines.
+After merging the pm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-I think exactly the opposite myself.
+In file included from include/trace/ftrace.h:567:0,
+                 from include/trace/define_trace.h:96,
+                 from include/trace/events/rpm.h:99,
+                 from kernel/trace/rpm-traces.c:15:
+include/trace/events/rpm.h: In function 'ftrace_raw_event_rpm_internal':
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'usage_count'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'disable_depth'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'runtime_auto'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'request_pending'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'irq_safe'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'child_count'
+In file included from include/trace/ftrace.h:771:0,
+                 from include/trace/define_trace.h:96,
+                 from include/trace/events/rpm.h:99,
+                 from kernel/trace/rpm-traces.c:15:
+include/trace/events/rpm.h: In function 'perf_trace_rpm_internal':
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'usage_count'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'disable_depth'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'runtime_auto'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'request_pending'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'irq_safe'
+include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
+named 'child_count'
 
-I think all of the '#define pr_fmt(fmt) KBUILD_MODNAME ": "'
-are effectivly useless and I will eventually delete them.
+Presumably caused by commit 53b615ccca56 ("PM / Runtime: Introduce trace
+points for tracing rpm_* functions").
 
-The printk subsystem should look up the module name and
-prefix them to the printk akin to how the dynamic_debug
-system does.  Except the module name should be a singleton.
+I have used the pm tree from next-20110927 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOgqfgAAoJEDMEi1NhKgbsjs8H/2/2jdrSCNdkuCwTWHUyRHGG
+CagjDNpNaXiV/oUGxD32em4AixQXbLYTWJYQ/4SlxB7FvgH5ZYcojOw3Lwq2V/Oo
+swJXv9CzJCrc8yNuieOKpizEnIZ6YPxL9Tv4RUBo1Re5KKC0PQr4ms8VMNjAM1r9
+cS0oNlWB5dgjOfMTlgOwFvwGj3nO1UK1+mLdEQr7ERnUezkrfiVJCyfYX7i3DGV+
+pf7V4fgg3R2kROYfyCMON/icMxj6UGW80oPI6P32Y/NAJMyohowW/JQxuVM3j7PT
+5sWrrdtAn6wz+6Camuk3dhRWo/jsfNJ/5cwCUM/kPUPFlIFAV82pmwN3laAU4rM=
+=lZmb
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5--
