@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1I1Wma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:42:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54068 "EHLO mx2.suse.de"
+	id S932494Ab1I1WnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:43:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54171 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755846Ab1I1WmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:42:23 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:32 2011
-Message-Id: <20110928220132.575381982@clark.kroah.org>
+	id S932469Ab1I1WnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:14 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:37 2011
+Message-Id: <20110928220137.346038437@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:33 -0700
+Date: Wed, 28 Sep 2011 15:01:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Igor Mammedov <imammedo@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [069/244] xen: x86_32: do not enable iterrupts when returning from exception in interrupt context
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [114/244] mfd: Fix value of WM8994_CONFIGURE_GPIO
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Mammedov <imammedo@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit d198d499148a0c64a41b3aba9e7dd43772832b91 upstream.
+commit 8efcc57dedfebc99c3cd39564e3fc47cd1a24b75 upstream.
 
-If vmalloc page_fault happens inside of interrupt handler with interrupts
-disabled then on exit path from exception handler when there is no pending
-interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
+This needs to be an out of band value for the register and on this device
+registers are 16 bit so we must shift left one to the 17th bit.
 
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-	sete XEN_vcpu_info_mask(%eax)
-
-will enable interrupts even if they has been previously disabled according to
-eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
-
-	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
-	setz XEN_vcpu_info_mask(%eax)
-
-Solution is in setting XEN_vcpu_info_mask only when it should be set
-according to
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-but not clearing it if there isn't any pending events.
-
-Reproducer for bug is attached to RHBZ 707552
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/xen-asm_32.S |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ include/linux/mfd/wm8994/pdata.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -113,11 +113,13 @@ xen_iret_start_crit:
+--- a/include/linux/mfd/wm8994/pdata.h
++++ b/include/linux/mfd/wm8994/pdata.h
+@@ -26,7 +26,7 @@ struct wm8994_ldo_pdata {
+ 	struct regulator_init_data *init_data;
+ };
  
- 	/*
- 	 * If there's something pending, mask events again so we can
--	 * jump back into xen_hypervisor_callback
-+	 * jump back into xen_hypervisor_callback. Otherwise do not
-+	 * touch XEN_vcpu_info_mask.
- 	 */
--	sete XEN_vcpu_info_mask(%eax)
-+	jne 1f
-+	movb $1, XEN_vcpu_info_mask(%eax)
+-#define WM8994_CONFIGURE_GPIO 0x8000
++#define WM8994_CONFIGURE_GPIO 0x10000
  
--	popl %eax
-+1:	popl %eax
- 
- 	/*
- 	 * From this point on the registers are restored and the stack
+ #define WM8994_DRC_REGS 5
+ #define WM8994_EQ_REGS  20
 
 
