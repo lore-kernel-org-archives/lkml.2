@@ -1,23 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1I1GxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 02:53:06 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:53726 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab1I1GxE (ORCPT
+	id S1752917Ab1I1Gxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 02:53:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40311 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1I1Gxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 02:53:04 -0400
-Date: Wed, 28 Sep 2011 16:53:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yogesh Ashok Powar <yogeshp@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the moduleh tree with the  tree
-Message-Id: <20110928165300.8126288f6c0e0554acda4c21@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Wed, 28 Sep 2011 02:53:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Sep 2011 15:53:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 2/9] kstaled: documentation and config option.
+Message-Id: <20110928155302.ca394980.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1317170947-17074-3-git-send-email-walken@google.com>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<1317170947-17074-3-git-send-email-walken@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,42 +34,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, 27 Sep 2011 17:49:00 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-Today's linux-next merge of the moduleh tree got conflicts in
-net/mac80211/util.c and net/wireless/util.c between commit 0879fa44b541
-("cfg80211/mac80211: move information element parsing logic to cfg80211")
-from the net tree and commit c1f5764979c5 ("net: Add export.h for
-EXPORT_SYMBOL/THIS_MODULE to non-modules") from the moduleh tree.
+> Extend memory cgroup documentation do describe the optional idle page
+> tracking features, and add the corresponding configuration option.
+> 
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> +* idle_2_clean, idle_2_dirty_file, idle_2_dirty_swap: same definitions as
+> +  above, but for pages that have been untouched for at least two scan cycles.
+> +* these fields repeat up to idle_240_clean, idle_240_dirty_file and
+> +  idle_240_dirty_swap, allowing one to observe idle pages over a variety
+> +  of idle interval lengths. Note that the accounting is cumulative:
+> +  pages counted as idle for a given interval length are also counted
+> +  as idle for smaller interval lengths.
 
-diff --cc net/mac80211/util.c
-index 2c9dc36,7a55c69..0000000
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@@ -19,6 -19,8 +19,7 @@@
-  #include <linux/etherdevice.h>
-  #include <linux/if_arp.h>
-  #include <linux/bitmap.h>
- -#include <linux/crc32.h>
-+ #include <linux/export.h>
-  #include <net/net_namespace.h>
-  #include <net/cfg80211.h>
-  #include <net/rtnetlink.h>
-diff --cc net/wireless/util.c
-index 6304ed6,3ba8eea..0000000
---- a/net/wireless/util.c
-+++ b/net/wireless/util.c
-@@@ -6,7 -6,7 +6,8 @@@
-  #include <linux/bitops.h>
-  #include <linux/etherdevice.h>
-  #include <linux/slab.h>
- +#include <linux/crc32.h>
-+ #include <linux/export.h>
-  #include <net/cfg80211.h>
-  #include <net/ip.h>
-  #include "core.h"
+I'm sorry if you've answered already.
+
+Why 240 ? and above means we have idle_xxx_clean/dirty/ xxx is 'seq 2 240' ?
+Isn't it messy ? Anyway, idle_1_clean etc should be provided.
+
+Hmm, I don't like the idea very much...
+
+IIUC, there is no kernel interface which shows histgram rather than load_avg[].
+Is there any other interface and what histgram is provided ?
+And why histgram by kernel is required ? 
+
+BTW, can't this information be exported by /proc/<pid>/smaps or somewhere ?
+I guess per-proc will be wanted finally. 
+
+
+Hm, do you use params other than idle_clean for your scheduling ?
+
+Thanks,
+-Kame
+
