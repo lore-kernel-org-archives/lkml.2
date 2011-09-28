@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab1I1OKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:10:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43919 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab1I1OKK convert rfc822-to-8bit (ORCPT
+	id S1754650Ab1I1OLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:11:18 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43005 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754536Ab1I1OLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:10:10 -0400
-MIME-Version: 1.0
-Message-ID: <22173398-de03-43ef-abe4-a3f3231dd2e9@default>
-Date: Wed, 28 Sep 2011 07:09:18 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com,
-        levinsasha928@gmail.com
-Subject: RE: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at
- next window)
-References: <20110915213305.GA26317@ca-server1.us.oracle.com
- 20110928151558.dca1da5e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110928151558.dca1da5e.kamezawa.hiroyu@jp.fujitsu.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A090203.4E832AAF.00DD,ss=1,re=0.000,fgs=0
+	Wed, 28 Sep 2011 10:11:16 -0400
+Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E832A55.30709@kernel.dk>
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>
+	 <20110928004722.GA27421@kernel.dk>
+	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
+	 <4E82751C.9050908@kernel.dk>
+	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
+	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
+	 <4E832A55.30709@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 09:11:14 -0500
+Message-ID: <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> Sent: Wednesday, September 28, 2011 12:16 AM
-> To: Dan Magenheimer
-> Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; jeremy@goop.org; hughd@google.com;
-> ngupta@vflare.org; Konrad Wilk; JBeulich@novell.com; Kurt Hackel; npiggin@kernel.dk; akpm@linux-
-> foundation.org; riel@redhat.com; hannes@cmpxchg.org; matthew@wil.cx; Chris Mason;
-> sjenning@linux.vnet.ibm.com; jackdachef@gmail.com; cyclonusj@gmail.com; levinsasha928@gmail.com
-> Subject: Re: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
+On Wed, 2011-09-28 at 08:08 -0600, Jens Axboe wrote:
+> On 2011-09-27 22:10, James Bottomley wrote:
+> > On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
+> >> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> >>>>
+> >>>> But if you forward the actual patch to me (the one I see on lkml seems
+> >>>> to be broken and doesn't compile cleanly because it's assiging a
+> >>>> structure to a pointer), I'll try it out anyway.
+> >>>
+> >>> Thanks, that would be great. It's inlined below.
+> >>
+> >> Well, I did several USB eject events, and nothing bad happened.
+> >>
+> >> But as mentioned, I don't think that means much. Have you tried this
+> >> with slub debugging and poisoning? It might be worth some extra
+> >> testing that way.
+> > 
+> > I've been testing a simpler version:
+> > 
+> > http://marc.info/?l=linux-kernel&m=131300594629839
+> > 
+> > For a long time now with great success.  The only difference is the
+> > locking cleanup, but SCSI doesn't need that since it doesn't supply its
+> > own lock, so I've been voting for this as the final fix for a while now.
 > 
-> On Thu, 15 Sep 2011 14:33:05 -0700
-> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-> 
-> > [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
-> >
-> > (Note: V9->V10 only change is corrections in debugfs-related code/counters)
-> >
-> > (Note to earlier reviewers:  This patchset was reorganized at V9 due
-> > to feedback from Kame Hiroyuki and Andrew Morton.  Additionally, feedback
-> > on frontswap v8 from Andrew Morton also applies to cleancache, to wit:
-> >  (1) change usage of sysfs to debugfs to avoid unnecessary kernel ABIs
-> >  (2) rename all uses of "flush" to "invalidate"
-> > As a result, additional patches (5of6 and 6of6) were added to this
-> > series at V9 to patch cleancache core code and cleancache hooks in the mm
-> > and fs subsystems and update cleancache documentation accordingly.)
-> 
-> I'm sorry I couldn't catch following... what happens at hibernation ?
-> frontswap is effectively stopped/skipped automatically ? or contents of
-> TMEM can be kept after power off and it can be read correctly when
-> resume thread reads swap ?
-> 
-> In short: no influence to hibernation ?
-> I'm sorry if I misunderstand some.
+> The locking cleanup looks good, though, for devices that do use the
+> embedded lock.
 
-Hi Kame --
+Exactly ... it's the missing piece; without it my patch is really only
+addressing SCSI.
 
-Hibernation would need to be handled by the tmem backend (e.g. zcache, Xen
-tmem).  In the case of Xen tmem, both save/restore and live migration are
-fully supported.  I'm not sure if zcache works across hibernation; since
-all memory is kmalloc'ed, I think it should work fine, but it would be an
-interesting experiment.
+>  But functionally they should be the same for SCSI, so if
+> you had great success with it, then that's a good data point.
 
-Thanks,
-Dan
+Right, I've run it through the memory debugger and USB ejection testing
+(with ext2, which seems to be the fs that triggers this problem the
+most).
+
+James
+
+
+
