@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab1I1Sbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:31:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48099 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab1I1Sbq (ORCPT
+	id S1755013Ab1I1ScJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:32:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46567 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab1I1ScH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:31:46 -0400
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <874o09x97m.fsf@rustcorp.com.au>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-	 <20110819152335.GA19489@redhat.com> <1313771587.12243.16.camel@lappy>
-	 <20110820200043.GB5276@redhat.com> <871uvdryq2.fsf@rustcorp.com.au>
-	 <20110919060150.GB1569@redhat.com>  <874o09x97m.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 28 Sep 2011 21:30:51 +0300
-Message-ID: <1317234651.11915.6.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 14:32:07 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/8Gc0S+19kTpgoqbljCgtc
+Date: Wed, 28 Sep 2011 11:31:57 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kyle Manna <kyle@kylemanna.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Keerthy <j-keerthy@ti.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] arm: BeagleBoard: add support for the
+ twl4030-madc
+Message-ID: <20110928183157.GC6324@atomide.com>
+References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
+ <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
+ <1313119995-15382-5-git-send-email-kyle@kylemanna.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313119995-15382-5-git-send-email-kyle@kylemanna.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-19 at 17:19 +0930, Rusty Russell wrote:
-> On Mon, 19 Sep 2011 09:01:50 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Mon, Sep 19, 2011 at 01:05:17PM +0930, Rusty Russell wrote:
-> > > On Sat, 20 Aug 2011 23:00:44 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > On Fri, Aug 19, 2011 at 07:33:07PM +0300, Sasha Levin wrote:
-> > > > > Maybe this is better solved by copying the way it was done in PCI itself
-> > > > > with capability linked list?
-> > > > 
-> > > > There are any number of ways to lay out the structure.  I went for what
-> > > > seemed a simplest one.  For MSI-X the train has left the station.  We
-> > > > can probably still tweak where the high 32 bit features
-> > > > for 64 bit features are.  No idea if it's worth it.
-> > > 
-> > > Sorry, this has been in the back of my mind.  I think it's a good idea;
-> > > can we use the capability linked list for pre-device specific stuff from
-> > > now on?
-> > > 
-> > > Thanks,
-> > > Rusty.
-> > 
-> > Do we even want capability bits then?
-> > We can give each capability an ack flag ...
+* Kyle Manna <kyle@kylemanna.com> [110811 20:01]:
+> Signed-off-by: Kyle Manna <kyle@kylemanna.com>
+
+Missing description, but with that corrected:
+
+Acked-by: Tony Lindgren <tony@atomide.com>
+
+> ---
+>  arch/arm/mach-omap2/board-omap3beagle.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
 > 
-> We could have, and if I'd known PCI when I designed virtio I might have.
+> diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+> index 3ae16b4..9cc9fa9 100644
+> --- a/arch/arm/mach-omap2/board-omap3beagle.c
+> +++ b/arch/arm/mach-omap2/board-omap3beagle.c
+> @@ -378,7 +378,8 @@ static struct i2c_board_info __initdata beagle_i2c_eeprom[] = {
+>  static int __init omap3_beagle_i2c_init(void)
+>  {
+>  	omap3_pmic_get_config(&beagle_twldata,
+> -			TWL_COMMON_PDATA_USB | TWL_COMMON_PDATA_AUDIO,
+> +			TWL_COMMON_PDATA_USB | TWL_COMMON_PDATA_MADC |
+> +			TWL_COMMON_PDATA_AUDIO,
+>  			TWL_COMMON_REGULATOR_VDAC | TWL_COMMON_REGULATOR_VPLL2);
+>  
+>  	beagle_twldata.vpll2->constraints.name = "VDVI";
+> @@ -456,9 +457,15 @@ static void __init omap3_beagle_init_irq(void)
+>  	omap3_init_irq();
+>  }
+>  
+> +static struct platform_device madc_hwmon = {
+> +	.name	= "twl4030_madc_hwmon",
+> +	.id	= -1,
+> +};
+> +
+>  static struct platform_device *omap3_beagle_devices[] __initdata = {
+>  	&leds_gpio,
+>  	&keys_gpio,
+> +	&madc_hwmon,
+>  };
+>  
+>  static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
+> -- 
+> 1.7.4.1
 > 
-> But it's not easy now to map structure offsets to that scheme, and we
-> can't really force such a change on the non-PCI users.  So I'd say we
-> should only do it for the non-device-specific options.  ie. we'll still
-> have the MSI-X case move the device-specific config, but we'll use a
-> linked list from now on, eg. for the next 32 features bits...
-> 
-> Thoughts?
-> Rusty.
-
-What if we create a capability list but place it in the virtio-pci
-config space instead of the PCI space?
-
-It'll work fine with non-PCI users and would leave MSI-X as the only
-thing that changes offsets (and we could probably deprecate and remove
-it at some point in the future).
-
--- 
-
-Sasha.
-
