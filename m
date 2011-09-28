@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1I1WpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54382 "EHLO mx2.suse.de"
+	id S932696Ab1I1Woa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54322 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab1I1WpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
-Message-Id: <20110928220140.605535933@clark.kroah.org>
+	id S932666Ab1I1Wo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:27 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
+Message-Id: <20110928220139.674429218@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:49 -0700
+Date: Wed, 28 Sep 2011 15:01:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lasse Collin <lasse.collin@tukaani.org>
-Subject: [145/244] XZ: Fix incorrect XZ_BUF_ERROR
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [136/244] USB: xhci: Set change bit when warm reset change is set.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lasse Collin <lasse.collin@tukaani.org>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 9c1f8594df4814ebfd6822ca3c9444fb3445888d upstream.
+commit 44f4c3ed60fb21e1d2dd98304390ac121e6c7c6d upstream.
 
-xz_dec_run() could incorrectly return XZ_BUF_ERROR if all of the
-following was true:
+Sometimes, when a USB 3.0 device is disconnected, the Intel Panther
+Point xHCI host controller will report a link state change with the
+state set to "SS.Inactive".  This causes the xHCI host controller to
+issue a warm port reset, which doesn't finish before the USB core times
+out while waiting for it to complete.
 
- - The caller knows how many bytes of output to expect and only provides
-   that much output space.
+When the warm port reset does complete, and the xHC gives back a port
+status change event, the xHCI driver kicks khubd.  However, it fails to
+set the bit indicating there is a change event for that port because the
+logic in xhci-hub.c doesn't check for the warm port reset bit.
 
- - When the last output bytes are decoded, the caller-provided input
-   buffer ends right before the LZMA2 end of payload marker.  So LZMA2
-   won't provide more output anymore, but it won't know it yet and thus
-   won't return XZ_STREAM_END yet.
+After that, the warm port status change bit is never cleared by the USB
+core, and the xHC stops reporting port status change bits.  (The xHCI
+spec says it shouldn't report more port events until all change bits are
+cleared.) This means any port changes when a new device is connected
+will never be reported, and the port will seem "dead" until the xHCI
+driver is unloaded and reloaded, or the computer is rebooted.  Fix this
+by making the xHCI driver set the port change bit when a warm port reset
+change bit is set.
 
- - A BCJ filter is in use and it hasn't left any unfiltered bytes in the
-   temp buffer.  This can happen with any BCJ filter, but in practice
-   it's more likely with filters other than the x86 BCJ.
+A better solution would be to make the USB core handle warm port reset
+in differently, merging the current code with the standard port reset
+code that does an incremental backoff on the timeout, and tries to
+complete the port reset two more times before giving up.  That more
+complicated fix will be merged next window, and this fix will be
+backported to stable.
 
-This fixes <https://bugzilla.redhat.com/show_bug.cgi?id=735408> where
-Squashfs thinks that a valid file system is corrupt.
+This should be backported to kernels as old as 3.0, since that was the
+first kernel with commit a11496ebf375 ("xHCI: warm reset support").
 
-This also fixes a similar bug in single-call mode where the uncompressed
-size of a block using BCJ + LZMA2 was 0 bytes and caller provided no
-output space.  Many empty .xz files don't contain any blocks and thus
-don't trigger this bug.
-
-This also tweaks a closely related detail: xz_dec_bcj_run() could call
-xz_dec_lzma2_run() to decode into temp buffer when it was known to be
-useless.  This was harmless although it wasted a minuscule number of CPU
-cycles.
-
-Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- lib/xz/xz_dec_bcj.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci-hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/lib/xz/xz_dec_bcj.c
-+++ b/lib/xz/xz_dec_bcj.c
-@@ -441,8 +441,12 @@ XZ_EXTERN enum xz_ret xz_dec_bcj_run(str
- 	 * next filter in the chain. Apply the BCJ filter on the new data
- 	 * in the output buffer. If everything cannot be filtered, copy it
- 	 * to temp and rewind the output buffer position accordingly.
-+	 *
-+	 * This needs to be always run when temp.size == 0 to handle a special
-+	 * case where the output buffer is full and the next filter has no
-+	 * more output coming but hasn't returned XZ_STREAM_END yet.
- 	 */
--	if (s->temp.size < b->out_size - b->out_pos) {
-+	if (s->temp.size < b->out_size - b->out_pos || s->temp.size == 0) {
- 		out_start = b->out_pos;
- 		memcpy(b->out + b->out_pos, s->temp.buf, s->temp.size);
- 		b->out_pos += s->temp.size;
-@@ -465,16 +469,25 @@ XZ_EXTERN enum xz_ret xz_dec_bcj_run(str
- 		s->temp.size = b->out_pos - out_start;
- 		b->out_pos -= s->temp.size;
- 		memcpy(s->temp.buf, b->out + b->out_pos, s->temp.size);
-+
-+		/*
-+		 * If there wasn't enough input to the next filter to fill
-+		 * the output buffer with unfiltered data, there's no point
-+		 * to try decoding more data to temp.
-+		 */
-+		if (b->out_pos + s->temp.size < b->out_size)
-+			return XZ_OK;
- 	}
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -761,7 +761,7 @@ int xhci_hub_status_data(struct usb_hcd
+ 	memset(buf, 0, retval);
+ 	status = 0;
  
- 	/*
--	 * If we have unfiltered data in temp, try to fill by decoding more
--	 * data from the next filter. Apply the BCJ filter on temp. Then we
--	 * hopefully can fill the actual output buffer by copying filtered
--	 * data from temp. A mix of filtered and unfiltered data may be left
--	 * in temp; it will be taken care on the next call to this function.
-+	 * We have unfiltered data in temp. If the output buffer isn't full
-+	 * yet, try to fill the temp buffer by decoding more data from the
-+	 * next filter. Apply the BCJ filter on temp. Then we hopefully can
-+	 * fill the actual output buffer by copying filtered data from temp.
-+	 * A mix of filtered and unfiltered data may be left in temp; it will
-+	 * be taken care on the next call to this function.
- 	 */
--	if (s->temp.size > 0) {
-+	if (b->out_pos < b->out_size) {
- 		/* Make b->out{,_pos,_size} temporarily point to s->temp. */
- 		s->out = b->out;
- 		s->out_pos = b->out_pos;
+-	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC;
++	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC | PORT_WRC;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	/* For each port, did anything change?  If so, set that bit in buf. */
 
 
