@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab1I1SJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:09:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab1I1SJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754867Ab1I1SJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:09:20 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41478 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab1I1SJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Sep 2011 14:09:18 -0400
-Date: Wed, 28 Sep 2011 14:09:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20110928180905.GB21628@redhat.com>
-References: <4E82751C.9050908@kernel.dk>
- <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
- <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
- <4E832A55.30709@kernel.dk>
- <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
- <4E832BD2.50409@kernel.dk>
- <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
- <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
- <20110928174859.GA21628@redhat.com>
- <20110928175304.GA3985@infradead.org>
+Date: Thu, 29 Sep 2011 03:09:07 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@google.com>, Mel Gorman <mgorman@suse.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2/4] mm: try to distribute dirty pages fairly across
+ zones
+Message-ID: <20110928180907.GD1696@barrios-desktop>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-3-git-send-email-jweiner@redhat.com>
+ <20110921160226.1bf74494.akpm@google.com>
+ <20110922085242.GA29046@redhat.com>
+ <20110923144248.GC2606@redhat.com>
+ <20110928055640.GB14561@barrios-desktop>
+ <20110928071154.GA23535@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110928175304.GA3985@infradead.org>
+In-Reply-To: <20110928071154.GA23535@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 01:53:04PM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 28, 2011 at 01:48:59PM -0400, Vivek Goyal wrote:
-> > I am wondering if we should retain blk_throtl_exit() in blk_cleanup_queue()
-> > before lock swap and just move elevator cleanup in blk_release_queue().
+On Wed, Sep 28, 2011 at 09:11:54AM +0200, Johannes Weiner wrote:
+> On Wed, Sep 28, 2011 at 02:56:40PM +0900, Minchan Kim wrote:
+> > On Fri, Sep 23, 2011 at 04:42:48PM +0200, Johannes Weiner wrote:
+> > > The maximum number of dirty pages that exist in the system at any time
+> > > is determined by a number of pages considered dirtyable and a
+> > > user-configured percentage of those, or an absolute number in bytes.
 > > 
-> > A note to myself, I should probably enhance blk_throtl_exit() to look for any
-> > queued throttled bio and single their completion with error (-ENODEV) or
-> > something like that.
+> > It's explanation of old approach.
 > 
-> The root of this evil is how queue_lock is implemented and (ab)used.
-> Instead of letting the driver assign a pointer to make the core use
-> its locks we really need to make the queue_lock a lock embedded directly
-> into the queue, and drivers may or may not use that lock for their
-> internal data structures.  For high performance drivers they preferable
-> should use their own locks as queue_lock is far too contended already
-> for any high IOPS device.   The same applies to throtteling btw -
-> instead of overloading an already highly contended lock it really
-> should have its own.
+> What do you mean?  This does not change with this patch.  We still
+> have a number of dirtyable pages and a limit that is applied
+> relatively to this number.
+> 
+> > > This number of dirtyable pages is the sum of memory provided by all
+> > > the zones in the system minus their lowmem reserves and high
+> > > watermarks, so that the system can retain a healthy number of free
+> > > pages without having to reclaim dirty pages.
+> > 
+> > It's a explanation of new approach.
+> 
+> Same here, this aspect is also not changed with this patch!
+> 
+> > > But there is a flaw in that we have a zoned page allocator which does
+> > > not care about the global state but rather the state of individual
+> > > memory zones.  And right now there is nothing that prevents one zone
+> > > from filling up with dirty pages while other zones are spared, which
+> > > frequently leads to situations where kswapd, in order to restore the
+> > > watermark of free pages, does indeed have to write pages from that
+> > > zone's LRU list.  This can interfere so badly with IO from the flusher
+> > > threads that major filesystems (btrfs, xfs, ext4) mostly ignore write
+> > > requests from reclaim already, taking away the VM's only possibility
+> > > to keep such a zone balanced, aside from hoping the flushers will soon
+> > > clean pages from that zone.
+> > 
+> > It's a explanation of old approach, again!
+> > Shoudn't we move above phrase of new approach into below?
+> 
+> Everything above describes the current behaviour (at the point of this
+> patch, so respecting lowmem_reserve e.g. is part of the current
+> behaviour by now) and its problems.  And below follows a description
+> of how the patch tries to fix it.
 
-I had thought of implementing a separate lock for throttling. Then I
-noticed few operations like checking for queue flags where I would
-be required to hold queue locks.
+It seems that it's not a good choice to use "old" and "new" terms.
+Hannes, please ignore, it's not a biggie.
 
-So I could do lock nesting.
-
-hold throttling_lock;
-   hold queue_lock;
-
-IIRC, I also had noticed some operations where queue might want to call
-into throttling with queue lock held and that would have led to lock
-order problems.
-
-So I had given up on the idea and continued to use queue lock for
-throttling. Thought it could still probably be done if one could
-justify additional complexity.
-
-Thanks
-Vivek
+-- 
+Kind regards,
+Minchan Kim
