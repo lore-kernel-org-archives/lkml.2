@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1I1Rv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:51:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6167 "EHLO mga02.intel.com"
+	id S1754796Ab1I1Rwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:52:51 -0400
+Received: from claw.goop.org ([74.207.240.146]:38619 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab1I1Rv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:51:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="57630176"
-Message-ID: <4E835EBC.3080604@linux.intel.com>
-Date: Wed, 28 Sep 2011 10:51:56 -0700
-From: Darren Hart <dvhart@linux.intel.com>
+	id S1753643Ab1I1Rwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 13:52:50 -0400
+Message-ID: <4E835EF0.4080200@goop.org>
+Date: Wed, 28 Sep 2011 10:52:48 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "lkml, " <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis@compulab.co.il>,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: Serial issues with EG20T (Topcliff) PCH uarts
-References: <4E820FA8.8050604@linux.intel.com> <20110927225722.54936878@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110927225722.54936878@lxorguk.ukuu.org.uk>
+To: Don Zickus <dzickus@redhat.com>
+CC: Robert Richter <robert.richter@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>
+Subject: Re: [V6][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
+ and unknown NMIs
+References: <1316805435-14832-1-git-send-email-dzickus@redhat.com> <1316805435-14832-5-git-send-email-dzickus@redhat.com> <20110928103140.GD6063@erda.amd.com> <20110928123720.GL5795@redhat.com> <4E835095.5020706@goop.org> <20110928174400.GS5795@redhat.com>
+In-Reply-To: <20110928174400.GS5795@redhat.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On 09/28/2011 10:44 AM, Don Zickus wrote:
+> On Wed, Sep 28, 2011 at 09:51:33AM -0700, Jeremy Fitzhardinge wrote:
+>> On 09/28/2011 05:37 AM, Don Zickus wrote:
+>>> On Wed, Sep 28, 2011 at 12:31:40PM +0200, Robert Richter wrote:
+>>>> On 23.09.11 15:17:13, Don Zickus wrote:
+>>>>> @@ -89,6 +89,15 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+>>>>>  
+>>>>>  		handled += a->handler(type, regs);
+>>>>>  
+>>>>> +		/*
+>>>>> + 		 * Optimization: only loop once if this is not a 
+>>>>> + 		 * back-to-back NMI.  The idea is nothing is dropped
+>>>>> + 		 * on the first NMI, only on the second of a back-to-back
+>>>>> + 		 * NMI.  No need to waste cycles going through all the
+>>>>> + 		 * handlers.
+>>>>> + 		 */
+>>>>> +		if (!b2b && handled)
+>>>>> +			break;
+>>>> I don't think we can leave this in. As said, there are cases that 2
+>>>> nmis trigger but the handler is called only once. Only the first would
+>>>> be handled then, and the second get lost cause there is no 2nd nmi
+>>>> call.
+>>> Right.  Avi, Jeremy what was your objection that needed this optimization
+>>> in the first place?
+>> My only interest in the NMI code is its use of spinlocks, which seem
+>> inappropriate.
+> Right.  But I thought this was going to clash with your ticketed spinlock
+> stuff?
 
-Thanks for the suggestions. Still not working, details follow.
+To be honest I haven't really been following this thread; it didn't
+appear to me to relate to the spinlock issue any more.  At least in the
+Xen case, I don't *think* we'll be sending NMIs to domains which are
+using pv ticketlocks, so the issue is moot.  It's more pressing for Avi
+because he's thinking of using NMIs to implement pv ticketlocks in kvm.
 
-On 09/27/2011 02:57 PM, Alan Cox wrote:
->> Using the ti_usb_3410_5052 driver with modified vendor/product strings, I am
->> able to get ttyUSB0 on my host and open it in minicom:
->>
->> $ sudo modprobe ti_usb_3410_5052 vendor_3410=0x0451 product_3410=0x5053
->> $ minicom -D /dev/ttyUSB0
-> 
-> Please submit those idents to GregKH for the ti_usb driver.
-> 
-
-I will. I need to confirm this is something I can do now (if I can use
-the product name, etc.).
-
->> Can anyone offer up some ideas on what I might try to get:
->>
->> 1) the getty working
->> 2) the earlier kernel messages to appear
->> 3) syslinux working
->>
->> over the serial port?
-> 
-> It may depend a lot on the port. If it boots in PCI D3 (power saved) then
-> it's going to be fun. Otherwise forcing the address of the port ought to
-> do the trick.
-> 
-> See	
-> 	console=uart8250,io 0xb060,115200n8
-
-I tried:
-
-console=uart8250,io,0xb060,115200n8
-
-With this I got 4 non-ascii chars
-
-> 
-> although it's polled so you may want to drop the speed a bit!
-
-I switched all my terminal emulators, syslinux config, the getty, and
-console redirection in the bios to use 9600n8. Then ran with:
-
-console=uart8250,io,0xb060,9600n8
-
-This printed several bursts of garbled non-ascii strings, but did so
-very early! :)
-
-With minicom on each end, I see the INT 18 count go up by 1 for every
-char sent from the board and up by 3 for every char sent from my dev
-box, as well as the irregular rx,fe increment mentioned originally.
-
-> 
-> netconsole might also be useful to debug the early serial problems !
-
-I did give that a shot, it complained about eth0 not existing, despite
-the driver being compiled in. Possibly an init race with netconsole and
-pch_gbe? Similar posts sent to linux-next earlier this year.
-
-
-> 
-> No idea for syslinux.
-
-Doesn't like 9600 either.
-
-> 
-> Alan
-
-So I'm bugging the hardware/firmware guys, really looks like something
-is bad under the covers to me.
-
-Thanks Alan!
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+    J
