@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab1I1NMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:12:48 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23659 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab1I1NMq (ORCPT
+	id S1753038Ab1I1NQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:16:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62493 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1I1NQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:12:46 -0400
-Date: Wed, 28 Sep 2011 09:12:29 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH v4 2/2] xen: modify kernel mappings
- corresponding to granted pages
-Message-ID: <20110928131229.GA10270@phenom.oracle.com>
-References: <alpine.DEB.2.00.1109081944150.12963@kaball-desktop>
- <20110921145853.GA541@phenom.oracle.com>
- <alpine.DEB.2.00.1109231412220.8700@kaball-desktop>
- <20110923144538.GA10701@phenom.oracle.com>
- <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
+	Wed, 28 Sep 2011 09:16:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH v4 3/3] arm/tegra: device tree support for ventana board
+Date: Wed, 28 Sep 2011 15:16:42 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+References: <1317171902-14736-1-git-send-email-pdeschrijver@nvidia.com> <1317171902-14736-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1317171902-14736-4-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
-X-CT-RefId: str=0001.0A090201.4E831D48.0005,ss=1,re=0.000,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109281516.42513.arnd@arndb.de>
+X-Provags-ID: V02:K0:IPT8l/Wk7OC8sz84nx1i8JsNtCHiK/rBsIFbwWNuR+J
+ NHMy2iqEDNQ6XrJ8fOghPYcUL0DxmvqwXxTDTPcI382IUBPvuh
+ 7p0oHwLhiUI0ppoYD/FDwZTvYu0AHg2vMd2zIrefRQgAu5uzTp
+ f6k02fBFa0wabHCwmJ44rNY83rghRPKOMv7nxTfhbUH49GTLip
+ 64IUN8C/283tqULXnqYZiuAswzYHJxhDR+XOeLlJB3WgpcdGcQ
+ 64wQI5tiIIrDhI4PkoOs/ITVvAhYb6IqrCi8QDSWiA2tmDrKO4
+ Novua5EpVYkiGk1yVztUommYDPZ9Y7XievJHLPlXt1RxWOUIbA
+ WCZwj+TtfKjU7bXYtUyU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Anyhow, If you want to modify your patchset to check PagePrivate bit
-> > and set the SetPagePrivate/set_page_private - go ahead.
-> 
-> I'll do that.
+On Wednesday 28 September 2011, Peter De Schrijver wrote:
+> --- a/arch/arm/mach-tegra/board-dt.c
+> +++ b/arch/arm/mach-tegra/board-dt.c
+> @@ -47,7 +47,7 @@
+>  
+>  void harmony_pinmux_init(void);
+>  void seaboard_pinmux_init(void);
+> -
+> +void ventana_pinmux_init(void);
+>  
+>  struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+>         OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
+> @@ -95,6 +95,8 @@ static void __init tegra_dt_init(void)
+>                 harmony_pinmux_init();
+>         else if (of_machine_is_compatible("nvidia,seaboard"))
+>                 seaboard_pinmux_init();
+> +       else if (of_machine_is_compatible("nvidia,ventana"))
+> +               ventana_pinmux_init();
 
-Preempted you a bit :-)
-http://lists.xensource.com/archives/html/xen-devel/2011-09/msg01364.html
+Are you (Peter, Colin, Olof) confident that this is not getting out
+of hand before it's getting better?
 
-> > > > > +                     gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
-> > > > > +                             map->flags |
-> > > > > +                             GNTMAP_host_map |
-> > > > > +                             GNTMAP_contains_pte,
-> > > > > +                             map->grants[i].ref,
-> > > > > +                             map->grants[i].domid);
-> > > > > +             }
-> > > >
-> > > > So, on startup.. (before this function is called) the
-> > > > find_grant_ptes is called which pretty much does the exact thing for
-> > > > each virtual address.  Except its flags are GNTMAP_application_map
-> > > > instead of GNTMAP_host_map.
-> > > >
-> > > > It even uses the same type structure.. It fills out map_ops[i] one.
-> > > >
-> > > > Can we use that instead of adding a new structure?
-> > >
-> > > Do you mean moving this code inside find_grant_ptes?
-> > > I don't think that can be done because find_grant_ptes is called on a
-> > > range of virtual addresses while this is called on an array of struct
-> > > pages. It is true that the current implementation of
-> > 
-> > But aren't that 'range of virtual address' of struct pages? You
-> > are using 'alloc_xenballooned_pages' to get those pages and that is
-> > what the 'range of virtual adresses' is walking through.
-> 
-> it is not the same range of virtual addresses
+If we are keeping the per-board pinmux configuration in the kernel
+for longer, I think it would be better to do this table-driven than
+having a list of top-level of_machine_is_compatible() statements
+and do something like:
 
-OK, but the pte_maddr is the same, isn't it?
+static struct {
+	const char *machine;
+	struct tegra_pingroup_config *config[];
+} pinmux_configs[] __initdata = {
+	{ "nvidia,ventana", &ventana_pinmux },
+	{ "nvidia,seaboard, &seaboard_pinmux },
+};
 
-> 
-> > > alloc_xenballooned_pages is going to return a consecutive set of pages
-> > > but it might not always be the case.
-> > 
-> > I am sensing some grand plans in work here? I thought we are going to
-> > try to simply our lives and see about making alloc_xenballooned_pages
-> > returned sane pages that are !PageHighMem (or if they are PageHighMem they
-> > are already pinned, and set in the &init_mm)?
-> > 
-> > I am just thinking in terms of lookup_address and arbitrary_virt_to_machine
-> > calls being done _twice_. And it seems like we have the find_grant_ptes
-> > which does the bulk of this already - so why not piggyback on it?
-> 
-> It has to be done twice: once for the user ptes and once for the kernel
-> mappings of map->pages.
-> 
-> 
-> > Besides that, the patch set looks fine. .. How do I reproduce the failures
-> > you had encountered with the AIO?
-> > 
-> 
-> Just setup and use upstream qemu and configure your VM to use a disk on
-> a file (file:).
-
-OK.
+	Arnd
