@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1I1Ujs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 16:39:48 -0400
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:48238 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1I1Ujq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 16:39:46 -0400
-X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Sep 2011 16:39:46 EDT
-Subject: Re: [PATCH 0/2] autodetection of multitouch devices
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <alpine.LNX.2.00.1109261644250.24692@pobox.suse.cz>
-Date: Wed, 28 Sep 2011 22:32:26 +0200
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        USB list <linux-input@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D3E37531-860E-415F-B2B9-58CEBB4E10A3@enac.fr>
-References: <1316617015-11648-1-git-send-email-benjamin.tissoires@gmail.com> <alpine.LNX.2.00.1109261419330.13109@pobox.suse.cz> <20110926144635.GA6921@polaris.bitmath.org> <alpine.LNX.2.00.1109261644250.24692@pobox.suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-X-Mailer: Apple Mail (2.1084)
+	id S1754913Ab1I1UoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 16:44:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50230 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753919Ab1I1UoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 16:44:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,457,1312182000"; 
+   d="scan'208";a="56703044"
+Date: Wed, 28 Sep 2011 21:52:35 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@gentwo.org>, David Rientjes <rientjes@google.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110928215235.05d4f2e5@bob.linux.org.uk>
+In-Reply-To: <1317241905.16137.516.camel@nimitz>
+References: <20110927175453.GA3393@albatros>
+	<20110927175642.GA3432@albatros>
+	<20110927193810.GA5416@albatros>
+	<alpine.DEB.2.00.1109271459180.13797@router.home>
+	<alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1109271546320.13797@router.home>
+	<1317241905.16137.516.camel@nimitz>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 28 Sep 2011 13:31:45 -0700
+Dave Hansen <dave@linux.vnet.ibm.com> wrote:
 
-Le 26 sept. 2011 à 16:47, Jiri Kosina a écrit :
-
-> On Mon, 26 Sep 2011, Henrik Rydberg wrote:
+> On Tue, 2011-09-27 at 15:47 -0500, Christoph Lameter wrote:
+> > On Tue, 27 Sep 2011, David Rientjes wrote:
+> > > It'll turn into another one of our infinite number of
+> > > capabilities.  Does anything actually care about statistics at KB
+> > > granularity these days?
+> > 
+> > Changing that to MB may also break things. It may be better to have
+> > consistent system for access control to memory management counters
+> > that are not related to a process.
 > 
->>>> These two patches finally enable the kernel to handle multitouch devices correctly.
->>>> If a device presents in its report descriptors the usage Contact ID, then it is considered as
->>>> a multitouch device and handled by hid-multitouch.
->>> 
->>> Hi Banjamin,
->>> 
->>> thanks a lot for working on this. I have now queued the patches in my 
->>> tree.
->> 
->> Hi Benjamin,
->> 
->> Late as it seems, here are a couple of questions:
->> 
->> 1. How was this tested? By removing all white-listed devices in
->> hid-multitouch.c to see if the usual suspects are still picked up?
+> We could also just _effectively_ make it output in MB:
 > 
-> If we didn't have full test coverage (which I suppose to be the case), we 
-> can still revert to the old method after the merge window if there reports 
-> that this broke things on particular devices.
-> 
-> Do you guys at least have report descriptor dumps from most of the 
-> supported devices?
+> 	foo = foo & ~(1<<20)
 
+I do not think that does what you intend 8)
 
-Yes, we have report descriptors for about 20-30 different models now, and about 10 actual devices for testing purposes. Unfortunately, this still does not tell us exactly how all these devices manage to work with the same Win 7 driver, given their diversity. We are getting close, but just not yet.
-
-BTW we gladly accept to receive sample panels from vendors, this usually ensures fast support. Additionally, the panels are then reused by ENAC students in their projects, so this stimulates the market of multitouch devices in aviation :-)
-
-Cheers,
-
-St.
-
-
+I do like the idea - it avoids any interfaces vanishing and surprise
+breakages while only CAP_SYS_whatever needs the real numbers
