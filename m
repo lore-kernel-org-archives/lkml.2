@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab1I1IOE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:14:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43363 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1I1IOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:14:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Sep 2011 17:13:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
+	id S1753196Ab1I1IPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:15:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18133 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab1I1IP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 04:15:29 -0400
+Date: Wed, 28 Sep 2011 10:14:52 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
-Message-Id: <20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1317170947-17074-7-git-send-email-walken@google.com>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-	<1317170947-17074-7-git-send-email-walken@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: [PATCH] vmscan: add barrier to prevent evictable page in
+ unevictable list
+Message-ID: <20110928081452.GC23535@redhat.com>
+References: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011 17:49:04 -0700
-Michel Lespinasse <walken@google.com> wrote:
-
-> Scan some number of pages from each node every second, instead of trying to
-> scan the entime memory at once and being idle for the rest of the configured
-> interval.
+On Wed, Sep 28, 2011 at 10:45:30AM +0900, Minchan Kim wrote:
+> When racing between putback_lru_page and shmem_unlock happens,
+> progrom execution order is as follows, but clear_bit in processor #1
+> could be reordered right before spin_unlock of processor #1.
+> Then, the page would be stranded on the unevictable list.
 > 
-> In addition to spreading the CPU usage over the entire scanning interval,
-> this also reduces the jitter between two consecutive scans of the same page.
+> spin_lock
+> SetPageLRU
+> spin_unlock
+>                                 clear_bit(AS_UNEVICTABLE)
+>                                 spin_lock
+>                                 if PageLRU()
+>                                         if !test_bit(AS_UNEVICTABLE)
+>                                         	move evictable list
+> smp_mb
+> if !test_bit(AS_UNEVICTABLE)
+>         move evictable list
+>                                 spin_unlock
 > 
+> But, pagevec_lookup in scan_mapping_unevictable_pages has rcu_read_[un]lock so
+> it could protect reordering before reaching test_bit(AS_UNEVICTABLE) on processor #1
+> so this problem never happens. But it's a unexpected side effect and we should
+> solve this problem properly.
 > 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+> This patch adds a barrier after mapping_clear_unevictable.
+> 
+> side-note: I didn't meet this problem but just found during review.
+> 
+> Cc: Johannes Weiner <jweiner@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/shmem.c  |    1 +
+>  mm/vmscan.c |   11 ++++++-----
+>  2 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 2d35772..22cb349 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1068,6 +1068,7 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
+>  		user_shm_unlock(inode->i_size, user);
+>  		info->flags &= ~VM_LOCKED;
+>  		mapping_clear_unevictable(file->f_mapping);
+> +		smp_mb__after_clear_bit();
+>  		scan_mapping_unevictable_pages(file->f_mapping);
 
-Does this scan thread need to be signle thread ?
+I always get nervous when I see undocumented barriers.  Maybe add a
+teensy tiny comment here?
 
-Thanks,
--Kame
+	/*
+	 * Ensure that a racing putback_lru_page() can see
+	 * the pages of this mapping are evictable when we
+	 * skip them due to !PageLRU during the scan.
+	 */
 
+Or something like that.  Otherwise, nice catch :-)
 
+Acked-by: Johannes Weiner <jweiner@redhat.com>
