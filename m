@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1I1Ej2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:39:28 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45727 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab1I1Ej1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:39:27 -0400
-Date: Wed, 28 Sep 2011 10:09:21 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+	id S1752717Ab1I1Evb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:51:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60916 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751688Ab1I1Eva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 00:51:30 -0400
+Message-ID: <1317185489.19340.22.camel@Joe-Laptop>
+Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for
+ dynamic_pr_debug
+From: Joe Perches <joe@perches.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
-Message-ID: <20110928043921.GC8593@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110926115049.GA22604@linux.vnet.ibm.com>
- <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
- <20110928043427.GI4357@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110928043427.GI4357@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 27 Sep 2011 21:51:29 -0700
+In-Reply-To: <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+	 <1316642115-20029-26-git-send-email-jim.cromie@gmail.com>
+	 <1316725066.29447.16.camel@Joe-Laptop>
+	 <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
+	 <1317166589.19340.14.camel@Joe-Laptop>
+	 <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.92- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-28 10:04:27]:
+On Tue, 2011-09-27 at 20:54 -0600, Jim Cromie wrote:
+> Cleanest way is to drop the original synonym, and just use
+> warn (its shorter), but that creates some churn (havent grepped to see
+> how much).
+> I picked what looked like least effort & fewest corner-cases.
+> ICBW..
 
-> unless we want to go for more sophisticated like a sorted list of
-> rq->next_balance in a rb-tree
+#ifndef pr_fmt_warning
+#define pr_fmt_warning pr_fmt_warn
+#endif
 
-Given that this list will need to be global (and not per-cpu) and it will need 
-to be updated reqularly (even when cpus are busy and as they update their 
-rq->next_balance), that will probably not fly!
+> > What did you think of avoiding all of this and
+> > having __dynamic_pr_debug move the fmt pointer over
+> > any initial KBUILD_MODULE ": "
+> >
+> > int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+> > {
+> > [...]
+> >        size_t modsize = strlen(descriptor->modname);
+> >        if (0 == strncmp(fmt, descriptor->modname, modsize) &&
+> >            0 == strncmp(fmt + modsize, ": ", 2))
+> >                fmt += modsize + 2;
+> >        vprintk(fmt, ...)
+> > ?
+> 
+> I was getting to that... ;-)
+> Im not crazy about it.  It feels like too much ..
+> Its a runtime workaround for what I think is a
+> problem in users' (or header's) #defines.
 
-- vatsa
+I think exactly the opposite myself.
+
+I think all of the '#define pr_fmt(fmt) KBUILD_MODNAME ": "'
+are effectivly useless and I will eventually delete them.
+
+The printk subsystem should look up the module name and
+prefix them to the printk akin to how the dynamic_debug
+system does.  Except the module name should be a singleton.
+
+
