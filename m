@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab1I1Wro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:47:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54701 "EHLO mx2.suse.de"
+	id S1756084Ab1I1XDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:03:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933135Ab1I1Wrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:39 -0400
+	id S933046Ab1I1Wrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:35 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:42 2011
-Message-Id: <20110928220142.156220940@clark.kroah.org>
+Message-Id: <20110928220142.033134480@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:04 -0700
+Date: Wed, 28 Sep 2011 15:02:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: [160/244] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
+        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>
+Subject: [159/244] ipc/mqueue.c: fix mq_open() return value
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,141 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 6e6938b6d3130305a5960c86b1a9b21e58cf6144 upstream.
+commit d40dcdb0172a1ba853464983a059fb45e0aaf61a upstream.
 
-sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
-WB_SYNC_ALL sync. Identify the first stage with .tagged_writepages and
-do livelock prevention for it, too.
+We return ENOMEM from mqueue_get_inode even when we have enough memory.
+Namely in case the system rlimit of mqueue was reached.  This error
+propagates to mq_queue and user sees the error unexpectedly.  So fix
+this up to properly return EMFILE as described in the manpage:
 
-Jan's commit f446daaea9 ("mm: implement writeback livelock avoidance
-using page tagging") is a partial fix in that it only fixed the
-WB_SYNC_ALL phase livelock.
+	EMFILE The process already has the maximum number of files and
+	       message queues open.
 
-Although ext4 is tested to no longer livelock with commit f446daaea9,
-it may due to some "redirty_tail() after pages_skipped" effect which
-is by no means a guarantee for _all_ the file systems.
+instead of:
 
-Note that writeback_inodes_sb() is called by not only sync(), they are
-treated the same because the other callers also need livelock prevention.
+	ENOMEM Insufficient memory.
 
-Impact:  It changes the order in which pages/inodes are synced to disk.
-Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
-until finished with the current inode.
+With the previous patch we just switch to ERR_PTR/PTR_ERR/IS_ERR error
+handling here.
 
-Acked-by: Jan Kara <jack@suse.cz>
-CC: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c           |    4 ++--
- fs/fs-writeback.c         |   17 +++++++++--------
- include/linux/writeback.h |    1 +
- mm/page-writeback.c       |    4 ++--
- 4 files changed, 14 insertions(+), 12 deletions(-)
+ ipc/mqueue.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2756,7 +2756,7 @@ static int write_cache_pages_da(struct a
- 	index = wbc->range_start >> PAGE_CACHE_SHIFT;
- 	end = wbc->range_end >> PAGE_CACHE_SHIFT;
- 
--	if (wbc->sync_mode == WB_SYNC_ALL)
-+	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
- 		tag = PAGECACHE_TAG_TOWRITE;
- 	else
- 		tag = PAGECACHE_TAG_DIRTY;
-@@ -2988,7 +2988,7 @@ static int ext4_da_writepages(struct add
- 	}
- 
- retry:
--	if (wbc->sync_mode == WB_SYNC_ALL)
-+	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
- 		tag_pages_for_writeback(mapping, index, end);
- 
- 	while (!ret && wbc->nr_to_write > 0) {
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -36,6 +36,7 @@ struct wb_writeback_work {
- 	long nr_pages;
- 	struct super_block *sb;
- 	enum writeback_sync_modes sync_mode;
-+	unsigned int tagged_writepages:1;
- 	unsigned int for_kupdate:1;
- 	unsigned int range_cyclic:1;
- 	unsigned int for_background:1;
-@@ -650,6 +651,7 @@ static long wb_writeback(struct bdi_writ
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -113,6 +113,7 @@ static struct inode *mqueue_get_inode(st
  {
- 	struct writeback_control wbc = {
- 		.sync_mode		= work->sync_mode,
-+		.tagged_writepages	= work->tagged_writepages,
- 		.older_than_this	= NULL,
- 		.for_kupdate		= work->for_kupdate,
- 		.for_background		= work->for_background,
-@@ -657,7 +659,7 @@ static long wb_writeback(struct bdi_writ
- 	};
- 	unsigned long oldest_jif;
- 	long wrote = 0;
--	long write_chunk;
-+	long write_chunk = MAX_WRITEBACK_PAGES;
+ 	struct user_struct *u = current_user();
  	struct inode *inode;
++	int ret = -ENOMEM;
  
- 	if (wbc.for_kupdate) {
-@@ -683,9 +685,7 @@ static long wb_writeback(struct bdi_writ
- 	 *                   (quickly) tag currently dirty pages
- 	 *                   (maybe slowly) sync all tagged pages
- 	 */
--	if (wbc.sync_mode == WB_SYNC_NONE)
--		write_chunk = MAX_WRITEBACK_PAGES;
--	else
-+	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages)
- 		write_chunk = LONG_MAX;
+ 	inode = new_inode(sb);
+ 	if (!inode)
+@@ -160,6 +161,7 @@ static struct inode *mqueue_get_inode(st
+ 		    u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
+ 			spin_unlock(&mq_lock);
+ 			/* mqueue_evict_inode() releases info->messages */
++			ret = -EMFILE;
+ 			goto out_inode;
+ 		}
+ 		u->mq_bytes += mq_bytes;
+@@ -179,7 +181,7 @@ static struct inode *mqueue_get_inode(st
+ out_inode:
+ 	iput(inode);
+ err:
+-	return NULL;
++	return ERR_PTR(ret);
+ }
  
- 	wbc.wb_start = jiffies; /* livelock avoidance */
-@@ -1188,10 +1188,11 @@ void writeback_inodes_sb_nr(struct super
- {
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	struct wb_writeback_work work = {
--		.sb		= sb,
--		.sync_mode	= WB_SYNC_NONE,
--		.done		= &done,
--		.nr_pages	= nr,
-+		.sb			= sb,
-+		.sync_mode		= WB_SYNC_NONE,
-+		.tagged_writepages	= 1,
-+		.done			= &done,
-+		.nr_pages		= nr,
- 	};
+ static int mqueue_fill_super(struct super_block *sb, void *data, int silent)
+@@ -195,8 +197,8 @@ static int mqueue_fill_super(struct supe
  
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -47,6 +47,7 @@ struct writeback_control {
- 	unsigned encountered_congestion:1; /* An output: a queue is full */
- 	unsigned for_kupdate:1;		/* A kupdate writeback */
- 	unsigned for_background:1;	/* A background writeback */
-+	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
- 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
- 	unsigned range_cyclic:1;	/* range_start is cyclic */
- 	unsigned more_io:1;		/* more io to be dispatched */
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -892,12 +892,12 @@ int write_cache_pages(struct address_spa
- 			range_whole = 1;
- 		cycled = 1; /* ignore range_cyclic tests */
+ 	inode = mqueue_get_inode(sb, ns, S_IFDIR | S_ISVTX | S_IRWXUGO,
+ 				NULL);
+-	if (!inode) {
+-		error = -ENOMEM;
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
+ 		goto out;
  	}
--	if (wbc->sync_mode == WB_SYNC_ALL)
-+	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
- 		tag = PAGECACHE_TAG_TOWRITE;
- 	else
- 		tag = PAGECACHE_TAG_DIRTY;
- retry:
--	if (wbc->sync_mode == WB_SYNC_ALL)
-+	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
- 		tag_pages_for_writeback(mapping, index, end);
- 	done_index = index;
- 	while (!done && (index <= end)) {
+ 
+@@ -316,8 +318,8 @@ static int mqueue_create(struct inode *d
+ 	spin_unlock(&mq_lock);
+ 
+ 	inode = mqueue_get_inode(dir->i_sb, ipc_ns, mode, attr);
+-	if (!inode) {
+-		error = -ENOMEM;
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
+ 		spin_lock(&mq_lock);
+ 		ipc_ns->mq_queues_count--;
+ 		goto out_unlock;
 
 
