@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1I1KpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 06:45:08 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39568 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab1I1KpE (ORCPT
+	id S1753999Ab1I1Kpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 06:45:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50444 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752626Ab1I1Kn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 06:45:04 -0400
-Date: Wed, 28 Sep 2011 12:45:06 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
-        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-Message-ID: <20110928104506.GB22878@gere.osrc.amd.com>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
- <1317068164.1763.39.camel@twins>
- <1317076065.3112.539.camel@work-vm>
- <1317119870.15383.29.camel@twins>
- <1317164216.3112.711.camel@work-vm>
- <1317201399.18012.4.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317201399.18012.4.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Sep 2011 06:43:58 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 6/7] regmap: Implement regcache_cache_bypass helper function
+Date: Wed, 28 Sep 2011 11:43:46 +0100
+Message-Id: <1317206627-6673-6-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com>
+References: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 11:16:39AM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-09-27 at 15:56 -0700, John Stultz wrote:
-> > 
-> > 
-> > I do think my idea is neat, so we can spend/burn time debating it, but
-> > if you have viable suggestions (and honestly, I think rewriting all of
-> > userland isn't viable) on solving the larger problem, I'm all ears.
-> > 
-> And yet, rewriting all of userspace is exactly what Android did, they
-> had the perfect opportunity of doing it right, but they came up with the
-> worst solution ever.
-> 
-> As for my laptop, I really would like the firefox guys to add a
-> 'feature' that stops JS on non-visible tabs and preferably also drop all
-> data after a little while.
-> 
-> firefox is the #1 wakeup thing on my machine and its mostly invisible
-> (minimized) and when its not, I can only stare at a single tab anyway.
+Ensure we've got a function so users can enable/disable the
+cache bypass option.
 
-Oh yeah, same here.
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regcache.c |   19 +++++++++++++++++++
+ include/linux/regmap.h         |    1 +
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-I even went so far as to do
-
-kill -STOP $(pidof firefox-bin)
-
-at times simply because the thing was getting out of control. And to be
-honest, the moment a thinner browser comes out with authors who actually
-do care about not bloating the crap out of it, I'm jumping on it.
-
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 8900897..a3f466c 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -288,6 +288,25 @@ void regcache_cache_only(struct regmap *map, bool enable)
+ }
+ EXPORT_SYMBOL_GPL(regcache_cache_only);
+ 
++/**
++ * regcache_cache_bypass: Put a register map into cache bypass mode
++ *
++ * @map: map to configure
++ * @cache_only: flag if changes should not be written to the hardware
++ *
++ * When a register map is marked with the cache bypass option, writes
++ * to the register map API will only update the hardware and not the
++ * the cache directly.  This is useful when syncing the cache back to
++ * the hardware.
++ */
++void regcache_cache_bypass(struct regmap *map, bool enable)
++{
++	mutex_lock(&map->sync_lock);
++	map->cache_bypass = enable;
++	mutex_unlock(&map->sync_lock);
++}
++EXPORT_SYMBOL_GPL(regcache_cache_bypass);
++
+ bool regcache_set_val(void *base, unsigned int idx,
+ 		      unsigned int val, unsigned int word_size)
+ {
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 76ac255..3daac2d 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -142,5 +142,6 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 
+ int regcache_sync(struct regmap *map);
+ void regcache_cache_only(struct regmap *map, bool enable);
++void regcache_cache_bypass(struct regmap *map, bool enable);
+ 
+ #endif
 -- 
-Regards/Gruss,
-Boris.
+1.7.6.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
