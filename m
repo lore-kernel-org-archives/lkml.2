@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab1I1Ks6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 06:48:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13544 "EHLO mx1.redhat.com"
+	id S1752153Ab1I1LGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 07:06:46 -0400
+Received: from lucidpixels.com ([72.73.18.11]:49043 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab1I1Ks4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 06:48:56 -0400
-Message-ID: <4E82FC4E.5010101@redhat.com>
-Date: Wed, 28 Sep 2011 18:51:58 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110126 Red Hat/3.1.8-1.el6 Thunderbird/3.1.8
+	id S1750851Ab1I1LGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 07:06:44 -0400
+Date: Wed, 28 Sep 2011 07:06:44 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Where to obtain the carl open source firmware?
+Message-ID: <alpine.DEB.2.02.1109280705410.8348@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, eric.dumazet@gmail.com,
-        "David S. Miller" <davem@redhat.com>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, stable@kernel.org
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Amos Kong <akong@redhat.com>
-Subject: Possible NULL dereference caused by -stable commit ef81bb40bf15f350fe865f31fa42f1082772a576
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all:
+Hi,
 
-A possible NULL dereference were noticed by the stable commit 
-ef81bb40bf15f350fe865f31fa42f1082772a576 (which is a backport of 
-87c48fa3b4630905f98268dde838ee43626a060c). The case happens when bridge 
-froward a packet from guest to a physical nic, at this time no route is 
-attached to the skb which may lead a NULL dereference in 
-ipv6_select_ident(). -Next version have this check so it is fine. The 
-following patch may be used to avoid this but may also lead the ip 
-identification predicable, and this defect is also exist -next version 
-when no route because we still depends on a global variable to generate 
-the identification.  Any thought on this?
+Since kernel.org is down and the new kernel (3.x) does not work with the 
+older firmware, where can one obtain the firmware for this open source 
+device so I can run the 3.x kernel?
 
-Thanks.
+[  412.760165] usb 1-3.3: USB disconnect, device number 4
+[  422.489053] usb 2-2: new high speed USB device number 4 using ehci_hcd
+[  422.656097] usb 2-2: New USB device found, idVendor=0cf3, idProduct=1002
+[  422.656102] usb 2-2: New USB device strings: Mfr=16, Product=32, SerialNumber=48
+[  422.656105] usb 2-2: Product: USB2.0 WLAN
+[  422.656107] usb 2-2: Manufacturer: ATHER
+[  422.656109] usb 2-2: SerialNumber: *****
+[  422.759079] usb 2-2: reset high speed USB device number 4 using ehci_hcd
+[  423.025836] usb 2-2: driver   API: 1.9.4 2011-06-30 [1-1]
+[  423.025841] usb 2-2: firmware API: 1.9.2 2010-12-25
+[  423.025843] usb 2-2: failed to find compatible firmware descriptor.
+[  423.025846] usb 2-2: failed to parse firmware (-61).
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 4ea6e21..414e2f4 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -622,7 +622,9 @@ static u32 __ipv6_select_ident(const struct in6_addr 
-*addr)
-
-  void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-  {
--       fhdr->identification = 
-htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
-+       const struct in6_addr addr = IN6ADDR_ANY_INIT;
-+       fhdr->identification =
-+               htonl(__ipv6_select_ident(rt ? &rt->rt6i_dst.addr : &addr));
-  }
-
-  int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-
+Justin.
 
