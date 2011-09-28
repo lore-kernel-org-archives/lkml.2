@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab1I1W6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:58:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54875 "EHLO mx2.suse.de"
+	id S1756022Ab1I1W7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:59:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54841 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933255Ab1I1WtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:01 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:48 2011
-Message-Id: <20110928220147.920671965@clark.kroah.org>
+	id S933205Ab1I1Wss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:48 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:47 2011
+Message-Id: <20110928220147.520694867@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:58 -0700
+Date: Wed, 28 Sep 2011 15:02:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [214/244] cnic: Fix race conditions with firmware
+        Ben Hutchings <ben@decadent.org.uk>, Takashi Iwai <tiwai@suse.de>
+Subject: [210/244] ALSA: fm801: Gracefully handle failure of tuner auto-detect
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 101c40c8cb0d10c30f423805f9f5b7a75956832d upstream.
+commit c37279b92aba2893578f61076cd2eef5c5fa0e99 upstream.
 
-During iSCSI connection terminations, if the target is also terminating
-at about the same time, the firmware may not complete the driver's
-request to close or reset the connection.  This is fixed by handling
-other events (instead of the expected completion event) as an indication
-that the driver's request has been rejected.
+Commit 9676001559fce06e37c7dc230ab275f605556176
+("ALSA: fm801: add error handling if auto-detect fails") seems to
+break systems that were previously working without a tuner.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+As a bonus, this should fix init and cleanup for the case where the
+tuner is explicitly disabled.
+
+Reported-and-tested-by: Hor Jiun Shyong <jiunshyong@gmail.com>
+References: http://bugs.debian.org/641946
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/cnic.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ sound/pci/fm801.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/net/cnic.c
-+++ b/drivers/net/cnic.c
-@@ -3767,7 +3767,13 @@ static void cnic_cm_process_kcqe(struct
- 		break;
+--- a/sound/pci/fm801.c
++++ b/sound/pci/fm801.c
+@@ -68,6 +68,7 @@ MODULE_PARM_DESC(enable, "Enable FM801 s
+ module_param_array(tea575x_tuner, int, NULL, 0444);
+ MODULE_PARM_DESC(tea575x_tuner, "TEA575x tuner access method (0 = auto, 1 = SF256-PCS, 2=SF256-PCP, 3=SF64-PCR, 8=disable, +16=tuner-only).");
  
- 	case L4_KCQE_OPCODE_VALUE_CLOSE_RECEIVED:
--		cnic_cm_upcall(cp, csk, opcode);
-+		/* after we already sent CLOSE_REQ */
-+		if (test_bit(CNIC_F_BNX2X_CLASS, &dev->flags) &&
-+		    !test_bit(SK_F_OFFLD_COMPLETE, &csk->flags) &&
-+		    csk->state == L4_KCQE_OPCODE_VALUE_CLOSE_COMP)
-+			cp->close_conn(csk, L4_KCQE_OPCODE_VALUE_RESET_COMP);
-+		else
-+			cnic_cm_upcall(cp, csk, opcode);
- 		break;
- 	}
- 	csk_put(csk);
-@@ -3821,12 +3827,14 @@ static int cnic_ready_to_close(struct cn
- 	}
++#define TUNER_DISABLED		(1<<3)
+ #define TUNER_ONLY		(1<<4)
+ #define TUNER_TYPE_MASK		(~TUNER_ONLY & 0xFFFF)
  
- 	/* 1. If event opcode matches the expected event in csk->state
--	 * 2. If the expected event is CLOSE_COMP, we accept any event
-+	 * 2. If the expected event is CLOSE_COMP or RESET_COMP, we accept any
-+	 *    event
- 	 * 3. If the expected event is 0, meaning the connection was never
- 	 *    never established, we accept the opcode from cm_abort.
- 	 */
- 	if (opcode == csk->state || csk->state == 0 ||
--	    csk->state == L4_KCQE_OPCODE_VALUE_CLOSE_COMP) {
-+	    csk->state == L4_KCQE_OPCODE_VALUE_CLOSE_COMP ||
-+	    csk->state == L4_KCQE_OPCODE_VALUE_RESET_COMP) {
- 		if (!test_and_set_bit(SK_F_CLOSING, &csk->flags)) {
- 			if (csk->state == 0)
- 				csk->state = opcode;
+@@ -1150,7 +1151,8 @@ static int snd_fm801_free(struct fm801 *
+ 
+       __end_hw:
+ #ifdef CONFIG_SND_FM801_TEA575X_BOOL
+-	snd_tea575x_exit(&chip->tea);
++	if (!(chip->tea575x_tuner & TUNER_DISABLED))
++		snd_tea575x_exit(&chip->tea);
+ #endif
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, chip);
+@@ -1250,10 +1252,15 @@ static int __devinit snd_fm801_create(st
+ 		}
+ 		if (tea575x_tuner == 4) {
+ 			snd_printk(KERN_ERR "TEA575x radio not found\n");
+-			return -ENODEV;
++			chip->tea575x_tuner = TUNER_DISABLED;
+ 		}
+ 	}
+-	strlcpy(chip->tea.card, snd_fm801_tea575x_gpios[(tea575x_tuner & TUNER_TYPE_MASK) - 1].name, sizeof(chip->tea.card));
++	if (!(chip->tea575x_tuner & TUNER_DISABLED)) {
++		strlcpy(chip->tea.card,
++			snd_fm801_tea575x_gpios[(tea575x_tuner &
++						 TUNER_TYPE_MASK) - 1].name,
++			sizeof(chip->tea.card));
++	}
+ #endif
+ 
+ 	*rchip = chip;
 
 
