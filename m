@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1I1RtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:49:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12698 "EHLO mx1.redhat.com"
+	id S1754747Ab1I1RuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:50:15 -0400
+Received: from claw.goop.org ([74.207.240.146]:38593 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab1I1RtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:49:07 -0400
-Date: Wed, 28 Sep 2011 13:48:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20110928174859.GA21628@redhat.com>
-References: <20110928004722.GA27421@kernel.dk>
- <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
- <4E82751C.9050908@kernel.dk>
- <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
- <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
- <4E832A55.30709@kernel.dk>
- <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
- <4E832BD2.50409@kernel.dk>
- <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
- <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
+	id S1753129Ab1I1RuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 13:50:13 -0400
+Message-ID: <4E835E50.2020307@goop.org>
+Date: Wed, 28 Sep 2011 10:50:08 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        xen-devel@lists.xensource.com, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <3300108.XQUp9Wrktc@chlor> <4E81FD52.50106@goop.org> <CA+55aFx7dv4C4ZB_3CFjdJmX_wpoxecpqo1ARYr1=zTVP=CVVA@mail.gmail.com> <4E835F8C0200007800058461@nat28.tlf.novell.com> <CA+55aFyVoZpZZp7ejypTv21Cx_qJWkZQdpJOnxBa_jUxsCjhuw@mail.gmail.com> <4E834FBA.1080709@goop.org> <CA+55aFzGZp8YaQMMUMwV+pd_vnqR14CtiTmTtkXuotQBg0zspg@mail.gmail.com> <4E835851.7070502@zytor.com>
+In-Reply-To: <4E835851.7070502@zytor.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 10:43:36AM -0500, James Bottomley wrote:
-> On Wed, 2011-09-28 at 08:22 -0700, Linus Torvalds wrote:
-> > On Wed, Sep 28, 2011 at 7:14 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> > >
-> > >  /*
-> > > - * Note: If a driver supplied the queue lock, it should not zap that lock
-> > > - * unexpectedly as some queue cleanup components like elevator_exit() and
-> > > - * blk_throtl_exit() need queue lock.
-> > > + * Note: If a driver supplied the queue lock, it is disconnected
-> > > + * by this function. The actual state of the lock doesn't matter
-> > > + * here as the request_queue isn't accessible after this point
-> > > + * (QUEUE_FLAG_DEAD is set) and no other requests will be queued.
-> > >  */
-> > 
-> > So quite frankly, I just don't believe in that comment.
-> > 
-> > If no more requests will be queued or completed, then the queue lock
-> > is irrelevant and should not be changed.
-> 
-> That was my original argument for my patch.  I lost it because you can
-> still hold a queue reference in the sysfs code for block, which means
-> that the put in blk_cleanup_queue() won't be the final one and you'll
-> get a use after free of the lock when the sysfs directory is exited
-> because we take the lock again as we destroy the elevator.
-> 
-> > More importantly, if no more requests are queued or completed after
-> > blk_cleanup_queue(), then we wouldn't have had the bug that we clearly
-> > had with the elevator accesses, now would we? So the comment seems to
-> > be obviously bogus and wrong.
-> 
-> So this I agree with.  blk_cleanup_queue() prevents any new access to
-> the queue, but we still have the old reference holders to contend with.
-> They can submit requests, although we try to error them again with the
-> queue guards check.
-> 
-> > I pulled this, but I think the "just move the teardown" would have
-> > been the safer option. What  happens if a request completes on another
-> > CPU just as we are changing locks, and we lock one lock and then
-> > unlock another?!
-> 
-> The only code for which this could be true is code where we use the
-> block supplied lock, so effectively it never changes.
+On 09/28/2011 10:24 AM, H. Peter Anvin wrote:
+> On 09/28/2011 10:22 AM, Linus Torvalds wrote:
+>> On Wed, Sep 28, 2011 at 9:47 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>> Could do something like:
+>>>
+>>>        if (ticket->head >= 254)
+>>>                prev = xadd(&ticket->head_tail, 0xff02);
+>>>        else
+>>>                prev = xadd(&ticket->head_tail, 0x0002);
+>>>
+>>> to compensate for the overflow.
+>> Oh wow. You havge an even more twisted mind than I do.
+>>
+>> I guess that will work, exactly because we control "head" and thus can
+>> know about the overflow in the low byte. But boy is that ugly ;)
+>>
+>> But at least you wouldn't need to do the loop with cmpxchg. So it's
+>> twisted and ugly, but migth be practical.
+>>
+> I suspect it should be coded as -254 in order to use a short immediate
+> if that is even possible...
 
-> The drivers which supply their own lock are supposed to have already
-> ensured that the queue is unused.
+I'm about to test:
 
-Hi James,
+static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+{
+	if (TICKET_SLOWPATH_FLAG && unlikely(arch_static_branch(&paravirt_ticketlocks_enabled))) {
+		arch_spinlock_t prev;
+		__ticketpair_t inc = TICKET_LOCK_INC;
 
-For my education purposes, how will driver come to know that queue is
-unused? Does it happen by checking if any requsts are queued or not? If
-yes, we might run into issues with throttling logic.
+		if (lock->tickets.head >= (1 << TICKET_SHIFT) - TICKET_LOCK_INC)
+			inc += -1 << TICKET_SHIFT;
 
-For example, if some bio have been throttled and are queued in some data
-structures on queue.  In that case driver does not even know that some bios
-are queued and will be submitted later. Now if driver calls blk_cleanup_queue()
-it might happen that throttling related worker is already queue lock and
-trying to do some housekeeping or trying to dispatch bio etc. Now if queue
-lock is swapped, it will just cause all the kind of issues.
+		prev.head_tail = xadd(&lock->head_tail, inc);
 
-I am wondering if we should retain blk_throtl_exit() in blk_cleanup_queue()
-before lock swap and just move elevator cleanup in blk_release_queue().
+		if (prev.tickets.tail & TICKET_SLOWPATH_FLAG)
+			__ticket_unlock_slowpath(lock, prev);
+	} else
+		__ticket_unlock_release(lock);
+}
 
-A note to myself, I should probably enhance blk_throtl_exit() to look for any
-queued throttled bio and single their completion with error (-ENODEV) or
-something like that.
+Which, frankly, is not something I particularly want to put my name to.
 
-Thanks
-Vivek
+It makes gcc go into paroxysms of trickiness:
+
+ 4a8:   80 3f fe                cmpb   $0xfe,(%rdi)
+ 4ab:   19 f6                   sbb    %esi,%esi
+ 4ad:   66 81 e6 00 01          and    $0x100,%si
+ 4b2:   66 81 ee fe 00          sub    $0xfe,%si
+ 4b7:   f0 66 0f c1 37          lock xadd %si,(%rdi)
+
+...which is pretty neat, actually.
+
+    J
