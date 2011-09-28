@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab1I1XF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:05:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17559 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933010Ab1I1XFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 19:05:54 -0400
-Date: Wed, 28 Sep 2011 19:05:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH v4 2/2] xen: modify kernel mappings
- corresponding to granted pages
-Message-ID: <20110928230535.GA23001@phenom.oracle.com>
-References: <alpine.DEB.2.00.1109081944150.12963@kaball-desktop>
- <20110921145853.GA541@phenom.oracle.com>
- <alpine.DEB.2.00.1109231412220.8700@kaball-desktop>
- <20110923144538.GA10701@phenom.oracle.com>
- <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
- <20110928131229.GA10270@phenom.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928131229.GA10270@phenom.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
-X-CT-RefId: str=0001.0A090207.4E83A84A.007A,ss=1,re=0.000,fgs=0
+	id S933033Ab1I1XGh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:06:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54544 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932990Ab1I1Wqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:46:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:43 2011
+Message-Id: <20110928220143.457007376@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 28 Sep 2011 15:02:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [172/244] [SCSI] mpt2sas: Added DID_NO_CONNECT return when driver remove and avoid shutdown call
+In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 09:12:29AM -0400, Konrad Rzeszutek Wilk wrote:
-> > > Anyhow, If you want to modify your patchset to check PagePrivate bit
-> > > and set the SetPagePrivate/set_page_private - go ahead.
-> > 
-> > I'll do that.
-> 
-> Preempted you a bit :-)
-> http://lists.xensource.com/archives/html/xen-devel/2011-09/msg01364.html
-> 
-> > > > > > +                     gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
-> > > > > > +                             map->flags |
-> > > > > > +                             GNTMAP_host_map |
-> > > > > > +                             GNTMAP_contains_pte,
-> > > > > > +                             map->grants[i].ref,
-> > > > > > +                             map->grants[i].domid);
-> > > > > > +             }
-> > > > >
-> > > > > So, on startup.. (before this function is called) the
-> > > > > find_grant_ptes is called which pretty much does the exact thing for
-> > > > > each virtual address.  Except its flags are GNTMAP_application_map
-> > > > > instead of GNTMAP_host_map.
-> > > > >
-> > > > > It even uses the same type structure.. It fills out map_ops[i] one.
-> > > > >
-> > > > > Can we use that instead of adding a new structure?
-> > > >
-> > > > Do you mean moving this code inside find_grant_ptes?
-> > > > I don't think that can be done because find_grant_ptes is called on a
-> > > > range of virtual addresses while this is called on an array of struct
-> > > > pages. It is true that the current implementation of
-> > > 
-> > > But aren't that 'range of virtual address' of struct pages? You
-> > > are using 'alloc_xenballooned_pages' to get those pages and that is
-> > > what the 'range of virtual adresses' is walking through.
-> > 
-> > it is not the same range of virtual addresses
-> 
-> OK, but the pte_maddr is the same, isn't it?
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-No it is not. It is the machine address of the PTE entry that
-points to the 'struct page' (kernel linear address), while the
-find_grant_pte's gets the machine address of the PTE entry that
-points to the user pages. Completlely different machine addresses
-of the PTEs.
+------------------
 
-Can you add a comment to the patch saying something along what
-I just said? Just in case somebody is as thick as I am when looking
-at this code/patch.
+From: "Kashyap, Desai" <kashyap.desai@lsi.com>
 
-Otherwise the patch looks fine - just fix up the SetPagePrivate,
-the PAGE_GRANT bit, and add extra comments and I am ready to stick it
-on my queue.
+commit 7821578caa8cb831868989041112ab808029ca65 upstream.
 
-Thanks!
-> 
-> > 
-> > > > alloc_xenballooned_pages is going to return a consecutive set of pages
-> > > > but it might not always be the case.
-> > > 
-> > > I am sensing some grand plans in work here? I thought we are going to
-> > > try to simply our lives and see about making alloc_xenballooned_pages
-> > > returned sane pages that are !PageHighMem (or if they are PageHighMem they
-> > > are already pinned, and set in the &init_mm)?
-> > > 
-> > > I am just thinking in terms of lookup_address and arbitrary_virt_to_machine
-> > > calls being done _twice_. And it seems like we have the find_grant_ptes
-> > > which does the bulk of this already - so why not piggyback on it?
-> > 
-> > It has to be done twice: once for the user ptes and once for the kernel
-> > mappings of map->pages.
-> > 
-> > 
-> > > Besides that, the patch set looks fine. .. How do I reproduce the failures
-> > > you had encountered with the AIO?
-> > > 
-> > 
-> > Just setup and use upstream qemu and configure your VM to use a disk on
-> > a file (file:).
-> 
-> OK.
+Driver should not call shutdown call from _scsih_remove otherwise,
+The scsi midlayer can be deadlocked when devices are removed from the driver
+pci_driver->shutdown handler.
+
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3698,7 +3698,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
+ 		return 0;
+ 	}
+ 
+-	if (ioc->pci_error_recovery) {
++	if (ioc->pci_error_recovery || ioc->remove_host) {
+ 		scmd->result = DID_NO_CONNECT << 16;
+ 		scmd->scsi_done(scmd);
+ 		return 0;
+@@ -7211,7 +7211,6 @@ _scsih_remove(struct pci_dev *pdev)
+ 	}
+ 
+ 	sas_remove_host(shost);
+-	_scsih_shutdown(pdev);
+ 	list_del(&ioc->list);
+ 	scsi_remove_host(shost);
+ 	scsi_host_put(shost);
+
+
