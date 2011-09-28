@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1I1Whk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:37:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53446 "EHLO mx2.suse.de"
+	id S1755178Ab1I1Who (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:37:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53453 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab1I1Whi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:38 -0400
+	id S1755354Ab1I1Whm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:27 2011
-Message-Id: <20110928220127.457952576@clark.kroah.org>
+Message-Id: <20110928220127.553780293@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:45 -0700
+Date: Wed, 28 Sep 2011 14:59:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wang Zhi <zhi.wang@windriver.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [021/244] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
+        Andiry Xu <andiry.xu@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [022/244] xHCI: fix port U3 status check condition
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Zhi <zhi.wang@windriver.com>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
+commit 5ac04bf190e6f8b17238aef179ebd7f2bdfec919 upstream.
 
->From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
-PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
-Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
-bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
-the action of clearing PORT_RESUME. This will cause unexpected long
-resume signal on USB bus.
+Fix the port U3 status check when Clear PORT_SUSPEND Feature.
+The port status should be masked with PORT_PLS_MASK to check if it's in
+U3 state.
 
-Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+This should be backported to kernels as old as 2.6.37.
+
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-hub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -343,7 +343,7 @@ static int ehci_bus_resume (struct usb_h
- 	u32			temp;
- 	u32			power_okay;
- 	int			i;
--	u8			resume_needed = 0;
-+	unsigned long		resume_needed = 0;
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -664,7 +664,7 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 			xhci_dbg(xhci, "PORTSC %04x\n", temp);
+ 			if (temp & PORT_RESET)
+ 				goto error;
+-			if (temp & XDEV_U3) {
++			if ((temp & PORT_PLS_MASK) == XDEV_U3) {
+ 				if ((temp & PORT_PE) == 0)
+ 					goto error;
  
- 	if (time_before (jiffies, ehci->next_statechange))
- 		msleep(5);
-@@ -416,7 +416,7 @@ static int ehci_bus_resume (struct usb_h
- 		if (test_bit(i, &ehci->bus_suspended) &&
- 				(temp & PORT_SUSPEND)) {
- 			temp |= PORT_RESUME;
--			resume_needed = 1;
-+			set_bit(i, &resume_needed);
- 		}
- 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
- 	}
-@@ -431,8 +431,7 @@ static int ehci_bus_resume (struct usb_h
- 	i = HCS_N_PORTS (ehci->hcs_params);
- 	while (i--) {
- 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
--		if (test_bit(i, &ehci->bus_suspended) &&
--				(temp & PORT_SUSPEND)) {
-+		if (test_bit(i, &resume_needed)) {
- 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
- 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
- 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
 
 
