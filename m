@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab1I1HW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:22:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34480 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1I1HW2 convert rfc822-to-8bit (ORCPT
+	id S1753449Ab1I1HWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:22:33 -0400
+Received: from smtp-out-142.synserver.de ([212.40.185.142]:1223 "HELO
+	smtp-out-141.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753404Ab1I1HWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:22:28 -0400
+	Wed, 28 Sep 2011 03:22:31 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 14653
+Message-ID: <4E82CB21.5060401@metafoo.de>
+Date: Wed, 28 Sep 2011 09:22:09 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1317183650.2067.10.camel@shrek.rexursive.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com>
-Date: Wed, 28 Sep 2011 10:22:27 +0300
-X-Google-Sender-Auth: Ag4koTPz8DZdjoXWnxjx_ZmTAiI
-Message-ID: <CAOJsxLGam5htmwtTZOuPka02+CZ1Fkv1b+SuYMJ8x9VRntFzRQ@mail.gmail.com>
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Fix setting adau1373_dai->master for SND_SOC_DAIFMT_CBS_CFS
+References: <1317194096.2498.1.camel@phoenix>
+In-Reply-To: <1317194096.2498.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 7:20 AM, Bojan Smojver <bojan@rexursive.com> wrote:
-> +static int lzo_compress_threadfn(void *data)
-> +{
-> +       struct cmp_data *d = data;
-> +
-> +       while(1) {
-> +               wait_event(d->go, atomic_read(&d->ready) ||
-> +                                 kthread_should_stop());
-> +               if (kthread_should_stop())
-> +                       break;
+On 09/28/2011 09:14 AM, Axel Lin wrote:
+> In the case of SND_SOC_DAIFMT_CBS_CFS, adau1373_dai->master should be false.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-So... what happens to the hibernation process when 'kthread_should_stop()'
-returns true?
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-> +               atomic_set(&d->ready, 0);
-> +
-> +               d->ret = lzo1x_1_compress(d->unc, d->unc_len,
-> +                                         d->cmp + LZO_HEADER, &d->cmp_len,
-> +                                         d->wrk);
-> +               atomic_set(&d->stop, 1);
-> +               wake_up(&d->done);
-> +       }
-> +
-> +       return 0;
-> +}
->
->  /**
->  * save_image_lzo - Save the suspend image data compressed with LZO.
-> @@ -434,45 +494,74 @@ static int save_image_lzo(struct swap_map_handle *handle,
->        int ret = 0;
->        int nr_pages;
->        int err2;
-> +       int cpu;
->        struct bio *bio;
->        struct timeval start;
->        struct timeval stop;
-> -       size_t off, unc_len, cmp_len;
-> -       unsigned char *unc, *cmp, *wrk, *page;
-> +       size_t off, thr, cthr, nthr;
-> +       unsigned char *page = NULL;
-> +       struct cmp_data *data = NULL;
-> +
-> +       /*
-> +        * We'll limit the number of threads for compression to limit memory
-> +        * footprint.
-> +        */
-> +       nthr = num_online_cpus() - 1;
-> +       nthr = nthr > LZO_THREADS ? LZO_THREADS : (nthr < 1 ? 1 : nthr);
+Thanks
 
-That's probably one of the most unreadable uses of the ternary
-operator I've ever seen!
+> ---
+>  sound/soc/codecs/adau1373.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
+> index 2aa40c3..1ccf8dd 100644
+> --- a/sound/soc/codecs/adau1373.c
+> +++ b/sound/soc/codecs/adau1373.c
+> @@ -974,7 +974,7 @@ static int adau1373_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+>  		break;
+>  	case SND_SOC_DAIFMT_CBS_CFS:
+>  		ctrl = 0;
+> -		adau1373_dai->master = true;
+> +		adau1373_dai->master = false;
+>  		break;
+>  	default:
+>  		return -EINVAL;
 
-What's going on here anyway? Why "num_online_cpus() - 1"? What's wrong with
-
-  nr_threads = num_online_cpus();
-  if (nr_threads > LZO_THREADS)
-    nr_threads = LZO_THREADS;
-
-[ And yes, please use less cryptic variable names. ]
-
-Overall, I really like your patch!
