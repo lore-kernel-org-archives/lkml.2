@@ -1,196 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1I1VAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 17:00:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34629 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753969Ab1I1VA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 17:00:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-Date: Wed, 28 Sep 2011 23:02:39 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: lkml <linux-kernel@vger.kernel.org>, arve@android.com,
-        markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
-        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org> <1317119870.15383.29.camel@twins> <1317164216.3112.711.camel@work-vm>
-In-Reply-To: <1317164216.3112.711.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109282302.39360.rjw@sisk.pl>
+	id S1755160Ab1I1VGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 17:06:06 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3199 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab1I1VGE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 17:06:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6483"; a="123074292"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] msm: Consolidate and move DEBUG_LL to generic ARM Kconfig
+Date: Wed, 28 Sep 2011 14:05:58 -0700
+Message-Id: <1317243959-26383-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.7.rc0.70.g82660
+In-Reply-To: <1317243959-26383-1-git-send-email-sboyd@codeaurora.org>
+References: <1317243959-26383-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-Hi Peter,
+Now that DEBUG_LL is a choice, we can move MSM's homegrown choice
+menu to DEBUG_LL.
 
-On Wednesday, September 28, 2011, John Stultz wrote:
-> On Tue, 2011-09-27 at 12:37 +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-09-26 at 15:27 -0700, John Stultz wrote:
-> > > On Mon, 2011-09-26 at 22:16 +0200, Peter Zijlstra wrote:
-> > > > On Mon, 2011-09-26 at 12:13 -0700, John Stultz wrote:
-> > > > > 
-> > > > > For now, I'd just be interested in what folks think about the concept with
-> > > > > regards to the wakelock discussions. Where it might not be sufficient? Or
-> > > > > what other disadvantages might it have? Are there any varients to this
-> > > > > idea that would be better? 
-> > > > 
-> > > > I would like to know why people still think wakelocks are remotely sane?
-> > > > 
-> > > > From where I'm sitting they're utter crap.. _WHY_ do you need to suspend
-> > > > anything? What's wrong with regular idle?
-> > > 
-> > > Well. Regular idle still takes up more power with my desktop then I
-> > > could save with suspend.
-> > 
-> > Blame Intel ;-)
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/Kconfig.debug                          |   21 +++++++++++++++
+ arch/arm/mach-msm/Kconfig                       |   32 -----------------------
+ arch/arm/mach-msm/include/mach/debug-macro.S    |   17 +-----------
+ arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |   12 --------
+ arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |   12 --------
+ arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |   12 --------
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |   12 ++++++++
+ arch/arm/mach-msm/io.c                          |    9 ++++--
+ 8 files changed, 40 insertions(+), 87 deletions(-)
 
-That's not Intel, but all of the PC vendors who don't care about
-anything but Windows compatibility.
-
-> > Personally I loathe suspend because it kills all my network links.
-
-Well, I only use suspend when I would disconnect from the network anyway.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 91a82630..35eebad 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -120,6 +120,27 @@ choice
+ 		  Say Y here if you want the debug print routines to direct
+ 		  their output to the second serial port on these devices.
  
-> > > My personal use case: I do nightly backups with rdiff-backup. I'd like
-> > > to schedule those  backup using an alarm-timer, so I could suspend my
-> > > system when I'm not using it. So far, so good, that all works. 
-> > > 
-> > > However, if my system tries to suspend itself after 15 minutes of X
-> > > input idle, and my backup at 2am takes more then 15 minutes, then the
-> > > backup gets interrupted. Because rdiff-backup is more of a transactional
-> > > style backup, it then has to roll back any incomplete changes and try
-> > > again the next night, which will surely take more then 15 minutes, etc.
-> > 
-> > So your fail is to tie suspend to the input inactivity instead of the
-> > completion of your backup thingy.
-> 
-> Well, its both. If the backup runs very long, and I'm using the machine
-> in the morning, I don't want the end of my backup to suspend the system.
++	config DEBUG_MSM_UART1
++		bool "Kernel low-level debugging messages via MSM UART1"
++		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the first serial port on MSM devices.
++
++	config DEBUG_MSM_UART2
++		bool "Kernel low-level debugging messages via MSM UART2"
++		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the second serial port on MSM devices.
++
++	config DEBUG_MSM_UART3
++		bool "Kernel low-level debugging messages via MSM UART3"
++		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
++		help
++		  Say Y here if you want the debug print routines to direct
++		  their output to the third serial port on MSM devices.
++
+ endchoice
+ 
+ config EARLY_PRINTK
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index ebde97f..5b07b61 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -13,7 +13,6 @@ config ARCH_MSM7X00A
+ 	select CPU_V6
+ 	select GPIO_MSM_V1
+ 	select MSM_PROC_COMM
+-	select HAS_MSM_DEBUG_UART_PHYS
+ 
+ config ARCH_MSM7X30
+ 	bool "MSM7x30"
+@@ -25,7 +24,6 @@ config ARCH_MSM7X30
+ 	select MSM_GPIOMUX
+ 	select GPIO_MSM_V1
+ 	select MSM_PROC_COMM
+-	select HAS_MSM_DEBUG_UART_PHYS
+ 
+ config ARCH_QSD8X50
+ 	bool "QSD8X50"
+@@ -37,7 +35,6 @@ config ARCH_QSD8X50
+ 	select MSM_GPIOMUX
+ 	select GPIO_MSM_V1
+ 	select MSM_PROC_COMM
+-	select HAS_MSM_DEBUG_UART_PHYS
+ 
+ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+@@ -73,9 +70,6 @@ config  ARCH_MSM_ARM11
+ config  ARCH_MSM_SCORPION
+ 	bool
+ 
+-config HAS_MSM_DEBUG_UART_PHYS
+-	bool
+-
+ config  MSM_VIC
+ 	bool
+ 
+@@ -152,32 +146,6 @@ config MACH_MSM8960_RUMI3
+ 
+ endmenu
+ 
+-config MSM_DEBUG_UART
+-	int
+-	default 1 if MSM_DEBUG_UART1
+-	default 2 if MSM_DEBUG_UART2
+-	default 3 if MSM_DEBUG_UART3
+-
+-if HAS_MSM_DEBUG_UART_PHYS
+-choice
+-	prompt "Debug UART"
+-
+-	default MSM_DEBUG_UART_NONE
+-
+-	config MSM_DEBUG_UART_NONE
+-		bool "None"
+-
+-	config MSM_DEBUG_UART1
+-		bool "UART1"
+-
+-	config MSM_DEBUG_UART2
+-		bool "UART2"
+-
+-	config MSM_DEBUG_UART3
+-		bool "UART3"
+-endchoice
+-endif
+-
+ config MSM_SMD_PKG3
+ 	bool
+ 
+diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/mach-msm/include/mach/debug-macro.S
+index 646b99e..3120691 100644
+--- a/arch/arm/mach-msm/include/mach/debug-macro.S
++++ b/arch/arm/mach-msm/include/mach/debug-macro.S
+@@ -1,4 +1,4 @@
+-/* arch/arm/mach-msm7200/include/mach/debug-macro.S
++/*
+  *
+  * Copyright (C) 2007 Google, Inc.
+  * Author: Brian Swetland <swetland@google.com>
+@@ -14,12 +14,9 @@
+  *
+  */
+ 
+-
+-
+ #include <mach/hardware.h>
+ #include <mach/msm_iomap.h>
+ 
+-#if defined(CONFIG_HAS_MSM_DEBUG_UART_PHYS) && !defined(CONFIG_MSM_DEBUG_UART_NONE)
+ 	.macro	addruart, rp, rv
+ 	ldr	\rp, =MSM_DEBUG_UART_PHYS
+ 	ldr	\rv, =MSM_DEBUG_UART_BASE
+@@ -36,18 +33,6 @@
+ 	tst	\rd, #0x04
+ 	beq	1001b
+ 	.endm
+-#else
+-	.macro  addruart, rp, rv
+-	mov	\rv, #0xff000000
+-	orr	\rv, \rv, #0x00f00000
+-	.endm
+-
+-	.macro	senduart,rd,rx
+-	.endm
+-
+-	.macro	waituart,rd,rx
+-	.endm
+-#endif
+ 
+ 	.macro	busyuart,rd,rx
+ 	.endm
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
+index 94fe9fe..8af4612 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
+@@ -78,18 +78,6 @@
+ #define MSM_UART3_PHYS        0xA9C00000
+ #define MSM_UART3_SIZE        SZ_4K
+ 
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#define MSM_DEBUG_UART_BASE   0xE1000000
+-#if CONFIG_MSM_DEBUG_UART == 1
+-#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 2
+-#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 3
+-#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
+-#endif
+-#define MSM_DEBUG_UART_SIZE   SZ_4K
+-#endif
+-
+ #define MSM_SDC1_PHYS         0xA0400000
+ #define MSM_SDC1_SIZE         SZ_4K
+ 
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h b/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
+index 3769444..198202c 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-7x30.h
+@@ -89,18 +89,6 @@
+ #define MSM_UART3_PHYS        0xACC00000
+ #define MSM_UART3_SIZE        SZ_4K
+ 
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#define MSM_DEBUG_UART_BASE   0xE1000000
+-#if CONFIG_MSM_DEBUG_UART == 1
+-#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 2
+-#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 3
+-#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
+-#endif
+-#define MSM_DEBUG_UART_SIZE   SZ_4K
+-#endif
+-
+ #define MSM_MDC_BASE	      IOMEM(0xE0200000)
+ #define MSM_MDC_PHYS	      0xAA500000
+ #define MSM_MDC_SIZE	      SZ_1M
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
+index d67cd73..0faa894 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x50.h
+@@ -83,18 +83,6 @@
+ #define MSM_UART3_PHYS        0xA9C00000
+ #define MSM_UART3_SIZE        SZ_4K
+ 
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#define MSM_DEBUG_UART_BASE   0xE1000000
+-#if CONFIG_MSM_DEBUG_UART == 1
+-#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 2
+-#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
+-#elif CONFIG_MSM_DEBUG_UART == 3
+-#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
+-#endif
+-#define MSM_DEBUG_UART_SIZE   SZ_4K
+-#endif
+-
+ #define MSM_MDC_BASE	      IOMEM(0xE0200000)
+ #define MSM_MDC_PHYS	      0xAA500000
+ #define MSM_MDC_SIZE	      SZ_1M
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
+index 4ded152..90682f4 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
+@@ -55,6 +55,18 @@
+ 
+ #include "msm_iomap-8960.h"
+ 
++#define MSM_DEBUG_UART_SIZE	SZ_4K
++#if defined(CONFIG_DEBUG_MSM_UART1)
++#define MSM_DEBUG_UART_BASE	0xE1000000
++#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
++#elif defined(CONFIG_DEBUG_MSM_UART2)
++#define MSM_DEBUG_UART_BASE	0xE1000000
++#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
++#elif defined(CONFIG_DEBUG_MSM_UART3)
++#define MSM_DEBUG_UART_BASE	0xE1000000
++#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
++#endif
++
+ /* Virtual addresses shared across all MSM targets. */
+ #define MSM_CSR_BASE		IOMEM(0xE0001000)
+ #define MSM_QGIC_DIST_BASE	IOMEM(0xF0000000)
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 8759ecf..03036af 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -47,7 +47,8 @@ static struct map_desc msm_io_desc[] __initdata = {
+ 	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
+ 	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
+ 	MSM_DEVICE(CLK_CTL),
+-#ifdef CONFIG_MSM_DEBUG_UART
++#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
++	defined(CONFIG_DEBUG_MSM_UART3)
+ 	MSM_DEVICE(DEBUG_UART),
+ #endif
+ #ifdef CONFIG_ARCH_MSM7X30
+@@ -84,7 +85,8 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
+ 	MSM_DEVICE(SCPLL),
+ 	MSM_DEVICE(AD5),
+ 	MSM_DEVICE(MDC),
+-#ifdef CONFIG_MSM_DEBUG_UART
++#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
++	defined(CONFIG_DEBUG_MSM_UART3)
+ 	MSM_DEVICE(DEBUG_UART),
+ #endif
+ 	{
+@@ -146,7 +148,8 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
+ 	MSM_DEVICE(SAW),
+ 	MSM_DEVICE(GCC),
+ 	MSM_DEVICE(TCSR),
+-#ifdef CONFIG_MSM_DEBUG_UART
++#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
++	defined(CONFIG_DEBUG_MSM_UART3)
+ 	MSM_DEVICE(DEBUG_UART),
+ #endif
+ 	{
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-I think this is a variant of a more general issue (see below).
-
-> > > I could try to inhibit suspend by making requests to my desktop
-> > > environment, so the desktop-specific power management daemon won't
-> > > trigger suspend. But given recent behavior, I don't trust that not to
-> > > break when I upgrade my system, or if I get frustrated with one desktop
-> > > environment, that I won't have to use a different api for whatever other
-> > > environment I pick next.
-> > 
-> > Kick the friggin Desktop folks already for messing up. I mean, because
-> > userspace is incompetent this needs to go in the kernel?
-
-The problem is not outright incompetence, but the fact that this would require
-creating a layer of user space between the apps and the kernel that would
-have to be shared by all the existing variants of user space, or else
-applications working with one variant of the user space "middleware" won't be
-compatible with another one.
-
-> > Ere long we'll have a kernel based GUI if we go that route.
-
-I guess you'd use the same argument against cgroups, right?
-
-> Well, to be fair to the desktop guys, they have been working to try to
-> provide a DBUS api to handle this.
-> 
-> But even with a proper DBUS api, there's still the race when I walk away
-> from my computer 15 minutes before the backup starts. 
-> 
-> In that case, my backup application's alarm timer fires and schedules
-> the backup, but then before the backup application runs and sends its
-> DBUS message to block suspend, the suspend occurs. And yea, that's
-> probably not a problem for my use, but it limits any similar power
-> savings from an environment where reliability might actually matter. 
-> 
-> Read that last bit again, as it has seemingly been missed over and over
-> in these discussions. This ability to make sure wake up events are
-> consumed by userland before suspending again is key.
-
-This alone doesn't require any new kernel interfaces IMO, although it
-requires some additional conditions to be met, which is not the case in
-practice (see below).
-
-> > > Another use case I've heard about are systems that have firmware updates
-> > > that are remotely triggered. Should the system go into suspend while the
-> > > firmware update is going on, you end up with a brick.
-> [snip]
-> > > Having to have multiple distro/release specific quirks to get the
-> > > power-management-daemon to inhibit suspend is annoying enough, but then
-> > > you also have to deal with custom changes by administrator, or remote
-> > > power management systems like power nap, which might also echo "mem"
-> > > into /sys/power/state when you're not expecting it. A kernel method to
-> > > really block suspend would be nice. While this doesn't necessarily need
-> > > to be conflated with wakelock style suspend, there is some need to allow
-> > > userland to block suspend at the kernel level, and once you have that, I
-> > > can't imagine folks not trying to stretch that into something like
-> > > wakelocks. So you might as well at least try to design it reasonably
-> > > well to start.
-> > 
-> > How about you create a daemon tasked with managing /sys/power/state and
-> > change /sys/power/state such that it can be opened only once, then that
-> > daemon can keep the fd open and everything else trying to poke at it
-> > will get a fail.
-> 
-> That's actually pretty interesting. It doesn't handle the race issues
-> between wakeup event and event consumption by userland, but not a bad
-> tool to have in the toolbox as we look at other approaches.
-
-_If_ there is a power management daemon, it doesn't have to do things like
-this.  It may work just as described in Section 5 of this paper:
-
-http://lwn.net/images/pdf/suspend_blockers.pdf
-
-The problem is that no one has ever tried to implement the PM daemon.
-
-I think there are two questions to ask here:
-
-(1) If "opportunistic" suspend is not used (i.e. the only way to make the
-    system suspend is to write "mem" to /sys/power/state), can we handle
-    the race issues between wakeup events and event consumption by userland?
-
-(2) If the answer to (1) is "yes" and "opportunistic" suspend _is_ going
-    to be used, is the mechanism addressing (1) sufficient for it to work
-    correctly?
-
-While (2) is only relevant if one wants to use "opportunistic" suspend (like
-Android), (1) is relevant in general.
-
-Now, I believe that the answer to (1) is "yes" under the following conditions:
-* There is only one user space process attempting to use /sys/power/state
-  (ie. the power manager daemon).
-* This process cooperates with all user space processes consuming wakeup
-  events (as described in the article mentioned above).
-
-Unfortunately, as I said, I'm not aware of any power management daemon
-implementations like this used in real life.  [Well, I could create a
-proof-of-concept one, but quite evidently people want me to spend time on
-other things.]  This means that _in_ _practice_ the answer to (1) is "no",
-which I think John is trying to address (perhaps among other things).
-
-The practice seems to be that (a) there are multiple processes that can
-try to write to /sys/power/state (and we have hibernation that can use
-a different interface for that matter) and (b) those processes don't
-cooperate with each other in any way close to sanity.
-
-Moreover, user space consumers of wakeup events (or more precisely, consumers
-of input data associated with wakeup events) have no way to talk to
-the processes operating /sys/power/state, so they can't indicate whether
-or not it really is a good idea to suspend at the moment.
-
-Arguably, those issues can be addressed by modifying user space, but there
-are a few things to take into consideration here:
-* Is it realistic to expect that they're ever going to be addressed this way?
-* If so, is the cost of addressing them at the user space level lower or
-  higher than the cost of a solution involving a kernel interface?
-* If it is higher, then perhaps we can do that at the kernel level after all?
-
-Rafael
