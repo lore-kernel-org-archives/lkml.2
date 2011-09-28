@@ -1,125 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab1I1XWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:22:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53902 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab1I1WlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
-Message-Id: <20110928220134.254059804@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:49 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Prem Karat <prem.karat@linux.vnet.ibm.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [085/244] fs/9p: Fix invalid mount options/args
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1755802Ab1I1XXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:23:02 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39817 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab1I1XW5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 19:22:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110927115207.GA3701@polaris.bitmath.org>
+References: <1316311297-12765-1-git-send-email-martinez.javier@gmail.com>
+ <1316311297-12765-2-git-send-email-martinez.javier@gmail.com> <20110927115207.GA3701@polaris.bitmath.org>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Thu, 29 Sep 2011 01:22:41 +0200
+Message-ID: <CAAwP0s0Jrc4zRAw4RUBWvSpiKNT0TqxYizqQZVihkkEy5+gcMw@mail.gmail.com>
+Subject: Re: [PATCH V3 1/3] Input: cyttsp - Cypress TTSP capacitive
+ multi-touch screen support
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kevin McNeely <kev@cypress.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Tue, Sep 27, 2011 at 1:52 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Javier,
+>
+>> Cypress TrueTouch(tm) Standard Product controllers are found in
+>> a wide range of embedded devices. This driver add support for a
+>> variety of TTSP controllers.
+>
+> please find some comments below.
+>
 
-------------------
+Hello Henrik,
 
-From: Prem Karat <prem.karat@linux.vnet.ibm.com>
+Thanks a lot for the review
 
-commit a2dd43bb0d7b9ce28f8a39254c25840c0730498e upstream.
+>> +/* Slots management */
+>> +#define CY_MAX_FINGER               4
+>> +#define CY_UNUSED                   0
+>> +#define CY_USED                     1
+>
+> These two look like bool, please use as bool instead.
+>
+>> +#define CY_MAX_ID                   15
+>
+> Why not 16 here?
+>
 
-Without this fix, if any invalid mount options/args are passed while mouting
-the 9p fs, no error (-EINVAL) is returned and default arg value is assigned.
+Because as far as I know there are only 14 possible tracking ids
+(1-14), not 16. 15 and 0 are not valid track ids.
 
-This fix returns -EINVAL when an invalid arguement is found while parsing
-mount options.
+When a contact lifts off the hardware reports a magic number (15) for
+it. Also, the sequence always start with 1 which is the track id that
+gets the first contact reported by the touch.
 
-Signed-off-by: Prem Karat <prem.karat@linux.vnet.ibm.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>> +
+>> +/* TrueTouch Standard Product Gen3 interface definition */
+>> +struct cyttsp_xydata {
+>> +     u8 hst_mode;
+>> +     u8 tt_mode;
+>> +     u8 tt_stat;
+>> +     struct cyttsp_tch tch1;
+>> +     u8 touch12_id;
+>> +     struct cyttsp_tch tch2;
+>> +     u8 gest_cnt;
+>> +     u8 gest_id;
+>> +     struct cyttsp_tch tch3;
+>> +     u8 touch34_id;
+>> +     struct cyttsp_tch tch4;
+>> +     u8 tt_undef[3];
+>> +     u8 act_dist;
+>> +     u8 tt_reserved;
+>> +} __packed;
+>
+> Too bad the touches are not an array here...
+>
 
----
- fs/9p/v9fs.c |   43 ++++++++++++++++++++++++++++++++++---------
- 1 file changed, 34 insertions(+), 9 deletions(-)
+Yes, the problem is that the offset between touches is not uniform.
+For tch1 and tch2 is only 8 bits but the offset between tch2 and tch3
+is 16 (u8 * 2) for example.
 
---- a/fs/9p/v9fs.c
-+++ b/fs/9p/v9fs.c
-@@ -78,6 +78,25 @@ static const match_table_t tokens = {
- 	{Opt_err, NULL}
- };
- 
-+/* Interpret mount options for cache mode */
-+static int get_cache_mode(char *s)
-+{
-+	int version = -EINVAL;
-+
-+	if (!strcmp(s, "loose")) {
-+		version = CACHE_LOOSE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: loose\n");
-+	} else if (!strcmp(s, "fscache")) {
-+		version = CACHE_FSCACHE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: fscache\n");
-+	} else if (!strcmp(s, "none")) {
-+		version = CACHE_NONE;
-+		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: none\n");
-+	} else
-+		printk(KERN_INFO "9p: Unknown Cache mode %s.\n", s);
-+	return version;
-+}
-+
- /**
-  * v9fs_parse_options - parse mount options into session structure
-  * @v9ses: existing v9fs session information
-@@ -97,7 +116,7 @@ static int v9fs_parse_options(struct v9f
- 	/* setup defaults */
- 	v9ses->afid = ~0;
- 	v9ses->debug = 0;
--	v9ses->cache = 0;
-+	v9ses->cache = CACHE_NONE;
- #ifdef CONFIG_9P_FSCACHE
- 	v9ses->cachetag = NULL;
- #endif
-@@ -171,13 +190,13 @@ static int v9fs_parse_options(struct v9f
- 				  "problem allocating copy of cache arg\n");
- 				goto free_and_return;
- 			}
-+			ret = get_cache_mode(s);
-+			if (ret == -EINVAL) {
-+				kfree(s);
-+				goto free_and_return;
-+			}
- 
--			if (strcmp(s, "loose") == 0)
--				v9ses->cache = CACHE_LOOSE;
--			else if (strcmp(s, "fscache") == 0)
--				v9ses->cache = CACHE_FSCACHE;
--			else
--				v9ses->cache = CACHE_NONE;
-+			v9ses->cache = ret;
- 			kfree(s);
- 			break;
- 
-@@ -200,9 +219,15 @@ static int v9fs_parse_options(struct v9f
- 			} else {
- 				v9ses->flags |= V9FS_ACCESS_SINGLE;
- 				v9ses->uid = simple_strtoul(s, &e, 10);
--				if (*e != '\0')
--					v9ses->uid = ~0;
-+				if (*e != '\0') {
-+					ret = -EINVAL;
-+					printk(KERN_INFO "9p: Unknown access "
-+							"argument %s.\n", s);
-+					kfree(s);
-+					goto free_and_return;
-+				}
- 			}
-+
- 			kfree(s);
- 			break;
- 
+>> +     int slot_curr[CY_MAX_ID];
+>> +     int slot_prev[CY_MAX_ID];
+>
+> These two are not needed; the input core will take care of duplicates,
+> so slot_prev can be removed. Also, the set of current slots can be
+> tracked using a temporary bitmask, so slot_curr can be removed as well.
 
+Perfect, I'll remove both. I didn't know that the input core took care
+of duplicates, sorry for not getting this from the docs.
 
+>> +
+>> +static void cyttsp_get_tch(struct cyttsp_xydata *xy_data, int idx,
+>> +                        struct cyttsp_tch **tch)
+>> +{
+>> +     switch (idx) {
+>> +     case 0:
+>> +             *tch = &xy_data->tch1;
+>> +             break;
+>> +     case 1:
+>> +             *tch = &xy_data->tch2;
+>> +             break;
+>> +     case 2:
+>> +             *tch = &xy_data->tch3;
+>> +             break;
+>> +     case 3:
+>> +             *tch = &xy_data->tch4;
+>> +             break;
+>> +     }
+>> +}
+>
+> How about returning a const struct cyttsp_tch* here instead.
+>
+
+Ok, will return a struct pointer instead.
+
+>> +
+>> +     cyttsp_extract_track_ids(&xy_data, ids);
+>> +
+>> +     for (i = 0; i < num_cur_tch; i++) {
+>> +             ts->slot_curr[ids[i] - 1] = CY_USED;
+>
+> Why the -1 here? Since the values are provably between 0 and 15, there
+> is no need to change them further.
+
+As I told you before is a HW thing. I looked at the track ids reported
+by the touchscreen and their values are always between 1 and 14. So I
+did the -1 to avoid having and unused element in the array. (I don't
+have the HW datasheet so maybe I'm wrong with this)
+
+Kevin?
+
+>
+> Also, the above line could be replaced by "used |= 1 << ids[i]", for instance.
+>
+>> +
+>> +             cyttsp_get_tch(&xy_data, i, &tch);
+>> +
+>> +             x = be16_to_cpu(tch->x);
+>> +             y = be16_to_cpu(tch->y);
+>> +             z = tch->z;
+>> +
+>> +             cyttsp_report_slot(ts->input, ids[i] - 1, x, y, z);
+>
+> Ditto, -1.
+>
+>> +     }
+>> +
+>> +     for (i = 0; i < CY_MAX_ID; i++) {
+>> +             if (ts->slot_prev[i] == CY_USED &&
+>> +                 ts->slot_curr[i] == CY_UNUSED)
+>> +                     cyttsp_report_slot_empty(ts->input, i);
+>> +             ts->slot_prev[i] = ts->slot_curr[i];
+>> +             ts->slot_curr[i] = CY_UNUSED;
+>> +     }
+>
+> Input core handles duplicate calls, so the above could be simplified.
+>
+
+Perfect, will clean this code.
+
+>> +
+>> +     for (i = 0; i < CY_MAX_ID; i++) {
+>> +             ts->slot_prev[i] = CY_UNUSED;
+>> +             ts->slot_curr[i] = CY_UNUSED;
+>> +     }
+>
+> Could be removed.
+>
+
+Yes, I'll do that.
+
+>
+> Thanks,
+> Henrik
+>
+
+Thanks for your comments, I will work on these issues and resubmit a
+new version of the patch-set.
+
+Best regards,
+
+-- 
+Javier Martínez Canillas
+(+34) 682 39 81 69
+Barcelona, Spain
