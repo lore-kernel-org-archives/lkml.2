@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1I1XMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:12:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54330 "EHLO mx2.suse.de"
+	id S1756165Ab1I1XNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:13:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54314 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932666Ab1I1Woe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:34 -0400
+	id S932670Ab1I1WoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:24 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
-Message-Id: <20110928220139.880444560@clark.kroah.org>
+Message-Id: <20110928220139.562716383@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:42 -0700
+Date: Wed, 28 Sep 2011 15:01:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [138/244] ALSA: hda/realtek - Fix auto-mute with HP+LO configuration
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [135/244] drm/radeon/kms: Make GPU/CPU page size handling consistent in blit code (v2)
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +26,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8974bd51a77824d91010176f9a5da28513c2e1f5 upstream.
+commit 003cefe0c238e683a29d2207dba945b508cd45b7 upstream.
 
-When the system has only the headphone and the line-out jacks without
-speakers, the current auto-mute code doesn't work.  It's because the
-spec->automute_lines flag is wrongly referred in update_speakers().
-This flag must be meaningless when spec->automute_hp_lo isn't set, thus
-they should be always coupled.
+The BO blit code inconsistenly handled the page size.  This wasn't
+an issue on system with 4k pages since the GPU's page size is 4k as
+well.  Switch the driver blit callbacks to take num pages in GPU
+page units.
 
-The patch fixes the problem and add a comment to indicate the
-relationship briefly.
+Fixes lemote mipsel systems using AMD rs780/rs880 chipsets.
 
-BugLink: http://bugs.launchpad.net/bugs/851697
+v2: incorporate suggestions from Michel.
 
-Reported-by: David Henningsson <david.henningsson@canonical.com>
-Tested-By: Jayne Han <jayne.han@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c   |   10 ++++++----
+ drivers/gpu/drm/radeon/r100.c        |   12 ++++++------
+ drivers/gpu/drm/radeon/r200.c        |    4 ++--
+ drivers/gpu/drm/radeon/r600.c        |   10 ++++++----
+ drivers/gpu/drm/radeon/radeon.h      |    7 ++++---
+ drivers/gpu/drm/radeon/radeon_asic.h |    8 ++++----
+ drivers/gpu/drm/radeon/radeon_ttm.c  |    7 ++++++-
+ 7 files changed, 34 insertions(+), 24 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -397,7 +397,7 @@ struct alc_spec {
- 	unsigned int auto_mic:1;
- 	unsigned int automute:1;	/* HP automute enabled */
- 	unsigned int detect_line:1;	/* Line-out detection enabled */
--	unsigned int automute_lines:1;	/* automute line-out as well */
-+	unsigned int automute_lines:1;	/* automute line-out as well; NOP when automute_hp_lo isn't set */
- 	unsigned int automute_hp_lo:1;	/* both HP and LO available */
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3170,21 +3170,23 @@ int evergreen_suspend(struct radeon_devi
+ }
  
- 	/* other flags */
-@@ -1161,7 +1161,7 @@ static void update_speakers(struct hda_c
- 	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0] ||
- 	    spec->autocfg.line_out_pins[0] == spec->autocfg.speaker_pins[0])
- 		return;
--	if (!spec->automute_lines || !spec->automute)
-+	if (!spec->automute || (spec->automute_hp_lo && !spec->automute_lines))
- 		on = 0;
- 	else
- 		on = spec->jack_present;
-@@ -1494,7 +1494,7 @@ static int alc_automute_mode_get(struct
- 	unsigned int val;
- 	if (!spec->automute)
- 		val = 0;
--	else if (!spec->automute_lines)
-+	else if (!spec->automute_hp_lo || !spec->automute_lines)
- 		val = 1;
- 	else
- 		val = 2;
-@@ -1515,7 +1515,8 @@ static int alc_automute_mode_put(struct
- 		spec->automute = 0;
- 		break;
- 	case 1:
--		if (spec->automute && !spec->automute_lines)
-+		if (spec->automute &&
-+		    (!spec->automute_hp_lo || !spec->automute_lines))
- 			return 0;
- 		spec->automute = 1;
- 		spec->automute_lines = 0;
+ int evergreen_copy_blit(struct radeon_device *rdev,
+-			uint64_t src_offset, uint64_t dst_offset,
+-			unsigned num_pages, struct radeon_fence *fence)
++			uint64_t src_offset,
++			uint64_t dst_offset,
++			unsigned num_gpu_pages,
++			struct radeon_fence *fence)
+ {
+ 	int r;
+ 
+ 	mutex_lock(&rdev->r600_blit.mutex);
+ 	rdev->r600_blit.vb_ib = NULL;
+-	r = evergreen_blit_prepare_copy(rdev, num_pages * RADEON_GPU_PAGE_SIZE);
++	r = evergreen_blit_prepare_copy(rdev, num_gpu_pages * RADEON_GPU_PAGE_SIZE);
+ 	if (r) {
+ 		if (rdev->r600_blit.vb_ib)
+ 			radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
+ 		mutex_unlock(&rdev->r600_blit.mutex);
+ 		return r;
+ 	}
+-	evergreen_kms_blit_copy(rdev, src_offset, dst_offset, num_pages * RADEON_GPU_PAGE_SIZE);
++	evergreen_kms_blit_copy(rdev, src_offset, dst_offset, num_gpu_pages * RADEON_GPU_PAGE_SIZE);
+ 	evergreen_blit_done_copy(rdev, fence);
+ 	mutex_unlock(&rdev->r600_blit.mutex);
+ 	return 0;
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -721,11 +721,11 @@ void r100_fence_ring_emit(struct radeon_
+ int r100_copy_blit(struct radeon_device *rdev,
+ 		   uint64_t src_offset,
+ 		   uint64_t dst_offset,
+-		   unsigned num_pages,
++		   unsigned num_gpu_pages,
+ 		   struct radeon_fence *fence)
+ {
+ 	uint32_t cur_pages;
+-	uint32_t stride_bytes = PAGE_SIZE;
++	uint32_t stride_bytes = RADEON_GPU_PAGE_SIZE;
+ 	uint32_t pitch;
+ 	uint32_t stride_pixels;
+ 	unsigned ndw;
+@@ -737,7 +737,7 @@ int r100_copy_blit(struct radeon_device
+ 	/* radeon pitch is /64 */
+ 	pitch = stride_bytes / 64;
+ 	stride_pixels = stride_bytes / 4;
+-	num_loops = DIV_ROUND_UP(num_pages, 8191);
++	num_loops = DIV_ROUND_UP(num_gpu_pages, 8191);
+ 
+ 	/* Ask for enough room for blit + flush + fence */
+ 	ndw = 64 + (10 * num_loops);
+@@ -746,12 +746,12 @@ int r100_copy_blit(struct radeon_device
+ 		DRM_ERROR("radeon: moving bo (%d) asking for %u dw.\n", r, ndw);
+ 		return -EINVAL;
+ 	}
+-	while (num_pages > 0) {
+-		cur_pages = num_pages;
++	while (num_gpu_pages > 0) {
++		cur_pages = num_gpu_pages;
+ 		if (cur_pages > 8191) {
+ 			cur_pages = 8191;
+ 		}
+-		num_pages -= cur_pages;
++		num_gpu_pages -= cur_pages;
+ 
+ 		/* pages are in Y direction - height
+ 		   page width in X direction - width */
+--- a/drivers/gpu/drm/radeon/r200.c
++++ b/drivers/gpu/drm/radeon/r200.c
+@@ -84,7 +84,7 @@ static int r200_get_vtx_size_0(uint32_t
+ int r200_copy_dma(struct radeon_device *rdev,
+ 		  uint64_t src_offset,
+ 		  uint64_t dst_offset,
+-		  unsigned num_pages,
++		  unsigned num_gpu_pages,
+ 		  struct radeon_fence *fence)
+ {
+ 	uint32_t size;
+@@ -93,7 +93,7 @@ int r200_copy_dma(struct radeon_device *
+ 	int r = 0;
+ 
+ 	/* radeon pitch is /64 */
+-	size = num_pages << PAGE_SHIFT;
++	size = num_gpu_pages << RADEON_GPU_PAGE_SHIFT;
+ 	num_loops = DIV_ROUND_UP(size, 0x1FFFFF);
+ 	r = radeon_ring_lock(rdev, num_loops * 4 + 64);
+ 	if (r) {
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2355,21 +2355,23 @@ void r600_fence_ring_emit(struct radeon_
+ }
+ 
+ int r600_copy_blit(struct radeon_device *rdev,
+-		   uint64_t src_offset, uint64_t dst_offset,
+-		   unsigned num_pages, struct radeon_fence *fence)
++		   uint64_t src_offset,
++		   uint64_t dst_offset,
++		   unsigned num_gpu_pages,
++		   struct radeon_fence *fence)
+ {
+ 	int r;
+ 
+ 	mutex_lock(&rdev->r600_blit.mutex);
+ 	rdev->r600_blit.vb_ib = NULL;
+-	r = r600_blit_prepare_copy(rdev, num_pages * RADEON_GPU_PAGE_SIZE);
++	r = r600_blit_prepare_copy(rdev, num_gpu_pages * RADEON_GPU_PAGE_SIZE);
+ 	if (r) {
+ 		if (rdev->r600_blit.vb_ib)
+ 			radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
+ 		mutex_unlock(&rdev->r600_blit.mutex);
+ 		return r;
+ 	}
+-	r600_kms_blit_copy(rdev, src_offset, dst_offset, num_pages * RADEON_GPU_PAGE_SIZE);
++	r600_kms_blit_copy(rdev, src_offset, dst_offset, num_gpu_pages * RADEON_GPU_PAGE_SIZE);
+ 	r600_blit_done_copy(rdev, fence);
+ 	mutex_unlock(&rdev->r600_blit.mutex);
+ 	return 0;
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -322,6 +322,7 @@ union radeon_gart_table {
+ 
+ #define RADEON_GPU_PAGE_SIZE 4096
+ #define RADEON_GPU_PAGE_MASK (RADEON_GPU_PAGE_SIZE - 1)
++#define RADEON_GPU_PAGE_SHIFT 12
+ 
+ struct radeon_gart {
+ 	dma_addr_t			table_addr;
+@@ -914,17 +915,17 @@ struct radeon_asic {
+ 	int (*copy_blit)(struct radeon_device *rdev,
+ 			 uint64_t src_offset,
+ 			 uint64_t dst_offset,
+-			 unsigned num_pages,
++			 unsigned num_gpu_pages,
+ 			 struct radeon_fence *fence);
+ 	int (*copy_dma)(struct radeon_device *rdev,
+ 			uint64_t src_offset,
+ 			uint64_t dst_offset,
+-			unsigned num_pages,
++			unsigned num_gpu_pages,
+ 			struct radeon_fence *fence);
+ 	int (*copy)(struct radeon_device *rdev,
+ 		    uint64_t src_offset,
+ 		    uint64_t dst_offset,
+-		    unsigned num_pages,
++		    unsigned num_gpu_pages,
+ 		    struct radeon_fence *fence);
+ 	uint32_t (*get_engine_clock)(struct radeon_device *rdev);
+ 	void (*set_engine_clock)(struct radeon_device *rdev, uint32_t eng_clock);
+--- a/drivers/gpu/drm/radeon/radeon_asic.h
++++ b/drivers/gpu/drm/radeon/radeon_asic.h
+@@ -75,7 +75,7 @@ uint32_t r100_pll_rreg(struct radeon_dev
+ int r100_copy_blit(struct radeon_device *rdev,
+ 		   uint64_t src_offset,
+ 		   uint64_t dst_offset,
+-		   unsigned num_pages,
++		   unsigned num_gpu_pages,
+ 		   struct radeon_fence *fence);
+ int r100_set_surface_reg(struct radeon_device *rdev, int reg,
+ 			 uint32_t tiling_flags, uint32_t pitch,
+@@ -143,7 +143,7 @@ extern void r100_post_page_flip(struct r
+ extern int r200_copy_dma(struct radeon_device *rdev,
+ 			 uint64_t src_offset,
+ 			 uint64_t dst_offset,
+-			 unsigned num_pages,
++			 unsigned num_gpu_pages,
+ 			 struct radeon_fence *fence);
+ void r200_set_safe_registers(struct radeon_device *rdev);
+ 
+@@ -311,7 +311,7 @@ void r600_ring_ib_execute(struct radeon_
+ int r600_ring_test(struct radeon_device *rdev);
+ int r600_copy_blit(struct radeon_device *rdev,
+ 		   uint64_t src_offset, uint64_t dst_offset,
+-		   unsigned num_pages, struct radeon_fence *fence);
++		   unsigned num_gpu_pages, struct radeon_fence *fence);
+ void r600_hpd_init(struct radeon_device *rdev);
+ void r600_hpd_fini(struct radeon_device *rdev);
+ bool r600_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd);
+@@ -403,7 +403,7 @@ void evergreen_bandwidth_update(struct r
+ void evergreen_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib);
+ int evergreen_copy_blit(struct radeon_device *rdev,
+ 			uint64_t src_offset, uint64_t dst_offset,
+-			unsigned num_pages, struct radeon_fence *fence);
++			unsigned num_gpu_pages, struct radeon_fence *fence);
+ void evergreen_hpd_init(struct radeon_device *rdev);
+ void evergreen_hpd_fini(struct radeon_device *rdev);
+ bool evergreen_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd);
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -277,7 +277,12 @@ static int radeon_move_blit(struct ttm_b
+ 		DRM_ERROR("Trying to move memory with CP turned off.\n");
+ 		return -EINVAL;
+ 	}
+-	r = radeon_copy(rdev, old_start, new_start, new_mem->num_pages, fence);
++
++	BUILD_BUG_ON((PAGE_SIZE % RADEON_GPU_PAGE_SIZE) != 0);
++
++	r = radeon_copy(rdev, old_start, new_start,
++			new_mem->num_pages * (PAGE_SIZE / RADEON_GPU_PAGE_SIZE), /* GPU pages */
++			fence);
+ 	/* FIXME: handle copy error */
+ 	r = ttm_bo_move_accel_cleanup(bo, (void *)fence, NULL,
+ 				      evict, no_wait_reserve, no_wait_gpu, new_mem);
 
 
