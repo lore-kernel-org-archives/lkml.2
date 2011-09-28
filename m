@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1I1P0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:26:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41821 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab1I1P0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:26:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=TJmavsz3lXX+iaz+dwVZ1HC7BT6YhAHL4wEeRrt1FtPX4VigDkVW3tDa21DAWF0GO
-	kD7BlqJgSsfmLGLriskGA==
+	id S1754836Ab1I1P1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:27:38 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55239 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752938Ab1I1P1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:27:37 -0400
+Message-ID: <4E833CAF.7010208@parallels.com>
+Date: Wed, 28 Sep 2011 12:26:39 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <1317194932.6506.94.camel@marge.simson.net>
-References: <1310455620.4844.29.camel@marge.simson.net> <1317194932.6506.94.camel@marge.simson.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 28 Sep 2011 09:26:16 -0600
-Message-ID: <CAErSpo6t7D_TFjf_jQx9GG-kh-XeLD6dS1GgdTywgpM0SnXndg@mail.gmail.com>
-Subject: Re: x86: interrupt routing question
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <jbottomley@parallels.com>, Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [RFD 4/9] Make total_forks per-cgroup
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com> <1316816432-9237-5-git-send-email-glommer@parallels.com> <1317160837.21836.21.camel@twins> <20110928101357.5a90c2ab@de.ibm.com>
+In-Reply-To: <20110928101357.5a90c2ab@de.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.46.219.221]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 1:28 AM, Mike Galbraith <efault@gmx.de> wrote:
+On 09/28/2011 05:13 AM, Martin Schwidefsky wrote:
+> On Wed, 28 Sep 2011 00:00:37 +0200
+> Peter Zijlstra<a.p.zijlstra@chello.nl>  wrote:
 >
-> For the next sod who gets curious about irq routing behavior difference,
-> and tries to ask google.
+>> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
+>>> @@ -1039,6 +1035,8 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
+>>>          INIT_LIST_HEAD(&tsk->cpu_timers[2]);
+>>>   }
+>>>
+>>> +struct task_group *task_group(struct task_struct *p);
+>>
+>> That doesn't appear to be actually used in this file..
+>>
+>> Also, since there's already a for_each_possible_cpu() loop in that
+>> proc/stat function, would it yield some code improvement to make
+>> total_forks a cpu_usage_stat?
+>>
+>> I guess the whole cputime64_t crap gets in the way of that being
+>> natural...
+>>
+>> We could of course kill off the cputime64_t thing, its pretty pointless
+>> and its a u64 all over the board. I think Martin or Heiko created this
+>> stuff (although I might be wrong, my git tree doesn't go back that far).
+>
+> The reason to introduce cputime_t has been that different architecture
+> needed differently sized integers for their respective representation
+> of cputime. On x86-32 the number of ticks is recorded in a u32, on s390
+> we needed a u64 for the cpu timer values. cputime64_t is needed for
+> cpustat and other sums of cputime that would overflow a cputime_t
+> (in particular on x86-32 with the u32 cputime_t and the u64 cputime64_t).
+>
+> Now we would convert everything to u64 but that would cause x86-32 to
+> use 64-bit arithmetic for the tick counter. If that is acceptable I
+> can't say.
+>
+If we get rid of cputime64_t, it doesn't mean we need to get rid of 
+cputime_t. Or am I missing the point here?
 
-Thanks for following up on this!
+We would still have to call an analogous of cputime_to_cputime64 before 
+using it, but I get that where it matters, gcc can even make it void.
+And for all the rest, we do u64 math and typing and just get happy.
 
-So, having read the fine manual, do you think this is a Linux bug, or
-something that could be improved in Linux, either by changing the
-behavior or making the dmesg more informative?  It certainly cost you
-a lot of time, and it'd be nice if we could save the next person :)
-
-> On Tue, 2011-07-12 at 09:27 +0200, Mike Galbraith wrote:
-> > Greetings,
-> >
-> > I have an x3550 M3 box which shows different behavior than my Q6600
-> > desktop box.  The below is the rt kernel, but it doesn't matter which
-> > kernel I boot, all interrupts are on CPU0 unless I move them.  On Q6600
-> > box, IRQs magically appear on every cpu in the affinity mask.  Change
-> > the eth0 mask while flood pinging, numbers start/stop changing on the
-> > fly.
-> >
-> > On x3550 M3, setting eg IRQ 63's mask to '0xe' will move irq to CPU2,
-> > but nothing that I have found will make the thing behave the same as
-> > trusty old Q6600 box, which seems strange.  Is this some kind of BIOS
-> > thingie, or is every kernel busted on this hardware?  Busted kernel
-> > seems highly doubtful.
->
-> The difference is that Q6600 desktop box uses flat routing, and x3550 M3
-> uses physical flat.  What the heck does that mean you (didn't) ask?
-> Dunno, that's a "RTFM for all the gory technical details" thing, but if
-> you rummage around in x86 source, you'll end up here..
->
-> arch/kernel/x86/apic/io_apic.c::setup_ioapic_irq()
->
->        if (assign_irq_vector(irq, cfg, apic->target_cpus()))
->                return;
->
->        dest = apic->cpu_mask_to_apicid_and(cfg->domain, apic->target_cpus());
->
->        apic_printk(APIC_VERBOSE,KERN_DEBUG
->                    "IOAPIC[%d]: Set routing entry (%d-%d -> 0x%x -> "
->                    "IRQ %d Mode:%i Active:%i Dest:%d)\n",
->                    apic_id, mpc_ioapic_id(apic_id), pin, cfg->vector,
->                    irq, trigger, polarity, dest);
->
-> ..and see that in physical flat mode, assign_irq_vector() scribbles only
-> one bit to cfg->domain.
->
-> arch/kernel/x86/apic/io_apic.c:__assign_irq_vector()
->
->            for_each_cpu_and(cpu, mask, cpu_online_mask) {
->                int new_cpu;
->                int vector, offset;
->
->                apic->vector_allocation_domain(cpu, tmp_mask);
->                ...
->                cpumask_copy(cfg->domain, tmp_mask);
->                err = 0;
->                break;
->        }
->
-> apic.vector_allocation_domain for physical flat is..
->
-> arch/x86/kernel/apic/apic_flat_64.c::
->
-> static void physflat_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> {
->        cpumask_clear(retmask);
->        cpumask_set_cpu(cpu, retmask);
-> }
->
-> ..whereas for flat it's..
->
-> static void flat_vector_allocation_domain(int cpu, struct cpumask *retmask)
-> {
->        ...
->        cpumask_clear(retmask);
->        cpumask_bits(retmask)[0] = APIC_ALL_CPUS;
-> }
->
-> So, while __assign_irq_vector() is called with a mask of all CPUs for
-> both boxen, apic->vector_allocation_domain() ensures the mask finally
-> written to cfg->domain has only one CPU bit set in physical flat mode,
-> and all CPU bits set in flat mode.
->
->        -Mike
->
-> P.S.  if you try that RTFM thing, strap a pillow to your forehead first
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
