@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1I1SdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:33:24 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55512 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab1I1SdW convert rfc822-to-8bit (ORCPT
+	id S1754973Ab1I1Se1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:34:27 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:21187
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753420Ab1I1Se0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:33:22 -0400
+	Wed, 28 Sep 2011 14:34:26 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dK936eK1432N98dKzz1202hzzz2fh668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E83687D.1070507@am.sony.com>
+Date: Wed, 28 Sep 2011 11:33:33 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <201109281516.42513.arnd@arndb.de>
-References: <1317171902-14736-1-git-send-email-pdeschrijver@nvidia.com>
-	<1317171902-14736-4-git-send-email-pdeschrijver@nvidia.com>
-	<201109281516.42513.arnd@arndb.de>
-Date: Wed, 28 Sep 2011 11:33:21 -0700
-Message-ID: <CAOesGMgv5wqZPMZPS4UKO4owgxBRLP9T6NPSFAVVcLd3vPYkiQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] arm/tegra: device tree support for ventana board
-From: Olof Johansson <olof@lixom.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PREEMPT_RT_FULL: arm coredump fails for cpu >= 4
+References: <4E828E35.6070801@am.sony.com> <1317214993.24040.16.camel@twins>
+In-Reply-To: <1317214993.24040.16.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 6:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 28 September 2011, Peter De Schrijver wrote:
->> --- a/arch/arm/mach-tegra/board-dt.c
->> +++ b/arch/arm/mach-tegra/board-dt.c
->> @@ -47,7 +47,7 @@
+On 09/28/11 06:03, Peter Zijlstra wrote:
+> On Tue, 2011-09-27 at 20:02 -0700, Frank Rowand wrote:
 >>
->>  void harmony_pinmux_init(void);
->>  void seaboard_pinmux_init(void);
->> -
->> +void ventana_pinmux_init(void);
+>> ARM can not use SPLIT_PTLOCK_CPUS if PREEMPT_RT_FULL because
+>> vectors_user_mapping() creates a VM_ALWAYSDUMP mapping of the vector page,
+>> but no ptl->lock has been allocated for the page.  An attempt to coredump
+>> that page will result in a kernel NULL pointer dereference when
+>> follow_page() attempts to lock the page.
+> 
+> 
 >>
->>  struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
->>         OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
->> @@ -95,6 +95,8 @@ static void __init tegra_dt_init(void)
->>                 harmony_pinmux_init();
->>         else if (of_machine_is_compatible("nvidia,seaboard"))
->>                 seaboard_pinmux_init();
->> +       else if (of_machine_is_compatible("nvidia,ventana"))
->> +               ventana_pinmux_init();
->
-> Are you (Peter, Colin, Olof) confident that this is not getting out
-> of hand before it's getting better?
->
-> If we are keeping the per-board pinmux configuration in the kernel
-> for longer, I think it would be better to do this table-driven than
-> having a list of top-level of_machine_is_compatible() statements
-> and do something like:
->
-> static struct {
->        const char *machine;
->        struct tegra_pingroup_config *config[];
-> } pinmux_configs[] __initdata = {
->        { "nvidia,ventana", &ventana_pinmux },
->        { "nvidia,seaboard, &seaboard_pinmux },
-> };
+>> This patch is needed only if mm-shrink-the-page-frame-to-rt-size.patch is
+>> applied. 
+> 
+> Yeah, vile hackery that is.. why isn't pgtable_page_ctor() called on
+> those pages?
 
-That is definitely a nicer solution. I didn't see a strong need to
-switch to that model now since it should hopefully be a temporary
-thing, but given Stephen's mention of Cardhu, I think it does make
-sense.
+Yep, that is the question.  I started fixing that yesterday, but realized
+I was going about it the wrong way, so I sent a first version of the
+patch that simply avoids the problem.
 
-Peter, care to respin this patch with the above solution instead?
-Also, please print a warning if no match is found.
+I'll be looking at whether I can fix it cleanly.
+
+> 
+> Not that I care too much about split_pte_lock on ARM, they're mostly all
+> tiny machines anyway so the gain is marginal, but it would be good to
+> find out why the pgtable constructor isn't called properly.
+> 
 
 
-Thanks,
-
--Olof
