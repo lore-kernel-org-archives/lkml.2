@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab1I1WoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:44:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54290 "EHLO mx2.suse.de"
+	id S932586Ab1I1Wns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:43:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54245 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932524Ab1I1WoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:36 2011
-Message-Id: <20110928220135.986707671@clark.kroah.org>
+	id S932548Ab1I1Wnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:38 2011
+Message-Id: <20110928220138.177777619@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:05 -0700
+Date: Wed, 28 Sep 2011 15:01:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [101/244] PCI: Remove MRRS modification from MPS setting code
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [122/244] ALSA: HDA: Cirrus - fix "Surround Speaker" volume control name
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,117 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <mason@myri.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit ed2888e906b56769b4ffabb9c577190438aa68b8 upstream.
+commit 2e1210bc3d065a6e26ff5fef228a9a7e08921d2c upstream.
 
-Modifying the Maximum Read Request Size to 0 (value of 128Bytes) has
-massive negative ramifications on some devices.  Without knowing which
-devices have this issue, do not modify from the default value when
-walking the PCI-E bus in pcie_bus_safe mode.  Also, make pcie_bus_safe
-the default procedure.
+This patch fixes "Surround Speaker Playback Volume" being cut off.
+(Commit b4dabfc452a10 was probably meant to fix this, but it fixed
+only the "Switch" name, not the "Volume" name.)
 
-Tested-by: Sven Schnelle <svens@stackframe.org>
-Tested-by: Simon Kirby <sim@hostway.ca>
-Tested-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-and-tested-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42162
-Signed-off-by: Jon Mason <mason@myri.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c   |    2 +-
- drivers/pci/probe.c |   45 ++++++++++++++++++++++++---------------------
- 2 files changed, 25 insertions(+), 22 deletions(-)
+ sound/pci/hda/patch_cirrus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -77,7 +77,7 @@ unsigned long pci_cardbus_mem_size = DEF
- unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
- unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
- 
--enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
-+enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_SAFE;
- 
- /*
-  * The default CLS is used if arch didn't set CLS explicitly and not
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1397,34 +1397,37 @@ static void pcie_write_mps(struct pci_de
- 
- static void pcie_write_mrrs(struct pci_dev *dev, int mps)
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -508,7 +508,7 @@ static int add_volume(struct hda_codec *
+ 		      int index, unsigned int pval, int dir,
+ 		      struct snd_kcontrol **kctlp)
  {
--	int rc, mrrs;
--
--	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
--		int dev_mpss = 128 << dev->pcie_mpss;
--
--		/* For Max performance, the MRRS must be set to the largest
--		 * supported value.  However, it cannot be configured larger
--		 * than the MPS the device or the bus can support.  This assumes
--		 * that the largest MRRS available on the device cannot be
--		 * smaller than the device MPSS.
--		 */
--		mrrs = mps < dev_mpss ? mps : dev_mpss;
--	} else
--		/* In the "safe" case, configure the MRRS for fairness on the
--		 * bus by making all devices have the same size
--		 */
--		mrrs = mps;
-+	int rc, mrrs, dev_mpss;
- 
-+	/* In the "safe" case, do not configure the MRRS.  There appear to be
-+	 * issues with setting MRRS to 0 on a number of devices.
-+	 */
-+
-+	if (pcie_bus_config != PCIE_BUS_PERFORMANCE)
-+		return;
-+
-+	dev_mpss = 128 << dev->pcie_mpss;
-+
-+	/* For Max performance, the MRRS must be set to the largest supported
-+	 * value.  However, it cannot be configured larger than the MPS the
-+	 * device or the bus can support.  This assumes that the largest MRRS
-+	 * available on the device cannot be smaller than the device MPSS.
-+	 */
-+	mrrs = min(mps, dev_mpss);
- 
- 	/* MRRS is a R/W register.  Invalid values can be written, but a
--	 * subsiquent read will verify if the value is acceptable or not.
-+	 * subsequent read will verify if the value is acceptable or not.
- 	 * If the MRRS value provided is not acceptable (e.g., too large),
- 	 * shrink the value until it is acceptable to the HW.
-  	 */
- 	while (mrrs != pcie_get_readrq(dev) && mrrs >= 128) {
-+		dev_warn(&dev->dev, "Attempting to modify the PCI-E MRRS value"
-+			 " to %d.  If any issues are encountered, please try "
-+			 "running with pci=pcie_bus_safe\n", mrrs);
- 		rc = pcie_set_readrq(dev, mrrs);
- 		if (rc)
--			dev_err(&dev->dev, "Failed attempting to set the MRRS\n");
-+			dev_err(&dev->dev,
-+				"Failed attempting to set the MRRS\n");
- 
- 		mrrs /= 2;
- 	}
-@@ -1437,13 +1440,13 @@ static int pcie_bus_configure_set(struct
- 	if (!pci_is_pcie(dev))
- 		return 0;
- 
--	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
- 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
- 
- 	pcie_write_mps(dev, mps);
- 	pcie_write_mrrs(dev, mps);
- 
--	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
- 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
- 
- 	return 0;
+-	char tmp[32];
++	char tmp[44];
+ 	struct snd_kcontrol_new knew =
+ 		HDA_CODEC_VOLUME_IDX(tmp, index, 0, 0, HDA_OUTPUT);
+ 	knew.private_value = pval;
 
 
