@@ -1,158 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab1I1IvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:51:08 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61637 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab1I1IvF convert rfc822-to-8bit (ORCPT
+	id S1753696Ab1I1I7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:59:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:9431 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab1I1I7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:51:05 -0400
+	Wed, 28 Sep 2011 04:59:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=OF/RemscRwEhpgpZiuox+ULk9c0+3SkSQmzMai/ITl5TFOIQLTzcRbYoOxEn6T3q0
+	2BO/LOKFoy8DF8a/I8eTA==
+Date: Wed, 28 Sep 2011 10:59:06 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, acme@redhat.com, dsahern@gmail.com, mingo@elte.hu
+Subject: [PATCH] perf: fix perf.data endianness detection (v2b)
+Message-ID: <20110928085906.GA6009@quad>
 MIME-Version: 1.0
-In-Reply-To: <4E82D0A1.8050203@st.com>
-References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com>
- <1317189007-23033-2-git-send-email-alim.akhtar@samsung.com> <4E82D0A1.8050203@st.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Wed, 28 Sep 2011 14:20:24 +0530
-Message-ID: <CAGOxZ53qZy+VUM65oK68W088QR=RgQ=cNxOCbO7_WESJesJaVQ@mail.gmail.com>
-Subject: Re: [PATCH V2 1/1] dmaengine/amba-pl08x: Add support for s3c64xx DMAC
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
 
-Thanks for reviewing the patch.
+The current version of perf detects whether or not
+the perf.data file is written in a different endianness
+using the attr_size field in the header of the file. This
+field represents sizeof(struct perf_event) as known to perf
+record. If the size does not match, then perf tries the
+byte-swapped version. If they match, then the tool assumes
+a different endianness.
 
-On Wed, Sep 28, 2011 at 1:15 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
-> On 9/28/2011 11:20 AM, Alim Akhtar wrote:
->> Signed-off-by: Alim Akhtar <alim.akhtar@samsung.com>
->> ---
->>  drivers/dma/amba-pl08x.c |  135 ++++++++++++++++++++++++++++++++++++++--------
->>  1 files changed, 112 insertions(+), 23 deletions(-)
->>
->
-> It would be good if you can add pick some part from cover-letter and put it in
-> commit log too.
->
-Ok, I will write more comments in the commit log.
+The issue with the approach is that it assumes the size of
+perf_event_attr always has to match between the file and the
+tool. However, the kernel API is designed to make it possible
+to extend perf_event_attr for new features. Consequently, it
+is not possible to use attr_size to detect endianness.
 
->> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
->> index cd8df7f..501540f 100644
->> --- a/drivers/dma/amba-pl08x.c
->> +++ b/drivers/dma/amba-pl08x.c
->> @@ -110,6 +129,11 @@ struct pl08x_lli {
->>       u32 dst;
->>       u32 lli;
->>       u32 cctl;
->> +     /*
->> +      * Samsung pl080 DMAC has one exrta control register
->> +      * which is used to hold the transfer_size
->> +      */
->> +     u32 cctl1;
->
-> Will you write transfer_size in cctl also? What is the purpose of cctl1?
->
-The main difference between Primecell PL080 and samsung variant is in
-LLI control register bit [0:11] is reserved in case of samsung pl080
-and one extra register is add to hold the transfer size at offset
-0x10. The purpose of cctl1 is store the transfer_size.
+This patch takes another approach by using the magic number
+written at the beginning of the perf.data file to detect
+endianness mismatch. The magic number is an eight-byte
+signature. The patch introduces a new value for this
+signature. The key difference is that the signature
+is written differently in the file depending on the
+endianness. Thus, by comparing the signature from the file
+with the tool's own signature it is possible to detect if
+the endianness matches. The new signature is "PERFILE2".
 
->> @@ -215,11 +255,23 @@ static void pl08x_start_txd(struct pl08x_dma_chan *plchan,
->>               cpu_relax();
->>
->>       /* Do not access config register until channel shows as inactive */
->> -     val = readl(phychan->base + PL080_CH_CONFIG);
->> -     while ((val & PL080_CONFIG_ACTIVE) || (val & PL080_CONFIG_ENABLE))
->> +     if (pl08x->vd->is_pl080_s3c) {
->> +             val = readl(phychan->base + PL080S_CH_CONFIG);
->> +             while ((val & PL080_CONFIG_ACTIVE) ||
->> +                     (val & PL080_CONFIG_ENABLE))
->> +                     val = readl(phychan->base + PL080S_CH_CONFIG);
->> +
->> +             writel(val | PL080_CONFIG_ENABLE,
->> +                     phychan->base + PL080S_CH_CONFIG);
->> +     } else {
->>               val = readl(phychan->base + PL080_CH_CONFIG);
->> +                     while ((val & PL080_CONFIG_ACTIVE) ||
->> +                             (val & PL080_CONFIG_ENABLE))
->> +                             val = readl(phychan->base + PL080_CH_CONFIG);
->>
->> -     writel(val | PL080_CONFIG_ENABLE, phychan->base + PL080_CH_CONFIG);
->> +             writel(val | PL080_CONFIG_ENABLE,
->> +                     phychan->base + PL080_CH_CONFIG);
->> +     }
->
-> You have similar stuff in most the the changes in this patch, because offset of
-> config register changes for s3c, you placed in if,else block.
->
-> If you check these changes again, there is a lot of code duplication in this if,else
-> blocks. The only different thing in if,else is the offset of CH_CONFIG register.
->
-> It would be much better if you can do following:
->
-> u32 ch_cfg_off;
->
->        if (pl08x->vd->is_pl080_s3c)
->                ch_cfg_off = PL080S_CH_CONFIG;
->        else
->                ch_cfg_off = PL080_CH_CONFIG;
->
-> Now, this offset can be used in existing code, without much code duplication.
->
-I will use suggestion and remove the code duplications.
+Backward compatiblity with existing perf.data file is
+ensured.
 
->> @@ -569,6 +641,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
->>       u32 cctl, early_bytes = 0;
->>       size_t max_bytes_per_lli, total_bytes = 0;
->>       struct pl08x_lli *llis_va;
->> +     size_t lli_len = 0, target_len, tsize, odd_bytes;
->>
->>       txd->llis_va = dma_pool_alloc(pl08x->pool, GFP_NOWAIT, &txd->llis_bus);
->>       if (!txd->llis_va) {
->> @@ -700,7 +773,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
->>                * width left
->>                */
->>               while (bd.remainder > (mbus->buswidth - 1)) {
->> -                     size_t lli_len, tsize, width;
->> +                     size_t width;
->>
->
-> why do we need above two changes. odd_bytes and target_len are still unused.
->
-sorry, I will remove the used variables.
->>                       /*
->>                        * If enough left try to send max possible,
->> @@ -759,6 +832,9 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
->>       llis_va[num_llis - 1].lli = 0;
->>       /* The final LLI element shall also fire an interrupt. */
->>       llis_va[num_llis - 1].cctl |= PL080_CONTROL_TC_IRQ_EN;
->> +     /* Keep the TransferSize seperate to fill samsung specific register */
->> +     if (pl08x->vd->is_pl080_s3c)
->> +             llis_va[num_llis - 1].cctl1 |= lli_len;
->
-> I couldn't get this completely. Why do you keep only length of
-> last lli in cctl1. what about all other llis. Also why |=
-> and not directly cctl1 = lli_len
->
-I will write more explanation about it.
-> --
-> viresh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+The perf.data files created with this new magic number
+(PERFILE2) cannot be read by former versions of perf
+which use the old magic number (PERFFILE).
+
+This second version fixes a bug in the case of the new
+format whereby the u64 fields of the header were not
+swapped when necessary. This new version also factorizes
+the swapping on the u64 portion of the header.
+
+Version 2b is simply updating the changelog.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+---
+
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index b6c1ad1..4fa52d3 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -57,9 +57,20 @@ char *perf_header__find_event(u64 id)
+ 	return NULL;
+ }
+ 
+-static const char *__perf_magic = "PERFFILE";
+-
+-#define PERF_MAGIC	(*(u64 *)__perf_magic)
++/*
++ * magic2 = "PERFILE2"
++ * must be a numerical value to let the endianness
++ * determine the memory layout. That way we are able
++ * to detect endianness when reading the perf.data file
++ * back.
++ *
++ * we check for legacy (PERFFILE) format.
++ */
++static const char *__perf_magic1 = "PERFFILE";
++static const u64 __perf_magic2    = 0x32454c4946524550ULL;
++static const u64 __perf_magic2_sw = 0x50455246494c4532ULL;
++
++#define PERF_MAGIC	__perf_magic2
+ 
+ struct perf_file_attr {
+ 	struct perf_event_attr	attr;
+@@ -595,24 +606,59 @@ out_free:
+ 	return err;
+ }
+ 
++static int check_magic_endian(u64 *magic, struct perf_file_header *header,
++			      struct perf_header *ph)
++{
++	int ret;
++
++	/* check for legacy format */
++	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
++	if (ret == 0) {
++		pr_debug("legacy perf.data format\n");
++		if (!header)
++			return -1;
++
++		if (header->attr_size != sizeof(struct perf_file_attr)) {
++			u64 attr_size = bswap_64(header->attr_size);
++
++			if (attr_size != sizeof(struct perf_file_attr))
++				return -1;
++
++			ph->needs_swap = true;
++		}
++		return 0;
++	}
++
++	/* check magic number with same endianness */
++	if (*magic == __perf_magic2)
++		return 0;
++
++	/* check magic number but opposite endianness */
++	if (*magic != __perf_magic2_sw)
++		return -1;
++
++	ph->needs_swap = true;
++
++	return 0;
++}
++
+ int perf_file_header__read(struct perf_file_header *header,
+ 			   struct perf_header *ph, int fd)
+ {
++	int ret;
++
+ 	lseek(fd, 0, SEEK_SET);
+ 
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
+ 		return -1;
+ 
+-	if (header->attr_size != sizeof(struct perf_file_attr)) {
+-		u64 attr_size = bswap_64(header->attr_size);
+-
+-		if (attr_size != sizeof(struct perf_file_attr))
+-			return -1;
++	if (check_magic_endian(&header->magic, header, ph) < 0)
++		return -1;
+ 
++	if (ph->needs_swap) {
+ 		mem_bswap_64(header, offsetof(struct perf_file_header,
+-					    adds_features));
+-		ph->needs_swap = true;
++			     adds_features));
+ 	}
+ 
+ 	if (header->size != sizeof(*header)) {
+@@ -824,8 +870,13 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 				       struct perf_header *ph, int fd,
+ 				       bool repipe)
+ {
+-	if (readn(fd, header, sizeof(*header)) <= 0 ||
+-	    memcmp(&header->magic, __perf_magic, sizeof(header->magic)))
++	int ret;
++
++	ret = readn(fd, header, sizeof(*header));
++	if (ret <= 0)
++		return -1;
++
++	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
+ 		return -1;
+ 
+ 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
