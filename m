@@ -1,48 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab1I1XFy (ORCPT <rfc822;w@1wt.eu>);
+	id S933045Ab1I1XF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:05:57 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17559 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933010Ab1I1XFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Sep 2011 19:05:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54361 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab1I1XFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 19:05:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,458,1312182000"; 
-   d="scan'208";a="68452861"
-Subject: Re: [PATCH] iwlagn: iwl-agn-rs: remove unnecessary null check for
- sta and lq_sta
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: "Gregory.Dietsche@cuw.edu" <Gregory.Dietsche@cuw.edu>
-Cc: "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+Date: Wed, 28 Sep 2011 19:05:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1317250444-2248-1-git-send-email-Gregory.Dietsche@cuw.edu>
-References: <1317250444-2248-1-git-send-email-Gregory.Dietsche@cuw.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 15:18:38 -0700
-Message-ID: <1317248318.1958.21.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [Xen-devel] Re: [PATCH v4 2/2] xen: modify kernel mappings
+ corresponding to granted pages
+Message-ID: <20110928230535.GA23001@phenom.oracle.com>
+References: <alpine.DEB.2.00.1109081944150.12963@kaball-desktop>
+ <20110921145853.GA541@phenom.oracle.com>
+ <alpine.DEB.2.00.1109231412220.8700@kaball-desktop>
+ <20110923144538.GA10701@phenom.oracle.com>
+ <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
+ <20110928131229.GA10270@phenom.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928131229.GA10270@phenom.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090207.4E83A84A.007A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 15:54 -0700, Gregory.Dietsche@cuw.edu wrote:
-> From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+On Wed, Sep 28, 2011 at 09:12:29AM -0400, Konrad Rzeszutek Wilk wrote:
+> > > Anyhow, If you want to modify your patchset to check PagePrivate bit
+> > > and set the SetPagePrivate/set_page_private - go ahead.
+> > 
+> > I'll do that.
 > 
-> both sta and lq_sta are guaranteed to be not null in the
-> calling function so we don't need to check them here.
+> Preempted you a bit :-)
+> http://lists.xensource.com/archives/html/xen-devel/2011-09/msg01364.html
 > 
-> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> ---
->  drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+> > > > > > +                     gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+> > > > > > +                             map->flags |
+> > > > > > +                             GNTMAP_host_map |
+> > > > > > +                             GNTMAP_contains_pte,
+> > > > > > +                             map->grants[i].ref,
+> > > > > > +                             map->grants[i].domid);
+> > > > > > +             }
+> > > > >
+> > > > > So, on startup.. (before this function is called) the
+> > > > > find_grant_ptes is called which pretty much does the exact thing for
+> > > > > each virtual address.  Except its flags are GNTMAP_application_map
+> > > > > instead of GNTMAP_host_map.
+> > > > >
+> > > > > It even uses the same type structure.. It fills out map_ops[i] one.
+> > > > >
+> > > > > Can we use that instead of adding a new structure?
+> > > >
+> > > > Do you mean moving this code inside find_grant_ptes?
+> > > > I don't think that can be done because find_grant_ptes is called on a
+> > > > range of virtual addresses while this is called on an array of struct
+> > > > pages. It is true that the current implementation of
+> > > 
+> > > But aren't that 'range of virtual address' of struct pages? You
+> > > are using 'alloc_xenballooned_pages' to get those pages and that is
+> > > what the 'range of virtual adresses' is walking through.
+> > 
+> > it is not the same range of virtual addresses
 > 
-you are correct
+> OK, but the pte_maddr is the same, isn't it?
 
-Wey
+No it is not. It is the machine address of the PTE entry that
+points to the 'struct page' (kernel linear address), while the
+find_grant_pte's gets the machine address of the PTE entry that
+points to the user pages. Completlely different machine addresses
+of the PTEs.
 
+Can you add a comment to the patch saying something along what
+I just said? Just in case somebody is as thick as I am when looking
+at this code/patch.
+
+Otherwise the patch looks fine - just fix up the SetPagePrivate,
+the PAGE_GRANT bit, and add extra comments and I am ready to stick it
+on my queue.
+
+Thanks!
+> 
+> > 
+> > > > alloc_xenballooned_pages is going to return a consecutive set of pages
+> > > > but it might not always be the case.
+> > > 
+> > > I am sensing some grand plans in work here? I thought we are going to
+> > > try to simply our lives and see about making alloc_xenballooned_pages
+> > > returned sane pages that are !PageHighMem (or if they are PageHighMem they
+> > > are already pinned, and set in the &init_mm)?
+> > > 
+> > > I am just thinking in terms of lookup_address and arbitrary_virt_to_machine
+> > > calls being done _twice_. And it seems like we have the find_grant_ptes
+> > > which does the bulk of this already - so why not piggyback on it?
+> > 
+> > It has to be done twice: once for the user ptes and once for the kernel
+> > mappings of map->pages.
+> > 
+> > 
+> > > Besides that, the patch set looks fine. .. How do I reproduce the failures
+> > > you had encountered with the AIO?
+> > > 
+> > 
+> > Just setup and use upstream qemu and configure your VM to use a disk on
+> > a file (file:).
+> 
+> OK.
