@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab1I1EKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:10:55 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41857 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751738Ab1I1EKy (ORCPT
+	id S1752642Ab1I1EPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:15:11 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50723 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab1I1EPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:10:54 -0400
-Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>
-	 <20110928004722.GA27421@kernel.dk>
-	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
-	 <4E82751C.9050908@kernel.dk>
-	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Sep 2011 23:10:38 -0500
-Message-ID: <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 00:15:09 -0400
+Date: Wed, 28 Sep 2011 09:45:01 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venki Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
+Message-ID: <20110928041501.GH4357@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20110926115049.GA22604@linux.vnet.ibm.com>
+ <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
+ <1317167376.11592.53.camel@sbsiddha-desk.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1317167376.11592.53.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
-> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> >>
-> >> But if you forward the actual patch to me (the one I see on lkml seems
-> >> to be broken and doesn't compile cleanly because it's assiging a
-> >> structure to a pointer), I'll try it out anyway.
-> >
-> > Thanks, that would be great. It's inlined below.
+* Suresh Siddha <suresh.b.siddha@intel.com> [2011-09-27 16:49:36]:
+
+> One of the reasons why we saw lib_cpu not idle is probably because that
+> info was stale.
 > 
-> Well, I did several USB eject events, and nothing bad happened.
+> Consider this scenario.
 > 
-> But as mentioned, I don't think that means much. Have you tried this
-> with slub debugging and poisoning? It might be worth some extra
-> testing that way.
+> a. got a tick when the cpu was busy, so idle_at_tick was not set
+> b. cpu went idle
+> c. same cpu got the kick IPI from other busy cpu
+> d. and as it has idle_at_tick not set, it couldn't proceed with the nohz
+> idle balance.
 
-I've been testing a simpler version:
+Good point ..we chould use idle_cpu() instead there ..
 
-http://marc.info/?l=linux-kernel&m=131300594629839
+> I think we are mostly likely seeing the above mentioned scenario.
+> 
+> Also Vatsa, there is a deadlock associated by using
+> __smp_call_funciton_single() in the nohz_balancer_kick(). So I am
+> planning to remove the IPI that is used to kick the nohz balancer and
+> instead use the resched_cpu logic to kick the nohz balancer.
+> 
+> I will post this patch mostly tomorrow. That patch will not use the
+> idle_at_tick check in the nohz_idle_balance(). So that should address
+> your issue in some cases if not most.
 
-For a long time now with great success.  The only difference is the
-locking cleanup, but SCSI doesn't need that since it doesn't supply its
-own lock, so I've been voting for this as the final fix for a while now.
+Ok ..would be glad to test your change ..I am however doubtfull if it
+will eliminate rest of the issues I pointed out with nohz load balancer.
 
-James
-
-
+- vatsa
