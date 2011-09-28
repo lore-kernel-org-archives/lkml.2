@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab1I1S1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:27:47 -0400
-Received: from claw.goop.org ([74.207.240.146]:38713 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab1I1S1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:27:46 -0400
-Message-ID: <4E83671E.9070202@goop.org>
-Date: Wed, 28 Sep 2011 11:27:42 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <4E835851.7070502@zytor.com> <4E835E50.2020307@goop.org> <201109282008.17722.stephan.diestelhorst@amd.com>
-In-Reply-To: <201109282008.17722.stephan.diestelhorst@amd.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+	id S1754953Ab1I1Sbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:31:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48099 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1I1Sbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 14:31:46 -0400
+Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+In-Reply-To: <874o09x97m.fsf@rustcorp.com.au>
+References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
+	 <20110819152335.GA19489@redhat.com> <1313771587.12243.16.camel@lappy>
+	 <20110820200043.GB5276@redhat.com> <871uvdryq2.fsf@rustcorp.com.au>
+	 <20110919060150.GB1569@redhat.com>  <874o09x97m.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="us-ascii"
+Date: Wed, 28 Sep 2011 21:30:51 +0300
+Message-ID: <1317234651.11915.6.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 11:08 AM, Stephan Diestelhorst wrote:
-> On Wednesday 28 September 2011 19:50:08 Jeremy Fitzhardinge wrote:
->> On 09/28/2011 10:24 AM, H. Peter Anvin wrote:
->>> On 09/28/2011 10:22 AM, Linus Torvalds wrote:
->>>> On Wed, Sep 28, 2011 at 9:47 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->>>>> Could do something like:
->>>>>
->>>>>        if (ticket->head >= 254)
->>>>>                prev = xadd(&ticket->head_tail, 0xff02);
->>>>>        else
->>>>>                prev = xadd(&ticket->head_tail, 0x0002);
->>>>>
->>>>> to compensate for the overflow.
->>>> Oh wow. You havge an even more twisted mind than I do.
->>>>
->>>> I guess that will work, exactly because we control "head" and thus can
->>>> know about the overflow in the low byte. But boy is that ugly ;)
->>>>
->>>> But at least you wouldn't need to do the loop with cmpxchg. So it's
->>>> twisted and ugly, but migth be practical.
->>>>
->>> I suspect it should be coded as -254 in order to use a short immediate
->>> if that is even possible...
->> I'm about to test:
->>
->> static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
->> {
->> 	if (TICKET_SLOWPATH_FLAG && unlikely(arch_static_branch(&paravirt_ticketlocks_enabled))) {
->> 		arch_spinlock_t prev;
->> 		__ticketpair_t inc = TICKET_LOCK_INC;
->>
->> 		if (lock->tickets.head >= (1 << TICKET_SHIFT) - TICKET_LOCK_INC)
->> 			inc += -1 << TICKET_SHIFT;
->>
->> 		prev.head_tail = xadd(&lock->head_tail, inc);
->>
->> 		if (prev.tickets.tail & TICKET_SLOWPATH_FLAG)
->> 			__ticket_unlock_slowpath(lock, prev);
->> 	} else
->> 		__ticket_unlock_release(lock);
->> }
->>
->> Which, frankly, is not something I particularly want to put my name to.
-> I must have missed the part when this turned into the propose-the-
-> craziest-way-that-this-still-works.contest :)
->
-> What is wrong with converting the original addb into a lock addb? The
-> crazy wrap around tricks add a conditional and lots of headache. The
-> lock addb/w is clean. We are paying an atomic in both cases, so I just
-> don't see the benefit of the second solution.
+On Mon, 2011-09-19 at 17:19 +0930, Rusty Russell wrote:
+> On Mon, 19 Sep 2011 09:01:50 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Mon, Sep 19, 2011 at 01:05:17PM +0930, Rusty Russell wrote:
+> > > On Sat, 20 Aug 2011 23:00:44 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > On Fri, Aug 19, 2011 at 07:33:07PM +0300, Sasha Levin wrote:
+> > > > > Maybe this is better solved by copying the way it was done in PCI itself
+> > > > > with capability linked list?
+> > > > 
+> > > > There are any number of ways to lay out the structure.  I went for what
+> > > > seemed a simplest one.  For MSI-X the train has left the station.  We
+> > > > can probably still tweak where the high 32 bit features
+> > > > for 64 bit features are.  No idea if it's worth it.
+> > > 
+> > > Sorry, this has been in the back of my mind.  I think it's a good idea;
+> > > can we use the capability linked list for pre-device specific stuff from
+> > > now on?
+> > > 
+> > > Thanks,
+> > > Rusty.
+> > 
+> > Do we even want capability bits then?
+> > We can give each capability an ack flag ...
+> 
+> We could have, and if I'd known PCI when I designed virtio I might have.
+> 
+> But it's not easy now to map structure offsets to that scheme, and we
+> can't really force such a change on the non-PCI users.  So I'd say we
+> should only do it for the non-device-specific options.  ie. we'll still
+> have the MSI-X case move the device-specific config, but we'll use a
+> linked list from now on, eg. for the next 32 features bits...
+> 
+> Thoughts?
+> Rusty.
 
-Well, it does end up generating surprisingly nice code.  And to be
-honest, being able to do the unlock and atomically fetch the flag as one
-operation makes it much easier to reason about.
+What if we create a capability list but place it in the virtio-pci
+config space instead of the PCI space?
 
-I'll do a locked add variant as well to see how it turns out.
+It'll work fine with non-PCI users and would leave MSI-X as the only
+thing that changes offsets (and we could probably deprecate and remove
+it at some point in the future).
 
-Do you think locked add is better than unlocked + mfence?
+-- 
 
-Thanks,
-    J
+Sasha.
+
