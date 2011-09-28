@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab1I1Wxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:53:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55054 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933516Ab1I1Wub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:50:31 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:50 2011
-Message-Id: <20110928220150.576775630@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [239/244] rtlwifi: rtl8192cu: Fix unitialized struct
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1756033Ab1I1WyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:54:14 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46203 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755175Ab1I1WyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:54:08 -0400
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Wed, 28 Sep 2011 15:53:46 -0700
+X-Google-Sender-Auth: MVv1ssO-PN8IDPFvAzxIIh7Esgg
+Message-ID: <CAB=NE6WKv3ZDP_2xq5D8Y7S6-w1=a4gsRBj8QvQ1QX9G413Rww@mail.gmail.com>
+Subject: [ANN] compat-wireless for 3.1-rc8 is out
+To: linux-kernel@vger.kernel.org
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>, netdev@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+The world hasn't ended yet, even without kernel.org, so we get a new
+compat-wireless release based on Linus' rc8 release. Given that
+kernel.org is down I just sucked in Linus' tree on github into my
+linux-2.6-allstable and reset it to 3.1-rc8. Please test and rant
+about issues found.
 
-------------------
+http://linuxwireless.org/en/users/Download/stable (as
+wireless.kernel.org DNS is bust right now)
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+sha1sum: db33de991c9764185707591da881963e041de9c8
+Size: 4.1 MiB
 
-commit 831d85471e761e190c3c8979b37540d699ae5812 upstream.
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.1/compat-wireless-3.1-rc8-1.tar.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.1/ChangeLog-3.1-wireless
 
-Driver rtl8192cu assigns a new struct rtl_tcb_desc object, but fails to
-clear it.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/rtlwifi/usb.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -861,6 +861,7 @@ static void _rtl_usb_tx_preprocess(struc
- 	u8 tid = 0;
- 	u16 seq_number = 0;
- 
-+	memset(&tcb_desc, 0, sizeof(struct rtl_tcb_desc));
- 	if (ieee80211_is_auth(fc)) {
- 		RT_TRACE(rtlpriv, COMP_SEND, DBG_DMESG, ("MAC80211_LINKING\n"));
- 		rtl_ips_nic_on(hw);
-
-
+  Luis
