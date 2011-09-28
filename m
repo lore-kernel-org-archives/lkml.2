@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab1I1Ar3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:47:29 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:52642
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab1I1ArY (ORCPT
+	id S1752406Ab1I1Atd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:49:33 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22115 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab1I1Atb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 20:47:24 -0400
-Date: Wed, 28 Sep 2011 02:47:23 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Hannes Reinecke <hare@suse.de>
-Cc: James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
-Message-ID: <20110928004722.GA27421@kernel.dk>
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109221318.p8MDIXPP020015@pentland.suse.de>
+	Tue, 27 Sep 2011 20:49:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
+	b=O1j04aCJsfm+RgkZodo+6hqMUt9zaO6XSX78v8zvDpx0Ji5sibx/KcP7jqoX0fDHk
+	iz0uKLzCENY97k9aPK0VQ==
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: [PATCH 0/9] V2: idle page tracking / working set estimation
+Date: Tue, 27 Sep 2011 17:48:58 -0700
+Message-Id: <1317170947-17074-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22 2011, Hannes Reinecke wrote:
-> 
-> A kernel crash is observed when a mounted ext3/ext4 filesystem
-> is physically removed.
-> The problem is that blk_cleanup_queue() frees up some resources
-> eg by calling elevator_exit(), which are not checked for in
-> normal operation.
-> So we should rather move these calls to the destructor function
-> blk_release_queue() as at that point all remaining references
-> are gone.
-> However, in doing so we have to ensure that any externally
-> supplied queue_lock is disconnected as the driver might
-> free up the lock after the call of blk_cleanup_queue(),
+This is a followup to the prior version of this patchset, which I sent out
+on September 16.
 
-Do we have acks from the people who saw this oops, that this really does
-fix it for them? I ask since this fix is vastly cleaner than the other
-patch floating around, so I'd much rather pull this one in.
+I have addressed most of the basic feedback I got so far:
+
+- Renamed struct pr_info -> struct page_referenced_info
+
+- Config option now depends on 64BIT, as we may not have sufficient
+  free page flags in 32-bit builds
+
+- Renamed mem -> memcg in kstaled code within memcontrol.c
+
+- Uninlined kstaled_scan_page
+
+- Replaced strict_strtoul -> kstrtoul
+
+- Report PG_stale in /proc/kpageflags
+
+- Fix accounting of THP pages. Sorry for forgeting to do this in the
+  V1 patchset - to detail the change here, what I had to do was make sure
+  page_referenced() reports THP pages as dirty (as they always are - the
+  dirty bit in the pmd is currently meaningless) and update the minimalistic
+  implementation change to count THP pages as equivalent to 512 small pages.
+
+- The ugliest parts of patch 6 (rate limit pages scanned per second) have
+  been reworked. If the scanning thread gets delayed, it tries to catch up
+  so as to minimize jitter. If it can't catch up, it would probably be a
+  good idea to increase the scanning interval, but this is left up
+  to userspace.
+
+Michel Lespinasse (9):
+  page_referenced: replace vm_flags parameter with struct page_referenced_info
+  kstaled: documentation and config option.
+  kstaled: page_referenced_kstaled() and supporting infrastructure.
+  kstaled: minimalistic implementation.
+  kstaled: skip non-RAM regions.
+  kstaled: rate limit pages scanned per second.
+  kstaled: add histogram sampling functionality
+  kstaled: add incrementally updating stale page count
+  kstaled: export PG_stale in /proc/kpageflags
+
+ Documentation/cgroups/memory.txt  |  103 ++++++++-
+ arch/x86/include/asm/page_types.h |    8 +
+ arch/x86/kernel/e820.c            |   45 ++++
+ fs/proc/page.c                    |    4 +
+ include/linux/kernel-page-flags.h |    2 +
+ include/linux/ksm.h               |    9 +-
+ include/linux/mmzone.h            |   11 +
+ include/linux/page-flags.h        |   50 ++++
+ include/linux/pagemap.h           |   11 +-
+ include/linux/rmap.h              |   82 ++++++-
+ mm/Kconfig                        |   10 +
+ mm/internal.h                     |    1 +
+ mm/ksm.c                          |   15 +-
+ mm/memcontrol.c                   |  479 +++++++++++++++++++++++++++++++++++++
+ mm/memory_hotplug.c               |    6 +
+ mm/mlock.c                        |    1 +
+ mm/rmap.c                         |  138 ++++++-----
+ mm/swap.c                         |    1 +
+ mm/vmscan.c                       |   20 +-
+ 19 files changed, 899 insertions(+), 97 deletions(-)
 
 -- 
-Jens Axboe
+1.7.3.1
 
