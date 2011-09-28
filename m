@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1I1OTw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:19:52 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:47015 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab1I1OTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:19:51 -0400
-Date: Wed, 28 Sep 2011 19:47:01 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Venki Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
-Message-ID: <20110928141701.GF8593@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <20110926115049.GA22604@linux.vnet.ibm.com>
- <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
- <20110928043427.GI4357@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110928043427.GI4357@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754180Ab1I1OXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:23:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56080 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1I1OXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 10:23:21 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=v1jNb7L17ooA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=R6Ph2Kqlq8VnvbJxTCsA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCHv2 1/2] perf tools: Collect tracing event data files
+ directly
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, eric.dumazet@gmail.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org, nhorman@tuxdriver.com
+Date: Wed, 28 Sep 2011 10:23:20 -0400
+In-Reply-To: <20110928141754.GT18553@somewhere>
+References: <20110925133406.GB2702@jolsa.brq.redhat.com>
+	 <1317028312-5156-1-git-send-email-jolsa@redhat.com>
+	 <1317028312-5156-2-git-send-email-jolsa@redhat.com>
+	 <1317044192.26514.1.camel@gandalf.stny.rr.com>
+	 <20110926145606.GA8886@jolsa.brq.redhat.com>
+	 <20110928135525.GS18553@somewhere>
+	 <1317218589.4588.4.camel@gandalf.stny.rr.com>
+	 <20110928141754.GT18553@somewhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317219800.4588.6.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-28 10:04:27]:
-
-> > Especially with higher number of logical CPUs. Likely cleaner way is to clear
-> > first_pick, second_pick on idle instead of clearing on tickless.
+On Wed, 2011-09-28 at 16:17 +0200, Frederic Weisbecker wrote:
+> > > 
+> > > But it seems Steve's patches are not completely uncontroversial because
+> > > of some crazy disagreements on where the libparsevent.so should lay (tools generic
+> > > or tied to perf).
+> > 
+> > Which to me seems to be a silly road block, in which I never got a clear
+> > answer for.
 > 
-> I think I tried that (cleared first/second_pick_cpu in
-> nohz_kick_needed() upon idle) but didn't get the best results. Let me
-> try that again and post idle time numbers.
+> Yeah we need to sort that out with Ingo.
 
-So made some changes so that first/second_pick_cpu identifiers are
-cleared when corresponding cpus become idle. They are cleared in
-pick_next_task_idle() ..
+And include Arnaldo, as he was the one that suggested to do what I did
+that Ingo NACKd. And I consider Arnaldo the maintainer of the userspace
+side of perf, so I will not step on his toes in what I do.
 
-With that change, I don't see additional benefit of having a third busy
-cpu kick ilb_cpu when it has > 1 task.
+-- Steve
 
 
-Idle time -> 			Avg.	Std.Dev   Min   Max
-W/o third busy cpu kicking	4.57%   0.9	  3%    8%   
-With third busy cpu kicking	4.78%   1.1%      3%    8%
-
-So will go with your suggestion in the next version!
-
-- vatsa
