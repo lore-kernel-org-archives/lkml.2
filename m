@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab1I1Wt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:49:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54982 "EHLO mx2.suse.de"
+	id S933436Ab1I1WuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:50:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54986 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933383Ab1I1Wtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:55 -0400
+	id S933483Ab1I1Wt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:58 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:49 2011
-Message-Id: <20110928220149.611851528@clark.kroah.org>
+Message-Id: <20110928220149.721393356@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:14 -0700
+Date: Wed, 28 Sep 2011 15:03:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: [230/244] memcg: fix vmscan count in small memcgs
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [231/244] [SCSI] cxgb3i: convert cdev->l2opt to use rcu to prevent NULL dereference
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,116 +24,247 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 4508378b9523e22a2a0175d8bf64d932fb10a67d upstream.
+commit e48f129c2f200dde8899f6ea5c6e7173674fc482 upstream.
 
-Commit 246e87a93934 ("memcg: fix get_scan_count() for small targets")
-fixes the memcg/kswapd behavior against small targets and prevent vmscan
-priority too high.
-
-But the implementation is too naive and adds another problem to small
-memcg.  It always force scan to 32 pages of file/anon and doesn't handle
-swappiness and other rotate_info.  It makes vmscan to scan anon LRU
-regardless of swappiness and make reclaim bad.  This patch fixes it by
-adjusting scanning count with regard to swappiness at el.
-
-At a test "cat 1G file under 300M limit." (swappiness=20)
- before patch
-        scanned_pages_by_limit 360919
-        scanned_anon_pages_by_limit 180469
-        scanned_file_pages_by_limit 180450
-        rotated_pages_by_limit 31
-        rotated_anon_pages_by_limit 25
-        rotated_file_pages_by_limit 6
-        freed_pages_by_limit 180458
-        freed_anon_pages_by_limit 19
-        freed_file_pages_by_limit 180439
-        elapsed_ns_by_limit 429758872
- after patch
-        scanned_pages_by_limit 180674
-        scanned_anon_pages_by_limit 24
-        scanned_file_pages_by_limit 180650
-        rotated_pages_by_limit 35
-        rotated_anon_pages_by_limit 24
-        rotated_file_pages_by_limit 11
-        freed_pages_by_limit 180634
-        freed_anon_pages_by_limit 0
-        freed_file_pages_by_limit 180634
-        elapsed_ns_by_limit 367119089
-        scanned_pages_by_system 0
-
-the numbers of scanning anon are decreased(as expected), and elapsed time
-reduced. By this patch, small memcgs will work better.
-(*) Because the amount of file-cache is much bigger than anon,
-    recalaim_stat's rotate-scan counter make scanning files more.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Ying Han <yinghan@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+This oops was reported recently:
+d:mon> e
+cpu 0xd: Vector: 300 (Data Access) at [c0000000fd4c7120]
+    pc: d00000000076f194: .t3_l2t_get+0x44/0x524 [cxgb3]
+    lr: d000000000b02108: .init_act_open+0x150/0x3d4 [cxgb3i]
+    sp: c0000000fd4c73a0
+   msr: 8000000000009032
+   dar: 0
+ dsisr: 40000000
+  current = 0xc0000000fd640d40
+  paca    = 0xc00000000054ff80
+    pid   = 5085, comm = iscsid
+d:mon> t
+[c0000000fd4c7450] d000000000b02108 .init_act_open+0x150/0x3d4 [cxgb3i]
+[c0000000fd4c7500] d000000000e45378 .cxgbi_ep_connect+0x784/0x8e8 [libcxgbi]
+[c0000000fd4c7650] d000000000db33f0 .iscsi_if_rx+0x71c/0xb18
+[scsi_transport_iscsi2]
+[c0000000fd4c7740] c000000000370c9c .netlink_data_ready+0x40/0xa4
+[c0000000fd4c77c0] c00000000036f010 .netlink_sendskb+0x4c/0x9c
+[c0000000fd4c7850] c000000000370c18 .netlink_sendmsg+0x358/0x39c
+[c0000000fd4c7950] c00000000033be24 .sock_sendmsg+0x114/0x1b8
+[c0000000fd4c7b50] c00000000033d208 .sys_sendmsg+0x218/0x2ac
+[c0000000fd4c7d70] c00000000033f55c .sys_socketcall+0x228/0x27c
+[c0000000fd4c7e30] c0000000000086a4 syscall_exit+0x0/0x40
 ---
- mm/vmscan.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+ drivers/infiniband/hw/cxgb3/iwch_cm.c |   10 +++++-----
+ drivers/net/cxgb3/cxgb3_offload.c     |   23 ++++++++++++++++++-----
+ drivers/net/cxgb3/l2t.c               |   15 ++++++++++++---
+ drivers/net/cxgb3/l2t.h               |   16 ++++++++++++----
+ drivers/scsi/cxgbi/cxgb3i/cxgb3i.c    |    2 +-
+ 5 files changed, 48 insertions(+), 18 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1748,6 +1748,7 @@ static void get_scan_count(struct zone *
- 	enum lru_list l;
- 	int noswap = 0;
- 	int force_scan = 0;
-+	unsigned long nr_force_scan[2];
- 
- 
- 	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
-@@ -1770,6 +1771,8 @@ static void get_scan_count(struct zone *
- 		fraction[0] = 0;
- 		fraction[1] = 1;
- 		denominator = 1;
-+		nr_force_scan[0] = 0;
-+		nr_force_scan[1] = SWAP_CLUSTER_MAX;
- 		goto out;
+--- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+@@ -287,7 +287,7 @@ void __free_ep(struct kref *kref)
+ 	if (test_bit(RELEASE_RESOURCES, &ep->com.flags)) {
+ 		cxgb3_remove_tid(ep->com.tdev, (void *)ep, ep->hwtid);
+ 		dst_release(ep->dst);
+-		l2t_release(L2DATA(ep->com.tdev), ep->l2t);
++		l2t_release(ep->com.tdev, ep->l2t);
  	}
+ 	kfree(ep);
+ }
+@@ -1178,7 +1178,7 @@ static int act_open_rpl(struct t3cdev *t
+ 		release_tid(ep->com.tdev, GET_TID(rpl), NULL);
+ 	cxgb3_free_atid(ep->com.tdev, ep->atid);
+ 	dst_release(ep->dst);
+-	l2t_release(L2DATA(ep->com.tdev), ep->l2t);
++	l2t_release(ep->com.tdev, ep->l2t);
+ 	put_ep(&ep->com);
+ 	return CPL_RET_BUF_DONE;
+ }
+@@ -1375,7 +1375,7 @@ static int pass_accept_req(struct t3cdev
+ 	if (!child_ep) {
+ 		printk(KERN_ERR MOD "%s - failed to allocate ep entry!\n",
+ 		       __func__);
+-		l2t_release(L2DATA(tdev), l2t);
++		l2t_release(tdev, l2t);
+ 		dst_release(dst);
+ 		goto reject;
+ 	}
+@@ -1952,7 +1952,7 @@ int iwch_connect(struct iw_cm_id *cm_id,
+ 	if (!err)
+ 		goto out;
  
-@@ -1781,6 +1784,8 @@ static void get_scan_count(struct zone *
- 			fraction[0] = 1;
- 			fraction[1] = 0;
- 			denominator = 1;
-+			nr_force_scan[0] = SWAP_CLUSTER_MAX;
-+			nr_force_scan[1] = 0;
- 			goto out;
+-	l2t_release(L2DATA(h->rdev.t3cdev_p), ep->l2t);
++	l2t_release(h->rdev.t3cdev_p, ep->l2t);
+ fail4:
+ 	dst_release(ep->dst);
+ fail3:
+@@ -2123,7 +2123,7 @@ int iwch_ep_redirect(void *ctx, struct d
+ 	PDBG("%s ep %p redirect to dst %p l2t %p\n", __func__, ep, new,
+ 	     l2t);
+ 	dst_hold(new);
+-	l2t_release(L2DATA(ep->com.tdev), ep->l2t);
++	l2t_release(ep->com.tdev, ep->l2t);
+ 	ep->l2t = l2t;
+ 	dst_release(old);
+ 	ep->dst = new;
+--- a/drivers/net/cxgb3/cxgb3_offload.c
++++ b/drivers/net/cxgb3/cxgb3_offload.c
+@@ -1149,12 +1149,14 @@ static void cxgb_redirect(struct dst_ent
+ 		if (te && te->ctx && te->client && te->client->redirect) {
+ 			update_tcb = te->client->redirect(te->ctx, old, new, e);
+ 			if (update_tcb) {
++				rcu_read_lock();
+ 				l2t_hold(L2DATA(tdev), e);
++				rcu_read_unlock();
+ 				set_l2t_ix(tdev, tid, e);
+ 			}
  		}
  	}
-@@ -1829,6 +1834,11 @@ static void get_scan_count(struct zone *
- 	fraction[0] = ap;
- 	fraction[1] = fp;
- 	denominator = ap + fp + 1;
-+	if (force_scan) {
-+		unsigned long scan = SWAP_CLUSTER_MAX;
-+		nr_force_scan[0] = div64_u64(scan * ap, denominator);
-+		nr_force_scan[1] = div64_u64(scan * fp, denominator);
-+	}
- out:
- 	for_each_evictable_lru(l) {
- 		int file = is_file_lru(l);
-@@ -1849,12 +1859,8 @@ out:
- 		 * memcg, priority drop can cause big latency. So, it's better
- 		 * to scan small amount. See may_noscan above.
- 		 */
--		if (!scan && force_scan) {
--			if (file)
--				scan = SWAP_CLUSTER_MAX;
--			else if (!noswap)
--				scan = SWAP_CLUSTER_MAX;
--		}
-+		if (!scan && force_scan)
-+			scan = nr_force_scan[file];
- 		nr[l] = scan;
- 	}
+-	l2t_release(L2DATA(tdev), e);
++	l2t_release(tdev, e);
  }
+ 
+ /*
+@@ -1267,7 +1269,7 @@ int cxgb3_offload_activate(struct adapte
+ 		goto out_free;
+ 
+ 	err = -ENOMEM;
+-	L2DATA(dev) = t3_init_l2t(l2t_capacity);
++	RCU_INIT_POINTER(dev->l2opt, t3_init_l2t(l2t_capacity));
+ 	if (!L2DATA(dev))
+ 		goto out_free;
+ 
+@@ -1301,16 +1303,24 @@ int cxgb3_offload_activate(struct adapte
+ 
+ out_free_l2t:
+ 	t3_free_l2t(L2DATA(dev));
+-	L2DATA(dev) = NULL;
++	rcu_assign_pointer(dev->l2opt, NULL);
+ out_free:
+ 	kfree(t);
+ 	return err;
+ }
+ 
++static void clean_l2_data(struct rcu_head *head)
++{
++	struct l2t_data *d = container_of(head, struct l2t_data, rcu_head);
++	t3_free_l2t(d);
++}
++
++
+ void cxgb3_offload_deactivate(struct adapter *adapter)
+ {
+ 	struct t3cdev *tdev = &adapter->tdev;
+ 	struct t3c_data *t = T3C_DATA(tdev);
++	struct l2t_data *d;
+ 
+ 	remove_adapter(adapter);
+ 	if (list_empty(&adapter_list))
+@@ -1318,8 +1328,11 @@ void cxgb3_offload_deactivate(struct ada
+ 
+ 	free_tid_maps(&t->tid_maps);
+ 	T3C_DATA(tdev) = NULL;
+-	t3_free_l2t(L2DATA(tdev));
+-	L2DATA(tdev) = NULL;
++	rcu_read_lock();
++	d = L2DATA(tdev);
++	rcu_read_unlock();
++	rcu_assign_pointer(tdev->l2opt, NULL);
++	call_rcu(&d->rcu_head, clean_l2_data);
+ 	if (t->nofail_skb)
+ 		kfree_skb(t->nofail_skb);
+ 	kfree(t);
+--- a/drivers/net/cxgb3/l2t.c
++++ b/drivers/net/cxgb3/l2t.c
+@@ -300,14 +300,21 @@ static inline void reuse_entry(struct l2
+ struct l2t_entry *t3_l2t_get(struct t3cdev *cdev, struct neighbour *neigh,
+ 			     struct net_device *dev)
+ {
+-	struct l2t_entry *e;
+-	struct l2t_data *d = L2DATA(cdev);
++	struct l2t_entry *e = NULL;
++	struct l2t_data *d;
++	int hash;
+ 	u32 addr = *(u32 *) neigh->primary_key;
+ 	int ifidx = neigh->dev->ifindex;
+-	int hash = arp_hash(addr, ifidx, d);
+ 	struct port_info *p = netdev_priv(dev);
+ 	int smt_idx = p->port_id;
+ 
++	rcu_read_lock();
++	d = L2DATA(cdev);
++	if (!d)
++		goto done_rcu;
++
++	hash = arp_hash(addr, ifidx, d);
++
+ 	write_lock_bh(&d->lock);
+ 	for (e = d->l2tab[hash].first; e; e = e->next)
+ 		if (e->addr == addr && e->ifindex == ifidx &&
+@@ -338,6 +345,8 @@ struct l2t_entry *t3_l2t_get(struct t3cd
+ 	}
+ done:
+ 	write_unlock_bh(&d->lock);
++done_rcu:
++	rcu_read_unlock();
+ 	return e;
+ }
+ 
+--- a/drivers/net/cxgb3/l2t.h
++++ b/drivers/net/cxgb3/l2t.h
+@@ -76,6 +76,7 @@ struct l2t_data {
+ 	atomic_t nfree;		/* number of free entries */
+ 	rwlock_t lock;
+ 	struct l2t_entry l2tab[0];
++	struct rcu_head rcu_head;	/* to handle rcu cleanup */
+ };
+ 
+ typedef void (*arp_failure_handler_func)(struct t3cdev * dev,
+@@ -99,7 +100,7 @@ static inline void set_arp_failure_handl
+ /*
+  * Getting to the L2 data from an offload device.
+  */
+-#define L2DATA(dev) ((dev)->l2opt)
++#define L2DATA(cdev) (rcu_dereference((cdev)->l2opt))
+ 
+ #define W_TCB_L2T_IX    0
+ #define S_TCB_L2T_IX    7
+@@ -126,15 +127,22 @@ static inline int l2t_send(struct t3cdev
+ 	return t3_l2t_send_slow(dev, skb, e);
+ }
+ 
+-static inline void l2t_release(struct l2t_data *d, struct l2t_entry *e)
++static inline void l2t_release(struct t3cdev *t, struct l2t_entry *e)
+ {
+-	if (atomic_dec_and_test(&e->refcnt))
++	struct l2t_data *d;
++
++	rcu_read_lock();
++	d = L2DATA(t);
++
++	if (atomic_dec_and_test(&e->refcnt) && d)
+ 		t3_l2e_free(d, e);
++
++	rcu_read_unlock();
+ }
+ 
+ static inline void l2t_hold(struct l2t_data *d, struct l2t_entry *e)
+ {
+-	if (atomic_add_return(1, &e->refcnt) == 1)	/* 0 -> 1 transition */
++	if (d && atomic_add_return(1, &e->refcnt) == 1)	/* 0 -> 1 transition */
+ 		atomic_dec(&d->nfree);
+ }
+ 
+--- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
++++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+@@ -913,7 +913,7 @@ static void l2t_put(struct cxgbi_sock *c
+ 	struct t3cdev *t3dev = (struct t3cdev *)csk->cdev->lldev;
+ 
+ 	if (csk->l2t) {
+-		l2t_release(L2DATA(t3dev), csk->l2t);
++		l2t_release(t3dev, csk->l2t);
+ 		csk->l2t = NULL;
+ 		cxgbi_sock_put(csk);
+ 	}
 
 
