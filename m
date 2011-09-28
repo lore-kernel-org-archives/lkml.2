@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1I1P35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:29:57 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53288 "EHLO mx2.parallels.com"
+	id S1754867Ab1I1Pa4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:30:56 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53338 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752938Ab1I1P34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:29:56 -0400
-Message-ID: <4E833D27.50906@parallels.com>
-Date: Wed, 28 Sep 2011 12:28:39 -0300
+	id S1752091Ab1I1Paz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:30:55 -0400
+Message-ID: <4E833D6D.1030407@parallels.com>
+Date: Wed, 28 Sep 2011 12:29:49 -0300
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <linux-kernel@vger.kernel.org>,
-        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
         <jbottomley@parallels.com>, Heiko Carstens <heiko.carstens@de.ibm.com>
 Subject: Re: [RFD 4/9] Make total_forks per-cgroup
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com> <1316816432-9237-5-git-send-email-glommer@parallels.com> <1317160837.21836.21.camel@twins> <20110928101357.5a90c2ab@de.ibm.com> <1317206124.20318.6.camel@twins> <20110928144218.6a4882e5@de.ibm.com>
-In-Reply-To: <20110928144218.6a4882e5@de.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-5-git-send-email-glommer@parallels.com>  <1317160837.21836.21.camel@twins> <20110928101357.5a90c2ab@de.ibm.com>  <1317206124.20318.6.camel@twins> <20110928144218.6a4882e5@de.ibm.com> <1317214418.24040.13.camel@twins>
+In-Reply-To: <1317214418.24040.13.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [187.46.219.221]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 09:42 AM, Martin Schwidefsky wrote:
-> On Wed, 28 Sep 2011 12:35:24 +0200
-> Peter Zijlstra<a.p.zijlstra@chello.nl>  wrote:
+On 09/28/2011 09:53 AM, Peter Zijlstra wrote:
+> On Wed, 2011-09-28 at 14:42 +0200, Martin Schwidefsky wrote:
 >
->> On Wed, 2011-09-28 at 10:13 +0200, Martin Schwidefsky wrote:
->>> On Wed, 28 Sep 2011 00:00:37 +0200
->>> Peter Zijlstra<a.p.zijlstra@chello.nl>  wrote:
->>>
->>>> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->>>>> @@ -1039,6 +1035,8 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
->>>>>          INIT_LIST_HEAD(&tsk->cpu_timers[2]);
->>>>>   }
->>>>>
->>>>> +struct task_group *task_group(struct task_struct *p);
->>>>
->>>> That doesn't appear to be actually used in this file..
->>>>
->>>> Also, since there's already a for_each_possible_cpu() loop in that
->>>> proc/stat function, would it yield some code improvement to make
->>>> total_forks a cpu_usage_stat?
->>>>
->>>> I guess the whole cputime64_t crap gets in the way of that being
->>>> natural...
->>>>
->>>> We could of course kill off the cputime64_t thing, its pretty pointless
->>>> and its a u64 all over the board. I think Martin or Heiko created this
->>>> stuff (although I might be wrong, my git tree doesn't go back that far).
->>>
->>> The reason to introduce cputime_t has been that different architecture
->>> needed differently sized integers for their respective representation
->>> of cputime. On x86-32 the number of ticks is recorded in a u32, on s390
->>> we needed a u64 for the cpu timer values. cputime64_t is needed for
->>> cpustat and other sums of cputime that would overflow a cputime_t
->>> (in particular on x86-32 with the u32 cputime_t and the u64 cputime64_t).
->>>
->>> Now we would convert everything to u64 but that would cause x86-32 to
->>> use 64-bit arithmetic for the tick counter. If that is acceptable I
->>> can't say.
+>>> That is, am I missing some added value of all this cputime*() foo?
 >>
->> Right, so the main point was about cputime64_t, we might as well use a
->> u64 for that throughout and ditch the silly cputime64_$op() accessors
->> and write normal code.
->>
->> But even if cputime_t differs between 32 and 64 bit machines, there is
->> no reason actually use cputime_add(), C can do this.
->>
->> The only reason to use things like cputime_add() is if you use a non
->> simple type, but that doesn't seem to be the case.
->>
->> So I think we can simplify the code lots by doing away with cputime64_t
->> and all the cputime_*() functions. We can keep cputime_t, or we can use
->> unsigned long, which I think will end up doing pretty much the same.
->>
->> That is, am I missing some added value of all this cputime*() foo?
+>> C can do the math as long as the encoding of the cputime is simple enough.
+>> Can we demand that a cputime value needs to be an integral type ?
 >
-> C can do the math as long as the encoding of the cputime is simple enough.
-> Can we demand that a cputime value needs to be an integral type ?
+> I'd like to think we can ;-)
 >
-> What I did when I wrote all that stuff is to define cputime_t as a struct
-> that contains a single u64. That way I found all the places in the kernel
-> that used a cputime and could convert the code accordingly.
+>> What I did when I wrote all that stuff is to define cputime_t as a struct
+>> that contains a single u64. That way I found all the places in the kernel
+>> that used a cputime and could convert the code accordingly.
 >
-> My fear is that if the cputime_xxx operations are removed, code will
-> sneak in again that just uses an unsigned long instead of a cputime_t.
-> That would break any arch that requires something bigger than a u32 for
-> its cputime. I really have to find my old debugging patch and see if we
-> already have bit rot in regard to cputime_t.
+> Indeed, that makes it a non-simple type and breaks all the C arith bits.
 >
-Martin,
-
-Proposal is to keep cputime_t as is, and only get rid of its 
-size-specific version. So I think we're safe as far as cputime_t is 
-concerned.
-
+>> My fear is that if the cputime_xxx operations are removed, code will
+>> sneak in again that just uses an unsigned long instead of a cputime_t.
+>> That would break any arch that requires something bigger than a u32 for
+>> its cputime.
+>
+> Which is only a problem for 32bit archs, of which s390 is the only one
+> that matters, right? Hurm,. could we do something with sparse? Lots of
+> people run sparse.
+>
+Well, I think x86-32 is unlikely to ever really go away.
