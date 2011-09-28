@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab1I1P55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:57:57 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:26554 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755065Ab1I1P5z convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:4:1>);
-	Wed, 28 Sep 2011 11:57:55 -0400
-Message-Id: <4E8360200200007800058467@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 28 Sep 2011 16:57:52 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] x86-64: fix CFI data for interrupt frames
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755093Ab1I1P7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:59:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab1I1P7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:59:15 -0400
+Date: Wed, 28 Sep 2011 17:55:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Stephen Wilson <wilsons@start.ca>, linux-kernel@vger.kernel.org
+Subject: Re: Q: x86: add context tag to mark mm when running a task in
+	32-bit compatibility mode
+Message-ID: <20110928155539.GA10550@redhat.com>
+References: <20110927170448.GA15977@redhat.com> <20110927183219.GL2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110927183219.GL2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch titled "x86: Don't use frame pointer to save old stack on irq
-entry" did not properly adjust CFI directives, so this patch is a
-follow-up to that one.
+On 09/27, Al Viro wrote:
+>
+> On Tue, Sep 27, 2011 at 07:04:48PM +0200, Oleg Nesterov wrote:
+> > --- x/arch/x86/kernel/process_64.c
+> > +++ x/arch/x86/kernel/process_64.c
+> > @@ -502,10 +502,6 @@ void set_personality_64bit(void)
+> >  	/* Make sure to be in 64bit mode */
+> >  	clear_thread_flag(TIF_IA32);
+> >
+> > -	/* Ensure the corresponding mm is not marked. */
+> > -	if (current->mm)
+> > -		current->mm->context.ia32_compat = 0;
+>
+> What happens when 32bit task does exec on 64bit binary?
 
-With the old stack pointer no longer stored in a callee-saved register
-(plus some offset), we now have to use a CFA expression to describe the
-memory location where it is being found. This requires the use of
-.cfi_escape (allowing arbitrary byte streams to be emitted into
-.eh_frame), as there is no .cfi_def_cfa_expression (which also cannot
-reasonably be expected, as it would require a full expression parser).
+Nothing. This bit is always zero after init_mm(), it can't copy
+MMF_COMPAT.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+But. This is wrong anyway. I forgot about fork(). We do not want to
+uglify copy_mm(), MMF_INIT_MASK should include MMF_COMPAT and then
+set_personality_64bit() needs to clear this bit.
 
----
- arch/x86/include/asm/dwarf2.h |    2 ++
- arch/x86/kernel/entry_64.S    |   14 +++++++++-----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+Thanks!
 
---- 3.1-rc8/arch/x86/include/asm/dwarf2.h
-+++ 3.1-rc8-x86_64-unwind-through-interrupts/arch/x86/include/asm/dwarf2.h
-@@ -27,6 +27,7 @@
- #define CFI_REMEMBER_STATE	.cfi_remember_state
- #define CFI_RESTORE_STATE	.cfi_restore_state
- #define CFI_UNDEFINED		.cfi_undefined
-+#define CFI_ESCAPE		.cfi_escape
- 
- #ifdef CONFIG_AS_CFI_SIGNAL_FRAME
- #define CFI_SIGNAL_FRAME	.cfi_signal_frame
-@@ -68,6 +69,7 @@
- #define CFI_REMEMBER_STATE	cfi_ignore
- #define CFI_RESTORE_STATE	cfi_ignore
- #define CFI_UNDEFINED		cfi_ignore
-+#define CFI_ESCAPE		cfi_ignore
- #define CFI_SIGNAL_FRAME	cfi_ignore
- 
- #endif
---- 3.1-rc8/arch/x86/kernel/entry_64.S
-+++ 3.1-rc8-x86_64-unwind-through-interrupts/arch/x86/kernel/entry_64.S
-@@ -331,10 +331,15 @@ ENDPROC(native_usergs_sysret64)
- 1:	incl PER_CPU_VAR(irq_count)
- 	jne 2f
- 	mov PER_CPU_VAR(irq_stack_ptr),%rsp
--	EMPTY_FRAME 0
-+	CFI_DEF_CFA_REGISTER	rsi
- 
- 2:	/* Store previous stack value */
- 	pushq %rsi
-+	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
-+			0x77 /* DW_OP_breg7 */, 0, \
-+			0x06 /* DW_OP_deref */, \
-+			0x08 /* DW_OP_const1u */, SS+8-RBP, \
-+			0x22 /* DW_OP_plus */
- 	/* We entered an interrupt context - irqs are off: */
- 	TRACE_IRQS_OFF
- 	.endm
-@@ -788,7 +793,6 @@ END(interrupt)
- 	subq $ORIG_RAX-RBP, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-RBP
- 	SAVE_ARGS_IRQ
--	PARTIAL_FRAME 0
- 	call \func
- 	.endm
- 
-@@ -813,10 +817,10 @@ ret_from_intr:
- 
- 	/* Restore saved previous stack */
- 	popq %rsi
--	leaq 16(%rsi), %rsp
--
-+	CFI_DEF_CFA_REGISTER	rsi
-+	leaq ARGOFFSET-RBP(%rsi), %rsp
- 	CFI_DEF_CFA_REGISTER	rsp
--	CFI_ADJUST_CFA_OFFSET	-16
-+	CFI_ADJUST_CFA_OFFSET	RBP-ARGOFFSET
- 
- exit_intr:
- 	GET_THREAD_INFO(%rcx)
+> > -	if (current->mm)
+> > -		current->mm->context.ia32_compat = 1;
+> > +	set_bit(MMF_COMPAT, &current->mm->flags);
+>
+> ... assuming current->mm is never NULL here.
 
+Yes, but it can't be NULL?
 
+SET_PERSONALITY() can only be called during exec, and it must be called
+after exec_mmap() has already installed the new mm != NULL, otherwise
+the current code is buggy anyway.
+
+Oleg.
 
