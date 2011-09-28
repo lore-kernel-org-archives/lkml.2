@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1I1WmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:42:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54009 "EHLO mx2.suse.de"
+	id S1755863Ab1I1XVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:21:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53965 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932374Ab1I1Wl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:59 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:32 2011
-Message-Id: <20110928220131.992600946@clark.kroah.org>
+	id S932309Ab1I1Wlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:49 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
+Message-Id: <20110928220134.809357657@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:28 -0700
+Date: Wed, 28 Sep 2011 15:00:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrey Vagin <avagin@openvz.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [064/244] x86, perf: Check that current->mm is alive before getting user callchain
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [090/244] iommu/amd: Dont take domain->lock recursivly
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 20afc60f892d285fde179ead4b24e6a7938c2f1b upstream.
+commit e33acde91140f1809952d1c135c36feb66a51887 upstream.
 
-An event may occur when an mm is already released.
+The domain_flush_devices() function takes the domain->lock.
+But this function is only called from update_domain() which
+itself is already called unter the domain->lock. This causes
+a deadlock situation when the dma-address-space of a domain
+grows larger than 1GB.
 
-I added an event in dequeue_entity() and caught a panic with
-the following backtrace:
-
-[  434.421110] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
-[  434.421258] IP: [<ffffffff810464ac>] __get_user_pages_fast+0x9c/0x120
-...
-[  434.421258] Call Trace:
-[  434.421258]  [<ffffffff8101ae81>] copy_from_user_nmi+0x51/0xf0
-[  434.421258]  [<ffffffff8109a0d5>] ? sched_clock_local+0x25/0x90
-[  434.421258]  [<ffffffff8101b048>] perf_callchain_user+0x128/0x170
-[  434.421258]  [<ffffffff811154cd>] ? __perf_event_header__init_id+0xed/0x100
-[  434.421258]  [<ffffffff81116690>] perf_prepare_sample+0x200/0x280
-[  434.421258]  [<ffffffff81118da8>] __perf_event_overflow+0x1b8/0x290
-[  434.421258]  [<ffffffff81065240>] ? tg_shares_up+0x0/0x670
-[  434.421258]  [<ffffffff8104fe1a>] ? walk_tg_tree+0x6a/0xb0
-[  434.421258]  [<ffffffff81118f44>] perf_swevent_overflow+0xc4/0xf0
-[  434.421258]  [<ffffffff81119150>] do_perf_sw_event+0x1e0/0x250
-[  434.421258]  [<ffffffff81119204>] perf_tp_event+0x44/0x70
-[  434.421258]  [<ffffffff8105701f>] ftrace_profile_sched_block+0xdf/0x110
-[  434.421258]  [<ffffffff8106121d>] dequeue_entity+0x2ad/0x2d0
-[  434.421258]  [<ffffffff810614ec>] dequeue_task_fair+0x1c/0x60
-[  434.421258]  [<ffffffff8105818a>] dequeue_task+0x9a/0xb0
-[  434.421258]  [<ffffffff810581e2>] deactivate_task+0x42/0xe0
-[  434.421258]  [<ffffffff814bc019>] thread_return+0x191/0x808
-[  434.421258]  [<ffffffff81098a44>] ? switch_task_namespaces+0x24/0x60
-[  434.421258]  [<ffffffff8106f4c4>] do_exit+0x464/0x910
-[  434.421258]  [<ffffffff8106f9c8>] do_group_exit+0x58/0xd0
-[  434.421258]  [<ffffffff8106fa57>] sys_exit_group+0x17/0x20
-[  434.421258]  [<ffffffff8100b202>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1314693156-24131-1-git-send-email-avagin@openvz.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/amd_iommu.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1856,6 +1856,9 @@ perf_callchain_user(struct perf_callchai
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -773,14 +773,9 @@ static void domain_flush_complete(struct
+ static void domain_flush_devices(struct protection_domain *domain)
+ {
+ 	struct iommu_dev_data *dev_data;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&domain->lock, flags);
  
- 	perf_callchain_store(entry, regs->ip);
+ 	list_for_each_entry(dev_data, &domain->dev_list, list)
+ 		device_flush_dte(dev_data->dev);
+-
+-	spin_unlock_irqrestore(&domain->lock, flags);
+ }
  
-+	if (!current->mm)
-+		return;
-+
- 	if (perf_callchain_user32(regs, entry))
- 		return;
- 
+ /****************************************************************************
 
 
