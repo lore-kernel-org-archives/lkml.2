@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab1I1VSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 17:18:13 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58908
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751494Ab1I1VSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 17:18:12 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, kys@microsoft.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: [PATCH] staging: hv: remove the carrier status check from netvsc_open()
-Date: Wed, 28 Sep 2011 13:24:15 -0700
-Message-Id: <1317241455-30493-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755214Ab1I1VUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 17:20:08 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:10052 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab1I1VUH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 17:20:07 -0400
+Message-ID: <4E838F77.2040705@atmel.com>
+Date: Wed, 28 Sep 2011 23:19:51 +0200
+From: Nicolas FERRE <nicolas.ferre@atmel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; fr; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] at91 fixes for 3.1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Antivirus: avast! (VPS 110928-1, 28/09/2011), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking carrier status in netvsc_open() is not necessary.
+Hi Arnd,
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Here is a couple of fixes that may be included in 3.1-final.
+The Kconfig modification will allow to select the PWM driver for SAM9G45 
+SoC. This will also benefit to stable kernels.
+The new defconfig for SAM9G45 family will allow us to better monitor the 
+health of this port through automatic compilation mechanism. I find it 
+interesting to have it included the sooner.
 
----
- drivers/staging/hv/TODO         |    2 --
- drivers/staging/hv/netvsc_drv.c |   19 +++++++------------
- 2 files changed, 7 insertions(+), 14 deletions(-)
+The pull is based on the following changes since commit 
+a102a9ece5489e1718cd7543aa079082450ac3a2:
 
-diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
-index fcc57c2..ed4d636 100644
---- a/drivers/staging/hv/TODO
-+++ b/drivers/staging/hv/TODO
-@@ -1,7 +1,5 @@
- TODO:
- 	- audit the network driver
--	  - checking for carrier inside open is wrong, network device API
--            confusion??
- 	- audit the scsi driver
- 
- Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 69c233e..561ba58 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -69,20 +69,15 @@ static int netvsc_open(struct net_device *net)
- 	struct hv_device *device_obj = net_device_ctx->device_ctx;
- 	int ret = 0;
- 
--	if (netif_carrier_ok(net)) {
--		/* Open up the device */
--		ret = rndis_filter_open(device_obj);
--		if (ret != 0) {
--			netdev_err(net, "unable to open device (ret %d).\n",
--				   ret);
--			return ret;
--		}
--
--		netif_start_queue(net);
--	} else {
--		netdev_err(net, "unable to open device...link is down.\n");
-+	/* Open up the device */
-+	ret = rndis_filter_open(device_obj);
-+	if (ret != 0) {
-+		netdev_err(net, "unable to open device (ret %d).\n", ret);
-+		return ret;
- 	}
- 
-+	netif_start_queue(net);
-+
- 	return ret;
- }
- 
+   Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
+
+are available in the git repository at:
+   git://github.com/at91linux/linux-at91.git at91-fixes
+
+Nicolas Ferre (2):
+   ARM: at91: remove dependency for Atmel PWM driver selector in Kconfig
+   ARM: at91: add defconfig for at91sam9g45 family
+
+  arch/arm/configs/at91sam9g45_defconfig |  214 ++++++++++++++++++++++
+  drivers/misc/Kconfig                   |    1 -
+  2 files changed, 214 insertions(+), 1 deletions(-)
+  create mode 100644 arch/arm/configs/at91sam9g45_defconfig
+
 -- 
-1.6.3.2
-
+Nicolas Ferre
