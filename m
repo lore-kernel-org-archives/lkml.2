@@ -1,128 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab1I1R7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:59:35 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47836 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751785Ab1I1R7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:59:34 -0400
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110928174859.GA21628@redhat.com>
-References: <20110928004722.GA27421@kernel.dk>
-	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
-	 <4E82751C.9050908@kernel.dk>
-	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-	 <4E832A55.30709@kernel.dk>
-	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
-	 <4E832BD2.50409@kernel.dk>
-	 <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
-	 <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
-	 <20110928174859.GA21628@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 12:59:28 -0500
-Message-ID: <1317232768.22022.14.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1754709Ab1I1SCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:02:16 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1477 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab1I1SCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 14:02:15 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Subject: Re: [PATCH] drivers/firmware/edd: Treat "XPRS" host bus type
+ the same as "PCI"
+From: "Michael Chan" <mchan@broadcom.com>
+To: "Matt Domsch" <Matt_Domsch@dell.com>, yi.zou@intel.com
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>
+In-Reply-To: <20110928162815.GA14031@emperor.us.dell.com>
+References: <1317162728-14488-1-git-send-email-mchan@broadcom.com>
+ <20110928162815.GA14031@emperor.us.dell.com>
+Date: Wed, 28 Sep 2011 10:51:19 -0700
+Message-ID: <1317232279.13696.3.camel@HP1>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5)
+X-WSS-ID: 629DBD105IS13191521-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 13:48 -0400, Vivek Goyal wrote:
-> On Wed, Sep 28, 2011 at 10:43:36AM -0500, James Bottomley wrote:
-> > On Wed, 2011-09-28 at 08:22 -0700, Linus Torvalds wrote:
-> > > On Wed, Sep 28, 2011 at 7:14 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> > > >
-> > > >  /*
-> > > > - * Note: If a driver supplied the queue lock, it should not zap that lock
-> > > > - * unexpectedly as some queue cleanup components like elevator_exit() and
-> > > > - * blk_throtl_exit() need queue lock.
-> > > > + * Note: If a driver supplied the queue lock, it is disconnected
-> > > > + * by this function. The actual state of the lock doesn't matter
-> > > > + * here as the request_queue isn't accessible after this point
-> > > > + * (QUEUE_FLAG_DEAD is set) and no other requests will be queued.
-> > > >  */
-> > > 
-> > > So quite frankly, I just don't believe in that comment.
-> > > 
-> > > If no more requests will be queued or completed, then the queue lock
-> > > is irrelevant and should not be changed.
-> > 
-> > That was my original argument for my patch.  I lost it because you can
-> > still hold a queue reference in the sysfs code for block, which means
-> > that the put in blk_cleanup_queue() won't be the final one and you'll
-> > get a use after free of the lock when the sysfs directory is exited
-> > because we take the lock again as we destroy the elevator.
-> > 
-> > > More importantly, if no more requests are queued or completed after
-> > > blk_cleanup_queue(), then we wouldn't have had the bug that we clearly
-> > > had with the elevator accesses, now would we? So the comment seems to
-> > > be obviously bogus and wrong.
-> > 
-> > So this I agree with.  blk_cleanup_queue() prevents any new access to
-> > the queue, but we still have the old reference holders to contend with.
-> > They can submit requests, although we try to error them again with the
-> > queue guards check.
-> > 
-> > > I pulled this, but I think the "just move the teardown" would have
-> > > been the safer option. What  happens if a request completes on another
-> > > CPU just as we are changing locks, and we lock one lock and then
-> > > unlock another?!
-> > 
-> > The only code for which this could be true is code where we use the
-> > block supplied lock, so effectively it never changes.
-> 
-> > The drivers which supply their own lock are supposed to have already
-> > ensured that the queue is unused.
-> 
-> Hi James,
-> 
-> For my education purposes, how will driver come to know that queue is
-> unused? Does it happen by checking if any requsts are queued or not? If
-> yes, we might run into issues with throttling logic.
 
-I can't explain this ... it's the bit I think is bogus.  If we need
-refcounted queues, it's impossible to satisfy and if we don't, why do we
-have refcounts?
-
-The root cause of this is allowing drivers to specify locks.  If we
-really want to continue doing this, we should have a lock release
-function which is called as part of the queue refcounting model where
-the final lock free can be done.  That's a big amount of work if you
-look at all the block drivers which use their own locks.
-
-James
-
-
-> For example, if some bio have been throttled and are queued in some data
-> structures on queue.  In that case driver does not even know that some bios
-> are queued and will be submitted later. Now if driver calls blk_cleanup_queue()
-> it might happen that throttling related worker is already queue lock and
-> trying to do some housekeeping or trying to dispatch bio etc. Now if queue
-> lock is swapped, it will just cause all the kind of issues.
+On Wed, 2011-09-28 at 09:28 -0700, Matt Domsch wrote:
+> On Tue, Sep 27, 2011 at 05:32:08PM -0500, Michael Chan wrote:
+> > PCI Express devices will return "XPRS" host bus type during BIOS EDD
+> > call.  "XPRS" should be treated just like "PCI" so that the proper
+> > pci_dev symlink will be created.  Scripts such as fcoe-edd.sh will
+> > then work correctly.
+> > 
+> > Cc: Matt Domsch <Matt_Domsch@dell.com>
+> > Signed-off-by: Michael Chan <mchan@broadcom.com>
 > 
-> I am wondering if we should retain blk_throtl_exit() in blk_cleanup_queue()
-> before lock swap and just move elevator cleanup in blk_release_queue().
+> Agreed, this looks correct.  Thanks for the patch.  Feel free to
+> submit it through whichever maintainer tree is convenient for you.
 > 
-> A note to myself, I should probably enhance blk_throtl_exit() to look for any
-> queued throttled bio and single their completion with error (-ENODEV) or
-> something like that.
+> Reviewed-by: Matt Domsch <Matt_Domsch@dell.com>
 > 
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Yi, could you submit this patch through the open-fcoe tree?  Thanks.
 
 
