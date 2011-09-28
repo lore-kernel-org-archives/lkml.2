@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1I1JUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:20:20 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:47791 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1I1JUT (ORCPT
+	id S1753976Ab1I1JU1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:20:27 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38859 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab1I1JUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:20:19 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Kyle Moffett <kyle@moffetthome.net>
-Subject: Re: [PATCH 09/10] drbd: Remove volume numbers from struct p_header95
-Date: Wed, 28 Sep 2011 11:20:06 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        drbd-dev@lists.linbit.com
-References: <1316788285-17433-1-git-send-email-philipp.reisner@linbit.com> <201109271134.06410.philipp.reisner@linbit.com> <CAGZ=bqL=K6v+jxZOwv-=iL=MjOpoJ4JRAPLTtwdHNW_CsFc4GA@mail.gmail.com>
-In-Reply-To: <CAGZ=bqL=K6v+jxZOwv-=iL=MjOpoJ4JRAPLTtwdHNW_CsFc4GA@mail.gmail.com>
-X-OTRS-FollowUp-SenderType: agent
+	Wed, 28 Sep 2011 05:20:24 -0400
+X-AuditID: b753bd60-97c2cba0000070ad-84-4e82e6d5a527
+X-AuditID: b753bd60-97c2cba0000070ad-84-4e82e6d5a527
+Message-ID: <4E82E6D0.4000508@hitachi.com>
+Date: Wed, 28 Sep 2011 18:20:16 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 25/26]   perf: Documentation for perf
+ uprobes
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120507.25326.68120.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20110920120507.25326.68120.sendpatchset@srdronam.in.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109281120.07349.philipp.reisner@linbit.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 28. September 2011, 06:26:45 schrieb Kyle Moffett:
-> On Tue, Sep 27, 2011 at 05:34, Philipp Reisner
-> 
-> <philipp.reisner@linbit.com> wrote:
-> > Am Freitag, 23. September 2011, 19:28:24 schrieb Kyle Moffett:
-> >> On Fri, Sep 23, 2011 at 10:31, Philipp Reisner 
-<philipp.reisner@linbit.com> wrote:
-> >> > diff --git a/drivers/block/drbd/drbd_main.c
-> >> > b/drivers/block/drbd/drbd_main.c index 3310986..99b467e 100644
-> >> > --- a/drivers/block/drbd/drbd_main.c
-> >> > +++ b/drivers/block/drbd/drbd_main.c
-> >> > @@ -717,11 +717,11 @@ static unsigned int prepare_header80(struct
-> >> > p_header80 *h, enum drbd_packet cmd, return sizeof(struct p_header80);
-> >> >  }
-> >> > 
-> >> > -static unsigned int prepare_header95(struct p_header95 *h, enum
-> >> > drbd_packet cmd, int size, int vnr) +static unsigned int
-> >> > prepare_header95(struct p_header95 *h, enum drbd_packet cmd, int size)
-> >> > { h->magic   = cpu_to_be16(DRBD_MAGIC_BIG);
-> >> >        h->command = cpu_to_be16(cmd);
-> >> > -       h->vol_n_len = cpu_to_be32(vnr << 24 | size);
-> >> > +       h->length = cpu_to_be32(size);
-> >> >        return sizeof(struct p_header95);
-> >> >  }
-> >> 
-> >> This patch needs a commit message indicating why it does not break
-> >> compatibility.  If you are guaranteed that the "vnr" passed into
-> >> prepare_header95 is always zero, then you should indicate why that is
-> >> true.
-> > 
-> > Here is the commit message for that one. The alternative is to merge
-> > that to patch 'drbd: Use new header layout, and send volume IOs'.
-> > ( Which is patch number 236, i.e. outside of this (10th) posting of
-> >  DRBD-8.4 patches. It was posted on August 25.
-> >  See https://lkml.org/lkml/2011/8/25/322 )
-> > 
-> > Author: Andreas Gruenbacher <agruen@linbit.com>
-> > Date:   Tue Mar 22 13:17:47 2011 +0100
-> > 
-> >    drbd: Remove volume numbers from struct p_header95
-> > 
-> >    Remove the temporal 8 bit volume number form header 95. All
-> > connections that support multiple volumes are new using protocol 100
-> > with header 100.
-> 
-> So my concern is that this effectively ignores an old field in
-> header95, so an old DRBD trying to talk about multiple volumes to a
-> new DRBD using header95 is going to get its volume number ignored,
-> right?
-> 
-> This means that old-DRBD and new-DRBD cannot communicate about
-> multiple volumes over one connection at all.  That needs to be made an
-> explicit part of this commit message and the rationale explained in
-> detail.
-> 
-> In particular, you need to make sure to describe what negotiation
-> mechanism prevents multiple-volume-header95 messages from being sent
-> to a version of DRBD including this commit.  If that behavior (IE: a
-> negotiation change) is part of another commit, then this is small
-> enough that I would merge it with that other commit, but it still
-> needs comments about why version interoperability will not break.
-> 
-> It seems to me like DRBD has historically not been terribly strict
-> with backwards-compatibility to very old versions, but now that it is
-> in the upstream kernel that is a very serious concern.  With an
-> out-of-tree module you have a lot more control over exactly which
-> version you are running, but when it's in-tree you are stuck with
-> whatever your vendor's kernel version is (for the most part).  Any
-> time you change or break backwards compatibility there needs to be at
-> the very *least* a detailed comment indicating why it needs to be
-> broken and exactly how you avoid additional complications from that.
-> 
+(2011/09/20 21:05), Srikar Dronamraju wrote:
+> Modify perf-probe.txt to include uprobe documentation
 
-Hi,
+This change should be included in 23rd and 24th patches,
+because the documentation should be updated with the tool
+enhancement.
 
-Well, the last time we broke the on-the-wire compatibility was in January
-2007, with the release of drbd-8.0.0. Since then all newer releases can
-connect to drbd-8.0.0 and every release in between. (Side node: The 8.0
-code was also the code we submitted for inclusion into mainline for the
-first time back in 2007)
+Thank you,
 
-What happened here in this patch set is, that first (with patch #236)
-the volume number gets introduced in the highest byte of the length
-(since the bio size only needs 20 bits currently that is valid).
-Later on the protocol 100 header gets implemented, and the
-volume number field in header 95 is removed again.
+> 
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  tools/perf/Documentation/perf-probe.txt |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+> index 800775e..3c98a54 100644
+> --- a/tools/perf/Documentation/perf-probe.txt
+> +++ b/tools/perf/Documentation/perf-probe.txt
+> @@ -78,6 +78,8 @@ OPTIONS
+>  -F::
+>  --funcs::
+>  	Show available functions in given module or kernel.
+> +	With -x/--exec, can also list functions in a user space executable
+> +	/ shared library.
+>  
+>  --filter=FILTER::
+>  	(Only for --vars and --funcs) Set filter. FILTER is a combination of glob
+> @@ -98,6 +100,11 @@ OPTIONS
+>  --max-probes::
+>  	Set the maximum number of probe points for an event. Default is 128.
+>  
+> +-x::
+> +--exec=PATH::
+> +	Specify path to the executable or shared library file for user
+> +	space tracing. Can also be used with --funcs option.
+> +
+>  PROBE SYNTAX
+>  ------------
+>  Probe points are defined by following syntax.
+> @@ -182,6 +189,13 @@ Delete all probes on schedule().
+>  
+>   ./perf probe --del='schedule*'
+>  
+> +Add probes at zfree() function on /bin/zsh
+> +
+> + ./perf probe -x /bin/zsh zfree
+> +
+> +Add probes at malloc() function on libc
+> +
+> + ./perf probe -x /lib/libc.so.6 malloc
+>  
+>  SEE ALSO
+>  --------
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So the header 95 with volume numbers is a temporal thing, that happened
-during development. It was never in a released version.
-
-Ok, to put an end to this discussion:
-I changed patch #236 to never introduce that field into header 95.
-As a consequence this patch 'drbd: Remove volume numbers from struct 
-p_header95' turns into the removal of outdated comments. See the follow-up
-mail.
-
-Best,
- Phil
 
 -- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
-
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
