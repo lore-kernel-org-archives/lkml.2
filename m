@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1I1TcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 15:32:00 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:52070 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab1I1Tb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 15:31:59 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4E8375ED.1060209@freescale.com>
-Date: Wed, 28 Sep 2011 14:30:53 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1754065Ab1I1TdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 15:33:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59745 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854Ab1I1TdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 15:33:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="57660614"
+Message-ID: <4E837679.4040904@linux.intel.com>
+Date: Wed, 28 Sep 2011 12:33:13 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH 3/6] ASoC: Remove unused "control_data" field of struct
- cs4270_private
-References: <1317175218.14102.1.camel@phoenix> <1317175838.14102.4.camel@phoenix>
-In-Reply-To: <1317175838.14102.4.camel@phoenix>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "lkml," <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis@compulab.co.il>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: Serial issues with EG20T (Topcliff) PCH uarts
+References: <4E820FA8.8050604@linux.intel.com> <20110927225722.54936878@lxorguk.ukuu.org.uk> <4E835EBC.3080604@linux.intel.com> <CAErSpo6XcctMq1uM2No8Z=1_sgBxBhNQ3os3dU=aHCsPxrpwBg@mail.gmail.com>
+In-Reply-To: <CAErSpo6XcctMq1uM2No8Z=1_sgBxBhNQ3os3dU=aHCsPxrpwBg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
-> The control_data field is used to initialize the codec's control_data field,
-> but since this is also done by the snd-soc-cache core, the redundant
-> assignment can be removed and the field can be dropped.
+
+On 09/28/2011 12:14 PM, Bjorn Helgaas wrote:
+> On Wed, Sep 28, 2011 at 11:51 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>
+>> Hi Alan,
+>>
+>> Thanks for the suggestions. Still not working, details follow.
+>>
+>> On 09/27/2011 02:57 PM, Alan Cox wrote:
+>>>
+>>> No idea for syslinux.
+>>
+>> Doesn't like 9600 either.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
+> Are you using "serial 1" or similar for the syslinux config?  I don't
+> know how syslinux learns the (port -> address) mapping, but
+> doc/syslinux.txt says you can also specify the address directly, e.g.,
+> "serial 0xb060 9600".
 
-Acked-by: Timur Tabi <timur@freescale.com>
+I was using 0,1,2,3, with no output. Using serial 0xb060 as you describe
+results in a single char appearing in minicom when syslinux tries to
+output to the serial port.
 
-Although Mark, it would have been nice if you had given me a chance to test this
-change before applying the patch.
+> 
+> I'm not familiar with the EG20T hardware, but all the code in
+> drivers/tty/serial/pch_uart.c makes me wonder how 16550-compatible
+> those things really are.  If the EG20T UARTs require special tickling,
+> syslinux isn't likely to know how to do that.
+
+I the results of the test above support this concern. Syslinux
+apparently couldn't find the ports by itself. Specifying the IO address
+directly gets it to the right place, but something appears to not be
+initialized.
+
+I wonder if this could be fixed with some help from the firmware.
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
