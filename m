@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab1I1Wof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:44:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54324 "EHLO mx2.suse.de"
+	id S932730Ab1I1Wos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54340 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932695Ab1I1Wob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:31 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
-Message-Id: <20110928220139.775478770@clark.kroah.org>
+	id S932642Ab1I1Wop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
+Message-Id: <20110928220140.077109100@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:41 -0700
+Date: Wed, 28 Sep 2011 15:01:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [137/244] iwlagn: fix command queue timeout
+        Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [140/244] Fix the conflict between rwpidforward and rw mount options
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Steve French <sfrench@us.ibm.com>
 
-commit 282cdb325aea4ebbc42ce753b47cc96145eb54bc upstream.
+commit c9c7fa0064f4afe1d040e72f24c2256dd8ac402d upstream.
 
-If the command queue is constantly busy,
-which can happen in P2P, the hangcheck
-timer will frequently find a command in
-it and will eventually reset the device
-because nothing sets the timestamp for
-this queue when commands are processed.
+Both these options are started with "rw" - that's why the first one
+isn't switched on even if it is specified. Fix this by adding a length
+check for "rw" option check.
 
-Fix this by setting the timestamp when
-a command completes.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-tx.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/cifs/connect.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -802,6 +802,8 @@ void iwl_tx_cmd_complete(struct iwl_priv
- 	cmd = txq->cmd[cmd_index];
- 	meta = &txq->meta[cmd_index];
- 
-+	txq->time_stamp = jiffies;
-+
- 	iwlagn_unmap_tfd(priv, meta, &txq->tfds[index], PCI_DMA_BIDIRECTIONAL);
- 
- 	/* Input error checking is done when commands are added to queue. */
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1258,7 +1258,7 @@ cifs_parse_mount_options(const char *mou
+ 			/* ignore */
+ 		} else if (strnicmp(data, "guest", 5) == 0) {
+ 			/* ignore */
+-		} else if (strnicmp(data, "rw", 2) == 0) {
++		} else if (strnicmp(data, "rw", 2) == 0 && strlen(data) == 2) {
+ 			/* ignore */
+ 		} else if (strnicmp(data, "ro", 2) == 0) {
+ 			/* ignore */
+@@ -1361,7 +1361,7 @@ cifs_parse_mount_options(const char *mou
+ 			vol->server_ino = 1;
+ 		} else if (strnicmp(data, "noserverino", 9) == 0) {
+ 			vol->server_ino = 0;
+-		} else if (strnicmp(data, "rwpidforward", 4) == 0) {
++		} else if (strnicmp(data, "rwpidforward", 12) == 0) {
+ 			vol->rwpidforward = 1;
+ 		} else if (strnicmp(data, "cifsacl", 7) == 0) {
+ 			vol->cifs_acl = 1;
 
 
