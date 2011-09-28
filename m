@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab1I1WTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:19:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34740 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab1I1WTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:19:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: PME via interrupt or SCI mechanism?
-Date: Thu, 29 Sep 2011 00:21:28 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20110912171003.GA7939@xanatos> <201109272254.47232.rjw@sisk.pl> <20110927235216.GA5765@xanatos>
-In-Reply-To: <20110927235216.GA5765@xanatos>
+	id S1754957Ab1I1WT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:19:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57381 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab1I1WTW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:19:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=bSR0zg7zvOT+3wLaggnTQi+Om6qqzyOPAuWdHybEZ41gxDoTdRoU66pXpcMoGxi3+
+	PPRKcnnX05YIsdtWuH0pg==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109290021.28407.rjw@sisk.pl>
+In-Reply-To: <20110922143202.GC13359@shamino.rdu.redhat.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1316447235-31345-1-git-send-email-nhorman@tuxdriver.com> <20110922135428.GC16740@parisc-linux.org>
+ <20110922143202.GC13359@shamino.rdu.redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 28 Sep 2011 16:18:55 -0600
+Message-ID: <CAErSpo7LPz=oXEN6VOZ-SqG_o4+i7hxbf4+UWtyPVLOfVpaeyA@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v3)
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 28, 2011, Sarah Sharp wrote:
-> On Tue, Sep 27, 2011 at 10:54:47PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, September 27, 2011, Sarah Sharp wrote:
-> > > On Tue, Sep 27, 2011 at 12:20:26AM +0200, Rafael J. Wysocki wrote:
-> > > > On Sunday, September 25, 2011, Rafael J. Wysocki wrote:
-> > > > > On Thursday, September 22, 2011, Sarah Sharp wrote:
-> > > > > > On Mon, Sep 19, 2011 at 11:43:33PM +0200, Rafael J. Wysocki wrote:
-> > > > > Without looking at the tables at the moment (I'll do that later),
-> > > > > I think that they are missing the information that GPE 0D is a wakeup
-> > > > > GPE for the xHCI device.
-> > > > 
-> > > > The DSDT appears to contain that information, so I'm not sure what's
-> > > > going on.  Perhaps you can put a debug printk into acpi_dev_run_wake()
-> > > > to see if that function is called for the xHCI controllers?
-> > > 
-> > > I put a printk in acpi_dev_run_wake(), and that shows up in the original
-> > > dmesg I sent:
-> > > 
-> > > Sep 22 10:47:09 talon kernel: [ 2026.211933] xhci_hcd 0000:00:14.0: acpi_pci_run_wake - enable dev wake
-> > > Sep 22 10:47:09 talon kernel: [ 2026.211936] acpi device:34: acpi_dev_run_wake - enable dev wake
-> > > Sep 22 10:47:09 talon kernel: [ 2026.211955] acpi device:34: acpi_dev_run_wake - return -19
-> > 
-> > OK, can you printk() dev->wakeup.gpe_number here?
-> > 
-> > [/me realizes that "error" is not really used in this function.  Bah.]
-> 
-> Ok, here's what dmesg says (I used %u not 0x%x for the GPE number):
-> 
-> Sep 27 16:30:34 talon kernel: [  882.301023] xhci_hcd 0000:00:14.0: xhci_pci_suspend
-> Sep 27 16:30:34 talon kernel: [  882.301029] xhci_hcd 0000:00:14.0: xhci_suspend
-> Sep 27 16:30:34 talon kernel: [  882.301039] xhci_hcd 0000:00:14.0: // Setting command ring address to 0x30c3f001
-> Sep 27 16:30:34 talon kernel: [  882.301090] xhci_hcd 0000:00:14.0: hcd_pci_runtime_suspend: 0
-> Sep 27 16:30:34 talon kernel: [  882.301140] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
-> Sep 27 16:30:34 talon kernel: [  882.301143] xhci_hcd 0000:00:14.0: acpi_pci_power_manageable - dev is not power manageable
-> Sep 27 16:30:34 talon kernel: [  882.301146] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
-> Sep 27 16:30:34 talon kernel: [  882.301149] xhci_hcd 0000:00:14.0: __pci_enable_wake - enable runtimewake
-> Sep 27 16:30:34 talon kernel: [  882.301156] xhci_hcd 0000:00:14.0: PME# enabled
-> Sep 27 16:30:34 talon kernel: [  882.301159] xhci_hcd 0000:00:14.0: acpi_pci_run_wake - enable dev wake
-> Sep 27 16:30:34 talon kernel: [  882.301162] acpi device:34: acpi_dev_run_wake - enable dev wake
-> Sep 27 16:30:34 talon kernel: [  882.301175] acpi device:34: acpi_dev_run_wake - enable gpe 13
-> Sep 27 16:30:34 talon kernel: [  882.301185] acpi device:34: acpi_dev_run_wake - return -19
-> Sep 27 16:30:34 talon kernel: [  882.301188] xhci_hcd 0000:00:14.0: pci_raw_set_power_state from 0 to 3
-> Sep 27 16:30:34 talon kernel: [  882.312288] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
-> Sep 27 16:30:34 talon kernel: [  882.312293] xhci_hcd 0000:00:14.0: acpi_pci_power_manageable - dev is not power manageable
-> Sep 27 16:30:34 talon kernel: [  882.312296] acpi_bus_power_manageable - result 0, device->flags.power_manageable 0
-> Sep 27 16:30:34 talon kernel: [  882.312299] xhci_hcd 0000:00:14.0: pci_platform_power_transition - is NOT power managable
-> 
-> If I wake up the host controller by plugging in a webcam into an external hub:
-> 
-> Sep 27 16:31:46 talon kernel: [  953.645014] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645023] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645029] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645034] e1000e 0000:00:19.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645089] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645094] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645098] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
-> Sep 27 16:31:46 talon kernel: [  953.645103] e1000e 0000:00:19.0: pci_acpi_wake_dev
-> 
-> Those lines repeat constantly until I echo on to the power/control file
-> for the xHCI device.
-> 
-> If I cat the /sys/firmware/acpi/interrupts/gpe0D file *before* I disable
-> D3, I see:
-> 
-> root@talon:/sys/firmware/acpi/interrupts# cat gpe0D
->   211327   enabled
-> root@talon:/sys/firmware/acpi/interrupts# 
-> 
-> I think I was catting the file after I ran `echo on > power/control`
-> previously.  Sorry for the confusion.
-> 
-> So it looks like gpe 0xD is enabled when the host goes into D3, and
-> acpi_dev_run_wake is calling acpi_enable_gpe() with GPE 13 (i.e. 0xD),
-> correct?
+On Thu, Sep 22, 2011 at 8:32 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>
+> On Thu, Sep 22, 2011 at 07:54:28AM -0600, Matthew Wilcox wrote:
+> > On Mon, Sep 19, 2011 at 11:47:15AM -0400, Neil Horman wrote:
+> > > So a while back, I wanted to provide a way for irqbalance (and other apps) to
+> > > definitively map irqs to devices, which, for msi[x] irqs is currently not really
+> > > possible in user space.  My first attempt wen't not so well:
+> > > https://lkml.org/lkml/2011/4/21/308
+> > >
+> > > It was plauged by the same issues that prior attempts were, namely that it
+> > > violated the one-file-one-value sysfs rule.  I wandered off but have recently
+> > > come back to this.  I've got a new implementation here that exports a new
+> > > subdirectory for every pci device,  called msi_irqs.  This subdirectory contanis
+> > > a variable number of numbered subdirectories, in which the number represents an
+> > > msi irq.  Each numbered subdirectory contains attributes for that irq, which
+> > > currently is only the mode it is operating in (msi vs. msix).  I think fits
+> > > within the constraints sysfs requires, and will allow irqbalance to properly map
+> > > msi irqs to devices without having to rely on rickety, best guess methods like
+> > > interface name matching.
+> >
+> > This approach feels like building bigger rockets instead of a space
+> > elevator :-)
+> >
+> In which case your comments make me think that you're trying to build the
+> Death Star instead of buying more tie fighters :)
+> https://docs.google.com/viewer?url=http://www.dau.mil/pubscats/ATL%20Docs/Sep-Oct11/Ward.pdf
+>
+> > What we need is to allow device drivers to ask for per-CPU interrupts,
+> > and implement them in terms of MSI-X.  I've made a couple of stabs at
+> > implementing this, but haven't got anything working yet.  It would solve
+> Yes, IIRC you were trying to do this the first time I proposed this:
+> https://lkml.org/lkml/2011/4/21/315
+>
+> > a number of problems:
+> >
+> Thats great, I don't see how this precludes what I'm trying to do here.  All
+> this patch does is expose a definitive relationship between msi irqs and the pci
+> devices that allocate them.  The kernel internal model used to allocate msi
+> interrupts can change, the kobject creation and removal just has to change with
+> it (presumably to create and destroy the msi irq kobjects when the individual
+> irqs are allocated/freed, rather than in a batch).  I don't see why we should
+> block enhancements to the existing msi implementation until you get new model
+> sorted, especially when this feature works equally well, despite the model we
+> use internally.
 
-Yes, that's correct.
+Matthew, I don't understand this issue well enough to know whether
+Neil's patch would get in the way of your planned enhancements, or
+whether it would be baggage we won't want to maintain forever.  As far
+as I can tell, the patch exposes an (IRQ -> device) mapping, which
+would still be meaningful even with per-CPU interrupts.  Can you
+educate me?
 
-Moreover, evidently, the event is signaled and it causes pci_acpi_wake_dev()
-to be called for multiple devices, _except_ for the xhci_hcd.  Perhaps
-the notifier is not installed for that device for some reason.
+Neil, why do you propose doing this just for MSI IRQs?  I would think
+it'd be useful information for *all* IRQs, regardless of type, and
+that exposing the mapping for all IRQs would make it easier for tools.
 
-Please add an additional debug printk()s to pci_acpi_add_pm_notifier()
-for both pci_dev and dev and for the result returned by add_pm_notifier().
+Also, you have a nice long changelog, but in five years, the details
+about previous attempts and changes between v1/v2/v3 will be useless.
+Can you replace it with a short summary of what the patch *does*,
+maybe something along the lines of the
+Documentation/ABI/testing/sysfs-bus-pci update?  (BTW, that update
+contains a couple typos -- "set subdirectories," "vecotor")
 
-Thanks,
-Rafael
+Bjorn
