@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933050Ab1I1XGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:06:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54533 "EHLO mx2.suse.de"
+	id S932973Ab1I1WqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:46:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54521 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab1I1Wq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:46:27 -0400
+	id S932927Ab1I1WqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:46:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:43 2011
-Message-Id: <20110928220143.237872336@clark.kroah.org>
+Message-Id: <20110928220143.026883351@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:14 -0700
+Date: Wed, 28 Sep 2011 15:02:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kiran Patil <kiran.patil@intel.com>,
-        Robert Love <robert.w.love@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [170/244] [SCSI] libfc: Enhancement to RPORT state machine applicable only for VN2VN mode
+        Marek Vasut <marek.vasut@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [168/244] ASIX: Add AX88772B USB ID
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,72 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kiran Patil <kiran.patil@intel.com>
+From: Marek Vasut <marek.vasut@gmail.com>
 
-commit 480584818a4bb3655d8d0d875ed60b427fc61cc5 upstream.
+commit 308859097831831a979f2e82cbeef0a94f438080 upstream.
 
-Problem: Existing RPORT state machine continues witg FLOGI/PLOGI
-process only after it receices beacon from other end. Once claiming
-stage is over (either clain notify or clain repose), beacon is sent
-and state machine enters into operational mode where it initiates the
-rlogin process (FLOGI/PLOGI) to the peer but before this rlogin is
-initiated, exitsing implementation checks if it received beacon from
-other end, it beacon is not received yet, rlogin process is not
-initiated. Other end initiates FLOGI but peer end keeps on rejecting
-FLOGI, hence after 3 retries other end deletes associated rport, then
-sends a beacon. Once the beacon is received, peer end now initiates
-rlogin to the peer end but since associated rport is deleted FLOGI is
-neither accepted nor the reject response send out because rport is
-deleted. Hence unable to proceed withg FLOGI/PLOGI process and fails
-to establish VN2VN connection.
+This device can be found in Acer Iconia TAB W500 tablet dock.
 
-Fix: VN2VN spec is not standard yet but based on exitsing collateral
-on T11, it appears that, both end shall send beacon and enter into
-'operational mode' without explictly waiting for beacon from other
-end. Fix is to allow the RPORT login process as long as respective
-RPORT is created (as part of claim notification / claim response) even
-though state of RPORT is INIT. Means don't wait for beacon from peer
-end, if peer end initiates FLOGI (means peer end exist and
-responding).
-
-Notes: This patch is preparing the FCoE stack for target wrt
-offload. This is generic patch and harmless even if applied on storage
-initiator because 'else if' condition of function 'fcoe_oem_found'
-shall evaluate to TRUE only for targets.
-
-Dependencies: None
-
-Signed-off-by: Kiran Patil <kiran.patil@intel.com>
-Signed-off-by: Robert Love <robert.w.love@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libfc/fc_rport.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/usb/asix.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/scsi/libfc/fc_rport.c
-+++ b/drivers/scsi/libfc/fc_rport.c
-@@ -801,6 +801,20 @@ static void fc_rport_recv_flogi_req(stru
- 
- 	switch (rdata->rp_state) {
- 	case RPORT_ST_INIT:
-+		/*
-+		 * If received the FLOGI request on RPORT which is INIT state
-+		 * (means not transition to FLOGI either fc_rport timeout
-+		 * function didn;t trigger or this end hasn;t received
-+		 * beacon yet from other end. In that case only, allow RPORT
-+		 * state machine to continue, otherwise fall through which
-+		 * causes the code to send reject response.
-+		 * NOTE; Not checking for FIP->state such as VNMP_UP or
-+		 * VNMP_CLAIM because if FIP state is not one of those,
-+		 * RPORT wouldn;t have created and 'rport_lookup' would have
-+		 * failed anyway in that case.
-+		 */
-+		if (lport->point_to_multipoint)
-+			break;
- 	case RPORT_ST_DELETE:
- 		mutex_unlock(&rdata->rp_mutex);
- 		rjt_data.reason = ELS_RJT_FIP;
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -1502,6 +1502,10 @@ static const struct usb_device_id	produc
+ 	USB_DEVICE (0x04f1, 0x3008),
+ 	.driver_info = (unsigned long) &ax8817x_info,
+ }, {
++	// ASIX AX88772B 10/100
++	USB_DEVICE (0x0b95, 0x772b),
++	.driver_info = (unsigned long) &ax88772_info,
++}, {
+ 	// ASIX AX88772 10/100
+ 	USB_DEVICE (0x0b95, 0x7720),
+ 	.driver_info = (unsigned long) &ax88772_info,
 
 
