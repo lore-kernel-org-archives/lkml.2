@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab1I1WhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:37:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53392 "EHLO mx2.suse.de"
+	id S1755310Ab1I1WhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:37:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53402 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab1I1WhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:26 2011
-Message-Id: <20110928220126.722939821@clark.kroah.org>
+	id S1755271Ab1I1WhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:15 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:27 2011
+Message-Id: <20110928220126.929162960@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:38 -0700
+Date: Wed, 28 Sep 2011 14:59:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [014/244] USB: ftdi_sio: add Calao reference board support
+        Andrew Bird <ajb@spheresystems.co.uk>,
+        Alex Chiang <achiang@canonical.com>
+Subject: [016/244] USB option driver add PID of Huawei Vodafone K3806
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Andrew Bird <ajb@spheresystems.co.uk>
 
-commit c96fbdd0ab97235f930ebf24b38fa42a2e3458cf upstream.
+commit 0e69d75ccb2f091757b38d4d6a2ed739e06b615e upstream.
 
-Calao use on there dev kits a FT2232 where the port 0 is used for the JTAG and
-port 1 for the UART
+This patch adds the product ID of Huawei's Vodafone K3806 mobile broadband
+modem to option.c. This is necessary so that the driver gets loaded on
+demand without the intervention of usb_modeswitch. This has the benefit of
+it becoming available faster and also ensures that the option driver is not
+bound to a network interface that should be claimed by cdc_ether.
 
-They use the same VID and PID as FTDI Chip but they program the manufacturer
-name in the eeprom
-
-So use this information to detect it
-
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Signed-off-by: Alex Chiang <achiang@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -101,6 +101,7 @@ static int   ftdi_jtag_probe(struct usb_
- static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
- static int   ftdi_NDI_device_setup(struct usb_serial *serial);
- static int   ftdi_stmclite_probe(struct usb_serial *serial);
-+static int   ftdi_8u2232c_probe(struct usb_serial *serial);
- static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
- static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
- 
-@@ -128,6 +129,10 @@ static struct ftdi_sio_quirk ftdi_stmcli
- 	.probe	= ftdi_stmclite_probe,
- };
- 
-+static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
-+	.probe	= ftdi_8u2232c_probe,
-+};
-+
- /*
-  * The 8U232AM has the same API as the sio except for:
-  * - it can support MUCH higher baudrates; up to:
-@@ -177,7 +182,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_ALT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
--	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) ,
-+		.driver_info = (kernel_ulong_t)&ftdi_8u2232c_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_232H_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
-@@ -1732,6 +1738,18 @@ static int ftdi_jtag_probe(struct usb_se
- 
- 	return 0;
- }
-+
-+static int ftdi_8u2232c_probe(struct usb_serial *serial)
-+{
-+	struct usb_device *udev = serial->dev;
-+
-+	dbg("%s", __func__);
-+
-+	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
-+		return ftdi_jtag_probe(serial);
-+
-+	return 0;
-+}
- 
- /*
-  * First and second port on STMCLiteadaptors is reserved for JTAG interface
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -148,6 +148,7 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
++#define HUAWEI_PRODUCT_K3806			0x14AE
+ #define HUAWEI_PRODUCT_K3770			0x14C9
+ #define HUAWEI_PRODUCT_K3771			0x14CA
+ #define HUAWEI_PRODUCT_K4510			0x14CB
+@@ -551,6 +552,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
 
 
