@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab1I1XCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:02:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54715 "EHLO mx2.suse.de"
+	id S933162Ab1I1Wro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:47:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54701 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933165Ab1I1Wrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:45 -0400
+	id S933135Ab1I1Wrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:42 2011
-Message-Id: <20110928220142.379302679@clark.kroah.org>
+Message-Id: <20110928220142.156220940@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:06 -0700
+Date: Wed, 28 Sep 2011 15:02:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [162/244] [S390] qdio: clear shared DSCI before scheduling the queue handler
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: [160/244] writeback: introduce .tagged_writepages for the WB_SYNC_NONE sync stage
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +26,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Glauber <jang@linux.vnet.ibm.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-commit b02f0c2ea25781e0f94b4fc8f6f85582057857b3 upstream.
+commit 6e6938b6d3130305a5960c86b1a9b21e58cf6144 upstream.
 
-The following race can occur with qdio devices that use the shared device
-state change indicator:
+sync(2) is performed in two stages: the WB_SYNC_NONE sync and the
+WB_SYNC_ALL sync. Identify the first stage with .tagged_writepages and
+do livelock prevention for it, too.
 
-Device (Shared DSCI)    CPU0                            CPU1
-===============================================================================
+Jan's commit f446daaea9 ("mm: implement writeback livelock avoidance
+using page tagging") is a partial fix in that it only fixed the
+WB_SYNC_ALL phase livelock.
 
-1. DSCI 0 => 1,
-   INT pending
-                        2. Thinint handler
-                        * si_used = 1
-                        * Inbound tasklet_schedule
-                        * DSCI 1 => 0
+Although ext4 is tested to no longer livelock with commit f446daaea9,
+it may due to some "redirty_tail() after pages_skipped" effect which
+is by no means a guarantee for _all_ the file systems.
 
-3. DSCI 0 => 1,
-   INT pending
+Note that writeback_inodes_sb() is called by not only sync(), they are
+treated the same because the other callers also need livelock prevention.
 
-                                                        4. Thinint handler
-                                                        * si_used = 1
-                                                        * Inbound tasklet_schedu
-le
-                                                           => NOP
+Impact:  It changes the order in which pages/inodes are synced to disk.
+Now in the WB_SYNC_NONE stage, it won't proceed to write the next inode
+until finished with the current inode.
 
-                        5. Inbound tasklet run
-
-6. DSCI = 1,
-   INT surpressed
-
-                                                        7. DSCI 1 => 0
-
-The race would lead to a stall where new data in the input queue is
-not recognized so the device stops working in case of no further traffic.
-
-Fix the race by resetting the DSCI before scheduling the inbound tasklet
-so the device generates an interrupt if new data arrives in the above
-scenario in step 6.
-
-Reviewed-by: Ursula Braun <ursula.braun@de.ibm.com>
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Acked-by: Jan Kara <jack@suse.cz>
+CC: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/s390/cio/qdio_thinint.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ fs/ext4/inode.c           |    4 ++--
+ fs/fs-writeback.c         |   17 +++++++++--------
+ include/linux/writeback.h |    1 +
+ mm/page-writeback.c       |    4 ++--
+ 4 files changed, 14 insertions(+), 12 deletions(-)
 
---- a/drivers/s390/cio/qdio_thinint.c
-+++ b/drivers/s390/cio/qdio_thinint.c
-@@ -95,9 +95,11 @@ void tiqdio_remove_input_queues(struct q
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2756,7 +2756,7 @@ static int write_cache_pages_da(struct a
+ 	index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 	end = wbc->range_end >> PAGE_CACHE_SHIFT;
+ 
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag = PAGECACHE_TAG_TOWRITE;
+ 	else
+ 		tag = PAGECACHE_TAG_DIRTY;
+@@ -2988,7 +2988,7 @@ static int ext4_da_writepages(struct add
  	}
- }
  
--static inline u32 shared_ind_set(void)
-+static inline u32 clear_shared_ind(void)
+ retry:
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag_pages_for_writeback(mapping, index, end);
+ 
+ 	while (!ret && wbc->nr_to_write > 0) {
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -36,6 +36,7 @@ struct wb_writeback_work {
+ 	long nr_pages;
+ 	struct super_block *sb;
+ 	enum writeback_sync_modes sync_mode;
++	unsigned int tagged_writepages:1;
+ 	unsigned int for_kupdate:1;
+ 	unsigned int range_cyclic:1;
+ 	unsigned int for_background:1;
+@@ -650,6 +651,7 @@ static long wb_writeback(struct bdi_writ
  {
--	return q_indicators[TIQDIO_SHARED_IND].ind;
-+	if (!atomic_read(&q_indicators[TIQDIO_SHARED_IND].count))
-+		return 0;
-+	return xchg(&q_indicators[TIQDIO_SHARED_IND].ind, 0);
- }
+ 	struct writeback_control wbc = {
+ 		.sync_mode		= work->sync_mode,
++		.tagged_writepages	= work->tagged_writepages,
+ 		.older_than_this	= NULL,
+ 		.for_kupdate		= work->for_kupdate,
+ 		.for_background		= work->for_background,
+@@ -657,7 +659,7 @@ static long wb_writeback(struct bdi_writ
+ 	};
+ 	unsigned long oldest_jif;
+ 	long wrote = 0;
+-	long write_chunk;
++	long write_chunk = MAX_WRITEBACK_PAGES;
+ 	struct inode *inode;
  
- /**
-@@ -107,7 +109,7 @@ static inline u32 shared_ind_set(void)
-  */
- static void tiqdio_thinint_handler(void *alsi, void *data)
+ 	if (wbc.for_kupdate) {
+@@ -683,9 +685,7 @@ static long wb_writeback(struct bdi_writ
+ 	 *                   (quickly) tag currently dirty pages
+ 	 *                   (maybe slowly) sync all tagged pages
+ 	 */
+-	if (wbc.sync_mode == WB_SYNC_NONE)
+-		write_chunk = MAX_WRITEBACK_PAGES;
+-	else
++	if (wbc.sync_mode == WB_SYNC_ALL || wbc.tagged_writepages)
+ 		write_chunk = LONG_MAX;
+ 
+ 	wbc.wb_start = jiffies; /* livelock avoidance */
+@@ -1188,10 +1188,11 @@ void writeback_inodes_sb_nr(struct super
  {
--	u32 si_used = shared_ind_set();
-+	u32 si_used = clear_shared_ind();
- 	struct qdio_q *q;
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	struct wb_writeback_work work = {
+-		.sb		= sb,
+-		.sync_mode	= WB_SYNC_NONE,
+-		.done		= &done,
+-		.nr_pages	= nr,
++		.sb			= sb,
++		.sync_mode		= WB_SYNC_NONE,
++		.tagged_writepages	= 1,
++		.done			= &done,
++		.nr_pages		= nr,
+ 	};
  
- 	last_ai_time = S390_lowcore.int_clock;
-@@ -150,13 +152,6 @@ static void tiqdio_thinint_handler(void
- 		qperf_inc(q, adapter_int);
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -47,6 +47,7 @@ struct writeback_control {
+ 	unsigned encountered_congestion:1; /* An output: a queue is full */
+ 	unsigned for_kupdate:1;		/* A kupdate writeback */
+ 	unsigned for_background:1;	/* A background writeback */
++	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
+ 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+ 	unsigned more_io:1;		/* more io to be dispatched */
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -892,12 +892,12 @@ int write_cache_pages(struct address_spa
+ 			range_whole = 1;
+ 		cycled = 1; /* ignore range_cyclic tests */
  	}
- 	rcu_read_unlock();
--
--	/*
--	 * If the shared indicator was used clear it now after all queues
--	 * were processed.
--	 */
--	if (si_used && shared_ind_set())
--		xchg(&q_indicators[TIQDIO_SHARED_IND].ind, 0);
- }
- 
- static int set_subchannel_ind(struct qdio_irq *irq_ptr, int reset)
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag = PAGECACHE_TAG_TOWRITE;
+ 	else
+ 		tag = PAGECACHE_TAG_DIRTY;
+ retry:
+-	if (wbc->sync_mode == WB_SYNC_ALL)
++	if (wbc->sync_mode == WB_SYNC_ALL || wbc->tagged_writepages)
+ 		tag_pages_for_writeback(mapping, index, end);
+ 	done_index = index;
+ 	while (!done && (index <= end)) {
 
 
