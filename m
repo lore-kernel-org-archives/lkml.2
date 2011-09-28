@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1I1WbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:31:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58987 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab1I1WaG convert rfc822-to-8bit (ORCPT
+	id S1755259Ab1I1WbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:31:16 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:34054 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754904Ab1I1WbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:30:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="56930027"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Matthew Garrett <mjg@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Wed, 28 Sep 2011 15:30:04 -0700
-Subject: RE: [RFC][PATCH -next] pstore: replace spin_lock with
- spin_trylock_irqsave in panic path
-Thread-Topic: [RFC][PATCH -next] pstore: replace spin_lock with
- spin_trylock_irqsave in panic path
-Thread-Index: Acx95pHvKOHCg4TSTxyNGO3CgwNKbwARvafw
-Message-ID: <987664A83D2D224EAE907B061CE93D5301EE4B23D6@orsmsx505.amr.corp.intel.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C56C9B823@USINDEVS01.corp.hds.com>
- <20110927173413.GJ5795@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301EE4211E3@orsmsx505.amr.corp.intel.com>
- <20110927175919.GK5795@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301EE421365@orsmsx505.amr.corp.intel.com>
- <20110928135727.GQ5795@redhat.com>
-In-Reply-To: <20110928135727.GQ5795@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Sep 2011 18:31:13 -0400
+Message-ID: <4E83A02F.2020309@xenotime.net>
+Date: Wed, 28 Sep 2011 15:31:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Sept 28 (media/video/mt9p031.c)
+References: <20110928200404.6ed0d6c34161d233be8994fd@canb.auug.org.au> <4E839FCB.7050403@xenotime.net>
+In-Reply-To: <4E839FCB.7050403@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That should be up to the backend, no?  ERST has two modes, only one which
-> has a state machine.  The other is NVRAM which can probably handle
-> simultaneous writes.  And I believe the EFI back-end can handle that as
-> well.  That is why I was suggesting that the back-end return a failure.
+On 09/28/11 15:29, Randy Dunlap wrote:
+> On 09/28/11 03:04, Stephen Rothwell wrote:
+>> Hi all,
+> 
+> 
+> a.  Source file needs <linux/module.h> added to it unless the dropping
+> of the moduleh tree for today already contained that patch.
+> 
+> b.  Build errors after adding <linux/module.h>:
+> 
+> when CONFIG_MEDIA_CONTROLLER is not enabled
+> and CONFIG_VIDEO_V4L2_SUBDEV_API is not enabled:
+> 
+> 
+> drivers/media/video/mt9p031.c:443:3: error: implicit declaration of function 'v4l2_subdev_get_try_format'
+> drivers/media/video/mt9p031.c:457:3: error: implicit declaration of function 'v4l2_subdev_get_try_crop'
+> drivers/media/video/mt9p031.c:888:42: error: 'struct v4l2_subdev' has no member named 'entity'
 
-ERST tries to provide a lot of flexibility to the platform on how to
-make persistent space available.  If the platform has directly addressable
-NVRAM - then ERST can point to it, so the "save" operation degenerates into
-a simple write to the next available block.  But this isn't required. The
-ERST buffer may be in normal memory, and the actions in the state machine
-may trigger an SMI to make the BIOS copy it away to some safe place, or
-the actions could ping a doorbell on a management controller which could
-initiate a DMA transfer to pick up the buffer from memory.
 
--Tony
+Similar problems with drivers/media/video/mt9t001.c.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
