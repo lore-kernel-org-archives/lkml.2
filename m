@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1I1LxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 07:53:15 -0400
+	id S1753809Ab1I1LxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 07:53:10 -0400
 Received: from mail-qy0-f181.google.com ([209.85.216.181]:53008 "EHLO
 	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab1I1Lwx (ORCPT
+	with ESMTP id S1752688Ab1I1Lwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 07:52:53 -0400
+	Wed, 28 Sep 2011 07:52:50 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: trond.myklebust@netapp.com, smfrench@gmail.com, pavel@ucw.cz, rjw@sisk.pl
 Cc: linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
         linux-nfs@vger.kernel.org, john@Calva.COM,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] nfs: make TASK_KILLABLE sleeps attempt to freeze
-Date: Wed, 28 Sep 2011 07:52:41 -0400
-Message-Id: <1317210761-11518-5-git-send-email-jlayton@redhat.com>
+Subject: [PATCH 2/4] cifs, freezer: add wait_event_freezekillable and have cifs use it
+Date: Wed, 28 Sep 2011 07:52:39 -0400
+Message-Id: <1317210761-11518-3-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.6.2
 In-Reply-To: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
 References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
@@ -22,101 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the TASK_KILLABLE sleeps in NFS layer to respect the freezer. This
-should allow suspend and hibernate events to occur, even when there are
-RPC's pending on the wire.
+CIFS currently uses wait_event_killable to put tasks to sleep while
+they await replies from the server. That function though does not
+allow the freezer to run. In many cases, the network interface may
+be going down anyway, in which case the reply will never come. The
+client then ends up blocking the computer from suspending.
 
-Tested-by: John Hughes <john@Calva.COM>
+Fix this by adding a new wait_event_freezable variant --
+wait_event_freezekillable. The idea is to combine the behavior of
+wait_event_killable and wait_event_freezable -- put the task to
+sleep and only allow it to be awoken by fatal signals, but also
+allow the freezer to do its job.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/nfs/inode.c    |    4 +++-
- fs/nfs/nfs3proc.c |    3 ++-
- fs/nfs/nfs4proc.c |   12 ++++++++----
- fs/nfs/proc.c     |    3 ++-
- 4 files changed, 15 insertions(+), 7 deletions(-)
+ fs/cifs/transport.c     |    3 ++-
+ include/linux/freezer.h |   19 +++++++++++++++++--
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index fe12037..b7c4301 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -38,6 +38,7 @@
- #include <linux/nfs_xdr.h>
- #include <linux/slab.h>
- #include <linux/compat.h>
+diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
+index 10ca6b2..791bc4f 100644
+--- a/fs/cifs/transport.c
++++ b/fs/cifs/transport.c
+@@ -26,6 +26,7 @@
+ #include <linux/wait.h>
+ #include <linux/net.h>
+ #include <linux/delay.h>
 +#include <linux/freezer.h>
- 
- #include <asm/system.h>
  #include <asm/uaccess.h>
-@@ -77,7 +78,8 @@ int nfs_wait_bit_killable(void *word)
+ #include <asm/processor.h>
+ #include <linux/mempool.h>
+@@ -324,7 +325,7 @@ wait_for_response(struct TCP_Server_Info *server, struct mid_q_entry *midQ)
  {
- 	if (fatal_signal_pending(current))
+ 	int error;
+ 
+-	error = wait_event_killable(server->response_q,
++	error = wait_event_freezekillable(server->response_q,
+ 				    midQ->midState != MID_REQUEST_SUBMITTED);
+ 	if (error < 0)
  		return -ERESTARTSYS;
--	schedule();
-+	if (!try_to_freeze())
-+		schedule();
- 	return 0;
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 1effc8b..3672f73 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -134,10 +134,25 @@ static inline void set_freezable_with_signal(void)
  }
  
-diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
-index 85f1690..ee64bf3 100644
---- a/fs/nfs/nfs3proc.c
-+++ b/fs/nfs/nfs3proc.c
-@@ -32,7 +32,8 @@ nfs3_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
- 		res = rpc_call_sync(clnt, msg, flags);
- 		if (res != -EJUKEBOX && res != -EKEYEXPIRED)
- 			break;
--		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
-+		if (!try_to_freeze())
-+			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
- 		res = -ERESTARTSYS;
- 	} while (!fatal_signal_pending(current));
- 	return res;
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 4700fae..12f92dd 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -244,10 +244,12 @@ static int nfs4_delay(struct rpc_clnt *clnt, long *timeout)
- 		*timeout = NFS4_POLL_RETRY_MIN;
- 	if (*timeout > NFS4_POLL_RETRY_MAX)
- 		*timeout = NFS4_POLL_RETRY_MAX;
--	schedule_timeout_killable(*timeout);
-+	if (!try_to_freeze()) {
-+		schedule_timeout_killable(*timeout);
-+		*timeout <<= 1;
-+	}
- 	if (fatal_signal_pending(current))
- 		res = -ERESTARTSYS;
--	*timeout <<= 1;
- 	return res;
- }
+ /*
+- * Freezer-friendly wrappers around wait_event_interruptible() and
+- * wait_event_interruptible_timeout(), originally defined in <linux/wait.h>
++ * Freezer-friendly wrappers around wait_event_interruptible(),
++ * wait_event_killable() and wait_event_interruptible_timeout(), originally
++ * defined in <linux/wait.h>
+  */
  
-@@ -3970,8 +3972,10 @@ int nfs4_proc_delegreturn(struct inode *inode, struct rpc_cred *cred, const nfs4
- static unsigned long
- nfs4_set_lock_task_retry(unsigned long timeout)
- {
--	schedule_timeout_killable(timeout);
--	timeout <<= 1;
-+	if (!try_to_freeze()) {
-+		schedule_timeout_killable(timeout);
-+		timeout <<= 1;
-+	}
- 	if (timeout > NFS4_LOCK_MAXTIMEOUT)
- 		return NFS4_LOCK_MAXTIMEOUT;
- 	return timeout;
-diff --git a/fs/nfs/proc.c b/fs/nfs/proc.c
-index ac40b85..e3f03d1 100644
---- a/fs/nfs/proc.c
-+++ b/fs/nfs/proc.c
-@@ -59,7 +59,8 @@ nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
- 		res = rpc_call_sync(clnt, msg, flags);
- 		if (res != -EKEYEXPIRED)
- 			break;
--		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
-+		if (!try_to_freeze())
-+			schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
- 		res = -ERESTARTSYS;
- 	} while (!fatal_signal_pending(current));
- 	return res;
++#define wait_event_freezekillable(wq, condition)			\
++({									\
++	int __retval;							\
++	do {								\
++		__retval = wait_event_killable(wq, 			\
++				(condition) || freezing(current));	\
++		if (__retval && !freezing(current))			\
++			break;						\
++		else if (!(condition))					\
++			__retval = -ERESTARTSYS;			\
++	} while (try_to_freeze());					\
++	__retval;							\
++})
++
+ #define wait_event_freezable(wq, condition)				\
+ ({									\
+ 	int __retval;							\
 -- 
 1.7.6.2
 
