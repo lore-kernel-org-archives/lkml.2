@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1I1XNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:13:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54300 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649Ab1I1WoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:35 2011
-Message-Id: <20110928220135.032739599@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:56 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Fenghua Yu <fenghua.yu@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [092/244] ACPICA: Do not repair _TSS return package if _PSS is present
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1756175Ab1I1XOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:14:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54316 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755968Ab1I1XON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 19:14:13 -0400
+Date: Wed, 28 Sep 2011 18:14:10 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+Message-ID: <20110928231410.GF2838@ponder.secretlab.ca>
+References: <20110922184614.25419.84606.stgit@ponder>
+ <20110926152634.GN2946@opensource.wolfsonmicro.com>
+ <CACxGe6swdnhk_GCAv3siSx4kxNQXmCLDbwBFjsX5VPNfCBc2Mg@mail.gmail.com>
+ <201109271550.36427.arnd@arndb.de>
+ <20110927210849.GD3994@ponder.secretlab.ca>
+ <20110927221308.GA2674@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110927221308.GA2674@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Tue, Sep 27, 2011 at 11:13:10PM +0100, Mark Brown wrote:
+> On Tue, Sep 27, 2011 at 03:08:49PM -0600, Grant Likely wrote:
+> 
+> > Okay, will do.  How does EPROBE_DEFER 518 sound?
+> 
+> Note that I'm not sure this answers the issue I was raising - the issue
+> isn't that the caller doesn't know what the error code means, the issue
+> is that in some cases the driver needs to take a decision about what
+> failure to get a resource means.  Does it mean that the driver can work
+> fine and be slightly less featureful or should it cause a deferral?
 
-------------------
+Right. That was answering a different question.
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+For your question, I still think it is the driver that gets to make
+the decision.  If it can proceed without a resource, then it should go
+ahead and succeed on the probe, and then arrange to either be notified
+of new gpio controller (or whatever) registrations, or poll for the
+resource to be set up.
 
-commit 8f9c91273e36e5762c617c23e4fd48d5172e0dac upstream.
-
-We can only sort the _TSS return package if there is no _PSS
-in the same scope. This is because if _PSS is present, the ACPI
-specification dictates that the _TSS Power Dissipation field is
-to be ignored, and therefore some BIOSs leave garbage values in
-the _TSS Power field(s).  In this case, it is best to just return
-the _TSS package as-is.
-
-Reported-by: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/acpi/acpica/aclocal.h   |    1 +
- drivers/acpi/acpica/nspredef.c  |    1 +
- drivers/acpi/acpica/nsrepair2.c |   15 +++++++++++++++
- 3 files changed, 17 insertions(+)
-
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -357,6 +357,7 @@ struct acpi_predefined_data {
- 	char *pathname;
- 	const union acpi_predefined_info *predefined;
- 	union acpi_operand_object *parent_package;
-+	struct acpi_namespace_node *node;
- 	u32 flags;
- 	u8 node_flags;
- };
---- a/drivers/acpi/acpica/nspredef.c
-+++ b/drivers/acpi/acpica/nspredef.c
-@@ -212,6 +212,7 @@ acpi_ns_check_predefined_names(struct ac
- 		goto cleanup;
- 	}
- 	data->predefined = predefined;
-+	data->node = node;
- 	data->node_flags = node->flags;
- 	data->pathname = pathname;
- 
---- a/drivers/acpi/acpica/nsrepair2.c
-+++ b/drivers/acpi/acpica/nsrepair2.c
-@@ -503,6 +503,21 @@ acpi_ns_repair_TSS(struct acpi_predefine
- {
- 	union acpi_operand_object *return_object = *return_object_ptr;
- 	acpi_status status;
-+	struct acpi_namespace_node *node;
-+
-+	/*
-+	 * We can only sort the _TSS return package if there is no _PSS in the
-+	 * same scope. This is because if _PSS is present, the ACPI specification
-+	 * dictates that the _TSS Power Dissipation field is to be ignored, and
-+	 * therefore some BIOSs leave garbage values in the _TSS Power field(s).
-+	 * In this case, it is best to just return the _TSS package as-is.
-+	 * (May, 2011)
-+	 */
-+	status =
-+	    acpi_ns_get_node(data->node, "^_PSS", ACPI_NS_NO_UPSEARCH, &node);
-+	if (ACPI_SUCCESS(status)) {
-+		return (AE_OK);
-+	}
- 
- 	status = acpi_ns_check_sorted_list(data, return_object, 5, 1,
- 					   ACPI_SORT_DESCENDING,
-
-
+g.
