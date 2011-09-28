@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1I1NTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:19:01 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:44710 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab1I1NTA (ORCPT
+	id S1754132Ab1I1NUC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:20:02 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59915 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041Ab1I1NUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:19:00 -0400
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-Date: Wed, 28 Sep 2011 23:18:55 +1000
-From: "Bojan Smojver" <bojan@rexursive.com>
-To: penberg@cs.helsinki.fi
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl
+	Wed, 28 Sep 2011 09:20:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 04/24] add missing __iomem to generic iounmap declaration
+Date: Wed, 28 Sep 2011 15:19:52 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-5-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-5-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-X-Mailer: LCG ProfiMail 3.48
-Message-ID: <7978609203.1001719135@rexursive.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com> <CAOJsxLGam5htmwtTZOuPka02+CZ1Fkv1b+SuYMJ8x9VRntFzRQ@mail.gmail.com> <1317194947.1998.18.camel@shrek.rexursive.com> <CAOJsxLFGpU53AQRw-nKsz_Lz_QMDP+RDUD5J3bYzbAA_+ngaAA@mail.gmail.com> <1317196456.1998.24.camel@shrek.rexursive.com> <CAOJsxLGUmV=5+fOJShbfc+kELcPS9pnE+DkNY9+TBS33VmzRFg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109281519.52466.arnd@arndb.de>
+X-Provags-ID: V02:K0:2qQxDBeamJzzwyxHgPqwF5IzjykmJSTcCsBgdjh810g
+ PiBjn7PlCzCZCPApV2y+gbDmuGRlcD8mNOlK92cd99hmnYSkbp
+ sKmY1WdsvbISbLQMrR/iAyQiJd4xVshy1R96CKe0yYKkJ4xfmR
+ S1VKrvpiwoyIXswOujE1J9uWm7NQq+LMbcWU49AuYkd3Hv9WDr
+ jRbZo05wjIZliTDwNIy/5iU7auG0dk577+i8AI+S3cxBLspt4e
+ ub5KfAarrmnHEWKi26gFxMvWuAfsvTRNQbZo72NCL/dsm56jij
+ 1xNTMmqyyEKgdkRHhdxit8WjI1KL9n6WoiJWOJKxX7vePsEjGS
+ v1lTJ1hJPI6199WW8Gfw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------- Original message -------
-> From: Pekka Enberg
+On Tuesday 27 September 2011, Mark Salter wrote:
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> ---
+>  include/asm-generic/io.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-> On Wed, Sep 28, 2011 at 10:54 AM, Bojan Smojver <bojan@rexursive.com> 
-> wrote:
->> I'm guessing here that you mean that parts of the kernel other than
->> hibernation code itself can do this (i.e. set the flag for the thread to
->> stop, so kthread_should_stop() returns true). Correct?
->
-> Sorry, I'm not familiar this code. However, if you're checking for the
-> condition..
->
-> [snip]
->
->> Right now, this would result in - well I don't know what exactly - most
->> likely corrupted data on disk or on memory.
->
-> ...this is not really an option for handling it.
-
-Yeah, I changed the code in v7 to set the error code when this happens. So, 
-if the thread exits because something sets should_exit flag, error code 
-will terminate hibernation/thaw.
-
-Now that I think about it, another problem may come up if the thread has 
-been shut down by something else just as it's supposed to be cleaned up at 
-end of the run. I can introduce a mutex in each structure and then 
-set/check whether thread pointer is NULL before reping the thread.
-
-V8, here we come...
-
---
-Bojan 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
