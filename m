@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1I1OLS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:11:18 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43005 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754536Ab1I1OLQ (ORCPT
+	id S1754663Ab1I1OLc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:11:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60551 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab1I1OLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:11:16 -0400
-Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E832A55.30709@kernel.dk>
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>
-	 <20110928004722.GA27421@kernel.dk>
-	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
-	 <4E82751C.9050908@kernel.dk>
-	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-	 <4E832A55.30709@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 09:11:14 -0500
-Message-ID: <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Wed, 28 Sep 2011 10:11:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 23/24] C6X: DSCR - Device State Configuration Registers
+Date: Wed, 28 Sep 2011 16:11:27 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-24-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-24-git-send-email-msalter@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201109281611.27903.arnd@arndb.de>
+X-Provags-ID: V02:K0:ScIyHBYqCnmVBFFWyXCoim6PsTRrZSPfs14WWt3yZAh
+ 6kCbE/wUqf5DvLhxN9AG8YrnW+47jgn+mTEGyuvk7lesY5UMGh
+ X7D2bFe1bPYnSqg6o49PlRUorAD/e0gFDJl7u7FK3kfR1xA/aP
+ imtLgU28H1FB7Tbtn5LG5FaOloxuvTOs1G//lfZZEN2eYs+WXb
+ AG+5YlmyDATjEHcfvjwJDX7dTRLOMR9ubhFSkwvM7+JFl3eYZj
+ q1ZZzumR+IUPM1kIc8Sj4FSN3+DA28wYRHTI4wVNmAI/CHouXv
+ 6sVZEmX2WHMRuguC6qPu+1vq/mBgtmNcmWyJf6oeuSX0aoAtkt
+ 9KbxXEHB8pOmBEAZsftA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 08:08 -0600, Jens Axboe wrote:
-> On 2011-09-27 22:10, James Bottomley wrote:
-> > On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
-> >> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> >>>>
-> >>>> But if you forward the actual patch to me (the one I see on lkml seems
-> >>>> to be broken and doesn't compile cleanly because it's assiging a
-> >>>> structure to a pointer), I'll try it out anyway.
-> >>>
-> >>> Thanks, that would be great. It's inlined below.
-> >>
-> >> Well, I did several USB eject events, and nothing bad happened.
-> >>
-> >> But as mentioned, I don't think that means much. Have you tried this
-> >> with slub debugging and poisoning? It might be worth some extra
-> >> testing that way.
-> > 
-> > I've been testing a simpler version:
-> > 
-> > http://marc.info/?l=linux-kernel&m=131300594629839
-> > 
-> > For a long time now with great success.  The only difference is the
-> > locking cleanup, but SCSI doesn't need that since it doesn't supply its
-> > own lock, so I've been voting for this as the final fix for a while now.
+On Tuesday 27 September 2011, Mark Salter wrote:
 > 
-> The locking cleanup looks good, though, for devices that do use the
-> embedded lock.
+> All SoCs provide an area of device configuration registers called the DSCR. The
+> location of specific registers as well as their use varies considerably from
+> implementation to implementation. Rather than having to rely on additional
+> SoC-specific DSCR code for each new supported SoC, this code generalize things
+> as much as possible using device tree properties. Initialization must take
+> place early on (setup_arch time) in case the event timer device needs to be
+> enable via the DSCR.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
 
-Exactly ... it's the missing piece; without it my patch is really only
-addressing SCSI.
-
->  But functionally they should be the same for SCSI, so if
-> you had great success with it, then that's a good data point.
-
-Right, I've run it through the memory debugger and USB ejection testing
-(with ext2, which seems to be the fs that triggers this problem the
-most).
-
-James
-
-
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
