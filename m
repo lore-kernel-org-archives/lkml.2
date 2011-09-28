@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab1I1XWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:22:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53920 "EHLO mx2.suse.de"
+	id S932363Ab1I1Wla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:41:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53886 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab1I1Wlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:36 -0400
+	id S932313Ab1I1WlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:19 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
-Message-Id: <20110928220134.579436843@clark.kroah.org>
+Message-Id: <20110928220134.056592394@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:52 -0700
+Date: Wed, 28 Sep 2011 15:00:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [088/244] 9p: close ACL leaks
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>
+Subject: [083/244] fs/9p: Fid is not valid after a failed clunk.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,139 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 1ec95bf34d976b38897d1977b155a544d77b05e7 upstream.
+commit 5034990e28efb2d232ee82443a9edd62defd17ba upstream.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+free the fid even in case of failed clunk.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/9p/acl.c            |   22 +++++++++++++---------
- fs/9p/acl.h            |    6 +++---
- fs/9p/vfs_inode_dotl.c |    9 ++++++---
- 3 files changed, 22 insertions(+), 15 deletions(-)
+ net/9p/client.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/9p/acl.c
-+++ b/fs/9p/acl.c
-@@ -185,12 +185,15 @@ int v9fs_acl_chmod(struct dentry *dentry
- }
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -1250,9 +1250,11 @@ int p9_client_clunk(struct p9_fid *fid)
+ 	P9_DPRINTK(P9_DEBUG_9P, "<<< RCLUNK fid %d\n", fid->fid);
  
- int v9fs_set_create_acl(struct dentry *dentry,
--			struct posix_acl *dpacl, struct posix_acl *pacl)
-+			struct posix_acl **dpacl, struct posix_acl **pacl)
- {
--	v9fs_set_acl(dentry, ACL_TYPE_DEFAULT, dpacl);
--	v9fs_set_acl(dentry, ACL_TYPE_ACCESS, pacl);
--	posix_acl_release(dpacl);
--	posix_acl_release(pacl);
-+	if (dentry) {
-+		v9fs_set_acl(dentry, ACL_TYPE_DEFAULT, *dpacl);
-+		v9fs_set_acl(dentry, ACL_TYPE_ACCESS, *pacl);
-+	}
-+	posix_acl_release(*dpacl);
-+	posix_acl_release(*pacl);
-+	*dpacl = *pacl = NULL;
- 	return 0;
- }
- 
-@@ -212,11 +215,11 @@ int v9fs_acl_mode(struct inode *dir, mod
- 		struct posix_acl *clone;
- 
- 		if (S_ISDIR(mode))
--			*dpacl = acl;
-+			*dpacl = posix_acl_dup(acl);
- 		clone = posix_acl_clone(acl, GFP_NOFS);
--		retval = -ENOMEM;
-+		posix_acl_release(acl);
- 		if (!clone)
--			goto cleanup;
-+			return -ENOMEM;
- 
- 		retval = posix_acl_create_masq(clone, &mode);
- 		if (retval < 0) {
-@@ -225,11 +228,12 @@ int v9fs_acl_mode(struct inode *dir, mod
- 		}
- 		if (retval > 0)
- 			*pacl = clone;
-+		else
-+			posix_acl_release(clone);
- 	}
- 	*modep  = mode;
- 	return 0;
- cleanup:
--	posix_acl_release(acl);
- 	return retval;
- 
- }
---- a/fs/9p/acl.h
-+++ b/fs/9p/acl.h
-@@ -19,7 +19,7 @@ extern int v9fs_get_acl(struct inode *,
- extern int v9fs_check_acl(struct inode *inode, int mask, unsigned int flags);
- extern int v9fs_acl_chmod(struct dentry *);
- extern int v9fs_set_create_acl(struct dentry *,
--			       struct posix_acl *, struct posix_acl *);
-+			       struct posix_acl **, struct posix_acl **);
- extern int v9fs_acl_mode(struct inode *dir, mode_t *modep,
- 			 struct posix_acl **dpacl, struct posix_acl **pacl);
- #else
-@@ -33,8 +33,8 @@ static inline int v9fs_acl_chmod(struct
- 	return 0;
- }
- static inline int v9fs_set_create_acl(struct dentry *dentry,
--				      struct posix_acl *dpacl,
--				      struct posix_acl *pacl)
-+				      struct posix_acl **dpacl,
-+				      struct posix_acl **pacl)
- {
- 	return 0;
- }
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -287,7 +287,7 @@ v9fs_vfs_create_dotl(struct inode *dir,
- 		goto error;
- 
- 	/* Now set the ACL based on the default value */
--	v9fs_set_create_acl(dentry, dacl, pacl);
-+	v9fs_set_create_acl(dentry, &dacl, &pacl);
- 
- 	v9inode = V9FS_I(inode);
- 	mutex_lock(&v9inode->v_mutex);
-@@ -328,6 +328,7 @@ error:
- err_clunk_old_fid:
- 	if (ofid)
- 		p9_client_clunk(ofid);
-+	v9fs_set_create_acl(NULL, &dacl, &pacl);
- 	return err;
- }
- 
-@@ -421,12 +422,13 @@ static int v9fs_vfs_mkdir_dotl(struct in
- 		d_instantiate(dentry, inode);
- 	}
- 	/* Now set the ACL based on the default value */
--	v9fs_set_create_acl(dentry, dacl, pacl);
-+	v9fs_set_create_acl(dentry, &dacl, &pacl);
- 	inc_nlink(dir);
- 	v9fs_invalidate_inode_attr(dir);
+ 	p9_free_req(clnt, req);
+-	p9_fid_destroy(fid);
+-
  error:
- 	if (fid)
- 		p9_client_clunk(fid);
-+	v9fs_set_create_acl(NULL, &dacl, &pacl);
++	/*
++	 * Fid is not valid even after a failed clunk
++	 */
++	p9_fid_destroy(fid);
  	return err;
  }
- 
-@@ -826,10 +828,11 @@ v9fs_vfs_mknod_dotl(struct inode *dir, s
- 		d_instantiate(dentry, inode);
- 	}
- 	/* Now set the ACL based on the default value */
--	v9fs_set_create_acl(dentry, dacl, pacl);
-+	v9fs_set_create_acl(dentry, &dacl, &pacl);
- error:
- 	if (fid)
- 		p9_client_clunk(fid);
-+	v9fs_set_create_acl(NULL, &dacl, &pacl);
- 	return err;
- }
- 
+ EXPORT_SYMBOL(p9_client_clunk);
 
 
