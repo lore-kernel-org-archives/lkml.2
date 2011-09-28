@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1I1XB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:01:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54737 "EHLO mx2.suse.de"
+	id S1756074Ab1I1XCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:02:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54715 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933191Ab1I1Wrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:47:55 -0400
+	id S933165Ab1I1Wrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:42 2011
-Message-Id: <20110928220142.691413193@clark.kroah.org>
+Message-Id: <20110928220142.379302679@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:09 -0700
+Date: Wed, 28 Sep 2011 15:02:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anisse Astier <anisse@astier.eu>
-Subject: [165/244] ehci: refactor pci quirk to use standard dmi_check_system method
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [162/244] [S390] qdio: clear shared DSCI before scheduling the queue handler
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Jan Glauber <jang@linux.vnet.ibm.com>
 
-commit 03c75362181b0b1d6a330e7cf8def10ba988dfbe upstream.
+commit b02f0c2ea25781e0f94b4fc8f6f85582057857b3 upstream.
 
-In commit 3610ea5397b80822e417aaa0e706fd803fb05680 (ehci: workaround for pci
-quirk timeout on ExoPC), a workaround was added to skip the negociation for
-the handoff of the EHCI controller.
+The following race can occur with qdio devices that use the shared device
+state change indicator:
 
-Refactor the DMI detection code to use standard dmi_check_system function.
+Device (Shared DSCI)    CPU0                            CPU1
+===============================================================================
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
+1. DSCI 0 => 1,
+   INT pending
+                        2. Thinint handler
+                        * si_used = 1
+                        * Inbound tasklet_schedule
+                        * DSCI 1 => 0
+
+3. DSCI 0 => 1,
+   INT pending
+
+                                                        4. Thinint handler
+                                                        * si_used = 1
+                                                        * Inbound tasklet_schedu
+le
+                                                           => NOP
+
+                        5. Inbound tasklet run
+
+6. DSCI = 1,
+   INT surpressed
+
+                                                        7. DSCI 1 => 0
+
+The race would lead to a stall where new data in the input queue is
+not recognized so the device stops working in case of no further traffic.
+
+Fix the race by resetting the DSCI before scheduling the inbound tasklet
+so the device generates an interrupt if new data arrives in the above
+scenario in step 6.
+
+Reviewed-by: Ursula Braun <ursula.braun@de.ibm.com>
+Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/pci-quirks.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/s390/cio/qdio_thinint.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -535,20 +535,27 @@ static void __devinit quirk_usb_handoff_
- 	iounmap(base);
+--- a/drivers/s390/cio/qdio_thinint.c
++++ b/drivers/s390/cio/qdio_thinint.c
+@@ -95,9 +95,11 @@ void tiqdio_remove_input_queues(struct q
+ 	}
  }
  
-+static const struct dmi_system_id __initconst ehci_dmi_nohandoff_table[] = {
-+	{
-+		/*  Pegatron Lucid (ExoPC) */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_NAME, "EXOPG06411"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-CE-133"),
-+		},
-+	},
-+	{ }
-+};
-+
- static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
- 					void __iomem *op_reg_base,
- 					u32 cap, u8 offset)
+-static inline u32 shared_ind_set(void)
++static inline u32 clear_shared_ind(void)
  {
- 	int try_handoff = 1, tried_handoff = 0;
+-	return q_indicators[TIQDIO_SHARED_IND].ind;
++	if (!atomic_read(&q_indicators[TIQDIO_SHARED_IND].count))
++		return 0;
++	return xchg(&q_indicators[TIQDIO_SHARED_IND].ind, 0);
+ }
  
--	/* The Pegatron Lucid (ExoPC) tablet sporadically waits for 90
--	 * seconds trying the handoff on its unused controller.  Skip
--	 * it. */
-+	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it. */
- 	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
--		const char *dmi_bn = dmi_get_system_info(DMI_BOARD_NAME);
--		const char *dmi_bv = dmi_get_system_info(DMI_BIOS_VERSION);
--		if (dmi_bn && !strcmp(dmi_bn, "EXOPG06411") &&
--		    dmi_bv && !strcmp(dmi_bv, "Lucid-CE-133"))
-+		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
+ /**
+@@ -107,7 +109,7 @@ static inline u32 shared_ind_set(void)
+  */
+ static void tiqdio_thinint_handler(void *alsi, void *data)
+ {
+-	u32 si_used = shared_ind_set();
++	u32 si_used = clear_shared_ind();
+ 	struct qdio_q *q;
+ 
+ 	last_ai_time = S390_lowcore.int_clock;
+@@ -150,13 +152,6 @@ static void tiqdio_thinint_handler(void
+ 		qperf_inc(q, adapter_int);
  	}
+ 	rcu_read_unlock();
+-
+-	/*
+-	 * If the shared indicator was used clear it now after all queues
+-	 * were processed.
+-	 */
+-	if (si_used && shared_ind_set())
+-		xchg(&q_indicators[TIQDIO_SHARED_IND].ind, 0);
+ }
  
+ static int set_subchannel_ind(struct qdio_irq *irq_ptr, int reset)
 
 
