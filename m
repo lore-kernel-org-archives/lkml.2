@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab1I1RQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:16:34 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2128 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab1I1RQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:16:32 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6482"; a="123140279"
-X-IronPort-AV: E=Sophos;i="4.68,456,1312182000"; 
-   d="scan'208";a="155850681"
-Message-ID: <4E834E7B.3010405@qca.qualcomm.com>
-Date: Wed, 28 Sep 2011 19:42:35 +0300
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	id S1754332Ab1I1RR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:17:57 -0400
+Received: from claw.goop.org ([74.207.240.146]:38458 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab1I1RR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 13:17:56 -0400
+Message-ID: <4E834FBA.1080709@goop.org>
+Date: Wed, 28 Sep 2011 09:47:54 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Raja Mani <rmani@qca.qualcomm.com>,
-        Vivek Natarajan <nataraja@qca.qualcomm.com>,
-        Suraj Sumangala <surajs@qca.qualcomm.com>,
-        Joe Perches <joe@perches.com>, Jouni Malinen <jouni@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-References: <20110928183552.cb27a2b28b02fec275bca009@canb.auug.org.au>
-In-Reply-To: <20110928183552.cb27a2b28b02fec275bca009@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Beulich <JBeulich@suse.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        xen-devel@lists.xensource.com, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <3300108.XQUp9Wrktc@chlor> <4E81FD52.50106@goop.org> <CA+55aFx7dv4C4ZB_3CFjdJmX_wpoxecpqo1ARYr1=zTVP=CVVA@mail.gmail.com> <4E835F8C0200007800058461@nat28.tlf.novell.com> <CA+55aFyVoZpZZp7ejypTv21Cx_qJWkZQdpJOnxBa_jUxsCjhuw@mail.gmail.com>
+In-Reply-To: <CA+55aFyVoZpZZp7ejypTv21Cx_qJWkZQdpJOnxBa_jUxsCjhuw@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.64.128.123]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 11:35 AM, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> After merging the moduleh tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/net/wireless/ath/ath6kl/init.c:27:26: error: expected ')' before 'uint'
-> 
-> Caused by commit bdcd81707973 ("Add ath6kl cleaned up driver") from the
-> net tree interacting with the module.h split up.
-> 
-> I have applied the following patch for today (which sould be applied to
-> the net or wireless trees).
-> 
-> From 1875bfc8881cca3064c7d7fad024555fe1652926 Mon Sep 17 00:00:00 2001
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 28 Sep 2011 18:32:34 +1000
-> Subject: [PATCH] wireless/ath6kl: use of module_param requires the inclusion
->  of moduleparam.h
-> 
-> Otheriwse the module.h split up fails like this:
-> 
-> drivers/net/wireless/ath/ath6kl/init.c:27:26: error: expected ')' before 'uint'
+On 09/28/2011 09:10 AM, Linus Torvalds wrote:
+> On Wed, Sep 28, 2011 at 8:55 AM, Jan Beulich <JBeulich@suse.com> wrote:
+>>> just use "lock xaddw" there too.
+>> I'm afraid that's not possible, as that might carry from the low 8 bits
+>> into the upper 8 ones, which must be avoided.
+> Oh damn, you're right. So I guess the "right" way to do things is with
+> cmpxchg, but some nasty mfence setup could do it too.
 
-Thanks, I applied this to ath6kl.git (had to fix just one conflict).
-Later this week I will send a pull request to John so that the patch
-should get to the wireless tree soon.
+Could do something like:
 
-Unless John wants to take the patch directly, of course.
+	if (ticket->head >= 254)
+		prev = xadd(&ticket->head_tail, 0xff02);
+	else
+		prev = xadd(&ticket->head_tail, 0x0002);
 
-Kalle
+to compensate for the overflow.
+
+    J
