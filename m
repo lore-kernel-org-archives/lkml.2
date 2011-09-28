@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab1I1Ol5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:41:57 -0400
+	id S1754415Ab1I1Ol7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:41:59 -0400
 Received: from mail-ey0-f174.google.com ([209.85.215.174]:61099 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab1I1Olz (ORCPT
+	with ESMTP id S1753231Ab1I1Ol5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:41:55 -0400
+	Wed, 28 Sep 2011 10:41:57 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Sasha Levin <levinsasha928@gmail.com>,
@@ -14,20 +14,18 @@ Cc: Sasha Levin <levinsasha928@gmail.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         kvm@vger.kernel.org
-Subject: [PATCH v2 1/2] virtio-net: Verify page list size before fitting into  skb
-Date: Wed, 28 Sep 2011 17:40:54 +0300
-Message-Id: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v2 2/2] virtio-net: Prevent NULL dereference
+Date: Wed, 28 Sep 2011 17:40:55 +0300
+Message-Id: <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch verifies that the length of a buffer stored in a linked list
-of pages is small enough to fit into a skb.
-
-If the size is larger than a max size of a skb, it means that we shouldn't
-go ahead building skbs anyway since we won't be able to send the buffer as
-the user requested.
+This patch prevents a NULL dereference when the user has passed a length
+longer than an actual buffer to virtio-net.
 
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: "Michael S. Tsirkin" <mst@redhat.com>
@@ -36,33 +34,37 @@ Cc: netdev@vger.kernel.org
 Cc: kvm@vger.kernel.org
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- drivers/net/virtio_net.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+ drivers/net/virtio_net.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 0c7321c..bde0dec 100644
+index bde0dec..4a53d2a 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -195,6 +195,19 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
- 	len -= copy;
- 	offset += copy;
+@@ -208,12 +208,22 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 		return NULL;
+ 	}
+ 
+-	while (len) {
++	while (len && page) {
+ 		set_skb_frag(skb, page, offset, &len);
+ 		page = (struct page *)page->private;
+ 		offset = 0;
+ 	}
  
 +	/*
-+	 * Verify that we can indeed put this data into a skb.
-+	 * This is here to handle cases when the device erroneously
-+	 * tries to receive more than is possible. This is usually
-+	 * the case of a broken device.
-+	 */
-+	if (unlikely(len > MAX_SKB_FRAGS * PAGE_SIZE)) {
-+		if (net_ratelimit())
-+			pr_debug("%s: too much data\n", skb->dev->name);
++	 * This is the case where we ran out of pages in our linked list, but
++	 * supposedly have more data to read.
++	 */	
++	if (len > 0) {
++		pr_debug("%s: missing data to assemble skb\n", skb->dev->name);
 +		dev_kfree_skb(skb);
 +		return NULL;
 +	}
 +
- 	while (len) {
- 		set_skb_frag(skb, page, offset, &len);
- 		page = (struct page *)page->private;
+ 	if (page)
+ 		give_pages(vi, page);
+ 
 -- 
 1.7.6.1
 
