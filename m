@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab1I1IDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:03:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42179 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab1I1IDs convert rfc822-to-8bit (ORCPT
+	id S1753788Ab1I1IDW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:03:22 -0400
+Received: from h1778886.stratoserver.net ([85.214.133.74]:42994 "EHLO
+	h1778886.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab1I1IDQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:03:48 -0400
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
-        amit.kucheria@linaro.org, farrowg@sg.ibm.com,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 28 Sep 2011 10:02:55 +0200
-In-Reply-To: <20110928075752.GA6670@netboy.at.omicron.at>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-	 <1317068164.1763.39.camel@twins> <1317076065.3112.539.camel@work-vm>
-	 <1317119870.15383.29.camel@twins> <1317164216.3112.711.camel@work-vm>
-	 <1317196305.5781.5.camel@twins>
-	 <20110928075752.GA6670@netboy.at.omicron.at>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 28 Sep 2011 04:03:16 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC] Add gpio based voltage switching regulator
+Date: Wed, 28 Sep 2011 10:02:54 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+References: <201109260852.19859.heiko@sntech.de> <20110926125155.GH2946@opensource.wolfsonmicro.com>
+In-Reply-To: <20110926125155.GH2946@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317196975.5781.15.camel@twins>
-Mime-Version: 1.0
+Message-Id: <201109281002.57101.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 09:57 +0200, Richard Cochran wrote:
-> On Wed, Sep 28, 2011 at 09:51:45AM +0200, Peter Zijlstra wrote:
-> > SCHED_FIFO is an utter trainwreck, you're talking to the guy who gave a
-> > conference talk on why SCHED_FIFO sucks.
+Hi Mark,
+
+thanks for your comments.
+
+Am Montag, 26. September 2011, 14:51:55 schrieb Mark Brown:
+> On Mon, Sep 26, 2011 at 08:52:18AM +0200, Heiko Stübner wrote:
+> > This patch adds support for regulators that can switch between
+> > two voltage levels by setting a gpio.
 > 
-> That sounds interesting. Do you have a link to the paper and/or
-> presentation?
+> This really should be scalable beyond two voltages, or at least prepared
+> for that possibility.
+I think I've come up with a solution for this but would like to make sure I'm
+on the right track. So my general idea is to define the platform_data like
 
-Not really, I'm also the guy who doesn't write papers and has minimal
-slides (and has lost those he had).
+static struct switched_voltage_config es600_dcdc3 = {
+[...]
+	.switch_gpios = {
+		GPIO1, /* bit 0 in matrix */
+		GPIO2, /* bit 1 in matrix */
+	},
+	.nr_switch_gpios = 2,
+	.switch_matrix = {
+		{ .microvolts = 1000000, .gpio_state = (0 << 1) | (0 << 0) },
+		{ .microvolts = 1100000, .gpio_state = (0 << 1) | (1 << 0) },
+		{ .microvolts = 1200000, .gpio_state = (1 << 1) | (0 << 0) },
+		{ .microvolts = 1300000, .gpio_state = (1 << 1) | (1 << 0) },
+	},
+	.nr_switch_matrix = 4,
+[...]
+};
 
-But the gist is that SCHED_FIFO doesn't provide proper resource control:
-its possible to overload the system, nor does it provide proper resource
-isolation: (like already stated) its impossible to fold two properly
-working RT systems onto one machine and still have them work correctly
-(even when the combined utilization < 1).
+i.e. each voltage keeps the target gpio state in a bit-field which makes the
+mapping current_state -> voltage in get_voltage very easy.
+
+set_voltage would then look like
+
+	gpio_state = get_gpio_state_for_voltage(microvolts);
+	for(ptr = 0; ptr < nr_switch_gpios; ptr++) {
+		state = ( gpio_state & (1 << ptr) ) >> ptr;
+		gpio_set_value(switch_gpios[ptr], state);
+	}
+
+i.e. simply extracting the target setting from the bitfield for each gpio.
+
+If using integers for the state, this would scale up to 16 gpios and
+voltage-permutations thereof.
+
+Reasonable?
+
+> > Handling of set_voltage calls with a range that fits neither the
+> > low nor the high voltage is determined by the inbetween_high
+> > option. When set to 1 the high voltage is used, on 0 the low
+> > voltage is used and on -EINVAL an error is returned, disallowing
+> > the usage of the voltage range.
+> 
+> No, don't do this.  If you can't set the requested voltage then fail.
+> This is not in the least bit driver specific.
+ok
+
+> > @@ -0,0 +1,320 @@
+> > +/*
+> > + * switched.c
+> 
+> This needs a better name.
+"gpio-regulator"?
+
+I'm quite open to suggestions :-)
+
+> Otherwise this looks good, the main thing is the ability to support more
+> voltages.
+
+Heiko
