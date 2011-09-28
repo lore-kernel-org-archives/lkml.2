@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab1I1IlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:41:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42795 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab1I1IlG convert rfc822-to-8bit (ORCPT
+	id S1753763Ab1I1Il6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:41:58 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:34177 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab1I1Il5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:41:06 -0400
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, markgross@thegnar.org,
-        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
-        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 28 Sep 2011 10:40:22 +0200
-In-Reply-To: <1317164216.3112.711.camel@work-vm>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-	 <1317068164.1763.39.camel@twins> <1317076065.3112.539.camel@work-vm>
-	 <1317119870.15383.29.camel@twins> <1317164216.3112.711.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317199222.5781.40.camel@twins>
+	Wed, 28 Sep 2011 04:41:57 -0400
+Date: Wed, 28 Sep 2011 18:41:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the moduleh tree
+Message-Id: <20110928184150.0fcf097b7f9128f8639059f3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Sep_2011_18_41_50_+1000_L0zjN0ZKq=mjwi=4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-27 at 15:56 -0700, John Stultz wrote:
-> 
-> > IOW you should stop tasks from being runnable in the first place, once
-> > you're in a situation where you've got random runnable processes you've
-> > failed.
-> 
-> Consider your desktop. Consider servers. Are really ontop of every task
-> and are sure its not inefficient, or doesn't have some edge case bug
-> where it just flips out and chews cpu (I'm looking at you flashplayer!).
-> The real world is filled with crap.
+--Signature=_Wed__28_Sep_2011_18_41_50_+1000_L0zjN0ZKq=mjwi=4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, this is why I loathe to update to a new distro, there's bound to
-new and improved *kit-daemon crap about which does random wakeups even
-though you know you're not using any of it, and when you're trying to
-uninstall that junk it thinks it needs to uninstall the world :-(
+Hi Paul,
 
-On servers you mostly can, and I mostly have, wiped all that stuff.
+After merging the moduleh tree, today's linux-next build (x86_64
+allmodconfig) went on producing more failures (beyond those reported
+earlier).  I have used the version of the moduleh tree from next-20110927
+for today and will see if I have more stamina tomorrow.
 
-As for the Desktop, yes it is an unforgivable pile of shit. Even without
-flash, I've got 4G of memory and I can't read email and browse the web
-at the same time. Something is broken.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-About Flash, just say no, its one of the things Apple did get right ;-)
+--Signature=_Wed__28_Sep_2011_18_41_50_+1000_L0zjN0ZKq=mjwi=4
+Content-Type: application/pgp-signature
 
-> > Nothing the scheduler can do about that.
-> 
-> I disagree. Why are the inmates running the asylum? The scheduler
-> decides what runs when and where. We're not at the mercy of bad
-> applications, they're at the mercy of the scheduler. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-How the fuck does the scheduler know your bouncing cows crap really
-shouldn't be running because the screen is off? There is absolutely
-_NOTHING_ the scheduler can do about that.
+iQEcBAEBAgAGBQJOgt3OAAoJEDMEi1NhKgbsSc8H/AnRWE8MrZq8p5O+sc8wb+GN
+BiuwyKzNh3F14c/PL+hwhxBMPE3eE68xEzQypxKioMAygi9qklGE/Pc7PniAN6e8
+RIsqxt0Yn/5bpXyfkhR2lmxaMiPD2LfnYUSFw9dDyutbwVyzKvAkGlwuesmwcaZh
+heMFPMRCntReDhO8srbzK4F0qqQM4K2e7vVFqTMqeYEGvLuT34YAzByCJB9u0Tgv
+a9YaF0ILiEO7LLN34eZQ6GIxoh0/I/n8FTxdn1zrWT9WRWKZIFCjzl3iCcE8LPd8
+1LpFYdf76f3DcGL/oJA0NpKxGvtE8r+pOYjBW61vD7SmySIEI6XvdUOWdvb8Wbk=
+=4P8M
+-----END PGP SIGNATURE-----
 
-The user said he wanted this app to run, the app is runnable, we run it.
-That simple.
-
+--Signature=_Wed__28_Sep_2011_18_41_50_+1000_L0zjN0ZKq=mjwi=4--
