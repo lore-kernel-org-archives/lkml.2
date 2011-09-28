@@ -1,65 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab1I1Ewb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:52:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33672 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab1I1Ewa (ORCPT
+	id S1752963Ab1I1E4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:56:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47254 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab1I1E4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:52:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Sep 2011 13:51:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+	Wed, 28 Sep 2011 00:56:03 -0400
+Date: Wed, 28 Sep 2011 13:55:51 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
 To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@google.com>, Kautuk Consul <consul.kautuk@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch] mm: disable user interface to manually rescue
- unevictable pages
-Message-Id: <20110928135138.5113bc30.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110927072714.GA1997@redhat.com>
-References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
-	<20110926112944.GC14333@redhat.com>
-	<20110926161136.b4508ecb.akpm@google.com>
-	<20110927072714.GA1997@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4 v2] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110928045551.GA14561@barrios-desktop>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
+ <20110921150328.GJ4849@suse.de>
+ <20110922090326.GB29046@redhat.com>
+ <20110922105400.GL4849@suse.de>
+ <20110923143816.GA2606@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110923143816.GA2606@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011 09:27:14 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+Hi Hannes,
 
-> At one point, anonymous pages were supposed to go on the unevictable
-> list when no swap space was configured, and the idea was to manually
-> rescue those pages after adding swap and making them evictable again.
-> But nowadays, swap-backed pages on the anon LRU list are not scanned
-> without available swap space anyway, so there is no point in moving
-> them to a separate list anymore.
+On Fri, Sep 23, 2011 at 04:38:17PM +0200, Johannes Weiner wrote:
+> The amount of dirtyable pages should not include the full number of
+> free pages: there is a number of reserved pages that the page
+> allocator and kswapd always try to keep free.
 > 
-> The manual rescue could also be used in case pages were stranded on
-> the unevictable list due to race conditions.  But the code has been
-> around for a while now and newly discovered bugs should be properly
-> reported and dealt with instead of relying on such a manual fixup.
+> The closer (reclaimable pages - dirty pages) is to the number of
+> reserved pages, the more likely it becomes for reclaim to run into
+> dirty pages:
 > 
-> In addition to the lack of a usecase, the sysfs interface to rescue
-> pages from a specific NUMA node has been broken since its
-> introduction, so it's unlikely that anybody ever relied on that.
+>        +----------+ ---
+>        |   anon   |  |
+>        +----------+  |
+>        |          |  |
+>        |          |  -- dirty limit new    -- flusher new
+>        |   file   |  |                     |
+>        |          |  |                     |
+>        |          |  -- dirty limit old    -- flusher old
+>        |          |                        |
+>        +----------+                       --- reclaim
+>        | reserved |
+>        +----------+
+>        |  kernel  |
+>        +----------+
 > 
-> This patch removes the functionality behind the sysctl and the
-> node-interface and emits a one-time warning when somebody tries to
-> access either of them.
+> This patch introduces a per-zone dirty reserve that takes both the
+> lowmem reserve as well as the high watermark of the zone into account,
+> and a global sum of those per-zone values that is subtracted from the
+> global amount of dirtyable pages.  The lowmem reserve is unavailable
+> to page cache allocations and kswapd tries to keep the high watermark
+> free.  We don't want to end up in a situation where reclaim has to
+> clean pages in order to balance zones.
+> 
+> Not treating reserved pages as dirtyable on a global level is only a
+> conceptual fix.  In reality, dirty pages are not distributed equally
+> across zones and reclaim runs into dirty pages on a regular basis.
+> 
+> But it is important to get this right before tackling the problem on a
+> per-zone level, where the distance between reclaim and the dirty pages
+> is mostly much smaller in absolute numbers.
 > 
 > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reported-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  include/linux/mmzone.h |    6 ++++++
+>  include/linux/swap.h   |    1 +
+>  mm/page-writeback.c    |    6 ++++--
+>  mm/page_alloc.c        |   19 +++++++++++++++++++
+>  4 files changed, 30 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 1ed4116..37a61e7 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -317,6 +317,12 @@ struct zone {
+>  	 */
+>  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+>  
+> +	/*
+> +	 * This is a per-zone reserve of pages that should not be
+> +	 * considered dirtyable memory.
+> +	 */
+> +	unsigned long		dirty_balance_reserve;
+> +
+>  #ifdef CONFIG_NUMA
+>  	int node;
+>  	/*
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index b156e80..9021453 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -209,6 +209,7 @@ struct swap_list_t {
+>  /* linux/mm/page_alloc.c */
+>  extern unsigned long totalram_pages;
+>  extern unsigned long totalreserve_pages;
+> +extern unsigned long dirty_balance_reserve;
+>  extern unsigned int nr_free_buffer_pages(void);
+>  extern unsigned int nr_free_pagecache_pages(void);
+>  
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index da6d263..c8acf8a 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+>  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+>  
+>  		x += zone_page_state(z, NR_FREE_PAGES) +
+> -		     zone_reclaimable_pages(z);
+> +		     zone_reclaimable_pages(z) -
+> +		     zone->dirty_balance_reserve;
+>  	}
+>  	/*
+>  	 * Make sure that the number of highmem pages is never larger
+> @@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
+>  {
+>  	unsigned long x;
+>  
+> -	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+> +	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+> +	    dirty_balance_reserve;
+>  
+>  	if (!vm_highmem_is_dirtyable)
+>  		x -= highmem_dirtyable_memory(x);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 1dba05e..f8cba89 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
+>  
+>  unsigned long totalram_pages __read_mostly;
+>  unsigned long totalreserve_pages __read_mostly;
+> +/*
+> + * When calculating the number of globally allowed dirty pages, there
+> + * is a certain number of per-zone reserves that should not be
+> + * considered dirtyable memory.  This is the sum of those reserves
+> + * over all existing zones that contribute dirtyable memory.
+> + */
+> +unsigned long dirty_balance_reserve __read_mostly;
+> +
+>  int percpu_pagelist_fraction;
+>  gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+>  
+> @@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
+>  			if (max > zone->present_pages)
+>  				max = zone->present_pages;
+>  			reserve_pages += max;
+> +			/*
+> +			 * Lowmem reserves are not available to
+> +			 * GFP_HIGHUSER page cache allocations and
+> +			 * kswapd tries to balance zones to their high
+> +			 * watermark.  As a result, neither should be
+> +			 * regarded as dirtyable memory, to prevent a
+> +			 * situation where reclaim has to clean pages
+> +			 * in order to balance the zones.
+> +			 */
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Could you put Mel's description instead of it if you don't mind?
+If I didn't see Mel's thing, maybe I wouldn't suggest but it looks
+more easier to understand.
 
+> +			zone->dirty_balance_reserve = max;
+>  		}
+>  	}
+> +	dirty_balance_reserve = reserve_pages;
+>  	totalreserve_pages = reserve_pages;
+>  }
+>  
+> -- 
+> 1.7.6.2
+> 
+
+-- 
+Kinds regards,
+Minchan Kim
