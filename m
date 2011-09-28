@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1I1Nbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:31:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52469 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab1I1Nbn (ORCPT
+	id S1754217Ab1I1Nhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:37:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46381 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab1I1Nhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:31:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 07/24] C6X: devicetree support
-Date: Wed, 28 Sep 2011 15:31:36 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-8-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-8-git-send-email-msalter@redhat.com>
+	Wed, 28 Sep 2011 09:37:35 -0400
+Message-ID: <4E8322F5.6010206@windriver.com>
+Date: Wed, 28 Sep 2011 09:36:53 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109281531.36792.arnd@arndb.de>
-X-Provags-ID: V02:K0:FtWLhd8oGNv0h2ZhSjuvSdpJJrwclCMr63dBcuM985G
- 0OiUd3afUtelC0wcWxuWbl7bqfsz/Q5KvSpOSqXntwZLX9q0V5
- N63sbpbpm6UMbehu4n9UvaSS6XhTrTs9NcNxNi88lRsDzh91N0
- Eu5Yd4H5dKEzd0eYGPPy7+BBoPDAbqJL7CF+HsqLE2v2FxAyUI
- NOW0h0ZxfOBApi1+hzjP/too2WVENq5GZiQ7Jz5qTlzf/GE2zt
- 1707TNgeCM74rNZXCm0irZRHe6RKVmSmjj73AsW3Rz51rzRc+D
- Juu6BdgNtRxBRKRCuIRYdEOuy5OuRVhcDXP0ecHOHidM/YVgeP
- U0Y2lK0ZykjQxM53hW1A=
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] dma/imx-sdma+imx-dma: explicitly #include <linux/module.h>
+References: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de> <4E824821.8040105@windriver.com> <20110928064614.GN20550@pengutronix.de>
+In-Reply-To: <20110928064614.GN20550@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
-> diff --git a/arch/c6x/boot/install-dtb.c b/arch/c6x/boot/install-dtb.c
-> new file mode 100644
-> index 0000000..fa979ce
-> --- /dev/null
-> +++ b/arch/c6x/boot/install-dtb.c
-> @@ -0,0 +1,333 @@
-> +/*
-> + * Program to hack in a DTB to an ELF file having a placeholder
-> + * section named __fst_blob.
-> + *
-> + * This allows for building multiple images with builtin DTBs
-> + * using a single vmlinux image. This is only necessary until
-> + * bootloader support exists.
-> + *
-> + * Copyright 2011 Texas Instruments Incorporated
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + *
-> + * Usage: install-dtb <image.dtb> <kernel.elf>
-> + */
+On 11-09-28 02:46 AM, Uwe Kleine-König wrote:
+> [Cc: += linux-kbuild@v.k.o + Michal Marek]
+> 
+> Hello,
+> 
+> On Tue, Sep 27, 2011 at 06:03:13PM -0400, Paul Gortmaker wrote:
+>> On 11-09-26 02:26 AM, Uwe Kleine-König wrote:
+>>> This is needed after commit
+>>>
+>>> 	include: replace linux/module.h with "struct module" wherever possible
+>>>
+>>> (currently 25215aa in next).
+>>>
+>>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>>> ---
+>>> Hello,
+>>>
+>>> maybe it's sensible for Paul to take that before his commit?
+>>
+>> Thanks, I'll blend it into the commit adding module.h to the other
+>> drivers/dma files.  It seems the imx boards don't have a defconfig
+>> in the arch/arm/configs that enables this (CONFIG_IMX_[S]DMA).
+>>
+>> What is really interesting (at least to me anyway) is that I
+>> didn't get one iMX build in some 6000+ ARM randconfig builds....
+>>
+>> I would have thought it would have showed up at least a couple
+>> times, given that number of builds.  Maybe randconfig doesn't
+>> deal so well with "choice" Kconfig items?
+>>
+>> ~/git/module.h/linux-2.6.git$ ls -1 ../build-10*arm |wc -l
+>> 6399
+>> ~/git/module.h/linux-2.6.git$ grep CONFIG_ARCH_[A-Z0-9]*=y ../build-10*arm*/.config | sed 's/.*CON/CON/'|sort |uniq
+>> CONFIG_ARCH_EBSA110=y
+>> CONFIG_ARCH_H7201=y
+>> CONFIG_ARCH_H7202=y
+>> CONFIG_ARCH_H720X=y
+>> CONFIG_ARCH_VERSATILE=y
+> 
+> I don't understand why you did that sed, but AFAICT it doesn't hurt,
+> too. Maybe adding -c to uniq in your command line is interesting for the
+> kbuild people?!
 
-Other architectures allow simply appending the device tree to the
-kernel image file, which is more convenient for users and does
-not require much kernel support. Have you tried this?
+The sed was to strip the build paths from the grep output.  I could
+have used "grep -h" instead.
 
-> diff --git a/arch/c6x/platforms/platform.c b/arch/c6x/platforms/platform.c
-> new file mode 100644
-> index 0000000..ad4651c
-> --- /dev/null
-> +++ b/arch/c6x/platforms/platform.c
-> @@ -0,0 +1,17 @@
-> +
-> +static int __init c6x_device_probe(void)
-> +{
-> +       of_platform_bus_probe(NULL, of_default_bus_match_table, NULL);
-> +       return 0;
-> +}
-> +device_initcall(c6x_device_probe);
+> 
+>> ~/git/module.h/linux-2.6.git$ 
+>>
+>> No ARCH_MXC, no ARCH_MXS, PXA, or any of the other 20+ variants.
+>> Definitely not a random spread there, with all 6000 builds falling
+>> in just 5 buckets.
+> How did you test? Generate a .config, test without your change and if
+> that succeeds test with it? If so, maybe the problem isn't that
+> randconfig doesn't generate more random configs but that you got many
+> failures in the first run?!
 
-device_initcall is run rather late. I think it would be more useful
-to run this as early as possible, in order to make it possible to
-have more of the core services probed through the device tree.
+Testing was with the following chunk out of my $0.02 script:
 
-I also think that for probing the device tree root, you should be
-using of_platform_populate instead of of_platform_bus_probe
-nowadays. Maybe Grant can provide more information on this.
+ i=10000 ; while [ 1 ] ; do D=../build-$i-$MYARCH ; mkdir $D ; echo xxxxxxx $D xxxxxx  ; make ARCH=$MYARCH O=$D randconfig > $D/cfg.log 2>&1 ; if [ $? != 0 ] ; then echo  cfg failed in $D ; break ; fi ; time make ARCH=$MYARCH O=$D -j16 > $D/build.log 2>&1 ; if [ $? != 0 ]; then echo  bld fail in $D ; fi ; i=$[$i+1] ; done
 
-	Arnd
+Then I'd comb all the build logs looking for errors that were caused
+by changes that I made.  As you can see, it just calls randconfig, but
+the coverage never really "randomly" covered all arm platforms.
+
+Paul.
+
+
+
+> 
+> Best regards
+> Uwe
+> 
