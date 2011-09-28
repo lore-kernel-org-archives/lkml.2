@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1I1XMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:12:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54348 "EHLO mx2.suse.de"
+	id S1756155Ab1I1XMl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:12:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54330 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932723Ab1I1Wos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
-Message-Id: <20110928220140.187660209@clark.kroah.org>
+	id S932666Ab1I1Woe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:39 2011
+Message-Id: <20110928220139.880444560@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:45 -0700
+Date: Wed, 28 Sep 2011 15:01:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [141/244] ARM: Dove: fix second SPI initialization call
+        Takashi Iwai <tiwai@suse.de>
+Subject: [138/244] ALSA: hda/realtek - Fix auto-mute with HP+LO configuration
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 72cc205611879525db0374d9831f84f787112b25 upstream.
+commit 8974bd51a77824d91010176f9a5da28513c2e1f5 upstream.
 
-Commit 980f9f601a "ARM: orion: Consolidate SPI initialization."
-broke it by overwriting the SPI0 registration.
+When the system has only the headphone and the line-out jacks without
+speakers, the current auto-mute code doesn't work.  It's because the
+spec->automute_lines flag is wrongly referred in update_speakers().
+This flag must be meaningless when spec->automute_hp_lo isn't set, thus
+they should be always coupled.
 
-Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+The patch fixes the problem and add a comment to indicate the
+relationship briefly.
+
+BugLink: http://bugs.launchpad.net/bugs/851697
+
+Reported-by: David Henningsson <david.henningsson@canonical.com>
+Tested-By: Jayne Han <jayne.han@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-dove/common.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -160,7 +160,7 @@ void __init dove_spi0_init(void)
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -397,7 +397,7 @@ struct alc_spec {
+ 	unsigned int auto_mic:1;
+ 	unsigned int automute:1;	/* HP automute enabled */
+ 	unsigned int detect_line:1;	/* Line-out detection enabled */
+-	unsigned int automute_lines:1;	/* automute line-out as well */
++	unsigned int automute_lines:1;	/* automute line-out as well; NOP when automute_hp_lo isn't set */
+ 	unsigned int automute_hp_lo:1;	/* both HP and LO available */
  
- void __init dove_spi1_init(void)
- {
--	orion_spi_init(DOVE_SPI1_PHYS_BASE, get_tclk());
-+	orion_spi_1_init(DOVE_SPI1_PHYS_BASE, get_tclk());
- }
- 
- /*****************************************************************************
+ 	/* other flags */
+@@ -1161,7 +1161,7 @@ static void update_speakers(struct hda_c
+ 	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0] ||
+ 	    spec->autocfg.line_out_pins[0] == spec->autocfg.speaker_pins[0])
+ 		return;
+-	if (!spec->automute_lines || !spec->automute)
++	if (!spec->automute || (spec->automute_hp_lo && !spec->automute_lines))
+ 		on = 0;
+ 	else
+ 		on = spec->jack_present;
+@@ -1494,7 +1494,7 @@ static int alc_automute_mode_get(struct
+ 	unsigned int val;
+ 	if (!spec->automute)
+ 		val = 0;
+-	else if (!spec->automute_lines)
++	else if (!spec->automute_hp_lo || !spec->automute_lines)
+ 		val = 1;
+ 	else
+ 		val = 2;
+@@ -1515,7 +1515,8 @@ static int alc_automute_mode_put(struct
+ 		spec->automute = 0;
+ 		break;
+ 	case 1:
+-		if (spec->automute && !spec->automute_lines)
++		if (spec->automute &&
++		    (!spec->automute_hp_lo || !spec->automute_lines))
+ 			return 0;
+ 		spec->automute = 1;
+ 		spec->automute_lines = 0;
 
 
