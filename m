@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1I1CKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 22:10:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56376 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab1I1CKq (ORCPT
+	id S1752670Ab1I1CMD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 22:12:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64397 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab1I1CMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 22:10:46 -0400
-Subject: [PATCH 3/6] ASoC: Remove unused "control_data" field of struct
- cs4270_private
+	Tue, 27 Sep 2011 22:12:01 -0400
+Subject: [PATCH 4/6] ASoC: Remove unused "control_data" field of struct
+ cs42l51_private
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Timur Tabi <timur@freescale.com>
+        alsa-devel@alsa-project.org, Arnaud Patard <arnaud.patard@rtp-net.org>
 In-Reply-To: <1317175218.14102.1.camel@phoenix>
 References: <1317175218.14102.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 10:10:38 +0800
-Message-ID: <1317175838.14102.4.camel@phoenix>
+Date: Wed, 28 Sep 2011 10:11:54 +0800
+Message-ID: <1317175914.14102.6.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -32,47 +32,47 @@ assignment can be removed and the field can be dropped.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/cs4270.c |    6 +-----
+ sound/soc/codecs/cs42l51.c |    6 +-----
  1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/sound/soc/codecs/cs4270.c b/sound/soc/codecs/cs4270.c
-index 6cc8678..5830c93 100644
---- a/sound/soc/codecs/cs4270.c
-+++ b/sound/soc/codecs/cs4270.c
-@@ -128,7 +128,6 @@ static const char *supply_names[] = {
- /* Private data for the CS4270 */
- struct cs4270_private {
+diff --git a/sound/soc/codecs/cs42l51.c b/sound/soc/codecs/cs42l51.c
+index 8fb7070..286878d 100644
+--- a/sound/soc/codecs/cs42l51.c
++++ b/sound/soc/codecs/cs42l51.c
+@@ -42,7 +42,6 @@ enum master_slave_mode {
+ 
+ struct cs42l51_private {
  	enum snd_soc_control_type control_type;
 -	void *control_data;
- 	unsigned int mclk; /* Input frequency of the MCLK pin */
- 	unsigned int mode; /* The mode (I2S or left-justified) */
- 	unsigned int slave_mode;
-@@ -490,8 +489,6 @@ static int cs4270_probe(struct snd_soc_codec *codec)
- 	struct cs4270_private *cs4270 = snd_soc_codec_get_drvdata(codec);
- 	int i, ret;
- 
--	codec->control_data = cs4270->control_data;
--
- 	/* Tell ASoC what kind of I/O to use to read the registers.  ASoC will
- 	 * then do the I2C transactions itself.
- 	 */
-@@ -604,7 +601,7 @@ static int cs4270_soc_suspend(struct snd_soc_codec *codec, pm_message_t mesg)
- static int cs4270_soc_resume(struct snd_soc_codec *codec)
+ 	unsigned int mclk;
+ 	unsigned int audio_mode;	/* The mode (I2S or left-justified) */
+ 	enum master_slave_mode func;
+@@ -57,7 +56,7 @@ struct cs42l51_private {
+ static int cs42l51_fill_cache(struct snd_soc_codec *codec)
  {
- 	struct cs4270_private *cs4270 = snd_soc_codec_get_drvdata(codec);
+ 	u8 *cache = codec->reg_cache + 1;
 -	struct i2c_client *i2c_client = codec->control_data;
 +	struct i2c_client *i2c_client = to_i2c_client(codec->dev);
- 	int reg;
+ 	s32 length;
  
- 	regulator_bulk_enable(ARRAY_SIZE(cs4270->supplies),
-@@ -690,7 +687,6 @@ static int cs4270_i2c_probe(struct i2c_client *i2c_client,
+ 	length = i2c_smbus_read_i2c_block_data(i2c_client,
+@@ -520,8 +519,6 @@ static int cs42l51_probe(struct snd_soc_codec *codec)
+ 	struct snd_soc_dapm_context *dapm = &codec->dapm;
+ 	int ret, reg;
+ 
+-	codec->control_data = cs42l51->control_data;
+-
+ 	ret = cs42l51_fill_cache(codec);
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "failed to fill register cache\n");
+@@ -593,7 +590,6 @@ static int cs42l51_i2c_probe(struct i2c_client *i2c_client,
  	}
  
- 	i2c_set_clientdata(i2c_client, cs4270);
--	cs4270->control_data = i2c_client;
- 	cs4270->control_type = SND_SOC_I2C;
+ 	i2c_set_clientdata(i2c_client, cs42l51);
+-	cs42l51->control_data = i2c_client;
+ 	cs42l51->control_type = SND_SOC_I2C;
  
- 	ret = snd_soc_register_codec(&i2c_client->dev,
+ 	ret =  snd_soc_register_codec(&i2c_client->dev,
 -- 
 1.7.4.1
 
