@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab1I1PkE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:40:04 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47004 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab1I1PkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:40:03 -0400
-Message-ID: <4E833F96.1050106@parallels.com>
-Date: Wed, 28 Sep 2011 12:39:02 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754936Ab1I1Pmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:42:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54971 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab1I1Pmh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:42:37 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>, Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [RFD 4/9] Make total_forks per-cgroup
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>    <1316816432-9237-5-git-send-email-glommer@parallels.com>    <1317160837.21836.21.camel@twins> <20110928101357.5a90c2ab@de.ibm.com>    <1317206124.20318.6.camel@twins> <20110928144218.6a4882e5@de.ibm.com>   <1317214418.24040.13.camel@twins> <4E833D6D.1030407@parallels.com>  <1317224038.24040.52.camel@twins> <4E833ED4.4020205@parallels.com> <1317224258.24040.53.camel@twins>
-In-Reply-To: <1317224258.24040.53.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.46.219.221]
+Date: Wed, 28 Sep 2011 21:12:35 +0530
+Message-ID: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
+Subject: =?windows-1252?Q?BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD=92s_in_scsi?=
+	=?windows-1252?Q?glue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5Ftype=29?=
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 12:37 PM, Peter Zijlstra wrote:
-> On Wed, 2011-09-28 at 12:35 -0300, Glauber Costa wrote:
->>
->> So let me get this straight: The proposal here is really to get rid of
->> all cputime_t , not only cputime64_t ?
->
-> For now cputime64_t would be sufficient, just wanted to extend the
-> argument with Martin to see if we really need the cputime*() trickery at
-> all.
->
->
-Well, at least the 64-bit part I can do myself in this series, since I 
-am already touching it. I'd keep a transition point in which we convert 
-ticks to u64 whenever needed, and we can get rid of it later if you 
-really ditch cputime_t
+When a USB HDD is connected to the device, it invokes slave_configure
+to configure the USB HDD. In this function, whenever there is a SCSI
+device of type TYPE_DISK, it sets:
+	/* A number of devices have problems with MODE SENSE for
+		 * page x08, so we will skip it. */
+		sdev->skip_ms_page_8 = 1;
+
+Now, as a part of SCSI device probing, in the function
+sd_revalidate_disk()-->sd_read_cache_type(), there is a condition
+if (sdp->skip_ms_page_8)
+		goto defaults;
+which becomes always true for all the USB HDD’s – the net result is
+that the Write Cache is never considered for USB HDD(WCE = 0) –
+“Assuming drive cache: write through”
+
+What’s more – the QUEUE ordering which is marked for WCE=0 is
+QUEUE_ORDERED_DRAIN, instead of QUEUE_ORDERED_DRAIN_FLUSH
+This means there is no flushing of USB HDD internal cache (although
+SYNCHRONIZE_CACHE is implemented as passed as command in
+sd_prepare_flush) – queue_flush()(called in function
+blk_do_ordered()-->start_ordered()) does not gets called in case of
+QUEUE_ORDERED_DRAIN.
+
+This causes a serious impact on USB HDD’s.
+
+Please let me know in case I have missed something in my observations.
+
+Thanks & Regards,
+Amit Sahrawat
