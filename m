@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573Ab1I1Wno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54237 "EHLO mx2.suse.de"
+	id S1755898Ab1I1Wn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:43:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54253 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab1I1Wnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:42 -0400
+	id S932548Ab1I1Wnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:52 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:35 2011
-Message-Id: <20110928220135.271324361@clark.kroah.org>
+Message-Id: <20110928220135.373651290@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:58 -0700
+Date: Wed, 28 Sep 2011 15:00:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [094/244] fs/9p: Dont update file type when updating file attributes
+        Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
+Subject: [095/244] fs/9p: Add OS dependent open flags in 9p protocol
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,340 +28,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 45089142b1497dab2327d60f6c71c40766fc3ea4 upstream.
+commit f88657ce3f9713a0c62101dffb0e972a979e77b9 upstream.
 
-We should only update attributes that we can change on stat2inode.
-Also do file type initialization in v9fs_init_inode.
+Some of the flags are OS/arch dependent we add a 9p
+protocol value which maps to asm-generic/fcntl.h values in Linux
+Based on the original patch from Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+
+[extra comments from author as to why this needs to go to stable:
+
+Earlier for different operation such as open we used the values of open
+flag as defined by the OS.  But some of these flags such as O_DIRECT are
+arch dependent. So if we have the 9p client and server running on
+different architectures, we end up with client sending client
+architecture value of these open flag and server will try to map these
+values to what its architecture states. For ex: O_DIRECT on a x86 client
+maps to
+
+#define O_DIRECT        00040000
+
+Where as on sparc server it will maps to
+
+#define O_DIRECT        0x100000
+
+Hence we need to map these open flags to OS/arch independent flag
+values.  Getting these changes to an early version of kernel ensures us
+that we work with different combination of client and server. We should
+ideally backport this patch to all possible kernel version.]
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+Signed-off-by: Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/9p/v9fs_vfs.h       |    4 +-
- fs/9p/vfs_inode.c      |   91 ++++++++++++++++++++++++++-----------------------
- fs/9p/vfs_inode_dotl.c |   23 ++++++++----
- fs/9p/vfs_super.c      |    2 -
- 4 files changed, 68 insertions(+), 52 deletions(-)
+ fs/9p/v9fs_vfs.h       |    2 +
+ fs/9p/vfs_file.c       |    2 -
+ fs/9p/vfs_inode_dotl.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/net/9p/9p.h    |   24 +++++++++++++++++++++
+ 4 files changed, 81 insertions(+), 2 deletions(-)
 
 --- a/fs/9p/v9fs_vfs.h
 +++ b/fs/9p/v9fs_vfs.h
-@@ -54,9 +54,9 @@ extern struct kmem_cache *v9fs_inode_cac
- 
- struct inode *v9fs_alloc_inode(struct super_block *sb);
- void v9fs_destroy_inode(struct inode *inode);
--struct inode *v9fs_get_inode(struct super_block *sb, int mode);
-+struct inode *v9fs_get_inode(struct super_block *sb, int mode, dev_t);
- int v9fs_init_inode(struct v9fs_session_info *v9ses,
--		    struct inode *inode, int mode);
-+		    struct inode *inode, int mode, dev_t);
- void v9fs_evict_inode(struct inode *inode);
- ino_t v9fs_qid2ino(struct p9_qid *qid);
- void v9fs_stat2inode(struct p9_wstat *, struct inode *, struct super_block *);
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -95,15 +95,18 @@ static int unixmode2p9mode(struct v9fs_s
- /**
-  * p9mode2unixmode- convert plan9 mode bits to unix mode bits
-  * @v9ses: v9fs session information
-- * @mode: mode to convert
-+ * @stat: p9_wstat from which mode need to be derived
-+ * @rdev: major number, minor number in case of device files.
-  *
-  */
--
--static int p9mode2unixmode(struct v9fs_session_info *v9ses, int mode)
-+static int p9mode2unixmode(struct v9fs_session_info *v9ses,
-+			   struct p9_wstat *stat, dev_t *rdev)
- {
- 	int res;
-+	int mode = stat->mode;
- 
--	res = mode & 0777;
-+	res = mode & S_IALLUGO;
-+	*rdev = 0;
- 
- 	if ((mode & P9_DMDIR) == P9_DMDIR)
- 		res |= S_IFDIR;
-@@ -116,9 +119,26 @@ static int p9mode2unixmode(struct v9fs_s
- 		 && (v9ses->nodev == 0))
- 		res |= S_IFIFO;
- 	else if ((mode & P9_DMDEVICE) && (v9fs_proto_dotu(v9ses))
--		 && (v9ses->nodev == 0))
--		res |= S_IFBLK;
--	else
-+		 && (v9ses->nodev == 0)) {
-+		char type = 0, ext[32];
-+		int major = -1, minor = -1;
+@@ -82,4 +82,6 @@ static inline void v9fs_invalidate_inode
+ 	v9inode->cache_validity |= V9FS_INO_INVALID_ATTR;
+ 	return;
+ }
 +
-+		strncpy(ext, stat->extension, sizeof(ext));
-+		sscanf(ext, "%c %u %u", &type, &major, &minor);
-+		switch (type) {
-+		case 'c':
-+			res |= S_IFCHR;
-+			break;
-+		case 'b':
-+			res |= S_IFBLK;
-+			break;
-+		default:
-+			P9_DPRINTK(P9_DEBUG_ERROR,
-+				"Unknown special type %c %s\n", type,
-+				stat->extension);
-+		};
-+		*rdev = MKDEV(major, minor);
-+	} else
- 		res |= S_IFREG;
- 
- 	if (v9fs_proto_dotu(v9ses)) {
-@@ -131,7 +151,6 @@ static int p9mode2unixmode(struct v9fs_s
- 		if ((mode & P9_DMSETVTX) == P9_DMSETVTX)
- 			res |= S_ISVTX;
- 	}
--
- 	return res;
- }
- 
-@@ -242,13 +261,13 @@ void v9fs_destroy_inode(struct inode *in
- }
- 
- int v9fs_init_inode(struct v9fs_session_info *v9ses,
--		    struct inode *inode, int mode)
-+		    struct inode *inode, int mode, dev_t rdev)
- {
- 	int err = 0;
- 
- 	inode_init_owner(inode, NULL, mode);
- 	inode->i_blocks = 0;
--	inode->i_rdev = 0;
-+	inode->i_rdev = rdev;
- 	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
- 	inode->i_mapping->a_ops = &v9fs_addr_operations;
- 
-@@ -335,7 +354,7 @@ error:
-  *
-  */
- 
--struct inode *v9fs_get_inode(struct super_block *sb, int mode)
-+struct inode *v9fs_get_inode(struct super_block *sb, int mode, dev_t rdev)
- {
- 	int err;
- 	struct inode *inode;
-@@ -348,7 +367,7 @@ struct inode *v9fs_get_inode(struct supe
- 		P9_EPRINTK(KERN_WARNING, "Problem allocating inode\n");
- 		return ERR_PTR(-ENOMEM);
- 	}
--	err = v9fs_init_inode(v9ses, inode, mode);
-+	err = v9fs_init_inode(v9ses, inode, mode, rdev);
- 	if (err) {
- 		iput(inode);
- 		return ERR_PTR(err);
-@@ -435,11 +454,12 @@ void v9fs_evict_inode(struct inode *inod
- static int v9fs_test_inode(struct inode *inode, void *data)
- {
- 	int umode;
-+	dev_t rdev;
- 	struct v9fs_inode *v9inode = V9FS_I(inode);
- 	struct p9_wstat *st = (struct p9_wstat *)data;
- 	struct v9fs_session_info *v9ses = v9fs_inode2v9ses(inode);
- 
--	umode = p9mode2unixmode(v9ses, st->mode);
-+	umode = p9mode2unixmode(v9ses, st, &rdev);
- 	/* don't match inode of different type */
- 	if ((inode->i_mode & S_IFMT) != (umode & S_IFMT))
- 		return 0;
-@@ -473,6 +493,7 @@ static struct inode *v9fs_qid_iget(struc
- 				   struct p9_wstat *st,
- 				   int new)
- {
-+	dev_t rdev;
- 	int retval, umode;
- 	unsigned long i_ino;
- 	struct inode *inode;
-@@ -496,8 +517,8 @@ static struct inode *v9fs_qid_iget(struc
- 	 * later.
- 	 */
- 	inode->i_ino = i_ino;
--	umode = p9mode2unixmode(v9ses, st->mode);
--	retval = v9fs_init_inode(v9ses, inode, umode);
-+	umode = p9mode2unixmode(v9ses, st, &rdev);
-+	retval = v9fs_init_inode(v9ses, inode, umode, rdev);
- 	if (retval)
- 		goto error;
- 
-@@ -990,7 +1011,7 @@ v9fs_vfs_getattr(struct vfsmount *mnt, s
- 		return PTR_ERR(st);
- 
- 	v9fs_stat2inode(st, dentry->d_inode, dentry->d_inode->i_sb);
--		generic_fillattr(dentry->d_inode, stat);
-+	generic_fillattr(dentry->d_inode, stat);
- 
- 	p9stat_free(st);
- 	kfree(st);
-@@ -1074,6 +1095,7 @@ void
- v9fs_stat2inode(struct p9_wstat *stat, struct inode *inode,
- 	struct super_block *sb)
- {
-+	mode_t mode;
- 	char ext[32];
- 	char tag_name[14];
- 	unsigned int i_nlink;
-@@ -1109,31 +1131,9 @@ v9fs_stat2inode(struct p9_wstat *stat, s
- 				inode->i_nlink = i_nlink;
- 		}
- 	}
--	inode->i_mode = p9mode2unixmode(v9ses, stat->mode);
--	if ((S_ISBLK(inode->i_mode)) || (S_ISCHR(inode->i_mode))) {
--		char type = 0;
--		int major = -1;
--		int minor = -1;
--
--		strncpy(ext, stat->extension, sizeof(ext));
--		sscanf(ext, "%c %u %u", &type, &major, &minor);
--		switch (type) {
--		case 'c':
--			inode->i_mode &= ~S_IFBLK;
--			inode->i_mode |= S_IFCHR;
--			break;
--		case 'b':
--			break;
--		default:
--			P9_DPRINTK(P9_DEBUG_ERROR,
--				"Unknown special type %c %s\n", type,
--				stat->extension);
--		};
--		inode->i_rdev = MKDEV(major, minor);
--		init_special_inode(inode, inode->i_mode, inode->i_rdev);
--	} else
--		inode->i_rdev = 0;
--
-+	mode = stat->mode & S_IALLUGO;
-+	mode |= inode->i_mode & ~S_IALLUGO;
-+	inode->i_mode = mode;
- 	i_size_write(inode, stat->length);
- 
- 	/* not real number of blocks, but 512 byte ones ... */
-@@ -1399,6 +1399,8 @@ v9fs_vfs_mknod(struct inode *dir, struct
- 
- int v9fs_refresh_inode(struct p9_fid *fid, struct inode *inode)
- {
-+	int umode;
-+	dev_t rdev;
- 	loff_t i_size;
- 	struct p9_wstat *st;
- 	struct v9fs_session_info *v9ses;
-@@ -1407,6 +1409,12 @@ int v9fs_refresh_inode(struct p9_fid *fi
- 	st = p9_client_stat(fid);
- 	if (IS_ERR(st))
- 		return PTR_ERR(st);
-+	/*
-+	 * Don't update inode if the file type is different
-+	 */
-+	umode = p9mode2unixmode(v9ses, st, &rdev);
-+	if ((inode->i_mode & S_IFMT) != (umode & S_IFMT))
-+		goto out;
- 
- 	spin_lock(&inode->i_lock);
- 	/*
-@@ -1418,6 +1426,7 @@ int v9fs_refresh_inode(struct p9_fid *fi
- 	if (v9ses->cache)
- 		inode->i_size = i_size;
- 	spin_unlock(&inode->i_lock);
-+out:
- 	p9stat_free(st);
- 	kfree(st);
- 	return 0;
++int v9fs_open_to_dotl_flags(int flags);
+ #endif
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@ -65,7 +65,7 @@ int v9fs_file_open(struct inode *inode,
+ 	v9inode = V9FS_I(inode);
+ 	v9ses = v9fs_inode2v9ses(inode);
+ 	if (v9fs_proto_dotl(v9ses))
+-		omode = file->f_flags;
++		omode = v9fs_open_to_dotl_flags(file->f_flags);
+ 	else
+ 		omode = v9fs_uflags2omode(file->f_flags,
+ 					v9fs_proto_dotu(v9ses));
 --- a/fs/9p/vfs_inode_dotl.c
 +++ b/fs/9p/vfs_inode_dotl.c
-@@ -153,7 +153,8 @@ static struct inode *v9fs_qid_iget_dotl(
- 	 * later.
- 	 */
- 	inode->i_ino = i_ino;
--	retval = v9fs_init_inode(v9ses, inode, st->st_mode);
-+	retval = v9fs_init_inode(v9ses, inode,
-+				 st->st_mode, new_decode_dev(st->st_rdev));
- 	if (retval)
- 		goto error;
- 
-@@ -414,7 +415,7 @@ static int v9fs_vfs_mkdir_dotl(struct in
- 		 * inode with stat. We need to get an inode
- 		 * so that we can set the acl with dentry
- 		 */
--		inode = v9fs_get_inode(dir->i_sb, mode);
-+		inode = v9fs_get_inode(dir->i_sb, mode, 0);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			goto error;
-@@ -540,6 +541,7 @@ int v9fs_vfs_setattr_dotl(struct dentry
- void
- v9fs_stat2inode_dotl(struct p9_stat_dotl *stat, struct inode *inode)
- {
-+	mode_t mode;
- 	struct v9fs_inode *v9inode = V9FS_I(inode);
- 
- 	if ((stat->st_result_mask & P9_STATS_BASIC) == P9_STATS_BASIC) {
-@@ -552,11 +554,10 @@ v9fs_stat2inode_dotl(struct p9_stat_dotl
- 		inode->i_uid = stat->st_uid;
- 		inode->i_gid = stat->st_gid;
- 		inode->i_nlink = stat->st_nlink;
--		inode->i_mode = stat->st_mode;
--		inode->i_rdev = new_decode_dev(stat->st_rdev);
- 
--		if ((S_ISBLK(inode->i_mode)) || (S_ISCHR(inode->i_mode)))
--			init_special_inode(inode, inode->i_mode, inode->i_rdev);
-+		mode = stat->st_mode & S_IALLUGO;
-+		mode |= inode->i_mode & ~S_IALLUGO;
-+		inode->i_mode = mode;
- 
- 		i_size_write(inode, stat->st_size);
- 		inode->i_blocks = stat->st_blocks;
-@@ -664,7 +665,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir,
- 		fid = NULL;
- 	} else {
- 		/* Not in cached mode. No need to populate inode with stat */
--		inode = v9fs_get_inode(dir->i_sb, S_IFLNK);
-+		inode = v9fs_get_inode(dir->i_sb, S_IFLNK, 0);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			goto error;
-@@ -820,7 +821,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, s
- 		 * Not in cached mode. No need to populate inode with stat.
- 		 * socket syscall returns a fd, so we need instantiate
- 		 */
--		inode = v9fs_get_inode(dir->i_sb, mode);
-+		inode = v9fs_get_inode(dir->i_sb, mode, rdev);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			goto error;
-@@ -886,6 +887,11 @@ int v9fs_refresh_inode_dotl(struct p9_fi
- 	st = p9_client_getattr_dotl(fid, P9_STATS_ALL);
- 	if (IS_ERR(st))
- 		return PTR_ERR(st);
-+	/*
-+	 * Don't update inode if the file type is different
-+	 */
-+	if ((inode->i_mode & S_IFMT) != (st->st_mode & S_IFMT))
-+		goto out;
- 
- 	spin_lock(&inode->i_lock);
- 	/*
-@@ -897,6 +903,7 @@ int v9fs_refresh_inode_dotl(struct p9_fi
- 	if (v9ses->cache)
- 		inode->i_size = i_size;
- 	spin_unlock(&inode->i_lock);
-+out:
- 	kfree(st);
- 	return 0;
+@@ -191,6 +191,58 @@ v9fs_inode_from_fid_dotl(struct v9fs_ses
+ 	return inode;
  }
---- a/fs/9p/vfs_super.c
-+++ b/fs/9p/vfs_super.c
-@@ -149,7 +149,7 @@ static struct dentry *v9fs_mount(struct
- 	else
- 		sb->s_d_op = &v9fs_dentry_operations;
  
--	inode = v9fs_get_inode(sb, S_IFDIR | mode);
-+	inode = v9fs_get_inode(sb, S_IFDIR | mode, 0);
- 	if (IS_ERR(inode)) {
- 		retval = PTR_ERR(inode);
- 		goto release_sb;
++struct dotl_openflag_map {
++	int open_flag;
++	int dotl_flag;
++};
++
++static int v9fs_mapped_dotl_flags(int flags)
++{
++	int i;
++	int rflags = 0;
++	struct dotl_openflag_map dotl_oflag_map[] = {
++		{ O_CREAT,	P9_DOTL_CREATE },
++		{ O_EXCL,	P9_DOTL_EXCL },
++		{ O_NOCTTY,	P9_DOTL_NOCTTY },
++		{ O_TRUNC,	P9_DOTL_TRUNC },
++		{ O_APPEND,	P9_DOTL_APPEND },
++		{ O_NONBLOCK,	P9_DOTL_NONBLOCK },
++		{ O_DSYNC,	P9_DOTL_DSYNC },
++		{ FASYNC,	P9_DOTL_FASYNC },
++		{ O_DIRECT,	P9_DOTL_DIRECT },
++		{ O_LARGEFILE,	P9_DOTL_LARGEFILE },
++		{ O_DIRECTORY,	P9_DOTL_DIRECTORY },
++		{ O_NOFOLLOW,	P9_DOTL_NOFOLLOW },
++		{ O_NOATIME,	P9_DOTL_NOATIME },
++		{ O_CLOEXEC,	P9_DOTL_CLOEXEC },
++		{ O_SYNC,	P9_DOTL_SYNC},
++	};
++	for (i = 0; i < ARRAY_SIZE(dotl_oflag_map); i++) {
++		if (flags & dotl_oflag_map[i].open_flag)
++			rflags |= dotl_oflag_map[i].dotl_flag;
++	}
++	return rflags;
++}
++
++/**
++ * v9fs_open_to_dotl_flags- convert Linux specific open flags to
++ * plan 9 open flag.
++ * @flags: flags to convert
++ */
++int v9fs_open_to_dotl_flags(int flags)
++{
++	int rflags = 0;
++
++	/*
++	 * We have same bits for P9_DOTL_READONLY, P9_DOTL_WRONLY
++	 * and P9_DOTL_NOACCESS
++	 */
++	rflags |= flags & O_ACCMODE;
++	rflags |= v9fs_mapped_dotl_flags(flags);
++
++	return rflags;
++}
++
+ /**
+  * v9fs_vfs_create_dotl - VFS hook to create files for 9P2000.L protocol.
+  * @dir: directory inode that is being created
+@@ -259,7 +311,8 @@ v9fs_vfs_create_dotl(struct inode *dir,
+ 			   "Failed to get acl values in creat %d\n", err);
+ 		goto error;
+ 	}
+-	err = p9_client_create_dotl(ofid, name, flags, mode, gid, &qid);
++	err = p9_client_create_dotl(ofid, name, v9fs_open_to_dotl_flags(flags),
++				    mode, gid, &qid);
+ 	if (err < 0) {
+ 		P9_DPRINTK(P9_DEBUG_VFS,
+ 				"p9_client_open_dotl failed in creat %d\n",
+--- a/include/net/9p/9p.h
++++ b/include/net/9p/9p.h
+@@ -278,6 +278,30 @@ enum p9_perm_t {
+ 	P9_DMSETVTX = 0x00010000,
+ };
+ 
++/* 9p2000.L open flags */
++#define P9_DOTL_RDONLY        00000000
++#define P9_DOTL_WRONLY        00000001
++#define P9_DOTL_RDWR          00000002
++#define P9_DOTL_NOACCESS      00000003
++#define P9_DOTL_CREATE        00000100
++#define P9_DOTL_EXCL          00000200
++#define P9_DOTL_NOCTTY        00000400
++#define P9_DOTL_TRUNC         00001000
++#define P9_DOTL_APPEND        00002000
++#define P9_DOTL_NONBLOCK      00004000
++#define P9_DOTL_DSYNC         00010000
++#define P9_DOTL_FASYNC        00020000
++#define P9_DOTL_DIRECT        00040000
++#define P9_DOTL_LARGEFILE     00100000
++#define P9_DOTL_DIRECTORY     00200000
++#define P9_DOTL_NOFOLLOW      00400000
++#define P9_DOTL_NOATIME       01000000
++#define P9_DOTL_CLOEXEC       02000000
++#define P9_DOTL_SYNC          04000000
++
++/* 9p2000.L at flags */
++#define P9_DOTL_AT_REMOVEDIR		0x200
++
+ /**
+  * enum p9_qid_t - QID types
+  * @P9_QTDIR: directory
 
 
