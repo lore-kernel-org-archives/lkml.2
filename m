@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1I1UFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 16:05:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53523 "EHLO mx2.parallels.com"
+	id S1754810Ab1I1UX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 16:23:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733Ab1I1UFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 16:05:52 -0400
-Message-ID: <4E837DBE.5010904@parallels.com>
-Date: Wed, 28 Sep 2011 17:04:14 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752733Ab1I1UX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 16:23:57 -0400
+Date: Wed, 28 Sep 2011 22:20:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Wilson <wilsons@start.ca>, Al Viro <viro@zeniv.linux.org.uk>
+Cc: Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Q: proc: hold cred_guard_mutex in check_mem_permission()
+Message-ID: <20110928202020.GA3164@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>
-Subject: Re: [RFD 1/9] Change cpustat fields to an array.
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>   <1316816432-9237-2-git-send-email-glommer@parallels.com>  <1317157252.21836.3.camel@twins> <4E836546.7010004@parallels.com> <1317236957.24040.62.camel@twins>
-In-Reply-To: <1317236957.24040.62.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [189.64.210.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 04:09 PM, Peter Zijlstra wrote:
-> On Wed, 2011-09-28 at 15:19 -0300, Glauber Costa wrote:
->> On 09/27/2011 06:00 PM, Peter Zijlstra wrote:
->>> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->>>>    /* Must have preemption disabled for this to be meaningful. */
->>>> -#define kstat_this_cpu __get_cpu_var(kstat)
->>>> +#define kstat_this_cpu this_cpu_ptr(task_group_kstat(current))
->>>
->>> This just lost you a debug check, the former would whinge when called
->>> without preemption, the new one wont. Its part of the this_cpu feature
->>> set to make debugging impossible.
->>>
->>>> +#else
->>>> +#define kstat_cpu(cpu) per_cpu(kstat, cpu)
->>>> +#define kstat_this_cpu (&__get_cpu_var(kstat))
->>>> +#endif
->>>>
->>>>    extern unsigned long long nr_context_switches(void);
->>>>
->>>> @@ -52,8 +62,8 @@ struct irq_desc;
->>>>    static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
->>>>                                               struct irq_desc *desc)
->>>>    {
->>>> -       __this_cpu_inc(kstat.irqs[irq]);
->>>> -       __this_cpu_inc(kstat.irqs_sum);
->>>> +       kstat_this_cpu->irqs[irq]++;
->>>> +       kstat_this_cpu->irqs_sum++;
->>>
->>> It might be worth looking at the asm output of that, I think you made it
->>> worse, but I'm not quite sure how smart gcc is, it might just figure out
->>> what you meant.
->>
->> I'd say leave it alone.
->> The biggest difference is that we don't have access to task_group(), or
->> any of the fields in struct task_group. Because of that, we end up
->> having to export a function to do the job of dealing with it.
->>
->> Users inside sched.c won't have this problem. Outside of it, we'll add a
->> call to some paths. True, mostly handle_irq paths, but I don't think
->> that's what's going to kill us.
->>
->> Now if we really really want to save it, we'd have to move struct
->> task_group and its friends to a more visible location like a header...
->
-> I'm not quite getting how task_group is relevant here.
->
-> The above will do something like:
->
-> 	mov gs:$per-cpu-offset-of-kstat, reg
-> 	inc reg + idx*8
+Another change we probably need to backport, 18f661bc
+"proc: hold cred_guard_mutex in check_mem_permission()".
 
-except offset of kstat is not fixed. It is dynamic allocated, so you have
-to calculate it. You can't really do it without knowing at least the 
-address of task_group, and then, the offset of kstat inside it.
+>From the changelog:
+
+    Avoid a potential race when task exec's and we get a new ->mm but
+    check against the old credentials in ptrace_may_access().
+
+Could you please explain? How can we race with exec?
+
+This task is either current, or it is TASK_TRACED and we are the
+tracer. In the latter case nobody can resume it except SIGKILL.
+And the killed task obviously can't exec.
+
+Afaics, all we need is: we should read task->mm after the
+task_is_traced() check, we do not need the mutex.
+
+IOW, what do you think about the patch below? I have no idea how
+can I test it (and it wasn't even applied/compiled).
+
+Also, I'd appreciate if you can explain the PTRACE_MODE_ATTACH
+check. Again, we are already the tracer.
+
+Oleg.
+
+--- x/fs/proc/base.c
++++ x/fs/proc/base.c
+@@ -194,38 +194,31 @@ static int proc_root_link(struct inode *
+ 	return result;
+ }
+ 
+-static struct mm_struct *__check_mem_permission(struct task_struct *task)
++static int __check_mem_permission(struct task_struct *task)
+ {
+-	struct mm_struct *mm;
+-
+-	mm = get_task_mm(task);
+-	if (!mm)
+-		return ERR_PTR(-EINVAL);
+-
+ 	/*
+ 	 * A task can always look at itself, in case it chooses
+ 	 * to use system calls instead of load instructions.
+ 	 */
+ 	if (task == current)
+-		return mm;
++		return 0;
+ 
+ 	/*
+ 	 * If current is actively ptrace'ing, and would also be
+ 	 * permitted to freshly attach with ptrace now, permit it.
+ 	 */
+-	if (task_is_stopped_or_traced(task)) {
++	if (task_is_traced(task)) {
+ 		int match;
+ 		rcu_read_lock();
+ 		match = (ptrace_parent(task) == current);
+ 		rcu_read_unlock();
+ 		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
+-			return mm;
++			return 0;
+ 	}
+ 
+ 	/*
+ 	 * No one else is allowed.
+ 	 */
+-	mmput(mm);
+ 	return ERR_PTR(-EPERM);
+ }
+ 
+@@ -238,18 +231,11 @@ static struct mm_struct *check_mem_permi
+ 	struct mm_struct *mm;
+ 	int err;
+ 
+-	/*
+-	 * Avoid racing if task exec's as we might get a new mm but validate
+-	 * against old credentials.
+-	 */
+-	err = mutex_lock_killable(&task->signal->cred_guard_mutex);
++	err = __check_mem_permission(task);
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+-	mm = __check_mem_permission(task);
+-	mutex_unlock(&task->signal->cred_guard_mutex);
+-
+-	return mm;
++	return get_task_mm(task) ?: ERR_PTR(-EINVAL);
+ }
+ 
+ struct mm_struct *mm_for_maps(struct task_struct *task)
 
