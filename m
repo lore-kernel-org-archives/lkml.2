@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab1I1Wld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:41:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53908 "EHLO mx2.suse.de"
+	id S932405Ab1I1Wlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:41:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53947 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab1I1Wl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:29 -0400
+	id S932309Ab1I1Wlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:42 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
-Message-Id: <20110928220134.371106833@clark.kroah.org>
+Message-Id: <20110928220134.703436286@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:50 -0700
+Date: Wed, 28 Sep 2011 15:00:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [086/244] fs/9p: Always ask new inode in create
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [089/244] irda: fix smsc-ircc2 section mismatch warning
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,232 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit ed80fcfac2565fa866d93ba14f0e75de17a8223e upstream.
+commit f470e5ae34d68880a38aa79ee5c102ebc2a1aef6 upstream.
 
-This make sure we don't end up reusing the unlinked inode object.
-The ideal way is to use inode i_generation. But i_generation is
-not available in userspace always.
+Fix section mismatch warning:
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+WARNING: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open()
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/9p/v9fs.h           |   27 +++++++++++++++++++++++----
- fs/9p/vfs_inode.c      |   22 +++++++++++++++++-----
- fs/9p/vfs_inode_dotl.c |   30 +++++++++++++++++++++---------
- 3 files changed, 61 insertions(+), 18 deletions(-)
+ drivers/net/irda/smsc-ircc2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/9p/v9fs.h
-+++ b/fs/9p/v9fs.h
-@@ -153,13 +153,13 @@ extern void v9fs_vfs_put_link(struct den
- 			void *p);
- extern struct inode *v9fs_inode_from_fid(struct v9fs_session_info *v9ses,
- 					 struct p9_fid *fid,
--					 struct super_block *sb);
-+					 struct super_block *sb, int new);
- extern const struct inode_operations v9fs_dir_inode_operations_dotl;
- extern const struct inode_operations v9fs_file_inode_operations_dotl;
- extern const struct inode_operations v9fs_symlink_inode_operations_dotl;
- extern struct inode *v9fs_inode_from_fid_dotl(struct v9fs_session_info *v9ses,
- 					      struct p9_fid *fid,
--					      struct super_block *sb);
-+					      struct super_block *sb, int new);
- 
- /* other default globals */
- #define V9FS_PORT	564
-@@ -201,8 +201,27 @@ v9fs_get_inode_from_fid(struct v9fs_sess
- 			struct super_block *sb)
+--- a/drivers/net/irda/smsc-ircc2.c
++++ b/drivers/net/irda/smsc-ircc2.c
+@@ -515,7 +515,7 @@ static const struct net_device_ops smsc_
+  *    Try to open driver instance
+  *
+  */
+-static int __init smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
++static int __devinit smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
  {
- 	if (v9fs_proto_dotl(v9ses))
--		return v9fs_inode_from_fid_dotl(v9ses, fid, sb);
-+		return v9fs_inode_from_fid_dotl(v9ses, fid, sb, 0);
- 	else
--		return v9fs_inode_from_fid(v9ses, fid, sb);
-+		return v9fs_inode_from_fid(v9ses, fid, sb, 0);
- }
-+
-+/**
-+ * v9fs_get_new_inode_from_fid - Helper routine to populate an inode by
-+ * issuing a attribute request
-+ * @v9ses: session information
-+ * @fid: fid to issue attribute request for
-+ * @sb: superblock on which to create inode
-+ *
-+ */
-+static inline struct inode *
-+v9fs_get_new_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
-+			    struct super_block *sb)
-+{
-+	if (v9fs_proto_dotl(v9ses))
-+		return v9fs_inode_from_fid_dotl(v9ses, fid, sb, 1);
-+	else
-+		return v9fs_inode_from_fid(v9ses, fid, sb, 1);
-+}
-+
- #endif
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -454,6 +454,11 @@ static int v9fs_test_inode(struct inode
- 	return 1;
- }
- 
-+static int v9fs_test_new_inode(struct inode *inode, void *data)
-+{
-+	return 0;
-+}
-+
- static int v9fs_set_inode(struct inode *inode,  void *data)
- {
- 	struct v9fs_inode *v9inode = V9FS_I(inode);
-@@ -465,15 +470,22 @@ static int v9fs_set_inode(struct inode *
- 
- static struct inode *v9fs_qid_iget(struct super_block *sb,
- 				   struct p9_qid *qid,
--				   struct p9_wstat *st)
-+				   struct p9_wstat *st,
-+				   int new)
- {
- 	int retval, umode;
- 	unsigned long i_ino;
- 	struct inode *inode;
- 	struct v9fs_session_info *v9ses = sb->s_fs_info;
-+	int (*test)(struct inode *, void *);
-+
-+	if (new)
-+		test = v9fs_test_new_inode;
-+	else
-+		test = v9fs_test_inode;
- 
- 	i_ino = v9fs_qid2ino(qid);
--	inode = iget5_locked(sb, i_ino, v9fs_test_inode, v9fs_set_inode, st);
-+	inode = iget5_locked(sb, i_ino, test, v9fs_set_inode, st);
- 	if (!inode)
- 		return ERR_PTR(-ENOMEM);
- 	if (!(inode->i_state & I_NEW))
-@@ -504,7 +516,7 @@ error:
- 
- struct inode *
- v9fs_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
--		    struct super_block *sb)
-+		    struct super_block *sb, int new)
- {
- 	struct p9_wstat *st;
- 	struct inode *inode = NULL;
-@@ -513,7 +525,7 @@ v9fs_inode_from_fid(struct v9fs_session_
- 	if (IS_ERR(st))
- 		return ERR_CAST(st);
- 
--	inode = v9fs_qid_iget(sb, &st->qid, st);
-+	inode = v9fs_qid_iget(sb, &st->qid, st, new);
- 	p9stat_free(st);
- 	kfree(st);
- 	return inode;
-@@ -615,7 +627,7 @@ v9fs_create(struct v9fs_session_info *v9
- 	}
- 
- 	/* instantiate inode and assign the unopened fid to the dentry */
--	inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+	inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 	if (IS_ERR(inode)) {
- 		err = PTR_ERR(inode);
- 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -108,6 +108,12 @@ static int v9fs_test_inode_dotl(struct i
- 	return 1;
- }
- 
-+/* Always get a new inode */
-+static int v9fs_test_new_inode_dotl(struct inode *inode, void *data)
-+{
-+	return 0;
-+}
-+
- static int v9fs_set_inode_dotl(struct inode *inode,  void *data)
- {
- 	struct v9fs_inode *v9inode = V9FS_I(inode);
-@@ -121,16 +127,22 @@ static int v9fs_set_inode_dotl(struct in
- static struct inode *v9fs_qid_iget_dotl(struct super_block *sb,
- 					struct p9_qid *qid,
- 					struct p9_fid *fid,
--					struct p9_stat_dotl *st)
-+					struct p9_stat_dotl *st,
-+					int new)
- {
- 	int retval;
- 	unsigned long i_ino;
- 	struct inode *inode;
- 	struct v9fs_session_info *v9ses = sb->s_fs_info;
-+	int (*test)(struct inode *, void *);
-+
-+	if (new)
-+		test = v9fs_test_new_inode_dotl;
-+	else
-+		test = v9fs_test_inode_dotl;
- 
- 	i_ino = v9fs_qid2ino(qid);
--	inode = iget5_locked(sb, i_ino, v9fs_test_inode_dotl,
--			     v9fs_set_inode_dotl, st);
-+	inode = iget5_locked(sb, i_ino, test, v9fs_set_inode_dotl, st);
- 	if (!inode)
- 		return ERR_PTR(-ENOMEM);
- 	if (!(inode->i_state & I_NEW))
-@@ -164,7 +176,7 @@ error:
- 
- struct inode *
- v9fs_inode_from_fid_dotl(struct v9fs_session_info *v9ses, struct p9_fid *fid,
--			 struct super_block *sb)
-+			 struct super_block *sb, int new)
- {
- 	struct p9_stat_dotl *st;
- 	struct inode *inode = NULL;
-@@ -173,7 +185,7 @@ v9fs_inode_from_fid_dotl(struct v9fs_ses
- 	if (IS_ERR(st))
- 		return ERR_CAST(st);
- 
--	inode = v9fs_qid_iget_dotl(sb, &st->qid, fid, st);
-+	inode = v9fs_qid_iget_dotl(sb, &st->qid, fid, st, new);
- 	kfree(st);
- 	return inode;
- }
-@@ -263,7 +275,7 @@ v9fs_vfs_create_dotl(struct inode *dir,
- 		fid = NULL;
- 		goto error;
- 	}
--	inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+	inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 	if (IS_ERR(inode)) {
- 		err = PTR_ERR(inode);
- 		P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n", err);
-@@ -383,7 +395,7 @@ static int v9fs_vfs_mkdir_dotl(struct in
- 			goto error;
- 		}
- 
--		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n",
-@@ -636,7 +648,7 @@ v9fs_vfs_symlink_dotl(struct inode *dir,
- 		}
- 
- 		/* instantiate inode and assign the unopened fid to dentry */
--		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n",
-@@ -789,7 +801,7 @@ v9fs_vfs_mknod_dotl(struct inode *dir, s
- 			goto error;
- 		}
- 
--		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 		if (IS_ERR(inode)) {
- 			err = PTR_ERR(inode);
- 			P9_DPRINTK(P9_DEBUG_VFS, "inode creation failed %d\n",
+ 	struct smsc_ircc_cb *self;
+ 	struct net_device *dev;
 
 
