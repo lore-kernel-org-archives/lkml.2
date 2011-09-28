@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab1I1V3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 17:29:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48476 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751430Ab1I1V3q (ORCPT
+	id S1755236Ab1I1VaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 17:30:20 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35226 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab1I1VaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 17:29:46 -0400
-Subject: Re: BUG in kernel: Wrong Handling of USB =?UTF-8?Q?HDD=E2=80=99s?=
- in scsiglue(slave_configure) and scsi/sd(sd_read_cache_type)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <CADDb1s3KjMugBGwLmjoPv93hJVBCjkD81o8F0CZxJXXt+-Fk2A@mail.gmail.com>
-References: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
-	 <CADDb1s3KjMugBGwLmjoPv93hJVBCjkD81o8F0CZxJXXt+-Fk2A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 16:29:43 -0500
-Message-ID: <1317245383.22022.23.camel@dabdike.hansenpartnership.com>
+	Wed, 28 Sep 2011 17:30:18 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Will Drewry <wad@chromium.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        dm-devel@redhat.com, Elly Jones <ellyjones@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dm: verity target
+In-Reply-To: Your message of "Tue, 27 Sep 2011 14:02:05 CDT."
+             <CABqD9hYWK2czEKN87xDu7YPbRcp9xrumJ5PZ8aQTzBLafrnBMw@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1316112359-6085-1-git-send-email-msb@chromium.org>
+            <CABqD9hYWK2czEKN87xDu7YPbRcp9xrumJ5PZ8aQTzBLafrnBMw@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; boundary="==_Exmh_1317245414_2944P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 28 Sep 2011 17:30:14 -0400
+Message-ID: <21505.1317245414@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4E8391E8.000B,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 21:27 +0530, Amit Sahrawat wrote:
-> Marking mail to linux-scsi.
-> 
-> Thanks Christoph.
-> 
-> Regards,
-> Amit Sahrawat
-> 
-> On Wed, Sep 28, 2011 at 9:12 PM, Amit Sahrawat
-> <amit.sahrawat83@gmail.com> wrote:
-> > When a USB HDD is connected to the device, it invokes slave_configure
-> > to configure the USB HDD. In this function, whenever there is a SCSI
-> > device of type TYPE_DISK, it sets:
-> >        /* A number of devices have problems with MODE SENSE for
-> >                 * page x08, so we will skip it. */
-> >                sdev->skip_ms_page_8 = 1;
-> >
-> > Now, as a part of SCSI device probing, in the function
-> > sd_revalidate_disk()-->sd_read_cache_type(), there is a condition
-> > if (sdp->skip_ms_page_8)
-> >                goto defaults;
-> > which becomes always true for all the USB HDD’s – the net result is
-> > that the Write Cache is never considered for USB HDD(WCE = 0) –
-> > “Assuming drive cache: write through”
-> >
-> > What’s more – the QUEUE ordering which is marked for WCE=0 is
-> > QUEUE_ORDERED_DRAIN, instead of QUEUE_ORDERED_DRAIN_FLUSH
-> > This means there is no flushing of USB HDD internal cache (although
-> > SYNCHRONIZE_CACHE is implemented as passed as command in
-> > sd_prepare_flush) – queue_flush()(called in function
-> > blk_do_ordered()-->start_ordered()) does not gets called in case of
-> > QUEUE_ORDERED_DRAIN.
-> >
-> > This causes a serious impact on USB HDD’s.
-> >
-> > Please let me know in case I have missed something in my observations.
+--==_Exmh_1317245414_2944P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-This should be working in 3.0 ... what version of the kernel are you
-testing.  The actual patch that relaxes the caching mode page check is
-this one:
+On Tue, 27 Sep 2011 14:02:05 CDT, Will Drewry said:
 
-commit 0bcaa11154f07502e68375617e5650173eea8e50
-Author: Luben Tuikov <ltuikov@yahoo.com>
-Date:   Thu May 19 00:00:58 2011 -0700
+> I was just curious if there is any interest in pulling this change, or
+> if not, if there is any particular set of concerns, fixes, etc.
 
-    [SCSI] Retrieve the Caching mode page (version 2)
+Out of curiosity, how much of the stack does this end up eating?  My root=
 
-James
+filesystem is already ext4 on an LVM partition that's on a LUKS/dm-crypt
+partition on a hard drive, and I'm sure somebody out there will have used=
+ xfs
+instead - and then exported it via NFS or something. Are we going to get =
+weird
+stack overflows if people throw dm-verity into this sort of mix?
 
+> realize it's not a small amount of code to digest (though it is
+> smaller than the post from last year=5B1=5D).   Would re-posting with a=
+n
+> added blob explaining the name be useful,
+
+Probably will need it to be merged, unless you set up an auto-reply that =
+says
+=22Patch rejected, 'verity' is *not* a typo for 'verify'=22 ;)
+
+I'll hopefully have some more comments over the weekend if I get some spa=
+re
+cycles.
+
+
+--==_Exmh_1317245414_2944P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOg5HmcC3lWbTT17ARAiyZAKCTnnZ0SrjxMx727zoBr0/u+rJdMQCg0Lte
+zpMBlja3FzmgAxZ8M+5CD6Q=
+=e2DA
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317245414_2944P--
 
