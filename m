@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab1I1WfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:35:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2766 "EHLO mx1.redhat.com"
+	id S1755220Ab1I1Wg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:36:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53370 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab1I1WfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:35:02 -0400
-Date: Wed, 28 Sep 2011 18:34:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20110928223449.GD21628@redhat.com>
-References: <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
- <4E832A55.30709@kernel.dk>
- <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
- <4E832BD2.50409@kernel.dk>
- <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
- <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
- <20110928174859.GA21628@redhat.com>
- <20110928175304.GA3985@infradead.org>
- <20110928180905.GB21628@redhat.com>
- <20110928181649.GA27441@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928181649.GA27441@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754817Ab1I1Wg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:36:58 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:26 2011
+Message-Id: <20110928220126.408122698@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 28 Sep 2011 14:59:35 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Al Cooper <alcooperx@gmail.com>
+Subject: [011/244] 8250: Fix race condition in serial8250_backup_timeout().
+In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 02:16:49PM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 28, 2011 at 02:09:05PM -0400, Vivek Goyal wrote:
-> > I had thought of implementing a separate lock for throttling. Then I
-> > noticed few operations like checking for queue flags where I would
-> > be required to hold queue locks.
-> 
-> Can you do a writeup of these issues?  E.g. if the flags are throtteling
-> specific we can move them to a separate flags field, if not we can
-> see if we can make them atomic or similar.
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-Sure. I am going through the code and trying to list down some of the
-dependencies.
+------------------
 
-But before that I would say that tyring to optimize the throttling code
-to reduce the queue lock contention should be last on the priority list.
-The simple reason being that in common case it does not incur any locking
-cost. One needs to have IO cgroup configured and needs to have some
-throttling rules put in place only then queue lock cost will come into
-picture. And for most of the people, I don't think that's the common
-case.
+From: Al Cooper <alcooperx@gmail.com>
 
-Now coming back to question of dependencies. We take some services from
-request queue which needs to happen under queue lock.
+commit dbb3b1ca5609d1f3848cd387d06cc60aaacf7f98 upstream.
 
-- Looks like in current code I am only accessing QUEUE_FLAG_DEAD. I see
-  that flag is not synchronized using queue lock. So it probably is not
-  a concern.
+This is to fix an issue where output will suddenly become very slow.
+The problem occurs on 8250 UARTS with the hardware bug UART_BUG_THRE.
 
-- I am using tracing functionality. blk_add_trace_msg(). I guess it is
-  not required to take queue lock for this. But I am not sure.
+BACKGROUND
+For normal UARTs (without UART_BUG_THRE): When the serial core layer
+gets new transmit data and the transmitter is idle, it buffers the
+data and calls the 8250s' serial8250_start_tx() routine which will
+simply enable the TX interrupt in the IER register and return. This
+should immediately fire a THRE interrupt and begin transmitting the
+data.
+For buggy UARTs (with UART_BUG_THRE): merely enabling the TX interrupt
+in IER does not necessarily generate a new THRE interrupt.
+Therefore, a background timer periodically checks to see if there is
+pending data, and starts transmission if that is the case.
 
-- I am accessing q->backing_dev_info to get to associated devices's
-  major and minor number.
+The bug happens on SMP systems when the system has nothing to transmit,
+the transmit interrupt is disabled and the following sequence occurs:
+- CPU0: The background timer routine serial8250_backup_timeout()
+  starts and saves the state of the interrupt enable register (IER)
+  and then disables all interrupts in IER. NOTE: The transmit interrupt
+  (TI) bit is saved as disabled.
+- CPU1: The serial core gets data to transmit, grabs the port lock and
+  calls serial8250_start_tx() which enables the TI in IER.
+- CPU0: serial8250_backup_timeout() waits for the port lock.
+- CPU1: finishes (with TI enabled) and releases the port lock.
+- CPU0: serial8250_backup_timeout() calls the interrupt routine which
+  will transmit the next fifo's worth of data and then restores the
+  IER from the previously saved value (TI disabled).
+At this point, as long as the serial core has more transmit data
+buffered, it will not call serial8250_start_tx() again and the
+background timer routine will slowly transmit the data.
 
-That's it I guess. That's what a quick look tells me. So looks like
-it is not too hard to convert existing blk throttle code to use its
-own lock. That will also get rid of dependency on queue lock and
-in turn uncertainity associated with queue lock being valid (if
-driver provided the lock).
+The fix is to have serial8250_start_tx() get the port lock before
+it saves the IER state and release it after restoring IER. This will
+prevent serial8250_start_tx() from running in parallel.
 
-Thanks
-Vivek
+Signed-off-by: Al Cooper <alcooperx@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/tty/serial/8250.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -1819,6 +1819,8 @@ static void serial8250_backup_timeout(un
+ 	unsigned int iir, ier = 0, lsr;
+ 	unsigned long flags;
+ 
++	spin_lock_irqsave(&up->port.lock, flags);
++
+ 	/*
+ 	 * Must disable interrupts or else we risk racing with the interrupt
+ 	 * based handler.
+@@ -1836,10 +1838,8 @@ static void serial8250_backup_timeout(un
+ 	 * the "Diva" UART used on the management processor on many HP
+ 	 * ia64 and parisc boxes.
+ 	 */
+-	spin_lock_irqsave(&up->port.lock, flags);
+ 	lsr = serial_in(up, UART_LSR);
+ 	up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+-	spin_unlock_irqrestore(&up->port.lock, flags);
+ 	if ((iir & UART_IIR_NO_INT) && (up->ier & UART_IER_THRI) &&
+ 	    (!uart_circ_empty(&up->port.state->xmit) || up->port.x_char) &&
+ 	    (lsr & UART_LSR_THRE)) {
+@@ -1848,11 +1848,13 @@ static void serial8250_backup_timeout(un
+ 	}
+ 
+ 	if (!(iir & UART_IIR_NO_INT))
+-		serial8250_handle_port(up);
++		transmit_chars(up);
+ 
+ 	if (is_real_interrupt(up->port.irq))
+ 		serial_out(up, UART_IER, ier);
+ 
++	spin_unlock_irqrestore(&up->port.lock, flags);
++
+ 	/* Standard timer interval plus 0.2s to keep the port running */
+ 	mod_timer(&up->timer,
+ 		jiffies + uart_poll_timeout(&up->port) + HZ / 5);
+
+
