@@ -1,136 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1I1Mql (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:46:41 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58712 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab1I1Mqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:46:40 -0400
-Date: Wed, 28 Sep 2011 14:46:34 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/7] rcu: Fix preempt-unsafe debug check of rcu extended
- quiescent state
-Message-ID: <20110928124630.GR18553@somewhere>
-References: <1317032352-25571-1-git-send-email-fweisbec@gmail.com>
- <1317032352-25571-2-git-send-email-fweisbec@gmail.com>
- <CAG1a4rtKc0ZPZEeAsde-u7Xw9w36Oi05Zd--ueHT2XHbqRr6cg@mail.gmail.com>
- <20110927115002.GH18553@somewhere>
- <CAG1a4ruxzNo3TrRZTTLQWNfhVK7mB_0Mr4ff=tuK9k6CZbReDg@mail.gmail.com>
- <20110927214453.GO18553@somewhere>
- <CAG1a4rvjSjQ0wQuQbpRPAgF8DO9M=QfN1-Q_xEtZ9tVzYK2Efg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG1a4rvjSjQ0wQuQbpRPAgF8DO9M=QfN1-Q_xEtZ9tVzYK2Efg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754152Ab1I1MsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:48:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396Ab1I1MsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 08:48:23 -0400
+Subject: Re: [PATCH v3 11/24] C6X: time management
+From: Mark Salter <msalter@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Date: Wed, 28 Sep 2011 08:48:10 -0400
+In-Reply-To: <alpine.LFD.2.02.1109280130570.2711@ionos>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
+	 <1317155405-26235-12-git-send-email-msalter@redhat.com>
+	 <alpine.LFD.2.02.1109280130570.2711@ionos>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317214091.2580.59.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 11:52:52PM -0400, Pavel Ivanov wrote:
-> On Tue, Sep 27, 2011 at 5:44 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Tue, Sep 27, 2011 at 11:16:02AM -0400, Pavel Ivanov wrote:
-> >> > What matters is that we do that check by ensuring we are really
-> >> > checking the value of the cpu var in the CPU we are currently
-> >> > running and not some other random one that can change its dynticks
-> >> > value at the same time.
-> >>
-> >> Define the "CPU we are currently running on" in this context. Is it
-> >> CPU executing call to rcu_check_extended_qs() or is it CPU executing
-> >> return from rcu_check_extended_qs() ? These CPUs can be different both
-> >> before your patch and after that. And function can return extended_qs
-> >> state from either of these CPUs again both before and after the patch.
-> >> If the calling code wants these CPUs to be the same it has to disable
-> >> preemption before making the call. And if it does so then additional
-> >> preemption disabling inside the function is pointless.
-> >
-> > So, like Paul said rcu_read_lock() doesn't necessary imply to disable
-> > preemption.
-> >
-> > Hence by the time we call rcu_check_extended_qs() the current task
-> > can be migrated anytime before, while in the function (except
-> > a little part) or after.
-> >
-> > The CPU I was referring to when I talked about "CPU we are currently
-> > running on" is the CPU we are running between the call to get_cpu_var()
-> > and put_cpu_var(). This one can not be changed because get_cpu_var()
-> > disables preemption.
-> >
-> > So consider this piece of code:
-> >
-> >        struct rcu_dynticks *rdtp =
-> >               &get_cpu_var(rcu_dynticks);
-> >        bool ext_qs = true;
-> >
-> >        if (atomic_read(&rdtp->dynticks) & 0x1)
-> >                ext_qs = false;
-> >
-> >        put_cpu_var(rcu_dynticks);
-> >
-> > What I expect from preemption disabled is that when I read the local
-> > CPU variable rdtp->dyntick, I'm sure this is the CPU var of the local
-> > CPU and the rdtp->dyntick from another CPU.
-> >
-> > If I don't disable preemption, like it was without my patch:
-> >
-> > 0       struct rcu_dynticks *rdtp =
-> > 1               &__raw_get_cpu_var(rcu_dynticks);
-> > 2
-> > 3        if (atomic_read(&rdtp->dynticks) & 0x1)
-> > 4                ext_qs = false;
-> > 5
-> > 6        put_cpu_var(rcu_dynticks);
-> >
-> > I can fetch rdtp of CPU 1 in line 0. Then the task migrates on CPU 2.
-> > So on line 3 I'm reading rdtp->dynticks of CPU 1 from CPU 2 and this is
-> > racy because CPU 1 can change the value of rdtp->dynticks concurrently.
-> >
-> > Now indeed it's weird because we can migrate anytime outside that preempt
-> > disabled section.
-> >
-> > So let's explore the two cases where this function can be called:
-> >
-> > - From the idle task. For now this is the only place where we can
-> > run sections of code in RCU extended quiescent state. If any use
-> > of RCU is made on such section, it will hit our check.
-> > Here there is no head-scratching about the role of disabling preemption
-> > because the idle tasks can't be migrated. There is one per cpu so
-> > the rcu_dynticks variable we look at is always the same inside a
-> > given idle task.
-> >
-> > - From a normal task. We assume it can be migrated anytime. But
-> > normal tasks aren't supposed in RCU extended quiescent state.
-> > Still the check can be useful there and spot for example cases where
-> > we exit the idle task without calling rcu_exit_nohz().
-> >
-> > Now from a normal task, when we call rcu_read_lock(), we assume
-> > we can read the value dynticks from any CPU, wherever we migrate
-> > to. So for example if we are running idle in CPU 1, then we exit
-> > idle without calling rcu_exit_nohz(), the next task running on this
-> > CPU is about to call rcu_read_lock(), but of on the last time before
-> > we do our check it migrates to CPU 2. It won't detect the issue in CPU 1
-> > then. But it doesn't matter much, soon or later there are fair
-> > chances there will be a call to rcu_read_lock() on CPU 1 that
-> > will report the issue.
-> >
-> > That's also an anticipation for future development where we may
-> > call rcu_enter_nohz() in more place than just idle. Like in
-> > the Nohz cpusets for example.
-> >
-> > Right?
+On Wed, 2011-09-28 at 01:41 +0200, Thomas Gleixner wrote:
+> On Tue, 27 Sep 2011, Mark Salter wrote:
 > 
-> Right. Thank you, now I understand better what this function and this
-> patch are about. And I suggest to add that explanation to the log or a
-> comment before the function. Adding explanation to commit log would
-> make sense because it explains how behavior of the function is
-> different before and after the patch and why the patch matters.
+> > The C6X architecture includes a 64-bit free running core clock counter which
+> > is used as the clocksource. The SoCs have a number of 64-bit programmable
+> > timers. One of these is used as the clockevent timer.
+> > 
+> > + *  Port on Texas Instruments TMS320C6x architecture
+> > + *
+> > + *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
+> > + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
+> > + *
+> > + *  Modified for 2.6.34: Mark Salter <msalter@redhat.com>
+> 
+> Hmm. Who wrote that code and who is assigned the authorship? If the
+> original Author is Aurelian, then this patch is missing:
+> 
+>   - An extra From: ....
+> 
+>   - A SOB from the orginal author or an explnation why it's not
+>     available.
+> 
+> If not, then this want's to be documented in a proper form.
+> 
+> Please do not attribute other peoples code to yourself w/o a fcking
+> good reason. And porting forward itself is not considered to be one.
+> 
 
-Yeah indeed, I'll add a comment to explain this.
+Indeed not. I was focused on the code in putting the series together and
+completely overlooked the proper attribution and CCs.
+
+> > +/*
+> > + * This should be close enough...
+> 
+> What's the point of that comment ?
+
+None. It shouldn't be there.
+
+> 
+> > + */
+> > +#define CLOCK_TICK_RATE ((1000 * 1000000UL) / 6)
+> > +
+> > +/* 64-bit timestamp */
+> > +typedef unsigned long long cycles_t;
+> 
+> ...
+> 
+> > +static int next_event(unsigned long delta,
+> > +		      struct clock_event_device *evt)
+> > +{
+> > +	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
+> > +	soc_writel(delta - 1, &timer->prdlo);
+> > +	soc_writel(0, &timer->cntlo);
+> > +	soc_writel(soc_readl(&timer->tcr) | TCR_ENAMODELO_ONCE, &timer->tcr);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void set_clock_mode(enum clock_event_mode mode,
+> > +			   struct clock_event_device *evt)
+> > +{
+> 
+> So there is no way to disable that thing ?
+
+I will check...
+
+--Mark
+
+
