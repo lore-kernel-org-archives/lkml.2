@@ -1,134 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1I1NHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:07:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45122 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752894Ab1I1NHg convert rfc822-to-8bit (ORCPT
+	id S1754198Ab1I1NMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:12:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23659 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab1I1NMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:07:36 -0400
-Subject: [PATCH] kmemleak: Show where early_log issues come from
-To: linux-kernel@vger.kernel.org
-From: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Andrew Morton <akpm@google.com>, Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 28 Sep 2011 14:07:22 +0100
-Message-ID: <20110928130553.8707.82034.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: StGit/0.15-118-g0cb4
+	Wed, 28 Sep 2011 09:12:46 -0400
+Date: Wed, 28 Sep 2011 09:12:29 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: [PATCH v4 2/2] xen: modify kernel mappings
+ corresponding to granted pages
+Message-ID: <20110928131229.GA10270@phenom.oracle.com>
+References: <alpine.DEB.2.00.1109081944150.12963@kaball-desktop>
+ <20110921145853.GA541@phenom.oracle.com>
+ <alpine.DEB.2.00.1109231412220.8700@kaball-desktop>
+ <20110923144538.GA10701@phenom.oracle.com>
+ <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 28 Sep 2011 13:07:30.0666 (UTC) FILETIME=[9454B4A0:01CC7DDF]
-X-MC-Unique: 111092814073303801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1109271549030.3519@kaball-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090201.4E831D48.0005,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on initial patch by Steven Rostedt.
+> > Anyhow, If you want to modify your patchset to check PagePrivate bit
+> > and set the SetPagePrivate/set_page_private - go ahead.
+> 
+> I'll do that.
 
-Early kmemleak warnings did not show where the actual kmemleak API had
-been called from but rather just a backtrace to the kmemleak_init()
-function. By having all early kmemleak logs record the stack_trace, we
-can have kmemleak_init() write exactly where the problem occurred. This
-patch adds the setting of the kmemleak_warning variable every time a
-kmemleak warning is issued. The kmemleak_init() function checks this
-variable during early log replaying and prints the log trace if there
-was any warning.
+Preempted you a bit :-)
+http://lists.xensource.com/archives/html/xen-devel/2011-09/msg01364.html
 
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@google.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
+> > > > > +                     gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+> > > > > +                             map->flags |
+> > > > > +                             GNTMAP_host_map |
+> > > > > +                             GNTMAP_contains_pte,
+> > > > > +                             map->grants[i].ref,
+> > > > > +                             map->grants[i].domid);
+> > > > > +             }
+> > > >
+> > > > So, on startup.. (before this function is called) the
+> > > > find_grant_ptes is called which pretty much does the exact thing for
+> > > > each virtual address.  Except its flags are GNTMAP_application_map
+> > > > instead of GNTMAP_host_map.
+> > > >
+> > > > It even uses the same type structure.. It fills out map_ops[i] one.
+> > > >
+> > > > Can we use that instead of adding a new structure?
+> > >
+> > > Do you mean moving this code inside find_grant_ptes?
+> > > I don't think that can be done because find_grant_ptes is called on a
+> > > range of virtual addresses while this is called on an array of struct
+> > > pages. It is true that the current implementation of
+> > 
+> > But aren't that 'range of virtual address' of struct pages? You
+> > are using 'alloc_xenballooned_pages' to get those pages and that is
+> > what the 'range of virtual adresses' is walking through.
+> 
+> it is not the same range of virtual addresses
 
-Steven, a simpler implementation of your idea. Basically we have
-kmemleak_warn() called in several places where errors actually occur. We
-can just reuse this for printing the early log information rather than
-changing the function prototypes to return an error code.
+OK, but the pte_maddr is the same, isn't it?
 
- mm/kmemleak.c |   37 ++++++++++++++++++++++++++++---------
- 1 files changed, 28 insertions(+), 9 deletions(-)
+> 
+> > > alloc_xenballooned_pages is going to return a consecutive set of pages
+> > > but it might not always be the case.
+> > 
+> > I am sensing some grand plans in work here? I thought we are going to
+> > try to simply our lives and see about making alloc_xenballooned_pages
+> > returned sane pages that are !PageHighMem (or if they are PageHighMem they
+> > are already pinned, and set in the &init_mm)?
+> > 
+> > I am just thinking in terms of lookup_address and arbitrary_virt_to_machine
+> > calls being done _twice_. And it seems like we have the find_grant_ptes
+> > which does the bulk of this already - so why not piggyback on it?
+> 
+> It has to be done twice: once for the user ptes and once for the kernel
+> mappings of map->pages.
+> 
+> 
+> > Besides that, the patch set looks fine. .. How do I reproduce the failures
+> > you had encountered with the AIO?
+> > 
+> 
+> Just setup and use upstream qemu and configure your VM to use a disk on
+> a file (file:).
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index d6880f5..573152e 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -196,7 +196,9 @@ static atomic_t kmemleak_enabled = ATOMIC_INIT(0);
- static atomic_t kmemleak_initialized = ATOMIC_INIT(0);
- /* enables or disables early logging of the memory operations */
- static atomic_t kmemleak_early_log = ATOMIC_INIT(1);
--/* set if a fata kmemleak error has occurred */
-+/* set if a kmemleak warning was issued */
-+static atomic_t kmemleak_warning = ATOMIC_INIT(0);
-+/* set if a fatal kmemleak error has occurred */
- static atomic_t kmemleak_error = ATOMIC_INIT(0);
- 
- /* minimum and maximum address that may be valid pointers */
-@@ -259,9 +261,10 @@ static void kmemleak_disable(void);
- /*
-  * Print a warning and dump the stack trace.
-  */
--#define kmemleak_warn(x...)	do {	\
--	pr_warning(x);			\
--	dump_stack();			\
-+#define kmemleak_warn(x...)	do {		\
-+	pr_warning(x);				\
-+	dump_stack();				\
-+	atomic_set(&kmemleak_warning, 1);	\
- } while (0)
- 
- /*
-@@ -403,8 +406,8 @@ static struct kmemleak_object *lookup_object(unsigned long ptr, int alias)
- 		object = prio_tree_entry(node, struct kmemleak_object,
- 					 tree_node);
- 		if (!alias && object->pointer != ptr) {
--			pr_warning("Found object by alias at 0x%08lx\n", ptr);
--			dump_stack();
-+			kmemleak_warn("Found object by alias at 0x%08lx\n",
-+				      ptr);
- 			dump_object_info(object);
- 			object = NULL;
- 		}
-@@ -811,8 +814,7 @@ static void __init log_early(int op_type, const void *ptr, size_t size,
- 	log->ptr = ptr;
- 	log->size = size;
- 	log->min_count = min_count;
--	if (op_type == KMEMLEAK_ALLOC)
--		log->trace_len = __save_stack_trace(log->trace);
-+	log->trace_len = __save_stack_trace(log->trace);
- 	crt_early_log++;
- 	local_irq_restore(flags);
- }
-@@ -1659,6 +1661,17 @@ static int kmemleak_boot_config(char *str)
- }
- early_param("kmemleak", kmemleak_boot_config);
- 
-+static void __init print_log_trace(struct early_log *log)
-+{
-+	struct stack_trace trace;
-+
-+	trace.nr_entries = log->trace_len;
-+	trace.entries = log->trace;
-+
-+	pr_notice("Early log backtrace:\n");
-+	print_stack_trace(&trace, 2);
-+}
-+
- /*
-  * Kmemleak initialization.
-  */
-@@ -1720,7 +1733,13 @@ void __init kmemleak_init(void)
- 			kmemleak_no_scan(log->ptr);
- 			break;
- 		default:
--			WARN_ON(1);
-+			kmemleak_warn("Unknown early log operation: %d\n",
-+				      log->op_type);
-+		}
-+
-+		if (atomic_read(&kmemleak_warning)) {
-+			print_log_trace(log);
-+			atomic_set(&kmemleak_warning, 0);
- 		}
- 	}
- }
-
-
+OK.
