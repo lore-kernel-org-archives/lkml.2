@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab1I1Xfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:35:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53398 "EHLO mx2.suse.de"
+	id S1755169Ab1I1XmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:42:00 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:51627 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754817Ab1I1WhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:12 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:26 2011
-Message-Id: <20110928220126.827247005@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yulgon Kim <yulgon.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Subject: [015/244] usb: s5p-ehci: fix a NULL pointer deference
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1754263Ab1I1Xl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 19:41:58 -0400
+Message-ID: <4E83B071.5010703@parallels.com>
+Date: Wed, 28 Sep 2011 20:40:33 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>
+Subject: Re: [PATCH] trivial: initialize root cgroup's sibling list
+References: <1316816389-9135-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1316816389-9135-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.135.174]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Yulgon Kim <yulgon.kim@samsung.com>
-
-commit e5d3d4463fb30998385f9e78ab3c7f63b5813000 upstream.
-
-This patch fixes a NULL pointer deference. A NULL pointer
-dereference happens since s5p_ehci->hcd field is not initialized
-yet in probe function.
-
-[jg1.han@samsung.com: edit commit message]
-Signed-off-by: Yulgon Kim <yulgon.kim@samsung.com>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/host/ehci-s5p.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -86,6 +86,7 @@ static int __devinit s5p_ehci_probe(stru
- 		goto fail_hcd;
- 	}
- 
-+	s5p_ehci->hcd = hcd;
- 	s5p_ehci->clk = clk_get(&pdev->dev, "usbhost");
- 
- 	if (IS_ERR(s5p_ehci->clk)) {
-
-
+On 09/23/2011 07:19 PM, Glauber Costa wrote:
+> Even though there are no siblings, the list should be
+> initialized not to contain bogus values.
+>
+> Signed-off-by: Glauber Costa<glommer@parallels.com>
+> ---
+>   kernel/sched.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index ccacdbd..3ed4107 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -8082,6 +8082,7 @@ void __init sched_init(void)
+>   #ifdef CONFIG_CGROUP_SCHED
+>   	list_add(&root_task_group.list,&task_groups);
+>   	INIT_LIST_HEAD(&root_task_group.children);
+> +	INIT_LIST_HEAD(&root_task_group.siblings);
+>   	autogroup_init(&init_task);
+>   #endif /* CONFIG_CGROUP_SCHED */
+>
+Peter, how about this one ?
