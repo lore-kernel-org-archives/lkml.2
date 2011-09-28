@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab1I1Wi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:38:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53606 "EHLO mx2.suse.de"
+	id S1755652Ab1I1WjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:39:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53623 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755573Ab1I1Wix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:38:53 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:29 2011
-Message-Id: <20110928220129.808432871@clark.kroah.org>
+	id S1755573Ab1I1WjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:39:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:30 2011
+Message-Id: <20110928220130.113258236@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:07 -0700
+Date: Wed, 28 Sep 2011 15:00:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [043/244] sparc: fix array bounds error setting up PCIC NMI trap
+        "David S. Miller" <davem@davemloft.net>
+Subject: [046/244] sparc64: Only Panther cheetah+ chips have POPC.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 4a0342ca8e8150bd47e7118a76e300692a1b6b7b upstream.
+commit 1a8e0da5937a6c87807083baa318cf8f98dac9aa upstream.
 
-  CC      arch/sparc/kernel/pcic.o
-arch/sparc/kernel/pcic.c: In function 'pcic_probe':
-arch/sparc/kernel/pcic.c:359:33: error: array subscript is above array bounds [-Werror=array-bounds]
-arch/sparc/kernel/pcic.c:359:8: error: array subscript is above array bounds [-Werror=array-bounds]
-arch/sparc/kernel/pcic.c:360:33: error: array subscript is above array bounds [-Werror=array-bounds]
-arch/sparc/kernel/pcic.c:360:8: error: array subscript is above array bounds [-Werror=array-bounds]
-arch/sparc/kernel/pcic.c:361:33: error: array subscript is above array bounds [-Werror=array-bounds]
-arch/sparc/kernel/pcic.c:361:8: error: array subscript is above array bounds [-Werror=array-bounds]
-cc1: all warnings being treated as errors
-
-I'm not particularly familiar with sparc but t_nmi (defined in head_32.S via
-the TRAP_ENTRY macro) and pcic_nmi_trap_patch (defined in entry.S) both appear
-to be 4 instructions long and I presume from the usage that instructions are
-int sized.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Reviewed-by: Sam Ravnborg <sam@ravnborg.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/sparc/kernel/pcic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/setup_64.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/kernel/pcic.c
-+++ b/arch/sparc/kernel/pcic.c
-@@ -352,8 +352,8 @@ int __init pcic_probe(void)
- 	strcpy(pbm->prom_name, namebuf);
- 
- 	{
--		extern volatile int t_nmi[1];
--		extern int pcic_nmi_trap_patch[1];
-+		extern volatile int t_nmi[4];
-+		extern int pcic_nmi_trap_patch[4];
- 
- 		t_nmi[0] = pcic_nmi_trap_patch[0];
- 		t_nmi[1] = pcic_nmi_trap_patch[1];
+--- a/arch/sparc/kernel/setup_64.c
++++ b/arch/sparc/kernel/setup_64.c
+@@ -440,8 +440,14 @@ static void __init init_sparc64_elf_hwca
+ 			cap |= AV_SPARC_VIS;
+ 		if (tlb_type == cheetah || tlb_type == cheetah_plus)
+ 			cap |= AV_SPARC_VIS | AV_SPARC_VIS2;
+-		if (tlb_type == cheetah_plus)
+-			cap |= AV_SPARC_POPC;
++		if (tlb_type == cheetah_plus) {
++			unsigned long impl, ver;
++
++			__asm__ __volatile__("rdpr %%ver, %0" : "=r" (ver));
++			impl = ((ver >> 32) & 0xffff);
++			if (impl == PANTHER_IMPL)
++				cap |= AV_SPARC_POPC;
++		}
+ 		if (tlb_type == hypervisor) {
+ 			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1)
+ 				cap |= AV_SPARC_ASI_BLK_INIT;
 
 
