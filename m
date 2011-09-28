@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1I1Onh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:43:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33891 "EHLO ogre.sisk.pl"
+	id S1754570Ab1I1OoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:44:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57329 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab1I1Ong (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:43:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
-Date: Wed, 28 Sep 2011 16:45:48 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-References: <s5hmxdzyyzx.wl%tiwai@suse.de> <s5hwrcsbxub.wl%tiwai@suse.de> <s5hhb3wbv0e.wl%tiwai@suse.de>
-In-Reply-To: <s5hhb3wbv0e.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754503Ab1I1OoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 10:44:19 -0400
+Subject: Re: [PATCH v3 07/24] C6X: devicetree support
+From: Mark Salter <msalter@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 28 Sep 2011 10:44:10 -0400
+In-Reply-To: <201109281531.36792.arnd@arndb.de>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
+	 <1317155405-26235-8-git-send-email-msalter@redhat.com>
+	 <201109281531.36792.arnd@arndb.de>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109281645.48474.rjw@sisk.pl>
+Message-ID: <1317221051.2580.76.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 28, 2011, Takashi Iwai wrote:
-> At Wed, 28 Sep 2011 15:28:12 +0200,
-> Takashi Iwai wrote:
-> > 
-> > At Wed, 28 Sep 2011 15:26:19 +0200,
-> > Rafael J. Wysocki wrote:
-> > > 
-> > > On Wednesday, September 28, 2011, Takashi Iwai wrote:
-> > > > At Tue, 27 Sep 2011 18:56:44 +0200,
-> > > > Rafael J. Wysocki wrote:
-> > > > > 
-> > > > > On Tuesday, September 27, 2011, Takashi Iwai wrote:
-> > > > > > At Mon, 26 Sep 2011 19:26:44 -0700,
-> > > > > > Yinghai Lu wrote:
-> > > > > > > 
-> > > > > > > On 09/22/2011 11:11 AM, Takashi Iwai wrote:
-> > > > > > > 
-> > > > > > > > At Thu, 22 Sep 2011 07:33:17 -0700,
-> > > > > > > > Yinghai Lu wrote:
-> > > > > > > >>
-> > > > > > > >> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > > > > > >>> It looks like init_memory_mapping() is sometimes called with "end"
-> > > > > > > >>> beyond the last mapped PFN and it explodes when we try to write stuff to
-> > > > > > > >>> that address during image restoration.
-> > > > > > > >>>
-> > > > > > > >>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
-> > > > > > > >>> called with a "good end" on x86_64 was overomptimistic.
-> > > > > > > >>
-> > > > > > > >> for 64bit x86, kernel_physical_mapping_init() will use
-> > > > > > > >> map_low_page()/call early_memmap() to access ram for page_table that is above
-> > > > > > > >> rather last mapped PFN.
-> > > > > > > >>
-> > > > > > > >> the point is:
-> > > > > > > >> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
-> > > > > > > >> init_memory_mapping will be called two times for them.
-> > > > > > > >> before putting page_table high,
-> > > > > > > >> page table will be two parts: one is just below 512M, and one below 2048m.
-> > > > > > > >> after putting page_table high,
-> > > > > > > >> page table will be two parts: one is just below 2048M, and one below 64G.
-> > > > > > > > 
-> > > > > > > > So, how can this change break S4 resume?
-> > > > > > > 
-> > > > > > > 
-> > > > > > > not sure.
-> > > > > > > 
-> > > > > > > seems resume has it's own page table during transition...
-> > > > > > > 
-> > > > > > > 
-> > > > > > > > Any hint for further debugging?
-> > > > > > > 
-> > > > > > > 
-> > > > > > > you may try to insert dead loop in arch/x86/power/hibernate_asm_64.S::restore_image or core_restore_code
-> > > > > > > 
-> > > > > > > to see which part cause reset.
-> > > > > > 
-> > > > > > That's the answer I was afraid of :)
-> > > > > 
-> > > > > I wonder.  Does hibernation work on the machine in question with
-> > > > > acpi_sleep=nonvs and if so, is the problem reproducible with this
-> > > > > setting?
-> > > > 
-> > > > It still shows the same problem.  Reboots after a few S4 cycles.
-> > > > I'll test kernel S4.
-> > > 
-> > > This most likely means that NVS is not involved.
-> > 
-> > Indeed, kernel S4 also failed both with and without acpi_sleep=nonvs.
-> > 
-> > > Have you tried to revert commit d1ee433 (x86, trampoline: Use the unified
-> > > trampoline setup for ACPI wakeup)?
-> > 
-> > Not yet.  I'll check it later.
+On Wed, 2011-09-28 at 15:31 +0200, Arnd Bergmann wrote:
+> On Tuesday 27 September 2011, Mark Salter wrote:
+> > diff --git a/arch/c6x/boot/install-dtb.c b/arch/c6x/boot/install-dtb.c
+> > new file mode 100644
+> > index 0000000..fa979ce
+> > --- /dev/null
+> > +++ b/arch/c6x/boot/install-dtb.c
+> > @@ -0,0 +1,333 @@
+> > +/*
+> > + * Program to hack in a DTB to an ELF file having a placeholder
+> > + * section named __fst_blob.
+> > + *
+> > + * This allows for building multiple images with builtin DTBs
+> > + * using a single vmlinux image. This is only necessary until
+> > + * bootloader support exists.
+> > + *
+> > + * Copyright 2011 Texas Instruments Incorporated
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version
+> > + * 2 of the License, or (at your option) any later version.
+> > + *
+> > + * Usage: install-dtb <image.dtb> <kernel.elf>
+> > + */
 > 
-> Unfortunately the commit can't be reverted cleanly.
-> The commits around it seem mixed up together.
-> 
-> If you have a patch applicable to 3.0 or 3.1 kernel, let me know.
+> Other architectures allow simply appending the device tree to the
+> kernel image file, which is more convenient for users and does
+> not require much kernel support. Have you tried this?
 
-No, I don't, but can you simply go back to that commit and see
-if the issue is reproducible with HEAD = d1ee433, and if it is,
-see if it still will be reproducible after going one commit back from there?
+Well, I considered it. My main reason for doing it this way was one of
+debugging convenience. The debugger loads an ELF file and while I was
+making lots of device tree changes in the tree and in the code, it was
+more convenient to have one ELF file to deal with rather than an ELF
+file and a dtb. And the thought was to get rid of it altogether once
+bootloader support comes along. Maybe the thing to do would be to just
+rip it out of the kernel. It can almost as easily be post-processing
+step outside the kernel.
 
-Rafael
+--Mark
+
+
