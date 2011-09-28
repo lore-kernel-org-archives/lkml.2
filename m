@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1I1P4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:56:55 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:16263 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab1I1P4y convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:3:1>);
-	Wed, 28 Sep 2011 11:56:54 -0400
-Message-Id: <4E835FE30200007800058464@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 28 Sep 2011 16:56:51 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH, resend] x86-64: don't apply destructive erratum
-	 workaround on unaffected CPUs
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755098Ab1I1P51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:57:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55186 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab1I1P5Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:57:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
+References: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
+Date: Wed, 28 Sep 2011 21:27:23 +0530
+Message-ID: <CADDb1s3KjMugBGwLmjoPv93hJVBCjkD81o8F0CZxJXXt+-Fk2A@mail.gmail.com>
+Subject: =?windows-1252?Q?Re=3A_BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD=92s_in_?=
+	=?windows-1252?Q?scsiglue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5Ftype=29?=
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Erratum 93 applies to AMD K8 CPUs only, and its workaround (forcing
-the upper 32 bits of %rip to all get set under certain conditions) is
-actually getting in the way of analyzing page faults occurring during
-EFI physical mode runtime calls (in particular the page table walk
-shown is completely unrelated to the actual fault). This is because
-typically EFI runtime code lives in the space between 2G and 4G, which
-- modulo the above manipulation - is likely to overlap with the kernel
-or modules area.
+Marking mail to linux-scsi.
 
-While even for the other errata workarounds their taking effect could
-be limited to just the affected CPUs, none of them appears to be
-destructive, and they're generally getting called only outside of
-performance critical paths, so they're being left untouched.
+Thanks Christoph.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Regards,
+Amit Sahrawat
 
----
- arch/x86/mm/fault.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---- 3.1-rc8/arch/x86/mm/fault.c
-+++ 3.1-rc8-x86_64-amd-erratum93/arch/x86/mm/fault.c
-@@ -420,12 +420,14 @@ static noinline __kprobes int vmalloc_fa
- 	return 0;
- }
- 
-+#ifdef CONFIG_CPU_SUP_AMD
- static const char errata93_warning[] =
- KERN_ERR 
- "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
- "******* Working around it, but it may cause SEGVs or burn power.\n"
- "******* Please consider a BIOS update.\n"
- "******* Disabling USB legacy in the BIOS may also help.\n";
-+#endif
- 
- /*
-  * No vm86 mode in 64-bit mode:
-@@ -505,7 +507,11 @@ bad:
-  */
- static int is_errata93(struct pt_regs *regs, unsigned long address)
- {
--#ifdef CONFIG_X86_64
-+#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
-+	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
-+	    || boot_cpu_data.x86 != 0xf)
-+		return 0;
-+
- 	if (address != regs->ip)
- 		return 0;
- 
-
-
-
+On Wed, Sep 28, 2011 at 9:12 PM, Amit Sahrawat
+<amit.sahrawat83@gmail.com> wrote:
+> When a USB HDD is connected to the device, it invokes slave_configure
+> to configure the USB HDD. In this function, whenever there is a SCSI
+> device of type TYPE_DISK, it sets:
+>        /* A number of devices have problems with MODE SENSE for
+>                 * page x08, so we will skip it. */
+>                sdev->skip_ms_page_8 = 1;
+>
+> Now, as a part of SCSI device probing, in the function
+> sd_revalidate_disk()-->sd_read_cache_type(), there is a condition
+> if (sdp->skip_ms_page_8)
+>                goto defaults;
+> which becomes always true for all the USB HDD’s – the net result is
+> that the Write Cache is never considered for USB HDD(WCE = 0) –
+> “Assuming drive cache: write through”
+>
+> What’s more – the QUEUE ordering which is marked for WCE=0 is
+> QUEUE_ORDERED_DRAIN, instead of QUEUE_ORDERED_DRAIN_FLUSH
+> This means there is no flushing of USB HDD internal cache (although
+> SYNCHRONIZE_CACHE is implemented as passed as command in
+> sd_prepare_flush) – queue_flush()(called in function
+> blk_do_ordered()-->start_ordered()) does not gets called in case of
+> QUEUE_ORDERED_DRAIN.
+>
+> This causes a serious impact on USB HDD’s.
+>
+> Please let me know in case I have missed something in my observations.
+>
+> Thanks & Regards,
+> Amit Sahrawat
+>
