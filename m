@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1I1PP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:15:58 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48879 "EHLO mx2.parallels.com"
+	id S1754770Ab1I1PQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:16:39 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48898 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab1I1PP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:15:57 -0400
-Message-ID: <4E8339EA.7070700@parallels.com>
-Date: Wed, 28 Sep 2011 12:14:50 -0300
+	id S1752807Ab1I1PQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:16:37 -0400
+Message-ID: <4E833A28.8020508@parallels.com>
+Date: Wed, 28 Sep 2011 12:15:52 -0300
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
@@ -16,8 +16,8 @@ CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
         <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
         <jbottomley@parallels.com>
 Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-4-git-send-email-glommer@parallels.com> <1317160096.21836.14.camel@twins>
-In-Reply-To: <1317160096.21836.14.camel@twins>
+References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-4-git-send-email-glommer@parallels.com> <1317160344.21836.16.camel@twins>
+In-Reply-To: <1317160344.21836.16.camel@twins>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [187.46.219.221]
@@ -25,24 +25,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2011 06:48 PM, Peter Zijlstra wrote:
+On 09/27/2011 06:52 PM, Peter Zijlstra wrote:
 > On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->> +static inline void task_cgroup_account_field(struct task_struct *p,
->> +                                            cputime64_t tmp, int index)
->> +{
->> +       struct kernel_stat *kstat;
->> +       struct task_group *tg = task_group(p);
->> +
->> +       do {
->> +               kstat = this_cpu_ptr(tg->cpustat);
->> +               kstat->cpustat[index] = cputime64_add(kstat->cpustat[index],
->> +                                                     tmp);
+>> +       root_task_group.cpustat = alloc_percpu(struct kernel_stat);
+>> +       /* Failing that early an allocation means we're screwed anyway */
+>> +       BUG_ON(!root_task_group.cpustat);
+>> +       for_each_possible_cpu(i) {
+>> +               kstat = per_cpu_ptr(root_task_group.cpustat, i);
+>> +               kstat->cpustat[IDLE] = 0;
+>> +               kstat->cpustat[IDLE_BASE] = 0;
+>> +               kstat->cpustat[IOWAIT_BASE] = 0;
+>> +               kstat->cpustat[IOWAIT] = 0;
 >
-> So aside from the cputime64_t nonsense you could actually write that as:
->
-> 		__this_cpu_add(tg->cpustat[index], tmp);
->
-> which should yield better asm I think, a quick grep seems to confirm
-> cputime64_t is indeed a u64 all over so its fair to just ignore that.
+> so alloc_percpu() will actually zero your memory for you, which you rely
+> on for all other fields as well, so why reset these ones?
 
-Ok, It would indeed be better.
+Just to be style-consistent with the non-root initialization, in which 
+we actually put values on that. But I can easily remove it.
+
+>
+>> +       }
+>
+>
+
