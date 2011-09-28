@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1I1MJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 08:09:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57346 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab1I1MI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 08:08:58 -0400
-Subject: Re: Possible NULL dereference caused by -stable commit
- ef81bb40bf15f350fe865f31fa42f1082772a576
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@redhat.com>,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        stable@kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Amos Kong <akong@redhat.com>
-In-Reply-To: <4E82FC4E.5010101@redhat.com>
-References: <4E82FC4E.5010101@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 14:09:09 +0200
-Message-ID: <1317211749.2941.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1753600Ab1I1MM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 08:12:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41711 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051Ab1I1MM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 08:12:26 -0400
+Message-ID: <4E830EF1.5080704@parallels.com>
+Date: Wed, 28 Sep 2011 09:11:29 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Andrew Wagin <avagin@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 4/7] per-cgroup tcp buffers control
+References: <1316051175-17780-1-git-send-email-glommer@parallels.com> <1316051175-17780-5-git-send-email-glommer@parallels.com> <CANaxB-wy8VDv0Wjni6UzcfBzSgNn=bZBey5f+fXHebNuek=O1A@mail.gmail.com>
+In-Reply-To: <CANaxB-wy8VDv0Wjni6UzcfBzSgNn=bZBey5f+fXHebNuek=O1A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.46.173.177]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 28 septembre 2011 à 18:51 +0800, Jason Wang a écrit :
-> Hi all:
-> 
-> A possible NULL dereference were noticed by the stable commit 
-> ef81bb40bf15f350fe865f31fa42f1082772a576 (which is a backport of 
-> 87c48fa3b4630905f98268dde838ee43626a060c). The case happens when bridge 
-> froward a packet from guest to a physical nic, at this time no route is 
-> attached to the skb which may lead a NULL dereference in 
-> ipv6_select_ident(). -Next version have this check so it is fine. The 
-> following patch may be used to avoid this but may also lead the ip 
-> identification predicable, and this defect is also exist -next version 
-> when no route because we still depends on a global variable to generate 
-> the identification.  Any thought on this?
+On 09/28/2011 08:58 AM, Andrew Wagin wrote:
+> * tcp_destroy_cgroup_fill() is executed for each cgroup and
+> initializes some proto methods. proto_list is global and we can
+> initialize each proto one time. Do we need this really?
+>
+> * And when a cgroup is destroyed, it cleans proto methods
+> (tcp_destroy_cgroup_fill), how other cgroups will work after that?
 
-1) Discussion on current kernel :
+I've already realized that, and removed destruction from my upcoming
+series. Thanks
 
-All we need here is not the route but inet_peer, so that inet_getid()
-can be called on it.
+> * What about proto, which is registered when cgroup mounted?
+>
+> My opinion that we may initialize proto by the following way:
+>
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM+       .enter_memory_pressure
+> = tcp_enter_memory_pressure_nocg,
+> +       .sockets_allocated      = sockets_allocated_tcp_nocg,
+> +       .memory_allocated       = memory_allocated_tcp_nocg,
+> +       .memory_pressure        = memory_pressure_tcp_nocg,
+> +#else
+>          .enter_memory_pressure  = tcp_enter_memory_pressure,
+>          .sockets_allocated      = sockets_allocated_tcp,
+>          .memory_allocated       = memory_allocated_tcp,
+>          .memory_pressure        = memory_pressure_tcp,
+> +#endif
+>
+> It should work, because the root memory cgroup always exists.
+Yeah, I was still doing the initialization through cgroups, but I think
+this works.
 
-If no route is given to ipv6_select_ident(), at least we can try to get
-inet_peer, and release it before exiting from ipv6_select_ident()
+The reason I was keeping it cgroup's initialization method, was because 
+we have a parameter that allowed kmem accounting to be disabled.
+But Kame suggested we'd remove it, and so I did.
 
-2) On stable kernel, we already use an array
-(ipv6_fragmentation_id[FID_HASH_SZ];) to make less predictables
-fragments ids.
-
-So we could get dst addr from the packet to be forwarded instead of the
-(possibly NULL) route.
-
-
+>
+>> +int tcp_init_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+>> +                        struct cgroup_subsys *ss)
+>> +{
+>> +       prot->enter_memory_pressure     = tcp_enter_memory_pressure;
+>> +       prot->memory_allocated          = memory_allocated_tcp;
+>> +       prot->prot_mem                  = tcp_sysctl_mem;
+>> +       prot->sockets_allocated         = sockets_allocated_tcp;
+>> +       prot->memory_pressure           = memory_pressure_tcp;
+>> +
+>> +       return 0;
+>> +}
+>
+>
+>> +void tcp_destroy_cgroup_fill(struct proto *prot, struct cgroup *cgrp,
+>> +                            struct cgroup_subsys *ss)
+>> +{
+>> +       prot->enter_memory_pressure     = tcp_enter_memory_pressure_nocg;
+>> +       prot->memory_allocated          = memory_allocated_tcp_nocg;
+>> +       prot->prot_mem                  = tcp_sysctl_mem_nocg;
+>> +       prot->sockets_allocated         = sockets_allocated_tcp_nocg;
+>> +       prot->memory_pressure           = memory_pressure_tcp_nocg;
+>>
+>
+>> @@ -2220,12 +2220,16 @@ struct proto tcpv6_prot = {
+>>        .hash                   = tcp_v6_hash,
+>>        .unhash                 = inet_unhash,
+>>        .get_port               = inet_csk_get_port
+>> +       .enter_memory_pressure  = tcp_enter_memory_pressure_nocg,
+>> +       .sockets_allocated      = sockets_allocated_tcp_nocg,
+>> +       .memory_allocated       = memory_allocated_tcp_nocg,
+>> +       .memory_pressure        = memory_pressure_tcp_nocg,
 
