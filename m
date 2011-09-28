@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab1I1EhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:37:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56851 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab1I1EhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:37:13 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Sep 2011 13:36:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Wizard <wizarddewhite@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rdunlap@xenotime.net, linux-mm@kvack.org
-Subject: Re: [PATCH]   fix find_next_system_ram comments
-Message-Id: <20110928133621.45f936df.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1317132124-2820-1-git-send-email-wizarddewhite@gmail.com>
-References: <1317132124-2820-1-git-send-email-wizarddewhite@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752690Ab1I1Ej2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:39:28 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45727 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751572Ab1I1Ej1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 00:39:27 -0400
+Date: Wed, 28 Sep 2011 10:09:21 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1] sched: fix nohz idle load balancer issues
+Message-ID: <20110928043921.GC8593@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20110926115049.GA22604@linux.vnet.ibm.com>
+ <CABeCy1YXKR89_uQm_XAyNJHPHkL+6JKxa-C+8Z_9ox7b_k2scQ@mail.gmail.com>
+ <20110928043427.GI4357@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110928043427.GI4357@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011 22:02:04 +0800
-Wizard <wizarddewhite@gmail.com> wrote:
+* Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com> [2011-09-28 10:04:27]:
 
-> The purpose of find_next_system_ram() is to find a the lowest
-> memory resource which contain or overlap the [res->start, res->end),
-> not just contain.
-> 
-> In this patch, I make this comment more exact and fix one typo.
-> 
-> Signed-off-by: Wei Yang <wizarddewhite@gmail.com>
+> unless we want to go for more sophisticated like a sorted list of
+> rq->next_balance in a rb-tree
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Given that this list will need to be global (and not per-cpu) and it will need 
+to be updated reqularly (even when cpus are busy and as they update their 
+rq->next_balance), that will probably not fly!
 
+- vatsa
