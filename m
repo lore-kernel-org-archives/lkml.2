@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1I1SJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 14:09:58 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:37541 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1I1SJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 14:09:57 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzz8275dhz32i668h839h93fh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LS8VSB-01-QGO-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
-Date: Wed, 28 Sep 2011 20:08:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.4-030004-generic; KDE/4.7.1; x86_64; ; )
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <4E835851.7070502@zytor.com> <4E835E50.2020307@goop.org>
-In-Reply-To: <4E835E50.2020307@goop.org>
+	id S1754882Ab1I1SMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 14:12:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40404 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753420Ab1I1SMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 14:12:09 -0400
+Date: Wed, 28 Sep 2011 11:11:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: peterz@infradead.org, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] lockdep: Update documentation for lock-class leak
+ detection
+Message-ID: <20110928181139.GA8217@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201109282008.17722.stephan.diestelhorst@amd.com>
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 September 2011 19:50:08 Jeremy Fitzhardinge wrote:
-> On 09/28/2011 10:24 AM, H. Peter Anvin wrote:
-> > On 09/28/2011 10:22 AM, Linus Torvalds wrote:
-> >> On Wed, Sep 28, 2011 at 9:47 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> >>> Could do something like:
-> >>>
-> >>>        if (ticket->head >= 254)
-> >>>                prev = xadd(&ticket->head_tail, 0xff02);
-> >>>        else
-> >>>                prev = xadd(&ticket->head_tail, 0x0002);
-> >>>
-> >>> to compensate for the overflow.
-> >> Oh wow. You havge an even more twisted mind than I do.
-> >>
-> >> I guess that will work, exactly because we control "head" and thus can
-> >> know about the overflow in the low byte. But boy is that ugly ;)
-> >>
-> >> But at least you wouldn't need to do the loop with cmpxchg. So it's
-> >> twisted and ugly, but migth be practical.
-> >>
-> > I suspect it should be coded as -254 in order to use a short immediate
-> > if that is even possible...
-> 
-> I'm about to test:
-> 
-> static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
-> {
-> 	if (TICKET_SLOWPATH_FLAG && unlikely(arch_static_branch(&paravirt_ticketlocks_enabled))) {
-> 		arch_spinlock_t prev;
-> 		__ticketpair_t inc = TICKET_LOCK_INC;
-> 
-> 		if (lock->tickets.head >= (1 << TICKET_SHIFT) - TICKET_LOCK_INC)
-> 			inc += -1 << TICKET_SHIFT;
-> 
-> 		prev.head_tail = xadd(&lock->head_tail, inc);
-> 
-> 		if (prev.tickets.tail & TICKET_SLOWPATH_FLAG)
-> 			__ticket_unlock_slowpath(lock, prev);
-> 	} else
-> 		__ticket_unlock_release(lock);
-> }
-> 
-> Which, frankly, is not something I particularly want to put my name to.
+There are a number of bugs that can leak lock classes, which will
+eventually exhaust the maximum number (currently 8191).  However,
+the documentation does not tell you how to track down the leakers.
+This commit addresses this shortcoming.
 
-I must have missed the part when this turned into the propose-the-
-craziest-way-that-this-still-works.contest :)
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-What is wrong with converting the original addb into a lock addb? The
-crazy wrap around tricks add a conditional and lots of headache. The
-lock addb/w is clean. We are paying an atomic in both cases, so I just
-don't see the benefit of the second solution.
-
-Stephan
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH
-Einsteinring 24
-85609 Aschheim
-Germany
-
-Geschaeftsfuehrer: Alberto Bozzo;
-Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632, WEEE-Reg-Nr: DE 12919551 
-
+diff --git a/Documentation/lockdep-design.txt b/Documentation/lockdep-design.txt
+index abf768c..24bfd9f 100644
+--- a/Documentation/lockdep-design.txt
++++ b/Documentation/lockdep-design.txt
+@@ -221,3 +221,55 @@ when the chain is validated for the first time, is then put into a hash
+ table, which hash-table can be checked in a lockfree manner. If the
+ locking chain occurs again later on, the hash table tells us that we
+ dont have to validate the chain again.
++
++Troubleshooting:
++----------------
++
++The validator tracks a maximum of MAX_LOCKDEP_KEYS number of lock classes.
++Exceeding this number will trigger the following lockdep warning:
++
++	(DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
++
++By default, MAX_LOCKDEP_KEYS is currently set to 8191, and typical
++desktop systems have less than 1,000 lock classes, so this warning
++normally results from lock-class leakage.  Such leakage can result
++from the following:
++
++1.	Repeated module loading and unloading while running the validator.
++	The issue here is that each load of the module will create a
++	new set of lock classes for that module's locks, and module
++	unloading cannot remove old classes.  Therefore, if that module
++	is loaded and unloaded repeatedly, the number of lock classes
++	will eventually reach the maximum.
++
++2.	Dynamically allocating and freeing structures containing fields
++	of type "struct lock_class_key".  Again, the fact that old
++	lock classes cannot be reused means that repeating allocation/free
++	cycles for long enough will cause the number of lock classes to
++	eventually reach the maximum.
++
++One might argue that the validator should be modified to allow lock
++classes to be reused.  However, if you are tempted to make this argument,
++first review the code and think through the changes that would be
++required, keeping in mind that the lock classes to be removed are likely
++to be linked into the lock-dependency graph.  This turns out to be a
++harder to do than to say.
++
++But if you run out of lock classes, the next question is what are the
++offending lock classes.  First, the following command gives you the
++number of lock classes currently in use along with the maximum:
++
++	grep "lock-classes" /proc/lockdep_stats
++
++This command gets the following output on a modest Power system:
++
++	 lock-classes:                          748 [max: 8191]
++
++If the number allocated (748 above) increases continually over time,
++then there is likely a leak.  The following command can be used to
++identify the leaking lock classes:
++
++	grep "BD" /proc/lockdep
++
++Run the command and save the output, then compare against the output
++from a later run of this command to identify the leakers.
