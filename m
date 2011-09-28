@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1I1R2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:28:50 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1302 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab1I1R2t convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:28:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 28 Sep 2011 10:28:44 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>
-Date: Wed, 28 Sep 2011 10:28:43 -0700
-Subject: RE: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
-Thread-Topic: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
-Thread-Index: Acx91f3nm4PhNBOsRiqLDwWncbVLMgALbJ+g
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17395557FD@HQMAIL01.nvidia.com>
-References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B7321777@HQMAIL01.nvidia.com>
-	<CACRpkdY5ETbJxSpwJL-7KZhjOnhwrdT1=djwByek75ye=S9L9w@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF1738180164@HQMAIL01.nvidia.com>
-	<CACRpkdbiWUFPfF9vKV5YpSW68ZTdjwb8NhWZ_9WDoY5Q+aVfvQ@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17395556DC@HQMAIL01.nvidia.com>
- <CACRpkdYx-iKPJisP7PgNynu9z3tu7s6KieFAoAOU2YO_5X2iqA@mail.gmail.com>
-In-Reply-To: <CACRpkdYx-iKPJisP7PgNynu9z3tu7s6KieFAoAOU2YO_5X2iqA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754450Ab1I1Rbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:31:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58431 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482Ab1I1Rbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 13:31:47 -0400
+Message-ID: <4E835851.7070502@zytor.com>
+Date: Wed, 28 Sep 2011 10:24:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Jan Beulich <JBeulich@suse.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        xen-devel@lists.xensource.com, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <3300108.XQUp9Wrktc@chlor> <4E81FD52.50106@goop.org> <CA+55aFx7dv4C4ZB_3CFjdJmX_wpoxecpqo1ARYr1=zTVP=CVVA@mail.gmail.com> <4E835F8C0200007800058461@nat28.tlf.novell.com> <CA+55aFyVoZpZZp7ejypTv21Cx_qJWkZQdpJOnxBa_jUxsCjhuw@mail.gmail.com> <4E834FBA.1080709@goop.org> <CA+55aFzGZp8YaQMMUMwV+pd_vnqR14CtiTmTtkXuotQBg0zspg@mail.gmail.com>
+In-Reply-To: <CA+55aFzGZp8YaQMMUMwV+pd_vnqR14CtiTmTtkXuotQBg0zspg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Wednesday, September 28, 2011 5:59 AM:
-> On Wed, Sep 28, 2011 at 2:15 AM, Stephen Warren <swarren@nvidia.com> wrote:
+On 09/28/2011 10:22 AM, Linus Torvalds wrote:
+> On Wed, Sep 28, 2011 at 9:47 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>
+>> Could do something like:
+>>
+>>        if (ticket->head >= 254)
+>>                prev = xadd(&ticket->head_tail, 0xff02);
+>>        else
+>>                prev = xadd(&ticket->head_tail, 0x0002);
+>>
+>> to compensate for the overflow.
 > 
-> > But can't debugfs just get its information from the device name field in
-> > the mapping table? I'm not sure why the need to use that information for
-> > debugfs prevents the having entries with both the hog flag set and a
-> > device name set?
+> Oh wow. You havge an even more twisted mind than I do.
 > 
-> That feels unsafe - then you have some string claiming to represent the
-> device for that pinmux, but the system has not matched that string
-> against dev_name() for any real device, so it could be a lie, any string
-> like "foo" would do.
+> I guess that will work, exactly because we control "head" and thus can
+> know about the overflow in the low byte. But boy is that ugly ;)
 > 
-> What I do now for U300 is complete resolution by matching dev_name
-> in the mapping to dev_name(device) on the struct device * actually
-> instantiated, which means you're 100% sure it is really mapped
-> to that very device.
+> But at least you wouldn't need to do the loop with cmpxchg. So it's
+> twisted and ugly, but migth be practical.
 > 
-> I like this since it's much more stringent...
 
-OK, I can see the advantage, and I suppose one could still move
-u300_pinmux_fetch() into the pinmux core as a helper function in the
-future if needed without too much issue. If it's hard for some other
-machine to set up the .dev entries in the table the function uses, one
-can always fall back on system/non-device hog entries in the main
-mapping table.
+I suspect it should be coded as -254 in order to use a short immediate
+if that is even possible...
 
-So I'll drop my objection to this.
+	-hpa
 
 -- 
-nvpublic
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
