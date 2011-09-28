@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab1I1WkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:40:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53734 "EHLO mx2.suse.de"
+	id S932217Ab1I1WkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:40:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53766 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab1I1WkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:28 2011
-Message-Id: <20110928220128.607584752@clark.kroah.org>
+	id S932202Ab1I1WkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:40:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:29 2011
+Message-Id: <20110928220129.064268644@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:56 -0700
+Date: Wed, 28 Sep 2011 15:00:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Stewart <pstew@google.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [032/244] ath9k_hw: Fix STA (AR9485) bringup issue due to incorrect MAC address
+        Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [036/244] atm: br2684: Fix oops due to skb->dev being NULL
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
+From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
 
-commit b503c7a273c0a3018ad11ea8c513c639120afbf4 upstream.
+commit fbe5e29ec1886967255e76946aaf537b8cc9b81e upstream.
 
-Due to some recent optimization done in the way the mac address
-bytes are written into the OTP memory, some AR9485 chipsets were
-forced to use the first byte from the eeprom template and the
-remaining bytes are read from OTP.
+This oops have been already fixed with commit
 
-AR9485 happens to use generic eeprom template which has 0x1 as
-the first byte causes issues in bringing up the card.
+    27141666b69f535a4d63d7bc6d9e84ee5032f82a
 
-So fixed the eeprom template accordingly to address the issue.
+    atm: [br2684] Fix oops due to skb->dev being NULL
 
-Cc: Paul Stewart <pstew@google.com>
-Signed-off-by: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    It happens that if a packet arrives in a VC between the call to open it on
+    the hardware and the call to change the backend to br2684, br2684_regvcc
+    processes the packet and oopses dereferencing skb->dev because it is
+    NULL before the call to br2684_push().
+
+but have been introduced again with commit
+
+    b6211ae7f2e56837c6a4849316396d1535606e90
+
+    atm: Use SKB queue and list helpers instead of doing it by-hand.
+
+Signed-off-by: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/atm/br2684.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -68,7 +68,7 @@ static int ar9003_hw_power_interpolate(i
- static const struct ar9300_eeprom ar9300_default = {
- 	.eepromVersion = 2,
- 	.templateVersion = 2,
--	.macAddr = {1, 2, 3, 4, 5, 6},
-+	.macAddr = {0, 2, 3, 4, 5, 6},
- 	.custData = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 		     0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
- 	.baseEepHeader = {
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -558,12 +558,13 @@ static int br2684_regvcc(struct atm_vcc
+ 	spin_unlock_irqrestore(&rq->lock, flags);
+ 
+ 	skb_queue_walk_safe(&queue, skb, tmp) {
+-		struct net_device *dev = skb->dev;
++		struct net_device *dev;
++
++		br2684_push(atmvcc, skb);
++		dev = skb->dev;
+ 
+ 		dev->stats.rx_bytes -= skb->len;
+ 		dev->stats.rx_packets--;
+-
+-		br2684_push(atmvcc, skb);
+ 	}
+ 
+ 	/* initialize netdev carrier state */
 
 
