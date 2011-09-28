@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab1I1Wt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:49:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54918 "EHLO mx2.suse.de"
+	id S933393Ab1I1W6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:58:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54916 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933322Ab1I1WtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:45 2011
-Message-Id: <20110928220145.489311507@clark.kroah.org>
+	id S933370Ab1I1WtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:48 2011
+Message-Id: <20110928220148.353345074@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:35 -0700
+Date: Wed, 28 Sep 2011 15:03:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [191/244] zorro: Defer device_register() until all devices have been identified
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [218/244] [SCSI] bnx2fc: Fix kernel panic when deleting NPIV ports
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +26,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
 
-commit a7f4d00a82feb5b311f765bf9522bc55bee0684f upstream.
+commit d36b3279e157641c345b12eddb3db78fb42da80f upstream.
 
-As the Amiga Zorro II address space is limited to 8.5 MiB and Zorro
-devices can contain only one BAR, several Amiga Zorro II expansion
-boards (mainly graphics cards) contain multiple Zorro devices: a small
-one for the control registers and one (or more) for the graphics memory.
+Deleting NPIV port causes a kernel panic when the NPIV port is in the same zone
+as the physical port and shares the same LUN. This happens due to the fact that
+vport destroy and unsolicited ELS are scheduled to run on the same workqueue,
+and vport destroy destroys the lport and the unsolicited ELS tries to access
+the invalid lport.  This patch fixes this issue by maintaining a list of valid
+lports and verifying if the lport is valid or not before accessing it.
 
-The conversion of cirrusfb to the new driver framework introduced a
-regression: the driver contains a zorro_driver for the first Zorro
-device, and uses the (old) zorro_find_device() call to find the second
-Zorro device.
-
-However, as the Zorro core calls device_register() as soon as a Zorro
-device is identified, it may not have identified the second Zorro device
-belonging to the same physical Zorro expansion card.  Hence cirrusfb
-could no longer find the second part of the Picasso II graphics card,
-causing a NULL pointer dereference.
-
-Defer the registration of Zorro devices with the driver framework until
-all Zorro devices have been identified to fix this.
-
-Note that the alternative solution (modifying cirrusfb to register a
-zorro_driver for all Zorro devices belonging to a graphics card, instead
-of only for the first one, and adding a synchronization mechanism to
-defer initialization until all have been found), is not an option, as on
-some cards one device may be optional (e.g.  the second bank of 2 MiB of
-graphics memory on the Picasso IV in Zorro II mode).
-
-Reported-by: Ingo Jürgensmann <ij@2011.bluespice.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/zorro/zorro.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/scsi/bnx2fc/bnx2fc.h      |    8 +++++++-
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c |   28 +++++++++++++++++++++++++++-
+ drivers/scsi/bnx2fc/bnx2fc_hwi.c  |   24 +++++++++++++++++++++++-
+ 3 files changed, 57 insertions(+), 3 deletions(-)
 
---- a/drivers/zorro/zorro.c
-+++ b/drivers/zorro/zorro.c
-@@ -148,10 +148,10 @@ static int __init amiga_zorro_probe(stru
- 	}
- 	platform_set_drvdata(pdev, bus);
+--- a/drivers/scsi/bnx2fc/bnx2fc.h
++++ b/drivers/scsi/bnx2fc/bnx2fc.h
+@@ -152,7 +152,6 @@ struct bnx2fc_percpu_s {
+ 	spinlock_t fp_work_lock;
+ };
  
--	/* Register all devices */
- 	pr_info("Zorro: Probing AutoConfig expansion devices: %u device%s\n",
- 		 zorro_num_autocon, zorro_num_autocon == 1 ? "" : "s");
+-
+ struct bnx2fc_hba {
+ 	struct list_head link;
+ 	struct cnic_dev *cnic;
+@@ -179,6 +178,7 @@ struct bnx2fc_hba {
+ 		#define BNX2FC_CTLR_INIT_DONE		1
+ 		#define BNX2FC_CREATE_DONE		2
+ 	struct fcoe_ctlr ctlr;
++	struct list_head vports;
+ 	u8 vlan_enabled;
+ 	int vlan_id;
+ 	u32 next_conn_id;
+@@ -232,6 +232,11 @@ struct bnx2fc_hba {
  
-+	/* First identify all devices ... */
- 	for (i = 0; i < zorro_num_autocon; i++) {
- 		z = &zorro_autocon[i];
- 		z->id = (z->rom.er_Manufacturer<<16) | (z->rom.er_Product<<8);
-@@ -172,6 +172,11 @@ static int __init amiga_zorro_probe(stru
- 		dev_set_name(&z->dev, "%02x", i);
- 		z->dev.parent = &bus->dev;
- 		z->dev.bus = &zorro_bus_type;
+ #define bnx2fc_from_ctlr(fip) container_of(fip, struct bnx2fc_hba, ctlr)
+ 
++struct bnx2fc_lport {
++	struct list_head list;
++	struct fc_lport *lport;
++};
++
+ struct bnx2fc_cmd_mgr {
+ 	struct bnx2fc_hba *hba;
+ 	u16 next_idx;
+@@ -423,6 +428,7 @@ struct bnx2fc_work {
+ struct bnx2fc_unsol_els {
+ 	struct fc_lport *lport;
+ 	struct fc_frame *fp;
++	struct bnx2fc_hba *hba;
+ 	struct work_struct unsol_els_work;
+ };
+ 
+--- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+@@ -1225,6 +1225,7 @@ static int bnx2fc_interface_setup(struct
+ 	hba->ctlr.get_src_addr = bnx2fc_get_src_mac;
+ 	set_bit(BNX2FC_CTLR_INIT_DONE, &hba->init_done);
+ 
++	INIT_LIST_HEAD(&hba->vports);
+ 	rc = bnx2fc_netdev_setup(hba);
+ 	if (rc)
+ 		goto setup_err;
+@@ -1261,8 +1262,15 @@ static struct fc_lport *bnx2fc_if_create
+ 	struct fcoe_port	*port;
+ 	struct Scsi_Host	*shost;
+ 	struct fc_vport		*vport = dev_to_vport(parent);
++	struct bnx2fc_lport	*blport;
+ 	int			rc = 0;
+ 
++	blport = kzalloc(sizeof(struct bnx2fc_lport), GFP_KERNEL);
++	if (!blport) {
++		BNX2FC_HBA_DBG(hba->ctlr.lp, "Unable to alloc bnx2fc_lport\n");
++		return NULL;
 +	}
 +
-+	/* ... then register them */
-+	for (i = 0; i < zorro_num_autocon; i++) {
-+		z = &zorro_autocon[i];
- 		error = device_register(&z->dev);
- 		if (error) {
- 			dev_err(&bus->dev, "Error registering device %s\n",
+ 	/* Allocate Scsi_Host structure */
+ 	if (!npiv)
+ 		lport = libfc_host_alloc(&bnx2fc_shost_template, sizeof(*port));
+@@ -1271,7 +1279,7 @@ static struct fc_lport *bnx2fc_if_create
+ 
+ 	if (!lport) {
+ 		printk(KERN_ERR PFX "could not allocate scsi host structure\n");
+-		return NULL;
++		goto free_blport;
+ 	}
+ 	shost = lport->host;
+ 	port = lport_priv(lport);
+@@ -1327,12 +1335,20 @@ static struct fc_lport *bnx2fc_if_create
+ 	}
+ 
+ 	bnx2fc_interface_get(hba);
++
++	spin_lock_bh(&hba->hba_lock);
++	blport->lport = lport;
++	list_add_tail(&blport->list, &hba->vports);
++	spin_unlock_bh(&hba->hba_lock);
++
+ 	return lport;
+ 
+ shost_err:
+ 	scsi_remove_host(shost);
+ lp_config_err:
+ 	scsi_host_put(lport->host);
++free_blport:
++	kfree(blport);
+ 	return NULL;
+ }
+ 
+@@ -1348,6 +1364,7 @@ static void bnx2fc_if_destroy(struct fc_
+ {
+ 	struct fcoe_port *port = lport_priv(lport);
+ 	struct bnx2fc_hba *hba = port->priv;
++	struct bnx2fc_lport *blport, *tmp;
+ 
+ 	BNX2FC_HBA_DBG(hba->ctlr.lp, "ENTERED bnx2fc_if_destroy\n");
+ 	/* Stop the transmit retry timer */
+@@ -1372,6 +1389,15 @@ static void bnx2fc_if_destroy(struct fc_
+ 	/* Free memory used by statistical counters */
+ 	fc_lport_free_stats(lport);
+ 
++	spin_lock_bh(&hba->hba_lock);
++	list_for_each_entry_safe(blport, tmp, &hba->vports, list) {
++		if (blport->lport == lport) {
++			list_del(&blport->list);
++			kfree(blport);
++		}
++	}
++	spin_unlock_bh(&hba->hba_lock);
++
+ 	/* Release Scsi_Host */
+ 	scsi_host_put(lport->host);
+ 
+--- a/drivers/scsi/bnx2fc/bnx2fc_hwi.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
+@@ -480,16 +480,36 @@ int bnx2fc_send_session_destroy_req(stru
+ 	return rc;
+ }
+ 
++static bool is_valid_lport(struct bnx2fc_hba *hba, struct fc_lport *lport)
++{
++	struct bnx2fc_lport *blport;
++
++	spin_lock_bh(&hba->hba_lock);
++	list_for_each_entry(blport, &hba->vports, list) {
++		if (blport->lport == lport) {
++			spin_unlock_bh(&hba->hba_lock);
++			return true;
++		}
++	}
++	spin_unlock_bh(&hba->hba_lock);
++	return false;
++
++}
++
++
+ static void bnx2fc_unsol_els_work(struct work_struct *work)
+ {
+ 	struct bnx2fc_unsol_els *unsol_els;
+ 	struct fc_lport *lport;
++	struct bnx2fc_hba *hba;
+ 	struct fc_frame *fp;
+ 
+ 	unsol_els = container_of(work, struct bnx2fc_unsol_els, unsol_els_work);
+ 	lport = unsol_els->lport;
+ 	fp = unsol_els->fp;
+-	fc_exch_recv(lport, fp);
++	hba = unsol_els->hba;
++	if (is_valid_lport(hba, lport))
++		fc_exch_recv(lport, fp);
+ 	kfree(unsol_els);
+ }
+ 
+@@ -499,6 +519,7 @@ void bnx2fc_process_l2_frame_compl(struc
+ {
+ 	struct fcoe_port *port = tgt->port;
+ 	struct fc_lport *lport = port->lport;
++	struct bnx2fc_hba *hba = port->priv;
+ 	struct bnx2fc_unsol_els *unsol_els;
+ 	struct fc_frame_header *fh;
+ 	struct fc_frame *fp;
+@@ -559,6 +580,7 @@ void bnx2fc_process_l2_frame_compl(struc
+ 		fr_eof(fp) = FC_EOF_T;
+ 		fr_crc(fp) = cpu_to_le32(~crc);
+ 		unsol_els->lport = lport;
++		unsol_els->hba = hba;
+ 		unsol_els->fp = fp;
+ 		INIT_WORK(&unsol_els->unsol_els_work, bnx2fc_unsol_els_work);
+ 		queue_work(bnx2fc_wq, &unsol_els->unsol_els_work);
 
 
