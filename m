@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab1I1XVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:21:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54044 "EHLO mx2.suse.de"
+	id S1755725Ab1I1WmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:42:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54009 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755827Ab1I1WmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:42:14 -0400
+	id S932374Ab1I1Wl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:32 2011
-Message-Id: <20110928220132.347853673@clark.kroah.org>
+Message-Id: <20110928220131.992600946@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:31 -0700
+Date: Wed, 28 Sep 2011 15:00:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [067/244] mmc: core: use non-reentrant workqueue for clock gating
+        Andrey Vagin <avagin@openvz.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [064/244] x86, perf: Check that current->mm is alive before getting user callchain
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 50a50f9248497484c678631a9c1a719f1aaeab79 upstream.
+commit 20afc60f892d285fde179ead4b24e6a7938c2f1b upstream.
 
-The default multithread workqueue can cause the same work to be executed
-concurrently on a different CPUs. This isn't really suitable for clock
-gating as it might already gated the clock and gating it twice results both
-host->clk_old and host->ios.clock to be set to 0.
+An event may occur when an mm is already released.
 
-To prevent this from happening we use system_nrt_wq instead.
+I added an event in dequeue_entity() and caught a panic with
+the following backtrace:
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-Tested-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+[  434.421110] BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+[  434.421258] IP: [<ffffffff810464ac>] __get_user_pages_fast+0x9c/0x120
+...
+[  434.421258] Call Trace:
+[  434.421258]  [<ffffffff8101ae81>] copy_from_user_nmi+0x51/0xf0
+[  434.421258]  [<ffffffff8109a0d5>] ? sched_clock_local+0x25/0x90
+[  434.421258]  [<ffffffff8101b048>] perf_callchain_user+0x128/0x170
+[  434.421258]  [<ffffffff811154cd>] ? __perf_event_header__init_id+0xed/0x100
+[  434.421258]  [<ffffffff81116690>] perf_prepare_sample+0x200/0x280
+[  434.421258]  [<ffffffff81118da8>] __perf_event_overflow+0x1b8/0x290
+[  434.421258]  [<ffffffff81065240>] ? tg_shares_up+0x0/0x670
+[  434.421258]  [<ffffffff8104fe1a>] ? walk_tg_tree+0x6a/0xb0
+[  434.421258]  [<ffffffff81118f44>] perf_swevent_overflow+0xc4/0xf0
+[  434.421258]  [<ffffffff81119150>] do_perf_sw_event+0x1e0/0x250
+[  434.421258]  [<ffffffff81119204>] perf_tp_event+0x44/0x70
+[  434.421258]  [<ffffffff8105701f>] ftrace_profile_sched_block+0xdf/0x110
+[  434.421258]  [<ffffffff8106121d>] dequeue_entity+0x2ad/0x2d0
+[  434.421258]  [<ffffffff810614ec>] dequeue_task_fair+0x1c/0x60
+[  434.421258]  [<ffffffff8105818a>] dequeue_task+0x9a/0xb0
+[  434.421258]  [<ffffffff810581e2>] deactivate_task+0x42/0xe0
+[  434.421258]  [<ffffffff814bc019>] thread_return+0x191/0x808
+[  434.421258]  [<ffffffff81098a44>] ? switch_task_namespaces+0x24/0x60
+[  434.421258]  [<ffffffff8106f4c4>] do_exit+0x464/0x910
+[  434.421258]  [<ffffffff8106f9c8>] do_group_exit+0x58/0xd0
+[  434.421258]  [<ffffffff8106fa57>] sys_exit_group+0x17/0x20
+[  434.421258]  [<ffffffff8100b202>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1314693156-24131-1-git-send-email-avagin@openvz.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/host.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -179,7 +179,7 @@ void mmc_host_clk_release(struct mmc_hos
- 	host->clk_requests--;
- 	if (mmc_host_may_gate_card(host->card) &&
- 	    !host->clk_requests)
--		schedule_work(&host->clk_gate_work);
-+		queue_work(system_nrt_wq, &host->clk_gate_work);
- 	spin_unlock_irqrestore(&host->clk_lock, flags);
- }
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1856,6 +1856,9 @@ perf_callchain_user(struct perf_callchai
+ 
+ 	perf_callchain_store(entry, regs->ip);
+ 
++	if (!current->mm)
++		return;
++
+ 	if (perf_callchain_user32(regs, entry))
+ 		return;
  
 
 
