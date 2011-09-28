@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1I1ISZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:18:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44371 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab1I1ISV (ORCPT
+	id S1752734Ab1I1IT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:19:56 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:15354 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454Ab1I1ITx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:18:21 -0400
-Date: Wed, 28 Sep 2011 18:18:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Per Forlin <per.forlin@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110928181815.45f540034ddde2b206fc4e57@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 04:19:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=rJZrAP3vIL/BFMsWY57Q11f/kkossBd3f/B6PFWNbUvGXhzluH8sLjYgO00oECrN0
+	tLYJiLmh6l0jBZveAzHgA==
+MIME-Version: 1.0
+In-Reply-To: <20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<1317170947-17074-7-git-send-email-walken@google.com>
+	<20110928171309.b45c684f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 28 Sep 2011 01:19:50 -0700
+Message-ID: <CANN689GFE_hqtndKY6i4ouBBe+gVU_pqOK2HRrc-U1LJMONaXw@mail.gmail.com>
+Subject: Re: [PATCH 6/9] kstaled: rate limit pages scanned per second.
+From: Michel Lespinasse <walken@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, Sep 28, 2011 at 1:13 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 27 Sep 2011 17:49:04 -0700
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> Scan some number of pages from each node every second, instead of trying to
+>> scan the entime memory at once and being idle for the rest of the configured
+>> interval.
+>>
+>> In addition to spreading the CPU usage over the entire scanning interval,
+>> this also reduces the jitter between two consecutive scans of the same page.
+>>
+>>
+>> Signed-off-by: Michel Lespinasse <walken@google.com>
+>
+> Does this scan thread need to be signle thread ?
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/mmc/core/debugfs.c:28:35: error: expected ')' before numeric constant
-
-Caused by commit b5a62f8be3af ("mmc: add module param to set fault
-injection attributes") from the mmc tree interacting with the module.h
-split up.
-
-I have applied the patch below for today (something similar could be
-applied to the mmc tree).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 28 Sep 2011 18:09:12 +1000
-Subject: [PATCH] mmc: using mopdule_param requires the inclusion of
- moduleparam.h
-
-Otherwise the module.h split up produces this error:
-
-drivers/mmc/core/debugfs.c:28:35: error: expected ')' before numeric constant
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/mmc/core/debugfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 0a1e7cf..f9e9ff0 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -9,6 +9,7 @@
-  */
- #include <linux/debugfs.h>
- #include <linux/fs.h>
-+#include <linux/moduleparam.h>
- #include <linux/export.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--- 
-1.7.6.3
+It tends to perform worse if we try making it multithreaded. What
+happens is that the scanning threads call page_referenced() a lot, and
+if they both try scanning pages that belong to the same file that
+causes the mapping's i_mmap_mutex lock to bounce. Same things happens
+if they try scanning pages that belong to the same anon VMA too.
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
