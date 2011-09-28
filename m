@@ -1,89 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1I1OwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:52:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58900 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754479Ab1I1OwY (ORCPT
+	id S1754540Ab1I1O4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:56:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61354 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab1I1O4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:52:24 -0400
-Date: Wed, 28 Sep 2011 10:52:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jens Axboe <axboe@kernel.dk>, Rocko Requin <rockorequin@hotmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block fixes for 3.1-rc
-In-Reply-To: <4E826D3B.7080805@kernel.dk>
-Message-ID: <Pine.LNX.4.44L0.1109281042250.2089-100000@iolanthe.rowland.org>
+	Wed, 28 Sep 2011 10:56:20 -0400
+Message-ID: <4E833586.5070401@windriver.com>
+Date: Wed, 28 Sep 2011 10:56:06 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the moduleh tree with the staging
+ tree
+References: <20110928164419.372feaa0c5554687403a9af5@canb.auug.org.au> <20110928164824.29edfa867dfe583ff5b982e8@canb.auug.org.au>
+In-Reply-To: <20110928164824.29edfa867dfe583ff5b982e8@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Sep 2011, Jens Axboe wrote:
-
-> On 2011-09-27 17:52, Linus Torvalds wrote:
-> > On Wed, Sep 21, 2011 at 5:19 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> >>
-> >> Final round of patches for 3.1.
-> > 
-> > Apparently better not.
-> > 
-> > The "block layer oopses on USB device removal" is still there, it seems.
-> > 
-> > I can even find a patch from it from Alan Stern:
-> > 
-> >    https://lkml.org/lkml/2011/9/18/63
-> > 
-> > and the reason I found that was that my wife's machine just saw what
-> > looks very much like that bug in elv_put_request().
-> > 
-> > The call chain on that particular machine was:
-> > 
-> >  - __blk_put_request
-> >   blk_put_request
-> >   scsi_execute
-> >   scsi_execute_req
-> >   sd_check_events
-> >   disk_events_workfn
-> >   process_one_work
-> > 
-> > in one of the kthread helpers. It sounds like something either
-> > generates disk events after the unplug event (despite a "safely
-> > remove" thing), or doesn't properly wait for the disk events to have
-> > flushed before the elevator is cleared.
-> > 
-> > The "things go oops at USB removal" reports have been with us for a
-> > *loong* time now. Can we please get this fixed already, and have
-> > somebody really look at it?
-> > 
-> > And if you can't figure out why it happens, at least apply Alan's
-> > patch (or ack it).
+On 11-09-28 02:48 AM, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> The whole thing is a bit of a mess, it was introduced by changes meant
-> to clean it up, which didn't get to the root of the problem (and
-> seemingly only made it worse). We need the queue clearly referenced and
-> released, not just pointed to. That would be the more invasive and real
-> fix. I will apply Alan's fix for a happier 3.1.
+> On Wed, 28 Sep 2011 16:44:19 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> Today's linux-next merge of the moduleh tree got a conflict in
+>> drivers/staging/iio/accel/adis16201_ring.c between commit 779921683e6d
+>> ("staging:iio:accel header housekeeping - remove unecessary includes")
+>> from the staging tree and commit 15f310ea9641 ("staging: Add export.h for
+>> THIS_MODULE/EXPORT_SYMBOL to drivers/staging users") from the moduleh
+>> tree.
+> 
+> Also drivers/staging/iio/accel/adis16203_ring.c,
+> drivers/staging/iio/accel/adis16204_ring.c,
+> drivers/staging/iio/accel/adis16209_ring.c,
+> drivers/staging/iio/accel/adis16240_ring.c,
+> drivers/staging/iio/gyro/adis16260_ring.c and
+> drivers/staging/iio/meter/ade7758_ring.c
 
-You guys should be asking the person who first reported the most recent 
-version of this bug and is able to reproduce it easily.
+I've moved the export.h in all of these up near the top to make
+the conflict go away.
 
-Rocko has already tested Hannes's patch in
-
-	http://marc.info/?l=linux-scsi&m=131669751909474&w=2
-
-successfully.  The only difference between it and James's patch in
-
-	http://marc.info/?l=linux-kernel&m=131300594629839
-
-is the assignment to q->queue_lock, which doesn't appear to be
-essential in the SCSI case.  (Furthermore, Hannes's patch makes an
-unnecessary test before doing the assignment, which is inelegant.)
-
-Alan Stern
-
+Thanks,
+Paul.
