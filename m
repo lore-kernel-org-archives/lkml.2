@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab1I1Bpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 21:45:38 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51897 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab1I1Bpg (ORCPT
+	id S1752519Ab1I1Bpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 21:45:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40161 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab1I1Bpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 21:45:36 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 2/2] devicetree: Add ARM pl022 spi controller binding doc
-Date: Tue, 27 Sep 2011 20:45:14 -0500
-Message-Id: <1317174314-16122-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317174314-16122-1-git-send-email-robherring2@gmail.com>
-References: <1317174314-16122-1-git-send-email-robherring2@gmail.com>
+	Tue, 27 Sep 2011 21:45:44 -0400
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: [PATCH] vmscan: add barrier to prevent evictable page in unevictable list
+Date: Wed, 28 Sep 2011 10:45:30 +0900
+Message-Id: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+When racing between putback_lru_page and shmem_unlock happens,
+progrom execution order is as follows, but clear_bit in processor #1
+could be reordered right before spin_unlock of processor #1.
+Then, the page would be stranded on the unevictable list.
 
-Add binding documentation for ARM's Primecell PL022 SPI controller.
+spin_lock
+SetPageLRU
+spin_unlock
+                                clear_bit(AS_UNEVICTABLE)
+                                spin_lock
+                                if PageLRU()
+                                        if !test_bit(AS_UNEVICTABLE)
+                                        	move evictable list
+smp_mb
+if !test_bit(AS_UNEVICTABLE)
+        move evictable list
+                                spin_unlock
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+But, pagevec_lookup in scan_mapping_unevictable_pages has rcu_read_[un]lock so
+it could protect reordering before reaching test_bit(AS_UNEVICTABLE) on processor #1
+so this problem never happens. But it's a unexpected side effect and we should
+solve this problem properly.
+
+This patch adds a barrier after mapping_clear_unevictable.
+
+side-note: I didn't meet this problem but just found during review.
+
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- .../devicetree/bindings/spi/spi_pl022.txt          |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi_pl022.txt
+ mm/shmem.c  |    1 +
+ mm/vmscan.c |   11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/spi_pl022.txt b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-new file mode 100644
-index 0000000..306ec3f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi_pl022.txt
-@@ -0,0 +1,12 @@
-+ARM PL022 SPI controller
-+
-+Required properties:
-+- compatible : "arm,pl022", "arm,primecell"
-+- reg : Offset and length of the register set for the device
-+- interrupts : Should contain SPI controller interrupt
-+
-+Optional properties:
-+- cs-gpios : should specify GPIOs used for chipselects.
-+  The gpios will be referred to as reg = <index> in the SPI child nodes.
-+  If unspecified, a single SPI device without a chip select can be used.
-+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 2d35772..22cb349 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1068,6 +1068,7 @@ int shmem_lock(struct file *file, int lock, struct user_struct *user)
+ 		user_shm_unlock(inode->i_size, user);
+ 		info->flags &= ~VM_LOCKED;
+ 		mapping_clear_unevictable(file->f_mapping);
++		smp_mb__after_clear_bit();
+ 		scan_mapping_unevictable_pages(file->f_mapping);
+ 	}
+ 	retval = 0;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 23256e8..4480f67 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -634,13 +634,14 @@ redo:
+ 		lru = LRU_UNEVICTABLE;
+ 		add_page_to_unevictable_list(page);
+ 		/*
+-		 * When racing with an mlock clearing (page is
+-		 * unlocked), make sure that if the other thread does
+-		 * not observe our setting of PG_lru and fails
+-		 * isolation, we see PG_mlocked cleared below and move
++		 * When racing with an mlock or AS_UNEVICTABLE clearing
++		 * (page is unlocked) make sure that if the other thread
++		 * does not observe our setting of PG_lru and fails
++		 * isolation/check_move_unevictable_page,
++		 * we see PG_mlocked/AS_UNEVICTABLE cleared below and move
+ 		 * the page back to the evictable list.
+ 		 *
+-		 * The other side is TestClearPageMlocked().
++		 * The other side is TestClearPageMlocked() or shmem_lock().
+ 		 */
+ 		smp_mb();
+ 	}
 -- 
-1.7.5.4
+1.7.4.1
 
