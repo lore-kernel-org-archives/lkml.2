@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260Ab1I1WsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:48:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933245Ab1I1WsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933246Ab1I1WsQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Sep 2011 18:48:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54770 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933009Ab1I1WsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:13 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:46 2011
-Message-Id: <20110928220146.668620269@clark.kroah.org>
+Message-Id: <20110928220146.560424691@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:46 -0700
+Date: Wed, 28 Sep 2011 15:02:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@pobox.com>
-Subject: [202/244] ahci: RAID-mode SATA patch for Intel Panther Point DeviceIDs
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [201/244] [SCSI] isci: fix event-get pointer increment
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 2cab7a4c5ccf96e0954e767af490ba9aee2c9b6f upstream.
+commit 77cd72a53f6426f81b7f56a862402849ee903bda upstream.
 
-This patch adds an additional SATA RAID controller DeviceID for the Intel Panther Point PCH.
+Hardware only increments the put pointer on event types >= 4.  Do not
+increment the get pointer for event type 3.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
+Reported-by: Kapil Karkra <kapil.karkra@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/isci/host.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -267,6 +267,7 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x1e05), board_ahci }, /* Panther Point RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1e06), board_ahci }, /* Panther Point RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1e07), board_ahci }, /* Panther Point RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1e0e), board_ahci }, /* Panther Point RAID */
+--- a/drivers/scsi/isci/host.c
++++ b/drivers/scsi/isci/host.c
+@@ -531,6 +531,9 @@ static void sci_controller_process_compl
+ 			break;
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 		case SCU_COMPLETION_TYPE_EVENT:
++			sci_controller_event_completion(ihost, ent);
++			break;
++
+ 		case SCU_COMPLETION_TYPE_NOTIFY: {
+ 			event_cycle ^= ((event_get+1) & SCU_MAX_EVENTS) <<
+ 				       (SMU_COMPLETION_QUEUE_GET_EVENT_CYCLE_BIT_SHIFT - SCU_MAX_EVENTS_SHIFT);
 
 
