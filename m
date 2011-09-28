@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1I1ONa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:13:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57890 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab1I1ON3 (ORCPT
+	id S1754638Ab1I1OOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:14:51 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:56252
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab1I1OOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:13:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH v3 22/24] C6X: EMIF - External Memory Interface
-Date: Wed, 28 Sep 2011 16:13:27 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-23-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317155405-26235-23-git-send-email-msalter@redhat.com>
+	Wed, 28 Sep 2011 10:14:50 -0400
+Message-ID: <4E832BD2.50409@kernel.dk>
+Date: Wed, 28 Sep 2011 08:14:42 -0600
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue resources
+ at blk_release_queue())
+References: <201109221318.p8MDIXPP020015@pentland.suse.de>  <20110928004722.GA27421@kernel.dk>  <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>  <4E82751C.9050908@kernel.dk>  <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>  <1317183038.17578.9.camel@dabdike.hansenpartnership.com>  <4E832A55.30709@kernel.dk> <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
+In-Reply-To: <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109281613.27164.arnd@arndb.de>
-X-Provags-ID: V02:K0:q5a8JtpfsbmUEz2F7BmiEdGr8kYVBH8UEMVwn9xCOe9
- hdBVI/3R6I+6eZ+CYPh4ntMgfpuuI4693R0zr9UbGlEz9WaS0A
- UjrNKs/f/P8J1puZ77VWgqu22koI1FJ1PRqD8cair/jThqyJYW
- 2z4WYTUBn4z+4o8nW1kU5piL3+IdbTGbGmYEYcAOqaImBYlN7c
- kXFuiYFZoqvq/zRIHZrnwa4UCDP7ik3IwBQ/TpaTAIlWaF0Wfn
- twBB5nQzEAHftmwEiDwjLIhuZsLc8GzP8BQaGXhyEBhqDrS1M0
- Bk1Q3WU03fXJniIy9wllQ5TwzInQsYjHBbttgUsSC8m09aOJ5l
- THFZMgGhuvNHntddGgqA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 September 2011, Mark Salter wrote:
-> Several SoC parts provide a simple bridge to support external memory mapped
-> devices. This code probes the device tree for an EMIF node and sets up the
-> bridge registers if such a node is found. Beyond initial set up, there is no
-> further need to access the bridge control registers. External devices on the
-> bus are accessed through their MMIO registers using suitable drivers. The
-> bridge hardware does provide for timeout and other error interrupts, but these
-> are not yet supported.
+On 2011-09-28 08:11, James Bottomley wrote:
+> On Wed, 2011-09-28 at 08:08 -0600, Jens Axboe wrote:
+>> On 2011-09-27 22:10, James Bottomley wrote:
+>>> On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
+>>>> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>>
+>>>>>> But if you forward the actual patch to me (the one I see on lkml seems
+>>>>>> to be broken and doesn't compile cleanly because it's assiging a
+>>>>>> structure to a pointer), I'll try it out anyway.
+>>>>>
+>>>>> Thanks, that would be great. It's inlined below.
+>>>>
+>>>> Well, I did several USB eject events, and nothing bad happened.
+>>>>
+>>>> But as mentioned, I don't think that means much. Have you tried this
+>>>> with slub debugging and poisoning? It might be worth some extra
+>>>> testing that way.
+>>>
+>>> I've been testing a simpler version:
+>>>
+>>> http://marc.info/?l=linux-kernel&m=131300594629839
+>>>
+>>> For a long time now with great success.  The only difference is the
+>>> locking cleanup, but SCSI doesn't need that since it doesn't supply its
+>>> own lock, so I've been voting for this as the final fix for a while now.
+>>
+>> The locking cleanup looks good, though, for devices that do use the
+>> embedded lock.
 > 
-> Signed-off-by: Mark Salter <msalter@redhat.com>
+> Exactly ... it's the missing piece; without it my patch is really only
+> addressing SCSI.
+> 
+>>  But functionally they should be the same for SCSI, so if
+>> you had great success with it, then that's a good data point.
+> 
+> Right, I've run it through the memory debugger and USB ejection testing
+> (with ext2, which seems to be the fs that triggers this problem the
+> most).
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Alright, lets call this fully tested and fixed then. Linus, I committed
+it, please pull:
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+Hannes Reinecke (1):
+      block: Free queue resources at blk_release_queue()
+
+ block/blk-core.c  |   13 ++++++-------
+ block/blk-sysfs.c |    5 +++++
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index b2ed78a..d34433a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -348,9 +348,10 @@ void blk_put_queue(struct request_queue *q)
+ EXPORT_SYMBOL(blk_put_queue);
+ 
+ /*
+- * Note: If a driver supplied the queue lock, it should not zap that lock
+- * unexpectedly as some queue cleanup components like elevator_exit() and
+- * blk_throtl_exit() need queue lock.
++ * Note: If a driver supplied the queue lock, it is disconnected
++ * by this function. The actual state of the lock doesn't matter
++ * here as the request_queue isn't accessible after this point
++ * (QUEUE_FLAG_DEAD is set) and no other requests will be queued.
+  */
+ void blk_cleanup_queue(struct request_queue *q)
+ {
+@@ -367,10 +368,8 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+ 	mutex_unlock(&q->sysfs_lock);
+ 
+-	if (q->elevator)
+-		elevator_exit(q->elevator);
+-
+-	blk_throtl_exit(q);
++	if (q->queue_lock != &q->__queue_lock)
++		q->queue_lock = &q->__queue_lock;
+ 
+ 	blk_put_queue(q);
+ }
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index e681805..60fda88 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -479,6 +479,11 @@ static void blk_release_queue(struct kobject *kobj)
+ 
+ 	blk_sync_queue(q);
+ 
++	if (q->elevator)
++		elevator_exit(q->elevator);
++
++	blk_throtl_exit(q);
++
+ 	if (rl->rq_pool)
+ 		mempool_destroy(rl->rq_pool);
+ 
+
+
+-- 
+Jens Axboe
+
