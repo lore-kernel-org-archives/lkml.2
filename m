@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab1I1Wqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:46:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54604 "EHLO mx2.suse.de"
+	id S933102Ab1I1WrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:47:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54653 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932912Ab1I1Wqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:46:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:43 2011
-Message-Id: <20110928220143.896513864@clark.kroah.org>
+	id S933060Ab1I1WrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:47:11 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:44 2011
+Message-Id: <20110928220144.530652937@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:20 -0700
+Date: Wed, 28 Sep 2011 15:02:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [176/244] bridge: fix a possible net_device leak
+Subject: [182/244] net_sched: prio: use qdisc_dequeue_peeked
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,43 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 11f3a6bdc2528d1ce2af50202dbf7138fdee1b34 ]
+[ Upstream commit 3557619f0f6f7496ed453d4825e24958ab1884e0 ]
 
-Jan Beulich reported a possible net_device leak in bridge code after
-commit bb900b27a2f4 (bridge: allow creating bridge devices with netlink)
+commit 07bd8df5df4369487812bf85a237322ff3569b77
+(sch_sfq: fix peek() implementation) changed sfq to use generic
+peek helper.
 
-Reported-by: Jan Beulich <JBeulich@novell.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+This makes HFSC complain about a non-work-conserving child qdisc, if
+prio with sfq child is used within hfsc:
+
+hfsc peeks into prio qdisc, which will then peek into sfq.
+returned skb is stashed in sch->gso_skb.
+
+Next, hfsc tries to dequeue from prio, but prio will call sfq dequeue
+directly, which may return NULL instead of previously peeked-at skb.
+
+Have prio call qdisc_dequeue_peeked, so sfq->dequeue() is
+not called in this case.
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/bridge/br_if.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/sched/sch_prio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -231,6 +231,7 @@ static struct net_bridge_port *new_nbp(s
- int br_add_bridge(struct net *net, const char *name)
- {
- 	struct net_device *dev;
-+	int res;
+--- a/net/sched/sch_prio.c
++++ b/net/sched/sch_prio.c
+@@ -112,7 +112,7 @@ static struct sk_buff *prio_dequeue(stru
  
- 	dev = alloc_netdev(sizeof(struct net_bridge), name,
- 			   br_dev_setup);
-@@ -240,7 +241,10 @@ int br_add_bridge(struct net *net, const
- 
- 	dev_net_set(dev, net);
- 
--	return register_netdev(dev);
-+	res = register_netdev(dev);
-+	if (res)
-+		free_netdev(dev);
-+	return res;
- }
- 
- int br_del_bridge(struct net *net, const char *name)
+ 	for (prio = 0; prio < q->bands; prio++) {
+ 		struct Qdisc *qdisc = q->queues[prio];
+-		struct sk_buff *skb = qdisc->dequeue(qdisc);
++		struct sk_buff *skb = qdisc_dequeue_peeked(qdisc);
+ 		if (skb) {
+ 			qdisc_bstats_update(sch, skb);
+ 			sch->q.qlen--;
 
 
