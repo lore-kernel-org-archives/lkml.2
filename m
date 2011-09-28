@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab1I1WlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:41:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53882 "EHLO mx2.suse.de"
+	id S932349Ab1I1Wl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:41:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755802Ab1I1WlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:41:15 -0400
+	id S932334Ab1I1WlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:41:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:34 2011
-Message-Id: <20110928220133.956538226@clark.kroah.org>
+Message-Id: <20110928220134.147468706@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:46 -0700
+Date: Wed, 28 Sep 2011 15:00:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Venkateswararao=20Jujjuri=20@suse.de,
-        "?= <jvrao@linux.vnet.ibm.com>, Eric Van Hensbergen <ericvh@gmail.com>"@suse.de
-Subject: [082/244] VirtIO can transfer VIRTQUEUE_NUM of pages.
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>
+Subject: [084/244] fs/9p: When doing inode lookup compare qid details and inode mode bits.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +26,276 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: jvrao <jvrao@linux.vnet.ibm.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 7f781679dd596c8abde8336b4d0d166d6a4aad04 upstream.
+commit fd2421f54423f307ecd31bdebdca6bc317e0c492 upstream.
 
-Signed-off-by: Venkateswararao Jujjuri "<jvrao@linux.vnet.ibm.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+This make sure we don't use wrong inode from the inode hash. The inode number
+of the file deleted is reused by the next file system object created
+and if we only use inode number for inode hash lookup we could end up
+with wrong struct inode.
+
+Also compare inode generation number. Not all Linux file system provide
+st_gen in userspace. So it could be 0;
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/9p/trans_virtio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/9p/cache.c          |   20 +++++++++-----------
+ fs/9p/cache.h          |    9 ---------
+ fs/9p/v9fs.c           |    2 +-
+ fs/9p/v9fs.h           |    2 +-
+ fs/9p/vfs_inode.c      |   36 +++++++++++++++++++++++++++++++++---
+ fs/9p/vfs_inode_dotl.c |   41 +++++++++++++++++++++++++++++++++++++----
+ 6 files changed, 81 insertions(+), 29 deletions(-)
 
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -592,7 +592,7 @@ static struct p9_trans_module p9_virtio_
- 	.close = p9_virtio_close,
- 	.request = p9_virtio_request,
- 	.cancel = p9_virtio_cancel,
--	.maxsize = PAGE_SIZE*16,
-+	.maxsize = PAGE_SIZE*VIRTQUEUE_NUM,
- 	.pref = P9_TRANS_PREF_PAYLOAD_SEP,
- 	.def = 0,
- 	.owner = THIS_MODULE,
+--- a/fs/9p/cache.c
++++ b/fs/9p/cache.c
+@@ -108,11 +108,10 @@ static uint16_t v9fs_cache_inode_get_key
+ 					 void *buffer, uint16_t bufmax)
+ {
+ 	const struct v9fs_inode *v9inode = cookie_netfs_data;
+-	memcpy(buffer, &v9inode->fscache_key->path,
+-	       sizeof(v9inode->fscache_key->path));
++	memcpy(buffer, &v9inode->qid.path, sizeof(v9inode->qid.path));
+ 	P9_DPRINTK(P9_DEBUG_FSC, "inode %p get key %llu", &v9inode->vfs_inode,
+-		   v9inode->fscache_key->path);
+-	return sizeof(v9inode->fscache_key->path);
++		   v9inode->qid.path);
++	return sizeof(v9inode->qid.path);
+ }
+ 
+ static void v9fs_cache_inode_get_attr(const void *cookie_netfs_data,
+@@ -129,11 +128,10 @@ static uint16_t v9fs_cache_inode_get_aux
+ 					 void *buffer, uint16_t buflen)
+ {
+ 	const struct v9fs_inode *v9inode = cookie_netfs_data;
+-	memcpy(buffer, &v9inode->fscache_key->version,
+-	       sizeof(v9inode->fscache_key->version));
++	memcpy(buffer, &v9inode->qid.version, sizeof(v9inode->qid.version));
+ 	P9_DPRINTK(P9_DEBUG_FSC, "inode %p get aux %u", &v9inode->vfs_inode,
+-		   v9inode->fscache_key->version);
+-	return sizeof(v9inode->fscache_key->version);
++		   v9inode->qid.version);
++	return sizeof(v9inode->qid.version);
+ }
+ 
+ static enum
+@@ -143,11 +141,11 @@ fscache_checkaux v9fs_cache_inode_check_
+ {
+ 	const struct v9fs_inode *v9inode = cookie_netfs_data;
+ 
+-	if (buflen != sizeof(v9inode->fscache_key->version))
++	if (buflen != sizeof(v9inode->qid.version))
+ 		return FSCACHE_CHECKAUX_OBSOLETE;
+ 
+-	if (memcmp(buffer, &v9inode->fscache_key->version,
+-		   sizeof(v9inode->fscache_key->version)))
++	if (memcmp(buffer, &v9inode->qid.version,
++		   sizeof(v9inode->qid.version)))
+ 		return FSCACHE_CHECKAUX_OBSOLETE;
+ 
+ 	return FSCACHE_CHECKAUX_OKAY;
+--- a/fs/9p/cache.h
++++ b/fs/9p/cache.h
+@@ -93,15 +93,6 @@ static inline void v9fs_uncache_page(str
+ 	BUG_ON(PageFsCache(page));
+ }
+ 
+-static inline void v9fs_fscache_set_key(struct inode *inode,
+-					struct p9_qid *qid)
+-{
+-	struct v9fs_inode *v9inode = V9FS_I(inode);
+-	spin_lock(&v9inode->fscache_lock);
+-	v9inode->fscache_key = qid;
+-	spin_unlock(&v9inode->fscache_lock);
+-}
+-
+ static inline void v9fs_fscache_wait_on_page_write(struct inode *inode,
+ 						   struct page *page)
+ {
+--- a/fs/9p/v9fs.c
++++ b/fs/9p/v9fs.c
+@@ -487,8 +487,8 @@ static void v9fs_inode_init_once(void *f
+ 	struct v9fs_inode *v9inode = (struct v9fs_inode *)foo;
+ #ifdef CONFIG_9P_FSCACHE
+ 	v9inode->fscache = NULL;
+-	v9inode->fscache_key = NULL;
+ #endif
++	memset(&v9inode->qid, 0, sizeof(v9inode->qid));
+ 	inode_init_once(&v9inode->vfs_inode);
+ }
+ 
+--- a/fs/9p/v9fs.h
++++ b/fs/9p/v9fs.h
+@@ -125,8 +125,8 @@ struct v9fs_inode {
+ #ifdef CONFIG_9P_FSCACHE
+ 	spinlock_t fscache_lock;
+ 	struct fscache_cookie *fscache;
+-	struct p9_qid *fscache_key;
+ #endif
++	struct p9_qid qid;
+ 	unsigned int cache_validity;
+ 	struct p9_fid *writeback_fid;
+ 	struct mutex v_mutex;
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -216,7 +216,6 @@ struct inode *v9fs_alloc_inode(struct su
+ 		return NULL;
+ #ifdef CONFIG_9P_FSCACHE
+ 	v9inode->fscache = NULL;
+-	v9inode->fscache_key = NULL;
+ 	spin_lock_init(&v9inode->fscache_lock);
+ #endif
+ 	v9inode->writeback_fid = NULL;
+@@ -433,6 +432,37 @@ void v9fs_evict_inode(struct inode *inod
+ 	}
+ }
+ 
++static int v9fs_test_inode(struct inode *inode, void *data)
++{
++	int umode;
++	struct v9fs_inode *v9inode = V9FS_I(inode);
++	struct p9_wstat *st = (struct p9_wstat *)data;
++	struct v9fs_session_info *v9ses = v9fs_inode2v9ses(inode);
++
++	umode = p9mode2unixmode(v9ses, st->mode);
++	/* don't match inode of different type */
++	if ((inode->i_mode & S_IFMT) != (umode & S_IFMT))
++		return 0;
++
++	/* compare qid details */
++	if (memcmp(&v9inode->qid.version,
++		   &st->qid.version, sizeof(v9inode->qid.version)))
++		return 0;
++
++	if (v9inode->qid.type != st->qid.type)
++		return 0;
++	return 1;
++}
++
++static int v9fs_set_inode(struct inode *inode,  void *data)
++{
++	struct v9fs_inode *v9inode = V9FS_I(inode);
++	struct p9_wstat *st = (struct p9_wstat *)data;
++
++	memcpy(&v9inode->qid, &st->qid, sizeof(st->qid));
++	return 0;
++}
++
+ static struct inode *v9fs_qid_iget(struct super_block *sb,
+ 				   struct p9_qid *qid,
+ 				   struct p9_wstat *st)
+@@ -443,7 +473,7 @@ static struct inode *v9fs_qid_iget(struc
+ 	struct v9fs_session_info *v9ses = sb->s_fs_info;
+ 
+ 	i_ino = v9fs_qid2ino(qid);
+-	inode = iget_locked(sb, i_ino);
++	inode = iget5_locked(sb, i_ino, v9fs_test_inode, v9fs_set_inode, st);
+ 	if (!inode)
+ 		return ERR_PTR(-ENOMEM);
+ 	if (!(inode->i_state & I_NEW))
+@@ -453,6 +483,7 @@ static struct inode *v9fs_qid_iget(struc
+ 	 * FIXME!! we may need support for stale inodes
+ 	 * later.
+ 	 */
++	inode->i_ino = i_ino;
+ 	umode = p9mode2unixmode(v9ses, st->mode);
+ 	retval = v9fs_init_inode(v9ses, inode, umode);
+ 	if (retval)
+@@ -460,7 +491,6 @@ static struct inode *v9fs_qid_iget(struc
+ 
+ 	v9fs_stat2inode(st, inode, sb);
+ #ifdef CONFIG_9P_FSCACHE
+-	v9fs_fscache_set_key(inode, &st->qid);
+ 	v9fs_cache_inode_get_cookie(inode);
+ #endif
+ 	unlock_new_inode(inode);
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -86,6 +86,38 @@ static struct dentry *v9fs_dentry_from_d
+ 	return dentry;
+ }
+ 
++static int v9fs_test_inode_dotl(struct inode *inode, void *data)
++{
++	struct v9fs_inode *v9inode = V9FS_I(inode);
++	struct p9_stat_dotl *st = (struct p9_stat_dotl *)data;
++
++	/* don't match inode of different type */
++	if ((inode->i_mode & S_IFMT) != (st->st_mode & S_IFMT))
++		return 0;
++
++	if (inode->i_generation != st->st_gen)
++		return 0;
++
++	/* compare qid details */
++	if (memcmp(&v9inode->qid.version,
++		   &st->qid.version, sizeof(v9inode->qid.version)))
++		return 0;
++
++	if (v9inode->qid.type != st->qid.type)
++		return 0;
++	return 1;
++}
++
++static int v9fs_set_inode_dotl(struct inode *inode,  void *data)
++{
++	struct v9fs_inode *v9inode = V9FS_I(inode);
++	struct p9_stat_dotl *st = (struct p9_stat_dotl *)data;
++
++	memcpy(&v9inode->qid, &st->qid, sizeof(st->qid));
++	inode->i_generation = st->st_gen;
++	return 0;
++}
++
+ static struct inode *v9fs_qid_iget_dotl(struct super_block *sb,
+ 					struct p9_qid *qid,
+ 					struct p9_fid *fid,
+@@ -97,7 +129,8 @@ static struct inode *v9fs_qid_iget_dotl(
+ 	struct v9fs_session_info *v9ses = sb->s_fs_info;
+ 
+ 	i_ino = v9fs_qid2ino(qid);
+-	inode = iget_locked(sb, i_ino);
++	inode = iget5_locked(sb, i_ino, v9fs_test_inode_dotl,
++			     v9fs_set_inode_dotl, st);
+ 	if (!inode)
+ 		return ERR_PTR(-ENOMEM);
+ 	if (!(inode->i_state & I_NEW))
+@@ -107,13 +140,13 @@ static struct inode *v9fs_qid_iget_dotl(
+ 	 * FIXME!! we may need support for stale inodes
+ 	 * later.
+ 	 */
++	inode->i_ino = i_ino;
+ 	retval = v9fs_init_inode(v9ses, inode, st->st_mode);
+ 	if (retval)
+ 		goto error;
+ 
+ 	v9fs_stat2inode_dotl(st, inode);
+ #ifdef CONFIG_9P_FSCACHE
+-	v9fs_fscache_set_key(inode, &st->qid);
+ 	v9fs_cache_inode_get_cookie(inode);
+ #endif
+ 	retval = v9fs_get_acl(inode, fid);
+@@ -136,7 +169,7 @@ v9fs_inode_from_fid_dotl(struct v9fs_ses
+ 	struct p9_stat_dotl *st;
+ 	struct inode *inode = NULL;
+ 
+-	st = p9_client_getattr_dotl(fid, P9_STATS_BASIC);
++	st = p9_client_getattr_dotl(fid, P9_STATS_BASIC | P9_STATS_GEN);
+ 	if (IS_ERR(st))
+ 		return ERR_CAST(st);
+ 
+@@ -547,7 +580,7 @@ v9fs_stat2inode_dotl(struct p9_stat_dotl
+ 			inode->i_blocks = stat->st_blocks;
+ 	}
+ 	if (stat->st_result_mask & P9_STATS_GEN)
+-			inode->i_generation = stat->st_gen;
++		inode->i_generation = stat->st_gen;
+ 
+ 	/* Currently we don't support P9_STATS_BTIME and P9_STATS_DATA_VERSION
+ 	 * because the inode structure does not have fields for them.
 
 
