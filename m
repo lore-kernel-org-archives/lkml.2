@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1I1AvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:51:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60170 "EHLO
+	id S1752781Ab1I1Avm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:51:42 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60091 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1I1Ati (ORCPT
+	with ESMTP id S1751882Ab1I1Atc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 20:49:38 -0400
+	Tue, 27 Sep 2011 20:49:32 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=Kx5jOLieZl1gX+QWs8GjP8JzjwlM8ruyzyGYhQHyMqtCVL6C0jeG0BYGdeNUZaOsc
-	3vTkxV0m93C0LtVaaiIFA==
+	b=uyvY+ztUc52hedlbLkJ80tpO/yRF0S57EfkTXm27cWs76nHfd3sY5zeLqq/MRrsdj
+	84MqXwFUQBbo5OGCC3qtA==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 5/9] kstaled: skip non-RAM regions.
-Date: Tue, 27 Sep 2011 17:49:03 -0700
-Message-Id: <1317170947-17074-6-git-send-email-walken@google.com>
+Subject: [PATCH 2/9] kstaled: documentation and config option.
+Date: Tue, 27 Sep 2011 17:49:00 -0700
+Message-Id: <1317170947-17074-3-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1317170947-17074-1-git-send-email-walken@google.com>
 References: <1317170947-17074-1-git-send-email-walken@google.com>
@@ -34,155 +34,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pfn_skip_hole function that shrinks the passed input range in order to
-skip over pfn ranges that are known not bo be RAM backed. The x86
-implementation achieves this using e820 tables; other architectures
-use a generic no-op implementation.
+Extend memory cgroup documentation do describe the optional idle page
+tracking features, and add the corresponding configuration option.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- arch/x86/include/asm/page_types.h |    8 ++++++
- arch/x86/kernel/e820.c            |   45 +++++++++++++++++++++++++++++++++++++
- include/linux/mmzone.h            |    6 +++++
- mm/memcontrol.c                   |   31 +++++++++++++++----------
- 4 files changed, 78 insertions(+), 12 deletions(-)
+ Documentation/cgroups/memory.txt |  103 +++++++++++++++++++++++++++++++++++++-
+ mm/Kconfig                       |   10 ++++
+ 2 files changed, 112 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index bce688d..b0676c2 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -57,6 +57,14 @@ extern unsigned long init_memory_mapping(unsigned long start,
- extern void initmem_init(void);
- extern void free_initmem(void);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 06eb6d9..7ee2eb3 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -672,7 +672,108 @@ At reading, current status of OOM is shown.
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
  
-+extern void e820_skip_hole(unsigned long *start_pfn, unsigned long *end_pfn);
+-11. TODO
 +
-+#define ARCH_HAVE_PFN_SKIP_HOLE 1
-+static inline void pfn_skip_hole(unsigned long *start, unsigned long *end)
-+{
-+	e820_skip_hole(start, end);
-+}
++11. Idle page tracking
 +
- #endif	/* !__ASSEMBLY__ */
++Idle page tracking works by scanning physical memory at a known rate,
++finding idle pages, and accounting for them in the cgroup owning them.
++
++Idle pages are defined as user pages (either anon or file backed) that have
++not been accessed for a number of consecutive scans, and are also not
++currently pinned down (for example by being mlocked).
++
++11.1 Usage
++
++The first step is to select the global scanning rate:
++
++# echo 120 > /sys/kernel/mm/kstaled/scan_seconds	# 2 minutes per scan
++
++(At boot time, the default value for /sys/kernel/mm/kstaled/scan_seconds
++is 0 which means the idle page tracking feature is disabled).
++
++Then, the per-cgroup memory.idle_page_stats files get updated at the
++end of every scan. The relevant fields are:
++* idle_clean: idle pages that have been untouched for at least one scan cycle,
++  and are also clean. Being clean and unpinned, such pages are immediately
++  reclaimable by the MM's LRU algorithms.
++* idle_dirty_file: idle pages that have been untouched for at least one
++  scan cycle, are dirty, and are file backed. Such pages are not immediately
++  reclaimable as writeback needs to occur first.
++* idle_dirty_swap: idle pages that have been untouched for at least one
++  scan cycle, are dirty, and would have to be written to swap before being
++  reclaimed. This includes dirty anon memory, tmpfs files and shm segments.
++  Note that such pages are counted as idle_dirty_swap regardless of whether
++  swap is enabled or not on the system.
++* idle_2_clean, idle_2_dirty_file, idle_2_dirty_swap: same definitions as
++  above, but for pages that have been untouched for at least two scan cycles.
++* these fields repeat up to idle_240_clean, idle_240_dirty_file and
++  idle_240_dirty_swap, allowing one to observe idle pages over a variety
++  of idle interval lengths. Note that the accounting is cumulative:
++  pages counted as idle for a given interval length are also counted
++  as idle for smaller interval lengths.
++* scans: number of physical memory scans since the cgroup was created.
++
++All the above fields are updated exactly once per scan.
++
++11.2 Responsiveness guarantees
++
++After a user page stops being touched and/or pinned, it takes at least one
++scan cycle for that page to be considered as idle and accounted as such
++in one of the idle_clean / idle_dirty_file / idle_dirty_swap counts
++(or, n scan cycles for the page to be accounted as idle in one of the
++idle_N_clean / idle_N_dirty_file / idle_N_dirty_swap counts).
++
++However, there is no guarantee that pages will be detected that fast.
++In the worst case, it could take up to two extra scan cycle intervals
++for a page to be accounted as idle. This is because after userspace stops
++touching the page, it may take up to one scan interval before we next
++scan it (at which point the page will be seen as not idle yet since it
++was touched during the previous scan) and after the page is finally scanned
++again and detected as idle, it may take up to one extra scan interval before
++completing the physical memory scan and exporting the updated statistics.
++
++Conversely, when userspace touches or pins a page that was previously
++accounted for as idle, it may take up to two scan intervals before the
++corresponding statistics are updated. Once again, this is because it may
++take up to one scan interval before scanning the page and finding it not
++idle anymore, and up to one extra scan interval before completing the
++physical memory scan and exporting the updated statistics.
++
++11.3 Incremental idle page tracking
++
++In some situations, it is desired to obtain faster feedback when
++previously idle, clean user pages start being touched. Remember that
++unpinned clean pages are immediately reclaimable by the MM's LRU
++algorithms. A high number of such pages being idle in a given cgroup
++indicates that this cgroup is not experiencing high memory pressure.
++A decrease of that number can be seen as a leading indicator that
++memory pressure is about to increase, and it may be desired to act
++upon that indication before the two scan interval measurement delay.
++
++The incremental idle page tracking feature can be used for that case.
++It allows for tracking of idle clean pages only, and only for a
++predetermined number of scan intervals (no histogram functionality as
++in the main interface).
++
++The desired idle period must first be selected on a per-cgroup basis
++by writing an integer to the memory.stale_page_age file. The integer
++is the interval we want pages to be idle for, expressed in scan cycles.
++For example to check for pages that have been idle for 5 consecutive
++scan cycles (equivalent to the idle_5_clean statistic), one would
++write 5 to the memory.stale_page_age file. The default value for the
++memory.stale_page_age file is 0, which disables the incremental idle
++page tracking feature.
++
++During scanning, clean unpinned pages that have not been touched for the
++chosen number of scan cycles are incrementally accounted for and reflected
++in the "stale" statistic in memory.idle_page_stats. Likewise, pages that
++were previously accounted as stale and are found not to be idle anymore
++are also incrementally accounted for. Additionally, any pages that are
++being considered by the LRU replacement algorithm and found to have been
++touched are also incrementally accounted for.
++
++
++12. TODO
  
- #endif	/* _ASM_X86_PAGE_DEFS_H */
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 3e2ef84..0677873 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1123,3 +1123,48 @@ void __init memblock_find_dma_reserve(void)
- 	set_dma_reserve(mem_size_pfn - free_size_pfn);
- #endif
- }
-+
-+/*
-+ * The caller wants to skip pfns that are guaranteed to not be valid
-+ * memory. Find a stretch of ram between [start_pfn, end_pfn) and
-+ * return its pfn range back through start_pfn and end_pfn.
-+ */
-+
-+void e820_skip_hole(unsigned long *start_pfn, unsigned long *end_pfn)
-+{
-+	unsigned long start = *start_pfn << PAGE_SHIFT;
-+	unsigned long end = *end_pfn << PAGE_SHIFT;
-+	int i;
-+
-+	if (start >= end)
-+		goto fail;		/* short-circuit e820 checks */
-+
-+	for (i = 0; i < e820.nr_map; i++) {
-+		struct e820entry *ei = &e820.map[i];
-+		unsigned long last, addr;
-+
-+		addr = round_up(ei->addr, PAGE_SIZE);
-+		last = round_down(ei->addr + ei->size, PAGE_SIZE);
-+
-+		if (addr >= end)
-+			goto fail;	/* We're done, not found */
-+		if (last <= start)
-+			continue;	/* Not at start yet, move on */
-+		if (ei->type != E820_RAM)
-+			continue;	/* Not RAM, move on */
-+
-+		/*
-+		 * We've found RAM. If start is in this e820 range, return
-+		 * it, otherwise return the start of this e820 range.
-+		 */
-+
-+		if (addr > start)
-+			*start_pfn = addr >> PAGE_SHIFT;
-+		if (last < end)
-+			*end_pfn = last >> PAGE_SHIFT;
-+		return;
-+	}
-+fail:
-+	*start_pfn = *end_pfn;
-+	return;				/* No luck, return failure */
-+}
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9f7c3eb..6657106 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -930,6 +930,12 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
- #define pfn_to_nid(pfn)		(0)
- #endif
+ 1. Add support for accounting huge pages (as a separate controller)
+ 2. Make per-cgroup scanner reclaim not-shared pages first
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 8ca47a5..f6443a0 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -370,3 +370,13 @@ config CLEANCACHE
+ 	  in a negligible performance hit.
  
-+#ifndef ARCH_HAVE_PFN_SKIP_HOLE
-+static inline void pfn_skip_hole(unsigned long *start, unsigned long *end)
-+{
-+}
-+#endif
+ 	  If unsure, say Y to enable cleancache
 +
- #ifdef CONFIG_SPARSEMEM
- 
- /*
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e55056f..b75d41f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5747,22 +5747,29 @@ static void kstaled_scan_node(pg_data_t *pgdat)
- 	end = pfn + pgdat->node_spanned_pages;
- 
- 	while (pfn < end) {
--		if (need_resched()) {
--			pgdat_resize_unlock(pgdat, &flags);
--			cond_resched();
--			pgdat_resize_lock(pgdat, &flags);
-+		unsigned long contiguous = end;
-+
-+		/* restrict pfn..contiguous to be a RAM backed range */
-+		pfn_skip_hole(&pfn, &contiguous);
-+
-+		while (pfn < contiguous) {
-+			if (need_resched()) {
-+				pgdat_resize_unlock(pgdat, &flags);
-+				cond_resched();
-+				pgdat_resize_lock(pgdat, &flags);
- 
- #ifdef CONFIG_MEMORY_HOTPLUG
--			/* abort if the node got resized */
--			if (pfn < pgdat->node_start_pfn ||
--			    end > (pgdat->node_start_pfn +
--				   pgdat->node_spanned_pages))
--				goto abort;
-+				/* abort if the node got resized */
-+				if (pfn < pgdat->node_start_pfn ||
-+				    end > (pgdat->node_start_pfn +
-+					   pgdat->node_spanned_pages))
-+					goto abort;
- #endif
--		}
-+			}
- 
--		pfn += pfn_valid(pfn) ?
--			kstaled_scan_page(pfn_to_page(pfn)) : 1;
-+			pfn += pfn_valid(pfn) ?
-+				kstaled_scan_page(pfn_to_page(pfn)) : 1;
-+		}
- 	}
- 
- abort:
++config KSTALED
++       depends on CGROUP_MEM_RES_CTLR && 64BIT
++       bool "Per-cgroup idle page tracking"
++       help
++         This feature allows the kernel to report the amount of user pages
++	 in a cgroup that have not been touched in a given time.
++	 This information may be used to size the cgroups and/or for
++	 job placement within a compute cluster.
++	 See Documentation/cgroups/memory.txt for a more complete description.
 -- 
 1.7.3.1
 
