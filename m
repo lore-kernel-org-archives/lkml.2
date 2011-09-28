@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab1I1OIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:08:31 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:56189
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab1I1OI3 (ORCPT
+	id S1754594Ab1I1OJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:09:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50316 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab1I1OJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:08:29 -0400
-Message-ID: <4E832A55.30709@kernel.dk>
-Date: Wed, 28 Sep 2011 08:08:21 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 28 Sep 2011 10:09:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 20/24] C6X: library code
+Date: Wed, 28 Sep 2011 16:09:41 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-21-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-21-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: Free queue resources at blk_release_queue()
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>  <20110928004722.GA27421@kernel.dk>  <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>  <4E82751C.9050908@kernel.dk>  <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com> <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-In-Reply-To: <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201109281609.41468.arnd@arndb.de>
+X-Provags-ID: V02:K0:mP1mBfTYONGa7+wlHIYm8604YIJN7RrwZQDVN1K5xAL
+ o7hmQCQQXJPzumpSHpOvp7Yceb0Yj08J/up4WTuNxDHm+zt9o7
+ 4JRY8ZjJFD6G4OwX0SLjK8rxGhVKQlP+lShLEPnES430Lqrh22
+ pL67KB4UpsObWrmCWl7wMLzVWNRt+H6w7acB2VLTKpBEo43Xun
+ I9Yo2ZDxyQJntKvf+ZpAPA4oUl1erJXf6hsaAMOmVaG/q8GRwY
+ 4T5b+t7t95JVt99OUM0ocjhp1Tox0+fWghMawPkrhkKNXown1b
+ 85NJJFLPY/5Sca7SzMyrV802oBiE3uD1Nz2mcB6PHZkvczksYR
+ 6YA/KwYaGWZR/jSU/mxc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-27 22:10, James Bottomley wrote:
-> On Tue, 2011-09-27 at 18:59 -0700, Linus Torvalds wrote:
->> On Tue, Sep 27, 2011 at 6:15 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>
->>>> But if you forward the actual patch to me (the one I see on lkml seems
->>>> to be broken and doesn't compile cleanly because it's assiging a
->>>> structure to a pointer), I'll try it out anyway.
->>>
->>> Thanks, that would be great. It's inlined below.
->>
->> Well, I did several USB eject events, and nothing bad happened.
->>
->> But as mentioned, I don't think that means much. Have you tried this
->> with slub debugging and poisoning? It might be worth some extra
->> testing that way.
-> 
-> I've been testing a simpler version:
-> 
-> http://marc.info/?l=linux-kernel&m=131300594629839
-> 
-> For a long time now with great success.  The only difference is the
-> locking cleanup, but SCSI doesn't need that since it doesn't supply its
-> own lock, so I've been voting for this as the final fix for a while now.
+On Tuesday 27 September 2011, Mark Salter wrote:
+> +++ b/arch/c6x/include/asm/checksum.h
+> @@ -0,0 +1,115 @@
+> +/*
+> + *  Port on Texas Instruments TMS320C6x architecture
+> + *
+> + *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
+> + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + */
+> +#ifndef _ASM_C6X_CHECKSUM_H
+> +#define _ASM_C6X_CHECKSUM_H
+> +
+> +#include <asm/byteorder.h>
 
-The locking cleanup looks good, though, for devices that do use the
-embedded lock. But functionally they should be the same for SCSI, so if
-you had great success with it, then that's a good data point.
+I think you should fall back on the generic checksum.h file and only
+provide the declarations that are different. This file is largely
+identical to the generic version.
 
--- 
-Jens Axboe
-
+	Arnd
