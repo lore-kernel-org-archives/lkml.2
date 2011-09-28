@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1I1Wn4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54253 "EHLO mx2.suse.de"
+	id S932665Ab1I1WoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54290 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab1I1Wnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:35 2011
-Message-Id: <20110928220135.373651290@clark.kroah.org>
+	id S932524Ab1I1WoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:14 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:36 2011
+Message-Id: <20110928220135.986707671@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:59 -0700
+Date: Wed, 28 Sep 2011 15:01:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
-Subject: [095/244] fs/9p: Add OS dependent open flags in 9p protocol
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [101/244] PCI: Remove MRRS modification from MPS setting code
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,169 +25,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Jon Mason <mason@myri.com>
 
-commit f88657ce3f9713a0c62101dffb0e972a979e77b9 upstream.
+commit ed2888e906b56769b4ffabb9c577190438aa68b8 upstream.
 
-Some of the flags are OS/arch dependent we add a 9p
-protocol value which maps to asm-generic/fcntl.h values in Linux
-Based on the original patch from Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+Modifying the Maximum Read Request Size to 0 (value of 128Bytes) has
+massive negative ramifications on some devices.  Without knowing which
+devices have this issue, do not modify from the default value when
+walking the PCI-E bus in pcie_bus_safe mode.  Also, make pcie_bus_safe
+the default procedure.
 
-[extra comments from author as to why this needs to go to stable:
-
-Earlier for different operation such as open we used the values of open
-flag as defined by the OS.  But some of these flags such as O_DIRECT are
-arch dependent. So if we have the 9p client and server running on
-different architectures, we end up with client sending client
-architecture value of these open flag and server will try to map these
-values to what its architecture states. For ex: O_DIRECT on a x86 client
-maps to
-
-#define O_DIRECT        00040000
-
-Where as on sparc server it will maps to
-
-#define O_DIRECT        0x100000
-
-Hence we need to map these open flags to OS/arch independent flag
-values.  Getting these changes to an early version of kernel ensures us
-that we work with different combination of client and server. We should
-ideally backport this patch to all possible kernel version.]
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Harsh Prateek Bora <harsh@linux.vnet.ibm.com>
+Tested-by: Sven Schnelle <svens@stackframe.org>
+Tested-by: Simon Kirby <sim@hostway.ca>
+Tested-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-and-tested-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42162
+Signed-off-by: Jon Mason <mason@myri.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/9p/v9fs_vfs.h       |    2 +
- fs/9p/vfs_file.c       |    2 -
- fs/9p/vfs_inode_dotl.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/net/9p/9p.h    |   24 +++++++++++++++++++++
- 4 files changed, 81 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c   |    2 +-
+ drivers/pci/probe.c |   45 ++++++++++++++++++++++++---------------------
+ 2 files changed, 25 insertions(+), 22 deletions(-)
 
---- a/fs/9p/v9fs_vfs.h
-+++ b/fs/9p/v9fs_vfs.h
-@@ -82,4 +82,6 @@ static inline void v9fs_invalidate_inode
- 	v9inode->cache_validity |= V9FS_INO_INVALID_ATTR;
- 	return;
- }
-+
-+int v9fs_open_to_dotl_flags(int flags);
- #endif
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -65,7 +65,7 @@ int v9fs_file_open(struct inode *inode,
- 	v9inode = V9FS_I(inode);
- 	v9ses = v9fs_inode2v9ses(inode);
- 	if (v9fs_proto_dotl(v9ses))
--		omode = file->f_flags;
-+		omode = v9fs_open_to_dotl_flags(file->f_flags);
- 	else
- 		omode = v9fs_uflags2omode(file->f_flags,
- 					v9fs_proto_dotu(v9ses));
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -191,6 +191,58 @@ v9fs_inode_from_fid_dotl(struct v9fs_ses
- 	return inode;
- }
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -77,7 +77,7 @@ unsigned long pci_cardbus_mem_size = DEF
+ unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+ unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
  
-+struct dotl_openflag_map {
-+	int open_flag;
-+	int dotl_flag;
-+};
-+
-+static int v9fs_mapped_dotl_flags(int flags)
-+{
-+	int i;
-+	int rflags = 0;
-+	struct dotl_openflag_map dotl_oflag_map[] = {
-+		{ O_CREAT,	P9_DOTL_CREATE },
-+		{ O_EXCL,	P9_DOTL_EXCL },
-+		{ O_NOCTTY,	P9_DOTL_NOCTTY },
-+		{ O_TRUNC,	P9_DOTL_TRUNC },
-+		{ O_APPEND,	P9_DOTL_APPEND },
-+		{ O_NONBLOCK,	P9_DOTL_NONBLOCK },
-+		{ O_DSYNC,	P9_DOTL_DSYNC },
-+		{ FASYNC,	P9_DOTL_FASYNC },
-+		{ O_DIRECT,	P9_DOTL_DIRECT },
-+		{ O_LARGEFILE,	P9_DOTL_LARGEFILE },
-+		{ O_DIRECTORY,	P9_DOTL_DIRECTORY },
-+		{ O_NOFOLLOW,	P9_DOTL_NOFOLLOW },
-+		{ O_NOATIME,	P9_DOTL_NOATIME },
-+		{ O_CLOEXEC,	P9_DOTL_CLOEXEC },
-+		{ O_SYNC,	P9_DOTL_SYNC},
-+	};
-+	for (i = 0; i < ARRAY_SIZE(dotl_oflag_map); i++) {
-+		if (flags & dotl_oflag_map[i].open_flag)
-+			rflags |= dotl_oflag_map[i].dotl_flag;
-+	}
-+	return rflags;
-+}
-+
-+/**
-+ * v9fs_open_to_dotl_flags- convert Linux specific open flags to
-+ * plan 9 open flag.
-+ * @flags: flags to convert
-+ */
-+int v9fs_open_to_dotl_flags(int flags)
-+{
-+	int rflags = 0;
-+
-+	/*
-+	 * We have same bits for P9_DOTL_READONLY, P9_DOTL_WRONLY
-+	 * and P9_DOTL_NOACCESS
+-enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
++enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_SAFE;
+ 
+ /*
+  * The default CLS is used if arch didn't set CLS explicitly and not
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1397,34 +1397,37 @@ static void pcie_write_mps(struct pci_de
+ 
+ static void pcie_write_mrrs(struct pci_dev *dev, int mps)
+ {
+-	int rc, mrrs;
+-
+-	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
+-		int dev_mpss = 128 << dev->pcie_mpss;
+-
+-		/* For Max performance, the MRRS must be set to the largest
+-		 * supported value.  However, it cannot be configured larger
+-		 * than the MPS the device or the bus can support.  This assumes
+-		 * that the largest MRRS available on the device cannot be
+-		 * smaller than the device MPSS.
+-		 */
+-		mrrs = mps < dev_mpss ? mps : dev_mpss;
+-	} else
+-		/* In the "safe" case, configure the MRRS for fairness on the
+-		 * bus by making all devices have the same size
+-		 */
+-		mrrs = mps;
++	int rc, mrrs, dev_mpss;
+ 
++	/* In the "safe" case, do not configure the MRRS.  There appear to be
++	 * issues with setting MRRS to 0 on a number of devices.
 +	 */
-+	rflags |= flags & O_ACCMODE;
-+	rflags |= v9fs_mapped_dotl_flags(flags);
 +
-+	return rflags;
-+}
++	if (pcie_bus_config != PCIE_BUS_PERFORMANCE)
++		return;
 +
- /**
-  * v9fs_vfs_create_dotl - VFS hook to create files for 9P2000.L protocol.
-  * @dir: directory inode that is being created
-@@ -259,7 +311,8 @@ v9fs_vfs_create_dotl(struct inode *dir,
- 			   "Failed to get acl values in creat %d\n", err);
- 		goto error;
- 	}
--	err = p9_client_create_dotl(ofid, name, flags, mode, gid, &qid);
-+	err = p9_client_create_dotl(ofid, name, v9fs_open_to_dotl_flags(flags),
-+				    mode, gid, &qid);
- 	if (err < 0) {
- 		P9_DPRINTK(P9_DEBUG_VFS,
- 				"p9_client_open_dotl failed in creat %d\n",
---- a/include/net/9p/9p.h
-+++ b/include/net/9p/9p.h
-@@ -278,6 +278,30 @@ enum p9_perm_t {
- 	P9_DMSETVTX = 0x00010000,
- };
++	dev_mpss = 128 << dev->pcie_mpss;
++
++	/* For Max performance, the MRRS must be set to the largest supported
++	 * value.  However, it cannot be configured larger than the MPS the
++	 * device or the bus can support.  This assumes that the largest MRRS
++	 * available on the device cannot be smaller than the device MPSS.
++	 */
++	mrrs = min(mps, dev_mpss);
  
-+/* 9p2000.L open flags */
-+#define P9_DOTL_RDONLY        00000000
-+#define P9_DOTL_WRONLY        00000001
-+#define P9_DOTL_RDWR          00000002
-+#define P9_DOTL_NOACCESS      00000003
-+#define P9_DOTL_CREATE        00000100
-+#define P9_DOTL_EXCL          00000200
-+#define P9_DOTL_NOCTTY        00000400
-+#define P9_DOTL_TRUNC         00001000
-+#define P9_DOTL_APPEND        00002000
-+#define P9_DOTL_NONBLOCK      00004000
-+#define P9_DOTL_DSYNC         00010000
-+#define P9_DOTL_FASYNC        00020000
-+#define P9_DOTL_DIRECT        00040000
-+#define P9_DOTL_LARGEFILE     00100000
-+#define P9_DOTL_DIRECTORY     00200000
-+#define P9_DOTL_NOFOLLOW      00400000
-+#define P9_DOTL_NOATIME       01000000
-+#define P9_DOTL_CLOEXEC       02000000
-+#define P9_DOTL_SYNC          04000000
-+
-+/* 9p2000.L at flags */
-+#define P9_DOTL_AT_REMOVEDIR		0x200
-+
- /**
-  * enum p9_qid_t - QID types
-  * @P9_QTDIR: directory
+ 	/* MRRS is a R/W register.  Invalid values can be written, but a
+-	 * subsiquent read will verify if the value is acceptable or not.
++	 * subsequent read will verify if the value is acceptable or not.
+ 	 * If the MRRS value provided is not acceptable (e.g., too large),
+ 	 * shrink the value until it is acceptable to the HW.
+  	 */
+ 	while (mrrs != pcie_get_readrq(dev) && mrrs >= 128) {
++		dev_warn(&dev->dev, "Attempting to modify the PCI-E MRRS value"
++			 " to %d.  If any issues are encountered, please try "
++			 "running with pci=pcie_bus_safe\n", mrrs);
+ 		rc = pcie_set_readrq(dev, mrrs);
+ 		if (rc)
+-			dev_err(&dev->dev, "Failed attempting to set the MRRS\n");
++			dev_err(&dev->dev,
++				"Failed attempting to set the MRRS\n");
+ 
+ 		mrrs /= 2;
+ 	}
+@@ -1437,13 +1440,13 @@ static int pcie_bus_configure_set(struct
+ 	if (!pci_is_pcie(dev))
+ 		return 0;
+ 
+-	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
++	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
+ 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
+ 
+ 	pcie_write_mps(dev, mps);
+ 	pcie_write_mrrs(dev, mps);
+ 
+-	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
++	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
+ 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
+ 
+ 	return 0;
 
 
