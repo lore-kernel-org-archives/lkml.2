@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1I1NUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:20:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54409 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752977Ab1I1NUo (ORCPT
+	id S1754103Ab1I1NX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:23:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53138 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab1I1NXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:20:44 -0400
-Date: Wed, 28 Sep 2011 14:20:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110928132042.GL3279@opensource.wolfsonmicro.com>
-References: <20110922184614.25419.84606.stgit@ponder>
- <20110927210849.GD3994@ponder.secretlab.ca>
- <20110927221308.GA2674@opensource.wolfsonmicro.com>
- <201109281504.34560.arnd@arndb.de>
+	Wed, 28 Sep 2011 09:23:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 05/24] C6X: build infrastructure
+Date: Wed, 28 Sep 2011 15:23:15 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-6-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-6-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109281504.34560.arnd@arndb.de>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109281523.15680.arnd@arndb.de>
+X-Provags-ID: V02:K0:ySnkcFxisB7kUrESR8f8C2RL7nd4gvAfWV4/SH0eLrd
+ AAoFvd14ceoK/jo6YFgUf/Fo9t7dtY+p1ut1BgoozaOHfVjKYp
+ XHPh4FAF6VxeQFELPKjyRBtdF/FnKq6OHaePnoUYe8JrYOLCek
+ Wvk18k8aCd+EWpjRsVE6WSYSLzVYevY7rNx4u0uB1afa4d7bsS
+ GdRa/KwLHI1fE17ys8cpMfZAfIBwpubTDKXqd2iieSUEa1EpnC
+ NbufwRlA+Jam3DurJZh7jf3u6Py/MnnkuAKBi5jh/NtdYetNmn
+ 8zGIN2au4dzlD/SWnSzkH+xkFFAXIK6pAqF1FEDvA5u+83sUjl
+ 2wHAvZCnMdiQOTaWyxOo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 03:04:34PM +0200, Arnd Bergmann wrote:
-> On Wednesday 28 September 2011, Mark Brown wrote:
+On Tuesday 27 September 2011, Mark Salter wrote:
+> +comment "Board Selection"
+> +choice
+> +       prompt "Board"
+> +       help
+> +         This option specifies the specific board for which the kernel will be
+> +         compiled.
+> +
+> +config BOARD_DSK6455
+> +       bool "DSK6455"
+> +       select SOC_TMS320C6455
+> +
+> +config BOARD_EVM6457
+> +       bool "EVM6472"
+> +       select SOC_TMS320C6457
+> +
+> +config BOARD_EVM6472
+> +       bool "EVM6472"
+> +       select SOC_TMS320C6472
+> +
+> +config BOARD_EVM6474
+> +       bool "EVM6474"
+> +       select SOC_TMS320C6474
+> +
+> +endchoice
 
-> > Note that I'm not sure this answers the issue I was raising - the issue
-> > isn't that the caller doesn't know what the error code means, the issue
-> > is that in some cases the driver needs to take a decision about what
-> > failure to get a resource means.  Does it mean that the driver can work
-> > fine and be slightly less featureful or should it cause a deferral?
+This really wants to be a flat list instead of a "choice" statement,
+so you can build a kernel for multiple boards at once. Is there a
+reason why this is not possible right now?
 
-> Can you think of cases where this information cannot be put into the
-> device tree or platform_data? If a board provides an optional feature,
-> I think that should be a property of the device that the driver gets,
-> so it can return an error when that feature is not around, or continue
-> when it knows that the feature will never become available.
+Also, how different are these boards and socs still? Since you are
+based on device trees for hardware configuration, do you actually
+need the options at all?
 
-Not off the top of my head, most of the cases I'm aware of were cases
-where the supply is mandatory but soft control is optional so don't need
-to make this decision in the driver at all.  In the MMC case I didn't
-push this as working with the people concerned was extremely painful.
+	Arnd
