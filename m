@@ -1,126 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1I1J2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:28:43 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:33001 "EHLO mgw-da01.nokia.com"
+	id S1753812Ab1I1Jgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:36:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45083 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623Ab1I1J2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:28:42 -0400
-Message-ID: <4E82E8AF.8080609@iki.fi>
-Date: Wed, 28 Sep 2011 12:28:15 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110902 Firefox/6.0.2 SeaMonkey/2.3.3
+	id S1751434Ab1I1Jge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 05:36:34 -0400
+Date: Wed, 28 Sep 2011 10:36:29 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 2/2/4] mm: try to distribute dirty pages fairly across
+ zones
+Message-ID: <20110928093629.GE11313@suse.de>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-3-git-send-email-jweiner@redhat.com>
+ <20110921160226.1bf74494.akpm@google.com>
+ <20110922085242.GA29046@redhat.com>
+ <20110923144248.GC2606@redhat.com>
 MIME-Version: 1.0
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>
-Subject: Re: [PATCH 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
-References: <1315488922-16152-1-git-send-email-deepthy.ravi@ti.com> <201109161506.16505.laurent.pinchart@ideasonboard.com> <19F8576C6E063C45BE387C64729E739404EC8113E2@dbde02.ent.ti.com> <201109272006.30130.laurent.pinchart@ideasonboard.com> <19F8576C6E063C45BE387C64729E739404ECA54C58@dbde02.ent.ti.com>
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404ECA54C58@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110923144248.GC2606@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hiremath,
-
-Hiremath, Vaibhav wrote:
->> -----Original Message----- From: Laurent Pinchart
->> [mailto:laurent.pinchart@ideasonboard.com] Sent: Tuesday, September
->> 27, 2011 11:36 PM To: Hiremath, Vaibhav Cc: Ravi, Deepthy;
->> linux-media@vger.kernel.org; tony@atomide.com; 
->> linux@arm.linux.org.uk; linux-omap@vger.kernel.org; linux-arm- 
->> kernel@lists.infradead.org; linux-kernel@vger.kernel.org; 
->> mchehab@infradead.org; g.liakhovetski@gmx.de Subject: Re: [PATCH
->> 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
->> 
->> Hi Vaibhav,
->> 
->> On Monday 19 September 2011 17:31:02 Hiremath, Vaibhav wrote:
->>> On Friday, September 16, 2011 6:36 PM Laurent Pinchart wrote:
->>>> On Friday 16 September 2011 15:00:53 Ravi, Deepthy wrote:
->>>>> On Thursday, September 08, 2011 10:51 PM Laurent Pinchart
->>>>> wrote:
->>>>>> On Thursday 08 September 2011 15:35:22 Deepthy Ravi wrote:
->>>>>>> From: Vaibhav Hiremath <hvaibhav@ti.com>
->>>>>>> 
->>>>>>> In order to support TVP5146 (for that matter any video
->>>>>>> decoder), it is important to support G/S/ENUM_STD ioctl
->>>>>>> on /dev/videoX device node.
->>>>>> 
->>>>>> Why so ? Shouldn't it be queried on the subdev output pad
->> directly ?
->>>>> 
->>>>> Because standard v4l2 application for analog devices will
->>>>> call these std ioctls on the streaming device node. So it's
->>>>> done on /dev/video
->> to
->>>>> make the existing apllication work.
->>>> 
->>>> Existing applications can't work with the OMAP3 ISP (and
->>>> similar
->> complex
->>>> embedded devices) without userspace support anyway, either in
->>>> the form
->> of
->>>> a GStreamer element or a libv4l plugin. I still believe that
->>>> analog
->> video
->>>> standard operations should be added to the subdev pad
->>>> operations and exposed through subdev device nodes, exactly as
->>>> done with formats.
->>> 
->>> I completely agree with your point that, existing application
->>> will not
->> work
->>> without setting links properly. But I believe the assumption here
->>> is, media-controller should set the links (along with pad
->>> formants) and all existing application should work as is. Isn't
->>> it?
->> 
->> The media controller is an API used (among other things) to set the
->> links. You still need to call it from userspace. That won't happen
->> magically. The userspace component that sets up the links and
->> configures the formats, be it a GStreamer element, a libv4l plugin,
->> or something else, can as well setup the standard on the TVP5146
->> subdev.
->> 
-> Please look at from analog device point of view which is interfaced
-> to ISP.
+On Fri, Sep 23, 2011 at 04:42:48PM +0200, Johannes Weiner wrote:
+> The maximum number of dirty pages that exist in the system at any time
+> is determined by a number of pages considered dirtyable and a
+> user-configured percentage of those, or an absolute number in bytes.
 > 
-> OMAP3 ISP => TVP5146 (video decoder)
+> This number of dirtyable pages is the sum of memory provided by all
+> the zones in the system minus their lowmem reserves and high
+> watermarks, so that the system can retain a healthy number of free
+> pages without having to reclaim dirty pages.
 > 
-> As a user I would want to expect the standard to be supported on
-> streaming device node, since all standard streaming applications (for
-> analog devices/interfaces) does this.
+> But there is a flaw in that we have a zoned page allocator which does
+> not care about the global state but rather the state of individual
+> memory zones.  And right now there is nothing that prevents one zone
+> from filling up with dirty pages while other zones are spared, which
+> frequently leads to situations where kswapd, in order to restore the
+> watermark of free pages, does indeed have to write pages from that
+> zone's LRU list.  This can interfere so badly with IO from the flusher
+> threads that major filesystems (btrfs, xfs, ext4) mostly ignore write
+> requests from reclaim already, taking away the VM's only possibility
+> to keep such a zone balanced, aside from hoping the flushers will soon
+> clean pages from that zone.
 > 
-> Setting up the links and format is still something got added with MC
-> framework, and I would consider it as a separate plug-in along with
-> existing applications.
+> Enter per-zone dirty limits.  They are to a zone's dirtyable memory
+> what the global limit is to the global amount of dirtyable memory, and
+> try to make sure that no single zone receives more than its fair share
+> of the globally allowed dirty pages in the first place.  As the number
+> of pages considered dirtyable exclude the zones' lowmem reserves and
+> high watermarks, the maximum number of dirty pages in a zone is such
+> that the zone can always be balanced without requiring page cleaning.
 > 
-> Why do I need to write/use two different streaming application one
-> for MC compatible device and another for non-MC?
+> As this is a placement decision in the page allocator and pages are
+> dirtied only after the allocation, this patch allows allocators to
+> pass __GFP_WRITE when they know in advance that the page will be
+> written to and become dirty soon.  The page allocator will then
+> attempt to allocate from the first zone of the zonelist - which on
+> NUMA is determined by the task's NUMA memory policy - that has not
+> exceeded its dirty limit.
+> 
+> At first glance, it would appear that the diversion to lower zones can
+> increase pressure on them, but this is not the case.  With a full high
+> zone, allocations will be diverted to lower zones eventually, so it is
+> more of a shift in timing of the lower zone allocations.  Workloads
+> that previously could fit their dirty pages completely in the higher
+> zone may be forced to allocate from lower zones, but the amount of
+> pages that 'spill over' are limited themselves by the lower zones'
+> dirty constraints, and thus unlikely to become a problem.
+> 
+> For now, the problem of unfair dirty page distribution remains for
+> NUMA configurations where the zones allowed for allocation are in sum
+> not big enough to trigger the global dirty limits, wake up the flusher
+> threads and remedy the situation.  Because of this, an allocation that
+> could not succeed on any of the considered zones is allowed to ignore
+> the dirty limits before going into direct reclaim or even failing the
+> allocation, until a future patch changes the global dirty throttling
+> and flusher thread activation so that they take individual zone states
+> into account.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-You musn't need to.
-
-This is something that will have to be handled by the libv4l plugin, as
-the rest of controlling the device. Controls related ioctls will be
-passed from the source to downstream once they apply, and I don't see
-why the same shouldn't be done to the {G,S,ENUM}_STD.
-
-Regards,
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Sakari Ailus
-sakari.ailus@iki.fi
+Mel Gorman
+SUSE Labs
