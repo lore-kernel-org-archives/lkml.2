@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab1I1Evw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 00:51:52 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:59810 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab1I1Evv (ORCPT
+	id S1753021Ab1I1Ewb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 00:52:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33672 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab1I1Ewa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 00:51:51 -0400
-Date: Wed, 28 Sep 2011 14:51:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: linux-next: build failure after merge of the pm tree
-Message-Id: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Wed, 28 Sep 2011 00:52:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Sep 2011 13:51:38 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@google.com>, Kautuk Consul <consul.kautuk@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] mm: disable user interface to manually rescue
+ unevictable pages
+Message-Id: <20110928135138.5113bc30.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110927072714.GA1997@redhat.com>
+References: <1316948380-1879-1-git-send-email-consul.kautuk@gmail.com>
+	<20110926112944.GC14333@redhat.com>
+	<20110926161136.b4508ecb.akpm@google.com>
+	<20110927072714.GA1997@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 27 Sep 2011 09:27:14 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-Hi Rafael,
+> At one point, anonymous pages were supposed to go on the unevictable
+> list when no swap space was configured, and the idea was to manually
+> rescue those pages after adding swap and making them evictable again.
+> But nowadays, swap-backed pages on the anon LRU list are not scanned
+> without available swap space anyway, so there is no point in moving
+> them to a separate list anymore.
+> 
+> The manual rescue could also be used in case pages were stranded on
+> the unevictable list due to race conditions.  But the code has been
+> around for a while now and newly discovered bugs should be properly
+> reported and dealt with instead of relying on such a manual fixup.
+> 
+> In addition to the lack of a usecase, the sysfs interface to rescue
+> pages from a specific NUMA node has been broken since its
+> introduction, so it's unlikely that anybody ever relied on that.
+> 
+> This patch removes the functionality behind the sysctl and the
+> node-interface and emits a one-time warning when somebody tries to
+> access either of them.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Reported-by: Kautuk Consul <consul.kautuk@gmail.com>
 
-After merging the pm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-In file included from include/trace/ftrace.h:567:0,
-                 from include/trace/define_trace.h:96,
-                 from include/trace/events/rpm.h:99,
-                 from kernel/trace/rpm-traces.c:15:
-include/trace/events/rpm.h: In function 'ftrace_raw_event_rpm_internal':
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'usage_count'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'disable_depth'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'runtime_auto'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'request_pending'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'irq_safe'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'child_count'
-In file included from include/trace/ftrace.h:771:0,
-                 from include/trace/define_trace.h:96,
-                 from include/trace/events/rpm.h:99,
-                 from kernel/trace/rpm-traces.c:15:
-include/trace/events/rpm.h: In function 'perf_trace_rpm_internal':
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'usage_count'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'disable_depth'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'runtime_auto'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'request_pending'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'irq_safe'
-include/trace/events/rpm.h:16:1: error: 'struct dev_pm_info' has no member =
-named 'child_count'
-
-Presumably caused by commit 53b615ccca56 ("PM / Runtime: Introduce trace
-points for tracing rpm_* functions").
-
-I have used the pm tree from next-20110927 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOgqfgAAoJEDMEi1NhKgbsjs8H/2/2jdrSCNdkuCwTWHUyRHGG
-CagjDNpNaXiV/oUGxD32em4AixQXbLYTWJYQ/4SlxB7FvgH5ZYcojOw3Lwq2V/Oo
-swJXv9CzJCrc8yNuieOKpizEnIZ6YPxL9Tv4RUBo1Re5KKC0PQr4ms8VMNjAM1r9
-cS0oNlWB5dgjOfMTlgOwFvwGj3nO1UK1+mLdEQr7ERnUezkrfiVJCyfYX7i3DGV+
-pf7V4fgg3R2kROYfyCMON/icMxj6UGW80oPI6P32Y/NAJMyohowW/JQxuVM3j7PT
-5sWrrdtAn6wz+6Camuk3dhRWo/jsfNJ/5cwCUM/kPUPFlIFAV82pmwN3laAU4rM=
-=lZmb
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Sep_2011_14_51_44_+1000_tlSFUvJ2w+W207G5--
