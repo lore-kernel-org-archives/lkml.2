@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab1I1WpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:45:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54404 "EHLO mx2.suse.de"
+	id S932848Ab1I1Wp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:45:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54415 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932801Ab1I1WpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:45:18 -0400
+	id S932820Ab1I1WpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:45:25 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:41 2011
-Message-Id: <20110928220141.019970932@clark.kroah.org>
+Message-Id: <20110928220141.226715400@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:53 -0700
+Date: Wed, 28 Sep 2011 15:01:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [149/244] teach /proc/$pid/numa_maps about transparent hugepages
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [151/244] xen/e820: if there is no dom0_mem=, dont tweak extra_pages.
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,55 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 32ef43848f283e0ef945d3c67e851c143fea3970 upstream.
+commit e3b73c4a25e9a5705b4ef28b91676caf01f9bc9f upstream.
 
-This is modeled after the smaps code.
+The patch "xen: use maximum reservation to limit amount of usable RAM"
+(d312ae878b6aed3912e1acaaf5d0b2a9d08a4f11) breaks machines that
+do not use 'dom0_mem=' argument with:
 
-It detects transparent hugepages and then does a single gather_stats()
-for the page as a whole.  This has two benifits:
- 1. It is more efficient since it does many pages in a single shot.
- 2. It does not have to break down the huge page.
+reserve RAM buffer: 000000133f2e2000 - 000000133fffffff
+(XEN) mm.c:4976:d0 Global bit is set to kernel page fffff8117e
+(XEN) domain_crash_sync called from entry.S
+(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
+...
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The reason being that the last E820 entry is created using the
+'extra_pages' (which is based on how many pages have been freed).
+The mentioned git commit sets the initial value of 'extra_pages'
+using a hypercall which returns the number of pages (if dom0_mem
+has been used) or -1 otherwise. If the later we return with
+MAX_DOMAIN_PAGES as basis for calculation:
+
+    return min(max_pages, MAX_DOMAIN_PAGES);
+
+and use it:
+
+     extra_limit = xen_get_max_pages();
+     if (extra_limit >= max_pfn)
+             extra_pages = extra_limit - max_pfn;
+     else
+             extra_pages = 0;
+
+which means we end up with extra_pages = 128GB in PFNs (33554432)
+- 8GB in PFNs (2097152, on this specific box, can be larger or smaller),
+and then we add that value to the E820 making it:
+
+  Xen: 00000000ff000000 - 0000000100000000 (reserved)
+  Xen: 0000000100000000 - 000000133f2e2000 (usable)
+
+which is clearly wrong. It should look as so:
+
+  Xen: 00000000ff000000 - 0000000100000000 (reserved)
+  Xen: 0000000100000000 - 000000027fbda000 (usable)
+
+Naturally this problem does not present itself if dom0_mem=max:X
+is used.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/x86/xen/setup.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -936,6 +936,26 @@ static int gather_pte_stats(pmd_t *pmd,
- 	pte_t *pte;
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -307,10 +307,12 @@ char * __init xen_memory_setup(void)
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
  
- 	md = walk->private;
-+	spin_lock(&walk->mm->page_table_lock);
-+	if (pmd_trans_huge(*pmd)) {
-+		if (pmd_trans_splitting(*pmd)) {
-+			spin_unlock(&walk->mm->page_table_lock);
-+			wait_split_huge_page(md->vma->anon_vma, pmd);
-+		} else {
-+			pte_t huge_pte = *(pte_t *)pmd;
-+			struct page *page;
-+
-+			page = can_gather_numa_stats(huge_pte, md->vma, addr);
-+			if (page)
-+				gather_stats(page, md, pte_dirty(huge_pte),
-+						HPAGE_PMD_SIZE/PAGE_SIZE);
-+			spin_unlock(&walk->mm->page_table_lock);
-+			return 0;
-+		}
-+	} else {
-+		spin_unlock(&walk->mm->page_table_lock);
+ 	extra_limit = xen_get_max_pages();
+-	if (extra_limit >= max_pfn)
+-		extra_pages = extra_limit - max_pfn;
+-	else
+-		extra_pages = 0;
++	if (max_pfn + extra_pages > extra_limit) {
++		if (extra_limit > max_pfn)
++			extra_pages = extra_limit - max_pfn;
++		else
++			extra_pages = 0;
 +	}
-+
- 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
- 	do {
- 		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
+ 
+ 	extra_pages += xen_return_unused_memory(xen_start_info->nr_pages, &e820);
+ 
 
 
