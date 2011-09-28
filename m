@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab1I1Wmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:42:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54122 "EHLO mx2.suse.de"
+	id S932509Ab1I1WnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:43:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54188 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab1I1Wmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:42:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:36 2011
-Message-Id: <20110928220136.711977914@clark.kroah.org>
+	id S932469Ab1I1WnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:43:21 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:37 2011
+Message-Id: <20110928220137.552445368@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:12 -0700
+Date: Wed, 28 Sep 2011 15:01:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [108/244] iwlegacy: fix BUG_ON(info->control.rates[0].idx < 0)
+        Anand Gadiyar <gadiyar@ti.com>,
+        Keshava Munegowda <keshava_mgowda@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [116/244] mfd: Make omap-usb-host TLL mode work again
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Anand Gadiyar <gadiyar@ti.com>
 
-commit 7c2510120e9b43b0caf32c3786a6ab831f7d9e87 upstream.
+commit e600cffe618ff0da29ae1f8b8d3824ce0e2409fc upstream.
 
-When trying to connect to 5GHz we can provide negative index to
-mac80211 what trigger BUG_ON. Reason of iwl-3945-rs malfunction
-on 5GHz is unknown and needs further investigation. For now, to
-do not trigger a bug, correct value and just print WARNING.
+This code section seems to have been accidentally copy pasted.
+It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
+register and prevents the TLL mode from working correctly.
 
-Address bug:
-https://bugzilla.redhat.com/show_bug.cgi?id=730653
-
-Reported-and-tested-by: Jan Teichmann <jan.teichmann@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlegacy/iwl-3945-rs.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/mfd/omap-usb-host.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
-@@ -822,12 +822,15 @@ static void iwl3945_rs_get_rate(void *pr
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -676,7 +676,6 @@ static void usbhs_omap_tll_init(struct d
+ 				| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
+ 				| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
  
-  out:
+-			reg |= (1 << (i + 1));
+ 		} else
+ 			continue;
  
--	rs_sta->last_txrate_idx = index;
--	if (sband->band == IEEE80211_BAND_5GHZ)
--		info->control.rates[0].idx = rs_sta->last_txrate_idx -
--				IWL_FIRST_OFDM_RATE;
--	else
-+	if (sband->band == IEEE80211_BAND_5GHZ) {
-+		if (WARN_ON_ONCE(index < IWL_FIRST_OFDM_RATE))
-+			index = IWL_FIRST_OFDM_RATE;
-+		rs_sta->last_txrate_idx = index;
-+		info->control.rates[0].idx = index - IWL_FIRST_OFDM_RATE;
-+	} else {
-+		rs_sta->last_txrate_idx = index;
- 		info->control.rates[0].idx = rs_sta->last_txrate_idx;
-+	}
- 
- 	IWL_DEBUG_RATE(priv, "leave: %d\n", index);
- }
 
 
