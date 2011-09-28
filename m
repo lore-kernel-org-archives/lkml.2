@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1I1HZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:25:05 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33297 "EHLO
+	id S1753487Ab1I1H0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:26:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58944 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab1I1HZD (ORCPT
+	with ESMTP id S1751785Ab1I1H0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:25:03 -0400
+	Wed, 28 Sep 2011 03:26:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1317194324.1998.12.camel@shrek.rexursive.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com>
-	<CAOJsxLGt717Mn50xZC5TD2s64A9vt27eAHRRFg+6nbworD4byQ@mail.gmail.com>
-	<1317194324.1998.12.camel@shrek.rexursive.com>
-Date: Wed, 28 Sep 2011 10:25:03 +0300
-X-Google-Sender-Auth: j3C-C0_2TgtXYMHPaUQm9Ge-DYI
-Message-ID: <CAOJsxLFtrP1jiczYpoxFvyvjUoB_0xtG=6ODkMu2De3MihPZxg@mail.gmail.com>
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1317166015-20714-3-git-send-email-david.daney@cavium.com>
+References: <1317166015-20714-1-git-send-email-david.daney@cavium.com> <1317166015-20714-3-git-send-email-david.daney@cavium.com>
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Date: Wed, 28 Sep 2011 09:25:42 +0200
+Message-ID: <CAHXqBFLzrkH4AJVozbtT4k7ccgVgfaPoq69J48DeSJKSwEtxHw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+To: David Daney <david.daney@cavium.com>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8S7QBST029563
 
-On Wed, 2011-09-28 at 10:14 +0300, Pekka Enberg wrote:
->> So how do the numbers look like without your patch?
->
-> Write is about 110 - 120 MB/s. Read is always below 100 MB/s, mostly
-> around 50 - 70 MB/s.
+2011/9/28 David Daney <david.daney@cavium.com>:
+[...]
+> +Example :
+> +
+> + Â  Â  Â  /* The parent MDIO bus. */
+> + Â  Â  Â  smi1: mdio@1180000001900 {
+> + Â  Â  Â  Â  Â  Â  Â  compatible = "cavium,octeon-3860-mdio";
+> + Â  Â  Â  Â  Â  Â  Â  #address-cells = <1>;
+> + Â  Â  Â  Â  Â  Â  Â  #size-cells = <0>;
+> + Â  Â  Â  Â  Â  Â  Â  reg = <0x11800 0x00001900 0x0 0x40>;
+> + Â  Â  Â  };
+> +
+> + Â  Â  Â  /*
+> + Â  Â  Â  Â  Â An NXP sn74cbtlv3253 dual 1-of-4 switch controlled by a
+> + Â  Â  Â  Â  Â pair of GPIO lines. Â Child busses 2 and 3 populated with 4
+> + Â  Â  Â  Â  Â PHYs each.
+> + Â  Â  Â  Â */
+> + Â  Â  Â  mdio-mux {
+> + Â  Â  Â  Â  Â  Â  Â  compatible = "cavium,mdio-mux-sn74cbtlv3253", "cavium,mdio-mux";
+> + Â  Â  Â  Â  Â  Â  Â  gpios = <&gpio1 3 0>, <&gpio1 4 0>;
+> + Â  Â  Â  Â  Â  Â  Â  mdio-parent-bus = <&smi1>;
+> + Â  Â  Â  Â  Â  Â  Â  #address-cells = <1>;
+> + Â  Â  Â  Â  Â  Â  Â  #size-cells = <0>;
 
-So that's 2x-3x improvement? Impressive! Please remember to make that
-important detail part of your changelog.
+This should probably have 'compatible = "nxp,sn74cbtlv3253";' here.
 
-                        Pekka
+Best Regards,
+MichaÅ‚ MirosÅ‚aw
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
