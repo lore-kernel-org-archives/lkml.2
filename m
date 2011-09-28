@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1I1Atl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:49:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60150 "EHLO
+	id S1752792Ab1I1Atj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:49:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60147 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1I1Atg (ORCPT
+	with ESMTP id S1752478Ab1I1Atg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Sep 2011 20:49:36 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=Oy3yJFsLKRVYvti9/WaiANC1T23hNyLJqP7Gd0uoMGF9x3IMd6/+srDGQ01lGHIcc
-	ZjGJB3uPjnwYZy1ud+IUg==
+	b=gaSdRmdj5YOOcgeK1m2CILEtjRJo27o8xZPiBLX/lM7Ah6CQ4Q9om/0cX6pzKQAhh
+	lOaFX0y/jN9ztR5Q9UGlg==
 From: Michel Lespinasse <walken@google.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,9 +23,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 4/9] kstaled: minimalistic implementation.
-Date: Tue, 27 Sep 2011 17:49:02 -0700
-Message-Id: <1317170947-17074-5-git-send-email-walken@google.com>
+Subject: [PATCH 3/9] kstaled: page_referenced_kstaled() and supporting infrastructure.
+Date: Tue, 27 Sep 2011 17:49:01 -0700
+Message-Id: <1317170947-17074-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1317170947-17074-1-git-send-email-walken@google.com>
 References: <1317170947-17074-1-git-send-email-walken@google.com>
@@ -34,356 +34,319 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce minimal kstaled implementation. The scan rate is controlled by
-/sys/kernel/mm/kstaled/scan_seconds and per-cgroup statistics are output
-into /dev/cgroup/*/memory.idle_page_stats.
+Add a new page_referenced_kstaled() interface. The desired behavior
+is that page_referenced() returns page references since the last
+page_referenced() call, and page_referenced_kstaled() returns page
+references since the last page_referenced_kstaled() call, but they
+are both independent of each other and do not influence each other.
+
+The following events are counted as kstaled page references:
+- CPU data access to the page (as noticed through pte_young());
+- mark_page_accessed() calls;
+- page being freed / reallocated.
 
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- mm/memcontrol.c |  297 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 297 insertions(+), 0 deletions(-)
+ include/linux/page-flags.h |   35 ++++++++++++++++++++++
+ include/linux/rmap.h       |   68 +++++++++++++++++++++++++++++++++++++++----
+ mm/rmap.c                  |   62 ++++++++++++++++++++++++++++-----------
+ mm/swap.c                  |    1 +
+ 4 files changed, 141 insertions(+), 25 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e013b8e..e55056f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -49,6 +49,8 @@
- #include <linux/page_cgroup.h>
- #include <linux/cpu.h>
- #include <linux/oom.h>
-+#include <linux/kthread.h>
-+#include <linux/rmap.h>
- #include "internal.h"
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 6081493..e964d98 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -51,6 +51,13 @@
+  * PG_hwpoison indicates that a page got corrupted in hardware and contains
+  * data with incorrect ECC bits that triggered a machine check. Accessing is
+  * not safe since it may cause another machine check. Don't touch!
++ *
++ * PG_young indicates that kstaled cleared the young bit on some PTEs pointing
++ * to that page. In order to avoid interacting with the LRU algorithm, we want
++ * the next page_referenced() call to still consider the page young.
++ *
++ * PG_idle indicates that the page has not been referenced since the last time
++ * kstaled scanned it.
+  */
  
- #include <asm/uaccess.h>
-@@ -283,6 +285,16 @@ struct mem_cgroup {
- 	 */
- 	struct mem_cgroup_stat_cpu nocpu_base;
- 	spinlock_t pcp_counter_lock;
-+
+ /*
+@@ -107,6 +114,10 @@ enum pageflags {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	PG_compound_lock,
+ #endif
 +#ifdef CONFIG_KSTALED
-+	seqcount_t idle_page_stats_lock;
-+	struct idle_page_stats {
-+		unsigned long idle_clean;
-+		unsigned long idle_dirty_file;
-+		unsigned long idle_dirty_swap;
-+	} idle_page_stats, idle_scan_stats;
-+	unsigned long idle_page_scans;
++	PG_young,		/* kstaled cleared pte_young */
++	PG_idle,		/* idle since start of kstaled interval */
 +#endif
+ 	__NR_PAGEFLAGS,
+ 
+ 	/* Filesystems */
+@@ -278,6 +289,30 @@ PAGEFLAG_FALSE(HWPoison)
+ #define __PG_HWPOISON 0
+ #endif
+ 
++#ifdef CONFIG_KSTALED
++
++PAGEFLAG(Young, young)
++PAGEFLAG(Idle, idle)
++
++static inline void set_page_young(struct page *page)
++{
++	if (!PageYoung(page))
++		SetPageYoung(page);
++}
++
++static inline void clear_page_idle(struct page *page)
++{
++	if (PageIdle(page))
++		ClearPageIdle(page);
++}
++
++#else /* !CONFIG_KSTALED */
++
++static inline void set_page_young(struct page *page) {}
++static inline void clear_page_idle(struct page *page) {}
++
++#endif /* CONFIG_KSTALED */
++
+ u64 stable_page_flags(struct page *page);
+ 
+ static inline int PageUptodate(struct page *page)
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 82fef42..88a0b85 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -74,6 +74,8 @@ struct page_referenced_info {
+ 	unsigned long vm_flags;
+ 	unsigned int pr_flags;
+ #define PR_REFERENCED  1
++#define PR_DIRTY       2
++#define PR_FOR_KSTALED 4
  };
  
- /* Stuffs for move charges at task migration. */
-@@ -4668,6 +4680,30 @@ static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
+ #ifdef CONFIG_MMU
+@@ -165,8 +167,8 @@ static inline void page_dup_rmap(struct page *page)
+ /*
+  * Called from mm/vmscan.c to handle paging out
+  */
+-void page_referenced(struct page *, int is_locked, struct mem_cgroup *cnt,
+-		     struct page_referenced_info *info);
++void __page_referenced(struct page *, int is_locked, struct mem_cgroup *cnt,
++		       struct page_referenced_info *info);
+ void page_referenced_one(struct page *, struct vm_area_struct *,
+ 			 unsigned long address, unsigned int *mapcount,
+ 			 struct page_referenced_info *info);
+@@ -244,12 +246,10 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+ #define anon_vma_prepare(vma)	(0)
+ #define anon_vma_link(vma)	do {} while (0)
+ 
+-static inline void page_referenced(struct page *page, int is_locked,
+-				   struct mem_cgroup *cnt,
+-				   struct page_referenced_info *info)
++static inline void __page_referenced(struct page *page, int is_locked,
++				     struct mem_cgroup *cnt,
++				     struct page_referenced_info *info)
+ {
+-	info->vm_flags = 0;
+-	info->pr_flags = 0;
  }
- #endif /* CONFIG_NUMA */
  
-+#ifdef CONFIG_KSTALED
-+static int mem_cgroup_idle_page_stats_read(struct cgroup *cgrp,
-+	struct cftype *cft,  struct cgroup_map_cb *cb)
+ #define try_to_unmap(page, refs) SWAP_FAIL
+@@ -262,6 +262,60 @@ static inline int page_mkclean(struct page *page)
+ 
+ #endif	/* CONFIG_MMU */
+ 
++/**
++ * page_referenced - test if the page was referenced
++ * @page: the page to test
++ * @is_locked: caller holds lock on the page
++ * @mem_cont: target memory controller
++ * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
++ *
++ * Quick test_and_clear_referenced for all mappings to a page,
++ * returns the number of ptes which referenced the page.
++ */
++static inline void page_referenced(struct page *page,
++				   int is_locked,
++				   struct mem_cgroup *mem_cont,
++				   struct page_referenced_info *info)
 +{
-+	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
-+	unsigned int seqcount;
-+	struct idle_page_stats stats;
-+	unsigned long scans;
++	info->vm_flags = 0;
++	info->pr_flags = 0;
 +
-+	do {
-+		seqcount = read_seqcount_begin(&memcg->idle_page_stats_lock);
-+		stats = memcg->idle_page_stats;
-+		scans = memcg->idle_page_scans;
-+	} while (read_seqcount_retry(&memcg->idle_page_stats_lock, seqcount));
++#ifdef CONFIG_KSTALED
++	/*
++	 * Always clear PageYoung at the start of a scanning interval. It will
++	 * get get set if kstaled clears a young bit in a pte reference,
++	 * so that vmscan will still see the page as referenced.
++	 */
++	if (PageYoung(page)) {
++		ClearPageYoung(page);
++		info->pr_flags |= PR_REFERENCED;
++	}
++#endif
 +
-+	cb->fill(cb, "idle_clean", stats.idle_clean * PAGE_SIZE);
-+	cb->fill(cb, "idle_dirty_file", stats.idle_dirty_file * PAGE_SIZE);
-+	cb->fill(cb, "idle_dirty_swap", stats.idle_dirty_swap * PAGE_SIZE);
-+	cb->fill(cb, "scans", scans);
-+
-+	return 0;
++	__page_referenced(page, is_locked, mem_cont, info);
 +}
-+#endif /* CONFIG_KSTALED */
-+
- static struct cftype mem_cgroup_files[] = {
- 	{
- 		.name = "usage_in_bytes",
-@@ -4738,6 +4774,12 @@ static struct cftype mem_cgroup_files[] = {
- 		.mode = S_IRUGO,
- 	},
- #endif
-+#ifdef CONFIG_KSTALED
-+	{
-+		.name = "idle_page_stats",
-+		.read_map = mem_cgroup_idle_page_stats_read,
-+	},
-+#endif
- };
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-@@ -5001,6 +5043,9 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
- 	mutex_init(&mem->thresholds_lock);
-+#ifdef CONFIG_KSTALED
-+	seqcount_init(&mem->idle_page_stats_lock);
-+#endif
- 	return &mem->css;
- free_out:
- 	__mem_cgroup_free(mem);
-@@ -5568,3 +5613,255 @@ static int __init enable_swap_account(char *s)
- __setup("swapaccount=", enable_swap_account);
- 
- #endif
 +
 +#ifdef CONFIG_KSTALED
-+
-+static unsigned int kstaled_scan_seconds;
-+static DECLARE_WAIT_QUEUE_HEAD(kstaled_wait);
-+
-+static unsigned kstaled_scan_page(struct page *page)
++static inline void page_referenced_kstaled(struct page *page, bool is_locked,
++					   struct page_referenced_info *info)
 +{
-+	bool is_locked = false;
-+	bool is_file;
-+	struct page_referenced_info info;
-+	struct page_cgroup *pc;
-+	struct idle_page_stats *stats;
-+	unsigned nr_pages;
++	info->vm_flags = 0;
++	info->pr_flags = PR_FOR_KSTALED;
 +
 +	/*
-+	 * Before taking the page reference, check if the page is
-+	 * a user page which is not obviously unreclaimable
-+	 * (we will do more complete checks later).
++	 * Always set PageIdle at the start of a scanning interval. It will
++	 * get cleared if a young page reference is encountered; otherwise
++	 * the page will be counted as idle at the next kstaled scan cycle.
 +	 */
-+	if (!PageLRU(page) ||
-+	    (!PageCompound(page) &&
-+	     (PageMlocked(page) ||
-+	      (page->mapping == NULL && !PageSwapCache(page)))))
-+		return 1;
-+
-+	if (!get_page_unless_zero(page))
-+		return 1;
-+
-+	/* Recheck now that we have the page reference. */
-+	if (unlikely(!PageLRU(page)))
-+		goto out;
-+	nr_pages = 1 << compound_trans_order(page);
-+	if (PageMlocked(page))
-+		goto out;
-+
-+	/*
-+	 * Anon and SwapCache pages can be identified without locking.
-+	 * For all other cases, we need the page locked in order to
-+	 * dereference page->mapping.
-+	 */
-+	if (PageAnon(page) || PageSwapCache(page))
-+		is_file = false;
-+	else if (!trylock_page(page)) {
-+		/*
-+		 * We need to lock the page to dereference the mapping.
-+		 * But don't risk sleeping by calling lock_page().
-+		 * We don't want to stall kstaled, so we conservatively
-+		 * count locked pages as unreclaimable.
-+		 */
-+		goto out;
-+	} else {
-+		struct address_space *mapping = page->mapping;
-+
-+		is_locked = true;
-+
-+		/*
-+		 * The page is still anon - it has been continuously referenced
-+		 * since the prior check.
-+		 */
-+		VM_BUG_ON(PageAnon(page) || mapping != page_rmapping(page));
-+
-+		/*
-+		 * Check the mapping under protection of the page lock.
-+		 * 1. If the page is not swap cache and has no mapping,
-+		 *    shrink_page_list can't do anything with it.
-+		 * 2. If the mapping is unevictable (as in SHM_LOCK segments),
-+		 *    shrink_page_list can't do anything with it.
-+		 * 3. If the page is swap cache or the mapping is swap backed
-+		 *    (as in shmem), consider it a swappable page.
-+		 * 4. If the backing dev has indicated that it does not want
-+		 *    its pages sync'd to disk (as in ramfs), take this as
-+		 *    a hint that its pages are not reclaimable.
-+		 * 5. Otherwise, consider this as a file page reclaimable
-+		 *    through standard pageout.
-+		 */
-+		if (!mapping && !PageSwapCache(page))
-+			goto out;
-+		else if (mapping_unevictable(mapping))
-+			goto out;
-+		else if (PageSwapCache(page) ||
-+			 mapping_cap_swap_backed(mapping))
-+			is_file = false;
-+		else if (!mapping_cap_writeback_dirty(mapping))
-+			goto out;
-+		else
-+			is_file = true;
++	if (!PageIdle(page)) {
++		SetPageIdle(page);
++		info->pr_flags |= PR_REFERENCED;
 +	}
 +
-+	/* Find out if the page is idle. Also test for pending mlock. */
-+	page_referenced_kstaled(page, is_locked, &info);
-+	if ((info.pr_flags & PR_REFERENCED) || (info.vm_flags & VM_LOCKED))
-+		goto out;
-+
-+	/* Locate kstaled stats for the page's cgroup. */
-+	pc = lookup_page_cgroup(page);
-+	if (!pc)
-+		goto out;
-+	lock_page_cgroup(pc);
-+	if (!PageCgroupUsed(pc))
-+		goto unlock_page_cgroup_out;
-+	stats = &pc->mem_cgroup->idle_scan_stats;
-+
-+	/* Finally increment the correct statistic for this page. */
-+	if (!(info.pr_flags & PR_DIRTY) &&
-+	    !PageDirty(page) && !PageWriteback(page))
-+		stats->idle_clean += nr_pages;
-+	else if (is_file)
-+		stats->idle_dirty_file += nr_pages;
-+	else
-+		stats->idle_dirty_swap += nr_pages;
-+
-+ unlock_page_cgroup_out:
-+	unlock_page_cgroup(pc);
-+
-+ out:
-+	if (is_locked)
-+		unlock_page(page);
-+	put_page(page);
-+
-+	return nr_pages;
++	__page_referenced(page, is_locked, NULL, info);
 +}
-+
-+static void kstaled_scan_node(pg_data_t *pgdat)
-+{
-+	unsigned long flags;
-+	unsigned long pfn, end;
-+
-+	pgdat_resize_lock(pgdat, &flags);
-+
-+	pfn = pgdat->node_start_pfn;
-+	end = pfn + pgdat->node_spanned_pages;
-+
-+	while (pfn < end) {
-+		if (need_resched()) {
-+			pgdat_resize_unlock(pgdat, &flags);
-+			cond_resched();
-+			pgdat_resize_lock(pgdat, &flags);
-+
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+			/* abort if the node got resized */
-+			if (pfn < pgdat->node_start_pfn ||
-+			    end > (pgdat->node_start_pfn +
-+				   pgdat->node_spanned_pages))
-+				goto abort;
 +#endif
++
+ /*
+  * Return values of try_to_unmap
+  */
+diff --git a/mm/rmap.c b/mm/rmap.c
+index f87afd0..fa8440e 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -670,6 +670,8 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 			return;
+ 		}
+ 
++		info->pr_flags |= PR_DIRTY;
++
+ 		if (vma->vm_flags & VM_LOCKED) {
+ 			spin_unlock(&mm->page_table_lock);
+ 			*mapcount = 0;	/* break early from loop */
+@@ -678,8 +680,17 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		}
+ 
+ 		/* go ahead even if the pmd is pmd_trans_splitting() */
+-		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+-			referenced = true;
++		if (!(info->pr_flags & PR_FOR_KSTALED)) {
++			if (pmdp_clear_flush_young_notify(vma, address, pmd)) {
++				referenced = true;
++				clear_page_idle(page);
++			}
++		} else {
++			if (pmdp_test_and_clear_young(vma, address, pmd)) {
++				referenced = true;
++				set_page_young(page);
++			}
 +		}
+ 		spin_unlock(&mm->page_table_lock);
+ 	} else {
+ 		pte_t *pte;
+@@ -693,6 +704,9 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		if (!pte)
+ 			return;
+ 
++		if (pte_dirty(*pte))
++			info->pr_flags |= PR_DIRTY;
 +
-+		pfn += pfn_valid(pfn) ?
-+			kstaled_scan_page(pfn_to_page(pfn)) : 1;
-+	}
-+
-+abort:
-+	pgdat_resize_unlock(pgdat, &flags);
-+}
-+
-+static int kstaled(void *dummy)
-+{
-+	while (1) {
-+		int scan_seconds;
-+		int nid;
-+		struct mem_cgroup *memcg;
-+
-+		wait_event_interruptible(kstaled_wait,
-+				 (scan_seconds = kstaled_scan_seconds) > 0);
-+		/*
-+		 * We use interruptible wait_event so as not to contribute
-+		 * to the machine load average while we're sleeping.
-+		 * However, we don't actually expect to receive a signal
-+		 * since we run as a kernel thread, so the condition we were
-+		 * waiting for should be true once we get here.
-+		 */
-+		BUG_ON(scan_seconds <= 0);
-+
-+		for_each_mem_cgroup_all(memcg)
-+			memset(&memcg->idle_scan_stats, 0,
-+			       sizeof(memcg->idle_scan_stats));
-+
-+		for_each_node_state(nid, N_HIGH_MEMORY)
-+			kstaled_scan_node(NODE_DATA(nid));
-+
-+		for_each_mem_cgroup_all(memcg) {
-+			write_seqcount_begin(&memcg->idle_page_stats_lock);
-+			memcg->idle_page_stats = memcg->idle_scan_stats;
-+			memcg->idle_page_scans++;
-+			write_seqcount_end(&memcg->idle_page_stats_lock);
-+		}
-+
-+		schedule_timeout_interruptible(scan_seconds * HZ);
-+	}
-+
-+	BUG();
-+	return 0;	/* NOT REACHED */
-+}
-+
-+static ssize_t kstaled_scan_seconds_show(struct kobject *kobj,
-+					 struct kobj_attribute *attr,
-+					 char *buf)
-+{
-+	return sprintf(buf, "%u\n", kstaled_scan_seconds);
-+}
-+
-+static ssize_t kstaled_scan_seconds_store(struct kobject *kobj,
-+					  struct kobj_attribute *attr,
-+					  const char *buf, size_t count)
-+{
-+	int err;
-+	unsigned long input;
-+
-+	err = kstrtoul(buf, 10, &input);
-+	if (err)
-+		return -EINVAL;
-+	kstaled_scan_seconds = input;
-+	wake_up_interruptible(&kstaled_wait);
-+	return count;
-+}
-+
-+static struct kobj_attribute kstaled_scan_seconds_attr = __ATTR(
-+	scan_seconds, 0644,
-+	kstaled_scan_seconds_show, kstaled_scan_seconds_store);
-+
-+static struct attribute *kstaled_attrs[] = {
-+	&kstaled_scan_seconds_attr.attr,
-+	NULL
-+};
-+static struct attribute_group kstaled_attr_group = {
-+	.name = "kstaled",
-+	.attrs = kstaled_attrs,
-+};
-+
-+static int __init kstaled_init(void)
-+{
-+	int error;
-+	struct task_struct *thread;
-+
-+	error = sysfs_create_group(mm_kobj, &kstaled_attr_group);
-+	if (error) {
-+		pr_err("Failed to create kstaled sysfs node\n");
-+		return error;
-+	}
-+
-+	thread = kthread_run(kstaled, NULL, "kstaled");
-+	if (IS_ERR(thread)) {
-+		pr_err("Failed to start kstaled\n");
-+		return PTR_ERR(thread);
-+	}
-+
-+	return 0;
-+}
-+module_init(kstaled_init);
-+
-+#endif /* CONFIG_KSTALED */
+ 		if (vma->vm_flags & VM_LOCKED) {
+ 			pte_unmap_unlock(pte, ptl);
+ 			*mapcount = 0;	/* break early from loop */
+@@ -700,23 +714,38 @@ void page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 			return;
+ 		}
+ 
+-		if (ptep_clear_flush_young_notify(vma, address, pte)) {
++		if (!(info->pr_flags & PR_FOR_KSTALED)) {
++			if (ptep_clear_flush_young_notify(vma, address, pte)) {
++				/*
++				 * Don't treat a reference through a
++				 * sequentially read mapping as such.
++				 * If the page has been used in another
++				 * mapping, we will catch it; if this other
++				 * mapping is already gone, the unmap path
++				 * will have set PG_referenced or activated
++				 * the page.
++				 */
++				if (likely(!VM_SequentialReadHint(vma)))
++					referenced = true;
++				clear_page_idle(page);
++			}
++		} else {
+ 			/*
+-			 * Don't treat a reference through a sequentially read
+-			 * mapping as such.  If the page has been used in
+-			 * another mapping, we will catch it; if this other
+-			 * mapping is already gone, the unmap path will have
+-			 * set PG_referenced or activated the page.
++			 * Within page_referenced_kstaled():
++			 * skip TLB shootdown & VM_SequentialReadHint heuristic
+ 			 */
+-			if (likely(!VM_SequentialReadHint(vma)))
++			if (ptep_test_and_clear_young(vma, address, pte)) {
+ 				referenced = true;
++				set_page_young(page);
++			}
+ 		}
+ 		pte_unmap_unlock(pte, ptl);
+ 	}
+ 
+ 	/* Pretend the page is referenced if the task has the
+ 	   swap token and is in the middle of a page fault. */
+-	if (mm != current->mm && has_swap_token(mm) &&
++	if (!(info->pr_flags & PR_FOR_KSTALED) &&
++			mm != current->mm && has_swap_token(mm) &&
+ 			rwsem_is_locked(&mm->mmap_sem))
+ 		referenced = true;
+ 
+@@ -828,7 +857,7 @@ static void page_referenced_file(struct page *page,
+ }
+ 
+ /**
+- * page_referenced - test if the page was referenced
++ * __page_referenced - test if the page was referenced
+  * @page: the page to test
+  * @is_locked: caller holds lock on the page
+  * @mem_cont: target memory controller
+@@ -838,16 +867,13 @@ static void page_referenced_file(struct page *page,
+  * Quick test_and_clear_referenced for all mappings to a page,
+  * returns the number of ptes which referenced the page.
+  */
+-void page_referenced(struct page *page,
+-		     int is_locked,
+-		     struct mem_cgroup *mem_cont,
+-		     struct page_referenced_info *info)
++void __page_referenced(struct page *page,
++		       int is_locked,
++		       struct mem_cgroup *mem_cont,
++		       struct page_referenced_info *info)
+ {
+ 	int we_locked = 0;
+ 
+-	info->vm_flags = 0;
+-	info->pr_flags = 0;
+-
+ 	if (page_mapped(page) && page_rmapping(page)) {
+ 		if (!is_locked && (!PageAnon(page) || PageKsm(page))) {
+ 			we_locked = trylock_page(page);
+diff --git a/mm/swap.c b/mm/swap.c
+index 3a442f1..d65b69e 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -344,6 +344,7 @@ void mark_page_accessed(struct page *page)
+ 	} else if (!PageReferenced(page)) {
+ 		SetPageReferenced(page);
+ 	}
++	clear_page_idle(page);
+ }
+ 
+ EXPORT_SYMBOL(mark_page_accessed);
 -- 
 1.7.3.1
 
