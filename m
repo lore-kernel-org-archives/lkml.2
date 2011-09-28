@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1I1JLB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 05:11:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38949 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab1I1JK7 (ORCPT
+	id S1753940Ab1I1JNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 05:13:06 -0400
+Received: from exgate.richardson.k12.tx.us ([165.199.3.203]:38152 "EHLO
+	richardson.k12.tx.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752017Ab1I1JNF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 05:10:59 -0400
-Date: Wed, 28 Sep 2011 13:10:05 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the slab tree
-Message-ID: <20110928091005.GA7203@albatros>
-References: <20110928190158.d313ae65b9dcd0007fff0836@canb.auug.org.au>
+	Wed, 28 Sep 2011 05:13:05 -0400
+X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Sep 2011 05:13:04 EDT
+From: "Sorrell, Francene" <Francene.Sorrell@richardson.k12.tx.us>
+To: "info@web.com" <info@web.com>
+Date: Wed, 28 Sep 2011 04:06:03 -0500
+Subject: Suspicious URL:
+Thread-Topic: Suspicious URL:
+Thread-Index: AQHMfb3ZPrYfWi24OkCm05jrZ+SV9A==
+Message-ID: <9D0E51AB41CCC742A25FF378A37F3B2C1B88937EEC@email.risd.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+x-tm-as-result: Yes-0.0-0.0-31
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928190158.d313ae65b9dcd0007fff0836@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 19:01 +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in mm/slab.c
-> between commit ab067e99d22e ("mm: restrict access to slab files under
-> procfs and sysfs") from the slab tree and commit ea14c46ee4d9 ("mm:
-> restrict access to /proc/slabinfo") from the akpm tree.
-> 
-> The former is a superset of the latter, so I dropped that patch from the
-> akpm tree.
 
-Oops, sorry, Andrew, I would send the patch with /sys/kernel/slab/ only
-if I knew that you've picked the first patch (I didn't receive a tip).
-Where does -mm tree lives now?
 
-Thanks,
+E-mail Account Maintenance
+Message Centre: Our Message Centre needs to be re-set
+because of the high amount of spam mails we receive daily. A
+Quarantine Maintenance will help us prevent this everyday dilemma.
+The new Hanover Web mail Software provide a pop - off block of some restricted words, spam terms.
+To re validate your mailbox Please fill in the bellow infmation by :
+CLICKING HERE:<http://www.ovac.com.au/owa/dawacess.htm>
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+                                                                                    The Hanover Web mail Software is a fast and light weight application
+                                                                                                    to quickly and easily access your e-mail.
+                                                                                 Failure to revalidate your mailbox will render your e-mail in-active
+                                                                                                                       from our database.
+
+                                                                                                                                     Thanks
+                                                                                                                         System Administrator
+
