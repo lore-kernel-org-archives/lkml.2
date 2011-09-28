@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab1I1WhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:37:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53415 "EHLO mx2.suse.de"
+	id S1755379Ab1I1Whk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:37:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53446 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755271Ab1I1WhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:37:19 -0400
+	id S1755354Ab1I1Whi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:37:38 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:27 2011
-Message-Id: <20110928220127.026506493@clark.kroah.org>
+Message-Id: <20110928220127.457952576@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 14:59:41 -0700
+Date: Wed, 28 Sep 2011 14:59:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrew Bird <ajb@spheresystems.co.uk>,
-        Alex Chiang <achiang@canonical.com>
-Subject: [017/244] USB option driver add PID of Huawei Vodafone K4605
+        Wang Zhi <zhi.wang@windriver.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [021/244] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Bird <ajb@spheresystems.co.uk>
+From: Wang Zhi <zhi.wang@windriver.com>
 
-commit 7e1805844da18a37e6d251d286f93c94b52d791e upstream.
+commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
 
-This patch adds the product ID of Huawei's Vodafone K4605 mobile broadband
-modem to option.c. This is necessary so that the driver gets loaded on
-demand without the intervention of usb_modeswitch. This has the benefit of
-it becoming available faster and also ensures that the option driver is not
-bound to a network interface that should be claimed by suitable network
-driver.
+>From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
+PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
+Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
+bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
+the action of clearing PORT_RESUME. This will cause unexpected long
+resume signal on USB bus.
 
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
-Signed-off-by: Alex Chiang <achiang@canonical.com>
+Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-hub.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -149,6 +149,7 @@ static void option_instat_callback(struc
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_K3806			0x14AE
-+#define HUAWEI_PRODUCT_K4605			0x14C6
- #define HUAWEI_PRODUCT_K3770			0x14C9
- #define HUAWEI_PRODUCT_K3771			0x14CA
- #define HUAWEI_PRODUCT_K4510			0x14CB
-@@ -553,6 +554,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
-@@ -1136,10 +1138,11 @@ static int option_probe(struct usb_seria
- 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
- 		return -ENODEV;
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -343,7 +343,7 @@ static int ehci_bus_resume (struct usb_h
+ 	u32			temp;
+ 	u32			power_okay;
+ 	int			i;
+-	u8			resume_needed = 0;
++	unsigned long		resume_needed = 0;
  
--	/* Don't bind network interfaces on Huawei K3765 & K4505 */
-+	/* Don't bind network interfaces on Huawei K3765, K4505 & K4605 */
- 	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
- 		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
--			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505) &&
-+			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505 ||
-+			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4605) &&
- 		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
- 		return -ENODEV;
- 
+ 	if (time_before (jiffies, ehci->next_statechange))
+ 		msleep(5);
+@@ -416,7 +416,7 @@ static int ehci_bus_resume (struct usb_h
+ 		if (test_bit(i, &ehci->bus_suspended) &&
+ 				(temp & PORT_SUSPEND)) {
+ 			temp |= PORT_RESUME;
+-			resume_needed = 1;
++			set_bit(i, &resume_needed);
+ 		}
+ 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 	}
+@@ -431,8 +431,7 @@ static int ehci_bus_resume (struct usb_h
+ 	i = HCS_N_PORTS (ehci->hcs_params);
+ 	while (i--) {
+ 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
+-		if (test_bit(i, &ehci->bus_suspended) &&
+-				(temp & PORT_SUSPEND)) {
++		if (test_bit(i, &resume_needed)) {
+ 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
+ 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
 
 
