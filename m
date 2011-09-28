@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab1I1Uh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 16:37:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43152 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1I1Uh0 (ORCPT
+	id S1754867Ab1I1Ujs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 16:39:48 -0400
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:48238 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab1I1Ujq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 16:37:26 -0400
-Message-ID: <4E838581.4080803@gmail.com>
-Date: Wed, 28 Sep 2011 22:37:21 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110918 Thunderbird/7.0
-MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Arnaud Lacombe <lacombar@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Kerneloops.org defunct?
-References: <4DE6264A.2040901@gmail.com> <20110601212432.2677b03a.rdunlap@xenotime.net> <201106211534.10366.roucaries.bastien@gmail.com> <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com> <20110826173517.7321c086@lxorguk.ukuu.org.uk> <m2ei089fwq.fsf@firstfloor.org> <CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com> <4E57EA84.3080405@linux.intel.com>
-In-Reply-To: <4E57EA84.3080405@linux.intel.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Sep 2011 16:39:46 -0400
+X-Greylist: delayed 436 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Sep 2011 16:39:46 EDT
+Subject: Re: [PATCH 0/2] autodetection of multitouch devices
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <alpine.LNX.2.00.1109261644250.24692@pobox.suse.cz>
+Date: Wed, 28 Sep 2011 22:32:26 +0200
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        USB list <linux-input@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D3E37531-860E-415F-B2B9-58CEBB4E10A3@enac.fr>
+References: <1316617015-11648-1-git-send-email-benjamin.tissoires@gmail.com> <alpine.LNX.2.00.1109261419330.13109@pobox.suse.cz> <20110926144635.GA6921@polaris.bitmath.org> <alpine.LNX.2.00.1109261644250.24692@pobox.suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2011 08:48 PM, Arjan van de Ven wrote:
-> On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
->>
->> Is the code available somewhere, or will it need to be rewritten ?
+
+Le 26 sept. 2011 à 16:47, Jiri Kosina a écrit :
+
+> On Mon, 26 Sep 2011, Henrik Rydberg wrote:
 > 
-> we have the code on the server/etc... if someone signs up to help he
-> will be on the server of course
+>>>> These two patches finally enable the kernel to handle multitouch devices correctly.
+>>>> If a device presents in its report descriptors the usage Contact ID, then it is considered as
+>>>> a multitouch device and handled by hid-multitouch.
+>>> 
+>>> Hi Banjamin,
+>>> 
+>>> thanks a lot for working on this. I have now queued the patches in my 
+>>> tree.
+>> 
+>> Hi Benjamin,
+>> 
+>> Late as it seems, here are a couple of questions:
+>> 
+>> 1. How was this tested? By removing all white-listed devices in
+>> hid-multitouch.c to see if the usual suspects are still picked up?
+> 
+> If we didn't have full test coverage (which I suppose to be the case), we 
+> can still revert to the old method after the merge window if there reports 
+> that this broke things on particular devices.
+> 
+> Do you guys at least have report descriptor dumps from most of the 
+> supported devices?
 
-It looks like there are some volunteers. Did you have a chance to talk
-to each other and make any progress?
 
-If not, may we have at least a backup of the database published, please?
-There are very valuable data you collected over time and I'm sure there
-are more people than me who would appreciate that.
+Yes, we have report descriptors for about 20-30 different models now, and about 10 actual devices for testing purposes. Unfortunately, this still does not tell us exactly how all these devices manage to work with the same Win 7 driver, given their diversity. We are getting close, but just not yet.
 
-thanks,
--- 
-js
+BTW we gladly accept to receive sample panels from vendors, this usually ensures fast support. Additionally, the panels are then reused by ENAC students in their projects, so this stimulates the market of multitouch devices in aviation :-)
+
+Cheers,
+
+St.
+
+
