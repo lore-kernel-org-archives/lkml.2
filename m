@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab1I1W4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:56:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54977 "EHLO mx2.suse.de"
+	id S933495Ab1I1W4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:56:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54958 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933422Ab1I1Wtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:49:51 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:49 2011
-Message-Id: <20110928220149.507401304@clark.kroah.org>
+	id S933456Ab1I1Wtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:49:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:46 2011
+Message-Id: <20110928220146.131355001@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:13 -0700
+Date: Wed, 28 Sep 2011 15:02:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Pfaff <tpfaff@gmx.net>, Takashi Iwai <tiwai@suse.de>
-Subject: [229/244] ALSA: usb-audio: Check for possible chip NULL pointer before clearing probing flag
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        James Smart <james.smart@emulex.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [197/244] [SCSI] lpfc 8.3.25: Fabric and Target Discovery Fixes
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pfaff <tpfaff@gmx.net>
+From: James Smart <james.smart@emulex.com>
 
-commit 61a6a108d15213f5ee06332e1e7766d3860e4453 upstream.
+commit 5248a7498e5f6f3d6d276080466946f82f0ea56a upstream.
 
-Before clearing the probing flag in the error exit path, check that the
-chip pointer is not NULL.
+Fabric and Target Discovery Fixes
 
-Signed-off-by: Thomas Pfaff <tpfaff@gmx.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+- Clear FC_VPORT_NEEDS_INIT_VPI flag during completion of REG_VFI mailbox
+  command.
+- Prevent SLI3 Code from unregistering the physical VPI.
+- Add an else clause to the code that checks and sets
+  sp->cmn.request_multiple_Nport to clear the bit.
+- Remove a redundant mbox free.
+- Modified lpfc_sli4_async_fip_evt to pass in physical VPI toi
+  lpfc_find_vport_by_vpid function.
+- Modified lpfc_find_vport_by_vpid to translate physical VPI to logical VPI
+  before comparing with vport VPI.
+
+Signed-off-by: Alex Iannicelli <alex.iannicelli@emulex.com>
+Signed-off-by: James Smart <james.smart@emulex.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/card.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/scsi/lpfc/lpfc_els.c     |   33 +++++++++++++++------------------
+ drivers/scsi/lpfc/lpfc_hbadisc.c |    2 +-
+ drivers/scsi/lpfc/lpfc_init.c    |    4 ++--
+ 3 files changed, 18 insertions(+), 21 deletions(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -529,9 +529,11 @@ static void *snd_usb_audio_probe(struct
- 	return chip;
+--- a/drivers/scsi/lpfc/lpfc_els.c
++++ b/drivers/scsi/lpfc/lpfc_els.c
+@@ -647,21 +647,15 @@ lpfc_cmpl_els_flogi_fabric(struct lpfc_v
+ 		}
+ 		lpfc_cleanup_pending_mbox(vport);
  
-  __error:
--	if (chip && !chip->num_interfaces)
--		snd_card_free(chip->card);
--	chip->probing = 0;
-+	if (chip) {
-+		if (!chip->num_interfaces)
-+			snd_card_free(chip->card);
-+		chip->probing = 0;
-+	}
- 	mutex_unlock(&register_mutex);
-  __err_val:
- 	return NULL;
+-		if (phba->sli_rev == LPFC_SLI_REV4)
++		if (phba->sli_rev == LPFC_SLI_REV4) {
+ 			lpfc_sli4_unreg_all_rpis(vport);
+-
+-		if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
+ 			lpfc_mbx_unreg_vpi(vport);
+ 			spin_lock_irq(shost->host_lock);
+ 			vport->fc_flag |= FC_VPORT_NEEDS_REG_VPI;
+-			spin_unlock_irq(shost->host_lock);
+-		}
+-		/*
+-		 * If VPI is unreged, driver need to do INIT_VPI
+-		 * before re-registering
+-		 */
+-		if (phba->sli_rev == LPFC_SLI_REV4) {
+-			spin_lock_irq(shost->host_lock);
++			/*
++			* If VPI is unreged, driver need to do INIT_VPI
++			* before re-registering
++			*/
+ 			vport->fc_flag |= FC_VPORT_NEEDS_INIT_VPI;
+ 			spin_unlock_irq(shost->host_lock);
+ 		}
+@@ -1096,11 +1090,14 @@ lpfc_issue_els_flogi(struct lpfc_vport *
+ 			/* Set the fcfi to the fcfi we registered with */
+ 			elsiocb->iocb.ulpContext = phba->fcf.fcfi;
+ 		}
+-	} else if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
+-		sp->cmn.request_multiple_Nport = 1;
+-		/* For FLOGI, Let FLOGI rsp set the NPortID for VPI 0 */
+-		icmd->ulpCt_h = 1;
+-		icmd->ulpCt_l = 0;
++	} else {
++		if (phba->sli3_options & LPFC_SLI3_NPIV_ENABLED) {
++			sp->cmn.request_multiple_Nport = 1;
++			/* For FLOGI, Let FLOGI rsp set the NPortID for VPI 0 */
++			icmd->ulpCt_h = 1;
++			icmd->ulpCt_l = 0;
++		} else
++			sp->cmn.request_multiple_Nport = 0;
+ 	}
+ 
+ 	if (phba->fc_topology != LPFC_TOPOLOGY_LOOP) {
+@@ -6608,7 +6605,7 @@ lpfc_find_vport_by_vpid(struct lpfc_hba
+ {
+ 	struct lpfc_vport *vport;
+ 	unsigned long flags;
+-	int i;
++	int i = 0;
+ 
+ 	/* The physical ports are always vpi 0 - translate is unnecessary. */
+ 	if (vpi > 0) {
+@@ -6631,7 +6628,7 @@ lpfc_find_vport_by_vpid(struct lpfc_hba
+ 
+ 	spin_lock_irqsave(&phba->hbalock, flags);
+ 	list_for_each_entry(vport, &phba->port_list, listentry) {
+-		if (vport->vpi == vpi) {
++		if (vport->vpi == i) {
+ 			spin_unlock_irqrestore(&phba->hbalock, flags);
+ 			return vport;
+ 		}
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -2247,7 +2247,6 @@ read_next_fcf:
+ 				spin_lock_irq(&phba->hbalock);
+ 				phba->fcf.fcf_flag |= FCF_REDISC_FOV;
+ 				spin_unlock_irq(&phba->hbalock);
+-				lpfc_sli4_mbox_cmd_free(phba, mboxq);
+ 				lpfc_sli4_fcf_scan_read_fcf_rec(phba,
+ 						LPFC_FCOE_FCF_GET_FIRST);
+ 				return;
+@@ -2645,6 +2644,7 @@ lpfc_mbx_cmpl_reg_vfi(struct lpfc_hba *p
+ 	vport->vpi_state |= LPFC_VPI_REGISTERED;
+ 	vport->fc_flag |= FC_VFI_REGISTERED;
+ 	vport->fc_flag &= ~FC_VPORT_NEEDS_REG_VPI;
++	vport->fc_flag &= ~FC_VPORT_NEEDS_INIT_VPI;
+ 	spin_unlock_irq(shost->host_lock);
+ 
+ 	if (vport->port_state == LPFC_FABRIC_CFG_LINK) {
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -3649,7 +3649,7 @@ lpfc_sli4_async_fip_evt(struct lpfc_hba
+ 			" tag 0x%x\n", acqe_fip->index, acqe_fip->event_tag);
+ 
+ 		vport = lpfc_find_vport_by_vpid(phba,
+-				acqe_fip->index - phba->vpi_base);
++						acqe_fip->index);
+ 		ndlp = lpfc_sli4_perform_vport_cvl(vport);
+ 		if (!ndlp)
+ 			break;
+@@ -4518,7 +4518,7 @@ lpfc_sli4_driver_resource_setup(struct l
+ 		}
+ 	}
+ 
+-	return rc;
++	return 0;
+ 
+ out_free_fcp_eq_hdl:
+ 	kfree(phba->sli4_hba.fcp_eq_hdl);
 
 
