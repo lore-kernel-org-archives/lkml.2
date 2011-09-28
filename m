@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1I1PQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:16:39 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48898 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab1I1PQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:16:37 -0400
-Message-ID: <4E833A28.8020508@parallels.com>
-Date: Wed, 28 Sep 2011 12:15:52 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754747Ab1I1PTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:19:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59491 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752930Ab1I1PTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 11:19:39 -0400
+Date: Wed, 28 Sep 2011 16:19:37 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 3/7] regmap: Add a mutex to guard the sync operation
+Message-ID: <20110928151937.GM3279@opensource.wolfsonmicro.com>
+References: <1317206627-6673-1-git-send-email-dp@opensource.wolfsonmicro.com>
+ <1317206627-6673-3-git-send-email-dp@opensource.wolfsonmicro.com>
+ <20110928125249.GH3279@opensource.wolfsonmicro.com>
+ <20110928142406.GA12438@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>
-Subject: Re: [RFD 3/9] Display /proc/stat information per cgroup
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>  <1316816432-9237-4-git-send-email-glommer@parallels.com> <1317160344.21836.16.camel@twins>
-In-Reply-To: <1317160344.21836.16.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.46.219.221]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928142406.GA12438@opensource.wolfsonmicro.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2011 06:52 PM, Peter Zijlstra wrote:
-> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->> +       root_task_group.cpustat = alloc_percpu(struct kernel_stat);
->> +       /* Failing that early an allocation means we're screwed anyway */
->> +       BUG_ON(!root_task_group.cpustat);
->> +       for_each_possible_cpu(i) {
->> +               kstat = per_cpu_ptr(root_task_group.cpustat, i);
->> +               kstat->cpustat[IDLE] = 0;
->> +               kstat->cpustat[IDLE_BASE] = 0;
->> +               kstat->cpustat[IOWAIT_BASE] = 0;
->> +               kstat->cpustat[IOWAIT] = 0;
->
-> so alloc_percpu() will actually zero your memory for you, which you rely
-> on for all other fields as well, so why reset these ones?
+On Wed, Sep 28, 2011 at 03:24:06PM +0100, Dimitris Papastamos wrote:
+> On Wed, Sep 28, 2011 at 01:52:50PM +0100, Mark Brown wrote:
 
-Just to be style-consistent with the non-root initialization, in which 
-we actually put values on that. But I can easily remove it.
+> > Shouldn't we either be taking the regmap lock when doing the sync or
+> > otherwise guarding against something other than a cache sync?
 
->
->> +       }
->
->
+> Em the main issue is that the sync() implementation will use
+> regmap_write() which will grab map->lock.  To avoid this we could have
+> gone and used directly the lockless _regmap_write() but that's
+> static.  To be honest, it feels cleaner to have only 1 lock to guard
+> the map so maybe we should get rid of map->sync_lock.
 
+Making _regmap_write() global seems fine, it's not an externally visible
+API but the cache code is part of the infrastructure.
