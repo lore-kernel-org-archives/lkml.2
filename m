@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab1I1Pnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:43:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43370 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754874Ab1I1Pnj (ORCPT
+	id S1754971Ab1I1PoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:44:05 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60532 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab1I1PoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 11:43:39 -0400
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+	Wed, 28 Sep 2011 11:44:02 -0400
+Date: Wed, 28 Sep 2011 23:42:42 +0800
+From: Ram Pai <linuxram@us.ibm.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
-References: <201109221318.p8MDIXPP020015@pentland.suse.de>
-	 <20110928004722.GA27421@kernel.dk>
-	 <CA+55aFznvejXWe68BpjsJqCWnDizbHWBOzKLY_H+YqhRiK42sQ@mail.gmail.com>
-	 <4E82751C.9050908@kernel.dk>
-	 <CA+55aFyL76hD7o_839G7tKa0y6dFRcK-kC+g_h_coEp=Qk23pw@mail.gmail.com>
-	 <1317183038.17578.9.camel@dabdike.hansenpartnership.com>
-	 <4E832A55.30709@kernel.dk>
-	 <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
-	 <4E832BD2.50409@kernel.dk>
-	 <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 10:43:36 -0500
-Message-ID: <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, weiyang@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com,
+        Michal Ludvig <mludvig@logix.net.nz>
+Subject: Re: [PATCH] Resource: wrong resource window calculation
+Message-ID: <20110928154200.GA2477@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <CAErSpo70k6UnhvvOMgQQxJ6BHZOwym=-jaPMvOukAaCr-B0+cQ@mail.gmail.com>
+ <4E5EFFBD.4050201@logix.net.nz>
+ <CAErSpo6bofeiAxeRo_RjXQSnwmcWrdymn0MK8H4_CwqwoeD1jg@mail.gmail.com>
+ <4E634814.4050508@logix.net.nz>
+ <20110909113409.GE2416@ram-ThinkPad-T61>
+ <4E6C05B7.9000904@logix.net.nz>
+ <20110913110646.GB2425@ram-ThinkPad-T61>
+ <4E6F400A.6090909@logix.net.nz>
+ <20110922074858.GG5085@ram-ThinkPad-T61>
+ <4E7B04F8.3090500@logix.net.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E7B04F8.3090500@logix.net.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11092815-3270-0000-0000-0000007A0145
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 08:22 -0700, Linus Torvalds wrote:
-> On Wed, Sep 28, 2011 at 7:14 AM, Jens Axboe <axboe@kernel.dk> wrote:
+On Thu, Sep 22, 2011 at 09:50:48PM +1200, Michal Ludvig wrote:
+> On 09/22/2011 07:48 PM, Ram Pai wrote:
+> >   	Resource: wrong resource window calculation
 > >
-> >  /*
-> > - * Note: If a driver supplied the queue lock, it should not zap that lock
-> > - * unexpectedly as some queue cleanup components like elevator_exit() and
-> > - * blk_throtl_exit() need queue lock.
-> > + * Note: If a driver supplied the queue lock, it is disconnected
-> > + * by this function. The actual state of the lock doesn't matter
-> > + * here as the request_queue isn't accessible after this point
-> > + * (QUEUE_FLAG_DEAD is set) and no other requests will be queued.
-> >  */
+> >__find_resource() incorrectly returns a resource window which overlaps an
+> >existing allocated window. This happens when the parent's resource-window spans
+> >0x00000000 to 0xffffffff and is entirely allocated to all its children
+> >resource-windows.
+> >
+> >__find_resource() looks for gaps in resource allocation among the children
+> >resource windows.  When it encounters the last child window it blindly tries
+> >the range next to one allocated to the last child. Since the last child's
+> >window ends at 0xffffffff the calculation overflows, leading the algorithm to
+> >believe that any window in the range 0x0000000 to 0xfffffff is available for
+> >allocation. This leads to a conflicting window allocation.
+> >
+> >Michal Ludvig reported this issue seen on his platform. The following patch
+> >fixes the problem and has been verified by Michal. I believe this bug has been
+> >there for ages. It got exposed by git commit
+> >2bbc6942273b5b3097bd265d82227bdd84b351b2
+> >[PATCH] PCI : ability to relocate assigned pci-resources
+> >
+> >Signed-off-by: Ram Pai<linuxram@us.ibm.com>
 > 
-> So quite frankly, I just don't believe in that comment.
+> Tested-by: Michal Ludvig <mludvig@logix.net.nz>
 > 
-> If no more requests will be queued or completed, then the queue lock
-> is irrelevant and should not be changed.
+> Works fine on top of 3.1.0-rc7 and solves the problem with my Jetway board.
+> 
+> Thanks Ram!
+> 
+> M.
 
-That was my original argument for my patch.  I lost it because you can
-still hold a queue reference in the sysfs code for block, which means
-that the put in blk_cleanup_queue() won't be the final one and you'll
-get a use after free of the lock when the sysfs directory is exited
-because we take the lock again as we destroy the elevator.
+Linus,
 
-> More importantly, if no more requests are queued or completed after
-> blk_cleanup_queue(), then we wouldn't have had the bug that we clearly
-> had with the elevator accesses, now would we? So the comment seems to
-> be obviously bogus and wrong.
+	Do you plan to take this patch for 3.1? It fixes a regression w.r.t 3.0
+	https://bugzilla.kernel.org/show_bug.cgi?id=42002 captures the bug report.
 
-So this I agree with.  blk_cleanup_queue() prevents any new access to
-the queue, but we still have the old reference holders to contend with.
-They can submit requests, although we try to error them again with the
-queue guards check.
-
-> I pulled this, but I think the "just move the teardown" would have
-> been the safer option. What  happens if a request completes on another
-> CPU just as we are changing locks, and we lock one lock and then
-> unlock another?!
-
-The only code for which this could be true is code where we use the
-block supplied lock, so effectively it never changes.  The drivers which
-supply their own lock are supposed to have already ensured that the
-queue is unused.  I don't really believe this given the sysfs example
-above, but this fix is no worse than the use after free that would have
-resulted with the previous code.
-
-James
-
+RP
 
