@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590Ab1I1Wuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:50:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55086 "EHLO mx2.suse.de"
+	id S933601Ab1I1Wu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:50:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55090 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933576Ab1I1Wuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:50:52 -0400
+	id S1755978Ab1I1Wuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:50:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:48 2011
-Message-Id: <20110928220148.661214564@clark.kroah.org>
+Message-Id: <20110928220148.763469921@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:05 -0700
+Date: Wed, 28 Sep 2011 15:03:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [221/244] ARM: dma-mapping: free allocated page if unable to map
+Subject: [222/244] ARM: 7091/1: errata: D-cache line maintenance operation by MVA may not succeed
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +27,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d8e89b47e00ee80e920761145144640aac4cf71a upstream.
+commit f630c1bdfbf8fe423325beaf60027cfc7fd7c610 upstream.
 
-If the attempt to map a page for DMA fails (eg, because we're out of
-mapping space) then we must not hold on to the page we allocated for
-DMA - doing so will result in a memory leak.
+This patch implements a workaround for erratum 764369 affecting
+Cortex-A9 MPCore with two or more processors (all current revisions).
+Under certain timing circumstances, a data cache line maintenance
+operation by MVA targeting an Inner Shareable memory region may fail to
+proceed up to either the Point of Coherency or to the Point of
+Unification of the system. This workaround adds a DSB instruction before
+the relevant cache maintenance functions and sets a specific bit in the
+diagnostic control register of the SCU.
 
-Reported-by: Bryan Phillippe <bp@darkforest.org>
-Tested-by: Bryan Phillippe <bp@darkforest.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/dma-mapping.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/Kconfig          |   14 ++++++++++++++
+ arch/arm/kernel/smp_scu.c |   10 ++++++++++
+ arch/arm/mm/cache-v7.S    |   20 ++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
 
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -322,6 +322,8 @@ __dma_alloc(struct device *dev, size_t s
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1298,6 +1298,20 @@ source "drivers/pci/Kconfig"
  
- 	if (addr)
- 		*handle = pfn_to_dma(dev, page_to_pfn(page));
-+	else
-+		__dma_free_buffer(page, size);
+ source "drivers/pcmcia/Kconfig"
  
- 	return addr;
- }
++config ARM_ERRATA_764369
++	bool "ARM errata: Data cache line maintenance operation by MVA may not succeed"
++	depends on CPU_V7 && SMP
++	help
++	  This option enables the workaround for erratum 764369
++	  affecting Cortex-A9 MPCore with two or more processors (all
++	  current revisions). Under certain timing circumstances, a data
++	  cache line maintenance operation by MVA targeting an Inner
++	  Shareable memory region may fail to proceed up to either the
++	  Point of Coherency or to the Point of Unification of the
++	  system. This workaround adds a DSB instruction before the
++	  relevant cache maintenance functions and sets a specific bit
++	  in the diagnostic control register of the SCU.
++
+ endmenu
+ 
+ menu "Kernel Features"
+--- a/arch/arm/kernel/smp_scu.c
++++ b/arch/arm/kernel/smp_scu.c
+@@ -13,6 +13,7 @@
+ 
+ #include <asm/smp_scu.h>
+ #include <asm/cacheflush.h>
++#include <asm/cputype.h>
+ 
+ #define SCU_CTRL		0x00
+ #define SCU_CONFIG		0x04
+@@ -36,6 +37,15 @@ void __init scu_enable(void __iomem *scu
+ {
+ 	u32 scu_ctrl;
+ 
++#ifdef CONFIG_ARM_ERRATA_764369
++	/* Cortex-A9 only */
++	if ((read_cpuid(CPUID_ID) & 0xff0ffff0) == 0x410fc090) {
++		scu_ctrl = __raw_readl(scu_base + 0x30);
++		if (!(scu_ctrl & 1))
++			__raw_writel(scu_ctrl | 0x1, scu_base + 0x30);
++	}
++#endif
++
+ 	scu_ctrl = __raw_readl(scu_base + SCU_CTRL);
+ 	/* already enabled? */
+ 	if (scu_ctrl & 1)
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -174,6 +174,10 @@ ENTRY(v7_coherent_user_range)
+ 	dcache_line_size r2, r3
+ 	sub	r3, r2, #1
+ 	bic	r12, r0, r3
++#ifdef CONFIG_ARM_ERRATA_764369
++	ALT_SMP(W(dsb))
++	ALT_UP(W(nop))
++#endif
+ 1:
+  USER(	mcr	p15, 0, r12, c7, c11, 1	)	@ clean D line to the point of unification
+ 	add	r12, r12, r2
+@@ -223,6 +227,10 @@ ENTRY(v7_flush_kern_dcache_area)
+ 	add	r1, r0, r1
+ 	sub	r3, r2, #1
+ 	bic	r0, r0, r3
++#ifdef CONFIG_ARM_ERRATA_764369
++	ALT_SMP(W(dsb))
++	ALT_UP(W(nop))
++#endif
+ 1:
+ 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D line / unified line
+ 	add	r0, r0, r2
+@@ -247,6 +255,10 @@ v7_dma_inv_range:
+ 	sub	r3, r2, #1
+ 	tst	r0, r3
+ 	bic	r0, r0, r3
++#ifdef CONFIG_ARM_ERRATA_764369
++	ALT_SMP(W(dsb))
++	ALT_UP(W(nop))
++#endif
+ 	mcrne	p15, 0, r0, c7, c14, 1		@ clean & invalidate D / U line
+ 
+ 	tst	r1, r3
+@@ -270,6 +282,10 @@ v7_dma_clean_range:
+ 	dcache_line_size r2, r3
+ 	sub	r3, r2, #1
+ 	bic	r0, r0, r3
++#ifdef CONFIG_ARM_ERRATA_764369
++	ALT_SMP(W(dsb))
++	ALT_UP(W(nop))
++#endif
+ 1:
+ 	mcr	p15, 0, r0, c7, c10, 1		@ clean D / U line
+ 	add	r0, r0, r2
+@@ -288,6 +304,10 @@ ENTRY(v7_dma_flush_range)
+ 	dcache_line_size r2, r3
+ 	sub	r3, r2, #1
+ 	bic	r0, r0, r3
++#ifdef CONFIG_ARM_ERRATA_764369
++	ALT_SMP(W(dsb))
++	ALT_UP(W(nop))
++#endif
+ 1:
+ 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D / U line
+ 	add	r0, r0, r2
 
 
