@@ -1,181 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab1I1Avm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 20:51:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60091 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1I1Atc (ORCPT
+	id S1751380Ab1I1AxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 20:53:04 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47805 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1I1AxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 20:49:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
-	in-reply-to:references:x-system-of-record;
-	b=uyvY+ztUc52hedlbLkJ80tpO/yRF0S57EfkTXm27cWs76nHfd3sY5zeLqq/MRrsdj
-	84MqXwFUQBbo5OGCC3qtA==
-From: Michel Lespinasse <walken@google.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: [PATCH 2/9] kstaled: documentation and config option.
-Date: Tue, 27 Sep 2011 17:49:00 -0700
-Message-Id: <1317170947-17074-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1317170947-17074-1-git-send-email-walken@google.com>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-X-System-Of-Record: true
+	Tue, 27 Sep 2011 20:53:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Sep 2011 09:52:17 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Wizard <wizarddewhite@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH]   fix find_next_system_ram comments
+Message-Id: <20110928095217.37650ffd.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1317045482-3355-1-git-send-email-wizarddewhite@gmail.com>
+References: <1317045482-3355-1-git-send-email-wizarddewhite@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend memory cgroup documentation do describe the optional idle page
-tracking features, and add the corresponding configuration option.
+On Mon, 26 Sep 2011 21:58:02 +0800
+Wizard <wizarddewhite@gmail.com> wrote:
 
+> The purpose of find_next_system_ram() is to find a the lowest
+> memory resource which contain or overlap the [res->start, res->end),
+> not just contain.
+> 
+> In this patch, I make this comment more exact and fix one typo.
+> 
+> Signed-off-by: Wizard <wizarddewhite@gmail.com>
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- Documentation/cgroups/memory.txt |  103 +++++++++++++++++++++++++++++++++++++-
- mm/Kconfig                       |   10 ++++
- 2 files changed, 112 insertions(+), 1 deletions(-)
+Thank you for catching.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 06eb6d9..7ee2eb3 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -672,7 +672,108 @@ At reading, current status of OOM is shown.
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+
-+11. Idle page tracking
-+
-+Idle page tracking works by scanning physical memory at a known rate,
-+finding idle pages, and accounting for them in the cgroup owning them.
-+
-+Idle pages are defined as user pages (either anon or file backed) that have
-+not been accessed for a number of consecutive scans, and are also not
-+currently pinned down (for example by being mlocked).
-+
-+11.1 Usage
-+
-+The first step is to select the global scanning rate:
-+
-+# echo 120 > /sys/kernel/mm/kstaled/scan_seconds	# 2 minutes per scan
-+
-+(At boot time, the default value for /sys/kernel/mm/kstaled/scan_seconds
-+is 0 which means the idle page tracking feature is disabled).
-+
-+Then, the per-cgroup memory.idle_page_stats files get updated at the
-+end of every scan. The relevant fields are:
-+* idle_clean: idle pages that have been untouched for at least one scan cycle,
-+  and are also clean. Being clean and unpinned, such pages are immediately
-+  reclaimable by the MM's LRU algorithms.
-+* idle_dirty_file: idle pages that have been untouched for at least one
-+  scan cycle, are dirty, and are file backed. Such pages are not immediately
-+  reclaimable as writeback needs to occur first.
-+* idle_dirty_swap: idle pages that have been untouched for at least one
-+  scan cycle, are dirty, and would have to be written to swap before being
-+  reclaimed. This includes dirty anon memory, tmpfs files and shm segments.
-+  Note that such pages are counted as idle_dirty_swap regardless of whether
-+  swap is enabled or not on the system.
-+* idle_2_clean, idle_2_dirty_file, idle_2_dirty_swap: same definitions as
-+  above, but for pages that have been untouched for at least two scan cycles.
-+* these fields repeat up to idle_240_clean, idle_240_dirty_file and
-+  idle_240_dirty_swap, allowing one to observe idle pages over a variety
-+  of idle interval lengths. Note that the accounting is cumulative:
-+  pages counted as idle for a given interval length are also counted
-+  as idle for smaller interval lengths.
-+* scans: number of physical memory scans since the cgroup was created.
-+
-+All the above fields are updated exactly once per scan.
-+
-+11.2 Responsiveness guarantees
-+
-+After a user page stops being touched and/or pinned, it takes at least one
-+scan cycle for that page to be considered as idle and accounted as such
-+in one of the idle_clean / idle_dirty_file / idle_dirty_swap counts
-+(or, n scan cycles for the page to be accounted as idle in one of the
-+idle_N_clean / idle_N_dirty_file / idle_N_dirty_swap counts).
-+
-+However, there is no guarantee that pages will be detected that fast.
-+In the worst case, it could take up to two extra scan cycle intervals
-+for a page to be accounted as idle. This is because after userspace stops
-+touching the page, it may take up to one scan interval before we next
-+scan it (at which point the page will be seen as not idle yet since it
-+was touched during the previous scan) and after the page is finally scanned
-+again and detected as idle, it may take up to one extra scan interval before
-+completing the physical memory scan and exporting the updated statistics.
-+
-+Conversely, when userspace touches or pins a page that was previously
-+accounted for as idle, it may take up to two scan intervals before the
-+corresponding statistics are updated. Once again, this is because it may
-+take up to one scan interval before scanning the page and finding it not
-+idle anymore, and up to one extra scan interval before completing the
-+physical memory scan and exporting the updated statistics.
-+
-+11.3 Incremental idle page tracking
-+
-+In some situations, it is desired to obtain faster feedback when
-+previously idle, clean user pages start being touched. Remember that
-+unpinned clean pages are immediately reclaimable by the MM's LRU
-+algorithms. A high number of such pages being idle in a given cgroup
-+indicates that this cgroup is not experiencing high memory pressure.
-+A decrease of that number can be seen as a leading indicator that
-+memory pressure is about to increase, and it may be desired to act
-+upon that indication before the two scan interval measurement delay.
-+
-+The incremental idle page tracking feature can be used for that case.
-+It allows for tracking of idle clean pages only, and only for a
-+predetermined number of scan intervals (no histogram functionality as
-+in the main interface).
-+
-+The desired idle period must first be selected on a per-cgroup basis
-+by writing an integer to the memory.stale_page_age file. The integer
-+is the interval we want pages to be idle for, expressed in scan cycles.
-+For example to check for pages that have been idle for 5 consecutive
-+scan cycles (equivalent to the idle_5_clean statistic), one would
-+write 5 to the memory.stale_page_age file. The default value for the
-+memory.stale_page_age file is 0, which disables the incremental idle
-+page tracking feature.
-+
-+During scanning, clean unpinned pages that have not been touched for the
-+chosen number of scan cycles are incrementally accounted for and reflected
-+in the "stale" statistic in memory.idle_page_stats. Likewise, pages that
-+were previously accounted as stale and are found not to be idle anymore
-+are also incrementally accounted for. Additionally, any pages that are
-+being considered by the LRU replacement algorithm and found to have been
-+touched are also incrementally accounted for.
-+
-+
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 8ca47a5..f6443a0 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -370,3 +370,13 @@ config CLEANCACHE
- 	  in a negligible performance hit.
- 
- 	  If unsure, say Y to enable cleancache
-+
-+config KSTALED
-+       depends on CGROUP_MEM_RES_CTLR && 64BIT
-+       bool "Per-cgroup idle page tracking"
-+       help
-+         This feature allows the kernel to report the amount of user pages
-+	 in a cgroup that have not been touched in a given time.
-+	 This information may be used to size the cgroups and/or for
-+	 job placement within a compute cluster.
-+	 See Documentation/cgroups/memory.txt for a more complete description.
--- 
-1.7.3.1
+Please hear Randy's advice :)
+
+> ---
+>  kernel/resource.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index 3b3cedc..2751a8c 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -279,7 +279,8 @@ EXPORT_SYMBOL(release_resource);
+>  
+>  #if !defined(CONFIG_ARCH_HAS_WALK_MEMORY)
+>  /*
+> - * Finds the lowest memory reosurce exists within [res->start.res->end)
+> + * Finds the lowest memory resource which contains or overlaps
+> + * [res->start.res->end)
+>   * the caller must specify res->start, res->end, res->flags and "name".
+>   * If found, returns 0, res is overwritten, if not found, returns -1.
+>   */
+> -- 
+> 1.6.3.3
+> 
+> 
 
