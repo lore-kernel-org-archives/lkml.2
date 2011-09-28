@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab1I1VJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 17:09:00 -0400
-Received: from mail.us.es ([193.147.175.20]:36031 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753847Ab1I1VI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 17:08:58 -0400
-Date: Wed, 28 Sep 2011 23:08:51 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org
-Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
-Message-ID: <20110928210851.GA2761@1984>
-References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
- <20110912072524.GA2996@p183.telecom.by>
- <20110912093749.GE2194@1984>
- <E0902A9541FD5D118EA02B31@Ximines.local>
- <20110912183357.GC3641@1984>
- <87A32B21CA99D62CE1AB7A4B@Ximines.local>
- <7631498AC7E7C0EAD641AC7D@nimrod.local>
- <20110914013500.GB17051@1984>
- <A51A04647674405AF6C39A4F@nimrod.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A51A04647674405AF6C39A4F@nimrod.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755077Ab1I1VSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 17:18:13 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58908
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751494Ab1I1VSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 17:18:12 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: [PATCH] staging: hv: remove the carrier status check from netvsc_open()
+Date: Wed, 28 Sep 2011 13:24:15 -0700
+Message-Id: <1317241455-30493-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 14, 2011 at 09:01:34AM +0100, Alex Bligh wrote:
-> --On 14 September 2011 03:35:00 +0200 Pablo Neira Ayuso
-> <pablo@netfilter.org> wrote:
-> 
-> >>Is this new version OK? I am happy to adjust if not.
-> >
-> >Hm, I still think that this is a workaround.
-> 
-> It is a bit of a workaround, that is true. But it is a workaround
-> that will fix the bug in every kernel since 2.6.32 (and perhaps
-> before - I haven't looked). It's thus reasonably easily applicable
-> to stable kernel series.
+Checking carrier status in netvsc_open() is not necessary.
 
-The container support for netfilter seems to be in intermediate state,
-we need several patches to get it finished that:
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-* subsys_table definition in nfnetlink.c.
-* ctnl_notifier and ctnl_notifier_exp definitions in
-  nfnetlink_conntrack.c
-* similar things for nfnetlink_queue and nfnetlink_log.
+---
+ drivers/staging/hv/TODO         |    2 --
+ drivers/staging/hv/netvsc_drv.c |   19 +++++++------------
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-If nobody is going to fix all these, I'll find some spare time to do
-it myself, but I don't think we'll have a proper fix that we can pass
-to -stable. This will have to go to net-next, given the amount of
-patches that we'll need to appropriately fix this.
+diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
+index fcc57c2..ed4d636 100644
+--- a/drivers/staging/hv/TODO
++++ b/drivers/staging/hv/TODO
+@@ -1,7 +1,5 @@
+ TODO:
+ 	- audit the network driver
+-	  - checking for carrier inside open is wrong, network device API
+-            confusion??
+ 	- audit the scsi driver
+ 
+ Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 69c233e..561ba58 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -69,20 +69,15 @@ static int netvsc_open(struct net_device *net)
+ 	struct hv_device *device_obj = net_device_ctx->device_ctx;
+ 	int ret = 0;
+ 
+-	if (netif_carrier_ok(net)) {
+-		/* Open up the device */
+-		ret = rndis_filter_open(device_obj);
+-		if (ret != 0) {
+-			netdev_err(net, "unable to open device (ret %d).\n",
+-				   ret);
+-			return ret;
+-		}
+-
+-		netif_start_queue(net);
+-	} else {
+-		netdev_err(net, "unable to open device...link is down.\n");
++	/* Open up the device */
++	ret = rndis_filter_open(device_obj);
++	if (ret != 0) {
++		netdev_err(net, "unable to open device (ret %d).\n", ret);
++		return ret;
+ 	}
+ 
++	netif_start_queue(net);
++
+ 	return ret;
+ }
+ 
+-- 
+1.6.3.2
 
-> I'm not clued-up enough on Netfilter to know what the right fix is,
-> but is applying the workaround in a commit which could be easily
-> backported, then applying the 'right fix' (assuming that is different)
-> a reasonable strategy?
-> 
-> As you can probably tell, my interest here is to get something that
-> doesn't oops into stable kernels.
-
-As said, I'm not sure that this can happen, given that the amount of
-patches that we need to fix it fine, sorry.
