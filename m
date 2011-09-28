@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033Ab1I1XGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:06:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54544 "EHLO mx2.suse.de"
+	id S933050Ab1I1XGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:06:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54533 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932990Ab1I1Wqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:46:33 -0400
+	id S932980Ab1I1Wq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:46:27 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:43 2011
-Message-Id: <20110928220143.457007376@clark.kroah.org>
+Message-Id: <20110928220143.237872336@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:16 -0700
+Date: Wed, 28 Sep 2011 15:02:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
+        Kiran Patil <kiran.patil@intel.com>,
+        Robert Love <robert.w.love@intel.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [172/244] [SCSI] mpt2sas: Added DID_NO_CONNECT return when driver remove and avoid shutdown call
+Subject: [170/244] [SCSI] libfc: Enhancement to RPORT state machine applicable only for VN2VN mode
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Kashyap, Desai" <kashyap.desai@lsi.com>
+From: Kiran Patil <kiran.patil@intel.com>
 
-commit 7821578caa8cb831868989041112ab808029ca65 upstream.
+commit 480584818a4bb3655d8d0d875ed60b427fc61cc5 upstream.
 
-Driver should not call shutdown call from _scsih_remove otherwise,
-The scsi midlayer can be deadlocked when devices are removed from the driver
-pci_driver->shutdown handler.
+Problem: Existing RPORT state machine continues witg FLOGI/PLOGI
+process only after it receices beacon from other end. Once claiming
+stage is over (either clain notify or clain repose), beacon is sent
+and state machine enters into operational mode where it initiates the
+rlogin process (FLOGI/PLOGI) to the peer but before this rlogin is
+initiated, exitsing implementation checks if it received beacon from
+other end, it beacon is not received yet, rlogin process is not
+initiated. Other end initiates FLOGI but peer end keeps on rejecting
+FLOGI, hence after 3 retries other end deletes associated rport, then
+sends a beacon. Once the beacon is received, peer end now initiates
+rlogin to the peer end but since associated rport is deleted FLOGI is
+neither accepted nor the reject response send out because rport is
+deleted. Hence unable to proceed withg FLOGI/PLOGI process and fails
+to establish VN2VN connection.
 
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Fix: VN2VN spec is not standard yet but based on exitsing collateral
+on T11, it appears that, both end shall send beacon and enter into
+'operational mode' without explictly waiting for beacon from other
+end. Fix is to allow the RPORT login process as long as respective
+RPORT is created (as part of claim notification / claim response) even
+though state of RPORT is INIT. Means don't wait for beacon from peer
+end, if peer end initiates FLOGI (means peer end exist and
+responding).
+
+Notes: This patch is preparing the FCoE stack for target wrt
+offload. This is generic patch and harmless even if applied on storage
+initiator because 'else if' condition of function 'fcoe_oem_found'
+shall evaluate to TRUE only for targets.
+
+Dependencies: None
+
+Signed-off-by: Kiran Patil <kiran.patil@intel.com>
+Signed-off-by: Robert Love <robert.w.love@intel.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/scsi/libfc/fc_rport.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3698,7 +3698,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
- 		return 0;
- 	}
+--- a/drivers/scsi/libfc/fc_rport.c
++++ b/drivers/scsi/libfc/fc_rport.c
+@@ -801,6 +801,20 @@ static void fc_rport_recv_flogi_req(stru
  
--	if (ioc->pci_error_recovery) {
-+	if (ioc->pci_error_recovery || ioc->remove_host) {
- 		scmd->result = DID_NO_CONNECT << 16;
- 		scmd->scsi_done(scmd);
- 		return 0;
-@@ -7211,7 +7211,6 @@ _scsih_remove(struct pci_dev *pdev)
- 	}
- 
- 	sas_remove_host(shost);
--	_scsih_shutdown(pdev);
- 	list_del(&ioc->list);
- 	scsi_remove_host(shost);
- 	scsi_host_put(shost);
+ 	switch (rdata->rp_state) {
+ 	case RPORT_ST_INIT:
++		/*
++		 * If received the FLOGI request on RPORT which is INIT state
++		 * (means not transition to FLOGI either fc_rport timeout
++		 * function didn;t trigger or this end hasn;t received
++		 * beacon yet from other end. In that case only, allow RPORT
++		 * state machine to continue, otherwise fall through which
++		 * causes the code to send reject response.
++		 * NOTE; Not checking for FIP->state such as VNMP_UP or
++		 * VNMP_CLAIM because if FIP state is not one of those,
++		 * RPORT wouldn;t have created and 'rport_lookup' would have
++		 * failed anyway in that case.
++		 */
++		if (lport->point_to_multipoint)
++			break;
+ 	case RPORT_ST_DELETE:
+ 		mutex_unlock(&rdata->rp_mutex);
+ 		rjt_data.reason = ELS_RJT_FIP;
 
 
