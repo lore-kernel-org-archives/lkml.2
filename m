@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1I1OoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 10:44:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57329 "EHLO mx1.redhat.com"
+	id S1754586Ab1I1Opo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 10:45:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33900 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754503Ab1I1OoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 10:44:19 -0400
-Subject: Re: [PATCH v3 07/24] C6X: devicetree support
-From: Mark Salter <msalter@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 28 Sep 2011 10:44:10 -0400
-In-Reply-To: <201109281531.36792.arnd@arndb.de>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
-	 <1317155405-26235-8-git-send-email-msalter@redhat.com>
-	 <201109281531.36792.arnd@arndb.de>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
+	id S1754357Ab1I1Opm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 10:45:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Wed, 28 Sep 2011 16:47:55 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au> <CACVXFVMrPNZupCQnBMBXsSA1OH=15m9QBKhXT1Of+LghZbKn0Q@mail.gmail.com> <201109281558.05289.rjw@sisk.pl>
+In-Reply-To: <201109281558.05289.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1317221051.2580.76.camel@deneb.redhat.com>
-Mime-Version: 1.0
+Message-Id: <201109281647.55538.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 15:31 +0200, Arnd Bergmann wrote:
-> On Tuesday 27 September 2011, Mark Salter wrote:
-> > diff --git a/arch/c6x/boot/install-dtb.c b/arch/c6x/boot/install-dtb.c
-> > new file mode 100644
-> > index 0000000..fa979ce
-> > --- /dev/null
-> > +++ b/arch/c6x/boot/install-dtb.c
-> > @@ -0,0 +1,333 @@
-> > +/*
-> > + * Program to hack in a DTB to an ELF file having a placeholder
-> > + * section named __fst_blob.
-> > + *
-> > + * This allows for building multiple images with builtin DTBs
-> > + * using a single vmlinux image. This is only necessary until
-> > + * bootloader support exists.
-> > + *
-> > + * Copyright 2011 Texas Instruments Incorporated
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + *
-> > + * Usage: install-dtb <image.dtb> <kernel.elf>
-> > + */
+On Wednesday, September 28, 2011, Rafael J. Wysocki wrote:
+> On Wednesday, September 28, 2011, Ming Lei wrote:
+> > Hi Stephen and Rafael,
+> > 
+> > Sorry, the attachment patch can fix the build failure, which is
+> > caused by unset CONFIG_RUNTIME_PM.
 > 
-> Other architectures allow simply appending the device tree to the
-> kernel image file, which is more convenient for users and does
-> not require much kernel support. Have you tried this?
+> First off, that's CONFIG_PM_RUNTIME.  Second, why do you want to build
+> rpm-traces.c at all if CONFIG_PM_RUNTIME is unset?
 
-Well, I considered it. My main reason for doing it this way was one of
-debugging convenience. The debugger loads an ELF file and while I was
-making lots of device tree changes in the tree and in the code, it was
-more convenient to have one ELF file to deal with rather than an ELF
-file and a dtb. And the thought was to get rid of it altogether once
-bootloader support comes along. Maybe the thing to do would be to just
-rip it out of the kernel. It can almost as easily be post-processing
-step outside the kernel.
+IOW, what about the appended patch instead?
 
---Mark
+Rafael
 
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Tracing: Build runtime PM tracepoints if PM_RUNTIME is set
 
+Do not build kernel/trace/rpm-traces.c if CONFIG_PM_RUNTIME is not
+set, which avoids a build failure.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ kernel/power/Kconfig  |    4 ++++
+ kernel/trace/Makefile |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux/kernel/power/Kconfig
+===================================================================
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -238,3 +238,7 @@ config PM_GENERIC_DOMAINS
+ config PM_GENERIC_DOMAINS_RUNTIME
+ 	def_bool y
+ 	depends on PM_RUNTIME && PM_GENERIC_DOMAINS
++
++config RUNTIME_PM_TRACEPOINTS
++	def_bool y
++	depends on PM_RUNTIME && TRACEPOINTS
+Index: linux/kernel/trace/Makefile
+===================================================================
+--- linux.orig/kernel/trace/Makefile
++++ linux/kernel/trace/Makefile
+@@ -53,7 +53,7 @@ endif
+ obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+ obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+ obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+-obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
++obj-$(CONFIG_RUNTIME_PM_TRACEPOINTS) += rpm-traces.o
+ ifeq ($(CONFIG_TRACING),y)
+ obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+ endif
