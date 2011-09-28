@@ -1,107 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab1I1HvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:51:03 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:50781 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1I1HvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:51:01 -0400
-Date: Wed, 28 Sep 2011 17:50:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sam Bradshaw <sbradshaw@micron.com>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110928175057.2bff6b3dca98b4662a68a1d2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753655Ab1I1Hvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:51:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab1I1Hvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 03:51:37 -0400
+Date: Wed, 28 Sep 2011 09:50:54 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4 v2] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20110928075054.GB23535@redhat.com>
+References: <1316526315-16801-1-git-send-email-jweiner@redhat.com>
+ <1316526315-16801-2-git-send-email-jweiner@redhat.com>
+ <20110921140423.GG4849@suse.de>
+ <20110921150328.GJ4849@suse.de>
+ <20110922090326.GB29046@redhat.com>
+ <20110922105400.GL4849@suse.de>
+ <20110923143816.GA2606@redhat.com>
+ <20110928045551.GA14561@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928045551.GA14561@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Wed, Sep 28, 2011 at 01:55:51PM +0900, Minchan Kim wrote:
+> Hi Hannes,
+> 
+> On Fri, Sep 23, 2011 at 04:38:17PM +0200, Johannes Weiner wrote:
+> > The amount of dirtyable pages should not include the full number of
+> > free pages: there is a number of reserved pages that the page
+> > allocator and kswapd always try to keep free.
+> > 
+> > The closer (reclaimable pages - dirty pages) is to the number of
+> > reserved pages, the more likely it becomes for reclaim to run into
+> > dirty pages:
+> > 
+> >        +----------+ ---
+> >        |   anon   |  |
+> >        +----------+  |
+> >        |          |  |
+> >        |          |  -- dirty limit new    -- flusher new
+> >        |   file   |  |                     |
+> >        |          |  |                     |
+> >        |          |  -- dirty limit old    -- flusher old
+> >        |          |                        |
+> >        +----------+                       --- reclaim
+> >        | reserved |
+> >        +----------+
+> >        |  kernel  |
+> >        +----------+
+> > 
+> > This patch introduces a per-zone dirty reserve that takes both the
+> > lowmem reserve as well as the high watermark of the zone into account,
+> > and a global sum of those per-zone values that is subtracted from the
+> > global amount of dirtyable pages.  The lowmem reserve is unavailable
+> > to page cache allocations and kswapd tries to keep the high watermark
+> > free.  We don't want to end up in a situation where reclaim has to
+> > clean pages in order to balance zones.
+> > 
+> > Not treating reserved pages as dirtyable on a global level is only a
+> > conceptual fix.  In reality, dirty pages are not distributed equally
+> > across zones and reclaim runs into dirty pages on a regular basis.
+> > 
+> > But it is important to get this right before tackling the problem on a
+> > per-zone level, where the distance between reclaim and the dirty pages
+> > is mostly much smaller in absolute numbers.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > ---
+> >  include/linux/mmzone.h |    6 ++++++
+> >  include/linux/swap.h   |    1 +
+> >  mm/page-writeback.c    |    6 ++++--
+> >  mm/page_alloc.c        |   19 +++++++++++++++++++
+> >  4 files changed, 30 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> > index 1ed4116..37a61e7 100644
+> > --- a/include/linux/mmzone.h
+> > +++ b/include/linux/mmzone.h
+> > @@ -317,6 +317,12 @@ struct zone {
+> >  	 */
+> >  	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+> >  
+> > +	/*
+> > +	 * This is a per-zone reserve of pages that should not be
+> > +	 * considered dirtyable memory.
+> > +	 */
+> > +	unsigned long		dirty_balance_reserve;
+> > +
+> >  #ifdef CONFIG_NUMA
+> >  	int node;
+> >  	/*
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index b156e80..9021453 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -209,6 +209,7 @@ struct swap_list_t {
+> >  /* linux/mm/page_alloc.c */
+> >  extern unsigned long totalram_pages;
+> >  extern unsigned long totalreserve_pages;
+> > +extern unsigned long dirty_balance_reserve;
+> >  extern unsigned int nr_free_buffer_pages(void);
+> >  extern unsigned int nr_free_pagecache_pages(void);
+> >  
+> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > index da6d263..c8acf8a 100644
+> > --- a/mm/page-writeback.c
+> > +++ b/mm/page-writeback.c
+> > @@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+> >  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+> >  
+> >  		x += zone_page_state(z, NR_FREE_PAGES) +
+> > -		     zone_reclaimable_pages(z);
+> > +		     zone_reclaimable_pages(z) -
+> > +		     zone->dirty_balance_reserve;
+> >  	}
+> >  	/*
+> >  	 * Make sure that the number of highmem pages is never larger
+> > @@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
+> >  {
+> >  	unsigned long x;
+> >  
+> > -	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
+> > +	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+> > +	    dirty_balance_reserve;
+> >  
+> >  	if (!vm_highmem_is_dirtyable)
+> >  		x -= highmem_dirtyable_memory(x);
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 1dba05e..f8cba89 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
+> >  
+> >  unsigned long totalram_pages __read_mostly;
+> >  unsigned long totalreserve_pages __read_mostly;
+> > +/*
+> > + * When calculating the number of globally allowed dirty pages, there
+> > + * is a certain number of per-zone reserves that should not be
+> > + * considered dirtyable memory.  This is the sum of those reserves
+> > + * over all existing zones that contribute dirtyable memory.
+> > + */
+> > +unsigned long dirty_balance_reserve __read_mostly;
+> > +
+> >  int percpu_pagelist_fraction;
+> >  gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+> >  
+> > @@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
+> >  			if (max > zone->present_pages)
+> >  				max = zone->present_pages;
+> >  			reserve_pages += max;
+> > +			/*
+> > +			 * Lowmem reserves are not available to
+> > +			 * GFP_HIGHUSER page cache allocations and
+> > +			 * kswapd tries to balance zones to their high
+> > +			 * watermark.  As a result, neither should be
+> > +			 * regarded as dirtyable memory, to prevent a
+> > +			 * situation where reclaim has to clean pages
+> > +			 * in order to balance the zones.
+> > +			 */
+> 
+> Could you put Mel's description instead of it if you don't mind?
+> If I didn't see Mel's thing, maybe I wouldn't suggest but it looks
+> more easier to understand.
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+I changed it because it was already referring to allocation placement,
+but at the point in time where this comment is introduced there is no
+allocation placement based on dirty pages yet.
 
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: type defaults to 'int' in declaration of 'MODULE_DEVICE_TABLE'
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: parameter names (without types) in function declaration
-drivers/block/mtip32xx/mtip32xx.c:3589:15: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3589:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3589:1: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/block/mtip32xx/mtip32xx.c:3589:15: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3590:20: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3590:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3590:1: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/block/mtip32xx/mtip32xx.c:3590:20: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3591:16: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3591:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3591:1: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/block/mtip32xx/mtip32xx.c:3591:16: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3592:16: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3592:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3592:1: warning: type defaults to 'int' in declaration of 'MODULE_VERSION'
-drivers/block/mtip32xx/mtip32xx.c:3592:16: warning: function declaration isn't a prototype
+The other thing is that it said lowmem_reserves were respected to
+prevent increasing lowmem pressure, but lowmem is protected by the
+watermark checks during the allocation.  I took it into account to not
+end up with a number of dirtyable pages that is bigger than the amount
+of technically available page cache pages.  Otherwise, you could end
+up with all page cache pages in a zone dirtied at the time reclaim
+kicks in and we are back to square one.
 
-Casued by commit 49fdf3a7c4cf ("block: Add driver for Micron RealSSD pcie
-flash cards") from the block tree interacting with the module.h split up.
-
-I applied the following patch for today (whcih should be applied to the
-block tree ...).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 28 Sep 2011 17:47:05 +1000
-Subject: [PATCH] block/mtip32xx: include module.h for its utilities
-
-The module.h split up produced thses errors/warnings:
-
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: type defaults to 'int' in declaration of 'MODULE_DEVICE_TABLE'
-drivers/block/mtip32xx/mtip32xx.c:3542:1: warning: parameter names (without types) in function declaration
-drivers/block/mtip32xx/mtip32xx.c:3589:15: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3589:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3589:1: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/block/mtip32xx/mtip32xx.c:3589:15: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3590:20: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3590:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3590:1: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/block/mtip32xx/mtip32xx.c:3590:20: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3591:16: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3591:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3591:1: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/block/mtip32xx/mtip32xx.c:3591:16: warning: function declaration isn't a prototype
-drivers/block/mtip32xx/mtip32xx.c:3592:16: error: expected declaration specifiers or '...' before string constant
-drivers/block/mtip32xx/mtip32xx.c:3592:1: warning: data definition has no type or storage class
-drivers/block/mtip32xx/mtip32xx.c:3592:1: warning: type defaults to 'int' in declaration of 'MODULE_VERSION'
-drivers/block/mtip32xx/mtip32xx.c:3592:16: warning: function declaration isn't a prototype
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/block/mtip32xx/mtip32xx.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 3ec3d34..0e19eb5 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -33,6 +33,7 @@
- #include <linux/bio.h>
- #include <linux/dma-mapping.h>
- #include <linux/idr.h>
-+#include <linux/module.h>
- #include <../drivers/ata/ahci.h>
- #include "mtip32xx.h"
- 
--- 
-1.7.6.3
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Maybe you can fingerpoint to the part that is harder to understand so
+I can fix it?
