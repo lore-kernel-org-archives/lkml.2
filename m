@@ -1,34 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab1I1Pza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 11:55:30 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60625 "EHLO
+	id S1755068Ab1I1P4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 11:56:55 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:16263 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab1I1Pz3 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:12:2>);
-	Wed, 28 Sep 2011 11:55:29 -0400
-Message-Id: <4E835F8C0200007800058461@nat28.tlf.novell.com>
+	with ESMTP id S1755010Ab1I1P4y convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:3:1>);
+	Wed, 28 Sep 2011 11:56:54 -0400
+Message-Id: <4E835FE30200007800058464@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 28 Sep 2011 16:55:24 +0100
+Date: Wed, 28 Sep 2011 16:56:51 +0100
 From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Stephan Diestelhorst" <stephan.diestelhorst@amd.com>,
-        "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Ingo Molnar" <mingo@elte.hu>, "Andi Kleen" <andi@firstfloor.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Nick Piggin" <npiggin@kernel.dk>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        <xen-devel@lists.xensource.com>, "Avi Kivity" <avi@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>, "KVM" <kvm@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized
-	 ticketlocks
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
- <3300108.XQUp9Wrktc@chlor> <4E81FD52.50106@goop.org>
- <CA+55aFx7dv4C4ZB_3CFjdJmX_wpoxecpqo1ARYr1=zTVP=CVVA@mail.gmail.com>
-In-Reply-To: <CA+55aFx7dv4C4ZB_3CFjdJmX_wpoxecpqo1ARYr1=zTVP=CVVA@mail.gmail.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] x86-64: don't apply destructive erratum
+	 workaround on unaffected CPUs
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -37,28 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.09.11 at 17:38, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Tue, Sep 27, 2011 at 9:44 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->>
->> I guess it comes down to throwing myself on the efficiency of some kind
->> of fence instruction.  I guess an lfence would be sufficient; is that
->> any more efficient than a full mfence?  At least I can make it so that
->> its only present when pv ticket locks are actually in use, so it won't
->> affect the native case.
-> 
-> Please don't play with fences, just do the final "addb" as a locked 
-> instruction.
-> 
-> In fact, don't even use an addb, this whole thing is disgusting:
-> 
->   movzwl (%rdi),%esi (esi:=0x0400)
->   addb   $0x2,(%rdi) (LOCAL copy of lock is now: 0x0402)
->   movzwl (%rdi),%eax (local forwarding from previous store: eax := 0x0402)
-> 
-> just use "lock xaddw" there too.
+Erratum 93 applies to AMD K8 CPUs only, and its workaround (forcing
+the upper 32 bits of %rip to all get set under certain conditions) is
+actually getting in the way of analyzing page faults occurring during
+EFI physical mode runtime calls (in particular the page table walk
+shown is completely unrelated to the actual fault). This is because
+typically EFI runtime code lives in the space between 2G and 4G, which
+- modulo the above manipulation - is likely to overlap with the kernel
+or modules area.
 
-I'm afraid that's not possible, as that might carry from the low 8 bits
-into the upper 8 ones, which must be avoided.
+While even for the other errata workarounds their taking effect could
+be limited to just the affected CPUs, none of them appears to be
+destructive, and they're generally getting called only outside of
+performance critical paths, so they're being left untouched.
 
-Jan
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
+---
+ arch/x86/mm/fault.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- 3.1-rc8/arch/x86/mm/fault.c
++++ 3.1-rc8-x86_64-amd-erratum93/arch/x86/mm/fault.c
+@@ -420,12 +420,14 @@ static noinline __kprobes int vmalloc_fa
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CPU_SUP_AMD
+ static const char errata93_warning[] =
+ KERN_ERR 
+ "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
+ "******* Working around it, but it may cause SEGVs or burn power.\n"
+ "******* Please consider a BIOS update.\n"
+ "******* Disabling USB legacy in the BIOS may also help.\n";
++#endif
+ 
+ /*
+  * No vm86 mode in 64-bit mode:
+@@ -505,7 +507,11 @@ bad:
+  */
+ static int is_errata93(struct pt_regs *regs, unsigned long address)
+ {
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
++	    || boot_cpu_data.x86 != 0xf)
++		return 0;
++
+ 	if (address != regs->ip)
+ 		return 0;
+ 
+
+
 
