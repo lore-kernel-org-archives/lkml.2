@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab1I1WnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:43:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54146 "EHLO mx2.suse.de"
+	id S1755901Ab1I1Wmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:42:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54083 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1I1WnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:43:02 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:37 2011
-Message-Id: <20110928220137.035671044@clark.kroah.org>
+	id S1755868Ab1I1Wma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:42:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:36 2011
+Message-Id: <20110928220136.087023333@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:15 -0700
+Date: Wed, 28 Sep 2011 15:01:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guy Martin <gmsoft@tuxicoman.be>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Matt Turner <mattst88@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [111/244] e1000: Fix driver to be used on PA RISC C8000 workstations
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [102/244] [SCSI] isci: fix sata response handling
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,47 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit e2faeec2de9e2c73958e6ea6065dde1e8cd6f3a2 upstream.
+commit 1a878284473284f9577d44babf16d87152a05c33 upstream.
 
-The checksum field in the EEPROM on HPPA is really not a
-checksum but a signature (0x16d6).  So allow 0x16d6 as the
-matching checksum on HPPA systems.
+A bug (likely copy/paste) that has been carried from the original
+implementation.  The unsolicited frame handling structure returns the
+d2h fis in the isci_request.stp.rsp buffer.
 
-This issue is present on longterm/stable kernels, I have
-verified that this patch is applicable back to at least
-2.6.32.y kernels.
-
-v2- changed ifdef to use CONFIG_PARISC instead of __hppa__
-
-CC: Guy Martin <gmsoft@tuxicoman.be>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-CC: Matt Turner <mattst88@gmail.com>
-Reported-by: Mikulas Patocka <mikulas@artax.kerlin.mff.cuni.cz>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Acked-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000/e1000_hw.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/isci/request.c |   18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
---- a/drivers/net/e1000/e1000_hw.c
-+++ b/drivers/net/e1000/e1000_hw.c
-@@ -4028,6 +4028,12 @@ s32 e1000_validate_eeprom_checksum(struc
- 		checksum += eeprom_data;
+--- a/drivers/scsi/isci/request.c
++++ b/drivers/scsi/isci/request.c
+@@ -2399,22 +2399,19 @@ static void isci_task_save_for_upper_lay
  	}
+ }
  
-+#ifdef CONFIG_PARISC
-+	/* This is a signature and not a checksum on HP c8000 */
-+	if ((hw->subsystem_vendor_id == 0x103C) && (eeprom_data == 0x16d6))
-+		return E1000_SUCCESS;
-+
-+#endif
- 	if (checksum == (u16) EEPROM_SUM)
- 		return E1000_SUCCESS;
- 	else {
+-static void isci_request_process_stp_response(struct sas_task *task,
+-					      void *response_buffer)
++static void isci_process_stp_response(struct sas_task *task, struct dev_to_host_fis *fis)
+ {
+-	struct dev_to_host_fis *d2h_reg_fis = response_buffer;
+ 	struct task_status_struct *ts = &task->task_status;
+ 	struct ata_task_resp *resp = (void *)&ts->buf[0];
+ 
+-	resp->frame_len = le16_to_cpu(*(__le16 *)(response_buffer + 6));
+-	memcpy(&resp->ending_fis[0], response_buffer + 16, 24);
++	resp->frame_len = sizeof(*fis);
++	memcpy(resp->ending_fis, fis, sizeof(*fis));
+ 	ts->buf_valid_size = sizeof(*resp);
+ 
+-	/**
+-	 * If the device fault bit is set in the status register, then
++	/* If the device fault bit is set in the status register, then
+ 	 * set the sense data and return.
+ 	 */
+-	if (d2h_reg_fis->status & ATA_DF)
++	if (fis->status & ATA_DF)
+ 		ts->stat = SAS_PROTO_RESPONSE;
+ 	else
+ 		ts->stat = SAM_STAT_GOOD;
+@@ -2428,7 +2425,6 @@ static void isci_request_io_request_comp
+ {
+ 	struct sas_task *task = isci_request_access_task(request);
+ 	struct ssp_response_iu *resp_iu;
+-	void *resp_buf;
+ 	unsigned long task_flags;
+ 	struct isci_remote_device *idev = isci_lookup_device(task->dev);
+ 	enum service_response response       = SAS_TASK_UNDELIVERED;
+@@ -2565,9 +2561,7 @@ static void isci_request_io_request_comp
+ 				task);
+ 
+ 			if (sas_protocol_ata(task->task_proto)) {
+-				resp_buf = &request->stp.rsp;
+-				isci_request_process_stp_response(task,
+-								  resp_buf);
++				isci_process_stp_response(task, &request->stp.rsp);
+ 			} else if (SAS_PROTOCOL_SSP == task->task_proto) {
+ 
+ 				/* crack the iu response buffer. */
 
 
