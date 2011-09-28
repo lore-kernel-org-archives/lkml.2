@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab1I1GqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 02:46:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34221 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab1I1GqY (ORCPT
+	id S1752773Ab1I1Gq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 02:46:27 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:56989 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751170Ab1I1GqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 02:46:24 -0400
-Date: Wed, 28 Sep 2011 08:46:14 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] dma/imx-sdma+imx-dma: explicitly #include
- <linux/module.h>
-Message-ID: <20110928064614.GN20550@pengutronix.de>
-References: <1317018379-8897-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <4E824821.8040105@windriver.com>
+	Wed, 28 Sep 2011 02:46:25 -0400
+Message-ID: <4E82C294.7000308@st.com>
+Date: Wed, 28 Sep 2011 12:15:40 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E824821.8040105@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Deepak Sikri <deepak.sikri79@gmail.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>
+Subject: Re: [linux-pm Query] Power Management Device Suspend/ Resume
+References: <CAO1yOm2pbApTwa0gj3Q9RsC1mxNGGirxm6FzaDC7zbgjHdkKDw@mail.gmail.com>  <4E8293C4.5090009@st.com> <1317181365.1573.1636.camel@vkoul-udesk3>
+In-Reply-To: <1317181365.1573.1636.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc: += linux-kbuild@v.k.o + Michal Marek]
+Vinod,
 
-Hello,
+Thanks for mailing us back.
 
-On Tue, Sep 27, 2011 at 06:03:13PM -0400, Paul Gortmaker wrote:
-> On 11-09-26 02:26 AM, Uwe Kleine-König wrote:
-> > This is needed after commit
-> > 
-> > 	include: replace linux/module.h with "struct module" wherever possible
-> > 
-> > (currently 25215aa in next).
-> > 
-> > Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> > Hello,
-> > 
-> > maybe it's sensible for Paul to take that before his commit?
-> 
-> Thanks, I'll blend it into the commit adding module.h to the other
-> drivers/dma files.  It seems the imx boards don't have a defconfig
-> in the arch/arm/configs that enables this (CONFIG_IMX_[S]DMA).
-> 
-> What is really interesting (at least to me anyway) is that I
-> didn't get one iMX build in some 6000+ ARM randconfig builds....
-> 
-> I would have thought it would have showed up at least a couple
-> times, given that number of builds.  Maybe randconfig doesn't
-> deal so well with "choice" Kconfig items?
-> 
-> ~/git/module.h/linux-2.6.git$ ls -1 ../build-10*arm |wc -l
-> 6399
-> ~/git/module.h/linux-2.6.git$ grep CONFIG_ARCH_[A-Z0-9]*=y ../build-10*arm*/.config | sed 's/.*CON/CON/'|sort |uniq
-> CONFIG_ARCH_EBSA110=y
-> CONFIG_ARCH_H7201=y
-> CONFIG_ARCH_H7202=y
-> CONFIG_ARCH_H720X=y
-> CONFIG_ARCH_VERSATILE=y
+On 9/28/2011 9:12 AM, Vinod Koul wrote:
+> On Wed, 2011-09-28 at 08:55 +0530, Viresh Kumar wrote:
+>> On 9/22/2011 4:19 PM, Deepak Sikri wrote:
+> are you trying to do runtime power management or traditional suspend and
+> resume? IMO both should be done...
 
-I don't understand why you did that sed, but AFAICT it doesn't hurt,
-too. Maybe adding -c to uniq in your command line is interesting for the
-kbuild people?!
+We will first be testing traditional suspend/resume, but obviously we would
+try to design drivers in order to support runtime PM too.
 
-> ~/git/module.h/linux-2.6.git$ 
-> 
-> No ARCH_MXC, no ARCH_MXS, PXA, or any of the other 20+ variants.
-> Definitely not a random spread there, with all 6000 builds falling
-> in just 5 buckets.
-How did you test? Generate a .config, test without your change and if
-that succeeds test with it? If so, maybe the problem isn't that
-randconfig doesn't generate more random configs but that you got many
-failures in the first run?!
+>>> *Query- 1*. Suppose my platform has a ADC driver under char framework, which internally uses the
+>>> DMA driver (channels). Now, ADC driver can be used by other kernel drivers or directly from user application.
+>>>  
+>>> *1. a.* What are the expectations from the suspend and resume routines of both the devices, DMA & ADC ?
+>>>  
+>>> */-- Given that few of the options are/*
+>>> */1.a.1. On suspend,/*
+>>> In ADC suspend function: ADC releases all the DMA channels, latches its registers; and
+>>> DMA suspend function: DMA does nothing except for lataching of registers if required.
+>>>  
+>>> */1.a.2. On suspend, /*
+>>> ADC suspend function: ADC just latches its registers and stops R/W through DMA, no DMA channel release;
+>>> DMA suspend function: DMA halts its operating channels, and latches its registers if required.
+> Well channel release/alloc is not really required. You can goto suspend
+> in between as well. if you have queued but not active descriptors on all
+> channels then dmac is idle and you can use this time to goto suspend.
 
-Best regards
-Uwe
+But the time suspend is called for DMA, we may in middle of DMA transfers
+on few channels. So should we wait for them to finish or simply disable
+channel transfer? And in case of resume what will happen to transfers that
+were active during suspend?
+
+>>> *1.b* Will the suspend resume for the dependent drivers follow sequencing, i.e. Suspend of ADC followed by
+>>> Suspend of DMA? (Assume both of these devices are hooked on to Platform bus, given that ADC uses DMA)
+> why do you care?
+
+Suppose suspend of DMA occurs first and we disable its clock in the suspend
+routine. Now before the suspend of ADC is called, ADC requests for DMA
+transfers and because not every routine of DMA keeps track of clk is on/off,
+it may try to access DMA register.
+
+So, we must ensure that all children are suspended before the parent is
+requested to suspend. And probably this is the correct way.
+So, here we need ADC to suspend before DMA. How is this sequencing ensured?
+
+>>> 2.1 The user space threads freeze first followed by kernel space.  In case the user space process issues a a system
+>>> call (lets assume an ioctl system call), how will the user space thread respond in case of suspend to ram?
+> all user space processes are frozen on STR
+
+Yes, but what will be its state. Will the system calls complete? Will it
+close all devices opened by it before freezing?
+
+Suppose a user applications is accessing few ADC channels. ADC controller
+and its channel are all configured. Now, suspend is requested. What should
+ADC driver do? As power will be turned off, its register will loose their
+value.
+
+Should ADC reconfigure all its channel registers by keeping their state?
+Also it is not very straight forward to reconfigure channels directly, as
+registers are required to be programmed in certain sequence, so there
+needs to be good amount of intelligence put into driver for that.
+
+IIRC, i couldn't find any such stuff in other mainline drivers. And that's
+why we are confused on this topic.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+viresh
