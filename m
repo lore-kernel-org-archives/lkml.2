@@ -1,148 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1I1IBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 04:01:21 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48891 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab1I1IBS convert rfc822-to-8bit (ORCPT
+	id S1753901Ab1I1IBf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 04:01:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42300 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1I1IBd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 04:01:18 -0400
+	Wed, 28 Sep 2011 04:01:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=yoc1sEbbnXi4hc5qHbaCmsFgVB+qUje+lw5d3CSLhtAve5tDf5X40qkxnRrkmfqQN
+	uhD2ILoCTE/USVbRBZmYA==
 MIME-Version: 1.0
-In-Reply-To: <1317189007-23033-2-git-send-email-alim.akhtar@samsung.com>
-References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com>
-	<1317189007-23033-2-git-send-email-alim.akhtar@samsung.com>
-Date: Wed, 28 Sep 2011 10:01:16 +0200
-Message-ID: <CACRpkdZesKGuPGmUifLj4puN_e=kYAb4WyuQs+xERn9q7036rg@mail.gmail.com>
-Subject: Re: [PATCH V2 1/1] dmaengine/amba-pl08x: Add support for s3c64xx DMAC
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alim Akhtar <alim.akhtar@samsung.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, viresh.kumar@st.com,
-        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1317195706.5781.1.camel@twins>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<1317170947-17074-5-git-send-email-walken@google.com>
+	<1317195706.5781.1.camel@twins>
+Date: Wed, 28 Sep 2011 01:01:29 -0700
+Message-ID: <CANN689Gtv2B1j6Z5wTk1ysne+XVV8VfU+9jepY1RV4r=B7V_Zw@mail.gmail.com>
+Subject: Re: [PATCH 4/9] kstaled: minimalistic implementation.
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry if I missed a few nitpicks last time, anyway it's looking much better now:
-
-On Wed, Sep 28, 2011 at 7:50 AM, Alim Akhtar <alim.akhtar@samsung.com> wrote:
-> +       /*
-> +        * Samsung pl080 DMAC has one exrta control register
-
-s/exrta/exstra
-
-> +       if (pl08x->vd->is_pl080_s3c) {
-> +               writel(txd->ccfg, phychan->base + PL080S_CH_CONFIG);
-> +               writel(lli->cctl1, phychan->base + PL080S_CH_CONTROL2);
-> +       } else
-> +               writel(txd->ccfg, phychan->base + PL080_CH_CONFIG);
-
-What do you think about adding a field to the struct pl08x
-like
-
-u32 config_reg
-
-that we set to the proper config register (PL080S_CH_CONFIG or
-PL080_CH_CONFIG in probe(), so the above
-becomes the simpler variant:
-
-writel(txd->ccfg, phychan->base + pl08x->config_reg);
-if (pl08x->vd->is_pl080_s3c)
-    writel(lli->cctl1, phychan->base + PL080S_CH_CONTROL2);
-
-> +       if (pl08x->vd->is_pl080_s3c) {
-> +               val = readl(phychan->base + PL080S_CH_CONFIG);
-> +               while ((val & PL080_CONFIG_ACTIVE) ||
-> +                       (val & PL080_CONFIG_ENABLE))
-> +                       val = readl(phychan->base + PL080S_CH_CONFIG);
-> +
-> +               writel(val | PL080_CONFIG_ENABLE,
-> +                       phychan->base + PL080S_CH_CONFIG);
-> +       } else {
->                val = readl(phychan->base + PL080_CH_CONFIG);
-> +                       while ((val & PL080_CONFIG_ACTIVE) ||
-> +                               (val & PL080_CONFIG_ENABLE))
-> +                               val = readl(phychan->base + PL080_CH_CONFIG);
+On Wed, Sep 28, 2011 at 12:41 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-09-27 at 17:49 -0700, Michel Lespinasse wrote:
+>> +static int kstaled(void *dummy)
+>> +{
+>> +       while (1) {
 >
-> -       writel(val | PL080_CONFIG_ENABLE, phychan->base + PL080_CH_CONFIG);
-> +               writel(val | PL080_CONFIG_ENABLE,
-> +                       phychan->base + PL080_CH_CONFIG);
-> +       }
+>> +       }
+>> +
+>> +       BUG();
+>> +       return 0;       /* NOT REACHED */
+>> +}
+>
+> So if you build with this junk (as I presume distro's will), there is no
+> way to disable it?
 
-This would also become much simpler with that approach I think...
+There will be a thread, and it'll block in wait_event_interruptible()
+until a positive value is written into
+/sys/kernel/mm/kstaled/scan_seconds
 
->        /* Set the HALT bit and wait for the FIFO to drain */
-> -       val = readl(ch->base + PL080_CH_CONFIG);
-> -       val |= PL080_CONFIG_HALT;
-> -       writel(val, ch->base + PL080_CH_CONFIG);
-> -
-> +       if (pl08x->vd->is_pl080_s3c) {
-> +               val = readl(ch->base + PL080S_CH_CONFIG);
-> +               val |= PL080_CONFIG_HALT;
-> +               writel(val, ch->base + PL080S_CH_CONFIG);
-> +       } else {
-> +               val = readl(ch->base + PL080_CH_CONFIG);
-> +               val |= PL080_CONFIG_HALT;
-> +               writel(val, ch->base + PL080_CH_CONFIG);
-> +       }
-
-This would become simply:
-
-val = readl(ch->base + pl08x->config_reg);
-val |= PL080_CONFIG_HALT;
-writel(val, ch->base + pl08x->config_reg);
-
-
->        /* Clear the HALT bit */
-> -       val = readl(ch->base + PL080_CH_CONFIG);
-> -       val &= ~PL080_CONFIG_HALT;
-> -       writel(val, ch->base + PL080_CH_CONFIG);
-> +       if (pl08x->vd->is_pl080_s3c) {
-> +               val = readl(ch->base + PL080S_CH_CONFIG);
-> +               val &= ~PL080_CONFIG_HALT;
-> +               writel(val, ch->base + PL080S_CH_CONFIG);
-> +       } else {
-> +               val = readl(ch->base + PL080_CH_CONFIG);
-> +               val &= ~PL080_CONFIG_HALT;
-> +               writel(val, ch->base + PL080_CH_CONFIG);
-> +       }
-
-This would get rid of the if/else clauses
-
-> +       if (pl08x->vd->is_pl080_s3c) {
-> +               u32 val = readl(ch->base + PL080S_CH_CONFIG);
-> +               val &= ~(PL080_CONFIG_ENABLE | PL080_CONFIG_ERR_IRQ_MASK |
-> +                               PL080_CONFIG_TC_IRQ_MASK);
-> +               writel(val, ch->base + PL080S_CH_CONFIG);
-> +       } else {
-> +               u32 val = readl(ch->base + PL080_CH_CONFIG);
-> +               val &= ~(PL080_CONFIG_ENABLE | PL080_CONFIG_ERR_IRQ_MASK |
-> +                               PL080_CONFIG_TC_IRQ_MASK);
-> +               writel(val, ch->base + PL080_CH_CONFIG);
-> +       }
-
-As would this...
-
-> +       /* Samsung DMAC is PL080 variant*/
-> +       {
-> +               .id     = 0x00041082,
-> +               .mask   = 0x000fffff,
-> +               .data   = &vendor_pl080_s3c,
-
-Does the hardware realy have this primecell number or is it something that is
-hardcoded from the board/device tree?
-
-If it is hardcoded then no objections.
-
-In the latter case, replace 0x41 (= 'A', ARM) with something like
-0x55 'U' for Samsung or so. Or 0x51 'S'. Or whatever you like.
-
-Then add that to include/linux/amba/bus.h as
-AMBA_VENDOR_SAMSUNG = 0x55,
-so we have this under some kind of control.
-
-Yours,
-Linus Walleij
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
