@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab1I1Wwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:52:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55119 "EHLO mx2.suse.de"
+	id S933550Ab1I1Wuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:50:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55063 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756017Ab1I1WvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:51:06 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:49 2011
-Message-Id: <20110928220149.093178233@clark.kroah.org>
+	id S1756000Ab1I1Wui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:50:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:50 2011
+Message-Id: <20110928220150.782872795@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:03:09 -0700
+Date: Wed, 28 Sep 2011 15:03:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [225/244] ASoC: omap-mcbsp: Do not attempt to change DAI sysclk if stream is active
+        Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [241/244] iwlagn: fix dangling scan request
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,50 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 34c869855a28af3c6031d29e2267b5a3cce0d67d upstream.
+commit 6c80c39d9a6986a566c30d797aae37bfb697eea3 upstream.
 
-Attempt to change McBSP CLKS source while another stream is active is not
-safe after commit d135865 ("OMAP: McBSP: implement functional clock
-switching via clock framework") in 2.6.37.
+If iwl_scan_initiate() fails for any reason,
+priv->scan_request and priv->scan_vif are left
+dangling. This can lead to a crash later when
+iwl_bg_scan_completed() tries to run a pending
+scan request.
 
-CLKS parent clock switching using clock framework have to idle the McBSP
-before switching and then activate it again. This short break can cause a
-DMA transaction error to already running stream which halts and recovers
-only by closing and restarting the stream.
+In practice, this seems to be very rare due to
+the STATUS_SCANNING check earlier. That check,
+however, is wrong -- it should allow a scan to
+be queued when a reset/roc scan is going on.
+When a normal scan is already going on, a new
+one can't be issued by mac80211, so that code
+can be removed completely. I introduced this
+bug when adding off-channel support in commit
+266af4c745952e9bebf687dd68af58df553cb59d.
 
-This goes more fatal after commit e2fa61d ("OMAP3: l3: Introduce
-l3-interconnect error handling driver") in 2.6.39 where l3 driver detects a
-severe timeout error and does BUG_ON().
-
-Fix this by not changing any configuration in omap_mcbsp_dai_set_dai_sysclk
-if the McBSP is already active. This test should have been here just from
-the beginning anyway.
-
-Signed-off-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reported-by: Peng Yan <peng.yan@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/omap/omap-mcbsp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-scan.c |   30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -516,6 +516,12 @@ static int omap_mcbsp_dai_set_dai_sysclk
- 	struct omap_mcbsp_reg_cfg *regs = &mcbsp_data->regs;
- 	int err = 0;
+--- a/drivers/net/wireless/iwlwifi/iwl-scan.c
++++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
+@@ -406,31 +406,33 @@ int iwl_mac_hw_scan(struct ieee80211_hw
  
-+	if (mcbsp_data->active)
-+		if (freq == mcbsp_data->in_freq)
-+			return 0;
-+		else
-+			return -EBUSY;
-+
- 	/* The McBSP signal muxing functions are only available on McBSP1 */
- 	if (clk_id == OMAP_MCBSP_CLKR_SRC_CLKR ||
- 	    clk_id == OMAP_MCBSP_CLKR_SRC_CLKX ||
+ 	mutex_lock(&priv->mutex);
+ 
+-	if (test_bit(STATUS_SCANNING, &priv->status) &&
+-	    priv->scan_type != IWL_SCAN_NORMAL) {
+-		IWL_DEBUG_SCAN(priv, "Scan already in progress.\n");
+-		ret = -EAGAIN;
+-		goto out_unlock;
+-	}
+-
+-	/* mac80211 will only ask for one band at a time */
+-	priv->scan_request = req;
+-	priv->scan_vif = vif;
+-
+ 	/*
+ 	 * If an internal scan is in progress, just set
+ 	 * up the scan_request as per above.
+ 	 */
+ 	if (priv->scan_type != IWL_SCAN_NORMAL) {
+-		IWL_DEBUG_SCAN(priv, "SCAN request during internal scan\n");
++		IWL_DEBUG_SCAN(priv,
++			       "SCAN request during internal scan - defer\n");
++		priv->scan_request = req;
++		priv->scan_vif = vif;
+ 		ret = 0;
+-	} else
++	} else {
++		priv->scan_request = req;
++		priv->scan_vif = vif;
++		/*
++		 * mac80211 will only ask for one band at a time
++		 * so using channels[0] here is ok
++		 */
+ 		ret = iwl_scan_initiate(priv, vif, IWL_SCAN_NORMAL,
+ 					req->channels[0]->band);
++		if (ret) {
++			priv->scan_request = NULL;
++			priv->scan_vif = NULL;
++		}
++	}
+ 
+ 	IWL_DEBUG_MAC80211(priv, "leave\n");
+ 
+-out_unlock:
+ 	mutex_unlock(&priv->mutex);
+ 
+ 	return ret;
 
 
