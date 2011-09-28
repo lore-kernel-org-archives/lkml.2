@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1I1Fe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 01:34:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43125 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab1I1Fey (ORCPT
+	id S1753149Ab1I1Fgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 01:36:38 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48057 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab1I1Fgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 01:34:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxp8bNhLs+v69gp7XxBGq6wkmLkZKjB2_09H3qsZC_pzw@mail.gmail.com>
-References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
-	<CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
-	<CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
-	<CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com>
-	<CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
-	<CA+55aFxp8bNhLs+v69gp7XxBGq6wkmLkZKjB2_09H3qsZC_pzw@mail.gmail.com>
-Date: Wed, 28 Sep 2011 01:34:53 -0400
-Message-ID: <CACqU3MUbiQW3E8GeSbzkikMqvV1VKAnF2Ro-P2BWwih=s6vABA@mail.gmail.com>
-Subject: Re: Linux 3.1-rc7
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Sep 2011 01:36:37 -0400
+Date: Wed, 28 Sep 2011 01:36:33 -0400 (EDT)
+Message-Id: <20110928.013633.2247775129404573208.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Sep 2011 22:36:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Sep 27, 2011 at 7:31 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Sep 27, 2011 at 4:25 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>
->> What is strange is that I moved from -rc7 to -rc8 with:
->>
->> % git reset --hard v3.1-rc8
->
-> Git optimizes all the filesystem operations heavily. That means that
-> files that have not changed between two releases and are clean (and
-> match) in the index are not re-written by a git reset.
->
-> You can obviously always force a re-write by removing all files and
-> then doing the reset, but it should never be necessary under normal
-> circumstances.
->
->> which should have reset the corrupted file. FYI, the machine is
->> running 2.6.35.13-91.fc14.x86_64. Something's smelly with that kernel
->> :-/
->
-> More likely something is smelly with your filesystem or memory. A few
-> bits flipped on disk or in the page cache would do it, and git has
-> caught corruption like that before.
->
-> Do you still have the bad tree around? Because it migth be interesting
-> to see what the corruption pattern is if you do.
->
-No, unfortunately I checked the file out and overwrote it several
-time. I'll be more careful next time.
+1) Fix two SKB leaks in ipv6 multicast cost, from Ben Greear.
 
-<off-topic>
-Speaking of corruption, I'm encountering another set on an external
-hard-drive, connected through USB. The partition ended up being
-corrupted after transferring a few dozen GB, and being unmount'ed, ie.
-I unmounted the device and tried to mount it back, no spin-down or
-whatever; and the superblock was corrupted. fsck corrected a lots of
-issue, wrong group checksum, wrong group block usage count (mainly was
-always 32768)... but now, some files have wrong checksums
-(expectable). These files only seems to belong to files previously
-transferred. Luckily, some of these are text file, so I can easily do
-a diff. The same corruption pop up (at least in those text file): a
-sequence of 4 bytes is replaced by 0x000000E0 at offset 0x1E4 of the
-start of the file for some of them, 0x3E4 for two other (same
-corruption though). Locating the corruption will be more tricky in
-binary files.
+2) BNX2X needs to hit the registers differently for HW Attention
+   and Wake-On-Lan, from Dmitry Kravkov.
 
-I may not trust the drive, but the fact that only known offset are
-corrupted (in text files), the exact same way, sounds too much of a
-coincidence. Anyway, I started a long SMART self test to see if it
-catches anything, as there was no DMA transfer error[0].
-</off-topic>
+3) Missing break statement in dcbnl handling of bnx2x, fix from
+   Shmulik Ravid.
 
-my 2c,
- - Arnaud
+4) dst_alloc() return value not checked in IPSEC, fix from Madalin
+   Bucur.
 
-[0]: there used to be, but this was because of a bad SATA cable.
+5) Fix calculation of do_bcast in batman-adv stack, from Antonio Quartulli.
+
+6) Wireless:
+   a) Fix DMA getting stuck on ath9k AR9003 chips, from Rajkumar Manoharan.
+   b) Mirror iwlagn command queue timeout fix in iwlegacy, from Johannes
+      Berg.
+   c) Similarly, mirror iwlagn interruptible wait fix in iwlegacy, from
+      Stanislaw Gruszka.
+   d) NL80211_ATTR_AKM_SUITES netlink blobs were not validated using
+      the correct variable, fix from Jouni Malinen.
+   e) iwl_scan_request() leaves ->scan_request and ->scan_vif dangling
+      on failure, causing crashes later, fix from Johannes Berg.
+   f) tcb_desc needs to be initialized fully in rtlwifi USB, from Larry
+      Finger.
+   g) DMA mappings left dangling on module unload in ath9k driver, from
+      Mohammed Shafi.  Another bug found by the DMA debugging code.
+
+Please pull, thanks a lot!
+
+The following changes since commit a102a9ece5489e1718cd7543aa079082450ac3a2:
+
+  Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
+
+are available in the git repository at:
+  git://github.com/davem330/net.git master
+
+Antonio Quartulli (1):
+      batman-adv: do_bcast has to be true for broadcast packets only
+
+Ben Greear (2):
+      ipv6-multicast: Fix memory leak in input path.
+      ipv6-multicast: Fix memory leak in IPv6 multicast.
+
+David S. Miller (2):
+      Merge branch 'batman-adv/maint' of git://git.open-mesh.org/linux-merge
+      Merge branch 'for-davem' of git://git.infradead.org/users/linville/wireless
+
+Dmitry Kravkov (2):
+      bnx2x: fix hw attention handling
+      bnx2x: fix WOL by enablement PME in config space
+
+Jason Wang (1):
+      net: fix a typo in Documentation/networking/scaling.txt
+
+Johannes Berg (1):
+      iwlagn: fix dangling scan request
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.infradead.org/users/linville/wireless into for-davem
+
+Jouni Malinen (1):
+      cfg80211: Fix validation of AKM suites
+
+Larry Finger (1):
+      rtlwifi: rtl8192cu: Fix unitialized struct
+
+Madalin Bucur (2):
+      net: check return value for dst_alloc
+      ipv6: check return value for dst_alloc
+
+Mohammed Shafi Shajakhan (1):
+      ath9k: Fix a dma warning/memory leak
+
+Rajkumar Manoharan (1):
+      ath9k_hw: Fix Rx DMA stuck for AR9003 chips
+
+Shmulik Ravid (1):
+      bnx2x: add missing break in bnx2x_dcbnl_get_cap
+
+Stanislaw Gruszka (2):
+      iwlegacy: fix command queue timeout
+      iwlegacy: do not use interruptible waits
+
+ Documentation/networking/scaling.txt               |    2 +-
+ drivers/net/bnx2x/bnx2x_dcb.c                      |    1 +
+ drivers/net/bnx2x/bnx2x_main.c                     |   16 ++++++++--
+ drivers/net/bnx2x/bnx2x_reg.h                      |   12 ++++++++
+ .../net/wireless/ath/ath9k/ar9003_2p2_initvals.h   |    2 +-
+ drivers/net/wireless/ath/ath9k/recv.c              |   10 ++++++-
+ drivers/net/wireless/iwlegacy/iwl-core.c           |    4 +-
+ drivers/net/wireless/iwlegacy/iwl-hcmd.c           |    2 +-
+ drivers/net/wireless/iwlegacy/iwl-tx.c             |    4 ++-
+ drivers/net/wireless/iwlegacy/iwl3945-base.c       |    8 ++--
+ drivers/net/wireless/iwlegacy/iwl4965-base.c       |   10 +++---
+ drivers/net/wireless/iwlwifi/iwl-scan.c            |   30 ++++++++++---------
+ drivers/net/wireless/rtlwifi/usb.c                 |    1 +
+ net/batman-adv/soft-interface.c                    |   10 +++---
+ net/ipv6/ip6mr.c                                   |    8 ++++-
+ net/ipv6/route.c                                   |    4 ++-
+ net/wireless/nl80211.c                             |    5 ++-
+ net/xfrm/xfrm_policy.c                             |   10 ++++--
+ 18 files changed, 93 insertions(+), 46 deletions(-)
