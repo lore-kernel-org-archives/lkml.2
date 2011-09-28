@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab1I1X0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:26:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53772 "EHLO mx2.suse.de"
+	id S1755601Ab1I1X1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:27:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53745 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209Ab1I1WkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:40:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:29 2011
-Message-Id: <20110928220129.164154856@clark.kroah.org>
+	id S932116Ab1I1WkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:40:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:28 2011
+Message-Id: <20110928220128.730613837@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:00:01 -0700
+Date: Wed, 28 Sep 2011 14:59:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, IvDoorn@gmail.com,
-        Stanislaw Gruszka <sgruszka@redhat.com>, jpiszcz@lucidpixels.com,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [037/244] rt2x00: fix crash in rt2800usb_write_tx_desc
+Subject: [033/244] rt2x00: do not drop usb dev reference counter on suspend
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,97 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4b1bfb7d2d125af6653d6c2305356b2677f79dc6 upstream.
+commit 543cc38c8fe86deba4169977c61eb88491036837 upstream.
 
-Patch should fix this oops:
+When hibernating ->resume may not be called by usb core, but disconnect
+and probe instead, so we do not increase the counter after decreasing
+it in ->supend. As a result we free memory early, and get crash when
+unplugging usb dongle.
 
-BUG: unable to handle kernel NULL pointer dereference at 000000a0
-IP: [<f8e06078>] rt2800usb_write_tx_desc+0x18/0xc0 [rt2800usb]
-*pdpt = 000000002408c001 *pde = 0000000024079067 *pte = 0000000000000000
-Oops: 0000 [#1] SMP
-EIP: 0060:[<f8e06078>] EFLAGS: 00010282 CPU: 0
-EIP is at rt2800usb_write_tx_desc+0x18/0xc0 [rt2800usb]
-EAX: 00000035 EBX: ef2bef10 ECX: 00000000 EDX: d40958a0
-ESI: ef1865f8 EDI: ef1865f8 EBP: d4095878 ESP: d409585c
+BUG: unable to handle kernel paging request at 6b6b6b9f
+IP: [<c06909b0>] driver_sysfs_remove+0x10/0x30
+*pdpt = 0000000034f21001 *pde = 0000000000000000
+Pid: 20, comm: khubd Not tainted 3.1.0-rc1-wl+ #20 LENOVO 6369CTO/6369CTO
+EIP: 0060:[<c06909b0>] EFLAGS: 00010202 CPU: 1
+EIP is at driver_sysfs_remove+0x10/0x30
+EAX: 6b6b6b6b EBX: f52bba34 ECX: 00000000 EDX: 6b6b6b6b
+ESI: 6b6b6b6b EDI: c0a0ea20 EBP: f61c9e68 ESP: f61c9e64
  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process khubd (pid: 20, ti=f61c8000 task=f6138270 task.ti=f61c8000)
 Call Trace:
- [<f8da5e85>] rt2x00queue_write_tx_frame+0x155/0x300 [rt2x00lib]
- [<f8da424c>] rt2x00mac_tx+0x7c/0x370 [rt2x00lib]
- [<c04882b2>] ? mark_held_locks+0x62/0x90
- [<c081f645>] ? _raw_spin_unlock_irqrestore+0x35/0x60
- [<c04884ba>] ? trace_hardirqs_on_caller+0x5a/0x170
- [<c04885db>] ? trace_hardirqs_on+0xb/0x10
- [<f8d618ac>] __ieee80211_tx+0x5c/0x1e0 [mac80211]
- [<f8d631fc>] ieee80211_tx+0xbc/0xe0 [mac80211]
- [<f8d63163>] ? ieee80211_tx+0x23/0xe0 [mac80211]
- [<f8d632e1>] ieee80211_xmit+0xc1/0x200 [mac80211]
- [<f8d63220>] ? ieee80211_tx+0xe0/0xe0 [mac80211]
- [<c0487d45>] ? lock_release_holdtime+0x35/0x1b0
- [<f8d63986>] ? ieee80211_subif_start_xmit+0x446/0x5f0 [mac80211]
- [<f8d637dd>] ieee80211_subif_start_xmit+0x29d/0x5f0 [mac80211]
- [<f8d63924>] ? ieee80211_subif_start_xmit+0x3e4/0x5f0 [mac80211]
- [<c0760188>] ? sock_setsockopt+0x6a8/0x6f0
- [<c0760000>] ? sock_setsockopt+0x520/0x6f0
- [<c076daef>] dev_hard_start_xmit+0x2ef/0x650
+ [<c06909ef>] __device_release_driver+0x1f/0xa0
+ [<c0690b20>] device_release_driver+0x20/0x40
+ [<c068fd64>] bus_remove_device+0x84/0xe0
+ [<c068e12a>] ? device_remove_attrs+0x2a/0x80
+ [<c068e267>] device_del+0xe7/0x170
+ [<c06d93d4>] usb_disconnect+0xd4/0x180
+ [<c06d9d61>] hub_thread+0x691/0x1600
+ [<c0473260>] ? wake_up_bit+0x30/0x30
+ [<c0442a39>] ? complete+0x49/0x60
+ [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
+ [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
+ [<c0472eb4>] kthread+0x74/0x80
+ [<c0472e40>] ? kthread_worker_fn+0x150/0x150
+ [<c0809b3e>] kernel_thread_helper+0x6/0x10
 
-Oops might happen because we perform parallel putting new entries in a
-queue (rt2x00queue_write_tx_frame()) and removing entries after
-finishing transmitting (rt2800usb_work_txdone()). There are cases when
-_txdone may process an entry that was not fully send and nullify
-entry->skb .
-
-To fix check in _txdone if entry has flags that indicate pending
-transmission and wait until flags get cleared.
-
-Reported-by: Justin Piszcz <jpiszcz@lucidpixels.com>
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/wireless/rt2x00/rt2800lib.c |   10 ++++++++++
- drivers/net/wireless/rt2x00/rt2800usb.c |    4 +++-
- 2 files changed, 13 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -38,6 +38,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/sched.h>
+---
+ drivers/net/wireless/rt2x00/rt2x00usb.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
+
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.c
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
+@@ -870,18 +870,8 @@ int rt2x00usb_suspend(struct usb_interfa
+ {
+ 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
+ 	struct rt2x00_dev *rt2x00dev = hw->priv;
+-	int retval;
  
- #include "rt2x00.h"
- #include "rt2800lib.h"
-@@ -607,6 +608,15 @@ static bool rt2800_txdone_entry_check(st
- 	int wcid, ack, pid;
- 	int tx_wcid, tx_ack, tx_pid;
+-	retval = rt2x00lib_suspend(rt2x00dev, state);
+-	if (retval)
+-		return retval;
+-
+-	/*
+-	 * Decrease usbdev refcount.
+-	 */
+-	usb_put_dev(interface_to_usbdev(usb_intf));
+-
+-	return 0;
++	return rt2x00lib_suspend(rt2x00dev, state);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00usb_suspend);
  
-+	if (test_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags) ||
-+	    !test_bit(ENTRY_DATA_STATUS_PENDING, &entry->flags)) {
-+		WARNING(entry->queue->rt2x00dev,
-+			"Data pending for entry %u in queue %u\n",
-+			entry->entry_idx, entry->queue->qid);
-+		cond_resched();
-+		return false;
-+	}
-+
- 	wcid	= rt2x00_get_field32(reg, TX_STA_FIFO_WCID);
- 	ack	= rt2x00_get_field32(reg, TX_STA_FIFO_TX_ACK_REQUIRED);
- 	pid	= rt2x00_get_field32(reg, TX_STA_FIFO_PID_TYPE);
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -477,8 +477,10 @@ static void rt2800usb_work_txdone(struct
- 		while (!rt2x00queue_empty(queue)) {
- 			entry = rt2x00queue_get_entry(queue, Q_INDEX_DONE);
+@@ -890,8 +880,6 @@ int rt2x00usb_resume(struct usb_interfac
+ 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
+ 	struct rt2x00_dev *rt2x00dev = hw->priv;
  
--			if (test_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags))
-+			if (test_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags) ||
-+			    !test_bit(ENTRY_DATA_STATUS_PENDING, &entry->flags))
- 				break;
-+
- 			if (test_bit(ENTRY_DATA_IO_FAILED, &entry->flags))
- 				rt2x00lib_txdone_noinfo(entry, TXDONE_FAILURE);
- 			else if (rt2x00queue_status_timeout(entry))
+-	usb_get_dev(interface_to_usbdev(usb_intf));
+-
+ 	return rt2x00lib_resume(rt2x00dev);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00usb_resume);
 
 
