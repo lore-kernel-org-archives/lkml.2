@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab1I1NuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 09:50:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57292 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab1I1NuS convert rfc822-to-8bit (ORCPT
+	id S1754435Ab1I1Nun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 09:50:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49346 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754416Ab1I1Num (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 09:50:18 -0400
+	Wed, 28 Sep 2011 09:50:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH v3 14/24] C6X: traps
+Date: Wed, 28 Sep 2011 15:50:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <1317155405-26235-15-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317155405-26235-15-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZM-F-E_RUu4JTd-1J8UeQWXiekBcnMf7Jp7m07B8SYVQ@mail.gmail.com>
-References: <1316840820-2014-1-git-send-email-linkinjeon@gmail.com>
-	<CACRpkdZM-F-E_RUu4JTd-1J8UeQWXiekBcnMf7Jp7m07B8SYVQ@mail.gmail.com>
-Date: Wed, 28 Sep 2011 22:50:17 +0900
-Message-ID: <CAKYAXd-=EaG02N6f2VWO0ZNCshWp6swiT-WwpOV-p+cTDL7wwA@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        Per Forlin <per.forlin@stericsson.com>, johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109281550.40039.arnd@arndb.de>
+X-Provags-ID: V02:K0:9Zqlfj8ZVfqQe306ekljSQtIs+ZTW2vL/YuLmvnucQJ
+ Up5HKdBOvtWZvOK94CtE43eK5s8scAmHUE3MKCuRvo6R8AZlTy
+ jwoeOVEhzAT+Nqk5ftOmTe4pRIJUnBEzrB4cpW6z7z/0fdMApt
+ V0jVyJOWrqJ8Ci1Dbq924Tumzrg1YklMnvHW19ksNZG6wFAJvj
+ rdBYprzxr/j8CeQ64VoaHwRlGeE8NhMYskCUn0EWetR1e4qMXW
+ y6Bt1aCE7sJTfDwzZbrQIoJRkCRV1NtLPlr2UX3g7Gh7l7fjN+
+ 61EBqB04fetVhwdHAxS1YgAZ/9DgEnsaOGrCFN2dZwoKF4ZmiD
+ EW5f4Oq9fpfqj32m4zD0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/28 Linus Walleij <linus.walleij@linaro.org>:
-> On Sat, Sep 24, 2011 at 7:07 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
->
->> It allows gerneral purpose partitions in MMC Device.
->> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
->> After patching, we can see general purpose partitions like this.
->>> cat /proc/partitions
->>          179 0 847872 mmcblk0
->>          179 192 4096 mmcblk0gp4
->>          179 160 4096 mmcblk0gp3
->>          179 128 4096 mmcblk0gp2
->>          179 96  1052672 mmcblk0gp1
->
-> We notice there are 32 minors between 128 and 96,
-> how are these allocated?
-You can insert maximum minors in menuconfig. I set to 32.
->
->>          179 64  1024 mmcblk0boot1
->>          179 32  1024 mmcblk0boot0
->
-> Does this mean that each GP-partition can contain an MBR and thus several
-> subpartitions so we get things like:
->
-> mmcblk0gp1p1, mmcblk0gp1p2...
->
->
-Yes, We can divide dos partitions(included MBR) using fdisk like your
-words(mmcblk0gp1p1, mmcblk0gp1p2...)
+On Tuesday 27 September 2011, Mark Salter wrote:
+> 
+> This patch provides the kernel entry points for traps, syscalls and
+> interrupts.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
 
-> Yours,
-> Linus Walleij
->
+Acked-by: Arnd Bergmann <arnd@arndb.de>
