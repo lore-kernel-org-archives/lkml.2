@@ -1,31 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab1I1HON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 03:14:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45331 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab1I1HOM (ORCPT
+	id S1753384Ab1I1HPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 03:15:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53793 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab1I1HPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 03:14:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317183650.2067.10.camel@shrek.rexursive.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com>
-Date: Wed, 28 Sep 2011 10:14:11 +0300
-X-Google-Sender-Auth: Rxd6xQB-4ECvydLw_Z73ILXn0nM
-Message-ID: <CAOJsxLGt717Mn50xZC5TD2s64A9vt27eAHRRFg+6nbworD4byQ@mail.gmail.com>
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Sep 2011 03:15:07 -0400
+Subject: [PATCH] ASoC: Fix setting adau1373_dai->master for
+ SND_SOC_DAIFMT_CBS_CFS
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 15:14:56 +0800
+Message-ID: <1317194096.2498.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 7:20 AM, Bojan Smojver <bojan@rexursive.com> wrote:
-> I tested this patch on my ThinkPad T510 that has 8 GB of RAM. I booted
-> Fedora 15 with Gnome 3 and started a few apps. This took about 1 GB of
-> memory. Hibernation gave over 300 MB/s write speed. Thaw gave over 200
-> MB/s read speed.
+In the case of SND_SOC_DAIFMT_CBS_CFS, adau1373_dai->master should be false.
 
-So how do the numbers look like without your patch?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/adau1373.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/codecs/adau1373.c b/sound/soc/codecs/adau1373.c
+index 2aa40c3..1ccf8dd 100644
+--- a/sound/soc/codecs/adau1373.c
++++ b/sound/soc/codecs/adau1373.c
+@@ -974,7 +974,7 @@ static int adau1373_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+ 		break;
+ 	case SND_SOC_DAIFMT_CBS_CFS:
+ 		ctrl = 0;
+-		adau1373_dai->master = true;
++		adau1373_dai->master = false;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.7.4.1
+
+
+
