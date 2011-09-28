@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab1I1Coo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 22:44:44 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36781 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1I1Con (ORCPT
+	id S1752426Ab1I1Cpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 22:45:36 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59421 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab1I1Cpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 22:44:43 -0400
-Date: Tue, 27 Sep 2011 22:43:33 -0400 (EDT)
-Message-Id: <20110927.224333.1502961724066678494.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-09-27
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110927210031.GA2471@tuxdriver.com>
-References: <20110927210031.GA2471@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 27 Sep 2011 22:45:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E828AFC.7070405@jp.fujitsu.com>
+Date: Wed, 28 Sep 2011 11:48:28 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: minchan.kim@gmail.com
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jweiner@redhat.com, mel@csn.ul.ie,
+        riel@redhat.com, lee.schermerhorn@hp.com
+Subject: Re: [PATCH] vmscan: add barrier to prevent evictable page in unevictable
+ list
+References: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com> <4E8284C6.1050900@jp.fujitsu.com> <20110928022510.GB12100@barrios-desktop>
+In-Reply-To: <20110928022510.GB12100@barrios-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 27 Sep 2011 19:43:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 27 Sep 2011 17:00:31 -0400
-
-> Here is another last (?) batch of fixes intended for 3.1.  Included is a
-> scanning-related regression fix that avoids a potential crash, a buffer
-> overflow fix in cfg80211, an fix for an uninitialized variable in
-> rtlwifi, a fix for a DMA-related WARNING in ath9k, a fix for a DMA hang
-> in ath9k, and two iwlegacy fixes backported from prior iwlagn fixes, one
-> for avoiding interruptible waits and another for avoiding a command
-> queue timeout.
+(2011/09/28 11:25), Minchan Kim wrote:
+> On Wed, Sep 28, 2011 at 11:21:58AM +0900, KOSAKI Motohiro wrote:
+>> (2011/09/28 10:45), Minchan Kim wrote:
+>>> When racing between putback_lru_page and shmem_unlock happens,
+>>> progrom execution order is as follows, but clear_bit in processor #1
+>>> could be reordered right before spin_unlock of processor #1.
+>>> Then, the page would be stranded on the unevictable list.
+>>>
+>>> spin_lock
+>>> SetPageLRU
+>>> spin_unlock
+>>>                                 clear_bit(AS_UNEVICTABLE)
+>>>                                 spin_lock
+>>>                                 if PageLRU()
+>>>                                         if !test_bit(AS_UNEVICTABLE)
+>>>                                         	move evictable list
+>>> smp_mb
+>>> if !test_bit(AS_UNEVICTABLE)
+>>>         move evictable list
+>>>                                 spin_unlock
+>>>
+>>> But, pagevec_lookup in scan_mapping_unevictable_pages has rcu_read_[un]lock so
+>>> it could protect reordering before reaching test_bit(AS_UNEVICTABLE) on processor #1
+>>> so this problem never happens. But it's a unexpected side effect and we should
+>>> solve this problem properly.
+>>
+>> Do we still need this after Hannes removes scan_mapping_unevictable_pages?
+>  
+> Hi KOSAKI,
 > 
-> Please let me know if there are problems!
+> What Hannes removes is scan_zone_unevictable_pages not scan_mapping_unevictable_pages.
+> 
 
-Pulled, thanks John.
+Oops, you are right.
+
+
+
