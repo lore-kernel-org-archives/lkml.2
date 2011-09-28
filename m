@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab1I1Wos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:44:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54340 "EHLO mx2.suse.de"
+	id S932722Ab1I1Wo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:44:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54359 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932642Ab1I1Wop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:44:45 -0400
+	id S932733Ab1I1Woy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:44:54 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:40 2011
-Message-Id: <20110928220140.077109100@clark.kroah.org>
+Message-Id: <20110928220140.406936554@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:01:44 -0700
+Date: Wed, 28 Sep 2011 15:01:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [140/244] Fix the conflict between rwpidforward and rw mount options
+        Manual Munz <freifunk@somakoma.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [143/244] b43: Fix beacon problem in ad-hoc mode
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <sfrench@us.ibm.com>
+From: Manual Munz <freifunk@somakoma.de>
 
-commit c9c7fa0064f4afe1d040e72f24c2256dd8ac402d upstream.
+commit 8c23516fbb209ccf8f8c36268311c721faff29ee upstream.
 
-Both these options are started with "rw" - that's why the first one
-isn't switched on even if it is specified. Fix this by adding a length
-check for "rw" option check.
+In ad-hoc mode, driver b43 does not issue beacons.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Manual Munz <freifunk@somakoma.de>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1258,7 +1258,7 @@ cifs_parse_mount_options(const char *mou
- 			/* ignore */
- 		} else if (strnicmp(data, "guest", 5) == 0) {
- 			/* ignore */
--		} else if (strnicmp(data, "rw", 2) == 0) {
-+		} else if (strnicmp(data, "rw", 2) == 0 && strlen(data) == 2) {
- 			/* ignore */
- 		} else if (strnicmp(data, "ro", 2) == 0) {
- 			/* ignore */
-@@ -1361,7 +1361,7 @@ cifs_parse_mount_options(const char *mou
- 			vol->server_ino = 1;
- 		} else if (strnicmp(data, "noserverino", 9) == 0) {
- 			vol->server_ino = 0;
--		} else if (strnicmp(data, "rwpidforward", 4) == 0) {
-+		} else if (strnicmp(data, "rwpidforward", 12) == 0) {
- 			vol->rwpidforward = 1;
- 		} else if (strnicmp(data, "cifsacl", 7) == 0) {
- 			vol->cifs_acl = 1;
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -1571,7 +1571,8 @@ static void handle_irq_beacon(struct b43
+ 	u32 cmd, beacon0_valid, beacon1_valid;
+ 
+ 	if (!b43_is_mode(wl, NL80211_IFTYPE_AP) &&
+-	    !b43_is_mode(wl, NL80211_IFTYPE_MESH_POINT))
++	    !b43_is_mode(wl, NL80211_IFTYPE_MESH_POINT) &&
++	    !b43_is_mode(wl, NL80211_IFTYPE_ADHOC))
+ 		return;
+ 
+ 	/* This is the bottom half of the asynchronous beacon update. */
 
 
