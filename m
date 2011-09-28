@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933233Ab1I1WsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 18:48:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54753 "EHLO mx2.suse.de"
+	id S933260Ab1I1WsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 18:48:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933009Ab1I1WsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:48:05 -0400
+	id S933245Ab1I1WsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 18:48:16 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:46 2011
-Message-Id: <20110928220146.249298546@clark.kroah.org>
+Message-Id: <20110928220146.668620269@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:42 -0700
+Date: Wed, 28 Sep 2011 15:02:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        James Smart <james.smart@emulex.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [198/244] [SCSI] lpfc 8.3.25: PCI and SR-IOV Fixes
+        Seth Heasley <seth.heasley@intel.com>, Jeff Garzik <jgarzik@pobox.com>
+Subject: [202/244] ahci: RAID-mode SATA patch for Intel Panther Point DeviceIDs
 In-Reply-To: <20110928220225.GA27128@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,206 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Smart <james.smart@emulex.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 0a96e9754d6c4a2a31e50ee6c6e36ec13f80bc25 upstream.
+commit 2cab7a4c5ccf96e0954e767af490ba9aee2c9b6f upstream.
 
-PCI and SR-IOV Fixes
+This patch adds an additional SATA RAID controller DeviceID for the Intel Panther Point PCH.
 
-- Call pci_save_state after the pci_restore_state completes.
-- After calling pci_enable_pcie_error_reporting() and checking the return
-  value for logging messages from rc, reset rc to 0 to it will not later be
-  interpreted for error.
-- Read PCI config space SR-IOV capability to get the number of VFs supported.
-- Check for the PF's supported number of VFs before invoking PCI enable sriov
-  API call and log error message that user requested number of VFs is beyond
-  the PF capability if such request is passed in.
-- Added check for Physical function with Virtual Functions attached. If so,
-  first disable all the VFs before proceeding to device reset.
-
-Signed-off-by: Alex Iannicelli <alex.iannicelli@emulex.com>
-Signed-off-by: James Smart <james.smart@emulex.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/lpfc/lpfc_attr.c |   76 +-----------------------------------------
- drivers/scsi/lpfc/lpfc_crtn.h |    1 
- drivers/scsi/lpfc/lpfc_init.c |   44 ++++++++++++++++++++++++
- drivers/scsi/lpfc/lpfc_sli.c  |    1 
- 4 files changed, 49 insertions(+), 73 deletions(-)
+ drivers/ata/ahci.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/lpfc/lpfc_attr.c
-+++ b/drivers/scsi/lpfc/lpfc_attr.c
-@@ -1466,80 +1466,10 @@ lpfc_sriov_hw_max_virtfn_show(struct dev
- 	struct Scsi_Host *shost = class_to_shost(dev);
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
- 	struct lpfc_hba *phba = vport->phba;
--	struct pci_dev *pdev = phba->pcidev;
--	union  lpfc_sli4_cfg_shdr *shdr;
--	uint32_t shdr_status, shdr_add_status;
--	LPFC_MBOXQ_t *mboxq;
--	struct lpfc_mbx_get_prof_cfg *get_prof_cfg;
--	struct lpfc_rsrc_desc_pcie *desc;
--	uint32_t max_nr_virtfn;
--	uint32_t desc_count;
--	int length, rc, i;
-+	uint16_t max_nr_virtfn;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -267,6 +267,7 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x1e05), board_ahci }, /* Panther Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1e06), board_ahci }, /* Panther Point RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x1e07), board_ahci }, /* Panther Point RAID */
++	{ PCI_VDEVICE(INTEL, 0x1e0e), board_ahci }, /* Panther Point RAID */
  
--	if ((phba->sli_rev < LPFC_SLI_REV4) ||
--	    (bf_get(lpfc_sli_intf_if_type, &phba->sli4_hba.sli_intf) !=
--	     LPFC_SLI_INTF_IF_TYPE_2))
--		return -EPERM;
--
--	if (!pdev->is_physfn)
--		return snprintf(buf, PAGE_SIZE, "%d\n", 0);
--
--	mboxq = (LPFC_MBOXQ_t *)mempool_alloc(phba->mbox_mem_pool, GFP_KERNEL);
--	if (!mboxq)
--		return -ENOMEM;
--
--	/* get the maximum number of virtfn support by physfn */
--	length = (sizeof(struct lpfc_mbx_get_prof_cfg) -
--		  sizeof(struct lpfc_sli4_cfg_mhdr));
--	lpfc_sli4_config(phba, mboxq, LPFC_MBOX_SUBSYSTEM_COMMON,
--			 LPFC_MBOX_OPCODE_GET_PROFILE_CONFIG,
--			 length, LPFC_SLI4_MBX_EMBED);
--	shdr = (union lpfc_sli4_cfg_shdr *)
--		&mboxq->u.mqe.un.sli4_config.header.cfg_shdr;
--	bf_set(lpfc_mbox_hdr_pf_num, &shdr->request,
--	       phba->sli4_hba.iov.pf_number + 1);
--
--	get_prof_cfg = &mboxq->u.mqe.un.get_prof_cfg;
--	bf_set(lpfc_mbx_get_prof_cfg_prof_tp, &get_prof_cfg->u.request,
--	       LPFC_CFG_TYPE_CURRENT_ACTIVE);
--
--	rc = lpfc_sli_issue_mbox_wait(phba, mboxq,
--				lpfc_mbox_tmo_val(phba, MBX_SLI4_CONFIG));
--
--	if (rc != MBX_TIMEOUT) {
--		/* check return status */
--		shdr_status = bf_get(lpfc_mbox_hdr_status, &shdr->response);
--		shdr_add_status = bf_get(lpfc_mbox_hdr_add_status,
--					 &shdr->response);
--		if (shdr_status || shdr_add_status || rc)
--			goto error_out;
--
--	} else
--		goto error_out;
--
--	desc_count = get_prof_cfg->u.response.prof_cfg.rsrc_desc_count;
--
--	for (i = 0; i < LPFC_RSRC_DESC_MAX_NUM; i++) {
--		desc = (struct lpfc_rsrc_desc_pcie *)
--			&get_prof_cfg->u.response.prof_cfg.desc[i];
--		if (LPFC_RSRC_DESC_TYPE_PCIE ==
--		    bf_get(lpfc_rsrc_desc_pcie_type, desc)) {
--			max_nr_virtfn = bf_get(lpfc_rsrc_desc_pcie_nr_virtfn,
--					       desc);
--			break;
--		}
--	}
--
--	if (i < LPFC_RSRC_DESC_MAX_NUM) {
--		if (rc != MBX_TIMEOUT)
--			mempool_free(mboxq, phba->mbox_mem_pool);
--		return snprintf(buf, PAGE_SIZE, "%d\n", max_nr_virtfn);
--	}
--
--error_out:
--	if (rc != MBX_TIMEOUT)
--		mempool_free(mboxq, phba->mbox_mem_pool);
--	return -EIO;
-+	max_nr_virtfn = lpfc_sli_sriov_nr_virtfn_get(phba);
-+	return snprintf(buf, PAGE_SIZE, "%d\n", max_nr_virtfn);
- }
- 
- /**
---- a/drivers/scsi/lpfc/lpfc_crtn.h
-+++ b/drivers/scsi/lpfc/lpfc_crtn.h
-@@ -440,3 +440,4 @@ struct lpfc_node_rrq *lpfc_get_active_rr
- int lpfc_wr_object(struct lpfc_hba *, struct list_head *, uint32_t, uint32_t *);
- /* functions to support SR-IOV */
- int lpfc_sli_probe_sriov_nr_virtfn(struct lpfc_hba *, int);
-+uint16_t lpfc_sli_sriov_nr_virtfn_get(struct lpfc_hba *);
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -4037,6 +4037,34 @@ lpfc_reset_hba(struct lpfc_hba *phba)
- }
- 
- /**
-+ * lpfc_sli_sriov_nr_virtfn_get - Get the number of sr-iov virtual functions
-+ * @phba: pointer to lpfc hba data structure.
-+ *
-+ * This function enables the PCI SR-IOV virtual functions to a physical
-+ * function. It invokes the PCI SR-IOV api with the @nr_vfn provided to
-+ * enable the number of virtual functions to the physical function. As
-+ * not all devices support SR-IOV, the return code from the pci_enable_sriov()
-+ * API call does not considered as an error condition for most of the device.
-+ **/
-+uint16_t
-+lpfc_sli_sriov_nr_virtfn_get(struct lpfc_hba *phba)
-+{
-+	struct pci_dev *pdev = phba->pcidev;
-+	uint16_t nr_virtfn;
-+	int pos;
-+
-+	if (!pdev->is_physfn)
-+		return 0;
-+
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_SRIOV);
-+	if (pos == 0)
-+		return 0;
-+
-+	pci_read_config_word(pdev, pos + PCI_SRIOV_TOTAL_VF, &nr_virtfn);
-+	return nr_virtfn;
-+}
-+
-+/**
-  * lpfc_sli_probe_sriov_nr_virtfn - Enable a number of sr-iov virtual functions
-  * @phba: pointer to lpfc hba data structure.
-  * @nr_vfn: number of virtual functions to be enabled.
-@@ -4051,8 +4079,17 @@ int
- lpfc_sli_probe_sriov_nr_virtfn(struct lpfc_hba *phba, int nr_vfn)
- {
- 	struct pci_dev *pdev = phba->pcidev;
-+	uint16_t max_nr_vfn;
- 	int rc;
- 
-+	max_nr_vfn = lpfc_sli_sriov_nr_virtfn_get(phba);
-+	if (nr_vfn > max_nr_vfn) {
-+		lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
-+				"3057 Requested vfs (%d) greater than "
-+				"supported vfs (%d)", nr_vfn, max_nr_vfn);
-+		return -EINVAL;
-+	}
-+
- 	rc = pci_enable_sriov(pdev, nr_vfn);
- 	if (rc) {
- 		lpfc_printf_log(phba, KERN_WARNING, LOG_INIT,
-@@ -9487,6 +9524,13 @@ lpfc_io_slot_reset_s4(struct pci_dev *pd
- 	}
- 
- 	pci_restore_state(pdev);
-+
-+	/*
-+	 * As the new kernel behavior of pci_restore_state() API call clears
-+	 * device saved_state flag, need to save the restored state again.
-+	 */
-+	pci_save_state(pdev);
-+
- 	if (pdev->is_busmaster)
- 		pci_set_master(pdev);
- 
---- a/drivers/scsi/lpfc/lpfc_sli.c
-+++ b/drivers/scsi/lpfc/lpfc_sli.c
-@@ -5839,6 +5839,7 @@ lpfc_sli4_hba_setup(struct lpfc_hba *phb
- 					"Advanced Error Reporting (AER)\n");
- 			phba->cfg_aer_support = 0;
- 		}
-+		rc = 0;
- 	}
- 
- 	if (!(phba->hba_flag & HBA_FCOE_MODE)) {
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
