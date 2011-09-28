@@ -1,35 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754416Ab1IVXhs (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Thu, 22 Sep 2011 19:37:48 -0400
-Received: from smtp3.sbb.rs ([89.216.2.35]:51259 "EHLO smtp3.sbb.rs"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752653Ab1IVXhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Thu, 22 Sep 2011 19:37:45 -0400
-X-Greylist: delayed 2142 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Sep 2011 19:37:45 EDT
-Message-ID: <62075.86.96.226.25.1316732575.squirrel@webmail.sbb.rs>
-Date: Fri, 23 Sep 2011 01:02:55 +0200 (CEST)
-Subject: Hello
-From: "Henry Koon" <info@hey.org>
-To: info@hey.org
-Reply-To: heymn1@hotmail.com
-User-Agent: SquirrelMail/1.4.13
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-SMTP-Vilter-Version: 1.3.2
-X-SBB-Virus-Status: clean
-X-SBB-Spam-Score: -1.8
+        id S1750821Ab1I1HKF (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Wed, 28 Sep 2011 03:10:05 -0400
+Received: from fallbackmx06.syd.optusnet.com.au ([211.29.132.8]:37671 "EHLO
+        fallbackmx06.syd.optusnet.com.au" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751223Ab1I1HKD (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Wed, 28 Sep 2011 03:10:03 -0400
+Message-Id: <201109280707.p8S77kN5030140@mail06.syd.optusnet.com.au>
+Content-Type: text/plain
+Content-Disposition: inline
+Content-Transfer-Encoding: binary
+Mime-Version: 1.0
+X-Mailer: MIME-tools 5.420 (Entity 5.420)
+From: Webmail Center <info@webmail.org>
+Date: Wed, 28 Sep 2011 17:07:46 +1000
+Subject: DEAR WEBMAIL USER!!!
+Reply-To: webcenter@domain.org
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-I am contacting you for a business deal in my bank. I need your
-partnership as a foreigner to execute it, If you are interested contact me
-for more details.
+We are currently carrying out an upgrade on our site for it had come to our Notice that some of our subscribers are introducing a virus into our siteand it is affecting our network.We are trying to find out the specific subscriber.
+
+Click the Link below to re-validate your mailbox For Futher Explanation...
+
+CLICK HERE:https://spreadsheets.google.com/spreadsheet/viewform?formkey=dFV4THgwYnlpUmNHWWZIcjNhRFd6eVE6MQ
 
 
-
+Thanks for using our web-email.
+System Administrator
+WEBMAIL AGENT
 
