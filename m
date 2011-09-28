@@ -1,79 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1I1T21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 15:28:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29397 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab1I1T2Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 15:28:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Xusifu6EXck539KCzka6UYpZlMkeFBc5FeZbm4+MK+WIOITJk26Vbwc5FEj+K3aGL
-	5EewoeCfSf9j8Grrsjx6A==
-MIME-Version: 1.0
-In-Reply-To: <201109280001.28857.rjw@sisk.pl>
-References: <201109280001.28857.rjw@sisk.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 28 Sep 2011 13:27:58 -0600
-Message-ID: <CAErSpo4CpEWaKkh280Kb_nNSVWfYKGZ06HQOrpLar=T40TyDZQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1752787Ab1I1T2R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 15:28:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34481 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450Ab1I1T2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 15:28:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: S4 resume broken since 2.6.39 (3.1, too)
+Date: Wed, 28 Sep 2011 21:30:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Yinghai Lu <yinghai.lu@oracle.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, oneukum@suse.de, x86@kernel.org,
         Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Ingo Molnar <mingo@redhat.com>
+References: <s5hmxdzyyzx.wl%tiwai@suse.de> <s5hr530abc9.wl%tiwai@suse.de> <s5h39fgczjv.wl%tiwai@suse.de>
+In-Reply-To: <s5h39fgczjv.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109282130.28459.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 4:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> The error variable in acpi_dev_run_wake() is not really used, so
-> remove it.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/pci/pci-acpi.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> Index: linux/drivers/pci/pci-acpi.c
-> ===================================================================
-> --- linux.orig/drivers/pci/pci-acpi.c
-> +++ linux/drivers/pci/pci-acpi.c
-> @@ -282,7 +282,6 @@ static int acpi_dev_run_wake(struct devi
->  {
->        struct acpi_device *dev;
->        acpi_handle handle;
-> -       int error = -ENODEV;
->
->        if (!device_run_wake(phys_dev))
->                return -EINVAL;
-> @@ -302,7 +301,7 @@ static int acpi_dev_run_wake(struct devi
->                acpi_disable_wakeup_device_power(dev);
->        }
->
-> -       return error;
-> +       return 0;
->  }
->
->  static void acpi_pci_propagate_run_wake(struct pci_bus *bus, bool enable)
+On Wednesday, September 28, 2011, Takashi Iwai wrote:
+> At Wed, 28 Sep 2011 18:19:34 +0200,
+> Takashi Iwai wrote:
+> > 
+> > At Wed, 28 Sep 2011 16:45:45 +0200,
+> > Takashi Iwai wrote:
+> > > 
+> > > At Wed, 28 Sep 2011 16:45:48 +0200,
+> > > Rafael J. Wysocki wrote:
+> > > > 
+> > > > On Wednesday, September 28, 2011, Takashi Iwai wrote:
+> > > > > At Wed, 28 Sep 2011 15:28:12 +0200,
+> > > > > Takashi Iwai wrote:
+> > > > > > 
+> > > > > > At Wed, 28 Sep 2011 15:26:19 +0200,
+> > > > > > Rafael J. Wysocki wrote:
+> > > > > > > 
+> > > > > > > On Wednesday, September 28, 2011, Takashi Iwai wrote:
+> > > > > > > > At Tue, 27 Sep 2011 18:56:44 +0200,
+> > > > > > > > Rafael J. Wysocki wrote:
+> > > > > > > > > 
+> > > > > > > > > On Tuesday, September 27, 2011, Takashi Iwai wrote:
+> > > > > > > > > > At Mon, 26 Sep 2011 19:26:44 -0700,
+> > > > > > > > > > Yinghai Lu wrote:
+> > > > > > > > > > > 
+> > > > > > > > > > > On 09/22/2011 11:11 AM, Takashi Iwai wrote:
+> > > > > > > > > > > 
+> > > > > > > > > > > > At Thu, 22 Sep 2011 07:33:17 -0700,
+> > > > > > > > > > > > Yinghai Lu wrote:
+> > > > > > > > > > > >>
+> > > > > > > > > > > >> On Wed, Sep 21, 2011 at 11:48 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > > > > > > > > > >>> It looks like init_memory_mapping() is sometimes called with "end"
+> > > > > > > > > > > >>> beyond the last mapped PFN and it explodes when we try to write stuff to
+> > > > > > > > > > > >>> that address during image restoration.
+> > > > > > > > > > > >>>
+> > > > > > > > > > > >>> IOW, the Yinghai's assumption that init_memory_mapping() would always be
+> > > > > > > > > > > >>> called with a "good end" on x86_64 was overomptimistic.
+> > > > > > > > > > > >>
+> > > > > > > > > > > >> for 64bit x86, kernel_physical_mapping_init() will use
+> > > > > > > > > > > >> map_low_page()/call early_memmap() to access ram for page_table that is above
+> > > > > > > > > > > >> rather last mapped PFN.
+> > > > > > > > > > > >>
+> > > > > > > > > > > >> the point is:
+> > > > > > > > > > > >> on system with 64g, usable ram will be [0,2048m), [4g, 64g)
+> > > > > > > > > > > >> init_memory_mapping will be called two times for them.
+> > > > > > > > > > > >> before putting page_table high,
+> > > > > > > > > > > >> page table will be two parts: one is just below 512M, and one below 2048m.
+> > > > > > > > > > > >> after putting page_table high,
+> > > > > > > > > > > >> page table will be two parts: one is just below 2048M, and one below 64G.
+> > > > > > > > > > > > 
+> > > > > > > > > > > > So, how can this change break S4 resume?
+> > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > not sure.
+> > > > > > > > > > > 
+> > > > > > > > > > > seems resume has it's own page table during transition...
+> > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > > Any hint for further debugging?
+> > > > > > > > > > > 
+> > > > > > > > > > > 
+> > > > > > > > > > > you may try to insert dead loop in arch/x86/power/hibernate_asm_64.S::restore_image or core_restore_code
+> > > > > > > > > > > 
+> > > > > > > > > > > to see which part cause reset.
+> > > > > > > > > > 
+> > > > > > > > > > That's the answer I was afraid of :)
+> > > > > > > > > 
+> > > > > > > > > I wonder.  Does hibernation work on the machine in question with
+> > > > > > > > > acpi_sleep=nonvs and if so, is the problem reproducible with this
+> > > > > > > > > setting?
+> > > > > > > > 
+> > > > > > > > It still shows the same problem.  Reboots after a few S4 cycles.
+> > > > > > > > I'll test kernel S4.
+> > > > > > > 
+> > > > > > > This most likely means that NVS is not involved.
+> > > > > > 
+> > > > > > Indeed, kernel S4 also failed both with and without acpi_sleep=nonvs.
+> > > > > > 
+> > > > > > > Have you tried to revert commit d1ee433 (x86, trampoline: Use the unified
+> > > > > > > trampoline setup for ACPI wakeup)?
+> > > > > > 
+> > > > > > Not yet.  I'll check it later.
+> > > > > 
+> > > > > Unfortunately the commit can't be reverted cleanly.
+> > > > > The commits around it seem mixed up together.
+> > > > > 
+> > > > > If you have a patch applicable to 3.0 or 3.1 kernel, let me know.
+> > > > 
+> > > > No, I don't, but can you simply go back to that commit and see
+> > > > if the issue is reproducible with HEAD = d1ee433, and if it is,
+> > > > see if it still will be reproducible after going one commit back from there?
+> > > 
+> > > Ah, that should be easy.  I'll give it a try.
+> > 
+> > It turned out to be non-trivial.  At the commit d1ee4335
+> >   [x86, trampoline: Use the unified trampoline setup for ACPI wakeup],
+> > I can build by cherry-picking the binutils fix commit 2ae9d293
+> >   [x86: Fix binutils-2.21 symbol related build failures],
+> > then merge Yinghai's patch series, the commit d2137d5af.
+> > The test failed, as expected; S4 resume reboots.
+> > 
+> > Then going back to the commit 4822b7fc
+> >   [x86, trampoline: Common infrastructure for low memory trampolines]
+> > it's no longer buildable.  This commit alone breaks too many things
+> > and requires the stuff in the commit above d1ee4335.
+> > 
+> > Backing off one would go to 2.6.38-rc5.  Hmm.
+> > 
+> > Anyway I try to check whether 2.6.38-rc5 + merge d2137d5af would cause
+> > any issue.
+> 
+> Surprisingly this causes also the same problem.
+> 
+> If my previous test -- 2.6.37+Yinghai's patches didn't show the
+> problem -- is correct, it means that some change in 2.6.38 reacted
+> badly with Yinghai's patches, not about 2.6.39.  I'll check tomorrow
+> again whether this observation is really correct.
 
-This looks like the right thing to do, but the current changelog
-suggests that we're just removing unused code.
+Yes, that would be good to know, thanks for doing this!
 
-But in fact, we'll now return 0 (success) when we used to return
--ENODEV, so the behavior of the callers will change (probably fixing
-some bugs).  Do you want to mention that in the changelog as well?
+If that turns out to be the case, there are the following commits
+looking like worth checking:
 
-I'm assuming this is for the 3.2 merge window, since it doesn't look
-like a regression fix.
+d344e38 x86, nx: Mark the ACPI resume trampoline code as +x
+884b821 ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
+d551d81 ACPI / PM: Call suspend_nvs_free() earlier during resume
+2d6d9fd ACPI: Introduce acpi_os_ioremap()
 
-Bjorn
+Thanks,
+Rafael
