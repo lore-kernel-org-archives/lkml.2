@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab1I1BK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Sep 2011 21:10:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60142 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab1I1BK0 (ORCPT
+	id S1751833Ab1I1BNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Sep 2011 21:13:11 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:40058 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab1I1BNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Sep 2011 21:10:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Sep 2011 10:09:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>
-Subject: Re: [PATCH v3 4/7] per-cgroup tcp buffers control
-Message-Id: <20110928100938.89c68c45.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4E812C81.9020909@parallels.com>
-References: <1316393805-3005-1-git-send-email-glommer@parallels.com>
-	<1316393805-3005-5-git-send-email-glommer@parallels.com>
-	<20110926195906.f1f5831c.kamezawa.hiroyu@jp.fujitsu.com>
-	<4E812C81.9020909@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 27 Sep 2011 21:13:10 -0400
+Date: Wed, 28 Sep 2011 11:13:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: New location for the module.h split content
+Message-Id: <20110928111302.effdf3ba197447a158509cbf@canb.auug.org.au>
+In-Reply-To: <20110928003903.GA16710@windriver.com>
+References: <20110928003903.GA16710@windriver.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Sep_2011_11_13_02_+1000_iYYlnWVj=aZGMe7B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Sep 2011 22:53:05 -0300
-Glauber Costa <glommer@parallels.com> wrote:
+--Signature=_Wed__28_Sep_2011_11_13_02_+1000_iYYlnWVj=aZGMe7B
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 09/26/2011 07:59 AM, KAMEZAWA Hiroyuki wrote:
-> > On Sun, 18 Sep 2011 21:56:42 -0300
-> > Glauber Costa<glommer@parallels.com>  wrote:
-> >
-> >> With all the infrastructure in place, this patch implements
-> >> per-cgroup control for tcp memory pressure handling.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: David S. Miller<davem@davemloft.net>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: Eric W. Biederman<ebiederm@xmission.com>
-> >
-> > a comment below.
-> >
-> >> +int tcp_init_cgroup(struct proto *prot, struct cgroup *cgrp,
-> >> +		    struct cgroup_subsys *ss)
-> >> +{
-> >> +	struct mem_cgroup *cg = mem_cgroup_from_cont(cgrp);
-> >> +	unsigned long limit;
-> >> +
-> >> +	cg->tcp_memory_pressure = 0;
-> >> +	atomic_long_set(&cg->tcp_memory_allocated, 0);
-> >> +	percpu_counter_init(&cg->tcp_sockets_allocated, 0);
-> >> +
-> >> +	limit = nr_free_buffer_pages() / 8;
-> >> +	limit = max(limit, 128UL);
-> >> +
-> >> +	cg->tcp_prot_mem[0] = sysctl_tcp_mem[0];
-> >> +	cg->tcp_prot_mem[1] = sysctl_tcp_mem[1];
-> >> +	cg->tcp_prot_mem[2] = sysctl_tcp_mem[2];
-> >> +
-> >
-> > Then, the parameter doesn't inherit parent's one ?
-> >
-> > I think sockets_populate should pass 'parent' and
-> >
-> >
-> > I think you should have a function
-> >
-> >      mem_cgroup_should_inherit_parent_settings(parent)
-> >
-> > (This is because you made this feature as a part of memcg.
-> >   please provide expected behavior.)
-> >
-> > Thanks,
-> > -Kame
-> 
-> Kame: Another look into this:
-> 
-> sysctl_tcp_mem is a global value, unless you have different namespaces.
-> So it is either global anyway, or should come from the namespace, not 
-> the parent.
-> 
-> Now, the goal here is to set the maximum possible value for those 
-> fields. That, indeed, should come from the parent.
-> 
-> That's my understanding...
-> 
-Hmm, I may misunderstand something. If this isn't a value you don't want to limit
-by memcg's kmem_limit, it's ok.
-Maybe memcg should just take care of kmem_limit.
+Hi Paul,
 
-Thanks,
--Kame
+On Tue, 27 Sep 2011 20:39:04 -0400 Paul Gortmaker <paul.gortmaker@windriver=
+.com> wrote:
+>
+> I've placed the module split content for linux-next on one of
+> our local servers as per the pull request info below, to serve
+> as an alternate source while kernel.org is down.
+>=20
+> --------
+>=20
+> The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123b=
+cb:
+>=20
+>   Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
+>=20
+> are available in the git repository at:
+>   git://openlinux.windriver.com/people/paulg/linux-next for-sfr
 
+I will switch to this from today.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__28_Sep_2011_11_13_02_+1000_iYYlnWVj=aZGMe7B
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOgnSeAAoJEDMEi1NhKgbsAlcH/0zEhZn80flOtOWSYpsOzxA0
+pIglePwfb7r12g/eEOKq0l943dnU9ULg8UoOpETRm0qlRfEysIN93r43v6GI/Omw
+TuqkBJ9XhZ/NgsVq+mZv4P24QZCGoqDeGmERXJCImU0W8LdgWpX4UBzI8vzfRZex
+1gDhw9ONcg6dQP9GcyxJNypAq9GIq+DQhZiBCCY4uJ27NtyB2Q3TdPL/KoB8KdkK
+sd3uT8FlsGKiAYMY0i1lfxEz9pAQWHPSkA/ZnCWyiRV/wHbwemFvNamxD+Eqf5/I
+lPecDHBijM6jPahGaOrDxPtsxMo1P/pM3og143Mcs+TCVBy3GREy51GVf5IKUzs=
+=piMi
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Sep_2011_11_13_02_+1000_iYYlnWVj=aZGMe7B--
