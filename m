@@ -1,118 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab1I1Qi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 12:38:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57206 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab1I1Qi6 convert rfc822-to-8bit (ORCPT
+	id S1753346Ab1I1Qv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 12:51:59 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:11818 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab1I1Qv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 12:38:58 -0400
+	Wed, 28 Sep 2011 12:51:58 -0400
+Message-ID: <4E8350A8.7090307@cavium.com>
+Date: Wed, 28 Sep 2011 09:51:52 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwf3iOwyDDxjKbJ0fs=fy+-8mkoFHdgsEq32nAkerXS4g@mail.gmail.com>
-References: <CA+55aFwdm3n+xehYc1cronkcwLE79ZYtr96LiVWD2WjKkaZ5DA@mail.gmail.com>
-	<CACqU3MXzUbQS9fy0Etgt2GcgwRoXfihhmw-aWjrCFbzvmDM7yg@mail.gmail.com>
-	<CA+55aFwKyd5fuyxu2tGDbQ8gKiEj=z7uYdBRg9O46WN0sTeNTQ@mail.gmail.com>
-	<CACqU3MU8jkysNxFasdfy9ksqSo2ojiZ5LUwfcfX13MMRgVx2Xw@mail.gmail.com>
-	<CACqU3MWyCknNH3xmVmbJJu+w9ugNc3e4K3e3_6cY1RAy4ynJCQ@mail.gmail.com>
-	<CA+55aFxp8bNhLs+v69gp7XxBGq6wkmLkZKjB2_09H3qsZC_pzw@mail.gmail.com>
-	<CACqU3MUbiQW3E8GeSbzkikMqvV1VKAnF2Ro-P2BWwih=s6vABA@mail.gmail.com>
-	<CA+55aFwf3iOwyDDxjKbJ0fs=fy+-8mkoFHdgsEq32nAkerXS4g@mail.gmail.com>
-Date: Wed, 28 Sep 2011 12:38:56 -0400
-Message-ID: <CACqU3MX_OAAiuUZh-qFVLTJVGAp_jTS+d3Lc-T_E0XTj=xa=Zg@mail.gmail.com>
-Subject: Re: Linux 3.1-rc7
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirqus@gmail.com>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Subject: Re: [PATCH v2 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+References: <1317166015-20714-1-git-send-email-david.daney@cavium.com> <1317166015-20714-3-git-send-email-david.daney@cavium.com> <CAHXqBFLzrkH4AJVozbtT4k7ccgVgfaPoq69J48DeSJKSwEtxHw@mail.gmail.com>
+In-Reply-To: <CAHXqBFLzrkH4AJVozbtT4k7ccgVgfaPoq69J48DeSJKSwEtxHw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 28 Sep 2011 16:51:57.0549 (UTC) FILETIME=[EF37F9D0:01CC7DFE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Sep 28, 2011 at 11:47 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Sep 27, 2011 at 10:34 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>
->> <off-topic>
->> Speaking of corruption, I'm encountering another set on an external
->> hard-drive, connected through USB.
+On 09/28/2011 12:25 AM, MichaÅ‚ MirosÅ‚aw wrote:
+> 2011/9/28 David Daney<david.daney@cavium.com>:
+> [...]
+>> +Example :
+>> +
+>> +       /* The parent MDIO bus. */
+>> +       smi1: mdio@1180000001900 {
+>> +               compatible = "cavium,octeon-3860-mdio";
+>> +               #address-cells =<1>;
+>> +               #size-cells =<0>;
+>> +               reg =<0x11800 0x00001900 0x0 0x40>;
+>> +       };
+>> +
+>> +       /*
+>> +          An NXP sn74cbtlv3253 dual 1-of-4 switch controlled by a
+>> +          pair of GPIO lines.  Child busses 2 and 3 populated with 4
+>> +          PHYs each.
+>> +        */
+>> +       mdio-mux {
+>> +               compatible = "cavium,mdio-mux-sn74cbtlv3253", "cavium,mdio-mux";
+>> +               gpios =<&gpio1 3 0>,<&gpio1 4 0>;
+>> +               mdio-parent-bus =<&smi1>;
+>> +               #address-cells =<1>;
+>> +               #size-cells =<0>;
 >
-> I don't think it's unrelated or off-topic.
+> This should probably have 'compatible = "nxp,sn74cbtlv3253";' here.
 >
->>     The same corruption pop up (at least in those text file): a
->> sequence of 4 bytes is replaced by 0x000000E0 at offset 0x1E4 of the
->> start of the file for some of them, 0x3E4 for two other (same
->> corruption though). Locating the corruption will be more tricky in
->> binary files.
->
-> So it's possible that it's some rogue kernel pointer. We've certainly
-> had those before. Constants offsets like that happen with some
-> structure allocation that just happens to be say 1kB in size, and the
-> rogue kernel pointer assigns at a fixed offset to something that has
-> already been free'd.
->
-> You might want to try to compile the kernel with SLUB_DEBUG_ON set,
-> and possibly also DEBUG_PAGEALLOC.
->
-I'll give it a try.
 
-> HOWEVER. It's quite possible that it's hardware too.
->
-Yes.
+No, the sn74cbtlv3253 is a general purpose part that could be used to 
+multiplex anything (I2C, SPI, random analog signals, etc.).  Only when 
+it is in the "cavium,mdio-mux-sn74cbtlv3253" configuration is it an MDIO 
+bus multiplexer.
 
->> I may not trust the drive, but the fact that only known offset are
->> corrupted (in text files), the exact same way, sounds too much of a
->> coincidence. Anyway, I started a long SMART self test to see if it
->> catches anything, as there was no DMA transfer error[0].
->
-> It *could* be the disk, but it's much more likely to be something like
-> memory or a bad cable. Which wouldn't show up with SMART, since that
-> just tests internal disk issues.
->
-At some point I did not trust the internal disk, but SMART tests
-(`short', `'long', `conveyance') passed successfully. I'd assume that
-a bad cable issue between the USB adapter and the disk would be caught
-by the UDMA_CRC_Error_Count counter (it already did), and would be
-somehow truly random. I'm not sure if USB do any kind of data checksum
-between the host and the device. I'd assume so.
-
-> Do you get some occasional random SIGSEGV's too?
->
-Over the last month, not much, mostly chrome (unstable version), and WIP stuff:
-
-# sed -r '/kernel:.*segfault/!d; s/.*kernel:.* ([a-z]+)\[.*/\1/'
-/var/log/messages* | sort | uniq -c
-      4 chrome
-      5 conf
-     19 nconf
-
-However, the list of program which dumped core is different:
-# sed '/core dump/!d; s/.*(\(.*\)) to .*/\1/' /var/log/messages* |
-sort | uniq -c
-      1 /bin/zsh
-      1 /src/linux/linux/scripts/kconfig/conf
-     24 /src/linux/linux/scripts/kconfig/nconf
-      1 /opt/google/chrome/chrome
-      2 /usr/bin/evince
-      1 /usr/bin/mplayer
-     45 /usr/lib64/nspluginwrapper/npviewer.bin
-
-Comparatively, on another machine (F15, 2.6.40.4, chromium
-13.0.782.215), same time period:
-
-# sed -r '/kernel:.*segfault/!d; s/.*kernel:.* ([a-z\.-]+)\[.*/\1/'
-/var/log/messages* | sort | uniq -c
-      1 aplay
-     33 chromium-browser
-
-and no specific core dump listed (my setup may be wrong).
-
-I'll try to gather more information.
-
-Thanks,
- - Arnaud
-
->                        Linus
->
+David Daney.
