@@ -1,141 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab1I1XFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 19:05:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54590 "EHLO mx2.suse.de"
+	id S933023Ab1I1XFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 19:05:54 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54361 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932965Ab1I1Wqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 18:46:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Sep 28 15:01:43 2011
-Message-Id: <20110928220143.786962833@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 28 Sep 2011 15:02:19 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [175/244] arp: fix rcu lockdep splat in arp_process()
-In-Reply-To: <20110928220225.GA27128@kroah.com>
+	id S1756076Ab1I1XFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 19:05:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,458,1312182000"; 
+   d="scan'208";a="68452861"
+Subject: Re: [PATCH] iwlagn: iwl-agn-rs: remove unnecessary null check for
+ sta and lq_sta
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: "Gregory.Dietsche@cuw.edu" <Gregory.Dietsche@cuw.edu>
+Cc: "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1317250444-2248-1-git-send-email-Gregory.Dietsche@cuw.edu>
+References: <1317250444-2248-1-git-send-email-Gregory.Dietsche@cuw.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Sep 2011 15:18:38 -0700
+Message-ID: <1317248318.1958.21.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Wed, 2011-09-28 at 15:54 -0700, Gregory.Dietsche@cuw.edu wrote:
+> From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> 
+> both sta and lq_sta are guaranteed to be not null in the
+> calling function so we don't need to check them here.
+> 
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> ---
+>  drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+you are correct
 
-------------------
-
-
-From: Eric Dumazet <eric.dumazet@gmail.com>
-
-[ Upstream commit 20e6074eb8e096b3a595c093d1cb222f378cd671 ]
-
-Dave Jones reported a lockdep splat triggered by an arp_process() call
-from parp_redo().
-
-Commit faa9dcf793be (arp: RCU changes) is the origin of the bug, since
-it assumed arp_process() was called under rcu_read_lock(), which is not
-true in this particular path.
-
-Instead of adding rcu_read_lock() in parp_redo(), I chose to add it in
-neigh_proxy_process() to take care of IPv6 side too.
-
- ===================================================
- [ INFO: suspicious rcu_dereference_check() usage. ]
- ---------------------------------------------------
- include/linux/inetdevice.h:209 invoked rcu_dereference_check() without
-protection!
-
- other info that might help us debug this:
-
- rcu_scheduler_active = 1, debug_locks = 0
- 4 locks held by setfiles/2123:
-  #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff8114cbc4>]
-walk_component+0x1ef/0x3e8
-  #1:  (&isec->lock){+.+.+.}, at: [<ffffffff81204bca>]
-inode_doinit_with_dentry+0x3f/0x41f
-  #2:  (&tbl->proxy_timer){+.-...}, at: [<ffffffff8106a803>]
-run_timer_softirq+0x157/0x372
-  #3:  (class){+.-...}, at: [<ffffffff8141f256>] neigh_proxy_process
-+0x36/0x103
-
- stack backtrace:
- Pid: 2123, comm: setfiles Tainted: G        W
-3.1.0-0.rc2.git7.2.fc16.x86_64 #1
- Call Trace:
-  <IRQ>  [<ffffffff8108ca23>] lockdep_rcu_dereference+0xa7/0xaf
-  [<ffffffff8146a0b7>] __in_dev_get_rcu+0x55/0x5d
-  [<ffffffff8146a751>] arp_process+0x25/0x4d7
-  [<ffffffff8146ac11>] parp_redo+0xe/0x10
-  [<ffffffff8141f2ba>] neigh_proxy_process+0x9a/0x103
-  [<ffffffff8106a8c4>] run_timer_softirq+0x218/0x372
-  [<ffffffff8106a803>] ? run_timer_softirq+0x157/0x372
-  [<ffffffff8141f220>] ? neigh_stat_seq_open+0x41/0x41
-  [<ffffffff8108f2f0>] ? mark_held_locks+0x6d/0x95
-  [<ffffffff81062bb6>] __do_softirq+0x112/0x25a
-  [<ffffffff8150d27c>] call_softirq+0x1c/0x30
-  [<ffffffff81010bf5>] do_softirq+0x4b/0xa2
-  [<ffffffff81062f65>] irq_exit+0x5d/0xcf
-  [<ffffffff8150dc11>] smp_apic_timer_interrupt+0x7c/0x8a
-  [<ffffffff8150baf3>] apic_timer_interrupt+0x73/0x80
-  <EOI>  [<ffffffff8108f439>] ? trace_hardirqs_on_caller+0x121/0x158
-  [<ffffffff814fc285>] ? __slab_free+0x30/0x24c
-  [<ffffffff814fc283>] ? __slab_free+0x2e/0x24c
-  [<ffffffff81204e74>] ? inode_doinit_with_dentry+0x2e9/0x41f
-  [<ffffffff81204e74>] ? inode_doinit_with_dentry+0x2e9/0x41f
-  [<ffffffff81204e74>] ? inode_doinit_with_dentry+0x2e9/0x41f
-  [<ffffffff81130cb0>] kfree+0x108/0x131
-  [<ffffffff81204e74>] inode_doinit_with_dentry+0x2e9/0x41f
-  [<ffffffff81204fc6>] selinux_d_instantiate+0x1c/0x1e
-  [<ffffffff81200f4f>] security_d_instantiate+0x21/0x23
-  [<ffffffff81154625>] d_instantiate+0x5c/0x61
-  [<ffffffff811563ca>] d_splice_alias+0xbc/0xd2
-  [<ffffffff811b17ff>] ext4_lookup+0xba/0xeb
-  [<ffffffff8114bf1e>] d_alloc_and_lookup+0x45/0x6b
-  [<ffffffff8114cbea>] walk_component+0x215/0x3e8
-  [<ffffffff8114cdf8>] lookup_last+0x3b/0x3d
-  [<ffffffff8114daf3>] path_lookupat+0x82/0x2af
-  [<ffffffff8110fc53>] ? might_fault+0xa5/0xac
-  [<ffffffff8110fc0a>] ? might_fault+0x5c/0xac
-  [<ffffffff8114c564>] ? getname_flags+0x31/0x1ca
-  [<ffffffff8114dd48>] do_path_lookup+0x28/0x97
-  [<ffffffff8114df2c>] user_path_at+0x59/0x96
-  [<ffffffff811467ad>] ? cp_new_stat+0xf7/0x10d
-  [<ffffffff811469a6>] vfs_fstatat+0x44/0x6e
-  [<ffffffff811469ee>] vfs_lstat+0x1e/0x20
-  [<ffffffff81146b3d>] sys_newlstat+0x1a/0x33
-  [<ffffffff8108f439>] ? trace_hardirqs_on_caller+0x121/0x158
-  [<ffffffff812535fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff8150af82>] system_call_fastpath+0x16/0x1b
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/core/neighbour.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -1383,11 +1383,15 @@ static void neigh_proxy_process(unsigned
- 
- 		if (tdif <= 0) {
- 			struct net_device *dev = skb->dev;
-+
- 			__skb_unlink(skb, &tbl->proxy_queue);
--			if (tbl->proxy_redo && netif_running(dev))
-+			if (tbl->proxy_redo && netif_running(dev)) {
-+				rcu_read_lock();
- 				tbl->proxy_redo(skb);
--			else
-+				rcu_read_unlock();
-+			} else {
- 				kfree_skb(skb);
-+			}
- 
- 			dev_put(dev);
- 		} else if (!sched_next || tdif < sched_next)
-
+Wey
 
