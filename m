@@ -1,122 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab1I1RiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 13:38:13 -0400
-Received: from www17.your-server.de ([213.133.104.17]:44291 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab1I1RiM (ORCPT
+	id S1754425Ab1I1RmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 13:42:12 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:14231 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab1I1RmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 13:38:12 -0400
-Subject: Re: [PATCH] Support compat_ioctl get/set termios_locked
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 28 Sep 2011 19:37:58 +0200
-In-Reply-To: <2272244.eQGJoCfPBm@wuerfel>
-References: <1316854289.1696.6.camel@localhost.localdomain>
-	 <2272244.eQGJoCfPBm@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317231482.1724.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Wed, 28 Sep 2011 13:42:11 -0400
+Message-ID: <4E835C71.1010108@cavium.com>
+Date: Wed, 28 Sep 2011 10:42:09 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Subject: Re: [PATCH v2 2/3] netdev/of/phy: Add MDIO bus multiplexer support.
+References: <1317166015-20714-1-git-send-email-david.daney@cavium.com> <1317166015-20714-3-git-send-email-david.daney@cavium.com> <CAHXqBFLzrkH4AJVozbtT4k7ccgVgfaPoq69J48DeSJKSwEtxHw@mail.gmail.com> <4E8350A8.7090307@cavium.com> <CAHXqBF+ZVbCGEvnCcOtHk+sOWFLp1CuEnGLq+GEtHQTpu9PuYg@mail.gmail.com>
+In-Reply-To: <CAHXqBF+ZVbCGEvnCcOtHk+sOWFLp1CuEnGLq+GEtHQTpu9PuYg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 28 Sep 2011 17:42:11.0180 (UTC) FILETIME=[F37B92C0:01CC7E05]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 25.09.2011, 13:11 +0200 schrieb Arnd Bergmann:
-> Hi Thomas,
-> 
-> This looks ok for n_tty, but the same commands are supported for some
-> (all?) other tty line disciplines as well, and they remain broken
-> after your patch.
-> 
-> I think it would be better to handle this in the common tty_compat_ioctl()
-> function before calling into the line discipline's compat_ioctl function.
-> 
+On 09/28/2011 10:32 AM, Micha³ Miros³aw wrote:
+> W dniu 28 wrze¶nia 2011 18:51 u¿ytkownik David Daney
+> <david.daney@cavium.com>  napisa³:
+>> On 09/28/2011 12:25 AM, Micha³ Miros³aw wrote:
+>>>
+>>> 2011/9/28 David Daney<david.daney@cavium.com>:
+>>> [...]
+>>>>
+>>>> +Example :
+>>>> +
+>>>> +       /* The parent MDIO bus. */
+>>>> +       smi1: mdio@1180000001900 {
+>>>> +               compatible = "cavium,octeon-3860-mdio";
+>>>> +               #address-cells =<1>;
+>>>> +               #size-cells =<0>;
+>>>> +               reg =<0x11800 0x00001900 0x0 0x40>;
+>>>> +       };
+>>>> +
+>>>> +       /*
+>>>> +          An NXP sn74cbtlv3253 dual 1-of-4 switch controlled by a
+>>>> +          pair of GPIO lines.  Child busses 2 and 3 populated with 4
+>>>> +          PHYs each.
+>>>> +        */
+>>>> +       mdio-mux {
+>>>> +               compatible = "cavium,mdio-mux-sn74cbtlv3253",
+>>>> "cavium,mdio-mux";
+>>>> +               gpios =<&gpio1 3 0>,<&gpio1 4 0>;
+>>>> +               mdio-parent-bus =<&smi1>;
+>>>> +               #address-cells =<1>;
+>>>> +               #size-cells =<0>;
+>>>
+>>> This should probably have 'compatible = "nxp,sn74cbtlv3253";' here.
+>>>
+>>
+>> No, the sn74cbtlv3253 is a general purpose part that could be used to
+>> multiplex anything (I2C, SPI, random analog signals, etc.).  Only when it is
+>> in the "cavium,mdio-mux-sn74cbtlv3253" configuration is it an MDIO bus
+>> multiplexer.
+>
+> This should use some generic name then. 'mdio-mux-gpio' or something.
+> There's no point in introducing chip's model for a gate-like discrete
+> device.
 
->From a91ed2e890a61a1fa382b6434a3c95774bd1d3da Mon Sep 17 00:00:00 2001
-From: Thomas Meyer <thomas@m3y3r.de>
-Date: Sat, 24 Sep 2011 10:36:39 +0200
-Subject: [PATCH] Support compat_ioctl get/set termios_locked
+That could be.  We could define an "mdio-mux-gpio" as something that 
+selects the child bus based on the binary encoded value presented on the 
+GPIO lines.
 
-When running a Fedora 15 (x86) on an x86_64 kernel, in the boot process
-plymouthd complains about those two missing ioctls:
-[    2.581783] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005457){t:'T';sz:0} arg(ffb6a5d0) on /dev/tty1
-[    2.581803] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005456){t:'T';sz:0} arg(ffb6a680) on /dev/tty1
+I will regenerate the patch set with this in mind.  Note that the only 
+part of this patch that will change is this mdio-mux.txt file, no actual 
+code is affected.  In patch 3/3 I will add "mdio-mux-gpio" to the 
+.of_match_table.
 
-both ioctl functions work on the 'struct termios' resp. 'struct termios2',
-which has the same size (36 bytes resp. 44 bytes) on x86 and x86_64,
-so it's just a matter of converting the pointer from userland.
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
- drivers/tty/tty_io.c    |    3 +++
- drivers/tty/tty_ioctl.c |   17 +++++++++++++++++
- include/linux/tty.h     |    2 ++
- 3 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 4f1fc81..983f29a 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2716,6 +2716,9 @@ static long tty_compat_ioctl(struct file *file, unsigned int cmd,
- 	ld = tty_ldisc_ref_wait(tty);
- 	if (ld->ops->compat_ioctl)
- 		retval = ld->ops->compat_ioctl(tty, file, cmd, arg);
-+	else
-+		n_tty_compat_ioctl_helper(tty, file, cmd, arg);
-+
- 	tty_ldisc_deref(ld);
- 
- 	return retval;
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 53f2442..9314d93 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -19,6 +19,7 @@
- #include <linux/module.h>
- #include <linux/bitops.h>
- #include <linux/mutex.h>
-+#include <linux/compat.h>
- 
- #include <asm/io.h>
- #include <asm/uaccess.h>
-@@ -1179,3 +1180,19 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
- 	}
- }
- EXPORT_SYMBOL(n_tty_ioctl_helper);
-+
-+#ifdef CONFIG_COMPAT
-+long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
-+					unsigned int cmd, unsigned long arg)
-+{
-+	switch (cmd) {
-+	case TIOCGLCKTRMIOS:
-+	case TIOCSLCKTRMIOS:
-+		return tty_mode_ioctl(tty, file, cmd, (unsigned long) compat_ptr(arg));
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+}
-+EXPORT_SYMBOL(n_tty_compat_ioctl_helper);
-+#endif
-+
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 5f2ede8..ddac668 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -581,6 +581,8 @@ extern int __init tty_init(void);
- /* tty_ioctl.c */
- extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
- 		       unsigned int cmd, unsigned long arg);
-+extern long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
-+		       unsigned int cmd, unsigned long arg);
- 
- /* serial.c */
- 
--- 
-1.7.6.2
-
-
+Thanks,
+David Daney
