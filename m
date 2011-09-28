@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab1I1Qw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 12:52:56 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36121 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab1I1Qwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 12:52:54 -0400
-Date: Wed, 28 Sep 2011 09:51:45 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        David Miller <davem@davemloft.net>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/3] libcrc32c: Expose big-endian version of crc32c
-Message-ID: <20110928165133.GQ12086@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110927221239.21653.17489.stgit@elm3c44.beaverton.ibm.com> <20110927221253.21653.28062.stgit@elm3c44.beaverton.ibm.com> <20110928035356.GA6671@gondor.apana.org.au>
+	id S1753945Ab1I1Q61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 12:58:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52929 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752737Ab1I1Q60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 12:58:26 -0400
+Date: Wed, 28 Sep 2011 18:56:39 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jiri Olsa <jolsa@redhat.com>,
+        acme@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        paulus@samba.org, linux-kernel@vger.kernel.org, nhorman@tuxdriver.com
+Subject: Re: [PATCHv2 1/2] perf tools: Collect tracing event data files
+ directly
+Message-ID: <20110928165639.GA10084@elte.hu>
+References: <20110925133406.GB2702@jolsa.brq.redhat.com>
+ <1317028312-5156-1-git-send-email-jolsa@redhat.com>
+ <1317028312-5156-2-git-send-email-jolsa@redhat.com>
+ <1317044192.26514.1.camel@gandalf.stny.rr.com>
+ <20110926145606.GA8886@jolsa.brq.redhat.com>
+ <20110928135525.GS18553@somewhere>
+ <1317218589.4588.4.camel@gandalf.stny.rr.com>
+ <20110928141754.GT18553@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110928035356.GA6671@gondor.apana.org.au>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11092816-2398-0000-0000-0000008E39FF
+In-Reply-To: <20110928141754.GT18553@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 01:53:59PM +1000, Herbert Xu wrote:
-> On Tue, Sep 27, 2011 at 03:12:53PM -0700, Darrick J. Wong wrote:
-> > Provide a big-endian version of crc32c for modules that want it.
-> 
-> Who is going to use this?
 
-Well, I was using it for jbd2 ... but since you ask, it seems to work just as
-well with crc32c-le, so I think I'll just drop the -be version.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
---D
+> > > But it seems Steve's patches are not completely uncontroversial 
+> > > because of some crazy disagreements on where the 
+> > > libparsevent.so should lay (tools generic or tied to perf).
+> > 
+> > Which to me seems to be a silly road block, in which I never got 
+> > a clear answer for.
 > 
-> Thanks,
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Yeah we need to sort that out with Ingo.
 
+Basically, since it's not at all clear to me where these things (and 
+APIs) will go, I'd be much more comfortable with this starting out as 
+tools/perf/lib/ - we can still split it out later on. Merging it in 
+will be a lot harder.
+
+Thanks,
+
+	Ingo
