@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab1I2Ngp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 09:36:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56540 "EHLO
+	id S1756500Ab1I2NhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 09:37:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56536 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756452Ab1I2Ngh (ORCPT
+	by vger.kernel.org with ESMTP id S1754724Ab1I2Ngf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 09:36:37 -0400
+	Thu, 29 Sep 2011 09:36:35 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 4/4] regmap: Ensure we scream if we enable cache bypass/only at the same time
-Date: Thu, 29 Sep 2011 14:36:28 +0100
-Message-Id: <1317303388-4040-4-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/4] regmap: Save/restore the bypass state upon syncing
+Date: Thu, 29 Sep 2011 14:36:26 +0100
+Message-Id: <1317303388-4040-2-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1317303388-4040-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1317303388-4040-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -22,29 +22,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regcache.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/base/regmap/regcache.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index eaa2e20..1d07828 100644
+index 8393c47..f91bc7b 100644
 --- a/drivers/base/regmap/regcache.c
 +++ b/drivers/base/regmap/regcache.c
-@@ -281,6 +281,7 @@ EXPORT_SYMBOL_GPL(regcache_sync);
- void regcache_cache_only(struct regmap *map, bool enable)
- {
+@@ -227,10 +227,13 @@ int regcache_sync(struct regmap *map)
+ 	unsigned int val;
+ 	unsigned int i;
+ 	const char *name;
++	unsigned int bypass;
+ 
+ 	BUG_ON(!map->cache_ops);
+ 
  	mutex_lock(&map->lock);
-+	WARN_ON(map->cache_bypass && enable);
- 	map->cache_only = enable;
++	/* Remember the initial bypass state */
++	bypass = map->cache_bypass;
+ 	dev_dbg(map->dev, "Syncing %s cache\n",
+ 		map->cache_ops->name);
+ 	name = map->cache_ops->name;
+@@ -255,6 +258,8 @@ int regcache_sync(struct regmap *map)
+ 	}
+ out:
+ 	trace_regcache_sync(map->dev, name, "stop");
++	/* Restore the bypass state */
++	map->cache_bypass = bypass;
  	mutex_unlock(&map->lock);
- }
-@@ -300,6 +301,7 @@ EXPORT_SYMBOL_GPL(regcache_cache_only);
- void regcache_cache_bypass(struct regmap *map, bool enable)
- {
- 	mutex_lock(&map->lock);
-+	WARN_ON(map->cache_only && enable);
- 	map->cache_bypass = enable;
- 	mutex_unlock(&map->lock);
- }
+ 
+ 	return ret;
 -- 
 1.7.6.4
 
