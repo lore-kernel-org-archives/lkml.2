@@ -1,109 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1I2H4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 03:56:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256Ab1I2H4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 03:56:39 -0400
-Date: Thu, 29 Sep 2011 09:55:54 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: vmscan: distinguish between memcg triggering
- reclaim and memcg being scanned
-Message-ID: <20110929075554.GA6050@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-4-git-send-email-jweiner@redhat.com>
- <20110919142955.GG21847@tiehlicka.suse.cz>
- <20110920085811.GC11489@redhat.com>
- <20110920091738.GD27675@tiehlicka.suse.cz>
+	id S1754830Ab1I2H6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 03:58:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39763 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab1I2H6Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 03:58:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920091738.GD27675@tiehlicka.suse.cz>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <4E7B0E35.5010607@compulab.co.il>
+References: <1316268934.16763.2.camel@phoenix> <4E7B0E35.5010607@compulab.co.il>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 29 Sep 2011 15:57:55 +0800
+Message-ID: <CAF+7xW=AFmxCmppmt81pzkDbem=LAHdSYtT67yOOzMNPFRpnfA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa/cm-x300: properly set bt_reset pin
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 11:17:38AM +0200, Michal Hocko wrote:
-> On Tue 20-09-11 10:58:11, Johannes Weiner wrote:
-> > On Mon, Sep 19, 2011 at 04:29:55PM +0200, Michal Hocko wrote:
-> > > On Mon 12-09-11 12:57:20, Johannes Weiner wrote:
-> > > > @@ -2390,6 +2413,18 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
-> > > >  }
-> > > >  #endif
-> > > >  
-> > > > +static void age_active_anon(struct zone *zone, struct scan_control *sc,
-> > > > +			    int priority)
-> > > > +{
-> > > > +	struct mem_cgroup_zone mz = {
-> > > > +		.mem_cgroup = NULL,
-> > > > +		.zone = zone,
-> > > > +	};
-> > > > +
-> > > > +	if (inactive_anon_is_low(&mz))
-> > > > +		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-> > > > +}
-> > > > +
-> > > 
-> > > I do not like this very much because we are using a similar construct in
-> > > shrink_mem_cgroup_zone so we are duplicating that code. 
-> > > What about adding age_mem_cgroup_active_anon (something like shrink_zone).
-> > 
-> > I am not sure I follow and I don't see what could be shared between
-> > the zone shrinking and this as there are different exit conditions to
-> > the hierarchy walk.  Can you elaborate?
-> 
-> Sorry for not being clear enough. Maybe it is not very much important
-> but what about something like:
-> 
-> Index: linus_tree/mm/vmscan.c
-> ===================================================================
-> --- linus_tree.orig/mm/vmscan.c	2011-09-20 11:07:57.000000000 +0200
-> +++ linus_tree/mm/vmscan.c	2011-09-20 11:12:53.000000000 +0200
-> @@ -2041,6 +2041,13 @@ static inline bool should_continue_recla
->  	}
->  }
->  
-> +static void age_mem_cgroup_active_anon(struct mem_cgroup_zone *mz,
-> +		struct scan_control *sc, int priority)
-> +{
-> +	if (inactive_anon_is_low(mz))
-> +		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
-> +}
-> +
->  /*
->   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
->   */
-> @@ -2090,8 +2097,7 @@ restart:
->  	 * Even if we did not try to evict anon pages at all, we want to
->  	 * rebalance the anon lru active/inactive ratio.
->  	 */
-> -	if (inactive_anon_is_low(mz))
-> -		shrink_active_list(SWAP_CLUSTER_MAX, mz, sc, priority, 0);
-> +	age_mem_cgroup_active_anon(mz, sc, priority);
->  
->  	/* reclaim/compaction might need reclaim to continue */
->  	if (should_continue_reclaim(mz, nr_reclaimed,
-> @@ -2421,8 +2427,7 @@ static void age_active_anon(struct zone
->  		.zone = zone,
->  	};
->  
-> -	if (inactive_anon_is_low(&mz))
-> -		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-> +	age_mem_cgroup_active_anon(&mz, sc, priority);
->  }
-
-Ahh, understood.
-
-I think it would be an unrelated change, though.  There already are
-two of those constructs, I just move one of them.
+2011/9/22 Igor Grinberg <grinberg@compulab.co.il>:
+> Hi Axel,
+>
+> On 09/17/11 17:15, Axel Lin wrote:
+>> Fix below build warning and properly set bt_reset pin.
+>>
+>>   CC      arch/arm/mach-pxa/cm-x300.o
+>> arch/arm/mach-pxa/cm-x300.c: In function 'cm_x300_init_wi2wi':
+>> arch/arm/mach-pxa/cm-x300.c:779: warning: unused variable 'wlan_en'
+>> arch/arm/mach-pxa/cm-x300.c:795: warning: 'bt_reset' may be used uninitialized in this function
+>
+> Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+>
+> Also, this patch fixes a real regression since
+> 5a009df1f200efa49658b0e9c7ad056d59fbefe4 (ARM: pxa/cm-x300: GPIO cleanup)
+> - Wifi and Bluetooth do not work without it, so please:
+>
+> Cc: <stable@kernel.org> [3.0.x]
+>
+Hi, Eric,
+Just to pin the status of this patch. I think it should go for 3.1.
+Thanks,
+Axel
