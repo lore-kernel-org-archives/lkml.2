@@ -1,69 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1I3Be0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 21:34:26 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:12683 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab1I3BeX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 21:34:23 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 01/24] Staging: hv: mousevsc: Fixup struct
- hv_input_dev_info
-Thread-Topic: [PATCH 01/24] Staging: hv: mousevsc: Fixup struct
- hv_input_dev_info
-Thread-Index: AQHMfwPPXEl1lr45ykq6PK1XvCqYOZVljGyA//+WqgA=
-Date: Fri, 30 Sep 2011 01:34:21 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081EAA5A@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1317322456-9747-1-git-send-email-kys@microsoft.com>
- <1317322504-9788-1-git-send-email-kys@microsoft.com>
- <20110930004739.GA6810@kroah.com>
-In-Reply-To: <20110930004739.GA6810@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754255Ab1I3Bfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 21:35:34 -0400
+Received: from boletus.uvigo.es ([193.146.32.99]:57747 "EHLO boletus.uvigo.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359Ab1I3Bfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 21:35:33 -0400
+Message-ID: <20110930014045.rnqlbdifi808oscs@correoweb.uvigo.es>
+Date: Fri, 30 Sep 2011 01:40:45 +0200
+From: United Nation Promo <info@unf.co.uk>
+Reply-to: torobin01@blumail.org
+To: undisclosed-recipients:;
+Subject: CONGRATULATION!!!
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1;
+	Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR
+	3.0.30729; Media Center PC 6.0; FW 2.0.5655.p)
+X-Originating-IP: 74.115.6.10
+X-Uvigo-A-Spam_score: -0.6
+X-Uvigo-A-Spam_score_int: -5
+X-Uvigo-A-Spam_bar: /
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Thursday, September 29, 2011 8:48 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> Haiyang Zhang
-> Subject: Re: [PATCH 01/24] Staging: hv: mousevsc: Fixup struct
-> hv_input_dev_info
-> 
-> On Thu, Sep 29, 2011 at 11:54:41AM -0700, K. Y. Srinivasan wrote:
-> 
-> <snip>
-> 
-> I only got 21 emails in this thread, and they seemed to trickle in in
-> odd bunches.  Did they all get sent properly, or do you wish to resend
-> them to ensure they all get here?
-
-I sent them out as I normally send them. I don't know why they are not being 
-delivered as they should be. Given that you have gotten 21 of the 24 patches,
-if you tell me which patches you have not received, I could resend just those.
-Or I could resend the whole series again if you prefer. Let me know.
-
-Regards,
-
-K. Y 
-
+You have been chosen by the U.N Foundation to receive a Grant Donation of One
+Million Dollars. Your Qualification Numbers (G-999-747,UZ-900-77) Contact
+Mr.Robin Steven with Name,address,country for claim: E-mail:
+torobin01@blumail.org
