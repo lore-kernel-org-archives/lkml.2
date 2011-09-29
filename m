@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab1I2JVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:21:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1230 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab1I2JVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 05:21:15 -0400
-Date: Thu, 29 Sep 2011 11:20:33 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 06/11] mm: memcg: remove optimization of keeping the
- root_mem_cgroup LRU lists empty
-Message-ID: <20110929092033.GB6050@redhat.com>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-7-git-send-email-jweiner@redhat.com>
- <20110920150229.GB3571@tiehlicka.suse.cz>
+	id S932085Ab1I2JWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 05:22:03 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41817 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab1I2JWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 05:22:01 -0400
+Date: Thu, 29 Sep 2011 10:21:49 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        marc.zyngier@arm.com, thomas.abraham@linaro.org, jamie@jamieiles.com,
+        b-cousson@ti.com, shawn.guo@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 0/2] GIC OF bindings
+Message-ID: <20110929092149.GL17204@pulham.picochip.com>
+References: <1317268436-1613-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110920150229.GB3571@tiehlicka.suse.cz>
+In-Reply-To: <1317268436-1613-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 05:02:29PM +0200, Michal Hocko wrote:
-> On Mon 12-09-11 12:57:23, Johannes Weiner wrote:
-> > root_mem_cgroup, lacking a configurable limit, was never subject to
-> > limit reclaim, so the pages charged to it could be kept off its LRU
-> > lists.  They would be found on the global per-zone LRU lists upon
-> > physical memory pressure and it made sense to avoid uselessly linking
-> > them to both lists.
-> > 
-> > The global per-zone LRU lists are about to go away on memcg-enabled
-> > kernels, with all pages being exclusively linked to their respective
-> > per-memcg LRU lists.  As a result, pages of the root_mem_cgroup must
-> > also be linked to its LRU lists again.
+On Wed, Sep 28, 2011 at 10:53:54PM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Nevertheless we still do not charge them so this should be mentioned
-> here?
+> With recent patches for VIC device tree support and GIC MULTI_IRQ support,
+> it is evident that the irq domain support should be moved into the core GIC
+> code and not be dependent on the DT initialization. So I've split things up
+> into 2 patches separating irq_domain and device-tree code.
+> 
+> This should only change the internals of the GIC code. The binding is
+> unchanged from the previous version. Yeah!
+> 
+> The full series is available here. This includes Russell's devel-stable and
+> for-next branches and Nico's vmalloc branch.
 
-Added for the next revision:
+Looks good to me!
 
-	"This is purely about the LRU list, root_mem_cgroup is still
-	not charged."
+Reviewed-by: Jamie Iles <jamie@jamieiles.com>
