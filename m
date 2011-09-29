@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab1I2Q7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:59:06 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56083 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab1I2Q7D (ORCPT
+	id S1757188Ab1I2RGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:06:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8373 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab1I2RGH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:59:03 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@gentwo.org>,
-        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-In-Reply-To: Your message of "Thu, 29 Sep 2011 20:18:48 +0400."
-             <20110929161848.GA16348@albatros>
-From: Valdis.Kletnieks@vt.edu
-References: <20110927175453.GA3393@albatros> <20110927175642.GA3432@albatros> <20110927193810.GA5416@albatros> <alpine.DEB.2.00.1109271459180.13797@router.home> <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
-            <20110929161848.GA16348@albatros>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317315452_4004P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 29 Sep 2011 12:57:32 -0400
-Message-ID: <23921.1317315452@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4E84A37F.00CB,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 29 Sep 2011 13:06:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 29 Sep 2011 10:04:17 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Thu, 29 Sep 2011 10:04:15 -0700
+Subject: RE: [PATCH v5 3/3] arm/tegra: device tree support for ventana board
+Thread-Topic: [PATCH v5 3/3] arm/tegra: device tree support for ventana board
+Thread-Index: Acx+LjzDR2sWE8OiSg2h1DfkaGg8UgAmjYdg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6717@HQMAIL01.nvidia.com>
+References: <1317248978-10829-1-git-send-email-pdeschrijver@nvidia.com>
+ <1317248978-10829-4-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1317248978-10829-4-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317315452_4004P
-Content-Type: text/plain; charset=us-ascii
-
-On Thu, 29 Sep 2011 20:18:48 +0400, Vasiliy Kulikov said:
-
-> As `new' is just increased, it means it is known with KB granularity,
-> not MB.  By counting used slab objects he learns filled_obj_size_sum.
+Peter De Schrijver wrote at Wednesday, September 28, 2011 4:30 PM:
+...
+> diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+...
+> @@ -80,9 +80,19 @@ static struct of_device_id tegra_dt_gic_match[] __initdata = {
+>  	{}
+>  };
 > 
-> So, rounding gives us nothing, but obscurity.
+> +static struct {
+> +	char *machine;
+> +	void (*init)(void);
+> +} pinmux_configs[] = {
+> +	{ "nvidia,harmony", harmony_pinmux_init() },
+> +	{ "nvidia,seaboard", seaboard_pinmux_init() },
+> +	{ "nvidia,ventana", ventana_pinmux_init() },
+> +};
 
-Yes, but if he has an exploit that requires using up (for example) exactly 31
-objects in the slab, he may now know that a new slab got allocated to push it
-over the MB boundary.  So he knows there's exactly one object in that new slab.
+Do you want the brackets after the function names there? Locally, they
+cause the following syntax errors during compilation:
 
-But now he has to fly blind for the next 30 because the numbers will display
-exactly the same, and he can't correct for somebody else allocating one so he
-needs to only allocate 29...
+arch/arm/mach-tegra/board-dt.c:85: error: initializer element is not constant
+arch/arm/mach-tegra/board-dt.c:85: error: (near initialization for 'pinmux_configs[0].init')
+arch/arm/mach-tegra/board-dt.c:86: error: initializer element is not constant
+arch/arm/mach-tegra/board-dt.c:86: error: (near initialization for 'pinmux_configs[1].init')
+arch/arm/mach-tegra/board-dt.c:87: error: initializer element is not constant
+arch/arm/mach-tegra/board-dt.c:87: error: (near initialization for 'pinmux_configs[2].init')
 
+(using gcc version 4.4.3 (gcc-4.4.3_cos_gg_51096))
 
---==_Exmh_1317315452_4004P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOhKN8cC3lWbTT17ARAg/3AJ9x3uaMuHNlfdBtk8pRkToHP403mACglOOW
-87NfvBJfy887ga+I5IdAQY0=
-=H0IU
------END PGP SIGNATURE-----
-
---==_Exmh_1317315452_4004P--
+-- 
+nvpublic
 
