@@ -1,43 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab1I2OmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:42:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52619 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070Ab1I2OmH (ORCPT
+	id S1752825Ab1I2On2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:43:28 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:60703 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab1I2On1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:42:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH v3 19/24] C6X: headers
-Date: Thu, 29 Sep 2011 16:41:21 +0200
-Message-ID: <3471979.HTqjRmXnHP@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <1317306284.2580.119.camel@deneb.redhat.com>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <201109281607.11228.arnd@arndb.de> <1317306284.2580.119.camel@deneb.redhat.com>
+	Thu, 29 Sep 2011 10:43:27 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>, linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: Re: [PATCHv2] fat: don't use custom hex_to_bin()
+References: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
+	<542eeafb16d173360eb79f8188f967cc3dcc9252.1317124046.git.andriy.shevchenko@linux.intel.com>
+	<87hb3xj41s.fsf@devron.myhome.or.jp>
+	<CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
+	<87bou5inkk.fsf@devron.myhome.or.jp> <1317301641.2676.120.camel@smile>
+Date: Thu, 29 Sep 2011 23:43:22 +0900
+In-Reply-To: <1317301641.2676.120.camel@smile> (Andy Shevchenko's message of
+	"Thu, 29 Sep 2011 16:07:21 +0300")
+Message-ID: <87ipob8l4l.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:AENHFZ8m51FrFZWhPGxkGjvQGVyroUEm7nrC+lnQpz2
- xq7bFdqqc23hcAWp30LxP6sTT4peUd8F+aQyx6bxjm/X1fEmcF
- VfB4LWOLR+lC0BwmPHuoB7jfQi1q5npnOzBbJhwA5758tdDqE+
- 6pGMHpw1QF59mKWRbSVrebBA13wpPwB1fgOoo5qZ1oKfvPOV5P
- wTElbuhhhAM0NelfJj4eIJz8dAlFpPEqxmNYLgtKZ5q1FafKaW
- uwI3g3S7caBXYjETmMtH1KnOR/UVdT0ldvhbfRmz0nIxEhkMQX
- EgzTRrAtlRWw+9/mh1whuraKzriC0o9fOgxad4yTKiNS3yMRqx
- vaYG2otsWQcBLIA1w/KU=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 September 2011 10:24:43 Mark Salter wrote:
-> I think we still want the c6x unaligned.h because the hardware can do
-> unaligned 32 and 64 memory accesses with no performance penalty. There
-> are some addressing mode limitations which is why the compiler doesn't
-> use them generally.
+Andy Shevchenko <andriy.shevchenko@linux.intel.com> writes:
 
-Ok. I guess you still only need to override __cpu_to_{le,be}{16,32,64}p and
-__{le,be}{16,32,64}_to_cpup then and use include/linux/unaligned/access_ok.h.
+>> So, I think it should be something like
+>> 
+>> 	u8 uc[2];
+>> 	if (hex2bin(uc, ip + 1, 2) < 0)
+>>         	return -EINVAL;
+>> 	*(wchar_t *)op = uc[0] << 8 | uc[1];
+>> This should be readable more.
+> It might be so, but it's not okay to do such constructions in C
+>
+> fs/fat/namei_vfat.c:535:1: warning: ISO C90 forbids mixed declarations
+> and code [-Wdeclaration-after-statement]
+>
+> So, I will resend patch as I proposed with additional comments.
 
-	Arnd
+I guess you just did copy&paste. "u8 uc[2];" part should be before
+statement as C90.
+
+I.e.
+
+				if (escape && (*ip == ':')) {
+                                	u8 uc[2];
+
+					if (i > len - 5)
+						return -EINVAL;
+
+					if (hex2bin(uc, ip + 1, 2) < 0)
+						return -EINVAL;
+					*(wchar_t *)op = uc[0] << 8 | uc[1];
+
+					op += 2;
+					ip += 5;
+					i += 5;
+				} else {
+
+This should be work?
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
