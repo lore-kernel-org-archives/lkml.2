@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1I2Xpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:45:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43219 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab1I2Xpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:45:50 -0400
+	id S1753230Ab1I2XrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:47:07 -0400
+Received: from boletus.uvigo.es ([193.146.32.99]:52774 "EHLO boletus.uvigo.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab1I2XrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:47:06 -0400
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 19:47:05 EDT
+Message-ID: <20110930014658.yoyzlzkao0ogo8w8@correoweb.uvigo.es>
+Date: Fri, 30 Sep 2011 01:46:58 +0200
+From: United Nation Promo <info@unf.co.uk>
+Reply-to: torobin01@blumail.org
+To: undisclosed-recipients:;
+Subject: CONGRATULATION!!!
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1317327729.12332.121.camel@ted>
-References: <1316916753.5006.1.camel@phoenix> <20110929130049.a3b56e19.akpm00@gmail.com>
- <1317327729.12332.121.camel@ted>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 30 Sep 2011 07:45:29 +0800
-Message-ID: <CAF+7xWkQ6SX9aUjBuaCgNVwKoiaBoV6gXfOYfw3MBf9B2c_wiA@mail.gmail.com>
-Subject: Re: [PATCH] backlight: Rename corgibl_limit_intensity to genericbl_limit_intensity
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1;
+	Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR
+	3.0.30729; Media Center PC 6.0; FW 2.0.5655.p)
+X-Originating-IP: 74.115.6.10
+X-Uvigo-A-Spam_score: -0.6
+X-Uvigo-A-Spam_score_int: -5
+X-Uvigo-A-Spam_bar: /
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Why does corgibl_limit_intensity/genericbl_limit_intensity exist?
->> Nothing in the tree references it?
->
-> It sounds like someone has removed the sharpsl battery driver which did
-> use this. If this hook isn't used, low battery with high screen
-> backlight values will reset the device as the wiring isn't up to the
-> current draw.
->
-It is removed by commit 13a542475d1c62a12c77abfa83a790245598fc61
-Author: Christoph Egger <siccegge@cs.fau.de>
-Date:   Sun Jul 4 23:24:52 2010 +0800
 
-    [ARM] pxa: removing dead BACKLIGHT_CORGI
 
-    BACKLIGHT_CORGI was later renamed to BACKLIGHT_GENERIC and has not been
-    used since then. As it's now safe to completely transition to LCD_CORGI
-    driver, which incorprates both the LCD and backlight device.
-
-    Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-    Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-
-So, should we remove corgibl_limit_intensity/genericbl_limit_intensity
-since now it is not being used?
-
-> Richard
->
->
->
+You have been chosen by the U.N Foundation to receive a Grant Donation of One
+Million Dollars. Your Qualification Numbers (G-999-747,UZ-900-77) Contact
+Mr.Robin Steven with Name,address,country for claim: E-mail:
+torobin01@blumail.org
