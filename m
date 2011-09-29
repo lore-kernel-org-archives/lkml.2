@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1I2B24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 21:28:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60760 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab1I2B2y convert rfc822-to-8bit (ORCPT
+	id S1755477Ab1I2Bcn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 21:32:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42299 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab1I2Bcl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 21:28:54 -0400
+	Wed, 28 Sep 2011 21:32:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1316816389-9135-1-git-send-email-glommer@parallels.com>
-References: <1316816389-9135-1-git-send-email-glommer@parallels.com>
-From: Paul Menage <paul@paulmenage.org>
-Date: Wed, 28 Sep 2011 18:28:34 -0700
-X-Google-Sender-Auth: vxyrNzx2UNbl4mKYf07effXG3gc
-Message-ID: <CALdu-PD8GWBFxeCwmEC=FpN53rL5gb=DRkLahi8X8byUBEkqoQ@mail.gmail.com>
-Subject: Re: [PATCH] trivial: initialize root cgroup's sibling list
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
-        a.p.zijlstra@chello.nl, jbottomley@parallels.com
+In-Reply-To: <201109282132.46887.rjw@sisk.pl>
+References: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au>
+	<201109281558.05289.rjw@sisk.pl>
+	<CACVXFVMLBHu+CY1pgQnY04S_3iLN1z5S2vPiMdN6rsW=gBdWog@mail.gmail.com>
+	<201109282132.46887.rjw@sisk.pl>
+Date: Thu, 29 Sep 2011 09:32:39 +0800
+Message-ID: <CACVXFVM6CjZacbbvn0VzM78SNDa6geHSw1dsrCL1bbTBU=pH1g@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+From: Ming Lei <ming.lei@canonical.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 23, 2011 at 3:19 PM, Glauber Costa <glommer@parallels.com> wrote:
-> Even though there are no siblings, the list should be
-> initialized not to contain bogus values.
+On Thu, Sep 29, 2011 at 3:32 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, September 28, 2011, Ming Lei wrote:
+>> Hi,
+>>
+>> 2011/9/28 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > On Wednesday, September 28, 2011, Ming Lei wrote:
+>> >> Hi Stephen and Rafael,
+>> >>
+>> >> Sorry, the attachment patch can fix the build failure, which is
+>> >> caused by unset CONFIG_RUNTIME_PM.
+>> >
+>> > First off, that's CONFIG_PM_RUNTIME.  Second, why do you want to build
+>> > rpm-traces.c at all if CONFIG_PM_RUNTIME is unset?
+>> >
+>>
+>> Yes, you are right,  follows the correct fix:
+>>
+>> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+>> index 56bdab5..f49405f 100644
+>> --- a/kernel/trace/Makefile
+>> +++ b/kernel/trace/Makefile
+>> @@ -53,7 +53,9 @@ endif
+>>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+>>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+>>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+>> +ifeq ($(CONFIG_PM_RUNTIME),y)
+>>  obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+>> +endif
+>>  ifeq ($(CONFIG_TRACING),y)
+>>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+>>  endif
 >
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Well, this still is kind of ugly.  I'd prefer my patch sent in this thread.
 
-Acked-by: Paul Menage <paul@paulmenage.org>
+Both are doable, :-)
 
-Thanks,
-Paul
+But I don't think it is ugly, and this way is taken by BLOCK/PERF_EVENTS/
+KGDB_KDB in kernel/trace/Makefile. Also this one is a simple fix and
+don't introduce any new config option, which is unnecessary.
 
-> ---
->  kernel/sched.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index ccacdbd..3ed4107 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -8082,6 +8082,7 @@ void __init sched_init(void)
->  #ifdef CONFIG_CGROUP_SCHED
->        list_add(&root_task_group.list, &task_groups);
->        INIT_LIST_HEAD(&root_task_group.children);
-> +       INIT_LIST_HEAD(&root_task_group.siblings);
->        autogroup_init(&init_task);
->  #endif /* CONFIG_CGROUP_SCHED */
->
-> --
-> 1.7.6
->
->
+
+thanks,
+--
+Ming Lei
