@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1I2RGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:06:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8373 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab1I2RGH convert rfc822-to-8bit (ORCPT
+	id S1757291Ab1I2RGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:06:45 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:2060 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab1I2RGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:06:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 29 Sep 2011 10:04:17 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Thu, 29 Sep 2011 10:04:15 -0700
-Subject: RE: [PATCH v5 3/3] arm/tegra: device tree support for ventana board
-Thread-Topic: [PATCH v5 3/3] arm/tegra: device tree support for ventana board
-Thread-Index: Acx+LjzDR2sWE8OiSg2h1DfkaGg8UgAmjYdg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6717@HQMAIL01.nvidia.com>
-References: <1317248978-10829-1-git-send-email-pdeschrijver@nvidia.com>
- <1317248978-10829-4-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1317248978-10829-4-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Sep 2011 13:06:43 -0400
+Message-ID: <4E84A5A0.5010703@cavium.com>
+Date: Thu, 29 Sep 2011 10:06:40 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        David Daney <ddaney@caviumnetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Jump Label initialization
+References: <4E83D49C.9080809@goop.org> <1317297894.23938.9.camel@localhost.localdomain> <4E84A09A.2030909@goop.org>
+In-Reply-To: <4E84A09A.2030909@goop.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2011 17:06:42.0874 (UTC) FILETIME=[295399A0:01CC7ECA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Wednesday, September 28, 2011 4:30 PM:
-...
-> diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-...
-> @@ -80,9 +80,19 @@ static struct of_device_id tegra_dt_gic_match[] __initdata = {
->  	{}
->  };
-> 
-> +static struct {
-> +	char *machine;
-> +	void (*init)(void);
-> +} pinmux_configs[] = {
-> +	{ "nvidia,harmony", harmony_pinmux_init() },
-> +	{ "nvidia,seaboard", seaboard_pinmux_init() },
-> +	{ "nvidia,ventana", ventana_pinmux_init() },
-> +};
+On 09/29/2011 09:45 AM, Jeremy Fitzhardinge wrote:
+> On 09/29/2011 05:04 AM, Jan Glauber wrote:
+>>
+>> s390 does not have the early() variant since it didn't need it. On
+>> pre-SMP we probably don't need stop_machine() so creating
+>> arch_jump_label_transform_early() by leaving out stop_machine()
+>> and patching the code directly should be fine.
+>
+> Well, it occurs to me that if you're using jump_label_enable() very
+> early, then it will be using the full arch_jump_label_transform()
+> anyway.  While the stop_machine(), locking, etc that the full version
+> does is redundant in a pre-SMP environment, it shouldn't hurt, so
+> perhaps there's no need for an _early variant at all.
+>
 
-Do you want the brackets after the function names there? Locally, they
-cause the following syntax errors during compilation:
+You need a way to guarantee that the code you are modifying is not in 
+the instruction cache of the off-line CPUs.
 
-arch/arm/mach-tegra/board-dt.c:85: error: initializer element is not constant
-arch/arm/mach-tegra/board-dt.c:85: error: (near initialization for 'pinmux_configs[0].init')
-arch/arm/mach-tegra/board-dt.c:86: error: initializer element is not constant
-arch/arm/mach-tegra/board-dt.c:86: error: (near initialization for 'pinmux_configs[1].init')
-arch/arm/mach-tegra/board-dt.c:87: error: initializer element is not constant
-arch/arm/mach-tegra/board-dt.c:87: error: (near initialization for 'pinmux_configs[2].init')
+On our (Cavium) SMP MIPS systems, these off-line CPUs are most likely 
+spinning in architecture specific smp startup code somewhere in the 
+kernel image.  If this code happened to be adjacent to something the 
+arch_jump_label_transform_early() would touch, we could have a problem.
 
-(using gcc version 4.4.3 (gcc-4.4.3_cos_gg_51096))
+The solution is fairly simple, just invalidate the instruction cache 
+immediately upon leaving the spinning loop.
 
--- 
-nvpublic
-
+David Daney
