@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab1I2V0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 17:26:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37976 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756926Ab1I2V0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 17:26:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: PME via interrupt or SCI mechanism?
-Date: Thu, 29 Sep 2011 23:28:45 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <20110912171003.GA7939@xanatos> <201109292139.56626.rjw@sisk.pl> <20110929204440.GA6043@xanatos>
-In-Reply-To: <20110929204440.GA6043@xanatos>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757967Ab1I2Vbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 17:31:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59163 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755728Ab1I2Vbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 17:31:32 -0400
+Date: Thu, 29 Sep 2011 14:31:29 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kmod: prevent kmod_loop_msg overflow in
+ __request_module()
+Message-Id: <20110929143129.e7c3c7e2.akpm00@gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1109291749000.24692@pobox.suse.cz>
+References: <alpine.LNX.2.00.1109291749000.24692@pobox.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109292328.45375.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 29, 2011, Sarah Sharp wrote:
-> On Thu, Sep 29, 2011 at 09:39:56PM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, September 29, 2011, Sarah Sharp wrote:
-> > > On Thu, Sep 29, 2011 at 12:21:28AM +0200, Rafael J. Wysocki wrote:
-> > Please try the appended patch and check if you see the "Notification error
-> > for GPE" message (please keep your previous debug patches applied).
+On Thu, 29 Sep 2011 17:50:45 +0200 (CEST)
+Jiri Kosina <jkosina@suse.cz> wrote:
+
+> Due to post-decrement
+
+(post-increment)
+
+> in condition of kmod_loop_msg in __request_module(),
+> the system log can be spammed by much more than 5 instances of the 'runaway
+> loop' message if the number of events triggering it makes the kmod_loop_msg
+> to overflow.
 > 
-> Do I need to have the ACPI debug_level or debug_layer set to anything in
-> particular to see this message?
+> Fix that by making sure we never increment it past the threshold.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  kernel/kmod.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index ddc7644..a4bea97 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -114,10 +114,12 @@ int __request_module(bool wait, const char *fmt, ...)
+>  	atomic_inc(&kmod_concurrent);
+>  	if (atomic_read(&kmod_concurrent) > max_modprobes) {
+>  		/* We may be blaming an innocent here, but unlikely */
+> -		if (kmod_loop_msg++ < 5)
+> +		if (kmod_loop_msg < 5) {
+>  			printk(KERN_ERR
+>  			       "request_module: runaway loop modprobe %s\n",
+>  			       module_name);
+> +			kmod_loop_msg++;
+> +		}
+>  		atomic_dec(&kmod_concurrent);
+>  		return -ENOMEM;
+>  	}
 
-No, I don't think so, but just in case please try the patch below instead
-of the previous one.
+Well, it will take two billion passes through here to cause the
+overflow.  I really hope you found this problem by inspection!
 
-Thanks,
-Rafael
-
----
- drivers/acpi/acpica/evgpe.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
-Index: linux/drivers/acpi/acpica/evgpe.c
-===================================================================
---- linux.orig/drivers/acpi/acpica/evgpe.c
-+++ linux/drivers/acpi/acpica/evgpe.c
-@@ -521,12 +521,24 @@ static void ACPI_SYSTEM_XFACE acpi_ev_as
- 		status = acpi_ev_queue_notify_request(
- 				local_gpe_event_info->dispatch.device.node,
- 				ACPI_NOTIFY_DEVICE_WAKE);
-+		if (ACPI_FAILURE(status))
-+			pr_err("Notification error for GPE 0x%X",
-+				local_gpe_event_info->gpe_number);
-+		else
-+			pr_info("Notification queued up for GPE 0x%X",
-+				local_gpe_event_info->gpe_number);
- 
- 		notify_object = local_gpe_event_info->dispatch.device.next;
--		while (ACPI_SUCCESS(status) && notify_object) {
-+		while (notify_object) {
- 			status = acpi_ev_queue_notify_request(
- 					notify_object->node,
- 					ACPI_NOTIFY_DEVICE_WAKE);
-+			if (ACPI_FAILURE(status))
-+				pr_err("Notification error for GPE 0x%X",
-+					local_gpe_event_info->gpe_number);
-+			else
-+				pr_info("Notification queued up for GPE 0x%X",
-+					local_gpe_event_info->gpe_number);
- 			notify_object = notify_object->next;
- 		}
- 
