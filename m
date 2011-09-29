@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab1I2SyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:54:10 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:54180 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab1I2SyI (ORCPT
+	id S1755861Ab1I2Syj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:54:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38243 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab1I2Syi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:54:08 -0400
-Date: Thu, 29 Sep 2011 14:51:51 -0400 (EDT)
-From: Doug Ledford <dledford@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
-Message-ID: <f27ffef8-9ec1-4254-bb26-1f2fdf4366c7@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110929175716.GA5815@suse.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 14:54:38 -0400
+Date: Thu, 29 Sep 2011 19:54:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-kernel@vger.kernel.org, paul@pwsan.com, linaro-dev@lists.linaro.org,
+        linus.walleij@stericsson.com, patches@linaro.org, eric.miao@linaro.org,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, skannan@quicinc.com,
+        linux@arm.linux.org.uk, jeremy.kerr@canonical.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
+Subject: Re: [PATCH v2 0/7] Add a generic struct clk
+Message-ID: <20110929185432.GD2085@sirena.org.uk>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.11.231.143]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+X-Cookie: Whip it, whip it good!
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> Um, that's the way this patch is upstream, right?  So perhaps it
-> should
-> be fixed there first and then I can take the fix into -stable?
+On Thu, Sep 22, 2011 at 03:26:55PM -0700, Mike Turquette wrote:
 
-Upstream is a bit of a fuzzy statement ;-)  It might be in -next, but it's not in Linus' tree or Andrew's -mm tree or else my recent patches would have conflicted.  And in fact, upon further reflection, I think maybe that particular test could use being split into two distinct tests.  One for wrapping the byte counter, which would return -ENOMEM, and one for exceeding RLIMIT_MSGQUEUE which would return -EPERM (not sure if that's right, I would have to poke around elsewhere, but it seems a better response when you are violating a ulimit than nomem to me anyway).
+> more thought.  I also dropped Mark's change to append a device's name to
+> a clk name since device tree might solve this neatly.  Again more
+> discussion around that would be good.
 
--- 
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: CFBFF194
-	      http://people.redhat.com/dledford
-
+Some of that was for debugfs type stuff - if we end up providing
+information about the clocks via a diagnostic interface being able to
+distinguish between things in a textual fashion would be handy (and I'd
+guess the struct device may also be needed by any OF bindings to get at
+the bindings?).
