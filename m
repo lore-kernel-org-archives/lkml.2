@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab1I2IfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 04:35:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58528 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab1I2IfG convert rfc822-to-8bit (ORCPT
+	id S1756151Ab1I2Iux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 04:50:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33975 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab1I2Iuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 04:35:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdaCVj1J10BeCbOgwvRAqfN=gmV-1_FYmd9W1cwFqWMiag@mail.gmail.com>
-References: <1316840820-2014-1-git-send-email-linkinjeon@gmail.com>
-	<CACRpkdZM-F-E_RUu4JTd-1J8UeQWXiekBcnMf7Jp7m07B8SYVQ@mail.gmail.com>
-	<CAKYAXd-=EaG02N6f2VWO0ZNCshWp6swiT-WwpOV-p+cTDL7wwA@mail.gmail.com>
-	<CACRpkdaCVj1J10BeCbOgwvRAqfN=gmV-1_FYmd9W1cwFqWMiag@mail.gmail.com>
-Date: Thu, 29 Sep 2011 17:35:04 +0900
-Message-ID: <CAKYAXd9GqnmV5vz1BUa0oaHE6TBt85gJKCxRmxuR=Qno5kXAkA@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
-        Per Forlin <per.forlin@stericsson.com>, johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 29 Sep 2011 04:50:51 -0400
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Sep 2011 10:49:57 +0200
+In-Reply-To: <20110929033201.GA21722@localhost>
+References: <20110904015305.367445271@intel.com>
+	 <20110904020915.942753370@intel.com> <1315318179.14232.3.camel@twins>
+	 <20110907123108.GB6862@localhost> <1315822779.26517.23.camel@twins>
+	 <20110918141705.GB15366@localhost> <20110918143721.GA17240@localhost>
+	 <20110918144751.GA18645@localhost> <20110928140205.GA26617@localhost>
+	 <1317221435.24040.39.camel@twins> <20110929033201.GA21722@localhost>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317286197.22581.4.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/29 Linus Walleij <linus.walleij@linaro.org>:
-> On Wed, Sep 28, 2011 at 3:50 PM, NamJae Jeon <linkinjeon@gmail.com> wrote:
->> 2011/9/28 Linus Walleij <linus.walleij@linaro.org>:
->>> On Sat, Sep 24, 2011 at 7:07 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
->>>>
->>>>          179 64  1024 mmcblk0boot1
->>>>          179 32  1024 mmcblk0boot0
->>>
->>> Does this mean that each GP-partition can contain an MBR and thus several
->>> subpartitions so we get things like:
->>>
->>> mmcblk0gp1p1, mmcblk0gp1p2...
->>>
->> Yes, We can divide dos partitions(included MBR) using fdisk like your
->> words(mmcblk0gp1p1, mmcblk0gp1p2...)
->
-> OK that seems logical.
->
-> If this goes in, make a mental note to patch udev default rules
-> too, because currently they look like this:
->
-> rules.d/60-persistent-storage.rules:KERNEL=="mmcblk[0-9]",
-> SUBSYSTEMS=="mmc", ATTRS{name}=="?*", ATTRS{serial}=="?*",
-> ENV{ID_NAME}="$attr{name}", ENV{ID_SERIAL}="$attr{serial}",
-> SYMLINK+="disk/by-id/mmc-$env{ID_NAME}_$env{ID_SERIAL}"
-> rules.d/60-persistent-storage.rules:KERNEL=="mmcblk[0-9]p[0-9]",
-> ENV{ID_NAME}=="?*", ENV{ID_SERIAL}=="?*",
-> SYMLINK+="disk/by-id/mmc-$env{ID_NAME}_$env{ID_SERIAL}-part%n"
->
-> (I guess Android also has this kind of rule baked into its "big init"
-> process that handles also what udev normally takes care of.)
->
-> Anyway:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Thanks Linus~
-I will modify a little code to improve the readability.
-When I post patch v3 again, plz ack one more.
->
-> Yours,
-> Linus Walleij
->
+On Thu, 2011-09-29 at 11:32 +0800, Wu Fengguang wrote:
+> > Now I guess the only problem is when nr_bdi * MIN_WRITEBACK_PAGES ~
+> > limit, at which point things go pear shaped.
+> 
+> Yes. In that case the global @dirty will always be drove up to @limit.
+> Once @dirty dropped reasonably below, whichever bdi task wakeup first
+> will take the chance to fill the gap, which is not fair for bdi's of
+> different speed.
+> 
+> Let me retry the thresh=1M,10M test cases without MIN_WRITEBACK_PAGES.
+> Hopefully the removal of it won't impact performance a lot. 
+
+
+Right, so alternatively we could try an argument that this is
+sufficiently rare and shouldn't happen. People with lots of disks tend
+to also have lots of memory, etc.
+
+If we do find it happens we can always look at it again.
+
+
