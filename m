@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab1I2Qon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:44:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58504 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab1I2Qom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:44:42 -0400
-Date: Thu, 29 Sep 2011 20:43:41 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@gentwo.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH 2/2] mm: restrict access to
- /proc/meminfo
-Message-ID: <20110929164341.GA16888@albatros>
-References: <20110927175453.GA3393@albatros>
- <20110927175642.GA3432@albatros>
- <20110927193810.GA5416@albatros>
- <alpine.DEB.2.00.1109271459180.13797@router.home>
- <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
- <20110929161848.GA16348@albatros>
- <1317313836.16137.620.camel@nimitz>
+	id S1757253Ab1I2QpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 12:45:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:42108 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753921Ab1I2QpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 12:45:19 -0400
+Message-ID: <4E84A09A.2030909@goop.org>
+Date: Thu, 29 Sep 2011 09:45:15 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317313836.16137.620.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Glauber <jang@linux.vnet.ibm.com>
+CC: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        David Daney <ddaney@caviumnetworks.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: Jump Label initialization
+References: <4E83D49C.9080809@goop.org> <1317297894.23938.9.camel@localhost.localdomain>
+In-Reply-To: <1317297894.23938.9.camel@localhost.localdomain>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 09:30 -0700, Dave Hansen wrote:
-> On Thu, 2011-09-29 at 20:18 +0400, Vasiliy Kulikov wrote:
-> > I'm not convinced with rounding the information to MBs.  The attacker
-> > still may fill slabs with new objects to trigger new slab pages
-> > allocations.  He will be able to see when this MB-granularity barrier is
-> > overrun thus seeing how many kbs there were before:
-> > 
-> >     old = new - filled_obj_size_sum
-> > 
-> > As `new' is just increased, it means it is known with KB granularity,
-> > not MB.  By counting used slab objects he learns filled_obj_size_sum.
-> > 
-> > So, rounding gives us nothing, but obscurity. 
-> 
-> I'll agree that it doesn't fundamentally fix anything.  But, it does
-> make an attack more difficult in the real world.
+On 09/29/2011 05:04 AM, Jan Glauber wrote:
+>
+> s390 does not have the early() variant since it didn't need it. On
+> pre-SMP we probably don't need stop_machine() so creating
+> arch_jump_label_transform_early() by leaving out stop_machine()
+> and patching the code directly should be fine.
 
-No, it doesn't.  An attacker is able to simply add/remove objects from
-slab and get the precise numbers.  The only thing it takes some time,
-but the delay is negligible.  It neither eliminates the whole attack
-vector in specific cases nor makes the attacks probabilistic.
+Well, it occurs to me that if you're using jump_label_enable() very
+early, then it will be using the full arch_jump_label_transform()
+anyway.  While the stop_machine(), locking, etc that the full version
+does is redundant in a pre-SMP environment, it shouldn't hurt, so
+perhaps there's no need for an _early variant at all.
 
-
->  There's a reason that
-> real-world attackers are going after slabinfo: it's a fundamentally
-> *BETTER* than meminfo as a tool with which to aim an attack.
-
-Agreed, it gives much more information.
-
-
->  A
-> MB-rounded meminfo is also fundamentally *BETTER* than a
-> PAGE_SIZE-rounded meminfo.  I find it hard to call this "nothing".
-
-Could you elaborate?  As I've tried to describe above, an attacker still
-may recover the numbers.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+    J
