@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab1I2OyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:54:04 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:5712 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab1I2OyC (ORCPT
+	id S1756726Ab1I2Oyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:54:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2868 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756289Ab1I2Oya convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:54:02 -0400
-X-IronPort-AV: E=Sophos;i="4.68,461,1312156800"; 
-   d="scan'208";a="8132765"
-Date: Thu, 29 Sep 2011 15:53:47 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v5 2/2] xen: modify kernel mappings corresponding
- to granted pages
-In-Reply-To: <1317305884.26672.190.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.00.1109291550250.3519@kaball-desktop>
-References: <alpine.DEB.2.00.1109291148340.3519@kaball-desktop>  <1317293876-23891-2-git-send-email-stefano.stabellini@eu.citrix.com>  <20110929135558.GA31321@phenom.oracle.com> <1317305884.26672.190.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 29 Sep 2011 10:54:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,461,1312182000"; 
+   d="scan'208";a="72119162"
+Subject: Re: [PATCHv2] fat: don't use custom hex_to_bin()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>, linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Date: Thu, 29 Sep 2011 17:54:00 +0300
+In-Reply-To: <87ipob8l4l.fsf@devron.myhome.or.jp>
+References: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
+	 <542eeafb16d173360eb79f8188f967cc3dcc9252.1317124046.git.andriy.shevchenko@linux.intel.com>
+	 <87hb3xj41s.fsf@devron.myhome.or.jp>
+	 <CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
+	 <87bou5inkk.fsf@devron.myhome.or.jp> <1317301641.2676.120.camel@smile>
+	 <87ipob8l4l.fsf@devron.myhome.or.jp>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317308040.2676.124.camel@smile>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011, Ian Campbell wrote:
-> On Thu, 2011-09-29 at 14:55 +0100, Konrad Rzeszutek Wilk wrote:
-> > >  /* Xen machine address */
-> > > @@ -31,8 +32,10 @@ typedef struct xpaddr {
-> > >  #define INVALID_P2M_ENTRY	(~0UL)
-> > >  #define FOREIGN_FRAME_BIT	(1UL<<(BITS_PER_LONG-1))
-> > >  #define IDENTITY_FRAME_BIT	(1UL<<(BITS_PER_LONG-2))
-> > > +#define GRANT_FRAME_BIT	(1UL<<(BITS_PER_LONG-3))
-> > 
-> > I am going to change that to (BITS_PER_LONG-1) as we aren't
-> > using the P2M. (and add that comment in the file).
+On Thu, 2011-09-29 at 23:43 +0900, OGAWA Hirofumi wrote: 
+> I guess you just did copy&paste. "u8 uc[2];" part should be before
+> statement as C90.
 > 
-> You should also move it away from/out of the "/**** MACHINE <-> PHYSICAL
-> CONVERSION MACROS ****/" section, otherwise it's just confusing.
+> I.e.
 > 
-> The associated GRANT_FRAME macro seems to be unused.
+> 				if (escape && (*ip == ':')) {
+>                                 	u8 uc[2];
 > 
-> But what is that bit in page->private actually used for? This patch adds
-> it in m2p_add_override and masks it off in m2p_find_override, but
-> doesn't otherwise appear to use it.
+> 					if (i > len - 5)
+> 						return -EINVAL;
+> 
+> 					if (hex2bin(uc, ip + 1, 2) < 0)
+> 						return -EINVAL;
+> 					*(wchar_t *)op = uc[0] << 8 | uc[1];
+Actually, why do not use 
+*(wchar_t *)op++ = ... 
+instead of additional op+=2?
 
-It was needed by the previous version that was capable of handling
-highmem pages, it is not required anymore.
+> 
+> 					op += 2;
+> 					ip += 5;
+> 					i += 5;
+> 				} else {
+> 
+> This should be work?
+Oh, my bad! So much minor mistakes last time. Really need vacation.
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
