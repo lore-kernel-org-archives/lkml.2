@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab1I2VH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 17:07:27 -0400
-Received: from 74-92-214-37-Colorado.hfc.comcastbusiness.net ([74.92.214.37]:36396
-	"EHLO zlynx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab1I2VH0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 17:07:26 -0400
-X-Greylist: delayed 975 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 17:07:25 EDT
-Subject: Samsung Series 9 seems to require acpi=nonvs to resume properly
-From: Zan Lynx <zlynx@acm.org>
-To: rjw@sisk.pl
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Sep 2011 14:51:46 -0600
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6ADvmD6w/PXGMB+mUTZG"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1317329529.3151.10.camel@knife>
-Mime-Version: 1.0
-X-Envelope-From: zlynx@acm.org
-X-Spam-Id: 20110929/1R9NZI-00055U-Vj-linux-kernel@vger.kernel.org:zlynx@acm.org:74.92.214.37
+	id S1757813Ab1I2VLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 17:11:30 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:40182
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757074Ab1I2VL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 17:11:29 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 16/24] Staging: hv: mousevsc: Cleanup mousevsc_connect_to_vsp()
+Date: Thu, 29 Sep 2011 11:54:56 -0700
+Message-Id: <1317322504-9788-16-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317322504-9788-1-git-send-email-kys@microsoft.com>
+References: <1317322456-9747-1-git-send-email-kys@microsoft.com>
+ <1317322504-9788-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Cleanup mousevsc_connect_to_vsp(). There is no need to take reference on the
+mousevsc device object when we are setting up the device. As part of this
+cleanup get rid of get_input_device() as this function is only used here.
 
---=-6ADvmD6w/PXGMB+mUTZG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/staging/hv/hv_mouse.c |   34 +---------------------------------
+ 1 files changed, 1 insertions(+), 33 deletions(-)
 
-After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
-kernels would not suspend/resume on my laptop I followed a Ubuntu forum
-suggestion to use acpi=3Dnonvs. This worked, or at least it is working
-today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
-
-The system is also booting via UEFI if that makes any difference.
-
-I understand that there is a no-NVS blacklist in the kernel. Should the
-Samsung Series 9 be added to this list? Or could it be a different
-suspend/resume problem entirely? I ask because resume used to work with
-the 2.6.39 kernels, although it was flaky and would sometimes lock up.
-
-This seems to be the necessary information for the blacklist, taken from dm=
-idecode:
-
-Handle 0x0001, DMI type 1, 27 bytes
-System Information
-        Manufacturer: SAMSUNG ELECTRONICS CO., LTD.
-        Product Name: 90X3A
-        Version: 0.1
-        Serial Number: CZPR93GB301834
-        UUID: 249F9300-1DD2-11B2-8000-89C120F0C461
-        Wake-up Type: APM Timer
-        SKU Number: System SKUNumber
-        Family: HuronRiver System
-
-I can make this into a patch if necessary (drivers/acpi/sleep.c,
-right?). I am not /entirely/ sure it is the correct fix.
-
---=20
-Knowledge Is Power
-Power Corrupts
-Study Hard
-Be Evil
-
---=-6ADvmD6w/PXGMB+mUTZG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk6E2mIACgkQ1IRuMHS+h7EkFwCdHMJlwTJK0EpMrzY5b+OpHi0E
-zmgAnjPLGshHgk/8E+ERGOxiNZs8BYBU
-=OL47
------END PGP SIGNATURE-----
-
---=-6ADvmD6w/PXGMB+mUTZG--
+diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+index fc0ba68..75ea2db 100644
+--- a/drivers/staging/hv/hv_mouse.c
++++ b/drivers/staging/hv/hv_mouse.c
+@@ -204,32 +204,6 @@ static void free_input_device(struct mousevsc_dev *device)
+ }
+ 
+ /*
+- * Get the inputdevice object if exists and its refcount > 1
+- */
+-static struct mousevsc_dev *get_input_device(struct hv_device *device)
+-{
+-	struct mousevsc_dev *input_dev;
+-
+-	input_dev = hv_get_drvdata(device);
+-
+-/*
+- *	FIXME
+- *	This sure isn't a valid thing to print for debugging, no matter
+- *	what the intention is...
+- *
+- *	printk(KERN_ERR "-------------------------> REFCOUNT = %d",
+- *	       input_dev->ref_count);
+- */
+-
+-	if (input_dev && atomic_read(&input_dev->ref_count) > 1)
+-		atomic_inc(&input_dev->ref_count);
+-	else
+-		input_dev = NULL;
+-
+-	return input_dev;
+-}
+-
+-/*
+  * Get the inputdevice object iff exists and its refcount > 0
+  */
+ static struct mousevsc_dev *must_get_input_device(struct hv_device *device)
+@@ -520,15 +494,10 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ {
+ 	int ret = 0;
+ 	int t;
+-	struct mousevsc_dev *input_dev;
++	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
+ 	struct mousevsc_prt_msg *request;
+ 	struct mousevsc_prt_msg *response;
+ 
+-	input_dev = get_input_device(device);
+-
+-	if (!input_dev)
+-		return -ENODEV;
+-
+ 
+ 	request = &input_dev->protocol_req;
+ 
+@@ -584,7 +553,6 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
+ 		ret = -ENOMEM;
+ 
+ cleanup:
+-	put_input_device(device);
+ 
+ 	return ret;
+ }
+-- 
+1.7.4.1
 
