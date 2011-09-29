@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab1I2J3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:29:47 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:37547 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab1I2J3p (ORCPT
+	id S1756183Ab1I2J3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 05:29:52 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46391 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab1I2J3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 05:29:45 -0400
-From: Barry Song <Barry.Song@csr.com>
-To: <pavel@ucw.cz>, <rjw@sisk.pl>, <frank.hofmann@tomtom.com>
-CC: <linux-pm@lists.linux-foundation.org>, <linux-mmc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <workgroup.linux@csr.com>, Barry Song <baohua.song@csr.com>,
-        Barry Song <Baohua.Song@csr.com>
-Subject: [PATCH] PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file
-Date: Thu, 29 Sep 2011 02:29:08 -0700
-Message-ID: <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 29 Sep 2011 05:29:49 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LSA28I-01-2BE-02
+X-M-MSG: 
+Date: Thu, 29 Sep 2011 11:26:43 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+CC: Joerg Roedel <joro@8bytes.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] PCI: Add support for PASID capability
+Message-ID: <20110929092643.GN2138@amd.com>
+References: <1316706551-16138-1-git-send-email-joerg.roedel@amd.com>
+ <1316706551-16138-5-git-send-email-joerg.roedel@amd.com>
+ <CAErSpo7Vb7avbsP3eG=3huCewW4QBL7oMoXr2TjMCaWEvFgB0Q@mail.gmail.com>
+ <20110926221539.GG15002@8bytes.org>
+ <15060.1317237495@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.125.36.59]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <15060.1317237495@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Barry Song <baohua.song@csr.com>
+On Wed, Sep 28, 2011 at 03:18:15PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 27 Sep 2011 00:15:39 +0200, Joerg Roedel said:
+> 
+> > PASID stands for Process Address Space ID, it basically allows a PCI
+> > device to access multiple IO address spaces at the same time using an
+> > IOMMU. Users should enable it when they want to compile an IOMMU driver
+> > into the kernel that supports PASIDs for the translated devices.
+> > I'll add all that information to the Kconfig help. Thanks a lot for your
+> > feedback :)
+> 
+> Is this a case where the PCI device drivers in question should be doing a
+> 'select' or 'depends on' if they support talking to an IOMMU using PASID?
 
-Some devices like mmc are async detected very slow. For example,
-drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
-mmc partitions then add disk.
+Exactly. In fact, I plan to put the functionality which handles these
+capabilities and the fault-handling in a seperate module where all
+device drivers can use it in an easy way.
 
-we do have wait_for_device_probe and scsi_complete_async_scans
-before calling swsusp_check, but it is not enough to wait mmc.
+	Joerg
 
-This patch adds resumewait kernel param just like rootwait so
-that we have enough time to wait mmc ready. The differene is
-here we wait for resume partition but rootwait waits for rootfs
-partition.
-
-This patch will make swsusp support many embedded products
-without scsi devices but devices like mmc.
-
-This was tested on one ARM platform with Frank Hofmann's patch.
-
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
----
- kernel/power/hibernate.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 8f7b1db..9f4b4f3 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -14,6 +14,7 @@
- #include <linux/reboot.h>
- #include <linux/string.h>
- #include <linux/device.h>
-+#include <linux/async.h>
- #include <linux/kmod.h>
- #include <linux/delay.h>
- #include <linux/fs.h>
-@@ -31,6 +32,7 @@
- 
- static int nocompress = 0;
- static int noresume = 0;
-+static int resume_wait = 0;
- static char resume_file[256] = CONFIG_PM_STD_PARTITION;
- dev_t swsusp_resume_device;
- sector_t swsusp_resume_block;
-@@ -732,6 +734,13 @@ static int software_resume(void)
- 		 * to wait for this to finish.
- 		 */
- 		wait_for_device_probe();
-+
-+		if (resume_wait) {
-+			while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
-+				msleep(10);
-+			async_synchronize_full();
-+		}
-+
- 		/*
- 		 * We can't depend on SCSI devices being available after loading
- 		 * one of their modules until scsi_complete_async_scans() is
-@@ -1060,7 +1069,14 @@ static int __init noresume_setup(char *str)
- 	return 1;
- }
- 
-+static int __init resumewait_setup(char *str)
-+{
-+	resume_wait = 1;
-+	return 1;
-+}
-+
- __setup("noresume", noresume_setup);
- __setup("resume_offset=", resume_offset_setup);
- __setup("resume=", resume_setup);
- __setup("hibernate=", hibernate_setup);
-+__setup("resumewait", resumewait_setup);
 -- 
-1.7.1
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
