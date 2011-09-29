@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1I2E4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 00:56:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59762 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab1I2E4I (ORCPT
+	id S1754510Ab1I2FSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 01:18:49 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:49100 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab1I2FSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 00:56:08 -0400
-Message-ID: <4E83FA65.8060600@canonical.com>
-Date: Thu, 29 Sep 2011 06:56:05 +0200
-From: David Henningsson <david.henningsson@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110925 Thunderbird/7.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [228/244] ALSA: HDA: No power nids on 92HD93
-References: <20110928220149.403768579@clark.kroah.org>
-In-Reply-To: <20110928220149.403768579@clark.kroah.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 01:18:48 -0400
+Date: Thu, 29 Sep 2011 15:18:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Subject: linux-next: build failure after merge of the regmap tree
+Message-Id: <20110929151841.1ee572099f6bc4db67138825@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__29_Sep_2011_15_18_41_+1000_gHBEfJYgt335IHsf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--Signature=_Thu__29_Sep_2011_15_18_41_+1000_gHBEfJYgt335IHsf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks for applying this patch, but it makes little sense to do so 
-without the other patch "ALSA: HDA: Add support for IDT 92HD93" 
-(46724c2e023cb7ba5cd50) added a few days earlier (with cc to stable).
+Hi Mark,
 
-Can you tell me why the above patch was not applied, and in case it did 
-not apply cleanly, the location of the tree I need to fix it up against?
+After merging the regmap tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-On 09/29/2011 12:03 AM, Greg KH wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: David Henningsson<david.henningsson@canonical.com>
->
-> commit 6656b15d675c9c6a049db48d50994b3cd4e76bd6 upstream.
->
-> This patch is necessary to make internal speakers work on this chip.
->
-> BugLink: http://bugs.launchpad.net/bugs/854468
-> Tested-by: Alex Wolfson<alex.wolfson@canonical.com>
-> Signed-off-by: David Henningsson<david.henningsson@canonical.com>
-> Signed-off-by: Takashi Iwai<tiwai@suse.de>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
->
-> ---
->   sound/pci/hda/patch_sigmatel.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> --- a/sound/pci/hda/patch_sigmatel.c
-> +++ b/sound/pci/hda/patch_sigmatel.c
-> @@ -5470,6 +5470,7 @@ again:
->   	switch (codec->vendor_id) {
->   	case 0x111d76d1:
->   	case 0x111d76d9:
-> +	case 0x111d76df:
->   	case 0x111d76e5:
->   	case 0x111d7666:
->   	case 0x111d7667:
->
->
+drivers/base/regmap/regcache.c: In function 'regcache_cache_only':
+drivers/base/regmap/regcache.c:276:2: error: 'struct regmap' has no member =
+named 'sync_lock'
+drivers/base/regmap/regcache.c:278:19: error: 'struct regmap' has no member=
+ named 'sync_lock'
 
+Caused by commit 38f6916976f9 ("regmap: Grab the lock in
+regcache_cache_only()").
 
+I have used the regmap tree from next-20110928 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-David Henningsson, Canonical Ltd.
-http://launchpad.net/~diwic
+--Signature=_Thu__29_Sep_2011_15_18_41_+1000_gHBEfJYgt335IHsf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOg/+xAAoJEDMEi1NhKgbsoVsH/3EDtja3JBYtw7xqPJGEIk2k
+kg+eRW6xhghy+Tua1M6fNh6HYiCAVyNJoVPfnAbEespPmN7HXBWkifqQWJQOFLAj
+00YaR78vhz3rYFOn61cdWcaei0QI9fsG3oTl+M0xZ/6PLRCJq6xsRQ0VZNeTdFsu
+pLx1vlEj/23hV3vIpAKxS2uVfja5opdc27TMhyfiDisktWLdRoHuvJUvujm5RZXb
+UnpKAFK5v9kgkno84jipK09iRI482BeLYjg2rTDPYkv7cS5n5cAlRjRZTmlWtp4V
+jziUxtD0O2AJE+X1XQ9xvVQB7xgyPzQ4ANrOIyv1xxRlI3IACIUtPiTp8HPLCkQ=
+=MiHZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Sep_2011_15_18_41_+1000_gHBEfJYgt335IHsf--
