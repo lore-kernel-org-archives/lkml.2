@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab1I2Mi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:38:29 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:51683 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1I2Mi2 convert rfc822-to-8bit (ORCPT
+	id S1756011Ab1I2Mkb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:40:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48562 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1I2Mka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:38:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:subject:from:to:mime-version:content-type:
-	content-transfer-encoding; q=dns; s=shealevy.com; b=duaLD8QeohlD
-	CDD6FuDA4yHq2tYGpaU+h5wNLUKDd776P/sv5DPKBHsXKG0L6+worSxoRvOGlCdc
-	ZAGhsO24PGKfgeH3cQ5PMeEoTRFm3z7G9DA00l7ezi+Rf2qLQW1ERUEKsM90tNu8
-	OJGqeF4eJobnvcB0QxV4uKFb4+Vvx6I=
-Message-ID: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
-Date: Thu, 29 Sep 2011 05:38:27 -0700
-Subject: Hang with "runaway loop modprobe net-pf-1" on Linux 3.0.4
-From: shea@shealevy.com
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 29 Sep 2011 08:40:30 -0400
+X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=jRhu4G1yBvdpZJKnbfUA:9 a=cb4raEPhQav7qsLoPIAA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: Jump Label initialization
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Glauber <jang@linux.vnet.ibm.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Jason Baron <jbaron@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        David Daney <ddaney@caviumnetworks.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Thu, 29 Sep 2011 08:40:26 -0400
+In-Reply-To: <1317297894.23938.9.camel@localhost.localdomain>
+References: <4E83D49C.9080809@goop.org>
+	 <1317297894.23938.9.camel@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317300028.4588.15.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 2011-09-29 at 14:04 +0200, Jan Glauber wrote:
+> On Wed, 2011-09-28 at 19:14 -0700, Jeremy Fitzhardinge wrote:
+> > Hi all,
+> > 
+> > I'm trying to use the jump label machinery as part of the pv ticketlock
+> > work I'm doing on x86.
+> > 
+> > The problem I'm having at the moment is that I do my spinlock setup in
+> > smp_prepare_boot_cpu(), which happens before jump_label_init() gets
+> > called, and so the latter goes and nops out all my enabled jump label key.
+> > 
+> > I'm experimenting at the moment with a patch to allow
+> > jump_label_enable() to be called fairly early, and have that be
+> > respected by jump_label_init().  I'm doing this by replacing
+> > arch_jump_label_poke_text_early() with
+> > arch_jump_label_transform_early(), which shares most of its code with
+> > its non-early variant, except that it expects to run in a pre-SMP
+> > environment.
+> > 
+> > Does this seem plausible? (I haven't tested it yet.)
+> > 
+> > The x86, mips and sparc patches are fairly simple; I forgot to look at
+> > powerpc, and I didn't fully investigate s390.
+> 
+> s390 does not have the early() variant since it didn't need it. On
+> pre-SMP we probably don't need stop_machine() so creating
+> arch_jump_label_transform_early() by leaving out stop_machine()
+> and patching the code directly should be fine.
 
-My initrd mounts /proc and /sys, puts a tmpfs at /dev, then loads ext4. On
-2.6.39 (and earlier), this works fine and the initrd init continues
-happily. On 3.0.4, however, the kernel spits out
+Also note that stop_machine() may only be needed by a few archs (maybe
+only x86).
 
-> request_module: runaway loop modprobe net-pf-1
+x86 has a nasty condition if you change code that is being loaded in
+another CPUs pipeline, it could cause a GPF. I've been playing with this
+on PPC and this does not have that same bug. In fact Benjamin told me
+that PPC is fine with modifying instructions on a running system.
 
-a few times then hangs. If I drop into a shell before loading ext4 and run
-modprobe unix, the same problem occurs. The modprobe used is dynamically
-linked with glibc (which is included in the initrd), and it is the same
-modprobe on the working and non-working systems. From my searches, it
-appears that CONFIG_UNIX=y instead of =m would probably solve this
-problem, but I'd rather keep it as a module if it's possible to get it
-working. What's going wrong here? Why does it work on 2.6.39 but not
-3.0.4?
+I plan on removing the stop_machine() from ftrace for those boxes. I
+already have patches made, just need to spiffy them up a bit.
 
-Regards,
-Shea Levy
+-- Steve
+
+
 
