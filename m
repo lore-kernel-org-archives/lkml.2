@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab1I2TCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:02:52 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34537 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab1I2TCv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:02:51 -0400
+	id S1757247Ab1I2TFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19261 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753974Ab1I2TFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 15:05:23 -0400
+Date: Thu, 29 Sep 2011 15:05:19 -0400
+From: Dave Jones <davej@redhat.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.1rc7+ FSX failure over NFS
+Message-ID: <20110929190519.GA15165@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Trond Myklebust <Trond.Myklebust@netapp.com>,
+	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110929184127.GA12236@redhat.com>
+ <1317322772.8708.30.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <12748.1317313818@redhat.com>
-References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-	<2150.1314882260@redhat.com>
-	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
-	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
-	<5149.1317036720@redhat.com>
-	<CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
-	<CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com>
-	<6324.1317308270@redhat.com>
-	<CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com>
-	<12748.1317313818@redhat.com>
-Date: Thu, 29 Sep 2011 12:02:47 -0700
-Message-ID: <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com>
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-Cc: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317322772.8708.30.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 9:30 AM, David Howells <dhowells@redhat.com> wrote:
-> Mark Moseley <moseleymark@gmail.com> wrote:
->
->> >> [12999.564897] FS-Cache: Cookie 'NFS.fh' still has outstanding reads
->> >
->> > Hopefully the patch set I sent to you will deal with this.
->> >
->> > David
->>
->> Not sure what you mean. Was there another patch besides the one to get
->> more info in the traceback?
->
-> I emailed a set of 13 patches to you a short time before that.  Hopefully
-> they'll fix the outstanding-reads problem the bad-page-state problem.
+On Thu, Sep 29, 2011 at 02:59:32PM -0400, Trond Myklebust wrote:
+ 
+ > 1) What filesystem are you using on the server, and does that filesystem
+ > support high resolution timestamps?
 
-Sorry, I just had this thread sitting open in gmail and I was looking
-for the patch within it. I see all those emails you sent. I'll try to
-get those patched in today. Thanks!
+ext3
+
+ > 2) Does the file length on the server match the reported erroneous file
+ > length on the client?
+
+No. Server side is 213853 bytes (0x3435d)
+
+ > 3) Do the mtime and ctime on the erroneous file match on the client and
+ > server?
+ 
+both show..
+Modify: 2011-09-29 13:50:00.000000000 -0400
+
+	Dave
+
