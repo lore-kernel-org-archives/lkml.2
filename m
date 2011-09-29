@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab1I2UCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:02:43 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:46906 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab1I2UCm (ORCPT
+	id S932112Ab1I2UJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:09:57 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46026 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755709Ab1I2UJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:02:42 -0400
-Date: Thu, 29 Sep 2011 16:00:05 -0400 (EDT)
-From: Doug Ledford <dledford@redhat.com>
-To: Andrew Morton <akpm00@gmail.com>
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>
-Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
-Message-ID: <27472e91-046e-4160-85fe-b775d5ac02cd@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110929123715.004f4651.akpm00@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 16:09:55 -0400
+X-Sasl-enc: pEB9rnqNdx+SCd2s/qI3D2P7rwqekF0aADX44Cj6r0NX 1317326994
+Date: Thu, 29 Sep 2011 13:04:23 -0700
+From: Greg KH <greg@kroah.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, joro@8bytes.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/10] iommu/omap: Use bus_set_iommu instead of
+ register_iommu
+Message-ID: <20110929200423.GB26760@kroah.com>
+References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
+ <1316792756-3395-9-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.11.231.143]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316792756-3395-9-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> On Thu, 29 Sep 2011 12:08:55 -0700
+On Fri, Sep 23, 2011 at 05:45:54PM +0200, Joerg Roedel wrote:
+> Convert the OMAP IOMMU driver on ARM to use the new
+> interface for publishing the iommu_ops.
 > 
-> Doug, the thing to do here is to rework your recent mqueue patchset.
-> Prepare a minimal, critical-stuff series of bugfix patches against
-> current Linus mainline which is also applicable to -stable.  We can
-> merge that into 3.1 or, more likely, into 3.2-rc1/3.1.x.
-
-The original patchset was against a clean Linus mainline, so that's already done.
-
-> Then, later, we can merge up the less critical parts of that
-> patchset.
+> Cc: Ohad Ben-Cohen <ohad@wizery.com>
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  drivers/iommu/omap-iommu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> otoh, the only not-applicable-to-stable part of that patchset appears
-> to be "[1/5] ipc/mqueue: cleanup definition names and locations" and
-> it's fairly small.  So we could perhaps just merge all five into
-> 3.2-rc1, with a -stable backport.
+> diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+> index bd5f606..16d5b76 100644
+> --- a/drivers/iommu/omap-iommu.c
+> +++ b/drivers/iommu/omap-iommu.c
+> @@ -1250,7 +1250,7 @@ static int __init omap_iommu_init(void)
+>  		return -ENOMEM;
+>  	iopte_cachep = p;
+>  
+> -	register_iommu(&omap_iommu_ops);
+> +	bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
 
-That would be my suggestion.
+I too worry about this.
 
-> Doing that backport would require that we first backport the buggy
-> patches (ie: this one), which is a bit weird.  Perhaps it would be
-> better for you to prepare a reworked patch series for 3.0.x after
-> that five-patch series hits mainline.
+It kind of looks like the omap code should not be using the platform bus
+code for this, but instead, use their own bus code, as I'm sure that not
+all platform devices really work properly with this iommu controller,
+right?
 
-That or drop the buggy patch from -stable then fix it all in one go.
+thanks,
 
--- 
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: CFBFF194
-	      http://people.redhat.com/dledford
-
+greg k-h
