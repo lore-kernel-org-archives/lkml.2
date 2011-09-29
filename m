@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab1I2MoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:44:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47215 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab1I2Mn7 convert rfc822-to-8bit (ORCPT
+	id S1756356Ab1I2MuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:50:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64061 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab1I2MuW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:43:59 -0400
+	Thu, 29 Sep 2011 08:50:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <59872.1317299401@turing-police.cc.vt.edu>
-References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com> <59872.1317299401@turing-police.cc.vt.edu>
-From: Barry Song <21cnbao@gmail.com>
-Date: Thu, 29 Sep 2011 20:43:38 +0800
-Message-ID: <CAGsJ_4znTLmjd_qhgru_aOZPMEZc=dyXEQTqdsVGKr-GaryQsQ@mail.gmail.com>
-Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support
- MMC-like devices as resume file
-To: Valdis.Kletnieks@vt.edu
-Cc: Barry Song <Barry.Song@csr.com>, frank.hofmann@tomtom.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, rjw@sisk.pl, pavel@ucw.cz,
-        Barry Song <baohua.song@csr.com>, linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1317290085-3804-1-git-send-email-minchan.kim@gmail.com>
+References: <20110928081452.GC23535@redhat.com> <1317290085-3804-1-git-send-email-minchan.kim@gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Thu, 29 Sep 2011 21:50:02 +0900
+X-Google-Sender-Auth: y_9UP-XPKTOZXTRj_SRD7KEQcAI
+Message-ID: <CAHGf_=rH4QThPidf9TD_d1qt3QJ-_mAJnH+XmP+ZJ0pOjpOTTQ@mail.gmail.com>
+Subject: Re: [PATCH v2] vmscan: add barrier to prevent evictable page in
+ unevictable list
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Valdis,
+2011/9/29 Minchan Kim <minchan.kim@gmail.com>:
+> When racing between putback_lru_page and shmem_lock with lock=0 happens,
+> progrom execution order is as follows, but clear_bit in processor #1
+> could be reordered right before spin_unlock of processor #1.
+> Then, the page would be stranded on the unevictable list.
+>
+> spin_lock
+> SetPageLRU
+> spin_unlock
+>                                clear_bit(AS_UNEVICTABLE)
+>                                spin_lock
+>                                if PageLRU()
+>                                        if !test_bit(AS_UNEVICTABLE)
+>                                                move evictable list
+> smp_mb
+> if !test_bit(AS_UNEVICTABLE)
+>        move evictable list
+>                                spin_unlock
+>
+> But, pagevec_lookup in scan_mapping_unevictable_pages has rcu_read_[un]lock so
+> it could protect reordering before reaching test_bit(AS_UNEVICTABLE) on processor #1
+> so this problem never happens. But it's a unexpected side effect and we should
+> solve this problem properly.
+>
+> This patch adds a barrier after mapping_clear_unevictable.
+>
+> side-note: I didn't meet this problem but just found during review.
+>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> Acked-by: Johannes Weiner <jweiner@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-2011/9/29  <Valdis.Kletnieks@vt.edu>:
-> On Thu, 29 Sep 2011 02:29:08 PDT, Barry Song said:
->
->> This patch adds resumewait kernel param just like rootwait so
->> that we have enough time to wait mmc ready. The differene is
->> here we wait for resume partition but rootwait waits for rootfs
->> partition.
->
-> OK, seems a reasonable idea...
->
->> kernel/power/hibernate.c | Â  16 ++++++++++++++++
->> 1 files changed, 16 insertions(+), 0 deletions(-)
->
-> We have a __setup() parameter, this patch appears to be missing
-> a hunk for Documentation/kernel-parameters.txt?
->
-> Fix that issue, and you can stick this on there:
->
-> Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-
-thanks. i'll add the document in v2.
-
--barry
+  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
