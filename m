@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab1I2Slu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:41:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41049 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753530Ab1I2Slt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:41:49 -0400
-Message-ID: <1317321707.1867.1.camel@Joe-Laptop>
-Subject: Re: [PATCHv4] fat: don't use custom hex_to_bin()
-From: Joe Perches <joe@perches.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 Sep 2011 11:41:47 -0700
-In-Reply-To: <8762kb8aqj.fsf@devron.myhome.or.jp>
-References: <87ipob8l4l.fsf@devron.myhome.or.jp>
-	 <f176b6be3c0de274839e813d6ac514d6f7736e77.1317308975.git.andriy.shevchenko@linux.intel.com>
-	 <1317310634.1854.25.camel@Joe-Laptop> <8762kb8aqj.fsf@devron.myhome.or.jp>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757378Ab1I2Spv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:45:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57383 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755040Ab1I2Spu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 14:45:50 -0400
+Date: Thu, 29 Sep 2011 10:57:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Doug Ledford <dledford@redhat.com>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
+Message-ID: <20110929175716.GA5815@suse.de>
+References: <20110928220142.033134480@clark.kroah.org>
+ <67a3ec41-d2f4-43bd-b006-a0c299d72c0e@zmail05.collab.prod.int.phx2.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <67a3ec41-d2f4-43bd-b006-a0c299d72c0e@zmail05.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 03:27 +0900, OGAWA Hirofumi wrote:
-> Joe Perches <joe@perches.com> writes:
+On Thu, Sep 29, 2011 at 11:41:18AM -0400, Doug Ledford wrote:
+> ----- Original Message -----
+> > 3.0-stable review patch.  If anyone has any objections, please let us
+> > know.
+> > 
 > 
-> >> +
-> >> +					if (hex2bin(uc, ip + 1, 2) < 0)
-> >>  						return -EINVAL;
-> >> -					}
-> >> -					*op++ = ec & 0xFF;
-> >> -					*op++ = ec >> 8;
-> >> +
-> >> +					*(wchar_t *)op++ = uc[0] << 8 | uc[1];
-> >
-> > perhaps:
-> >
-> > 	__le16	foo;
-> >
-> > 	if (hex2bin((u8 *)&foo, ip + 1, 2) < 0)
-> > 		return -EINVAL;
-> > 	*(u16 *)op = le16_to_cpu(foo);
-> >
-> > 	op += 2;
+> @@ -160,6 +161,7 @@ static struct inode *mqueue_get_inode(st
+>                      u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
+>                          spin_unlock(&mq_lock);
+>                          /* mqueue_evict_inode() releases info->messages */
+> +                        ret = -EMFILE;
+>                          goto out_inode;
+>                  }
+>                  u->mq_bytes += mq_bytes;
 > 
-> I also thought about it. But I think it is not so good, like you had
-> mistake.  It should actually be "__be16 foo" and "be16_to_cpu()".
-> 
-> If we used sscanf() instead of hex2bin(), I might agree to use
-> "le16_to_cpu()" though.
-> 
-> Thanks.
+> NACK to this portion of the patch.  The test is for the total bytes
+> allocated, and the RLIMIT is for bytes allocated.  This can happen on
+> one file or on the hundredth file.  It isn't a file error, it's a
+> memory error and should remain such.  If you want to accurately return
+> the right error, then you need new_inode() to return an
+> ERR_PTR(EMFILE) in the case that the number of message queues in the
+> namespace is exceeded and propagate that back up, but as
+> mqueue_get_inode() really only checks memory issues, not queue count
+> issues, the only return it should generate is ENOMEM.
 
-Funny.
+Um, that's the way this patch is upstream, right?  So perhaps it should
+be fixed there first and then I can take the fix into -stable?
 
-I guess that's what I get for reading Andy's comment
-and coding that readably.
-
-+                                       /* The ip contains 2 bytes in little
-+                                        * endian format. We need to get them
-+                                        * in native endian. */
-
-
-
+greg k-h
