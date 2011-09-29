@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1I2SA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:00:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55838 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab1I2SAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:00:25 -0400
-Date: Thu, 29 Sep 2011 20:00:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen before
- deferring
-Message-ID: <20110929180021.GA27999@tiehlicka.suse.cz>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
- <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
- <20110928104445.GB15062@tiehlicka.suse.cz>
- <20110929115105.GE21113@tiehlicka.suse.cz>
- <20110929120517.GA10587@redhat.com>
- <20110929130204.GG21113@tiehlicka.suse.cz>
- <20110929163724.GA23773@redhat.com>
+	id S1755195Ab1I2SEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:04:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53815 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab1I2SE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 14:04:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6484"; a="123525581"
+Date: Thu, 29 Sep 2011 11:04:28 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCHv2 2/2] ARM: debug: Move DEBUG_ICEDCC into the DEBUG_LL
+ choice
+Message-ID: <20110929180428.GA8125@huya.qualcomm.com>
+References: <1316568208-4518-1-git-send-email-sboyd@codeaurora.org>
+ <1316568208-4518-2-git-send-email-sboyd@codeaurora.org>
+ <4E83D25C.6020306@codeaurora.org>
+ <20110929092102.GB25061@e102144-lin.cambridge.arm.com>
+ <20110929094243.GC25061@e102144-lin.cambridge.arm.com>
+ <20110929094602.GH23944@n2100.arm.linux.org.uk>
+ <20110929103939.GD25061@e102144-lin.cambridge.arm.com>
+ <4E84A962.9030806@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110929163724.GA23773@redhat.com>
+In-Reply-To: <4E84A962.9030806@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-09-11 18:37:24, Oleg Nesterov wrote:
-> On 09/29, Michal Hocko wrote:
-> >
-> > On Thu 29-09-11 14:05:17, Oleg Nesterov wrote:
-> >
-> > > But of course this can't help if freeze_task() is called later.
-> > > May be freezable() should check TIF_MEMDIE...
-> >
-> > Wouldn't it be easier to ignore try_to_freeze when fatal signals are
-> > pending in get_signal_to_deliver?
+On Thu, Sep 29, 2011 at 10:22:42AM -0700, Stephen Boyd wrote:
+> >> One of the problems you'll encounter is that there's places where we
+> >> don't have any timer infrastructure (eg, decompressor) and software
+> >> timing loops won't work (they'll be too slow for the lower-end CPUs
+> >> and too fast for the upper-end CPUs.)
+> > Agreed, software timing loops are the only option and it's impossible to get
+> > them right everywhere. I think the Kconfig help text should be updated so
+> > that the timeout paragraph is removed.
 > 
-> Oh, I don't think so. For what? This doesn't close other races, and
-> in fact the fatal_signal_pending() this patch adds is itself racy,
-> SIGKILL can come in between.
+> Yes if you wait a long time the timeout for each character will expire
+> and the execution will continue.
 
-OK, I think I see your point. You mean that oom will send KILL after
-both fatal_signal_pending in refrigerator and signal_pending check in
-schedule, right?
+Wouldn't it be better to detect the first timeout and then stop trying
+to write to the DCC?
 
-> 
-> > --- a/kernel/freezer.c
-> > +++ b/kernel/freezer.c
-> > @@ -48,6 +48,11 @@ void refrigerator(void)
-> >  	current->flags |= PF_FREEZING;
-> >
-> >  	for (;;) {
-> > +		if (fatal_signal_pending(current)) {
-> > +			if (freezing(current) || frozen(current))
-> > +				thaw_process(current);
-> 
-> Ah, I didn't mean refrigerator() should check freezing/frozen.
-> 
-> I meant, oom_kill can do this before thaw thaw_process(), afaics
-> this should fix the particular race you described (but not others).
+But, do we really want fancy auto-detection stuff in DEBUG_LL?  A
+timeout might make sense for a DCC console, but not here.
 
-This is what the follow up fix from David is doing. Check frozen in
-select_bad_process if the task is TIF_MEMDIE and thaw the process.
-
-And it seems that the David's follow up fix is sufficient so let's leave
-refrigerator alone.
-Or am I still missing something?
-
-> 
-> And. It is simply wrong to return from refrigerator() after we set
-> PF_FROZEN, this can fool try_to_freeze_tasks(). Sure, thaw_process()
-> from oom_kill is not nice too, but at least this is the special case,
-> we already have the problem.
-> 
-> Oleg.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+David
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
