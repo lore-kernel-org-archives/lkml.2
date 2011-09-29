@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab1I2QS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:18:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46144 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab1I2QSz (ORCPT
+	id S1756822Ab1I2QTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 12:19:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46294 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197Ab1I2QTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:18:55 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=PiVJXPJdrVoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=uxao9uKeMqtKkIm3pf4A:9 a=iO4tlg1U4uBxf7Wso6YA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: [PATCH][RT][RFC] rt: show owner of locks for blocked tasks in task
- dumps
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu, 29 Sep 2011 12:18:53 -0400
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317313134.4588.26.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Thu, 29 Sep 2011 12:19:49 -0400
+Date: Thu, 29 Sep 2011 20:18:48 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@gentwo.org>, kernel-hardening@lists.openwall.com,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110929161848.GA16348@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
+ <20110927193810.GA5416@albatros>
+ <alpine.DEB.2.00.1109271459180.13797@router.home>
+ <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found this quite helpful in my debugging lately. When doing task
-dumps, show the owner of a lock that a task may be blocked on. This is
-especially helpful when lockdep is not enabled and we do not know what
-task holds what lock. We still have the information of what owner holds
-a lock that a task is blocked on.
+On Tue, Sep 27, 2011 at 13:33 -0700, David Rientjes wrote:
+> I'd much rather just convert everything to use MB rather than KB so you 
+> can't determine things at a page level.  I think that gets us much closer 
+> to what the patch is intending to restrict.  But I also expect some 
+> breakage from things that just expect meminfo to be in KB units without 
+> parsing what the kernel is exporting.
 
-Due to the sensitive nature of task dumps happening almost anywhere.
-Tricks to the raw spinlocks are done to keep the dump from deadlocking.
+I'm not convinced with rounding the information to MBs.  The attacker
+still may fill slabs with new objects to trigger new slab pages
+allocations.  He will be able to see when this MB-granularity barrier is
+overrun thus seeing how many kbs there were before:
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+    old = new - filled_obj_size_sum
 
-Index: linux-mrg.git/kernel/rtmutex.c
-===================================================================
---- linux-mrg.git.orig/kernel/rtmutex.c
-+++ linux-mrg.git/kernel/rtmutex.c
-@@ -1431,3 +1431,51 @@ int rt_mutex_finish_proxy_lock(struct rt
- 
- 	return ret;
- }
-+
-+void show_rt_lock_owner(struct task_struct *p)
-+{
-+	struct rt_mutex_waiter *waiter;
-+	struct rt_mutex *lock;
-+	struct task_struct *task;
-+	unsigned long flags;
-+	int locked = 0;
-+
-+	/*
-+	 * This is called by stack dumps, we can't safely take a
-+	 * lock. If we fail to get the lock then simply state so
-+	 * and bail.
-+	 */
-+	if (!raw_spin_trylock_irqsave(&p->pi_lock, flags)) {
-+		printk (" task pi_lock already held\n");
-+		return;
-+	}
-+	waiter = p->pi_blocked_on;
-+	if (!rt_mutex_real_waiter(waiter))
-+		goto out;
-+
-+	/* Keep tasks from disappearing */
-+	rcu_read_lock();
-+
-+	lock = waiter->lock;
-+	/*
-+	 * Used by task stack traces, try to synchronize but
-+	 * don't block (we have the waiter pi_lock). If we fail to
-+	 * take the lock, the worse that can happen is the owner changes
-+	 * on us.
-+	 */
-+	if (raw_spin_trylock(&lock->wait_lock))
-+		locked = 1;
-+
-+	task = rt_mutex_owner(lock);
-+	if (task)
-+		printk(KERN_CONT "  blocked on lock %p owned by %s:%d\n",
-+		       lock, task->comm, task->pid);
-+	else
-+		printk(KERN_CONT "  blocked on lock %p with no owner\n", lock);
-+
-+	if (locked)
-+		raw_spin_unlock(&lock->wait_lock);
-+	rcu_read_unlock();
-+ out:
-+	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-+}
-Index: linux-mrg.git/kernel/sched.c
-===================================================================
---- linux-mrg.git.orig/kernel/sched.c
-+++ linux-mrg.git/kernel/sched.c
-@@ -6060,6 +6060,8 @@ void sched_show_task(struct task_struct 
- 		(unsigned long)task_thread_info(p)->flags);
- 
- 	show_stack(p, NULL);
-+
-+	show_rt_lock_owner(p);
- }
- 
- void show_state_filter(unsigned long state_filter)
-Index: linux-mrg.git/include/linux/spinlock.h
-===================================================================
---- linux-mrg.git.orig/include/linux/spinlock.h
-+++ linux-mrg.git/include/linux/spinlock.h
-@@ -273,6 +273,8 @@ static inline void do_raw_spin_unlock(ra
- # include <linux/spinlock_rt.h>
- #else /* PREEMPT_RT_FULL */
- 
-+static inline void show_rt_lock_owner(struct task_struct *p) { }
-+
- /*
-  * Map the spin_lock functions to the raw variants for PREEMPT_RT=n
-  */
-Index: linux-mrg.git/include/linux/spinlock_rt.h
-===================================================================
---- linux-mrg.git.orig/include/linux/spinlock_rt.h
-+++ linux-mrg.git/include/linux/spinlock_rt.h
-@@ -26,6 +26,8 @@ extern int __lockfunc rt_spin_trylock_bh
- extern int __lockfunc rt_spin_trylock(spinlock_t *lock);
- extern int atomic_dec_and_spin_lock(atomic_t *atomic, spinlock_t *lock);
- 
-+extern void show_rt_lock_owner(struct task_struct *p);
-+
- /*
-  * lockdep-less calls, for derived types like rwlock:
-  * (for trylock they can use rt_mutex_trylock() directly.
+As `new' is just increased, it means it is known with KB granularity,
+not MB.  By counting used slab objects he learns filled_obj_size_sum.
 
+So, rounding gives us nothing, but obscurity.
 
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
