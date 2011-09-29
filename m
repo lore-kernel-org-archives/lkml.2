@@ -1,79 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab1I2D1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 23:27:18 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36906 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab1I2D1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 23:27:17 -0400
-Subject: Re: [PATCH 0/6] [RFC] Proposal for optimistic suspend idea.
-From: John Stultz <john.stultz@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arve@android.com, markgross@thegnar.org,
-        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
-        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1317197974.5781.29.camel@twins>
-References: <1317064434-1829-1-git-send-email-john.stultz@linaro.org>
-	 <1317068164.1763.39.camel@twins> <1317076065.3112.539.camel@work-vm>
-	 <1317119870.15383.29.camel@twins> <1317164216.3112.711.camel@work-vm>
-	 <1317197974.5781.29.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Sep 2011 20:27:05 -0700
-Message-ID: <1317266825.3112.794.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755797Ab1I2DcJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 23:32:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63793 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754382Ab1I2DcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 23:32:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,458,1312182000"; 
+   d="scan'208";a="56810079"
+Date: Thu, 29 Sep 2011 11:32:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+Message-ID: <20110929033201.GA21722@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020915.942753370@intel.com>
+ <1315318179.14232.3.camel@twins>
+ <20110907123108.GB6862@localhost>
+ <1315822779.26517.23.camel@twins>
+ <20110918141705.GB15366@localhost>
+ <20110918143721.GA17240@localhost>
+ <20110918144751.GA18645@localhost>
+ <20110928140205.GA26617@localhost>
+ <1317221435.24040.39.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317221435.24040.39.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 10:19 +0200, Peter Zijlstra wrote:
-> On Tue, 2011-09-27 at 15:56 -0700, John Stultz wrote:
-> > > That's just insane.. why bother running anything but the 'important'
-> > > tasks. Idle is more power aware than running random crap tasks that have
-> > > no business running in the first place.
-> > 
-> > Its really not that different conceptually from aligning timers. Making
-> > sure that when we fire, we expire as many timers as we can in one go,
-> > and run all the tasks that need to run, so we can go back to idle for as
-> > long as possible.
-> > 
-> > But instead of idling "until the next timer group", we split stuff we
-> > don't care that much about (but needs to be there), and stuff we do care
-> > about, and only schedule the hardware to fire for the events we do care
-> > about. 
+On Wed, Sep 28, 2011 at 10:50:35PM +0800, Peter Zijlstra wrote:
+> On Wed, 2011-09-28 at 22:02 +0800, Wu Fengguang wrote:
 > 
-> But but but, my badly coded bouncing cows thing simply doesn't need to
-> run when we wake up to refill the sound buffers for the mp3 player while
-> the screen is still off!
+> /me attempts to swap back neurons related to writeback
 > 
-> Yet the wakelock thing will wake the system and lets us schedule
-> bouncing cows just fine..
+> > After lots of experiments, I end up with this bdi reserve point
+> > 
+> > +       x_intercept = bdi_thresh / 2 + MIN_WRITEBACK_PAGES;
+> > 
+> > together with this chunk to avoid a bdi stuck in bdi_thresh=0 state:
+> > 
+> > @@ -590,6 +590,7 @@ static unsigned long bdi_position_ratio(
+> >          */
+> >         if (unlikely(bdi_thresh > thresh))
+> >                 bdi_thresh = thresh;
+> > +       bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+> >         /*
+> >          * scale global setpoint to bdi's:
+> >          *      bdi_setpoint = setpoint * bdi_thresh / thresh
+> 
+> So you cap bdi_thresh at a minimum of (limit-dirty)/8 which can be
+> pretty close to 0 if we have a spike in dirty or a negative spike in
+> writeout bandwidth (sudden seeks or whatnot).
 
-You're right. While the sound buffers are being refilled, there might be
-idle cycles that the wasteful bouncing cow app gets to run during.
+That's right. However to bring bdi_thresh out of the close-to-zero
+state, it's only required that (limit-dirty)/8 is reasonable large for
+the _majority_ time, which is not a problem for the servers unless
+something goes wrong.
 
-And I'm also not disagreeing that blocking draw events from the
-framework if the screen is off would be smart.
+> 
+> > The above changes are good enough to keep reasonable amount of bdi
+> > dirty pages, so the bdi underrun flag ("[PATCH 11/18] block: add bdi
+> > flag to indicate risk of io queue underrun") is dropped.
+> 
+> That sounds like goodness ;-)
 
-But I think there's a difference between wasteful bouncing cow app, and
-the normal everyday background tasks that run on a standard linux
-system.
+Yeah!
 
-> I really don't get your argument. It just doesn't make any sense. What
-> I'm saying is, what about those apps we really don't care about, and
-> really don't need to be there.
+> > I also tried various bdi freerun patches, however the results are not
+> > satisfactory. Basically the bdi reserve area approach (this patch)
+> > yields noticeably more smooth/resilient behavior than the
+> > freerun/underrun approaches. I noticed that the bdi underrun flag
+> > could lead to sudden surge of dirty pages (especially if not
+> > safeguarded by the dirty_exceeded condition) in the very small
+> > window.. 
+> 
+> OK, so let me try and parse this magic:
+> 
+> +       x_intercept = bdi_thresh / 2 + MIN_WRITEBACK_PAGES;
+> +       if (bdi_dirty < x_intercept) {
+> +               if (bdi_dirty > x_intercept / 8) {
+> +                       pos_ratio *= x_intercept;
+> +                       do_div(pos_ratio, bdi_dirty);
+> +               } else
+> +                       pos_ratio *= 8;
+> +       }
+> 
+> So we set our target some place north of MIN_WRITEBACK_PAGES: if we're
+> short we add a factor of: x_intercept/bdi_dirty. 
+> 
+> Now, since bdi_dirty < x_intercept, this is > 1 and thus we promote more
+> dirties.
 
-I just think that we need a way to block the background noise of normal
-systems, so there should be some way for the kernel to distinguish
-between background noise and not.
+That's right.
 
-thanks
--john
+> Additionally we don't let the factor get larger than 8 to avoid silly
+> large fluctuations (8 already seems quite generous to me).
 
+I actually increased 8 to 128 and still think it safe: for the
+promotion ratio to be 128, bdi_dirty should be around bdi_thresh/2/128
+(or 0.4% bdi_thresh). Whatever large the promotion ratio is, it won't
+be more radical than some bdi freerun threshold.
 
+In the tests, what the bdi reserve area protect is mainly small memory
+systems (small dirty threshold comparing to writeout bandwidth), where
+an IO completion could bring down bdi_dirty considerably (relatively)
+and we really need to ramp it up fast at the point to feed the disk.
+
+> Now I guess the only problem is when nr_bdi * MIN_WRITEBACK_PAGES ~
+> limit, at which point things go pear shaped.
+
+Yes. In that case the global @dirty will always be drove up to @limit.
+Once @dirty dropped reasonably below, whichever bdi task wakeup first
+will take the chance to fill the gap, which is not fair for bdi's of
+different speed.
+
+Let me retry the thresh=1M,10M test cases without MIN_WRITEBACK_PAGES.
+Hopefully the removal of it won't impact performance a lot.
+
+Thanks,
+Fengguang
