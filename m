@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab1I2X1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:27:35 -0400
-Received: from claw.goop.org ([74.207.240.146]:43218 "EHLO claw.goop.org"
+	id S1758121Ab1I2X1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:27:53 -0400
+Received: from claw.goop.org ([74.207.240.146]:43206 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932207Ab1I2X0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:26:55 -0400
+	id S932192Ab1I2X0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:26:54 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 4/8] sparc/jump_label: add arch_jump_label_transform_early()
-Date: Thu, 29 Sep 2011 16:26:34 -0700
-Message-Id: <6b0e55538e91fd7663430a291a39c6ed048b2548.1317338254.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC 8/8] jump_label: drop default arch_jump_label_transform_early
+Date: Thu, 29 Sep 2011 16:26:38 -0700
+Message-Id: <26bdb3886266f38a3e1664568a0a0193eb882aab.1317338254.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.2
 In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
@@ -30,64 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-This allows jump-label entries to be modified early, in a pre-SMP
-environment.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: David S. Miller <davem@davemloft.net>
 ---
- arch/sparc/kernel/jump_label.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+ kernel/jump_label.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
-index ea2dafc..d3dad25 100644
---- a/arch/sparc/kernel/jump_label.c
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -8,8 +8,8 @@
- 
- #ifdef HAVE_JUMP_LABEL
- 
--void arch_jump_label_transform(struct jump_entry *entry,
--			       enum jump_label_type type)
-+static void __jump_label_transform(struct jump_entry *entry,
-+				   enum jump_label_type type)
- {
- 	u32 val;
- 	u32 *insn = (u32 *) (unsigned long) entry->code;
-@@ -28,20 +28,26 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 		val = 0x01000000;
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 54e8e2d..3010bcf 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -121,15 +121,6 @@ static void __jump_label_update(struct jump_label_key *key,
  	}
- 
--	get_online_cpus();
--	mutex_lock(&text_mutex);
- 	*insn = val;
- 	flushi(insn);
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+
-+	__jump_label_transform(entry, type);
-+
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
  }
  
--void arch_jump_label_text_poke_early(jump_label_t addr)
-+void __init arch_jump_label_transform_early(struct jump_entry *entry,
-+					    enum jump_label_type type)
- {
--	u32 *insn_p = (u32 *) (unsigned long) addr;
+-/*
+- * Not all archs need this.
+- */
+-void __weak arch_jump_label_transform_early(struct jump_entry *entry,
+-					    enum jump_label_type type)
+-{
+-	arch_jump_label_transform(entry, type);	
+-}
 -
--	*insn_p = 0x01000000;
--	flushi(insn_p);
-+	__jump_label_transform(entry, type);
- }
- 
- #endif
+ static __init int jump_label_init(void)
+ {
+ 	struct jump_entry *iter_start = __start___jump_table;
 -- 
 1.7.6.2
 
