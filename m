@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab1I2RQh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:16:37 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:35012 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758Ab1I2RQg (ORCPT
+	id S1757301Ab1I2RUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:20:31 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:31822 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752292Ab1I2RU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:16:36 -0400
-X-Greylist: delayed 1468 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 13:16:36 EDT
-Date: Fri, 30 Sep 2011 01:52:07 +0900
-From: Norbert Preining <preining@logic.at>
-To: linux-kernel@vger.kernel.org
-Cc: ipw3945-devel@lists.sourceforge.net
-Subject: iwlagn after suspend to ram and wakeup unusable, probe failed
-	error -22
-Message-ID: <20110929165207.GD19653@gamma.logic.tuwien.ac.at>
+	Thu, 29 Sep 2011 13:20:29 -0400
+Date: Thu, 29 Sep 2011 10:20:28 -0700 (PDT)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, adrian hunter <adrian.hunter@intel.com>,
+        linus walleij <linus.walleij@linaro.org>,
+        james p freyensee <james_p_freyensee@linux.intel.com>,
+        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
+        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
+        per forlin <per.forlin@stericsson.com>,
+        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
+        linux-mmc@vger.kernel.org
+Message-ID: <1522108758.811204.1317316828352.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1317309431-1898-1-git-send-email-linkinjeon@gmail.com>
+Subject: Re: [PATCH v3] mmc : general purpose partition support.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.61.163]
+X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Namjae,
 
-(please cc)
+----- Original Message -----
+> From: "Namjae Jeon" <linkinjeon@gmail.com>
+> To: cjb@laptop.org, linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com, "adrian hunter" <adrian.hunter@intel.com>, "linus walleij"
+> <linus.walleij@linaro.org>, "james p freyensee" <james_p_freyensee@linux.intel.com>, sebras@gmail.com, "Ulf Hansson"
+> <Ulf.Hansson@stericsson.com>, "stefan xk nilsson" <stefan.xk.nilsson@stericsson.com>, "per forlin"
+> <per.forlin@stericsson.com>, "johan rudholm" <johan.rudholm@stericsson.com>, "Namjae Jeon" <linkinjeon@gmail.com>
+> Sent: Thursday, September 29, 2011 11:17:11 AM
+> Subject: [PATCH v3] mmc : general purpose partition support.
+> 
+> It allows gerneral purpose partitions in MMC Device.
+> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
+> structure suggested by Andrei Warkentin.
+> After patching, we can see general purpose partitions like this.
+> > cat /proc/partitions
+>               179 0 847872 mmcblk0
+>               179 192 4096 mmcblk0gp3
+>               179 160 4096 mmcblk0gp2
+>               179 128 4096 mmcblk0gp1
+>               179 96  1052672 mmcblk0gp0
+>               179 64  1024 mmcblk0boot1
+>               179 32  1024 mmcblk0boot0
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 
-I am running one very recent kernel from git, currently 815d405cef,
-and I am regularly having problem getting iwlagn to work after some
-suspend/resume activity. It ends with no (NO!) way to get it working
-but rebooting. Removing the iwlagn module does *not* help.
+> +	 for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
+> +		if (card->boot_part[idx].size) {
+> +			ret = mmc_blk_alloc_part(card, md,
+> +				card->boot_part[idx].cookie,
+> +				card->boot_part[idx].size >> 9,
+> +				card->boot_part[idx].force_ro,
+> +				card->boot_part[idx].name);
+> +			if (ret)
+> +				return ret;
+> +		}
+> +	}
+> +
+> +	for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
+> +		if (card->gp_part[idx].size) {
+> +			ret = mmc_blk_alloc_part(card, md,
+> +				card->gp_part[idx].cookie,
+> +				card->gp_part[idx].size >> 9,
+> +				card->gp_part[idx].force_ro,
+> +				card->gp_part[idx].name);
+> +			if (ret)
+> +				return ret;
 
-In the syslog I see:
-[33824.855174] Intel(R) Wireless WiFi Link AGN driver for Linux, in-tree:d
-[33824.855178] Copyright(c) 2003-2011 Intel Corporation
-[33824.868124] iwlagn 0000:06:00.0: Refused to change power state, currently in D3
-[33824.868153] iwlagn 0000:06:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[33824.868601] iwlagn 0000:06:00.0: pci_resource_len = 0x00002000
-[33824.868609] iwlagn 0000:06:00.0: pci_resource_base = ffffc900048fc000
-[33824.868616] iwlagn 0000:06:00.0: HW Revision ID = 0x0
-[33824.868631] iwlagn 0000:06:00.0: pci_enable_msi failed
-[33824.868654] iwlagn 0000:06:00.0: PCI INT A disabled
-[33824.868674] iwlagn: probe of 0000:06:00.0 failed with error -22
+You were on a better track before. Why does the block drivre need to know about the partition types?
+You should parse one array.
 
+> -		card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +		if (ext_csd[EXT_CSD_BOOT_MULT])	{
+> +			part_cfg = EXT_CSD_PART_CONFIG_ACC_BOOT0;
+> +			for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
+> +				card->boot_part[idx].size =
+> +					ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +				card->boot_part[idx].cookie = part_cfg++;
+> +				sprintf(card->boot_part[idx].name, "boot%d",
+> +					idx);
+> +				card->boot_part[idx].force_ro = true;
+> +			}
+> +		}
+>  	}
+>  
 
-OTOH, a good log from booting is:
-[   54.232710] Intel(R) Wireless WiFi Link AGN driver for Linux, in-tree:d
-[   54.255001] Copyright(c) 2003-2011 Intel Corporation
-[   54.264822] iwlagn 0000:06:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[   54.277528] iwlagn 0000:06:00.0: setting latency timer to 64
-[   54.277588] iwlagn 0000:06:00.0: pci_resource_len = 0x00002000
-[   54.280334] iwlagn 0000:06:00.0: pci_resource_base = ffffc9000007c000
-[   54.292903] iwlagn 0000:06:00.0: HW Revision ID = 0x0
-[   54.319506] iwlagn 0000:06:00.0: irq 46 for MSI/MSI-X
-[   54.319805] iwlagn 0000:06:00.0: Detected Intel(R) WiFi Link 5100 AGN, REV=0x54
-[   54.322467] iwlagn 0000:06:00.0: L1 Enabled; Disabling L0S
+My earlier comment still stands - make your code look something like -
 
-Thanks for any suggestion or help
+if (ext_csd[EXT_CSD_BOOT_MULT])	{
+	part_cfg = EXT_CSD_PART_CONFIG_ACC_BOOT0;
+	for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
+		mmc_part_add(card, size, part_cfg++, "boot%d", part_cfg++,
+				"boot%d", idx, true)
+}
 
-Norbert
+> +	struct mmc_part	boot_part[MMC_NUM_BOOT_PARTITION];	/* mmc boot
+> partitions */
+> +	struct mmc_part	gp_part[MMC_NUM_GP_PARTITION];	/* mmc general
+> purpose partitions */
 
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-GANGES (n. rare : colonial Indian)
-Leg-rash contracted from playing too much polo. (It is a little-known
-fact that Prince Charles is troubled by ganges down the inside of his
-arms.)
-			--- Douglas Adams, The Meaning of Liff
+struct mmc_part parts[MMC_NUM_BOOT_PARTITION + MMC_NUM_GP_PARTITION];
+unsigned nr_parts;
+
+A
