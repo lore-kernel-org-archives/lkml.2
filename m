@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab1I2EKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 00:10:10 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55282 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab1I2EKJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 00:10:09 -0400
-Subject: [PATCH] ASoC: tlv320dac33: Add guarding parentheses to macros
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Sep 2011 12:09:57 +0800
-Message-ID: <1317269397.4561.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752072Ab1I2ELa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 00:11:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12038 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab1I2EL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 00:11:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,459,1312182000"; 
+   d="scan'208";a="56819765"
+Date: Thu, 29 Sep 2011 12:11:24 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/18] IO-less dirty throttling v11
+Message-ID: <20110929041124.GB21722@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110928145857.GA15587@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928145857.GA15587@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put parentheses around macro argument uses. This avoids pitfalls
-for the programmer, where the argument expansion does not give the
-expected result, for example:
+Hi Christoph,
 
-SAMPLES_TO_US(substream->runtime->rate, dac33->uthr - DAC33_MODE7_MARGIN + 1);
+On Wed, Sep 28, 2011 at 10:58:57PM +0800, Christoph Hellwig wrote:
+> On Sun, Sep 04, 2011 at 09:53:05AM +0800, Wu Fengguang wrote:
+> > Hi,
+> > 
+> > Finally, the complete IO-less balance_dirty_pages(). NFS is observed to perform
+> > better or worse depending on the memory size. Otherwise the added patches can
+> > address all known regressions.
+> > 
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v11
+> > 	(to be updated; currently it contains a pre-release v11)
+> 
+> Fengguang,
+> 
+> is there any chance we could start doing just the IO-less
+> balance_dirty_pages, but not all the subtile other changes?  I.e. are
+> the any known issues that make things work than current mainline if we
+> only put in patches 1 to 6?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/tlv320dac33.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Patches 1-6 are the bare IO-less framework, the followed patches are
 
-diff --git a/sound/soc/codecs/tlv320dac33.c b/sound/soc/codecs/tlv320dac33.c
-index 243d177..389b1c2 100644
---- a/sound/soc/codecs/tlv320dac33.c
-+++ b/sound/soc/codecs/tlv320dac33.c
-@@ -55,13 +55,13 @@
- #define BURST_BASEFREQ_HZ	49152000
- 
- #define SAMPLES_TO_US(rate, samples) \
--	(1000000000 / ((rate * 1000) / samples))
-+	(1000000000 / (((rate) * 1000) / (samples)))
- 
- #define US_TO_SAMPLES(rate, us) \
--	(rate / (1000000 / (us < 1000000 ? us : 1000000)))
-+	((rate) / (1000000 / ((us) < 1000000 ? (us) : 1000000)))
- 
- #define UTHR_FROM_PERIOD_SIZE(samples, playrate, burstrate) \
--	((samples * 5000) / ((burstrate * 5000) / (burstrate - playrate)))
-+	(((samples)*5000) / (((burstrate)*5000) / ((burstrate) - (playrate))))
- 
- static void dac33_calculate_times(struct snd_pcm_substream *substream);
- static int dac33_prepare_chip(struct snd_pcm_substream *substream);
--- 
-1.7.4.1
+1) tracing for easy debug
+2) regression fixes (eg. under-utilized disk in small memory systems)
+3) improvements
 
+My recent focus is trying to measure and fix the various regressions.
+Up to now the JBOD regressions have been addressed and single disk
+performance also looks good.
 
+NFS throughputs are observed to drop/rise somehow randomly in
+different cases and cannot be fixed fundamentally with the trivial
+approaches I've experimented.
 
+3.1.0-rc4-vanilla+  3.1.0-rc4-bgthresh3+  3.1.0-rc4-nfs-smooth+
+------------------  --------------------  ---------------------
+
+           3459793   -33.2%      2310900     +2.4%      3543478  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
+           3371104   -32.8%      2265584    -13.9%      2902573  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
+           2798005   +13.4%      3171975    +21.4%      3395410  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
+
+           1641479   +13.9%      1869541    +52.7%      2506587  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
+           3036860   -19.4%      2447633    -32.1%      2063006  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
+           2050746   +19.8%      2456601    +28.4%      2634044  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
+
+           1042855    +2.7%      1070893     +0.9%      1052112  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
+           2106794   -41.6%      1231128    -54.6%       957305  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
+           2034313   -40.4%      1212212    -51.7%       982609  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
+
+            239379                     0    +10.2%       263894  NFS-thresh=1M/nfs-10dd-1M-32p-32768M-1M:10-X
+            521149   -42.3%       300872    +13.9%       593485  NFS-thresh=1M/nfs-1dd-1M-32p-32768M-1M:10-X
+            564565                     0    -49.6%       284397  NFS-thresh=1M/nfs-2dd-1M-32p-32768M-1M:10-X
+
+> We're getting close to another merge window, and we're still busy
+> trying to figure out all the details of the bandwith estimation.  I
+> think we'd have a much more robust tree if we'd first only merge the
+> infrastructure (IO-less balance_dirty_pages()) and then work on the
+> algorithms separately.
+
+Agreed.  Let me sort out the minimal set of patches that can still
+maintain the vanilla kernel performance, plus the tracing patches.
+
+Thanks,
+Fengguang
