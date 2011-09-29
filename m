@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab1I2Wza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:55:30 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33051 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521Ab1I2Wz1 (ORCPT
+	id S932093Ab1I2W6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:58:19 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:58361 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab1I2W6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:55:27 -0400
-Message-ID: <4E84F75B.3050105@gmail.com>
-Date: Thu, 29 Sep 2011 16:55:23 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-References: <1317312068-10411-1-git-send-email-jolsa@redhat.com> <20110929220548.GA17597@ghostprotocols.net>
-In-Reply-To: <20110929220548.GA17597@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 18:58:17 -0400
+Date: Fri, 30 Sep 2011 08:58:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: linux-next: Tree for Sept 29 (kvm)
+Message-Id: <20110930085810.11bc8e2e38e1400a8b0b4cec@canb.auug.org.au>
+In-Reply-To: <4E84CC00.8090702@xenotime.net>
+References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
+	<4E84CC00.8090702@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Sep_2011_08_58_10_+1000_/obfP//LqmsQJq94"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__30_Sep_2011_08_58_10_+1000_/obfP//LqmsQJq94
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+[Just cc'ing the kvm guys ]
+
+On Thu, 29 Sep 2011 12:50:24 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> On 09/28/11 23:57, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > The linux-next tree is now available from
+> > git://github.com/sfrothwell/linux-next.git as a temporary measure while
+> > the kernel.org servers are unavailable.
+>=20
+>=20
+> kvm build on i386 says:
+>=20
+> ERROR: "__udivdi3" [arch/x86/kvm/kvm.ko] undefined!
+>=20
+> which is used in somewhere in start_apic_timer()  (probably the divide :).
+>=20
+>=20
+> --=20
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code =
+***
+>=20
 
 
-On 09/29/2011 04:05 PM, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
->> The event processing relies on all events having the same sample_type.
->>
->> This is being checked when the session is being opened read only.
->> It also needs to be checked when we do record, since events could be
->> read during processing build IDs at the end of the record command.
->>
->> If we process events with different sample_type the processing might
->> skip some events or hang.
->>
->> Following command hangs on my setup:
->>   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
->>    -e LLC-loads -- date '+%F'
->>
->> because hardware and tracepoint events have different sample type.
->>
->> With the patch applied the record command displays
->> "Non matching sample_type" message and exits.
-> 
-> That is way too cryptic :-\
-> 
-> What is that makes the sample type not match in this case? Can we make
-> it match instead?
-> 
-> This is something to be properly fixed by _allowing_ non matching sample
-> types, the evsel/evlist abstractions are getting we close but not there
-> yet, multiple files in a perf.data/ directory are needed.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
->From what I can see sample_type has to be the same for all samples:
-https://lkml.org/lkml/2011/8/15/6
+--Signature=_Fri__30_Sep_2011_08_58_10_+1000_/obfP//LqmsQJq94
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOhPgCAAoJEDMEi1NhKgbsKJwH/R28tBVZ4MDMr3O/MSG+q8WS
+pVnFsTa9IFG26stxObEBhJ+lCphGTFZr/Qhz10mVvMYopcaeeNXabq6Y9AcGO5gL
+ckBs8vhXPzp2MCdjHJWtFr6ZSq4O1hP0quBgHlErLrg9U7XEFR5jWfZR8GP53x6I
+jU44Go4edvrZOSdK81ZO48epcDAsrYOImE6UZzBcdoW8ntPq+DOWkHT1bCUFqPyv
+3iK8rbr2msCwEa/gojK5G1Y/pRTXY5PtSekA8BAcMybWbAV/gCEsn2zfGa63gNei
+LEqMrYRyLEz571sbDc6WgcZ01YjuqkWAlvzImTSxzABAiG2wyLVQGAs/dw2GlTg=
+=vzPC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Sep_2011_08_58_10_+1000_/obfP//LqmsQJq94--
