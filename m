@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab1I2Pty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:49:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55735 "EHLO mx1.redhat.com"
+	id S1757019Ab1I2Pt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51205 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756992Ab1I2Ptw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:49:52 -0400
+	id S1756898Ab1I2Pt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:49:56 -0400
 From: Amit Shah <amit.shah@redhat.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
         Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v2 05/11] virtio: blk: Move out vq initialization to separate function
-Date: Thu, 29 Sep 2011 21:19:38 +0530
-Message-Id: <87a20e93e1b81a8d8761dc5f6552a16557d64169.1317311033.git.amit.shah@redhat.com>
+Subject: [PATCH v2 06/11] virtio: blk: Add freeze, restore handlers to support S4
+Date: Thu, 29 Sep 2011 21:19:39 +0530
+Message-Id: <e31cf1eb4e21a63ca62e572a9f9cc44472f2b475.1317311033.git.amit.shah@redhat.com>
 In-Reply-To: <7bd7bd396c19237716cf47e53d558e3691f88ce5.1317311033.git.amit.shah@redhat.com>
 References: <cover.1317309123.git.amit.shah@redhat.com>
  <7bd7bd396c19237716cf47e53d558e3691f88ce5.1317311033.git.amit.shah@redhat.com>
@@ -22,51 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe and PM restore functions will share this code.
+Delete the vq on the freeze callback to prepare for hibernation.
+Re-create the vq in the restore callback to resume normal function.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/block/virtio_blk.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+ drivers/block/virtio_blk.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 079c088..717664a 100644
+index 717664a..b01930c 100644
 --- a/drivers/block/virtio_blk.c
 +++ b/drivers/block/virtio_blk.c
-@@ -337,6 +337,18 @@ static void virtblk_config_changed(struct virtio_device *vdev)
- 	queue_work(virtblk_wq, &vblk->config_work);
+@@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	kfree(vblk);
  }
  
-+static int init_vq(struct virtio_blk *vblk)
++#ifdef CONFIG_PM
++static int virtblk_freeze(struct virtio_device *vdev)
 +{
-+	int err = 0;
-+
-+	/* We expect one virtqueue, for output. */
-+	vblk->vq = virtio_find_single_vq(vblk->vdev, blk_done, "requests");
-+	if (IS_ERR(vblk->vq))
-+		err = PTR_ERR(vblk->vq);
-+
-+	return err;
++	vdev->config->del_vqs(vdev);
++	return 0;
 +}
 +
- static int __devinit virtblk_probe(struct virtio_device *vdev)
- {
- 	struct virtio_blk *vblk;
-@@ -375,12 +387,9 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	sg_init_table(vblk->sg, vblk->sg_elems);
- 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
++static int virtblk_restore(struct virtio_device *vdev)
++{
++	return init_vq(vdev->priv);
++}
++#endif
++
+ static const struct virtio_device_id id_table[] = {
+ 	{ VIRTIO_ID_BLOCK, VIRTIO_DEV_ANY_ID },
+ 	{ 0 },
+@@ -574,6 +587,10 @@ static struct virtio_driver __refdata virtio_blk = {
+ 	.probe			= virtblk_probe,
+ 	.remove			= __devexit_p(virtblk_remove),
+ 	.config_changed		= virtblk_config_changed,
++#ifdef CONFIG_PM
++	.freeze			= virtblk_freeze,
++	.restore		= virtblk_restore,
++#endif
+ };
  
--	/* We expect one virtqueue, for output. */
--	vblk->vq = virtio_find_single_vq(vdev, blk_done, "requests");
--	if (IS_ERR(vblk->vq)) {
--		err = PTR_ERR(vblk->vq);
-+	err = init_vq(vblk);
-+	if (err)
- 		goto out_free_vblk;
--	}
- 
- 	vblk->pool = mempool_create_kmalloc_pool(1,sizeof(struct virtblk_req));
- 	if (!vblk->pool) {
+ static int __init init(void)
 -- 
 1.7.6.2
 
