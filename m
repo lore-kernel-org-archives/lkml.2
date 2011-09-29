@@ -1,144 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1I2CGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 22:06:02 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33929 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab1I2CGB convert rfc822-to-8bit (ORCPT
+	id S1755623Ab1I2CL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 22:11:28 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18056 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab1I2CL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 22:06:01 -0400
+	Wed, 28 Sep 2011 22:11:26 -0400
+Message-ID: <4E83D3B3.7090508@oracle.com>
+Date: Thu, 29 Sep 2011 10:10:59 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <4E83D162.2010004@gmail.com>
-References: <1317218471.8008.3.camel@phoenix>
-	<1317218530.8008.4.camel@phoenix>
-	<4E83AB6A.1090203@gmail.com>
-	<CABqxG0dainno-pZiqjMLzTYkWs-bsnt95acfsDMWqSnjTU4mHQ@mail.gmail.com>
-	<4E83CF74.1040701@gmail.com>
-	<CABqxG0eWVMTBAF=Tq_a0USEXFeVYGpR7kRGRTCpUrrfP+0AGmw@mail.gmail.com>
-	<4E83D162.2010004@gmail.com>
-Date: Thu, 29 Sep 2011 10:06:00 +0800
-Message-ID: <CABqxG0f3xo52nrQM9AxWVEaOrNN+aGo1Piygdj+vZ_-uazGZpA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: Add BUG() assertion if max98095_get_bq_channel
- returns -EINVAL
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, Peter Hsiang <peter.hsiang@maxim-ic.com>,
-        Jesse Marroquin <jesse.marroquin@maxim-ic.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>
+CC: Guru Anbalagane <guru.anbalagane@oracle.com>,
+        Gurudas Pai <gurudas.pai@oracle.com>, Joe Jin <joe.jin@oracle.com>,
+        netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Marsden <greg.marsden@oracle.com>
+Subject: [PATCH] tg3: Dont dump registers if interface not ready.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E83D3CD.000A:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 10:01 AM, Ryan Mallon <rmallon@gmail.com> wrote:
-> On 29/09/11 11:59, Dave Young wrote:
->
->> On Thu, Sep 29, 2011 at 9:52 AM, Ryan Mallon <rmallon@gmail.com> wrote:
->>> On 29/09/11 11:35, Dave Young wrote:
->>>
->>>> On Thu, Sep 29, 2011 at 7:19 AM, Ryan Mallon <rmallon@gmail.com> wrote:
->>>>> On 29/09/11 00:02, Axel Lin wrote:
->>>>>> The callers use the return value of max98095_get_bq_channel as array index to
->>>>>> access max98095->dai[] array.
->>>>>> Add BUG() assertion for out of bound access of max98095->dai[] array.
->>>>>
->>>>> Same here, fix the problem in the callers.
->>>>>
->>>>> ----
->>>>> Check the return value of max98095_get_bq_channel in the callers and
->>>>> propagate any errors up. Remove the BUG_ON(channel > 1) since
->>>>> max98095_get_bq_channel never returns a value larger than 1.
->>>>>
->>>>> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
->>>>> ---
->>>>>
->>>>> diff --git a/sound/soc/codecs/max98095.c b/sound/soc/codecs/max98095.c
->>>>> index 668434d..55eccea 100644
->>>>> --- a/sound/soc/codecs/max98095.c
->>>>> +++ b/sound/soc/codecs/max98095.c
->>>>> @@ -2014,7 +2014,8 @@ static int max98095_put_bq_enum(struct snd_kcontrol *kcontrol,
->>>>>        int fs, best, best_val, i;
->>>>>        int regmask, regsave;
->>>>>
->>>>> -       BUG_ON(channel > 1);
->>>>> +       if (channel < 0)
->>>>> +               return channel;
->>>>
->>>> If use BUG() happens in  max98095_get_bq_channel, it will not return here?
->>>
->>>
->>> Not quite sure what you mean?
->>
->> I means if Axel Lin's patch applied, and CONFIG_BUG is on, it will
->> panic firstly the if condition will be never entered.
->
-> My patch is a replacement for Axel's patch, not on top of it. For Axel's
-> patch it would panic if channel was less than zero if CONFIG_BUG was
-> enabled, but would still have undefined behaviour if CONFIG_BUG was not
-> enabled.
+When bootup the server with BCM5704 Gigabit Ethernet get below warning:
 
-So that's good, thanks
+tg3 0000:03:01.0: eth0: DMA Status error.  Resetting chip.
+<Registers state of device>
+tg3 0000:03:01.0: eth0: 0: Host status block [00000007:00000002:(0000:0000:0000):(0000:0000)]
+tg3 0000:03:01.0: eth0: 0: NAPI info [00000001:00000002:(0000:0000:01ff):0000:(00c8:0000:0000:0000)]
+tg3 0000:03:01.0: eth0: Link is up at 1000 Mbps, full duplex
+tg3 0000:03:01.0: eth0: Flow control is on for TX and on for RX
+tg3 0000:03:01.0: tg3_stop_block timed out, ofs=4800 enable_bit=2
+tg3 0000:03:01.0: eth0: Link is down
+tg3 0000:03:01.0: eth0: Link is up at 1000 Mbps, full duplex
+tg3 0000:03:01.0: eth0: Flow control is on for TX and on for RX
 
->
-> ~Ryan
->
->>>
->>> If CONFIG_BUG was not enabled for the original version, then it would
->>> not return at the BUG_ON and would either crash or cause odd behaviour
->>> if it tried to index channel as -1.
->>>
->>> My patch is removing the BUG_ON and replacing it with a proper check and
->>> return. It doesn't need to check > 1 since max98095_get_bq_channel never
->>> returns that.
->>>
->>> My understanding is that device drivers, in general, should not call
->>> BUG. BUG is for unrecoverable errors which leave the kernel in some
->>> unstable state. Here we can just return an error code.
->>
->> Agree
->>
->>>
->>> ~Ryan
->>>
->>>>
->>>>>
->>>>>        if (!pdata || !max98095->bq_textcnt)
->>>>>                return 0;
->>>>> @@ -2069,6 +2070,9 @@ static int max98095_get_bq_enum(struct snd_kcontrol *kcontrol,
->>>>>        int channel = max98095_get_bq_channel(kcontrol->id.name);
->>>>>        struct max98095_cdata *cdata;
->>>>>
->>>>> +       if (channel < 0)
->>>>> +               return channel;
->>>>> +
->>>>>        cdata = &max98095->dai[channel];
->>>>>        ucontrol->value.enumerated.item[0] = cdata->bq_sel;
->>>>>
->>>>>
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>>
->>>>
->>>>
->>>>
->>>
->>>
->>>
->>
->>
->>
->
->
->
+If device not ready, then would not dump registers info.
 
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: Guru Anbalagane <guru.anbalagane@oracle.com>
+Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+Cc: Matt Carlson <mcarlson@broadcom.com>
+Cc: Michael Chan <mchan@broadcom.com>
+---
+ drivers/net/tg3.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-
+diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
+index 4a1374d..d79d344 100644
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -5475,10 +5475,15 @@ static void tg3_process_error(struct tg3 *tp)
+ {
+ 	u32 val;
+ 	bool real_error = false;
++	bool dump = true;
+ 
+ 	if (tg3_flag(tp, ERROR_PROCESSED))
+ 		return;
+ 
++	/* If interface not ready then dont dump error */
++	if (!netif_carrier_ok(tp->dev))
++		dump = false;
++
+ 	/* Check Flow Attention register */
+ 	val = tr32(HOSTCC_FLOW_ATTN);
+ 	if (val & ~HOSTCC_FLOW_ATTN_MBUF_LWM) {
+@@ -5492,14 +5497,16 @@ static void tg3_process_error(struct tg3 *tp)
+ 	}
+ 
+ 	if (tr32(RDMAC_STATUS) || tr32(WDMAC_STATUS)) {
+-		netdev_err(tp->dev, "DMA Status error.  Resetting chip.\n");
++		if (dump)
++			netdev_err(tp->dev, "DMA Status error.  Resetting chip.\n");
+ 		real_error = true;
+ 	}
+ 
+ 	if (!real_error)
+ 		return;
+ 
+-	tg3_dump_state(tp);
++	if (dump)
++		tg3_dump_state(tp);
+ 
+ 	tg3_flag_set(tp, ERROR_PROCESSED);
+ 	schedule_work(&tp->reset_task);
 -- 
-Regards
-Dave
+1.7.6.2
+
