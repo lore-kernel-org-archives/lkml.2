@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab1I2Tfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:35:47 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:57334 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab1I2Tfq (ORCPT
+	id S1757198Ab1I2ThU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:37:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34776 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab1I2ThS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:35:46 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4] fat: don't use custom hex_to_bin()
-References: <87ipob8l4l.fsf@devron.myhome.or.jp>
-	<f176b6be3c0de274839e813d6ac514d6f7736e77.1317308975.git.andriy.shevchenko@linux.intel.com>
-	<1317310634.1854.25.camel@Joe-Laptop>
-	<8762kb8aqj.fsf@devron.myhome.or.jp>
-	<1317321707.1867.1.camel@Joe-Laptop>
-Date: Fri, 30 Sep 2011 04:35:43 +0900
-In-Reply-To: <1317321707.1867.1.camel@Joe-Laptop> (Joe Perches's message of
-	"Thu, 29 Sep 2011 11:41:47 -0700")
-Message-ID: <871uuz87lc.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 29 Sep 2011 15:37:18 -0400
+Date: Thu, 29 Sep 2011 12:37:15 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Doug Ledford <dledford@redhat.com>, stable-review@kernel.org,
+        torvalds@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
+Message-Id: <20110929123715.004f4651.akpm00@gmail.com>
+In-Reply-To: <20110929190855.GA5381@suse.de>
+References: <20110929175716.GA5815@suse.de>
+	<f27ffef8-9ec1-4254-bb26-1f2fdf4366c7@zmail05.collab.prod.int.phx2.redhat.com>
+	<20110929190855.GA5381@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On Thu, 29 Sep 2011 12:08:55 -0700
+Greg KH <gregkh@suse.de> wrote:
 
->> > perhaps:
->> >
->> > 	__le16	foo;
->> >
->> > 	if (hex2bin((u8 *)&foo, ip + 1, 2) < 0)
->> > 		return -EINVAL;
->> > 	*(u16 *)op = le16_to_cpu(foo);
->> >
->> > 	op += 2;
->> 
->> I also thought about it. But I think it is not so good, like you had
->> mistake.  It should actually be "__be16 foo" and "be16_to_cpu()".
->> 
->> If we used sscanf() instead of hex2bin(), I might agree to use
->> "le16_to_cpu()" though.
->> 
->> Thanks.
->
-> Funny.
->
-> I guess that's what I get for reading Andy's comment
-> and coding that readably.
->
-> +                                       /* The ip contains 2 bytes in little
-> +                                        * endian format. We need to get them
-> +                                        * in native endian. */
+> > And in fact, upon further reflection, I think maybe that particular
+> > test could use being split into two distinct tests.  One for wrapping
+> > the byte counter, which would return -ENOMEM, and one for exceeding
+> > RLIMIT_MSGQUEUE which would return -EPERM (not sure if that's right, I
+> > would have to poke around elsewhere, but it seems a better response
+> > when you are violating a ulimit than nomem to me anyway).
+> 
+> Ok, care to get the patch into Linus's tree and then I can take it into
+> stable?
 
-In here, simply comment is wrong.
+Doug, the thing to do here is to rework your recent mqueue patchset. 
+Prepare a minimal, critical-stuff series of bugfix patches against
+current Linus mainline which is also applicable to -stable.  We can
+merge that into 3.1 or, more likely, into 3.2-rc1/3.1.x.
 
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Then, later, we can merge up the less critical parts of that patchset.
+
+otoh, the only not-applicable-to-stable part of that patchset appears
+to be "[1/5] ipc/mqueue: cleanup definition names and locations" and
+it's fairly small.  So we could perhaps just merge all five into
+3.2-rc1, with a -stable backport.
+
+Doing that backport would require that we first backport the buggy
+patches (ie: this one), which is a bit weird.  Perhaps it would be
+better for you to prepare a reworked patch series for 3.0.x after
+that five-patch series hits mainline.
