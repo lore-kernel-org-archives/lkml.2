@@ -1,143 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab1I2Qj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:39:56 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35557 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982Ab1I2Qjy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:39:54 -0400
+	id S1757131Ab1I2Qli (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 12:41:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab1I2Qlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 12:41:37 -0400
+Date: Thu, 29 Sep 2011 18:37:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen
+	before deferring
+Message-ID: <20110929163724.GA23773@redhat.com>
+References: <cover.1317110948.git.mhocko@suse.cz> <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz> <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com> <20110928104445.GB15062@tiehlicka.suse.cz> <20110929115105.GE21113@tiehlicka.suse.cz> <20110929120517.GA10587@redhat.com> <20110929130204.GG21113@tiehlicka.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20110929064119.160cb455@corrin.poochiereds.net>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
-	<1317210761-11518-3-git-send-email-jlayton@redhat.com>
-	<CAH2r5mtBwUkTXLQeXzvTC6oAcz1i9jzPGfiE7XTzDTw12A6C_Q@mail.gmail.com>
-	<20110929064119.160cb455@corrin.poochiereds.net>
-Date: Thu, 29 Sep 2011 11:39:53 -0500
-Message-ID: <CAH2r5ms8pg7VW7JMa_eCUomEC1cfiM+rG_JZ6F7cHB=MtZwF0A@mail.gmail.com>
-Subject: Re: [PATCH 2/4] cifs, freezer: add wait_event_freezekillable and have
- cifs use it
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: trond.myklebust@netapp.com, pavel@ucw.cz, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@calva.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929130204.GG21113@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 5:41 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Wed, 28 Sep 2011 23:28:02 -0500
-> Steve French <smfrench@gmail.com> wrote:
+On 09/29, Michal Hocko wrote:
 >
->> The general idea of the patch seems like a good idea to
->> me.  Assuming testing feedback was good from the problem
->> reporters, what tree would you want it merged from?
->>
+> On Thu 29-09-11 14:05:17, Oleg Nesterov wrote:
 >
-> There's the rub -- this requires a number of changes in different
-> areas. What I really need at this point is a verdict on patch #1. If
-> that looks OK, then that should probably go in via the one of the
-> linux-pm trees. Then patch #2 can probably go in via your tree and 3
-> and 4 can go in via Trond's.
+> > But of course this can't help if freeze_task() is called later.
+> > May be freezable() should check TIF_MEMDIE...
+>
+> Wouldn't it be easier to ignore try_to_freeze when fatal signals are
+> pending in get_signal_to_deliver?
 
-Yes - makes sense, but wonder about ways to test the various
-suspend/hibernate cases to make sure they work.
+Oh, I don't think so. For what? This doesn't close other races, and
+in fact the fatal_signal_pending() this patch adds is itself racy,
+SIGKILL can come in between.
 
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -48,6 +48,11 @@ void refrigerator(void)
+>  	current->flags |= PF_FREEZING;
 >
-> However, none of this should go in unless #1 is ok. Make sense?
->
->> On Wed, Sep 28, 2011 at 6:52 AM, Jeff Layton <jlayton@redhat.com> wrote:
->> > CIFS currently uses wait_event_killable to put tasks to sleep while
->> > they await replies from the server. That function though does not
->> > allow the freezer to run. In many cases, the network interface may
->> > be going down anyway, in which case the reply will never come. The
->> > client then ends up blocking the computer from suspending.
->> >
->> > Fix this by adding a new wait_event_freezable variant --
->> > wait_event_freezekillable. The idea is to combine the behavior of
->> > wait_event_killable and wait_event_freezable -- put the task to
->> > sleep and only allow it to be awoken by fatal signals, but also
->> > allow the freezer to do its job.
->> >
->> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
->> > ---
->> >  fs/cifs/transport.c     |    3 ++-
->> >  include/linux/freezer.h |   19 +++++++++++++++++--
->> >  2 files changed, 19 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/fs/cifs/transport.c b/fs/cifs/transport.c
->> > index 10ca6b2..791bc4f 100644
->> > --- a/fs/cifs/transport.c
->> > +++ b/fs/cifs/transport.c
->> > @@ -26,6 +26,7 @@
->> >  #include <linux/wait.h>
->> >  #include <linux/net.h>
->> >  #include <linux/delay.h>
->> > +#include <linux/freezer.h>
->> >  #include <asm/uaccess.h>
->> >  #include <asm/processor.h>
->> >  #include <linux/mempool.h>
->> > @@ -324,7 +325,7 @@ wait_for_response(struct TCP_Server_Info *server, struct mid_q_entry *midQ)
->> >  {
->> >        int error;
->> >
->> > -       error = wait_event_killable(server->response_q,
->> > +       error = wait_event_freezekillable(server->response_q,
->> >                                    midQ->midState != MID_REQUEST_SUBMITTED);
->> >        if (error < 0)
->> >                return -ERESTARTSYS;
->> > diff --git a/include/linux/freezer.h b/include/linux/freezer.h
->> > index 1effc8b..3672f73 100644
->> > --- a/include/linux/freezer.h
->> > +++ b/include/linux/freezer.h
->> > @@ -134,10 +134,25 @@ static inline void set_freezable_with_signal(void)
->> >  }
->> >
->> >  /*
->> > - * Freezer-friendly wrappers around wait_event_interruptible() and
->> > - * wait_event_interruptible_timeout(), originally defined in <linux/wait.h>
->> > + * Freezer-friendly wrappers around wait_event_interruptible(),
->> > + * wait_event_killable() and wait_event_interruptible_timeout(), originally
->> > + * defined in <linux/wait.h>
->> >  */
->> >
->> > +#define wait_event_freezekillable(wq, condition)                       \
->> > +({                                                                     \
->> > +       int __retval;                                                   \
->> > +       do {                                                            \
->> > +               __retval = wait_event_killable(wq,                      \
->> > +                               (condition) || freezing(current));      \
->> > +               if (__retval && !freezing(current))                     \
->> > +                       break;                                          \
->> > +               else if (!(condition))                                  \
->> > +                       __retval = -ERESTARTSYS;                        \
->> > +       } while (try_to_freeze());                                      \
->> > +       __retval;                                                       \
->> > +})
->> > +
->> >  #define wait_event_freezable(wq, condition)                            \
->> >  ({                                                                     \
->> >        int __retval;                                                   \
->> > --
->> > 1.7.6.2
->> >
->> >
->>
->>
->>
->
->
-> --
-> Jeff Layton <jlayton@redhat.com>
->
+>  	for (;;) {
+> +		if (fatal_signal_pending(current)) {
+> +			if (freezing(current) || frozen(current))
+> +				thaw_process(current);
 
+Ah, I didn't mean refrigerator() should check freezing/frozen.
 
+I meant, oom_kill can do this before thaw thaw_process(), afaics
+this should fix the particular race you described (but not others).
 
--- 
-Thanks,
+And. It is simply wrong to return from refrigerator() after we set
+PF_FROZEN, this can fool try_to_freeze_tasks(). Sure, thaw_process()
+from oom_kill is not nice too, but at least this is the special case,
+we already have the problem.
 
-Steve
+Oleg.
+
