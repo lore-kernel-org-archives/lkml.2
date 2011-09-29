@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab1I2Pni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:43:38 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:58386 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab1I2Pnh (ORCPT
+	id S1756830Ab1I2PrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:47:13 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:41126 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755183Ab1I2PrL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:43:37 -0400
-Date: Thu, 29 Sep 2011 11:41:18 -0400 (EDT)
-From: Doug Ledford <dledford@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
-Message-ID: <67a3ec41-d2f4-43bd-b006-a0c299d72c0e@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110928220142.033134480@clark.kroah.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 11:47:11 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.11.231.143]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20110929152752.GO21166@tbergstrom-lnx.Nvidia.com>
+References: <1317248978-10829-1-git-send-email-pdeschrijver@nvidia.com>
+	<1317248978-10829-3-git-send-email-pdeschrijver@nvidia.com>
+	<20110929092951.GE23944@n2100.arm.linux.org.uk>
+	<20110929152752.GO21166@tbergstrom-lnx.Nvidia.com>
+Date: Thu, 29 Sep 2011 08:47:10 -0700
+Message-ID: <CAOesGMhyV3tDUn=mErN-Yq79wy_01wM9S-9Aw7FVJtrqtGXJLw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] arm/tegra: add support for ventana pinmuxing
+From: Olof Johansson <olof@lixom.net>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> 3.0-stable review patch.  If anyone has any objections, please let us
-> know.
-> 
+On Thu, Sep 29, 2011 at 8:27 AM, Peter De Schrijver
+<pdeschrijver@nvidia.com> wrote:
+> On Thu, Sep 29, 2011 at 11:29:51AM +0200, Russell King - ARM Linux wrote:
+>> On Thu, Sep 29, 2011 at 01:29:35AM +0300, Peter De Schrijver wrote:
+>> > diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+>> > index f11b910..91a07e1 100644
+>> > --- a/arch/arm/mach-tegra/Makefile
+>> > +++ b/arch/arm/mach-tegra/Makefile
+>> > @@ -31,6 +31,7 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
+>> >
+>> >  obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
+>> >  obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
+>> > +obj-${CONFIG_MACH_TEGRA_DT}             += board-seaboard-pinmux.o
+>>
+>> Since when did Tegra start using braces instead of parens in its Makefile?
+>> I note some of Tegra's makefile is using braces and some of it parens.
+>> What's the reason for this alternative style to the rest of kbuild?
+>
+> I have no idea. I just followed the style used for the other CONFIG_MACH_TEGRA_DT entries. Colin or Olof, any idea?
 
-@@ -160,6 +161,7 @@ static struct inode *mqueue_get_inode(st
-                     u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
-                         spin_unlock(&mq_lock);
-                         /* mqueue_evict_inode() releases info->messages */
-+                        ret = -EMFILE;
-                         goto out_inode;
-                 }
-                 u->mq_bytes += mq_bytes;
 
-NACK to this portion of the patch.  The test is for the total bytes allocated, and the RLIMIT is for bytes allocated.  This can happen on one file or on the hundredth file.  It isn't a file error, it's a memory error and should remain such.  If you want to accurately return the right error, then you need new_inode() to return an ERR_PTR(EMFILE) in the case that the number of message queues in the namespace is exceeded and propagate that back up, but as mqueue_get_inode() really only checks memory issues, not queue count issues, the only return it should generate is ENOMEM.
+>From git logs, it looks like the first harmony board file that came
+from Colin used braces, and from there it's likely that everyone just
+copied and pasted -- I know that's what I did.
 
--- 
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: CFBFF194
-	      http://people.redhat.com/dledford
+Thanks for catching it, Russell, it had obviously completely gone
+unnoticed by me and others.
 
+I'll fix up the rest of the file. Peter -- no need to respin, I'll fix
+up when I apply.
+
+
+-Olof
