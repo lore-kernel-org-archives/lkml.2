@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1I2Oyb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:54:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2868 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756289Ab1I2Oya convert rfc822-to-8bit (ORCPT
+	id S1752279Ab1I2O5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:57:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43427 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab1I2O5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:54:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,461,1312182000"; 
-   d="scan'208";a="72119162"
-Subject: Re: [PATCHv2] fat: don't use custom hex_to_bin()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 29 Sep 2011 17:54:00 +0300
-In-Reply-To: <87ipob8l4l.fsf@devron.myhome.or.jp>
-References: <CAK1hOcNus4RKQOF=eivuCXFEM5Lqb+jBdOD4YrMA_5bL2EB6yA@mail.gmail.com>
-	 <542eeafb16d173360eb79f8188f967cc3dcc9252.1317124046.git.andriy.shevchenko@linux.intel.com>
-	 <87hb3xj41s.fsf@devron.myhome.or.jp>
-	 <CAHp75Vcdnx28i0s4sKUf+MCruMNq-zdX55f45TcTR7AcO4foSw@mail.gmail.com>
-	 <87bou5inkk.fsf@devron.myhome.or.jp> <1317301641.2676.120.camel@smile>
-	 <87ipob8l4l.fsf@devron.myhome.or.jp>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Sep 2011 10:57:24 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=cu7aa_lovUIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=PgKtdZRyRZx6PLchiAUA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: [PATCH][RT] Fix warning about bounded threads migrating
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Clark Williams <clark@redhat.com>
+Cc: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu, 29 Sep 2011 10:57:21 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317308040.2676.124.camel@smile>
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317308242.4588.21.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 23:43 +0900, OGAWA Hirofumi wrote: 
-> I guess you just did copy&paste. "u8 uc[2];" part should be before
-> statement as C90.
-> 
-> I.e.
-> 
-> 				if (escape && (*ip == ':')) {
->                                 	u8 uc[2];
-> 
-> 					if (i > len - 5)
-> 						return -EINVAL;
-> 
-> 					if (hex2bin(uc, ip + 1, 2) < 0)
-> 						return -EINVAL;
-> 					*(wchar_t *)op = uc[0] << 8 | uc[1];
-Actually, why do not use 
-*(wchar_t *)op++ = ... 
-instead of additional op+=2?
+Clark can you add this patch. You can fold it into the first one if you
+want.
 
-> 
-> 					op += 2;
-> 					ip += 5;
-> 					i += 5;
-> 				} else {
-> 
-> This should be work?
-Oh, my bad! So much minor mistakes last time. Really need vacation.
+The warning for the PF_THREAD_BOUND migrating was causing false reports
+because a task that is created on one CPU and bound to another CPU with
+kthread_bind() may migrate on wakeup triggering this message. There is
+nothing wrong with the use of migrating a thread that was recently
+created.
+
+Instead, only warn if the weight of the task's cpus_allowed is greater
+than one. That is a clear warning that someone is abusing the
+PF_THREAD_BOUND flag.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-mrg.git/kernel/sched.c
+===================================================================
+--- linux-mrg.git.orig/kernel/sched.c
++++ linux-mrg.git/kernel/sched.c
+@@ -2246,9 +2246,11 @@ void set_task_cpu(struct task_struct *p,
+ 	if (task_cpu(p) != new_cpu) {
+ 		p->se.nr_migrations++;
+ 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
+-		if (WARN_ON(p->flags & PF_THREAD_BOUND))
+-			printk(KERN_WARNING "migrating bounded task %s:%d\n",
+-			       p->comm, p->pid);
++		if (WARN(p->flags & PF_THREAD_BOUND &&
++			 cpumask_weight(tsk_cpus_allowed(p)) > 1,
++			 "migrating bounded task %s:%d\n",
++			 p->comm, p->pid))
++			return;
+ 	}
+ 
+ 	__set_task_cpu(p, new_cpu);
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
