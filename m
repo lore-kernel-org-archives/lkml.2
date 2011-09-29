@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab1I2Tfu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:35:50 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43145 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab1I2Tfs (ORCPT
+	id S1757511Ab1I2Tfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:35:47 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:57334 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab1I2Tfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:35:48 -0400
-Date: Thu, 29 Sep 2011 15:32:59 -0400 (EDT)
-Message-Id: <20110929.153259.169108824599752228.davem@davemloft.net>
-To: muralira@google.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net-proc: expose the tos values in /proc/net/[tcp|udp]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1317324162-21621-1-git-send-email-muralira@google.com>
-References: <1317324162-21621-1-git-send-email-muralira@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Sep 2011 12:33:01 -0700 (PDT)
+	Thu, 29 Sep 2011 15:35:46 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4] fat: don't use custom hex_to_bin()
+References: <87ipob8l4l.fsf@devron.myhome.or.jp>
+	<f176b6be3c0de274839e813d6ac514d6f7736e77.1317308975.git.andriy.shevchenko@linux.intel.com>
+	<1317310634.1854.25.camel@Joe-Laptop>
+	<8762kb8aqj.fsf@devron.myhome.or.jp>
+	<1317321707.1867.1.camel@Joe-Laptop>
+Date: Fri, 30 Sep 2011 04:35:43 +0900
+In-Reply-To: <1317321707.1867.1.camel@Joe-Laptop> (Joe Perches's message of
+	"Thu, 29 Sep 2011 11:41:47 -0700")
+Message-ID: <871uuz87lc.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Muraliraja Muniraju <muralira@google.com>
-Date: Thu, 29 Sep 2011 12:22:42 -0700
+Joe Perches <joe@perches.com> writes:
 
-> From: Murali Raja <muralira@google.com>
-> 
-> This patch exports the tos values from the inet_sock struct
-> for tcp and udp into the /proc/net/tcp or /proc/net/udp respectively.
-> This will not pickup per packet tos changes but it will address most
-> of the cases. This is mainly useful as it would decrease reliance on
-> tcpdump and also people without root access will be able to read
-> the values.
-> 
-> Signed-off-by: Murali Raja <muralira@google.com>
+>> > perhaps:
+>> >
+>> > 	__le16	foo;
+>> >
+>> > 	if (hex2bin((u8 *)&foo, ip + 1, 2) < 0)
+>> > 		return -EINVAL;
+>> > 	*(u16 *)op = le16_to_cpu(foo);
+>> >
+>> > 	op += 2;
+>> 
+>> I also thought about it. But I think it is not so good, like you had
+>> mistake.  It should actually be "__be16 foo" and "be16_to_cpu()".
+>> 
+>> If we used sscanf() instead of hex2bin(), I might agree to use
+>> "le16_to_cpu()" though.
+>> 
+>> Thanks.
+>
+> Funny.
+>
+> I guess that's what I get for reading Andy's comment
+> and coding that readably.
+>
+> +                                       /* The ip contains 2 bytes in little
+> +                                        * endian format. We need to get them
+> +                                        * in native endian. */
 
-You cannot change the layout of these files, they are parsed by userland
-problems and therefore have a fixed API.
+In here, simply comment is wrong.
 
-Netlink based socket dumping provides a proper, backwards compatible,
-way to extend what is reported, so please consider adding your changes
-there.
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
