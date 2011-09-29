@@ -1,244 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab1I2Uer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:34:47 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45269 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757817Ab1I2Uem (ORCPT
+	id S1757894Ab1I2Uev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:34:51 -0400
+Received: from lunge.queued.net ([173.255.254.236]:45618 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757817Ab1I2Uet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:34:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
-        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
-        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
-        airlied@linux.ie, alexdeucher@gmail.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/9] ttm: Introduce ttm_page_alloc_func structure.
-Date: Thu, 29 Sep 2011 16:33:45 -0400
-Message-Id: <1317328432-25620-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E84D63C.0115:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Thu, 29 Sep 2011 16:34:49 -0400
+Date: Thu, 29 Sep 2011 13:34:46 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        x86 maintainers <x86@kernel.org>, dsd@laptop.org
+Subject: Re: [PATCH] olpc: olpc-xo1-sci.c is an input driver, depends on
+ INPUT
+Message-ID: <20110929133446.40ff3250@queued.net>
+In-Reply-To: <4E84D259.5020008@xenotime.net>
+References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
+	<4E84D259.5020008@xenotime.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Which has the function members for all of the current page pool
-operations defined. The old calls (ttm_put_pages, ttm_get_pages, etc)
-are plumbed through little functions which lookup in the ttm_page_alloc_func
-the appropiate implementation and call it.
+On Thu, 29 Sep 2011 13:17:29 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-There is currently only one page pool code so the default registration
-goes to 'ttm_page_alloc_default'. The subsequent patch
-"ttm: Provide a DMA aware TTM page pool code." introduces the one
-to be used when the SWIOTLB code is turned on (that implementation
-is a union of the default TTM pool code with the DMA pool code).
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Fix build errors when CONFIG_INPUT is disabled (shortened list):
+> 
+> olpc-xo1-sci.c:(.text+0x1aee6): undefined reference to `input_event'
+> olpc-xo1-sci.c:(.text+0x1b077): undefined reference to
+> `input_unregister_device' olpc-xo1-sci.c:(.text+0x1b081): undefined
+> reference to `input_free_device'
+> arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1b270): more undefined
+> references to `input_event' follow
+> olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to
+> `input_allocate_device' olpc-xo1-sci.c:(.devinit.text+0x1a4):
+> undefined reference to `input_register_device'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Andres Salomon <dilinger@debian.org>
+> ---
+> Found in linux-next but also applies to mainline.
+> 
+>  arch/x86/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- next-2011-0929.orig/arch/x86/Kconfig
+> +++ next-2011-0929/arch/x86/Kconfig
+> @@ -2052,7 +2052,7 @@ config OLPC_XO1_RTC
+>  
+>  config OLPC_XO1_SCI
+>  	bool "OLPC XO-1 SCI extras"
+> -	depends on OLPC && OLPC_XO1_PM
+> +	depends on OLPC && OLPC_XO1_PM && INPUT
+>  	select POWER_SUPPLY
+>  	select GPIO_CS5535
+>  	select MFD_CORE
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_memory.c     |    3 ++
- drivers/gpu/drm/ttm/ttm_page_alloc.c |   58 ++++++++++++++++++++++++++++----
- include/drm/ttm/ttm_page_alloc.h     |   60 ++++++++++++++++++++++++++++++++++
- 3 files changed, 113 insertions(+), 8 deletions(-)
+Thanks!
 
-diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
-index e70ddd8..c7d97a5 100644
---- a/drivers/gpu/drm/ttm/ttm_memory.c
-+++ b/drivers/gpu/drm/ttm/ttm_memory.c
-@@ -356,6 +356,8 @@ static int ttm_mem_init_dma32_zone(struct ttm_mem_global *glob,
- }
- #endif
- 
-+struct ttm_page_alloc_func *ttm_page_alloc;
-+
- int ttm_mem_global_init(struct ttm_mem_global *glob)
- {
- 	struct sysinfo si;
-@@ -394,6 +396,7 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
- 		       "Zone %7s: Available graphics memory: %llu kiB.\n",
- 		       zone->name, (unsigned long long) zone->max_mem >> 10);
- 	}
-+	ttm_page_alloc = &ttm_page_alloc_default;
- 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
- 	return 0;
- out_no_zone:
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index d948575..6a888f8 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -664,9 +664,9 @@ out:
-  * On success pages list will hold count number of correctly
-  * cached pages.
-  */
--int ttm_get_pages(struct list_head *pages, int flags,
--		  enum ttm_caching_state cstate, unsigned count,
--		  dma_addr_t *dma_address)
-+int __ttm_get_pages(struct list_head *pages, int flags,
-+		    enum ttm_caching_state cstate, unsigned count,
-+		    dma_addr_t *dma_address)
- {
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
- 	struct page *p = NULL;
-@@ -734,8 +734,8 @@ int ttm_get_pages(struct list_head *pages, int flags,
- }
- 
- /* Put all pages in pages list to correct pool to wait for reuse */
--void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
--		   enum ttm_caching_state cstate, dma_addr_t *dma_address)
-+void __ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
-+		     enum ttm_caching_state cstate, dma_addr_t *dma_address)
- {
- 	unsigned long irq_flags;
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
-@@ -785,7 +785,7 @@ static void ttm_page_pool_init_locked(struct ttm_page_pool *pool, int flags,
- 	pool->name = name;
- }
- 
--int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
-+int __ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- {
- 	int ret;
- 
-@@ -822,7 +822,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- 	return 0;
- }
- 
--void ttm_page_alloc_fini(void)
-+void __ttm_page_alloc_fini(void)
- {
- 	int i;
- 
-@@ -836,7 +836,7 @@ void ttm_page_alloc_fini(void)
- 	_manager = NULL;
- }
- 
--int ttm_page_alloc_debugfs(struct seq_file *m, void *data)
-+int __ttm_page_alloc_debugfs(struct seq_file *m, void *data)
- {
- 	struct ttm_page_pool *p;
- 	unsigned i;
-@@ -856,4 +856,46 @@ int ttm_page_alloc_debugfs(struct seq_file *m, void *data)
- 	}
- 	return 0;
- }
-+
-+struct ttm_page_alloc_func ttm_page_alloc_default = {
-+	.get_pages	= __ttm_get_pages,
-+	.put_pages	= __ttm_put_pages,
-+	.alloc_init	= __ttm_page_alloc_init,
-+	.alloc_fini	= __ttm_page_alloc_fini,
-+	.debugfs	= __ttm_page_alloc_debugfs,
-+};
-+
-+int ttm_get_pages(struct list_head *pages, int flags,
-+		  enum ttm_caching_state cstate, unsigned count,
-+		  dma_addr_t *dma_address)
-+{
-+	if (ttm_page_alloc && ttm_page_alloc->get_pages)
-+		return ttm_page_alloc->get_pages(pages, flags, cstate, count,
-+						 dma_address);
-+	return -1;
-+}
-+void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
-+		   enum ttm_caching_state cstate, dma_addr_t *dma_address)
-+{
-+	if (ttm_page_alloc && ttm_page_alloc->put_pages)
-+		ttm_page_alloc->put_pages(pages, page_count, flags, cstate,
-+					  dma_address);
-+}
-+int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
-+{
-+	if (ttm_page_alloc && ttm_page_alloc->alloc_init)
-+		return ttm_page_alloc->alloc_init(glob, max_pages);
-+	return -1;
-+}
-+void ttm_page_alloc_fini(void)
-+{
-+	if (ttm_page_alloc && ttm_page_alloc->alloc_fini)
-+		ttm_page_alloc->alloc_fini();
-+}
-+int ttm_page_alloc_debugfs(struct seq_file *m, void *data)
-+{
-+	if (ttm_page_alloc && ttm_page_alloc->debugfs)
-+		return ttm_page_alloc->debugfs(m, data);
-+	return -1;
-+}
- EXPORT_SYMBOL(ttm_page_alloc_debugfs);
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 0017b17..6e8d73a 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -29,6 +29,66 @@
- #include "ttm_bo_driver.h"
- #include "ttm_memory.h"
- 
-+struct ttm_page_alloc_func {
-+	/**
-+	 * struct ttm_page_alloc_func member get_pages
-+	 * Get count number of pages from pool to pages list.
-+	 *
-+	 * @pages: head of empty linked list where pages are filled.
-+	 * @flags: ttm flags for page allocation.
-+	 * @cstate: ttm caching state for the page.
-+	 * @count: number of pages to allocate.
-+	 * @dma_address: The DMA (bus) address of pages (by default zero).
-+	 */
-+	int (*get_pages) (struct list_head *pages,
-+			  int flags,
-+			  enum ttm_caching_state cstate,
-+			  unsigned count,
-+			  dma_addr_t *dma_address);
-+	/**
-+	 * struct ttm_page_alloc_func member put_pages.
-+	 *
-+	 * Put linked list of pages to pool.
-+	 *
-+	 * @pages: list of pages to free.
-+	 * @page_count: number of pages in the list. Zero can be passed for
-+	 * unknown count.
-+	 * @flags: ttm flags for page allocation.
-+	 * @cstate: ttm caching state.
-+	 * @dma_address: The DMA (bus) address of pages (by default zero).
-+	 */
-+	void (*put_pages)(struct list_head *pages,
-+			  unsigned page_count,
-+			  int flags,
-+			  enum ttm_caching_state cstate,
-+			  dma_addr_t *dma_address);
-+	/**
-+	 * struct ttm_page_alloc_func member alloc_init.
-+	 *
-+	 * Initialize pool allocator.
-+	 */
-+	int (*alloc_init)(struct ttm_mem_global *glob, unsigned max_pages);
-+
-+	/**
-+	 * struct ttm_page_alloc_func member alloc_fini.
-+	 *
-+	 * Free pool allocator.
-+	 */
-+	void (*alloc_fini)(void);
-+
-+	/**
-+	 * struct ttm_page_alloc_func member debugfs.
-+	 *
-+	 * Output the state of pools to debugfs file
-+	 */
-+	int (*debugfs)(struct seq_file *m, void *data);
-+};
-+
-+extern struct ttm_page_alloc_func *ttm_page_alloc;
-+
-+/* Defined in ttm_page_alloc.c */
-+extern struct ttm_page_alloc_func ttm_page_alloc_default;
-+
- /**
-  * Get count number of pages from pool to pages list.
-  *
--- 
-1.7.4.1
-
+Hm.  This might actually need a 'select INPUT' though, since
+OLPC_XO1_SCI is bool while INPUT is tristate.  Sigh, bool..
