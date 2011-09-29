@@ -1,162 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab1I2LvJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 07:51:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57374 "EHLO mx2.suse.de"
+	id S1755546Ab1I2LwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 07:52:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59687 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab1I2LvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 07:51:07 -0400
-Date: Thu, 29 Sep 2011 13:51:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen before
- deferring
-Message-ID: <20110929115105.GE21113@tiehlicka.suse.cz>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
- <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
- <20110928104445.GB15062@tiehlicka.suse.cz>
+	id S1754076Ab1I2LwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 07:52:08 -0400
+Date: Thu, 29 Sep 2011 13:48:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stephen Wilson <wilsons@start.ca>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Johannes Weiner <jweiner@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Q: proc: hold cred_guard_mutex in check_mem_permission()
+Message-ID: <20110929114827.GA9279@redhat.com>
+References: <20110928202020.GA3164@redhat.com> <20110929071314.GA7734@wicker.gateway.2wire.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110928104445.GB15062@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110929071314.GA7734@wicker.gateway.2wire.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-09-11 12:44:45, Michal Hocko wrote:
-> On Tue 27-09-11 11:35:04, David Rientjes wrote:
-> > On Tue, 27 Sep 2011, Michal Hocko wrote:
-> > 
-> > > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > > index 626303b..c419a7e 100644
-> > > --- a/mm/oom_kill.c
-> > > +++ b/mm/oom_kill.c
-> > > @@ -32,6 +32,7 @@
-> > >  #include <linux/mempolicy.h>
-> > >  #include <linux/security.h>
-> > >  #include <linux/ptrace.h>
-> > > +#include <linux/freezer.h>
-> > >  
-> > >  int sysctl_panic_on_oom;
-> > >  int sysctl_oom_kill_allocating_task;
-> > > @@ -451,10 +452,15 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
-> > >  				task_pid_nr(q), q->comm);
-> > >  			task_unlock(q);
-> > >  			force_sig(SIGKILL, q);
-> > > +
-> > > +			if (frozen(q))
-> > > +				thaw_process(q);
-> > >  		}
-> > >  
-> > >  	set_tsk_thread_flag(p, TIF_MEMDIE);
-> > >  	force_sig(SIGKILL, p);
-> > > +	if (frozen(p))
-> > > +		thaw_process(p);
-> > >  
-> > >  	return 0;
-> > >  }
-> > 
-> > Also needs this...
-> > 
-> > 
-> > oom: thaw threads if oom killed thread is frozen before deferring
-> > 
-> > If a thread has been oom killed and is frozen, thaw it before returning
-> > to the page allocator.  Otherwise, it can stay frozen indefinitely and
-> > no memory will be freed.
-> 
-> OK, I can see the race now:
-> oom_kill_task				refrigerator
->   set_tsk_thread_flag(p, TIF_MEMDIE);
->   force_sig(SIGKILL, p);
->   if (frozen(p))
->   	thaw_process(p)
-> 					  frozen_process();
-> 					  [...]
-> 					  if (!frozen(current))
-> 					  	break;
-> 					  schedule();
-> 
-> select_bad_process
->   [...]
->   if (test_tsk_thread_flag(p, TIF_MEMDIE))
-> 	  return ERR_PTR(-1UL);
-> 
-> So we either have to make sure that TIF_MEMDIE task is not frozen in
-> select_bad_process (your patch) or check for fatal_signal_pending
-> in refrigerator before we schedule and break out of the loop. Maybe the
-> later one is safer? Rafael?
+On 09/29, Stephen Wilson wrote:
+>
+> On Wed, Sep 28, 2011 at 10:20:20PM +0200, Oleg Nesterov wrote:
+> > Another change we probably need to backport, 18f661bc
+> > "proc: hold cred_guard_mutex in check_mem_permission()".
+> >
+> > From the changelog:
+> >
+> >     Avoid a potential race when task exec's and we get a new ->mm but
+> >     check against the old credentials in ptrace_may_access().
+> >
+> > Could you please explain? How can we race with exec?
+>
+> My understanding of the race is this:
+>
+> sequence during execve():
+>
+> 	1) cred_guard_mutex is taken in prepare_bprm_creds()
+> 	2) new mm is installed via exec_mmap()
+> 	3) new creds are pushed via install_exec_creds() which releases
+> 	   cred_guard_mutex
+>
+> so if we get_task_mm() and ptrace_may_access() between 2 and 3 we
+> obtain a reference to the new mm validated against old creds.
+>
+> Perhaps (the fairly old) commit 704b836c helps?
 
-What about this?
----
->From 2c9d15f19ae9b5e8f2497b41c1718782bc65e1e7 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 29 Sep 2011 13:45:22 +0200
-Subject: [PATCH] freezer: Get out of refrigerator if fatal signals are
- pending
+Yes, and that is why I sent 704b836c ;)
 
-We should make sure that the current task doesn't enter refrigerator if
-it has fatal signals pending because it should get to the signals
-processing as soon as possible.
+But, check_mem_permission() can't race with exec, that was my point.
+The task is stopped (it is TASK_TRACED), it can't run unless SIGKILL'ed.
+It can not change its mm/creds.
 
-This closes a possible race when OOM killer selects a task which is
-about to enter the fridge but it is not set as frozen yet. This will
-lead to a livelock because select_bad_process would skip that task due
-to TIF_MEMDIE set for the process but there is no chance for further
-process.
-oom_kill_task                           refrigerator
-  set_tsk_thread_flag(p, TIF_MEMDIE);
-  force_sig(SIGKILL, p);
-  if (frozen(p))
-        thaw_process(p)
-                                          frozen_process();
-                                          [...]
-                                          if (!frozen(current))
-                                                break;
-                                          schedule();
+> > This task is either current, or it is TASK_TRACED and we are the
+> > tracer. In the latter case nobody can resume it except SIGKILL.
+> > And the killed task obviously can't exec.
+> >
+> > Afaics, all we need is: we should read task->mm after the
+> > task_is_traced() check, we do not need the mutex.
+>
+> Checking ptrace_parent() against current was introduced in 0d094efeb,
 
-select_bad_process
-  [...]
-  if (test_tsk_thread_flag(p, TIF_MEMDIE))
-          return ERR_PTR(-1UL);
+not actually, this is very old check, probably since 2.4.0 at least.
+That patch only renames the helper we use.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/freezer.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> but the
+> commit message gives no clue as to why the check was added.
 
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 7b01de9..74b8434 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -48,6 +48,10 @@ void refrigerator(void)
- 	current->flags |= PF_FREEZING;
- 
- 	for (;;) {
-+		if (fatal_signal_pending(current)) {
-+			current->flags &= ~PF_FROZEN;
-+			break;
-+		}
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (!frozen(current))
- 			break;
--- 
-1.7.6.3
+Only debugger can read/write the task's memory. May be we can relax
+this, perhaps we can only check ptrace_may_access(PTRACE_MODE_ATTACH).
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+But currently we require the caller should trace the target.
+
+> > IOW, what do you think about the patch below? I have no idea how
+> > can I test it (and it wasn't even applied/compiled).
+> >
+> > Also, I'd appreciate if you can explain the PTRACE_MODE_ATTACH
+> > check. Again, we are already the tracer.
+>
+> If we are the tracer then that ptrace_may_access() check is redundant and the
+> whole race thing is a non-issue, right?
+
+Yes.
+
+> But perhaps the correct move is to
+> relax the restriction that current be the tracer.
+
+Yes, I thought about this too. And in this case we do need the mutex.
+Although I don't think this really makes sense, I _think_ this all was
+created for debuggers. And, without ptrace_parent(), why do we need
+task_is_stopped_or_traced() check?
+
+So I think we should simply remove ->cred_guard_mutex.
+
+Oleg.
+
