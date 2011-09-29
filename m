@@ -1,133 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab1I2ScV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:32:21 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35719
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754394Ab1I2ScR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:32:17 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 07/24] Staging: hv: mousevsc: Use completion primitive to synchronize
-Date: Thu, 29 Sep 2011 11:54:47 -0700
-Message-Id: <1317322504-9788-7-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317322504-9788-1-git-send-email-kys@microsoft.com>
-References: <1317322456-9747-1-git-send-email-kys@microsoft.com>
- <1317322504-9788-1-git-send-email-kys@microsoft.com>
+	id S1757161Ab1I2Scg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:32:36 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59966 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757087Ab1I2Sce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 14:32:34 -0400
+Date: Thu, 29 Sep 2011 11:32:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] lockdep: Update documentation for lock-class leak
+ detection
+Message-ID: <20110929183228.GA8645@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110928181139.GA8217@linux.vnet.ibm.com>
+ <1317303019.22581.8.camel@twins>
+ <20110929182744.GI2362@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929182744.GI2362@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use completion primitive to synchronize.
+On Thu, Sep 29, 2011 at 11:27:44AM -0700, Paul E. McKenney wrote:
+> On Thu, Sep 29, 2011 at 03:30:19PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2011-09-28 at 11:11 -0700, Paul E. McKenney wrote:
+> > > There are a number of bugs that can leak lock classes, which will
+> > > eventually exhaust the maximum number (currently 8191).  However,
+> > > the documentation does not tell you how to track down the leakers.
+> > > This commit addresses this shortcoming.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > diff --git a/Documentation/lockdep-design.txt b/Documentation/lockdep-design.txt
+> > > index abf768c..24bfd9f 100644
+> > > --- a/Documentation/lockdep-design.txt
+> > > +++ b/Documentation/lockdep-design.txt
+> > > @@ -221,3 +221,55 @@ when the chain is validated for the first time, is then put into a hash
+> > >  table, which hash-table can be checked in a lockfree manner. If the
+> > >  locking chain occurs again later on, the hash table tells us that we
+> > >  dont have to validate the chain again.
+> > > +
+> > > +Troubleshooting:
+> > > +----------------
+> > > +
+> > > +The validator tracks a maximum of MAX_LOCKDEP_KEYS number of lock classes.
+> > > +Exceeding this number will trigger the following lockdep warning:
+> > > +
+> > > +	(DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
+> > > +
+> > > +By default, MAX_LOCKDEP_KEYS is currently set to 8191, and typical
+> > > +desktop systems have less than 1,000 lock classes, so this warning
+> > > +normally results from lock-class leakage.  Such leakage can result
+> > > +from the following:
+> > > +
+> > > +1.	Repeated module loading and unloading while running the validator.
+> > > +	The issue here is that each load of the module will create a
+> > > +	new set of lock classes for that module's locks, and module
+> > > +	unloading cannot remove old classes.  Therefore, if that module
+> > > +	is loaded and unloaded repeatedly, the number of lock classes
+> > > +	will eventually reach the maximum.
+> > > +
+> > > +2.	Dynamically allocating and freeing structures containing fields
+> > > +	of type "struct lock_class_key".  Again, the fact that old
+> > > +	lock classes cannot be reused means that repeating allocation/free
+> > > +	cycles for long enough will cause the number of lock classes to
+> > > +	eventually reach the maximum.
+> > > +
+> > 
+> > This isn't actually true, we check for keys to be in .data or .bss:
+> > 
+> > register_lock_class():
+> >         /*
+> >          * Debug-check: all keys must be persistent!
+> >          */
+> >         if (!static_obj(lock->key)) {
+> >                 debug_locks_off();
+> >                 printk("INFO: trying to register non-static key.\n");
+> >                 printk("the code is fine but needs lockdep annotation.\n");
+> >                 printk("turning off the locking correctness validator.\n");
+> >                 dump_stack();
+> > 
+> >                 return NULL;
+> >         }
+> > 
+> > 
+> > But what can happen is that you 'accidentally' create a lot of static
+> > locks, eg.
+> > 
+> > struct {
+> > 	spinlock_t lock;
+> > 	struct hlist_head hlist;
+> > } my_hash[1 << HASH_BITS];
+> > 
+> > If you don't initialize the lock members you'll find that each will get
+> > a separate lock class based on its static address. This can quickly
+> > deplete the class storage.
+> > 
+> > Now really, you shouldn't ever not initialize a lock, but the above has
+> > actually happened, although I can't find the commit atm.
+> 
+> Thank you for the review and feedback!  Here is an updated version.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |   30 ++++++++++--------------------
- 1 files changed, 10 insertions(+), 20 deletions(-)
+Gah!!!  Resent the old one by mistake.  :-/
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 74faa26..ea9e1f3 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -162,10 +162,7 @@ struct mousevsc_dev {
- 	struct mousevsc_prt_msg	protocol_req;
- 	struct mousevsc_prt_msg	protocol_resp;
- 	/* Synchronize the request/response if needed */
--	wait_queue_head_t	protocol_wait_event;
--	wait_queue_head_t	dev_info_wait_event;
--	int			protocol_wait_condition;
--	int			device_wait_condition;
-+	struct completion	wait_event;
- 	int			dev_info_status;
- 
- 	struct hid_descriptor	*hid_desc;
-@@ -194,6 +191,7 @@ static struct mousevsc_dev *alloc_input_device(struct hv_device *device)
- 
- 	input_dev->device = device;
- 	hv_set_drvdata(device, input_dev);
-+	init_completion(&input_dev->wait_event);
- 
- 	return input_dev;
- }
-@@ -379,8 +377,7 @@ static void mousevsc_on_receive_device_info(struct mousevsc_dev *input_device,
- 		goto cleanup;
- 	}
- 
--	input_device->device_wait_condition = 1;
--	wake_up(&input_device->dev_info_wait_event);
-+	complete(&input_device->wait_event);
- 
- 	return;
- 
-@@ -392,8 +389,7 @@ cleanup:
- 	input_device->report_desc = NULL;
- 
- 	input_device->dev_info_status = -1;
--	input_device->device_wait_condition = 1;
--	wake_up(&input_device->dev_info_wait_event);
-+	complete(&input_device->wait_event);
- }
- 
- static void mousevsc_on_receive_input_report(struct mousevsc_dev *input_device,
-@@ -444,8 +440,7 @@ static void mousevsc_on_receive(struct hv_device *device,
- 		memcpy(&input_dev->protocol_resp, pipe_msg,
- 		       pipe_msg->size + sizeof(struct pipe_prt_msg) -
- 		       sizeof(unsigned char));
--		input_dev->protocol_wait_condition = 1;
--		wake_up(&input_dev->protocol_wait_event);
-+		complete(&input_dev->wait_event);
- 		break;
- 
- 	case SynthHidInitialDeviceInfo:
-@@ -565,6 +560,7 @@ static void mousevsc_on_channel_callback(void *context)
- static int mousevsc_connect_to_vsp(struct hv_device *device)
- {
- 	int ret = 0;
-+	int t;
- 	struct mousevsc_dev *input_dev;
- 	struct mousevsc_prt_msg *request;
- 	struct mousevsc_prt_msg *response;
-@@ -576,8 +572,6 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 		return -1;
- 	}
- 
--	init_waitqueue_head(&input_dev->protocol_wait_event);
--	init_waitqueue_head(&input_dev->dev_info_wait_event);
- 
- 	request = &input_dev->protocol_req;
- 
-@@ -607,10 +601,8 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	input_dev->protocol_wait_condition = 0;
--	wait_event_timeout(input_dev->protocol_wait_event,
--		input_dev->protocol_wait_condition, msecs_to_jiffies(1000));
--	if (input_dev->protocol_wait_condition == 0) {
-+	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
-@@ -624,10 +616,8 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
--	input_dev->device_wait_condition = 0;
--	wait_event_timeout(input_dev->dev_info_wait_event,
--		input_dev->device_wait_condition, msecs_to_jiffies(1000));
--	if (input_dev->device_wait_condition == 0) {
-+	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-+	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
- 	}
--- 
-1.7.4.1
+Here is the new one.
 
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+lockdep: Update documentation for lock-class leak detection
+
+There are a number of bugs that can leak or overuse lock classes,
+which can cause the maximum number of lock classes (currently 8191)
+to be exceeded.  However, the documentation does not tell you how to
+track down these problems.  This commit addresses this shortcoming.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/Documentation/lockdep-design.txt b/Documentation/lockdep-design.txt
+index abf768c..7f213a1 100644
+--- a/Documentation/lockdep-design.txt
++++ b/Documentation/lockdep-design.txt
+@@ -221,3 +221,64 @@ when the chain is validated for the first time, is then put into a hash
+ table, which hash-table can be checked in a lockfree manner. If the
+ locking chain occurs again later on, the hash table tells us that we
+ dont have to validate the chain again.
++
++Troubleshooting:
++----------------
++
++The validator tracks a maximum of MAX_LOCKDEP_KEYS number of lock classes.
++Exceeding this number will trigger the following lockdep warning:
++
++	(DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
++
++By default, MAX_LOCKDEP_KEYS is currently set to 8191, and typical
++desktop systems have less than 1,000 lock classes, so this warning
++normally results from lock-class leakage or failure to properly
++initialize locks.  These two problems are illustrated below:
++
++1.	Repeated module loading and unloading while running the validator
++	will result in lock-class leakage.  The issue here is that each
++	load of the module will create a new set of lock classes for that
++	module's locks, but module unloading does not remove old classes.
++	Therefore, if that module is loaded and unloaded repeatedly,
++	the number of lock classes will eventually reach the maximum.
++
++2.	Using structures such as arrays that have large numbers of
++	locks that are not explicitly initialized.  For example,
++	a hash table with 8192 buckets where each bucket has its
++	own spinlock_t will consume 8192 lock classes -unless- each
++	spinlock is initialized, for example, using spin_lock_init().
++	Failure to properly initialize the per-bucket spinlocks would
++	guarantee lock-class overflow.	In contrast, a loop that called
++	spin_lock_init() on each lock would place all 8192 locks into a
++	single lock class.
++	
++	The moral of this story is that you should always explicitly
++	initialize your locks.
++
++One might argue that the validator should be modified to allow lock
++classes to be reused.  However, if you are tempted to make this argument,
++first review the code and think through the changes that would be
++required, keeping in mind that the lock classes to be removed are likely
++to be linked into the lock-dependency graph.  This turns out to be a
++harder to do than to say.
++
++Of course, if you do run out of lock classes, the next thing to do is
++to find the offending lock classes.  First, the following command gives
++you the number of lock classes currently in use along with the maximum:
++
++	grep "lock-classes" /proc/lockdep_stats
++
++This command produces the following output on a modest Power system:
++
++	 lock-classes:                          748 [max: 8191]
++
++If the number allocated (748 above) increases continually over time,
++then there is likely a leak.  The following command can be used to
++identify the leaking lock classes:
++
++	grep "BD" /proc/lockdep
++
++Run the command and save the output, then compare against the output
++from a later run of this command to identify the leakers.  This same
++output can also help you find situations where lock initialization
++has been omitted.
