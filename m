@@ -1,54 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab1I2MWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:22:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab1I2MWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:22:07 -0400
-Subject: Re: [PATCH v3 00/24] C6X: New architecture
-From: Mark Salter <msalter@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Date: Thu, 29 Sep 2011 08:21:58 -0400
-In-Reply-To: <201109291233.24623.arnd@arndb.de>
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
-	 <22021.1317246541@turing-police.cc.vt.edu>
-	 <201109291233.24623.arnd@arndb.de>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317298919.2580.92.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1755880Ab1I2Mav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:30:51 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:51519 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab1I2Mau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 08:30:50 -0400
+Date: Thu, 29 Sep 2011 14:30:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110929123040.GB3537@somewhere>
+References: <CAFTL4hy4t4z2GX=Tj5wjVv=BSGaSbcspDw3FGUy_2uK=9HU_2A@mail.gmail.com>
+ <20110926012611.GJ2995@linux.vnet.ibm.com>
+ <20110926092052.GD18553@somewhere>
+ <20110926225032.GQ2399@linux.vnet.ibm.com>
+ <20110927121648.GK18553@somewhere>
+ <20110927180142.GD2335@linux.vnet.ibm.com>
+ <20110928123116.GP18553@somewhere>
+ <20110928184025.GF2383@linux.vnet.ibm.com>
+ <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929005545.GT2383@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 12:33 +0200, Arnd Bergmann wrote:
-> On Wednesday 28 September 2011, Valdis.Kletnieks@vt.edu wrote:
-> >   Show Details
-> >   On Tue, 27 Sep 2011 16:29:41 EDT, Mark Salter said:
-> > 
-> > > This architecture supports members of the Texas Instruments family
-> > > of C6x single and multicore DSPs. The multicore DSPs do not support
-> > > cache coherancy, so are not suitable for SMP.
-> > 
-> > Is there a usage model for the multicore? I know somebody had some patches for
-> > "HPC dedicated compute cores" that would just basically run a userspace process
-> > and that's it - would those be applicable here?
+On Wed, Sep 28, 2011 at 05:55:45PM -0700, Paul E. McKenney wrote:
+> On Thu, Sep 29, 2011 at 01:46:36AM +0200, Frederic Weisbecker wrote:
+> > Not sure what you mean. You want to split that specific patch or
+> > others?
 > 
-> No, that's a different thing. Even with dedicated compute cores, you need
-> cache coherency.
+> It looks to me that having my pair of patches on top of yours is
+> really ugly.  If we are going to introduce the per-CPU idle variable,
+> we should make a patch stack that uses that from the start.  This allows
+> me to bisect to track down the failures I am seeing on Power.
 
-One thing that we plan to push later is an XIP model where cores can
-share a
-single kernel text image but run with their own copies of data. So you
-end up
-with something like a loosely coupled multiprocessor system with some
-hardware
-support for multicore communication and peripheral sharing.
+Yeah right. My patches fix the use on extended qs in idle. But if
+idle itself is considered as a quiescent state all along, that's about
+useless. So it sounds indeed better in that order.
 
---Mark
+> If you are too busy, I can take this on, but we might get better results
+> if you did it.  (And I certainly cannot complain about the large amount
+> of time and energy that you have put into this -- plus the reduction in
+> OS jitter will be really cool to have!)
 
+No problem, I can take it.
 
+> > > > Although idle and rcu/nohz are still close notions, it sounds
+> > > > more logical the other way around in the ordering:
+> > > > 
+> > > > tick_nohz_idle_enter() {
+> > > > 	rcu_idle_enter() {
+> > > > 		rcu_enter_nohz();
+> > > > 	}
+> > > > }
+> > > > 
+> > > > tick_nohz_irq_exit() {
+> > > >         rcu_idle_enter() {
+> > > >                 rcu_enter_nohz();
+> > > >         }
+> > > > }
+> > > > 
+> > > > Because rcu ext qs is something used by idle, not the opposite.
+> 
+> Re-reading this makes me realize that I would instead say that idle
+> is an example of an RCU extended quiescent state, or that the rcu_ext_qs
+> argument to the various functions is used to indicate whether or not
+> we are immediately entering/leaving idle from RCU's viewpoint.
+> 
+> So what were you really trying to say here?  ;-)
+
+I was thinking about the fact that idle is a caller of rcu_enter_nohz().
+And there may be more callers of it in the future. So I thought it may
+be better to keep rcu_enter_nohz() idle-agnostic.
+
+But it's fine, there are other ways to call rcu_idle_enter()/rcu_idle_exit()
+from the right places other than from rcu_enter/exit_nohz().
+We have tick_check_idle() on irq entry and tick_nohz_irq_exit(), both are called
+on the first interrupt level in idle.
+
+So I can change that easily for the nohz cpusets.
+
+> > > The problem I have with this is that it is rcu_enter_nohz() that tracks
+> > > the irq nesting required to correctly decide whether or not we are going
+> > > to really go to idle state.  Furthermore, there are cases where we
+> > > do enter idle but do not enter nohz, and that has to be handled correctly
+> > > as well.
+> > > 
+> > > Now, it is quite possible that I am suffering a senior moment and just
+> > > failing to see how to structure this in the design where rcu_idle_enter()
+> > > invokes rcu_enter_nohz(), but regardless, I am failing to see how to
+> > > structure this so that it works correctly.
+> > > 
+> > > Please feel free to enlighten me!
+> > 
+> > Ah I realize that you want to call rcu_idle_exit() when we enter
+> > the first level interrupt and rcu_idle_enter() when we exit it
+> > to return to idle loop.
+> > 
+> > But we use that check:
+> > 
+> > 	if (user ||
+> > 	    (rcu_is_cpu_idle() &&
+> >  	     !in_softirq() &&
+> >  	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
+> >  		rcu_sched_qs(cpu);
+> > 
+> > So we ensure that by the time we call rcu_check_callbacks(), we are not nesting
+> > in another interrupt.
+> 
+> But I would like to enable checks for entering/exiting idle while
+> within an RCU read-side critical section. The idea is to move
+> the checks from their currently somewhat problematic location in
+> rcu_needs_cpu_quick_check() to somewhere more sensible.  My current
+> thought is to move them rcu_enter_nohz() and rcu_exit_nohz() near the
+> calls to rcu_idle_enter() and rcu_idle_exit(), respectively.
+
+So, checking if we are calling rcu_idle_enter() while in an RCU
+read side critical section?
+
+But we already have checks that RCU read side API are not called in
+extended quiescent state.
+
+> This would mean that they operated only in NO_HZ kernels with lockdep
+> enabled, but I am good with that because to do otherwise would require
+> adding nesting-level counters to the non-NO_HZ case, which I would like
+> to avoid, expecially for TINY_RCU.
+
+There can be a secondary check in rcu_read_lock_held() and friends to
+ensures that rcu_is_idle_cpu(). In the non-NO_HZ case it's useful to
+find similar issues.
+
+In fact we could remove the check for rcu_extended_qs() in read side
+APIs and check instead rcu_is_idle_cpu(). That would work in any
+config and not only NO_HZ.
+
+But I hope we can actually keep the check for RCU extended quiescent
+state so that when rcu_enter_nohz() is called from other places than
+idle, we are ready for it.
+
+I believe it's fine to have both checks in PROVE_RCU.
+
+> 
+> > That said we found RCU uses after we decrement the hardirq offset and until
+> > we reach rcu_irq_exit(). So rcu_check_callbacks() may miss these places
+> > and account spurious quiescent states.
+> > 
+> > But between sub_preempt_count() and rcu_irq_exit(), irqs are disabled
+> > AFAIK so we can't be interrupted by rcu_check_callbacks(), except during the
+> > softirqs processing. But we have that ordering:
+> > 
+> > add_preempt_count(SOTFIRQ_OFFSET)
+> > local_irq_enable()
+> > 
+> > do softirqs
+> > 
+> > local_irq_disable()
+> > sub_preempt_count(SOTFIRQ_OFFSET)
+> > 
+> > So the !in_softirq() check covers us during the time we process softirqs.
+> > 
+> > The only assumption we need is that there is no place between
+> > sub_preempt_count(IRQ_EXIT_OFFSET) and rcu_irq_ext() that has
+> > irqs enabled and that is an rcu read side critical section.
+> > 
+> > I'm not aware of any automatic check to ensure that though.
+> 
+> Nor am I, which is why I am looking to the checks in
+> rcu_enter_nohz() and rcu_exit_nohz() called out above.
+
+Yep.
+
+> > Anyway, the delta patch looks good.
+> 
+> OK, my current plans are to start forward-porting to -rc8, and I would
+> like to have this pair of delta patches or something like them pulled
+> into your stack.
+
+Sure I can take your patches (I'm going to merge the delta into the first).
+But if you want a rebase against -rc8, it's going to be easier if you
+do that rebase on the branch you want me to work on. Then I work on top
+of it.
+
+For example we can take your rcu/dynticks, rewind to
+"rcu: Make synchronize_sched_expedited() better at work sharing"
+771c326f20029a9f30b9a58237c9a5d5ddc1763d, rebase on top of -rc8
+and I rebase my patches (yours included) on top of it and I repost.
+
+Right?
+
+> >                                     Just a little thing:
+> > 
+> > > -void tick_nohz_idle_exit(void)
+> > > +void tick_nohz_idle_exit(bool rcu_ext_qs)
+> > 
+> > It becomes weird to have both idle_enter/idle_exit having
+> > that parameter.
+> > 
+> > Would it make sense to have tick_nohz_idle_[exit|enter]_norcu()
+> > and a version without norcu?
+> 
+> Given that we need to make this work in CONFIG_NO_HZ=n kernels, I believe
+> that the current API is OK.  But if you would like to change the API
+> during the forward-port to -rc8, I am also OK with the alternative API
+> you suggest.
+
+Fine. I'll do that rename.
+
+Thanks.
