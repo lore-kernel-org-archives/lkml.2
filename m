@@ -1,53 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab1I2OIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:08:52 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:41662 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754590Ab1I2OIv (ORCPT
+	id S1756588Ab1I2OJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:09:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59797 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab1I2OJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:08:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 49so3.EVM1nmUimaeOhFLJfUz_sCeVi74bjSMyvImKIfYM1
- VBkmpJh8F34vJ1Qkfe4xRAxKj_VuZnci9NAVM.Bnm9fx.z11eykByLdcbMMu
- vgKNtiwW.KWp25KlcE0Ki2atfkKMSj8yHigM8v9qXKSFkJbdylJ.BgXi7PgG
- L4uYIRlgK7cCIvjcQM1Sa4OepcAsNS5sMgVmCZ.eFgI3pJSHX.geeNytfMt5
- RjIYhzBM0S8lXdSuYE9Q7uf8jTdLg8BNHQRUImFEpQ9AoIrTJBqF_.3lwMyC
- 5ebx2s4Jft8D9qtl0QHyOAawa3cKvGVqY7DzgJz114IDB20r9tbUkdMApMde
- 2guXLKAgOiYpils3yVs4KTEPQK3MWk61f5Q3UyivTVrVY3KQQNUAzhIIWFBS
- 9hqafVLLjZgFWRLct4pApXsw93fejRuctxkfLtcu7OiNWb_GK
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 29 Sep 2011 09:08:47 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Catalin Marinas <catalin.marinas@arm.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Huajun Li <huajun.li.lee@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: Question about memory leak detector giving false positive report
- for net/core/flow.c
-In-Reply-To: <20110928172342.GH23559@e102109-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.00.1109290907450.9382@router.home>
-References: <CA+v9cxadZzWr35Q9RFzVgk_NZsbZ8PkVLJNxjBAMpargW9Lm4Q@mail.gmail.com> <1317054774.6363.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110926165024.GA21617@e102109-lin.cambridge.arm.com> <1317066395.2796.11.camel@edumazet-laptop>
- <20110928172342.GH23559@e102109-lin.cambridge.arm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 29 Sep 2011 10:09:00 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
+Subject: [PATCH 1/5] arm: omap: usb: ehci and ohci hwmod structures for omap4
+Date: Thu, 29 Sep 2011 19:37:17 +0530
+Message-ID: <1317305241-611-2-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1317305241-611-1-git-send-email-keshava_mgowda@ti.com>
+References: <1317305241-611-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011, Catalin Marinas wrote:
+From: Benoit Cousson <b-cousson@ti.com>
 
-> I tried this but it's tricky. The problem is that the percpu pointer
-> returned by alloc_percpu() does not directly point to the per-cpu chunks
-> and kmemleak would report most percpu allocations as leaks. So far the
-> workaround is to simply mark the alloc_percpu() objects as never leaking
-> and at least we avoid false positives in other areas. See the patch
-> below (note that you have to increase the CONFIG_KMEMLEAK_EARLY_LOG_SIZE
-> as there are many alloc_percpu() calls before kmemleak is fully
-> initialised):
+Following 2 hwmod structures are added
+1. usb_host_hs
+     The hwmod of usbhs with uhh, ehci and ohci base addresses
+     functional clock and ehci, ohci irqs
 
-Seems that kernel.org is out and so tejon wont be seeing these.
+2. usb_tll_hs
+      hwmod of usbhs with the TLL base address and irq.
+
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
+
+- rebased to kernel version 3.0
+
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Reviewed-by: Partha Basak <parthab@india.ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  171 +++++++++++++++++++++++++++-
+ 1 files changed, 170 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 6201422..5e6e3c6 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -68,6 +68,8 @@ static struct omap_hwmod omap44xx_mmc2_hwmod;
+ static struct omap_hwmod omap44xx_mpu_hwmod;
+ static struct omap_hwmod omap44xx_mpu_private_hwmod;
+ static struct omap_hwmod omap44xx_usb_otg_hs_hwmod;
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod;
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod;
+ 
+ /*
+  * Interconnects omap_hwmod structures
+@@ -5336,6 +5338,170 @@ static struct omap_hwmod omap44xx_wd_timer3_hwmod = {
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
+ };
+ 
++/*
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
++ */
++static struct omap_hwmod_ocp_if omap44xx_usb_host_hs__l3_main_2 = {
++	.master		= &omap44xx_usb_host_hs_hwmod,
++	.slave		= &omap44xx_l3_main_2_hwmod,
++	.clk		= "l3_div_ck",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap44xx_usb_host_hs_hwmod_class = {
++	.name = "usb_host_hs",
++	.sysc = &omap44xx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_masters[] = {
++	&omap44xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x4a064000,
++		.pa_end		= 0x4a0647ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.name		= "ohci",
++		.pa_start	= 0x4a064800,
++		.pa_end		= 0x4a064bff,
++	},
++	{
++		.name		= "ehci",
++		.pa_start	= 0x4a064c00,
++		.pa_end		= 0x4a064fff,
++	},
++	{}
++};
++
++static struct omap_hwmod_irq_info omap44xx_usb_host_hs_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 + OMAP44XX_IRQ_GIC_START },
++	{ .name = "ehci-irq", .irq = 77 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_host_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_host_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_host_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_host_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_host_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
++	.name		= "usb_host_hs",
++	.class		= &omap44xx_usb_host_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.main_clk	= "usb_host_hs_fck",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_L3INIT_USB_HOST_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_L3INIT_USB_HOST_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++	.mpu_irqs	= omap44xx_usb_host_hs_irqs,
++	.slaves		= omap44xx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_slaves),
++	.masters	= omap44xx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap44xx_usb_host_hs_masters),
++/*
++ * The usbhs controller prevents the enter omap to low power mode
++ * if other than FORCE IDLE and FORCE STANDBY are used.
++ */
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
++/*
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ */
++static struct omap_hwmod_class_sysconfig omap44xx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
++			   SYSC_HAS_SOFTRESET | SYSC_HAS_ENAWAKEUP |
++			   SYSC_HAS_CLOCKACTIVITY),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap44xx_usb_tll_hs_hwmod_class = {
++	.name = "usb_tll_hs",
++	.sysc = &omap44xx_usb_tll_hs_sysc,
++};
++
++static struct omap_hwmod_irq_info omap44xx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x4a062000,
++		.pa_end		= 0x4a063fff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{}
++};
++
++static struct omap_hwmod_ocp_if omap44xx_l4_cfg__usb_tll_hs = {
++	.master		= &omap44xx_l4_cfg_hwmod,
++	.slave		= &omap44xx_usb_tll_hs_hwmod,
++	.clk		= "l4_div_ck",
++	.addr		= omap44xx_usb_tll_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap44xx_usb_tll_hs_slaves[] = {
++	&omap44xx_l4_cfg__usb_tll_hs,
++};
++
++static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
++	.name		= "usb_tll_hs",
++	.class		= &omap44xx_usb_tll_hs_hwmod_class,
++	.clkdm_name	= "l3_init_clkdm",
++	.main_clk	= "usb_tll_hs_ick",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_L3INIT_USB_TLL_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_L3INIT_USB_TLL_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++	.mpu_irqs	= omap44xx_usb_tll_hs_irqs,
++	.slaves		= omap44xx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
++/*
++ * The usbhs controller prevents the enter omap to low power mode
++ * if other than FORCE IDLE for TLL mode too.
++ */
++	.flags		= HWMOD_SWSUP_SIDLE,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP4430),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 
+ 	/* dmm class */
+@@ -5475,13 +5641,16 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	&omap44xx_uart3_hwmod,
+ 	&omap44xx_uart4_hwmod,
+ 
++	/* usb host class */
++	&omap44xx_usb_host_hs_hwmod,
++	&omap44xx_usb_tll_hs_hwmod,
++
+ 	/* usb_otg_hs class */
+ 	&omap44xx_usb_otg_hs_hwmod,
+ 
+ 	/* wd_timer class */
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
+-
+ 	NULL,
+ };
+ 
+-- 
+1.6.0.4
 
