@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab1I2McD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:32:03 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:58919 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab1I2McA (ORCPT
+	id S1755942Ab1I2Mi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:38:29 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:51683 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1I2Mi2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:32:00 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Barry Song <Barry.Song@csr.com>
-Cc: pavel@ucw.cz, rjw@sisk.pl, frank.hofmann@tomtom.com,
-        linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Barry Song <baohua.song@csr.com>
-Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file
-In-Reply-To: Your message of "Thu, 29 Sep 2011 02:29:08 PDT."
-             <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317299401_4421P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 29 Sep 2011 08:30:01 -0400
-Message-ID: <59872.1317299401@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4E8464CF.010A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 29 Sep 2011 08:38:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:subject:from:to:mime-version:content-type:
+	content-transfer-encoding; q=dns; s=shealevy.com; b=duaLD8QeohlD
+	CDD6FuDA4yHq2tYGpaU+h5wNLUKDd776P/sv5DPKBHsXKG0L6+worSxoRvOGlCdc
+	ZAGhsO24PGKfgeH3cQ5PMeEoTRFm3z7G9DA00l7ezi+Rf2qLQW1ERUEKsM90tNu8
+	OJGqeF4eJobnvcB0QxV4uKFb4+Vvx6I=
+Message-ID: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
+Date: Thu, 29 Sep 2011 05:38:27 -0700
+Subject: Hang with "runaway loop modprobe net-pf-1" on Linux 3.0.4
+From: shea@shealevy.com
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317299401_4421P
-Content-Type: text/plain; charset=us-ascii
+Hello,
 
-On Thu, 29 Sep 2011 02:29:08 PDT, Barry Song said:
+My initrd mounts /proc and /sys, puts a tmpfs at /dev, then loads ext4. On
+2.6.39 (and earlier), this works fine and the initrd init continues
+happily. On 3.0.4, however, the kernel spits out
 
-> This patch adds resumewait kernel param just like rootwait so
-> that we have enough time to wait mmc ready. The differene is
-> here we wait for resume partition but rootwait waits for rootfs
-> partition.
+> request_module: runaway loop modprobe net-pf-1
 
-OK, seems a reasonable idea...
+a few times then hangs. If I drop into a shell before loading ext4 and run
+modprobe unix, the same problem occurs. The modprobe used is dynamically
+linked with glibc (which is included in the initrd), and it is the same
+modprobe on the working and non-working systems. From my searches, it
+appears that CONFIG_UNIX=y instead of =m would probably solve this
+problem, but I'd rather keep it as a module if it's possible to get it
+working. What's going wrong here? Why does it work on 2.6.39 but not
+3.0.4?
 
-> kernel/power/hibernate.c |   16 ++++++++++++++++
-> 1 files changed, 16 insertions(+), 0 deletions(-)
-
-We have a __setup() parameter, this patch appears to be missing
-a hunk for Documentation/kernel-parameters.txt?
-
-Fix that issue, and you can stick this on there:
-
-Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-
---==_Exmh_1317299401_4421P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOhGTJcC3lWbTT17ARAjcbAJ9hqeFvA1FK4z3s4R/KevywFcmyKACgtGnI
-QJpEBIgiSQbQUp+U16+tHfs=
-=aeYo
------END PGP SIGNATURE-----
-
---==_Exmh_1317299401_4421P--
+Regards,
+Shea Levy
 
