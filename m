@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab1I2RUb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:20:31 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:31822 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752292Ab1I2RU3 (ORCPT
+	id S1757308Ab1I2RVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:21:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45301 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751183Ab1I2RVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:20:29 -0400
-Date: Thu, 29 Sep 2011 10:20:28 -0700 (PDT)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, adrian hunter <adrian.hunter@intel.com>,
-        linus walleij <linus.walleij@linaro.org>,
-        james p freyensee <james_p_freyensee@linux.intel.com>,
-        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
-        per forlin <per.forlin@stericsson.com>,
-        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
-        linux-mmc@vger.kernel.org
-Message-ID: <1522108758.811204.1317316828352.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1317309431-1898-1-git-send-email-linkinjeon@gmail.com>
-Subject: Re: [PATCH v3] mmc : general purpose partition support.
+	Thu, 29 Sep 2011 13:21:12 -0400
+Date: Thu, 29 Sep 2011 18:17:13 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huajun Li <huajun.li.lee@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
+Message-ID: <20110929171713.GK32023@e102109-lin.cambridge.arm.com>
+References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+ <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
+ <1317297373.2855.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.61.163]
-X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1317297373.2855.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae,
-
------ Original Message -----
-> From: "Namjae Jeon" <linkinjeon@gmail.com>
-> To: cjb@laptop.org, linux-mmc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com, "adrian hunter" <adrian.hunter@intel.com>, "linus walleij"
-> <linus.walleij@linaro.org>, "james p freyensee" <james_p_freyensee@linux.intel.com>, sebras@gmail.com, "Ulf Hansson"
-> <Ulf.Hansson@stericsson.com>, "stefan xk nilsson" <stefan.xk.nilsson@stericsson.com>, "per forlin"
-> <per.forlin@stericsson.com>, "johan rudholm" <johan.rudholm@stericsson.com>, "Namjae Jeon" <linkinjeon@gmail.com>
-> Sent: Thursday, September 29, 2011 11:17:11 AM
-> Subject: [PATCH v3] mmc : general purpose partition support.
+On Thu, Sep 29, 2011 at 12:56:13PM +0100, Eric Dumazet wrote:
+> Le jeudi 29 septembre 2011 à 12:02 +0100, Catalin Marinas a écrit :
+> > This patch adds kmemleak callbacks from the percpu allocator, reducing a
+> > number of false positives caused by kmemleak not scanning such memory
+> > blocks. The percpu chunks are never reported as leaks because of current
+> > kmemleak limitations with the __percpu pointer not pointing directly to
+> > the actual chunks.
+> > 
+> > Reported-by: Huajun Li <huajun.li.lee@gmail.com>
+> > Cc: Tejun Heo <tj@kernel.org>,
+> > Cc: Christoph Lameter <cl@linux-foundation.org>
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > ---
 > 
-> It allows gerneral purpose partitions in MMC Device.
-> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
-> structure suggested by Andrei Warkentin.
-> After patching, we can see general purpose partitions like this.
-> > cat /proc/partitions
->               179 0 847872 mmcblk0
->               179 192 4096 mmcblk0gp3
->               179 160 4096 mmcblk0gp2
->               179 128 4096 mmcblk0gp1
->               179 96  1052672 mmcblk0gp0
->               179 64  1024 mmcblk0boot1
->               179 32  1024 mmcblk0boot0
+> I wonder if you tried it on a 16 or 64 cpus machine ?
+
+I only tried on a 4-CPU system and the early log allocations went form
+under 400 to nearly 800.
+
+> I guess we should increase CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE default
 > 
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Or you could add new kmemleak_percpu_alloc() / kmemleak_percpu_free()
+> primitives to not waste entries in early_log[]
 
-> +	 for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
-> +		if (card->boot_part[idx].size) {
-> +			ret = mmc_blk_alloc_part(card, md,
-> +				card->boot_part[idx].cookie,
-> +				card->boot_part[idx].size >> 9,
-> +				card->boot_part[idx].force_ro,
-> +				card->boot_part[idx].name);
-> +			if (ret)
-> +				return ret;
-> +		}
-> +	}
-> +
-> +	for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
-> +		if (card->gp_part[idx].size) {
-> +			ret = mmc_blk_alloc_part(card, md,
-> +				card->gp_part[idx].cookie,
-> +				card->gp_part[idx].size >> 9,
-> +				card->gp_part[idx].force_ro,
-> +				card->gp_part[idx].name);
-> +			if (ret)
-> +				return ret;
+If we don't track them in early_log[] before kmemleak is initialised,
+they aren't tracked at all so we end up pretty much in the same
+situations.
 
-You were on a better track before. Why does the block drivre need to know about the partition types?
-You should parse one array.
+A better approach would be to tell kmemleak about the __percpu pointer
+via some additional API (or some other way to detect that it's a
+__percpu pointer) and kmemleak would do the for_each_possible_cpu()
+conversion when scanning.
 
-> -		card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-> +		if (ext_csd[EXT_CSD_BOOT_MULT])	{
-> +			part_cfg = EXT_CSD_PART_CONFIG_ACC_BOOT0;
-> +			for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
-> +				card->boot_part[idx].size =
-> +					ext_csd[EXT_CSD_BOOT_MULT] << 17;
-> +				card->boot_part[idx].cookie = part_cfg++;
-> +				sprintf(card->boot_part[idx].name, "boot%d",
-> +					idx);
-> +				card->boot_part[idx].force_ro = true;
-> +			}
-> +		}
->  	}
->  
+The question - can we guarantee that the __percpu pointer returned by
+alloc_percpu() does not overlap with some memory block allocated
+elsewhere? At least for the first chunk it seems to overlap with the
+percpu data section, which is fine as that's not added in kmemleak as an
+allocated block.
 
-My earlier comment still stands - make your code look something like -
+Allowing overlapping blocks in kmemleak may be a solution but it's not
+implemented yet.
 
-if (ext_csd[EXT_CSD_BOOT_MULT])	{
-	part_cfg = EXT_CSD_PART_CONFIG_ACC_BOOT0;
-	for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
-		mmc_part_add(card, size, part_cfg++, "boot%d", part_cfg++,
-				"boot%d", idx, true)
-}
-
-> +	struct mmc_part	boot_part[MMC_NUM_BOOT_PARTITION];	/* mmc boot
-> partitions */
-> +	struct mmc_part	gp_part[MMC_NUM_GP_PARTITION];	/* mmc general
-> purpose partitions */
-
-struct mmc_part parts[MMC_NUM_BOOT_PARTITION + MMC_NUM_GP_PARTITION];
-unsigned nr_parts;
-
-A
+-- 
+Catalin
