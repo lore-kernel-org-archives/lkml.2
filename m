@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab1I2Svf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:51:35 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43091 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab1I2Sve (ORCPT
+	id S1755137Ab1I2SyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:54:10 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:54180 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab1I2SyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:51:34 -0400
-Date: Thu, 29 Sep 2011 19:51:32 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v3] fs/minix: Verify bitmap block counts before mounting
-Message-ID: <20110929185132.GM2203@ZenIV.linux.org.uk>
-References: <20110819185025.GD2270@zod.bos.redhat.com>
- <20110929183818.GI16720@zod.bos.redhat.com>
+	Thu, 29 Sep 2011 14:54:08 -0400
+Date: Thu, 29 Sep 2011 14:51:51 -0400 (EDT)
+From: Doug Ledford <dledford@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
+Message-ID: <f27ffef8-9ec1-4254-bb26-1f2fdf4366c7@zmail05.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20110929175716.GA5815@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929183818.GI16720@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.11.231.143]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 02:38:18PM -0400, Josh Boyer wrote:
-> On Fri, Aug 19, 2011 at 02:50:25PM -0400, Josh Boyer wrote:
-> > Newer versions of MINIX can create filesystems that allocate an extra
-> > bitmap block.  Mounting of this succeeds, but doing a statfs call will
-> > result in an oops in count_free because of a negative number being used
-> > for the bh index.
-> > 
-> > Avoid this by verifying the number of allocated blocks at mount time,
-> > erroring out if there are not enough and make statfs ignore the extras
-> > if there are too many.
-> > 
-> > This fixes https://bugzilla.kernel.org/show_bug.cgi?id=18792
-> > 
-> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> 
-> Al, did this ever get queued up to send to Linus?
+----- Original Message -----
+> Um, that's the way this patch is upstream, right?  So perhaps it
+> should
+> be fixed there first and then I can take the fix into -stable?
 
-Sits in my tree, waiting for kernel.org to come back, with obvious
-followup on top of it...
+Upstream is a bit of a fuzzy statement ;-)  It might be in -next, but it's not in Linus' tree or Andrew's -mm tree or else my recent patches would have conflicted.  And in fact, upon further reflection, I think maybe that particular test could use being split into two distinct tests.  One for wrapping the byte counter, which would return -ENOMEM, and one for exceeding RLIMIT_MSGQUEUE which would return -EPERM (not sure if that's right, I would have to poke around elsewhere, but it seems a better response when you are violating a ulimit than nomem to me anyway).
 
-commit 2a0b3282ff528af4c0824c16d99c62a53d029720
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Fri Aug 26 22:38:50 2011 -0400
-
-    minixfs: kill manual hweight(), simplify
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-commit b928f2ccce51ffd666e4238e8c166dfeb0069c28
-Author: Josh Boyer <jwboyer@redhat.com>
-Date:   Fri Aug 19 14:50:26 2011 -0400
-
-    fs/minix: Verify bitmap block counts before mounting
+-- 
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: CFBFF194
+	      http://people.redhat.com/dledford
 
