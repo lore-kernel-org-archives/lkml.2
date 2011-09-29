@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab1I2Q5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:57:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754605Ab1I2Q5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:57:12 -0400
-Date: Thu, 29 Sep 2011 22:27:06 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 00/11] virtio: Support for hibernation (S4)
-Message-ID: <20110929165706.GH3708@amit-x200.redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
- <20110929154925.GG3708@amit-x200.redhat.com>
- <23581.1317314927@turing-police.cc.vt.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23581.1317314927@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932065Ab1I2Q7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 12:59:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56083 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab1I2Q7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 12:59:03 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@gentwo.org>,
+        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+In-Reply-To: Your message of "Thu, 29 Sep 2011 20:18:48 +0400."
+             <20110929161848.GA16348@albatros>
+From: Valdis.Kletnieks@vt.edu
+References: <20110927175453.GA3393@albatros> <20110927175642.GA3432@albatros> <20110927193810.GA5416@albatros> <alpine.DEB.2.00.1109271459180.13797@router.home> <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
+            <20110929161848.GA16348@albatros>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1317315452_4004P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 29 Sep 2011 12:57:32 -0400
+Message-ID: <23921.1317315452@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4E84A37F.00CB,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) 29 Sep 2011 [12:48:47], Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 29 Sep 2011 21:19:25 +0530, Amit Shah said:
-> > On (Thu) 29 Sep 2011 [20:55:56], Amit Shah wrote:
-> > > Hello,
-> > > 
-> > > These patches add support for S4 to virtio (pci) and all drivers.  The
-> > > patches are based on the virtio-console patch series in Rusty's queue.
-> > 
-> > Some patches have checkpatch warnings, re-sending those as v2.
+--==_Exmh_1317315452_4004P
+Content-Type: text/plain; charset=us-ascii
+
+On Thu, 29 Sep 2011 20:18:48 +0400, Vasiliy Kulikov said:
+
+> As `new' is just increased, it means it is known with KB granularity,
+> not MB.  By counting used slab objects he learns filled_obj_size_sum.
 > 
-> When doing something like this, don't say "some" - say "patches 4,5, 6, and 9".
-> Otherwise we're looking at 11 patches from the first set, 4 replacements, and
-> no way to tell if we've missed a 5th replacement patch.
+> So, rounding gives us nothing, but obscurity.
 
-Makes sense, will do that in the future, thanks.
+Yes, but if he has an exploit that requires using up (for example) exactly 31
+objects in the slab, he may now know that a new slab got allocated to push it
+over the MB boundary.  So he knows there's exactly one object in that new slab.
 
-I've sent out v2 of patches 4, 5, 6 and 9.
+But now he has to fly blind for the next 30 because the numbers will display
+exactly the same, and he can't correct for somebody else allocating one so he
+needs to only allocate 29...
 
-		Amit
+
+--==_Exmh_1317315452_4004P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOhKN8cC3lWbTT17ARAg/3AJ9x3uaMuHNlfdBtk8pRkToHP403mACglOOW
+87NfvBJfy887ga+I5IdAQY0=
+=H0IU
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317315452_4004P--
+
