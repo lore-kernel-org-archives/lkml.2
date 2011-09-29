@@ -1,130 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab1I2WpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:45:11 -0400
-Received: from peace.netnation.com ([204.174.223.2]:47284 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab1I2WpG (ORCPT
+	id S1756850Ab1I2Wp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:45:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39071 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079Ab1I2WpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:45:06 -0400
-Date: Thu, 29 Sep 2011 15:45:05 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: [3.1-rc6] kmalloc(64) leak from IDE
-Message-ID: <20110929224505.GC7959@hostway.ca>
-References: <20110922072643.GA27232@hostway.ca> <20110922084811.GC17640@liondog.tnic> <20110922202337.GB32661@hostway.ca> <20110923072118.GA13293@liondog.tnic> <20110923173808.GB26481@hostway.ca> <20110925085818.GA10947@liondog.tnic> <20110926080549.GA14697@hostway.ca> <20110927170755.GA31384@gere.osrc.amd.com> <20110929092705.GA809@liondog.tnic>
+	Thu, 29 Sep 2011 18:45:19 -0400
+Date: Thu, 29 Sep 2011 18:45:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Kevin Shanahan <kmshanah@disenchant.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] ttm/dma: Implement set_page_caching implementation
+ in the TTM DMA pool code.
+Message-ID: <20110929224507.GA32650@phenom.oracle.com>
+References: <20110929221615.GF3894@cubit>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110929092705.GA809@liondog.tnic>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110929221615.GF3894@cubit>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090204.4E84F4FD.00AC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 11:27:05AM +0200, Borislav Petkov wrote:
+On Fri, Sep 30, 2011 at 07:46:15AM +0930, Kevin Shanahan wrote:
+> On 2011-09-29 20:33:52, Konrad Rzeszutek Wilk wrote:
+> > . which is pretty much like the other TTM pool except it
+> > also handles moving the page to another pool list.
+> > 
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   96 ++++++++++++++++++++++++++++++
+> >  1 files changed, 96 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > index 5909d28..cea031e 100644
+> > --- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > +++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+> > @@ -1307,11 +1307,107 @@ static int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
+> >  	mutex_unlock(&_manager->lock);
+> >  	return 0;
+> >  }
+> > +#ifdef CONFIG_X86
+> > +static int ttm_dma_page_set_page_caching(struct page *p,
+> > +					 int flags,
+> > +					 enum ttm_caching_state c_old,
+> > +					 enum ttm_caching_state c_new,
+> > +					 struct device *dev)
+> > +{
+> > +	struct dma_pool *src, *dst;
+> > +	enum pool_type type;
+> > +	struct dma_page *dma_p;
+> > +	bool found = false;
+> > +	unsigned long irq_flags;
+> > +	int ret = 0;
+> > +
+> > +	if (!p)
+> > +		return 0;
+> > +
+> > +	if (PageHighMem(p))
+> > +		return 0;
+> > +
+> > +	type = ttm_to_type(flags, c_old);
+> > +	src = ttm_dma_find_pool(dev, type);
+> > +	if (!src) {
+> > +		WARN_ON(!src);
+> > +		return -ENOMEM;
+> > +	}
+> > +	type = ttm_to_type(flags, c_new);
+> > +	dst = ttm_dma_find_pool(dev, type);
+> > +	if (!dst) {
+> > +		gfp_t gfp_flags;
+> > +		if (flags & TTM_PAGE_FLAG_DMA32)
+> > +			gfp_flags = GFP_USER | GFP_DMA32;
+> > +		else
+> > +			gfp_flags = GFP_HIGHUSER;
+> > +
+> > +		if (flags & TTM_PAGE_FLAG_ZERO_ALLOC)
+> > +			gfp_flags |= __GFP_ZERO;
+> > +
+> > +		dst = ttm_dma_pool_init(dev, gfp_flags, type);
+> > +		if (IS_ERR_OR_NULL(dst))
+> > +			return -ENOMEM;
+> > +	}
+> > +
+> > +	dev_dbg(dev, "(%d) Caching %p (%p) from %x to %x.\n", current->pid,
+> > +		p, page_address(p), c_old, c_new);
+> > +
+> > +	if (c_old != tt_cached) {
+> > +		/* p isn't in the default caching state, set it to
+> > +		 * writeback first to free its current memtype. */
+> > +
+> > +		ret = set_pages_wb(p, 1);
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> >  
+> > +	if (c_new == tt_wc)
+> > +		ret = set_memory_wc((unsigned long) page_address(p), 1);
+> > +	else if (c_new == tt_uncached)
+> > +		ret = set_pages_uc(p, 1);
+> > +
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	dev_dbg(src->dev, "(%s:%d) Moving %p (%p) to %s.\n", src->name,
+> > +		current->pid, p, page_address(p), dst->name);
+> > +
+> > +	/* To make it faster we only take the spinlock on list
+> > +	 * removal, and later on adding the page to the destination pool. */
+> > +	spin_lock_irqsave(&src->lock, irq_flags);
+> > +	list_for_each_entry(dma_p, &src->page_list, page_list) {
+> > +		if (virt_to_page(dma_p->vaddr) != p) {
+> > +			pr_debug("%s: (%s:%d) Skipping %p (%p) (DMA:0x%lx)\n",
+> > +				src->dev_name, src->name, current->pid,
+> > +				dma_p->vaddr,
+> > +				virt_to_page(dma_p->vaddr),
+> > +				(unsigned long)dma_p->dma);
+> > +			continue;
+> > +		}
+> > +		list_del(&dma_p->page_list);
+> > +		src->npages_in_use -= 1;
+> > +		found = true;
+> > +		break;
+> > +	}
+> > +	spin_lock_irqsave(&src->lock, irq_flags);
+>         ^^^^^^^^^^^^^^^^^
+> 
+> Was this meant to be spin_unlock_irqrestore?
 
-> On Tue, Sep 27, 2011 at 07:07:55PM +0200, Borislav Petkov wrote:
-> > (forgot to Cc linux-ide earlier, sorry)
-> > 
-> > On Mon, Sep 26, 2011 at 01:05:50AM -0700, Simon Kirby wrote:
-> > > Ok, good. It's still running without any problem, and no new leaks
-> > > reported.
-> > 
-> > Ok.
-> > 
-> > [..]
-> > 
-> > > > backporting it to -stable is a good point. I'll add the proper tagging
-> > > > to the patch.
-> > > 
-> > > Do you know in which version the issue started, then?
-> > > 
-> > > If not, all I have to start with is that it was fine on 2.6.36, and I can
-> > > bisect it, if that would help.
-> > 
-> > This is exactly the question: AFAICT, it could be that changes in the
-> > block layer at some point have caused the ide bust and since almost no
-> > one tests ide...
-> > 
-> > The patch adding the dynamic ide_cmd struct allocation is
-> > 395d8ef5bebe547a80737692f9789d2e36da16f2 from 2008 and I don't think it
-> > caused the issue then but I could also be remembering it wrong.
-> > 
-> > So I wouldn't bisect it but test stable trees after 2.6.36 to see
-> > whether they have the issue, and if so, only then the patch should be
-> > backported.
-> > 
-> > And this is not that easy now with k.org down but looking at
-> > 
-> > http://web.archive.org/web/20110725015737/http://kernel.org/
-> > 
-> > the only stable trees which need to be tested are 2.6.39 and 3.0.
-> > 
-> > How does that sound?
-> 
-> Btw, here's the patch, if you would like to test 2.6.39 once without it
-> to see whether kmemleak screams and once with it, I'll add the stable
-> tagging.
-> 
-> Thanks.
-> 
-> --
-> >From 96414ddbfecaaa3d265794c0792d816cf3c1e33d Mon Sep 17 00:00:00 2001
-> From: Borislav Petkov <bp@alien8.de>
-> Date: Sun, 25 Sep 2011 13:38:04 +0200
-> Subject: [PATCH] ide-disk: Fix request requeuing
-> 
-> Simon Kirby reported that on his RAID setup with idedisk underneath
-> the box OOMs after a couple of days of runtime. Running with
-> CONFIG_DEBUG_KMEMLEAK pointed to idedisk_prep_fn() which unconditionally
-> allocates an ide_cmd struct. However, ide_requeue_and_plug() can be
-> called more than once per request, either from the request issue or the
-> IRQ handler path and do blk_peek_request() ends up in idedisk_prep_fn()
-> repeatedly, allocating a struct ide_cmd everytime and "forgetting" the
-> previous pointer.
-> 
-> Make sure the code reuses the old allocated chunk.
-> 
-> Reported-and-tested-by: Simon Kirby <sim@hostway.ca>
-> Link: http://marc.info/?l=linux-kernel&m=131667641517919
-> Link: http://lkml.kernel.org/r/20110922072643.GA27232@hostway.ca
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> ---
->  drivers/ide/ide-disk.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
-> index 274798068a54..16f69be820c7 100644
-> --- a/drivers/ide/ide-disk.c
-> +++ b/drivers/ide/ide-disk.c
-> @@ -435,7 +435,12 @@ static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
->  	if (!(rq->cmd_flags & REQ_FLUSH))
->  		return BLKPREP_OK;
->  
-> -	cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
-> +	if (rq->special) {
-> +		cmd = rq->special;
-> +		memset(cmd, 0, sizeof(*cmd));
-> +	} else {
-> +		cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
-> +	}
->  
->  	/* FIXME: map struct ide_taskfile on rq->cmd[] */
->  	BUG_ON(cmd == NULL);
-> -- 
-> 1.7.5.3.401.gfb674
-
-Tested against on 2.6.39 with and without this patch, and it definitely
-leaks without it and does not leak with it. 3.0 and 3.1-rc8 also seems
-good with the patch.
-
-I tested on another IDE box (with an old Quantum Fireball 6.4GB!) and
-even with software RAID, I could not see the leak, so I had to use the
-original box, of course. The only difference I could see is the test
-box has piix and the production box has via82cxxx, but anyway...
-
-Thanks!
-
-Simon-
+Yup! Fixing it up. Hmm.... how did it run. This is called from the TTM shrinker
+when the memory pressure is low, unless I am reading the code wrong.
