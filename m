@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab1I2Wu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:50:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60157 "EHLO
+	id S1756840Ab1I2WsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:48:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60119 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756936Ab1I2WsV (ORCPT
+	with ESMTP id S1755287Ab1I2WsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:48:21 -0400
+	Thu, 29 Sep 2011 18:48:16 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/16] perf buildid-list: Support showing the build id in an ELF file
-Date: Thu, 29 Sep 2011 19:47:58 -0300
-Message-Id: <1317336490-19437-5-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/16] perf stat: Fix +- nan% in --no-aggr runs
+Date: Thu, 29 Sep 2011 19:48:02 -0300
+Message-Id: <1317336490-19437-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
 References: <1317336490-19437-1-git-send-email-acme@infradead.org>
@@ -27,103 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Try first reading the build id, validating that it is an ELF file, etc.
-Cheap as libelf will bail out as soon as the magic number check fails.
+Without this patch, running:
 
-Useful when investigating debuginfo packaging problems like this one:
+$ sudo ./perf stat -r20 --no-aggr -a perl -e '$i++ for 1..100000'
 
-[root@emilia ~]# perf buildid-list -i /usr/lib/debug/lib/modules/`uname -r`/vmlinux
-77bb4ea591a602d455ace759a377c9adfff1aba3
-[root@emilia ~]# perf buildid-list -k
-07b0c016a2b30004e86132d0239945b1e88f5d75
-[root@emilia ~]#
+I get computations like this:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-4elot9oxwa0rr0d90dshca3a@git.kernel.org
+CPU0             12.488247 task-clock                #    1.224 CPUs utilized            ( +-  -nan% )
+CPU1             12.488909 task-clock                #    1.225 CPUs utilized            ( +-  -nan% )
+CPU2             12.500221 task-clock                #    1.226 CPUs utilized            ( +-  -nan% )
+CPU3             12.481713 task-clock                #    1.224 CPUs utilized            ( +-  -nan% )
+
+but with patch, I get:
+
+CPU0              8.233682 task-clock                #    0.754 CPUs utilized            ( +-  0.00% )
+CPU1              8.226318 task-clock                #    0.754 CPUs utilized            ( +-  0.00% )
+CPU2              8.210737 task-clock                #    0.752 CPUs utilized            ( +-  0.00% )
+CPU3              8.201691 task-clock                #    0.751 CPUs utilized            ( +-  0.00% )
+
+Note that without --no-aggr, I get non-0 statistics both before and after patch:
+
+        231.986022 task-clock                #    4.030 CPUs utilized            ( +-  0.97% )
+               212 context-switches          #    0.001 M/sec                    ( +- 12.07% )
+                 9 CPU-migrations            #    0.000 M/sec                    ( +- 25.80% )
+               466 page-faults               #    0.002 M/sec                    ( +-  3.23% )
+       174,318,593 cycles                    #    0.751 GHz                      ( +-  1.06% )
+
+I couldnt see anything wrong in the caller, so fixed it in
+stddev_stats().  ISTM that 0.00 is better than nan, since perf stat was
+passed -A (--no-aggr) so no standard deviation should be expected, and
+nan is suggestive of a deeper error.
+
+When running with --no-aggr, perhaps we should suppress the statistics
+printing entirely, or do so when they are 0.00.
+
+Link: http://lkml.kernel.org/r/1315437244-3788-3-git-send-email-jim.cromie@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-buildid-list.txt |    3 +-
- tools/perf/builtin-buildid-list.c              |   27 +++++++++++++++++++++--
- 2 files changed, 26 insertions(+), 4 deletions(-)
+ tools/perf/builtin-stat.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-buildid-list.txt b/tools/perf/Documentation/perf-buildid-list.txt
-index 770a7f3..cc22325 100644
---- a/tools/perf/Documentation/perf-buildid-list.txt
-+++ b/tools/perf/Documentation/perf-buildid-list.txt
-@@ -16,7 +16,8 @@ This command displays the buildids found in a perf.data file, so that other
- tools can be used to fetch packages with matching symbol tables for use by
- perf report.
- 
--It can also be used to show the build id of the running kernel.
-+It can also be used to show the build id of the running kernel or in an ELF
-+file using -i/--input.
- 
- OPTIONS
- -------
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 4102ead..cb690a6 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -1,8 +1,8 @@
- /*
-  * builtin-buildid-list.c
-  *
-- * Builtin buildid-list command: list buildids in perf.data or in the running
-- * kernel.
-+ * Builtin buildid-list command: list buildids in perf.data, in the running
-+ * kernel and in ELF files.
-  *
-  * Copyright (C) 2009, Red Hat Inc.
-  * Copyright (C) 2009, Arnaldo Carvalho de Melo <acme@redhat.com>
-@@ -16,6 +16,8 @@
- #include "util/session.h"
- #include "util/symbol.h"
- 
-+#include <libelf.h>
-+
- static char const *input_name = "perf.data";
- static bool force;
- static bool show_kernel;
-@@ -70,12 +72,31 @@ static int sysfs__fprintf_build_id(FILE *fp)
- 	return 0;
- }
- 
--static int __cmd_buildid_list(void)
-+static int filename__fprintf_build_id(const char *name, FILE *fp)
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a43c680..af0d65b 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -254,8 +254,13 @@ static double avg_stats(struct stats *stats)
+  */
+ static double stddev_stats(struct stats *stats)
  {
-+	u8 build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+-	double variance = stats->M2 / (stats->n - 1);
+-	double variance_mean = variance / stats->n;
++	double variance, variance_mean;
++
++	if (!stats->n)
++		return 0.0;
++
++	variance = stats->M2 / (stats->n - 1);
++	variance_mean = variance / stats->n;
  
-+	if (filename__read_build_id(name, build_id,
-+				    sizeof(build_id)) != sizeof(build_id))
-+		return 0;
-+
-+	build_id__sprintf(build_id, sizeof(build_id), sbuild_id);
-+	return fprintf(fp, "%s\n", sbuild_id);
-+}
-+
-+static int __cmd_buildid_list(void)
-+{
- 	if (show_kernel)
- 		return sysfs__fprintf_build_id(stdout);
- 
-+	elf_version(EV_CURRENT);
-+	/*
-+ 	 * See if this is an ELF file first:
-+ 	 */
-+	if (filename__fprintf_build_id(input_name, stdout))
-+		return 0;
-+
- 	return perf_session__list_build_ids();
+ 	return sqrt(variance_mean);
  }
- 
 -- 
 1.6.2.5
 
