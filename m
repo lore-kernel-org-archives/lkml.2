@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab1I2R0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:26:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37531 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab1I2R02 convert rfc822-to-8bit (ORCPT
+	id S1757331Ab1I2R1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:27:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755204Ab1I2R1f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:26:28 -0400
-Date: Thu, 29 Sep 2011 21:25:31 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu
-Cc: David Rientjes <rientjes@google.com>, Christoph Lameter <cl@gentwo.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH 2/2] mm: restrict access to
- /proc/meminfo
-Message-ID: <20110929172531.GA19290@albatros>
-References: <20110927175453.GA3393@albatros>
- <20110927175642.GA3432@albatros>
- <20110927193810.GA5416@albatros>
- <alpine.DEB.2.00.1109271459180.13797@router.home>
- <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
- <20110929161848.GA16348@albatros>
- <23921.1317315452@turing-police.cc.vt.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	Thu, 29 Sep 2011 13:27:35 -0400
+Date: Thu, 29 Sep 2011 13:29:00 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steve French <smfrench@gmail.com>
+Cc: trond.myklebust@netapp.com, pavel@ucw.cz, rjw@sisk.pl,
+        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, john@calva.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] cifs, freezer: add wait_event_freezekillable and
+ have cifs use it
+Message-ID: <20110929132900.47a7aa40@barsoom.rdu.redhat.com>
+In-Reply-To: <CAH2r5ms8pg7VW7JMa_eCUomEC1cfiM+rG_JZ6F7cHB=MtZwF0A@mail.gmail.com>
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+	<1317210761-11518-3-git-send-email-jlayton@redhat.com>
+	<CAH2r5mtBwUkTXLQeXzvTC6oAcz1i9jzPGfiE7XTzDTw12A6C_Q@mail.gmail.com>
+	<20110929064119.160cb455@corrin.poochiereds.net>
+	<CAH2r5ms8pg7VW7JMa_eCUomEC1cfiM+rG_JZ6F7cHB=MtZwF0A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <23921.1317315452@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 12:57 -0400, Valdis.Kletnieks@vt.edu wrote:
-> But now he has to fly blind for the next 30 because the numbers will display
-> exactly the same, and he can't correct for somebody else allocating one so he
-> needs to only allocate 29...
+On Thu, 29 Sep 2011 11:39:53 -0500
+Steve French <smfrench@gmail.com> wrote:
 
-You're still talking about "slabinfo", which is already restricted.
+> On Thu, Sep 29, 2011 at 5:41 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> > On Wed, 28 Sep 2011 23:28:02 -0500
+> > Steve French <smfrench@gmail.com> wrote:
+> >
+> >> The general idea of the patch seems like a good idea to
+> >> me.  Assuming testing feedback was good from the problem
+> >> reporters, what tree would you want it merged from?
+> >>
+> >
+> > There's the rub -- this requires a number of changes in different
+> > areas. What I really need at this point is a verdict on patch #1. If
+> > that looks OK, then that should probably go in via the one of the
+> > linux-pm trees. Then patch #2 can probably go in via your tree and 3
+> > and 4 can go in via Trond's.
+> 
+> Yes - makes sense, but wonder about ways to test the various
+> suspend/hibernate cases to make sure they work.
+> 
 
-
-And meminfo can be still learned with the same race window (ala seq lock):
-
-    prepare_stuff();
-    fill_slabs(); // Here we know counters with KB granularity
-    while (number_is_not_ok()) {
-        prepare_stuff();
-        fill_slabs();
-    }
-    do_exploit();
-
-
-Thanks,
+I think this set is unlikely to hurt anything (assuming of course that
+waking up TASK_KILLABLE tasks on suspend events is OK). It's possible
+that there are other places that need to be patched in the same way,
+but this seems to cover the main pain points that people have reported.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jeff Layton <jlayton@redhat.com>
