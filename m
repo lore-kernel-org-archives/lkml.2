@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab1I2Ufs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:35:48 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51963 "EHLO
+	id S1757896Ab1I2Ufr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:35:47 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51964 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757875Ab1I2Uer (ORCPT
+	with ESMTP id S1757877Ab1I2Uer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Sep 2011 16:34:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -14,138 +14,65 @@ To: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
         airlied@linux.ie, alexdeucher@gmail.com
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 9/9] ttm/dma: Implement set_page_caching implementation in the TTM DMA pool code.
-Date: Thu, 29 Sep 2011 16:33:52 -0400
-Message-Id: <1317328432-25620-10-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 7/9] nouveau/radeon: Set coherent DMA mask
+Date: Thu, 29 Sep 2011 16:33:50 -0400
+Message-Id: <1317328432-25620-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
 References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A090208.4E84D63D.007B,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4E84D63D.0051:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. which is pretty much like the other TTM pool except it
-also handles moving the page to another pool list.
+All the storage devices that use the dmapool set the coherent DMA
+mask so they can properly use the dmapool. Since the TTM DMA pool
+code is based on that and dma_alloc_coherent checks the
+'coherent_dma_mask' and not 'dma_mask' we want to set it.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   96 ++++++++++++++++++++++++++++++
- 1 files changed, 96 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_mem.c  |    5 +++++
+ drivers/gpu/drm/radeon/radeon_device.c |    6 ++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 5909d28..cea031e 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1307,11 +1307,107 @@ static int ttm_dma_page_alloc_debugfs(struct seq_file *m, void *data)
- 	mutex_unlock(&_manager->lock);
- 	return 0;
- }
-+#ifdef CONFIG_X86
-+static int ttm_dma_page_set_page_caching(struct page *p,
-+					 int flags,
-+					 enum ttm_caching_state c_old,
-+					 enum ttm_caching_state c_new,
-+					 struct device *dev)
-+{
-+	struct dma_pool *src, *dst;
-+	enum pool_type type;
-+	struct dma_page *dma_p;
-+	bool found = false;
-+	unsigned long irq_flags;
-+	int ret = 0;
-+
-+	if (!p)
-+		return 0;
-+
-+	if (PageHighMem(p))
-+		return 0;
-+
-+	type = ttm_to_type(flags, c_old);
-+	src = ttm_dma_find_pool(dev, type);
-+	if (!src) {
-+		WARN_ON(!src);
-+		return -ENOMEM;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_mem.c b/drivers/gpu/drm/nouveau/nouveau_mem.c
+index a2d7e35..bb6ccbd 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_mem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_mem.c
+@@ -408,6 +408,11 @@ nouveau_mem_vram_init(struct drm_device *dev)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = pci_set_consistent_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
++	if (ret) {
++		/* Reset to default value. */
++		pci_set_consistent_dma_mask(dev->pdev, DMA_BIT_MASK(32));
 +	}
-+	type = ttm_to_type(flags, c_new);
-+	dst = ttm_dma_find_pool(dev, type);
-+	if (!dst) {
-+		gfp_t gfp_flags;
-+		if (flags & TTM_PAGE_FLAG_DMA32)
-+			gfp_flags = GFP_USER | GFP_DMA32;
-+		else
-+			gfp_flags = GFP_HIGHUSER;
-+
-+		if (flags & TTM_PAGE_FLAG_ZERO_ALLOC)
-+			gfp_flags |= __GFP_ZERO;
-+
-+		dst = ttm_dma_pool_init(dev, gfp_flags, type);
-+		if (IS_ERR_OR_NULL(dst))
-+			return -ENOMEM;
-+	}
-+
-+	dev_dbg(dev, "(%d) Caching %p (%p) from %x to %x.\n", current->pid,
-+		p, page_address(p), c_old, c_new);
-+
-+	if (c_old != tt_cached) {
-+		/* p isn't in the default caching state, set it to
-+		 * writeback first to free its current memtype. */
-+
-+		ret = set_pages_wb(p, 1);
-+		if (ret)
-+			return ret;
+ 	dev_priv->fb_phys = pci_resource_start(dev->pdev, 1);
+ 
+ 	ret = nouveau_ttm_global_init(dev_priv);
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 7cfaa7e..0c0a970 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -757,8 +757,14 @@ int radeon_device_init(struct radeon_device *rdev,
+ 	r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
+ 	if (r) {
+ 		rdev->need_dma32 = true;
++		dma_bits = 32;
+ 		printk(KERN_WARNING "radeon: No suitable DMA available.\n");
+ 	}
++	r = pci_set_consistent_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
++	if (r) {
++		pci_set_consistent_dma_mask(rdev->pdev, DMA_BIT_MASK(32));
++		printk(KERN_WARNING "radeon: No coherent DMA available.\n");
 +	}
  
-+	if (c_new == tt_wc)
-+		ret = set_memory_wc((unsigned long) page_address(p), 1);
-+	else if (c_new == tt_uncached)
-+		ret = set_pages_uc(p, 1);
-+
-+	if (ret)
-+		return ret;
-+
-+	dev_dbg(src->dev, "(%s:%d) Moving %p (%p) to %s.\n", src->name,
-+		current->pid, p, page_address(p), dst->name);
-+
-+	/* To make it faster we only take the spinlock on list
-+	 * removal, and later on adding the page to the destination pool. */
-+	spin_lock_irqsave(&src->lock, irq_flags);
-+	list_for_each_entry(dma_p, &src->page_list, page_list) {
-+		if (virt_to_page(dma_p->vaddr) != p) {
-+			pr_debug("%s: (%s:%d) Skipping %p (%p) (DMA:0x%lx)\n",
-+				src->dev_name, src->name, current->pid,
-+				dma_p->vaddr,
-+				virt_to_page(dma_p->vaddr),
-+				(unsigned long)dma_p->dma);
-+			continue;
-+		}
-+		list_del(&dma_p->page_list);
-+		src->npages_in_use -= 1;
-+		found = true;
-+		break;
-+	}
-+	spin_lock_irqsave(&src->lock, irq_flags);
-+	if (!found)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&dst->lock, irq_flags);
-+	list_add(&dma_p->page_list, &dst->page_list);
-+	dst->npages_in_use++;
-+	spin_unlock_irqrestore(&dst->lock, irq_flags);
-+	return 0;
-+};
-+#endif
- struct ttm_page_alloc_func ttm_page_alloc_dma = {
- 	.get_pages	= ttm_dma_get_pages,
- 	.put_pages	= ttm_dma_put_pages,
- 	.alloc_init	= ttm_dma_page_alloc_init,
- 	.alloc_fini	= ttm_dma_page_alloc_fini,
- 	.debugfs	= ttm_dma_page_alloc_debugfs,
-+#ifdef CONFIG_X86
-+	.set_caching	= ttm_dma_page_set_page_caching,
-+#endif
- };
+ 	/* Registers mapping */
+ 	/* TODO: block userspace mapping of io register */
 -- 
 1.7.4.1
 
