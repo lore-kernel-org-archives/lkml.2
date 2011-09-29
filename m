@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab1I2Kdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 06:33:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53767 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1I2Kdk (ORCPT
+	id S1755506Ab1I2KeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 06:34:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53296 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750870Ab1I2KeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 06:33:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH v3 00/24] C6X: New architecture
-Date: Thu, 29 Sep 2011 12:33:24 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mark Salter <msalter@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <22021.1317246541@turing-police.cc.vt.edu>
-In-Reply-To: <22021.1317246541@turing-police.cc.vt.edu>
+	Thu, 29 Sep 2011 06:34:15 -0400
+Date: Thu, 29 Sep 2011 11:34:13 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        Peter Hsiang <peter.hsiang@maxim-ic.com>,
+        Jesse Marroquin <jesse.marroquin@maxim-ic.com>
+Subject: Re: [PATCH 1/2] ASoC: Add BUG() assertion if max98088_get_channel
+ returns -EINVAL
+Message-ID: <20110929103413.GK3697@opensource.wolfsonmicro.com>
+References: <1317218471.8008.3.camel@phoenix>
+ <4E83AA77.9040700@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109291233.24623.arnd@arndb.de>
-X-Provags-ID: V02:K0:yRYGXDBt+YU+XicWZ55fWlbqP4WHk3sM6wkYmQiglBC
- LR3x0qU6OgmDCI9Yo8CGhXMvzaGKgxRyXHA6AkH3laA/fGlBT/
- N8jkl3TRpvW/pf4H1WnbmnpDkiSwUw8IN1u7/divXJ5x+79fqq
- ZFnxZN6iuVs1mTR4DnZab9WTe/qdapbQ6T6O+N1kgZHXDjYULw
- Xy9ZQMVqOsyHeBttTGZznV5P46YMmirJISu9c/eHSyjjcxj59/
- 3E7dsC3qYy8lFu3kI+5/31siER2zMgrI1LZmweAueLBGDuiXjL
- B81FH5G6Omte47z2dnLix2J402H5wtZTiexx6BGtJyKK+Z+qrz
- a2ihPPvQyFOSFvoGSdfA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E83AA77.9040700@gmail.com>
+X-Cookie: You will be misunderstood by everyone.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 September 2011, Valdis.Kletnieks@vt.edu wrote:
->   Show Details
->   On Tue, 27 Sep 2011 16:29:41 EDT, Mark Salter said:
-> 
-> > This architecture supports members of the Texas Instruments family
-> > of C6x single and multicore DSPs. The multicore DSPs do not support
-> > cache coherancy, so are not suitable for SMP.
-> 
-> Is there a usage model for the multicore? I know somebody had some patches for
-> "HPC dedicated compute cores" that would just basically run a userspace process
-> and that's it - would those be applicable here?
+On Thu, Sep 29, 2011 at 09:15:03AM +1000, Ryan Mallon wrote:
+> On 29/09/11 00:01, Axel Lin wrote:
+> > The callers use the return value of max98088_get_channel as array index to
+> > access max98088->dai[] array.
+> > Add BUG() assertion for out of bound access of max98088->dai[] array.
 
-No, that's a different thing. Even with dedicated compute cores, you need
-cache coherency.
+> BUG() is pretty heavy handed for a driver. Why not fix the problem
+> properly in the callers?
 
-	Arnd
+There's nothing constructive that any of the callers can do with an
+error code - it's a clear bug in something (probably the driver) if we
+get called for a bad control.  Simply returning an error code isn't
+terribly helpful, it's very obscure what's gone wrong and why.  We at
+least need a log message.
