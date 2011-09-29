@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab1I2OdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:33:02 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43966 "EHLO e9.ny.us.ibm.com"
+	id S1756671Ab1I2Ods (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:33:48 -0400
+Received: from shutemov.name ([188.40.19.243]:43083 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756611Ab1I2Oc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:32:59 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] staging: zcache: reduce tmem bucket lock contention
-Date: Thu, 29 Sep 2011 09:32:26 -0500
-Message-Id: <1317306746-27072-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756308Ab1I2Odr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 10:33:47 -0400
+Date: Thu, 29 Sep 2011 17:33:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [004/244] sfi: table irq 0xFF means no interrupt
+Message-ID: <20110929143346.GA7357@shutemov.name>
+References: <20110928220225.GA27128@kroah.com>
+ <20110928220125.665499011@clark.kroah.org>
+ <20110929102100.GA6378@shutemov.name>
+ <20110929141827.GC3002@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929141827.GC3002@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmem uses hash buckets each with their own rbtree and lock to
-quickly lookup tmem objects.  tmem has TMEM_HASH_BUCKETS (256)
-buckets per pool.  However, because of the way the tmem_oid is
-generated for frontswap pages, only 16 unique tmem_oids are being
-generated, resulting in only 16 of the 256 buckets being used.
-This cause high lock contention for the per bucket locks.
+On Thu, Sep 29, 2011 at 07:18:27AM -0700, Greg KH wrote:
+> On Thu, Sep 29, 2011 at 01:21:00PM +0300, Kirill A. Shutemov wrote:
+> > On Wed, Sep 28, 2011 at 02:59:28PM -0700, Greg KH wrote:
+> > > 3.0-stable review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > 
+> > > commit a94cc4e6c0a26a7c8f79a432ab2c89534aa674d5 upstream.
+> > > 
+> > > According to the SFI specification irq number 0xFF means device has no
+> > > interrupt or interrupt attached via GPIO.
+> > > 
+> > > Currently, we don't handle this special case and set irq field in
+> > > *_board_info structs to 255.  It leads to confusion in some drivers.
+> > > Accelerometer driver tries to register interrupt 255, fails and prints
+> > > "Cannot get IRQ" to dmesg.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> > Please, take this as well:
+> > 
+> > http://lkml.org/lkml/2011/9/14/40
+> 
+> Is that patch in Linus's tree?
 
-This patch changes SWIZ_BITS to include more bits of the offset.
-The result is that all 256 hash buckets are potentially used resulting in a
-95% drop in hash bucket lock contention.
+No, it isn't.
 
-Based on v3.1-rc7
+Do not apply "sfi: table irq 0xFF means no interrupt" in this case. It
+breaks kexec. Better to take both patches into next stable release.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 462fbc2..ba982f5 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1798,8 +1798,11 @@ static int zcache_frontswap_poolid = -1;
- /*
-  * Swizzling increases objects per swaptype, increasing tmem concurrency
-  * for heavy swaploads.  Later, larger nr_cpus -> larger SWIZ_BITS
-+ * Setting SWIZ_BITS to 27 basically reconstructs the swap entry from
-+ * frontswap_get_page()
-  */
--#define SWIZ_BITS		4
-+#define SWIZ_BITS		27
- #define SWIZ_MASK		((1 << SWIZ_BITS) - 1)
- #define _oswiz(_type, _ind)	((_type << SWIZ_BITS) | (_ind & SWIZ_MASK))
- #define iswiz(_ind)		(_ind >> SWIZ_BITS)
 -- 
-1.7.4.1
-
+ Kirill A. Shutemov
