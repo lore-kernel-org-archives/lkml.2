@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab1I2MF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:05:26 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:56976 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000Ab1I2MFZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:05:25 -0400
-Subject: Re: Jump Label initialization
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        David Daney <ddaney@caviumnetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <4E83D49C.9080809@goop.org>
-References: <4E83D49C.9080809@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Sep 2011 14:04:54 +0200
-Message-ID: <1317297894.23938.9.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754036Ab1I2MJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:09:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000Ab1I2MJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 08:09:32 -0400
+Date: Thu, 29 Sep 2011 14:05:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen
+	before deferring
+Message-ID: <20110929120517.GA10587@redhat.com>
+References: <cover.1317110948.git.mhocko@suse.cz> <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz> <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com> <20110928104445.GB15062@tiehlicka.suse.cz> <20110929115105.GE21113@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929115105.GE21113@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 19:14 -0700, Jeremy Fitzhardinge wrote:
-> Hi all,
-> 
-> I'm trying to use the jump label machinery as part of the pv ticketlock
-> work I'm doing on x86.
-> 
-> The problem I'm having at the moment is that I do my spinlock setup in
-> smp_prepare_boot_cpu(), which happens before jump_label_init() gets
-> called, and so the latter goes and nops out all my enabled jump label key.
-> 
-> I'm experimenting at the moment with a patch to allow
-> jump_label_enable() to be called fairly early, and have that be
-> respected by jump_label_init().  I'm doing this by replacing
-> arch_jump_label_poke_text_early() with
-> arch_jump_label_transform_early(), which shares most of its code with
-> its non-early variant, except that it expects to run in a pre-SMP
-> environment.
-> 
-> Does this seem plausible? (I haven't tested it yet.)
-> 
-> The x86, mips and sparc patches are fairly simple; I forgot to look at
-> powerpc, and I didn't fully investigate s390.
+On 09/29, Michal Hocko wrote:
+>
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -48,6 +48,10 @@ void refrigerator(void)
+>  	current->flags |= PF_FREEZING;
+>  
+>  	for (;;) {
+> +		if (fatal_signal_pending(current)) {
+> +			current->flags &= ~PF_FROZEN;
 
-s390 does not have the early() variant since it didn't need it. On
-pre-SMP we probably don't need stop_machine() so creating
-arch_jump_label_transform_early() by leaving out stop_machine()
-and patching the code directly should be fine.
+We can't do this.
+
+If PF_FROZEN was set, we must not modify current->flags, this can
+race with, say, thaw_process().
+
+OK, we can take task_lock(), but this doesn't close other races.
+Say, a SIGKILL'ed task can do try_to_freeze(). Perhaps we should
+simply call thaw_process() unconditionally, this also clears
+TIF_FREEZE. Or check freezing() || frozen(). Afacis this solves
+the race you described.
+
+But of course this can't help if freeze_task() is called later.
+May be freezable() should check TIF_MEMDIE...
+
+Oleg.
 
