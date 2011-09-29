@@ -1,299 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab1I2OjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:39:05 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39895 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab1I2OjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:39:02 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Subject: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
-Date: Thu, 29 Sep 2011 10:38:49 -0400
-Message-Id: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.6.2
-In-Reply-To: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.6 (--)
+	id S1756676Ab1I2Ok7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:40:59 -0400
+Received: from swan.madduck.net ([80.68.90.58]:44402 "EHLO swan.madduck.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab1I2Ok6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 10:40:58 -0400
+Date: Thu, 29 Sep 2011 16:40:55 +0200
+From: martin f krafft <madduck@madduck.net>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: wiki mirror | looking for ATA_4_KiB_sector_issues page
+Message-ID: <20110929144054.GA20624@albatross.gern.madduck.net>
+Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+References: <20110929062013.GA29979@albatross.gern.madduck.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Disposition: inline
+In-Reply-To: <20110929062013.GA29979@albatross.gern.madduck.net>
+X-Motto: Keep the good times rollin'
+X-OS: Debian GNU/Linux wheezy/sid kernel 3.1.0-rc4-amd64 x86_64
+X-Spamtrap: madduck.bogus@madduck.net
+X-Subliminal-Message: debian/rules!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a per-pci-device subdirectory in sysfs called:
-/sys/bus/pci/devices/<device>/msi_irqs
 
-This sub-directory exports the set of msi vectors allocated by a given
-pci device, by creating a numbered sub-directory for each vector beneath
-msi_irqs.  For each vector various attributes can be exported.  Currently the
-only attribute is called mode, which tracks the operational mode of that vector
-(msi vs. msix)
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
+also sprach martin f krafft <madduck@madduck.net> [2011.09.29.0820 +0200]:
+> kernel.org still seems to be down. I am looking for
+>=20
+>   https://ata.wiki.kernel.org/index.php/ATA_4_KiB_sector_issues
+>=20
+> and I was wondering if there was a mirror out there?
 
-Change Notes:
+http://lwn.net/Articles/377897/ comes close. Thanks Michael Prokop.
 
-(v2)
-Fixed up Documentation to put new sysfs interface descriptions in the right
-place, as per request by Greg K-H
+--=20
+martin | http://madduck.net/ | http://two.sentenc.es/
+=20
+"... (ethik und =E4sthetik sind eins.)"
+                                                       -- wittgenstein
+=20
+spamtraps: madduck.bogus@madduck.net
 
-Fixed up oops that resulted from removing pci device.  Not 100% sure I did this
-exactly right, but looking at the crash (triggered by echo 1 >
-/sys/class/net/eth0/device/remove), it looked as though we were freeing the
-pci_dev struct prior to all sysfs objects releasing their use of the device.  AS
-such it seemed most appropriate to hold references on the pci_dev for each msi
-irq sysfs object that we create, and release them on free accordingly.  With
-this change in place, I can remove, and add (via rescan) msi enabled devices
-ad-nauseum without a panic.  Again thanks to Greg K-H
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
+Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
 
-(v3)
-As per Gregs suggestion, I looked further and noted that in fact, yes, it wasn't
-producing any errors on remove, but only because I had a refcounting problem,
-and my new sysfs objects were left orphaned with a dangling refcount.  I've
-fixed that, added a release method to the new ktype, which now drops the
-reference I hold on the pci_dev for us and I've validated that all objects I've
-created, along with the parent directory and pci device are cleaned up and freed
-by enabling the kobject dyanic_debug set and observing the appropriate release
-calls.  I can provide the logs if anyone wants to review them specifically.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-(v4)
-Fixed up some spelling mistakes, and added a scissors line with a good
-commitlog, so that git-am drops all the version logging
+iQLvBAEBCgDZBQJOhIN2wBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
+aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
+bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
+NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
+MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xDbJ
+EACuE4Q5B4oYGf+R3cKZ9v6ohBxhG3Ay6KI3pfMbRMUovLoYyF1XCt1qZfusJXWX
+hL8pnZ2AqWCvVCwCdhF8OjgVVGUezRXm0a/1SEH0FcwgiWJ6ZCjjrAT+dVMNCS7m
+NSaEFQXF2FJ2HSyX8O2VfG9jXAEyRGwcuMymfg+ZDbrt0MXVgpbL4In2lhmNUgZq
+RJnxHoj+rf7ozcxR5VduAwt9pIQ/mytwR1R875Yt9aebXoEKOBiGzGF3JLKAMHWo
+62+VJ2IkN0kIhCASO76Gsb4ySyOOd8KEu4mXpqw4+BcRcyf7LinIvssbzYpGUCuV
+B8TSoeL6s5rsTIXiv3L3xwZ6qrSnIegzoZMGPe+QPg+IVCah1xe3jqw9QbPgJ39o
+VzXdttNI2iGtwOKx/tBuXbB72CH77A8cOGQK+2oB/yL/QrDl+qM7D2WdybcNG3x/
+kCafOpv/pRoQ5jR1U8BmbesfQpxTT3gMuMERJusz7QAY7yVxNxSpAvWTNdx7+3jv
+hLhOBk1Xl9oXhfx/P6c1tXxsot34q91cJSdVtH//7AKlkqmPldVwY79SUTyYxFfH
+ECPwCtN2hci3laWn3zjmsTuC3pmwzKdz+26joLh7mPiOnX4+VuwM6OpTDGmdlxXi
+9pD5YURZ5/tRY/R7ZHwlHP2GvU4Kyf8GE/gaexc8VHfGhA==
+=nv3P
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-pci@vger.kernel.org
----
- Documentation/ABI/testing/sysfs-bus-pci |   18 +++++
- drivers/pci/msi.c                       |  111 +++++++++++++++++++++++++++++++
- include/linux/msi.h                     |    3 +
- include/linux/pci.h                     |    1 +
- 4 files changed, 133 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-index 349ecf2..2e445b7 100644
---- a/Documentation/ABI/testing/sysfs-bus-pci
-+++ b/Documentation/ABI/testing/sysfs-bus-pci
-@@ -66,6 +66,24 @@ Description:
- 		re-discover previously removed devices.
- 		Depends on CONFIG_HOTPLUG.
- 
-+What:		/sys/bus/pci/devices/.../msi_irqs/
-+Date:		September, 2011
-+Contact:	Neil Horman <nhorman@tuxdriver.com>
-+Description:
-+		The /sys/devices/.../msi_irqs directory contains a variable set
-+		sub-directories, with each sub-directory being named after a
-+		corresponding msi irq vector allocated to that device.  Each
-+		numbered sub-directory N contains attributes of that irq.
-+		Note that this directory is not created for device drivers which
-+		do not support msi irqs
-+
-+What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
-+Date:		September 2011
-+Contact:	Neil Horman <nhorman@tuxdriver.com>
-+Description:
-+		This attribute indicates the mode that the irq vector named by
-+		the parent directory is in (msi vs. msix)
-+
- What:		/sys/bus/pci/devices/.../remove
- Date:		January 2009
- Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 2f10328..73613e2 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -322,6 +322,8 @@ static void free_msi_irqs(struct pci_dev *dev)
- 			if (list_is_last(&entry->list, &dev->msi_list))
- 				iounmap(entry->mask_base);
- 		}
-+		kobject_del(&entry->kobj);
-+		kobject_put(&entry->kobj);
- 		list_del(&entry->list);
- 		kfree(entry);
- 	}
-@@ -402,6 +404,98 @@ void pci_restore_msi_state(struct pci_dev *dev)
- }
- EXPORT_SYMBOL_GPL(pci_restore_msi_state);
- 
-+
-+#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
-+#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
-+
-+struct msi_attribute {
-+	struct attribute        attr;
-+	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
-+			char *buf);
-+	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
-+			 const char *buf, size_t count);
-+};
-+
-+static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
-+			     char *buf)
-+{
-+	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
-+}
-+
-+static ssize_t msi_irq_attr_show(struct kobject *kobj,
-+				 struct attribute *attr, char *buf)
-+{
-+	struct msi_attribute *attribute = to_msi_attr(attr);
-+	struct msi_desc *entry = to_msi_desc(kobj);
-+
-+	if (!attribute->show)
-+		return -EIO;
-+
-+	return attribute->show(entry, attribute, buf);
-+}
-+
-+static const struct sysfs_ops msi_irq_sysfs_ops = {
-+	.show = msi_irq_attr_show,
-+};
-+
-+static struct msi_attribute mode_attribute =
-+	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
-+
-+
-+struct attribute *msi_irq_default_attrs[] = {
-+	&mode_attribute.attr,
-+	NULL
-+};
-+
-+void msi_kobj_release(struct kobject *kobj)
-+{
-+	struct msi_desc *entry = to_msi_desc(kobj);
-+
-+	pci_dev_put(entry->dev);
-+}
-+
-+static struct kobj_type msi_irq_ktype = {
-+	.release = msi_kobj_release,
-+	.sysfs_ops = &msi_irq_sysfs_ops,
-+	.default_attrs = msi_irq_default_attrs,
-+};
-+
-+static int populate_msi_sysfs(struct pci_dev *pdev)
-+{
-+	struct msi_desc *entry;
-+	struct kobject *kobj;
-+	int ret;
-+	int count = 0;
-+
-+	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
-+	if (!pdev->msi_kset)
-+		return -ENOMEM;
-+
-+	list_for_each_entry(entry, &pdev->msi_list, list) {
-+		kobj = &entry->kobj;
-+		kobj->kset = pdev->msi_kset;
-+		pci_dev_get(pdev);
-+		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
-+				     "%u", entry->irq);
-+		if (ret)
-+			goto out_unroll;
-+
-+		count++;
-+	}
-+
-+	return 0;
-+
-+out_unroll:
-+	list_for_each_entry(entry, &pdev->msi_list, list) {
-+		if (!count)
-+			break;
-+		kobject_del(&entry->kobj);
-+		kobject_put(&entry->kobj);
-+		count--;
-+	}
-+	return ret;
-+}
-+
- /**
-  * msi_capability_init - configure device's MSI capability structure
-  * @dev: pointer to the pci_dev data structure of MSI device function
-@@ -453,6 +547,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
- 		return ret;
- 	}
- 
-+	ret = populate_msi_sysfs(dev);
-+	if (ret) {
-+		msi_mask_irq(entry, mask, ~mask);
-+		free_msi_irqs(dev);
-+		return ret;
-+	}
-+
- 	/* Set MSI enabled bits	 */
- 	pci_intx_for_msi(dev, 0);
- 	msi_set_enable(dev, pos, 1);
-@@ -573,6 +674,12 @@ static int msix_capability_init(struct pci_dev *dev,
- 
- 	msix_program_entries(dev, entries);
- 
-+	ret = populate_msi_sysfs(dev);
-+	if (ret) {
-+		ret = 0;
-+		goto error;
-+	}
-+
- 	/* Set MSI-X enabled bits and unmask the function */
- 	pci_intx_for_msi(dev, 0);
- 	dev->msix_enabled = 1;
-@@ -731,6 +838,8 @@ void pci_disable_msi(struct pci_dev *dev)
- 
- 	pci_msi_shutdown(dev);
- 	free_msi_irqs(dev);
-+	kset_unregister(dev->msi_kset);
-+	dev->msi_kset = NULL;
- }
- EXPORT_SYMBOL(pci_disable_msi);
- 
-@@ -829,6 +938,8 @@ void pci_disable_msix(struct pci_dev *dev)
- 
- 	pci_msix_shutdown(dev);
- 	free_msi_irqs(dev);
-+	kset_unregister(dev->msi_kset);
-+	dev->msi_kset = NULL;
- }
- EXPORT_SYMBOL(pci_disable_msix);
- 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 05acced..ce93a34 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -1,6 +1,7 @@
- #ifndef LINUX_MSI_H
- #define LINUX_MSI_H
- 
-+#include <linux/kobject.h>
- #include <linux/list.h>
- 
- struct msi_msg {
-@@ -44,6 +45,8 @@ struct msi_desc {
- 
- 	/* Last set MSI message */
- 	struct msi_msg msg;
-+
-+	struct kobject kobj;
- };
- 
- /*
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index f27893b..fff3961 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -332,6 +332,7 @@ struct pci_dev {
- 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
- #ifdef CONFIG_PCI_MSI
- 	struct list_head msi_list;
-+	struct kset *msi_kset;
- #endif
- 	struct pci_vpd *vpd;
- #ifdef CONFIG_PCI_IOV
--- 
-1.7.6.2
+--lrZ03NoBR/3+SXJZ--
 
