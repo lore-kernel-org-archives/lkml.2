@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab1I2XeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:34:04 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:39460 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab1I2Xd7 (ORCPT
+	id S1758086Ab1I2XgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:36:21 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53424 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab1I2XgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:33:59 -0400
-Date: Thu, 29 Sep 2011 19:31:41 -0400 (EDT)
-From: Doug Ledford <dledford@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
-Message-ID: <d089f3ec-ccfc-4350-bd11-b8ccadf4ad3a@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <20110929190855.GA5381@suse.de>
-Content-Type: text/plain; charset=utf-8
+	Thu, 29 Sep 2011 19:36:20 -0400
+Date: Thu, 29 Sep 2011 19:31:57 -0400 (EDT)
+Message-Id: <20110929.193157.1260100265703479487.davem@davemloft.net>
+To: jeremy@goop.org
+Cc: rostedt@goodmis.org, david.daney@cavium.com, michael@ellerman.id.au,
+        jang@linux.vnet.ibm.com, jbaron@redhat.com, x86@kernel.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        jeremy.fitzhardinge@citrix.com
+Subject: Re: [PATCH RFC 4/8] sparc/jump_label: add
+ arch_jump_label_transform_early()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <6b0e55538e91fd7663430a291a39c6ed048b2548.1317338254.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
+	<cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
+	<6b0e55538e91fd7663430a291a39c6ed048b2548.1317338254.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.11.231.143]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Sep 2011 16:32:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> Sorry, I ment Linus's tree, that's where it matters for the stable
-> releases.
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+Date: Thu, 29 Sep 2011 16:26:34 -0700
 
-The patch in question hasn't hit Linus' tree yet, but it's queued up in Stephen Rothwell's for-next tree.  As I understand it, Andrew's tree gets fed into that on a somewhat regular basis, and Andrew took my four patches (plus a patchcheck fixup he committed) already.  So, I pulled Stephen's for-next, put my patches plus the patchcheck fix on top, then wrote a fixup patch that fixes what I saw as being wrong in the patch in question.
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> 
+> This allows jump-label entries to be modified early, in a pre-SMP
+> environment.
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-> Ok, care to get the patch into Linus's tree and then I can take it
-> into
-> stable?
-
-I made a new patch that fixes the patch I NAKed.  My entire patch set can be applied on top of his now (I was wrong about them conflicting, I think there was just enough space for the context not to overlap in a way that would conflict as I thought it would).  So, since the change isn't life threatening or anything, and can be easily fixed up, I'll withdraw my NAK and just submit the additional patch to correct it once I get home and have access to a mail program that does something besides attachments or mangled text as the only patch sending options.
-
-Now, the question of whether or not you want a patch in -stable that hasn't hit Linus' tree yet is up to you...
-
--- 
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: CFBFF194
-	      http://people.redhat.com/dledford
-
+Acked-by: David S. Miller <davem@davemloft.net>
