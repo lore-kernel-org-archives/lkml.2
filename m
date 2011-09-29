@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab1I2Iux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 04:50:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33975 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab1I2Iuv convert rfc822-to-8bit (ORCPT
+	id S1754981Ab1I2I4C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 04:56:02 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:46661 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab1I2I4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 04:50:51 -0400
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Sep 2011 10:49:57 +0200
-In-Reply-To: <20110929033201.GA21722@localhost>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020915.942753370@intel.com> <1315318179.14232.3.camel@twins>
-	 <20110907123108.GB6862@localhost> <1315822779.26517.23.camel@twins>
-	 <20110918141705.GB15366@localhost> <20110918143721.GA17240@localhost>
-	 <20110918144751.GA18645@localhost> <20110928140205.GA26617@localhost>
-	 <1317221435.24040.39.camel@twins> <20110929033201.GA21722@localhost>
+	Thu, 29 Sep 2011 04:56:00 -0400
+Subject: [PATCH] [TRIVIAL] btmrvl_sdio: fix typo 'btmrvl_sdio_sd6888'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317286197.22581.4.camel@twins>
+Date: Thu, 29 Sep 2011 10:55:47 +0200
+Message-ID: <1317286547.30144.1.camel@x61.thuisdomein>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 11:32 +0800, Wu Fengguang wrote:
-> > Now I guess the only problem is when nr_bdi * MIN_WRITEBACK_PAGES ~
-> > limit, at which point things go pear shaped.
-> 
-> Yes. In that case the global @dirty will always be drove up to @limit.
-> Once @dirty dropped reasonably below, whichever bdi task wakeup first
-> will take the chance to fill the gap, which is not fair for bdi's of
-> different speed.
-> 
-> Let me retry the thresh=1M,10M test cases without MIN_WRITEBACK_PAGES.
-> Hopefully the removal of it won't impact performance a lot. 
+It should be 'btmrvl_sdio_sd8688', of course.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This one was even compile tested!
 
-Right, so alternatively we could try an argument that this is
-sufficiently rare and shouldn't happen. People with lots of disks tend
-to also have lots of memory, etc.
+ drivers/bluetooth/btmrvl_sdio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-If we do find it happens we can always look at it again.
+diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
+index 7f521d4..c827d73 100644
+--- a/drivers/bluetooth/btmrvl_sdio.c
++++ b/drivers/bluetooth/btmrvl_sdio.c
+@@ -81,7 +81,7 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_8787 = {
+ 	.io_port_2 = 0x7a,
+ };
+ 
+-static const struct btmrvl_sdio_device btmrvl_sdio_sd6888 = {
++static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
+ 	.helper		= "sd8688_helper.bin",
+ 	.firmware	= "sd8688.bin",
+ 	.reg		= &btmrvl_reg_8688,
+@@ -98,7 +98,7 @@ static const struct btmrvl_sdio_device btmrvl_sdio_sd8787 = {
+ static const struct sdio_device_id btmrvl_sdio_ids[] = {
+ 	/* Marvell SD8688 Bluetooth device */
+ 	{ SDIO_DEVICE(SDIO_VENDOR_ID_MARVELL, 0x9105),
+-			.driver_data = (unsigned long) &btmrvl_sdio_sd6888 },
++			.driver_data = (unsigned long) &btmrvl_sdio_sd8688 },
+ 	/* Marvell SD8787 Bluetooth device */
+ 	{ SDIO_DEVICE(SDIO_VENDOR_ID_MARVELL, 0x911A),
+ 			.driver_data = (unsigned long) &btmrvl_sdio_sd8787 },
+-- 
+1.7.4.4
+
 
 
