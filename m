@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1I2PgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:36:05 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:36568 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab1I2PgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:36:03 -0400
-Date: Thu, 29 Sep 2011 17:34:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: Re: [GIT PULL] oprofile updates for v3.2
-Message-ID: <20110929153436.GA1243@elte.hu>
-References: <20110929150413.GP6063@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929150413.GP6063@erda.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756879Ab1I2PhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:37:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51778 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755201Ab1I2PhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:37:15 -0400
+Message-ID: <1317310634.1854.25.camel@Joe-Laptop>
+Subject: Re: [PATCHv4] fat: don't use custom hex_to_bin()
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Date: Thu, 29 Sep 2011 08:37:14 -0700
+In-Reply-To: <f176b6be3c0de274839e813d6ac514d6f7736e77.1317308975.git.andriy.shevchenko@linux.intel.com>
+References: <87ipob8l4l.fsf@devron.myhome.or.jp>
+	 <f176b6be3c0de274839e813d6ac514d6f7736e77.1317308975.git.andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.92- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2011-09-29 at 18:10 +0300, Andy Shevchenko wrote:
+> diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+[]
+> @@ -526,28 +526,16 @@ xlate_to_uni(const unsigned char *name, int len, unsigned char *outname,
+>  			     *outlen += 1)
+>  			{
+>  				if (escape && (*ip == ':')) {
+> +					u8 uc[2];
+> +
+>  					if (i > len - 5)
+>  						return -EINVAL;
+> -					ec = 0;
+> -					for (k = 1; k < 5; k++) {
+> -						nc = ip[k];
+> -						ec <<= 4;
+> -						if (nc >= '0' && nc <= '9') {
+> -							ec |= nc - '0';
+> -							continue;
+> -						}
+> -						if (nc >= 'a' && nc <= 'f') {
+> -							ec |= nc - ('a' - 10);
+> -							continue;
+> -						}
+> -						if (nc >= 'A' && nc <= 'F') {
+> -							ec |= nc - ('A' - 10);
+> -							continue;
+> -						}
+> +
+> +					if (hex2bin(uc, ip + 1, 2) < 0)
+>  						return -EINVAL;
+> -					}
+> -					*op++ = ec & 0xFF;
+> -					*op++ = ec >> 8;
+> +
+> +					*(wchar_t *)op++ = uc[0] << 8 | uc[1];
 
-* Robert Richter <robert.richter@amd.com> wrote:
+perhaps:
 
-> Ingo,
-> 
-> please pull oprofile updates for v3.2 (tip/perf/core):
-> 
->   git://amd64.org/linux/rric.git core
-> 
-> Thanks,
-> 
-> -Robert
-> 
-> 
-> The following changes since commit d6eed550a9d08fbd1fce32e517e8c49afa6edbf7:
-> 
->   x86: Perf_event_amd.c needs <asm/apicdef.h> (2011-09-27 19:55:09 +0200)
-> 
-> are available in the git repository at:
->   git://amd64.org/linux/rric.git core
-> 
-> Maarten Lankhorst (1):
->       oprofile, x86: Convert memory allocation to static array
-> 
-> Robert Richter (1):
->       oprofile, x86: Fix overflow and warning (commit 1d12d35)
-> 
->  arch/x86/oprofile/op_model_ppro.c |   27 ++-------------------------
->  1 files changed, 2 insertions(+), 25 deletions(-)
+	__le16	foo;
 
-Pulled, thanks Robert!
+	if (hex2bin((u8 *)&foo, ip + 1, 2) < 0)
+		return -EINVAL;
+	*(u16 *)op = le16_to_cpu(foo);
 
-	Ingo
+	op += 2;
+
