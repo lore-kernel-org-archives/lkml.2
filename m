@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab1I2IXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 04:23:36 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:53078 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab1I2IXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 04:23:34 -0400
-Subject: Re: [PATCH v5]: Improve performance of LZO hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Thu, 29 Sep 2011 18:23:32 +1000
-In-Reply-To: <CAOJsxLGUmV=5+fOJShbfc+kELcPS9pnE+DkNY9+TBS33VmzRFg@mail.gmail.com>
-References: <1317183650.2067.10.camel@shrek.rexursive.com>
-	 <CAOJsxLGam5htmwtTZOuPka02+CZ1Fkv1b+SuYMJ8x9VRntFzRQ@mail.gmail.com>
-	 <1317194947.1998.18.camel@shrek.rexursive.com>
-	 <CAOJsxLFGpU53AQRw-nKsz_Lz_QMDP+RDUD5J3bYzbAA_+ngaAA@mail.gmail.com>
-	 <1317196456.1998.24.camel@shrek.rexursive.com>
-	 <CAOJsxLGUmV=5+fOJShbfc+kELcPS9pnE+DkNY9+TBS33VmzRFg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317284612.1956.5.camel@shrek.rexursive.com>
-Mime-Version: 1.0
+	id S1755906Ab1I2I1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 04:27:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12845 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754714Ab1I2I1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 04:27:10 -0400
+Date: Thu, 29 Sep 2011 11:26:57 +0300 (EEST)
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+X-X-Sender: jsakkine@jsakkine-mobl
+To: Stephen Smalley <sds@tycho.nsa.gov>
+cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Smack: fix domain transfer issues
+In-Reply-To: <1317222904.20139.20.camel@moss-pluto>
+Message-ID: <alpine.DEB.2.02.1109291109070.3006@jsakkine-mobl>
+References: <1317206909-24443-1-git-send-email-jarkko.sakkinen@intel.com> <1317222904.20139.20.camel@moss-pluto>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 16:02 +0300, Pekka Enberg wrote:
-> On Wed, Sep 28, 2011 at 10:54 AM, Bojan Smojver <bojan@rexursive.com> wrote:
-> > I'm guessing here that you mean that parts of the kernel other than
-> > hibernation code itself can do this (i.e. set the flag for the thread to
-> > stop, so kthread_should_stop() returns true). Correct?
-> 
-> Sorry, I'm not familiar this code. However, if you're checking for the
-> condition..
-> 
-> [snip]
-> 
-> > Right now, this would result in - well I don't know what exactly - most
-> > likely corrupted data on disk or on memory.
-> 
-> ...this is not really an option for handling it.
 
-I think we should be good with v7. If anyone called kthread_stop(),
-error codes will be set. And we discard hibernation/thaw attempt based
-on errors coming from compression/decompression threads.
 
-In terms of thread pointer becoming a dangling one, I don't think that's
-a worry. I see many instances of kthread_stop() throughout the kernel
-code and none of them worry themselves with the pointer being bad.
+On Wed, 28 Sep 2011, Stephen Smalley wrote:
+> Did I miss something or did you find a rationale for using bprm->unsafe
+> in this manner?  It isn't private to your security module yet you are
+> claiming a bit for your own private use without reserving it in any way
+> globally (consider implications for any future stacking), and setting
+> new bits in it will have side effects on the capabilities logic.  I
+> already mentioned this on your first patch and you seemed to acknowledge
+> it then.  Pass it via bprm->cred->security if you need to pass it as a
+> flag, or re-test the condition in the secureexec hook otherwise.
 
-I may still have v8, with some variable name cleanups and some redundant
-code taken out.
+You got your point. I'll add smk_flags field to
+the struct task_smack (our task security blob).
 
--- 
-Bojan
+> Why not just:
+> 	if (bprm->unsafe)
+> 		return -EPERM;
+> if you aren't going to distinguish them via permission checks or
+> anything?
 
+I guess my purpose was to leave those visible because
+plan is to add permission checks at least for the
+ptrace case in the future. Now that I think of it,
+it does not justify their existence in the code.
+I'll revise this.
+
+Even in the current form, there should be check that
+you described to protect this code against situation
+where new LSM_UNSAFE flag is added and support has not
+yet been implemented to Smack.
+
+>
+> I take it you've decided you don't need any of the other checks or
+> sanitization applied by SELinux?
+
+MNT_NOSUID should be checked. Also, I'll plan to
+implement permission check for ptrace but in the
+scope of this patch.
+
+Thanks for informative reply!
+
+/Jarkko
