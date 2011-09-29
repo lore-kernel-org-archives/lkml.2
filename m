@@ -1,170 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab1I2QLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 12:11:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1I2QLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 12:11:43 -0400
-Date: Thu, 29 Sep 2011 18:11:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf, tool: Treat all memory maps without dso file as
- loaded
-Message-ID: <20110929161103.GB8950@jolsa.brq.redhat.com>
-References: <1312980251-4945-1-git-send-email-jolsa@redhat.com>
- <20110822075322.GI2073@jolsa.brq.redhat.com>
- <20110822141130.GA21345@ghostprotocols.net>
- <20110822145849.GB8694@jolsa.brq.redhat.com>
- <20110824131834.GA2007@jolsa.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824131834.GA2007@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757186Ab1I2QS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 12:18:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46144 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1I2QSz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 12:18:55 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=PiVJXPJdrVoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=meVymXHHAAAA:8 a=uxao9uKeMqtKkIm3pf4A:9 a=iO4tlg1U4uBxf7Wso6YA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: [PATCH][RT][RFC] rt: show owner of locks for blocked tasks in task
+ dumps
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu, 29 Sep 2011 12:18:53 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317313134.4588.26.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 03:18:34PM +0200, Jiri Olsa wrote:
-> On Mon, Aug 22, 2011 at 04:58:49PM +0200, Jiri Olsa wrote:
-> > On Mon, Aug 22, 2011 at 11:11:30AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Aug 22, 2011 at 09:53:22AM +0200, Jiri Olsa escreveu:
-> > > > hi,
-> > > > any feedback on this?
-> > > 
-> > > Fell thru the cracks, sorry.
-> > >  
-> > > > On Wed, Aug 10, 2011 at 02:44:11PM +0200, Jiri Olsa wrote:
-> > > > > I get unnecessary warnings from map__load about "[stack]" maps,
-> > > > > saying dso cannot be loaded.
-> > > 
-> > > > > Attached patch avoids this warning for maps that are not backed-up
-> > > > > by dso.
-> > > 
-> > > > > I was wondering if we want to treat stack/heaps/vdso maps the same
-> > > > > way or if there's something special about vdso in this regard.
-> > > > > Because there could be another fix with setting all stack/heaps/vdso
-> > > > > maps as loaded, which is probably little more nicer.
-> > > 
-> > > Humm, in the vdso case we have a fallback in thread__find_addr_map, i.e.
-> > > its symbol rbtree is empty, we notice that and lookup the symbol in the
-> > > kernel symbol tables (vmlinux and modules).
-> > > 
-> > > I.e. stack/heap symbols would not apply, this fallback wouldn't happen,
-> > > the symbol would be unresolved, the patch then would be just to
-> > > map__new, as:
-> > > 
-> > > diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> > > index a16ecab..0c1c11b 100644
-> > > --- a/tools/perf/util/map.c
-> > > +++ b/tools/perf/util/map.c
-> > > @@ -63,7 +63,9 @@ set_identity:
-> > >  		} else if (strcmp(filename, "[vdso]") == 0) {
-> > >  			dso__set_loaded(dso, self->type);
-> > >  			goto set_identity;
-> > > -		}
-> > > +		} else if (strcmp(filename, "[heap]") == 0 ||
-> > > +			   strcmp(filename, "[stack]") == 0)
-> > > +			dso__set_loaded(dso, self->type);
-> > >  	}
-> > >  	return self;
-> > >  out_delete:
-> > > 
-> > > Right?
-> > 
-> > yes, I was not completely sure I was not breaking anything else,
-> > so I posted the first patch.. the original patch I had is attached.
-> > 
-> > I haven't tested this one much though.. let me know and
-> > I can resend this one with changelog/testing..
-> 
-> and here it is ;)
+I found this quite helpful in my debugging lately. When doing task
+dumps, show the owner of a lock that a task may be blocked on. This is
+especially helpful when lockdep is not enabled and we do not know what
+task holds what lock. We still have the information of what owner holds
+a lock that a task is blocked on.
 
-hi,
-any feedback?
+Due to the sensitive nature of task dumps happening almost anywhere.
+Tricks to the raw spinlocks are done to keep the dump from deadlocking.
 
-thanks,
-jirka
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-mrg.git/kernel/rtmutex.c
+===================================================================
+--- linux-mrg.git.orig/kernel/rtmutex.c
++++ linux-mrg.git/kernel/rtmutex.c
+@@ -1431,3 +1431,51 @@ int rt_mutex_finish_proxy_lock(struct rt
+ 
+ 	return ret;
+ }
++
++void show_rt_lock_owner(struct task_struct *p)
++{
++	struct rt_mutex_waiter *waiter;
++	struct rt_mutex *lock;
++	struct task_struct *task;
++	unsigned long flags;
++	int locked = 0;
++
++	/*
++	 * This is called by stack dumps, we can't safely take a
++	 * lock. If we fail to get the lock then simply state so
++	 * and bail.
++	 */
++	if (!raw_spin_trylock_irqsave(&p->pi_lock, flags)) {
++		printk (" task pi_lock already held\n");
++		return;
++	}
++	waiter = p->pi_blocked_on;
++	if (!rt_mutex_real_waiter(waiter))
++		goto out;
++
++	/* Keep tasks from disappearing */
++	rcu_read_lock();
++
++	lock = waiter->lock;
++	/*
++	 * Used by task stack traces, try to synchronize but
++	 * don't block (we have the waiter pi_lock). If we fail to
++	 * take the lock, the worse that can happen is the owner changes
++	 * on us.
++	 */
++	if (raw_spin_trylock(&lock->wait_lock))
++		locked = 1;
++
++	task = rt_mutex_owner(lock);
++	if (task)
++		printk(KERN_CONT "  blocked on lock %p owned by %s:%d\n",
++		       lock, task->comm, task->pid);
++	else
++		printk(KERN_CONT "  blocked on lock %p with no owner\n", lock);
++
++	if (locked)
++		raw_spin_unlock(&lock->wait_lock);
++	rcu_read_unlock();
++ out:
++	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++}
+Index: linux-mrg.git/kernel/sched.c
+===================================================================
+--- linux-mrg.git.orig/kernel/sched.c
++++ linux-mrg.git/kernel/sched.c
+@@ -6060,6 +6060,8 @@ void sched_show_task(struct task_struct 
+ 		(unsigned long)task_thread_info(p)->flags);
+ 
+ 	show_stack(p, NULL);
++
++	show_rt_lock_owner(p);
+ }
+ 
+ void show_state_filter(unsigned long state_filter)
+Index: linux-mrg.git/include/linux/spinlock.h
+===================================================================
+--- linux-mrg.git.orig/include/linux/spinlock.h
++++ linux-mrg.git/include/linux/spinlock.h
+@@ -273,6 +273,8 @@ static inline void do_raw_spin_unlock(ra
+ # include <linux/spinlock_rt.h>
+ #else /* PREEMPT_RT_FULL */
+ 
++static inline void show_rt_lock_owner(struct task_struct *p) { }
++
+ /*
+  * Map the spin_lock functions to the raw variants for PREEMPT_RT=n
+  */
+Index: linux-mrg.git/include/linux/spinlock_rt.h
+===================================================================
+--- linux-mrg.git.orig/include/linux/spinlock_rt.h
++++ linux-mrg.git/include/linux/spinlock_rt.h
+@@ -26,6 +26,8 @@ extern int __lockfunc rt_spin_trylock_bh
+ extern int __lockfunc rt_spin_trylock(spinlock_t *lock);
+ extern int atomic_dec_and_spin_lock(atomic_t *atomic, spinlock_t *lock);
+ 
++extern void show_rt_lock_owner(struct task_struct *p);
++
+ /*
+  * lockdep-less calls, for derived types like rwlock:
+  * (for trylock they can use rt_mutex_trylock() directly.
 
 
-
-
-
-
-> 
-> thanks,
-> jirka
-> 
-> ---
-> The stack/vdso/heap memory maps dont have any dso file.
-> Setting the perf dso objects as 'loaded' for these maps,
-> we avoid unnecessary warnings like:
-> 
->   "Failed to open [stack], continuing without symbols"
-> 
-> All map__find_* functions still return NULL when searching
-> for symbols in these maps.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/util/map.c |   24 ++++++++++++++++++------
->  1 files changed, 18 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index a16ecab..7e218e3 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -18,6 +18,13 @@ static inline int is_anon_memory(const char *filename)
->  	return strcmp(filename, "//anon") == 0;
->  }
->  
-> +static inline int is_no_dso_memory(const char *filename)
-> +{
-> +	return !strcmp(filename, "[stack]") ||
-> +	       !strcmp(filename, "[vdso]")  ||
-> +	       !strcmp(filename, "[heap]");
-> +}
-> +
->  void map__init(struct map *self, enum map_type type,
->  	       u64 start, u64 end, u64 pgoff, struct dso *dso)
->  {
-> @@ -42,9 +49,10 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
->  	if (self != NULL) {
->  		char newfilename[PATH_MAX];
->  		struct dso *dso;
-> -		int anon;
-> +		int anon, no_dso;
->  
->  		anon = is_anon_memory(filename);
-> +		no_dso = is_no_dso_memory(filename);
->  
->  		if (anon) {
->  			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
-> @@ -57,12 +65,16 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
->  
->  		map__init(self, type, start, start + len, pgoff, dso);
->  
-> -		if (anon) {
-> -set_identity:
-> +		if (anon || no_dso) {
->  			self->map_ip = self->unmap_ip = identity__map_ip;
-> -		} else if (strcmp(filename, "[vdso]") == 0) {
-> -			dso__set_loaded(dso, self->type);
-> -			goto set_identity;
-> +
-> +			/*
-> +			 * Set memory without DSO as loaded. All map__find_*
-> +			 * functions still return NULL, and we avoid the
-> +			 * unnecessary map__load warning.
-> +			 */
-> +			if (no_dso)
-> +				dso__set_loaded(dso, self->type);
->  		}
->  	}
->  	return self;
-> -- 
-> 1.7.4
-> 
