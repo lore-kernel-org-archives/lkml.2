@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab1I2JWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:22:03 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41817 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab1I2JWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 05:22:01 -0400
-Date: Thu, 29 Sep 2011 10:21:49 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        marc.zyngier@arm.com, thomas.abraham@linaro.org, jamie@jamieiles.com,
-        b-cousson@ti.com, shawn.guo@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 0/2] GIC OF bindings
-Message-ID: <20110929092149.GL17204@pulham.picochip.com>
-References: <1317268436-1613-1-git-send-email-robherring2@gmail.com>
+	id S932110Ab1I2JYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 05:24:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36265 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932065Ab1I2JYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 05:24:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Thu, 29 Sep 2011 11:26:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20110928145144.3d074db9aa9b6f858e0dc4fb@canb.auug.org.au> <201109282132.46887.rjw@sisk.pl> <CACVXFVM6CjZacbbvn0VzM78SNDa6geHSw1dsrCL1bbTBU=pH1g@mail.gmail.com>
+In-Reply-To: <CACVXFVM6CjZacbbvn0VzM78SNDa6geHSw1dsrCL1bbTBU=pH1g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317268436-1613-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109291126.18470.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 10:53:54PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Thursday, September 29, 2011, Ming Lei wrote:
+> On Thu, Sep 29, 2011 at 3:32 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, September 28, 2011, Ming Lei wrote:
+> >> Hi,
+> >>
+> >> 2011/9/28 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> > On Wednesday, September 28, 2011, Ming Lei wrote:
+> >> >> Hi Stephen and Rafael,
+> >> >>
+> >> >> Sorry, the attachment patch can fix the build failure, which is
+> >> >> caused by unset CONFIG_RUNTIME_PM.
+> >> >
+> >> > First off, that's CONFIG_PM_RUNTIME.  Second, why do you want to build
+> >> > rpm-traces.c at all if CONFIG_PM_RUNTIME is unset?
+> >> >
+> >>
+> >> Yes, you are right,  follows the correct fix:
+> >>
+> >> diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+> >> index 56bdab5..f49405f 100644
+> >> --- a/kernel/trace/Makefile
+> >> +++ b/kernel/trace/Makefile
+> >> @@ -53,7 +53,9 @@ endif
+> >>  obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+> >>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+> >>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+> >> +ifeq ($(CONFIG_PM_RUNTIME),y)
+> >>  obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+> >> +endif
+> >>  ifeq ($(CONFIG_TRACING),y)
+> >>  obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
+> >>  endif
+> >
+> > Well, this still is kind of ugly.  I'd prefer my patch sent in this thread.
 > 
-> With recent patches for VIC device tree support and GIC MULTI_IRQ support,
-> it is evident that the irq domain support should be moved into the core GIC
-> code and not be dependent on the DT initialization. So I've split things up
-> into 2 patches separating irq_domain and device-tree code.
+> Both are doable, :-)
 > 
-> This should only change the internals of the GIC code. The binding is
-> unchanged from the previous version. Yeah!
-> 
-> The full series is available here. This includes Russell's devel-stable and
-> for-next branches and Nico's vmalloc branch.
+> But I don't think it is ugly, and this way is taken by BLOCK/PERF_EVENTS/
+> KGDB_KDB in kernel/trace/Makefile.
 
-Looks good to me!
+You're right about this.
 
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+> Also this one is a simple fix and don't introduce any new config option,
+> which is unnecessary.
+
+OK, I'll use your last patch.  Care to resend it with a sign-off?
+
+Rafael
