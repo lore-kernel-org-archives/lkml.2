@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab1I2KUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 06:20:35 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48090 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab1I2KUd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 06:20:33 -0400
+	id S1754451Ab1I2KVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 06:21:03 -0400
+Received: from shutemov.name ([188.40.19.243]:56708 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752279Ab1I2KVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 06:21:01 -0400
+Date: Thu, 29 Sep 2011 13:21:00 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [004/244] sfi: table irq 0xFF means no interrupt
+Message-ID: <20110929102100.GA6378@shutemov.name>
+References: <20110928220225.GA27128@kroah.com>
+ <20110928220125.665499011@clark.kroah.org>
 MIME-Version: 1.0
-In-Reply-To: <CAJ8eaTwA-Hct6NbarmDTpFsGsnNcgxhjAgJ7_nFejTjd+UKA4A@mail.gmail.com>
-References: <CAJ8eaTwoMpeRiNnSY+v6USf=8hquv=m9T2-ZDDzz2EAQgPvrDw@mail.gmail.com>
-	<CAJ8eaTwA-Hct6NbarmDTpFsGsnNcgxhjAgJ7_nFejTjd+UKA4A@mail.gmail.com>
-Date: Thu, 29 Sep 2011 06:20:31 -0400
-Message-ID: <CA+5PVA5aNSTPFW4hxZ6zvVibsH7aCKb6VucCOfLOi+j_aFVhZg@mail.gmail.com>
-Subject: Re: Info about long term
-From: Josh Boyer <jwboyer@gmail.com>
-To: naveen yadav <yad.naveen@gmail.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928220125.665499011@clark.kroah.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 5:34 AM, naveen yadav <yad.naveen@gmail.com> wrote:
-> Dear Mr. greg,
->
-> Last long term is 2.6.32, 2.6.35 etc.
->
-> I need small info , since kernel.org site is down for last few weeks ,
-> So I want to know  what will be the next long term in 3.0 series.
+On Wed, Sep 28, 2011 at 02:59:28PM -0700, Greg KH wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let us know.
+> 
+> ------------------
+> 
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> commit a94cc4e6c0a26a7c8f79a432ab2c89534aa674d5 upstream.
+> 
+> According to the SFI specification irq number 0xFF means device has no
+> interrupt or interrupt attached via GPIO.
+> 
+> Currently, we don't handle this special case and set irq field in
+> *_board_info structs to 255.  It leads to confusion in some drivers.
+> Accelerometer driver tries to register interrupt 255, fails and prints
+> "Cannot get IRQ" to dmesg.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Greg just sent the patch series for 3.0.5 to lkml yesterday.  It
-should be released tomorrow if all goes well.
+Please, take this as well:
 
-josh
+http://lkml.org/lkml/2011/9/14/40
+
+-- 
+ Kirill A. Shutemov
