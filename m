@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab1I2Ok7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:40:59 -0400
-Received: from swan.madduck.net ([80.68.90.58]:44402 "EHLO swan.madduck.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab1I2Ok6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:40:58 -0400
-Date: Thu, 29 Sep 2011 16:40:55 +0200
-From: martin f krafft <madduck@madduck.net>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: wiki mirror | looking for ATA_4_KiB_sector_issues page
-Message-ID: <20110929144054.GA20624@albatross.gern.madduck.net>
-Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-References: <20110929062013.GA29979@albatross.gern.madduck.net>
+	id S1756696Ab1I2OmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:42:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52619 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab1I2OmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 10:42:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v3 19/24] C6X: headers
+Date: Thu, 29 Sep 2011 16:41:21 +0200
+Message-ID: <3471979.HTqjRmXnHP@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317306284.2580.119.camel@deneb.redhat.com>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <201109281607.11228.arnd@arndb.de> <1317306284.2580.119.camel@deneb.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <20110929062013.GA29979@albatross.gern.madduck.net>
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux wheezy/sid kernel 3.1.0-rc4-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:AENHFZ8m51FrFZWhPGxkGjvQGVyroUEm7nrC+lnQpz2
+ xq7bFdqqc23hcAWp30LxP6sTT4peUd8F+aQyx6bxjm/X1fEmcF
+ VfB4LWOLR+lC0BwmPHuoB7jfQi1q5npnOzBbJhwA5758tdDqE+
+ 6pGMHpw1QF59mKWRbSVrebBA13wpPwB1fgOoo5qZ1oKfvPOV5P
+ wTElbuhhhAM0NelfJj4eIJz8dAlFpPEqxmNYLgtKZ5q1FafKaW
+ uwI3g3S7caBXYjETmMtH1KnOR/UVdT0ldvhbfRmz0nIxEhkMQX
+ EgzTRrAtlRWw+9/mh1whuraKzriC0o9fOgxad4yTKiNS3yMRqx
+ vaYG2otsWQcBLIA1w/KU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 29 September 2011 10:24:43 Mark Salter wrote:
+> I think we still want the c6x unaligned.h because the hardware can do
+> unaligned 32 and 64 memory accesses with no performance penalty. There
+> are some addressing mode limitations which is why the compiler doesn't
+> use them generally.
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok. I guess you still only need to override __cpu_to_{le,be}{16,32,64}p and
+__{le,be}{16,32,64}_to_cpup then and use include/linux/unaligned/access_ok.h.
 
-also sprach martin f krafft <madduck@madduck.net> [2011.09.29.0820 +0200]:
-> kernel.org still seems to be down. I am looking for
->=20
->   https://ata.wiki.kernel.org/index.php/ATA_4_KiB_sector_issues
->=20
-> and I was wondering if there was a mirror out there?
-
-http://lwn.net/Articles/377897/ comes close. Thanks Michael Prokop.
-
---=20
-martin | http://madduck.net/ | http://two.sentenc.es/
-=20
-"... (ethik und =E4sthetik sind eins.)"
-                                                       -- wittgenstein
-=20
-spamtraps: madduck.bogus@madduck.net
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQLvBAEBCgDZBQJOhIN2wBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
-aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
-bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
-NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
-MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xDbJ
-EACuE4Q5B4oYGf+R3cKZ9v6ohBxhG3Ay6KI3pfMbRMUovLoYyF1XCt1qZfusJXWX
-hL8pnZ2AqWCvVCwCdhF8OjgVVGUezRXm0a/1SEH0FcwgiWJ6ZCjjrAT+dVMNCS7m
-NSaEFQXF2FJ2HSyX8O2VfG9jXAEyRGwcuMymfg+ZDbrt0MXVgpbL4In2lhmNUgZq
-RJnxHoj+rf7ozcxR5VduAwt9pIQ/mytwR1R875Yt9aebXoEKOBiGzGF3JLKAMHWo
-62+VJ2IkN0kIhCASO76Gsb4ySyOOd8KEu4mXpqw4+BcRcyf7LinIvssbzYpGUCuV
-B8TSoeL6s5rsTIXiv3L3xwZ6qrSnIegzoZMGPe+QPg+IVCah1xe3jqw9QbPgJ39o
-VzXdttNI2iGtwOKx/tBuXbB72CH77A8cOGQK+2oB/yL/QrDl+qM7D2WdybcNG3x/
-kCafOpv/pRoQ5jR1U8BmbesfQpxTT3gMuMERJusz7QAY7yVxNxSpAvWTNdx7+3jv
-hLhOBk1Xl9oXhfx/P6c1tXxsot34q91cJSdVtH//7AKlkqmPldVwY79SUTyYxFfH
-ECPwCtN2hci3laWn3zjmsTuC3pmwzKdz+26joLh7mPiOnX4+VuwM6OpTDGmdlxXi
-9pD5YURZ5/tRY/R7ZHwlHP2GvU4Kyf8GE/gaexc8VHfGhA==
-=nv3P
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
-
+	Arnd
