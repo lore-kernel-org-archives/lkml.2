@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab1I2X23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:28:29 -0400
-Received: from claw.goop.org ([74.207.240.146]:43167 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758062Ab1I2X0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:26:50 -0400
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 3/8] x86/jump_label: add arch_jump_label_transform_early()
-Date: Thu, 29 Sep 2011 16:26:33 -0700
-Message-Id: <ab9dd31d526e98cd2008b2fc5af9e16972f9aff3.1317338254.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.6.2
-In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
+	id S1758068Ab1I2Xds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:33:48 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57210 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab1I2Xdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:33:47 -0400
+Message-ID: <4E850056.1090101@gmail.com>
+Date: Thu, 29 Sep 2011 17:33:42 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+References: <20110929230613.GA20083@ghostprotocols.net>
+In-Reply-To: <20110929230613.GA20083@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-This allows jump-label entries to be modified early, in a pre-SMP
-environment.
+On 09/29/2011 05:06 PM, Arnaldo Carvalho de Melo wrote:
+>> >From what I can see sample_type has to be the same for all samples:
+>> https://lkml.org/lkml/2011/8/15/6
+> 
+> We could add a PERF_SAMPLE_ID2 that if present would be guaranteed to be
+> the last, or we can, as PeterZ prefers/suggests, to use one mmap per
+> sample id, then we know that if we're getting it on that mmap, it has
+> that sample_type.
+> 
+> For record that means we need to dump each per-sample_id mmap onto a
+> separate file, i.e. use a directory, etc.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Jason Baron <jbaron@redhat.com>
----
- arch/x86/kernel/jump_label.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
+That seems like a major re-write of perf. Why not keep the existing
+restriction and have users who want different sample_types run multiple
+perf commands?
 
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index 3fee346..0887b59 100644
---- a/arch/x86/kernel/jump_label.c
-+++ b/arch/x86/kernel/jump_label.c
-@@ -24,8 +24,9 @@ union jump_code_union {
- 	} __attribute__((packed));
- };
- 
--void arch_jump_label_transform(struct jump_entry *entry,
--			       enum jump_label_type type)
-+static void __jump_label_transform(struct jump_entry *entry,
-+				   enum jump_label_type type,
-+				   void *(*poker)(void *, const void *, size_t))
- {
- 	union jump_code_union code;
- 
-@@ -35,17 +36,24 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 				(entry->code + JUMP_LABEL_NOP_SIZE);
- 	} else
- 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-+
-+	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	__jump_label_transform(entry, type, text_poke_smp);
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
- }
- 
--void arch_jump_label_text_poke_early(jump_label_t addr)
-+void __init arch_jump_label_transform_early(struct jump_entry *entry,
-+					    enum jump_label_type type)
- {
--	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
--			JUMP_LABEL_NOP_SIZE);
-+	__jump_label_transform(entry, type, text_poke_early);
- }
- 
- #endif
--- 
-1.7.6.2
+What's to be gained by refactoring the code to support multiple
+sample_types in a single command invocation?
 
+David
