@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab1I2NUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 09:20:43 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:63290 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1I2NUm (ORCPT
+	id S1756455Ab1I2NU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 09:20:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51361 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756402Ab1I2NU5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 09:20:42 -0400
-Subject: Re: [PATCH] Smack: fix domain transfer issues
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.02.1109291109070.3006@jsakkine-mobl>
-References: <1317206909-24443-1-git-send-email-jarkko.sakkinen@intel.com>
-	 <1317222904.20139.20.camel@moss-pluto>
-	 <alpine.DEB.2.02.1109291109070.3006@jsakkine-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Thu, 29 Sep 2011 09:20:36 -0400
-Message-ID: <1317302436.4079.22.camel@moss-pluto>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 09:20:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110929164028.912fba5b3fd2c4d12663de04@canb.auug.org.au>
+References: <20110929164028.912fba5b3fd2c4d12663de04@canb.auug.org.au>
+Date: Thu, 29 Sep 2011 09:20:55 -0400
+Message-ID: <CAP=VYLqY5S1rdCcfgNf26EwKFwZZPZNjBn0FJdsqy0DJi5y_Vg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (moduleh
+ tree related)
+From: Paul Gortmaker <paul.gortmaker@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 11:26 +0300, Jarkko Sakkinen wrote:
-> MNT_NOSUID should be checked.
+On Thu, Sep 29, 2011 at 2:40 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> drivers/staging/cxt1e1/linux.c:113:32: error: expected ')' before 'int'
+> drivers/staging/cxt1e1/linux.c:117:30: error: expected ')' before 'int'
+> drivers/staging/cxt1e1/linux.c:121:30: error: expected ')' before 'int'
+> drivers/staging/cxt1e1/linux.c:125:31: error: expected ')' before 'int'
+> drivers/staging/cxt1e1/linux.c:129:31: error: expected ')' before 'int'
+>
+> Caused by the module split.  The fix in the moduleh tree (commit
+> 6eee8b750254 ("staging: Add module.h to more drivers implicitly using
+> i")) is incorrect in that module.h has been included too late.
 
-Doubtful, as Smack and capabilities are completely orthogonal, right?
-Even for SELinux, the nosuid check is a bit of a nuisance.
+Thanks, I've fixed the mislocation in the original.
 
->  Also, I'll plan to
-> implement permission check for ptrace but in the
-> scope of this patch.
+Paul.
 
-Still no transition or entrypoint checks, open file revalidation, parent
-death signal clearing, ...?
-
--- 
-Stephen Smalley
-National Security Agency
-
+>
+> I have applied the following patch for today.
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 29 Sep 2011 16:36:21 +1000
+> Subject: [PATCH] staging: move the module.h include in cxt1e1/linux.c
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/staging/cxt1e1/linux.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+> index e7029af..6e574fe 100644
+> --- a/drivers/staging/cxt1e1/linux.c
+> +++ b/drivers/staging/cxt1e1/linux.c
+> @@ -15,6 +15,7 @@
+>  #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>
+>  #include <linux/types.h>
+> +#include <linux/module.h>
+>  #include <linux/netdevice.h>
+>  #include <linux/hdlc.h>
+>  #include <linux/if_arp.h>
+> @@ -163,7 +164,6 @@ mkret (int bsd)
+>
+>  /***************************************************************************/
+>  #include <linux/workqueue.h>
+> -#include <linux/module.h>
+>
+>  /***
+>  * One workqueue (wq) per port (since musycc allows simultaneous group
+> --
+> 1.7.6.3
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
