@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab1I2XCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:02:37 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:36407 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab1I2XCg (ORCPT
+	id S1758028Ab1I2XGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:06:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60616 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab1I2XGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:02:36 -0400
-Date: Fri, 30 Sep 2011 09:02:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: Please include pin control subsystem in linux-next
-Message-Id: <20110930090228.f3766d7980253bc54a1be723@canb.auug.org.au>
-In-Reply-To: <CACRpkdZcQU6pGrsZ684GvK9T8jD0qVKx6wx8kwdT=Qd7+1QwCw@mail.gmail.com>
-References: <CACRpkdZcQU6pGrsZ684GvK9T8jD0qVKx6wx8kwdT=Qd7+1QwCw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__30_Sep_2011_09_02_28_+1000_PbGCvcUb6zAs2f/w"
+	Thu, 29 Sep 2011 19:06:21 -0400
+Date: Thu, 29 Sep 2011 20:06:13 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+	sample type
+Message-ID: <20110929230613.GA20083@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Bad-Reply: 'Re:' in Subject but no References or In-Reply-To headers
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Sep_2011_09_02_28_+1000_PbGCvcUb6zAs2f/w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em Thu, Sep 29, 2011 at 04:55:23PM -0600, David Ahern escreveu:
+> On 09/29/2011 04:05 PM, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
+> >> Following command hangs on my setup:
+> >>   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
+> >>    -e LLC-loads -- date '+%F'
+> >>
+> >> because hardware and tracepoint events have different sample type.
+> >>
+> >> With the patch applied the record command displays
+> >> "Non matching sample_type" message and exits.
+> > 
+> > That is way too cryptic :-\
+> > 
+> > What is that makes the sample type not match in this case? Can we make
+> > it match instead?
+> > 
+> > This is something to be properly fixed by _allowing_ non matching sample
+> > types, the evsel/evlist abstractions are getting we close but not there
+> > yet, multiple files in a perf.data/ directory are needed.
+> 
+> >From what I can see sample_type has to be the same for all samples:
+> https://lkml.org/lkml/2011/8/15/6
 
-Hi Linus,
+We could add a PERF_SAMPLE_ID2 that if present would be guaranteed to be
+the last, or we can, as PeterZ prefers/suggests, to use one mmap per
+sample id, then we know that if we're getting it on that mmap, it has
+that sample_type.
 
-On Thu, 29 Sep 2011 14:57:41 +0200 Linus Walleij <linus.walleij@linaro.org>=
- wrote:
->
-> my pin control subsystem is maturing, so could you please
-> include this in linux-next:
->=20
-> git://git.linaro.org/people/triad/linux-pinctrl.git for-next
+For record that means we need to dump each per-sample_id mmap onto a
+separate file, i.e. use a directory, etc.
 
-I have added your tree from today.
+But what I suggested as a short term solution was to check what is the
+difference in the above case and then make them use a single sample
+type, i.e. bow to the current restriction.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+- Arnaldo
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__30_Sep_2011_09_02_28_+1000_PbGCvcUb6zAs2f/w
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOhPkEAAoJEDMEi1NhKgbsz2MH/1eGofBKLQy+w+UgkBg8I0Zs
-zETrEX8dGMAVwgdn6alWwJvp5NRqqUHMi4WMJfOq9/xMDcFIZNUSorV5M9KoBcPt
-rCL66fnYaaRpBVjisCqP01CuOZghn+tN1Nn7ms8rEPRRsHji2Ialv01BGL5g5w/X
-rLebIFjqwElZ/UyrT5oZkBQYKUp06h/57VlbAAkxC/mEC6v5DFwT3ewWBrlIlgFN
-bZ+zNe6qPP4/7XIrb6pbDUT6FQaOOeWcuTlUVBGpfPX4qJAfq/HflVKbQ1Jm+n0N
-YrANEz+1Njwo4553/dVdDBB18UUO+eNcicDHrU/9/S/CH7DH1nVTKM9ExmTSUeQ=
-=giGB
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Sep_2011_09_02_28_+1000_PbGCvcUb6zAs2f/w--
