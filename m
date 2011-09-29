@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab1I2URd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:17:33 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:53982 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757493Ab1I2URc (ORCPT
+	id S1757635Ab1I2USf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:18:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45038 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab1I2US3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:17:32 -0400
-Message-ID: <4E84D259.5020008@xenotime.net>
-Date: Thu, 29 Sep 2011 13:17:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andres Salomon <dilinger@debian.org>, x86 maintainers <x86@kernel.org>
-Subject: [PATCH] olpc: olpc-xo1-sci.c is an input driver, depends on INPUT
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-In-Reply-To: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 29 Sep 2011 16:18:29 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, rjw@sisk.pl, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, len.brown@intel.com,
+        joseph.cihula@intel.com, shane.wang@intel.com,
+        xen-devel@lists.xensource.com, linux-pm@lists.linux-foundation.org,
+        tboot-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
+        liang.tang@oracle.com, ke.yu@intel.com, kevin.tian@intel.com,
+        jeremy@goop.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/8] xen: Utilize the restore_msi_irqs hook.
+Date: Thu, 29 Sep 2011 16:16:50 -0400
+Message-Id: <1317327414-24072-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317327414-24072-1-git-send-email-konrad.wilk@oracle.com>
+References: <1317327414-24072-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4E84D244.0088,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+to make a hypercall to restore the vectors in the MSI/MSI-X
+configuration space.
 
-Fix build errors when CONFIG_INPUT is disabled (shortened list):
-
-olpc-xo1-sci.c:(.text+0x1aee6): undefined reference to `input_event'
-olpc-xo1-sci.c:(.text+0x1b077): undefined reference to `input_unregister_device'
-olpc-xo1-sci.c:(.text+0x1b081): undefined reference to `input_free_device'
-arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1b270): more undefined references to `input_event' follow
-olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to `input_allocate_device'
-olpc-xo1-sci.c:(.devinit.text+0x1a4): undefined reference to `input_register_device'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Andres Salomon <dilinger@debian.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
-Found in linux-next but also applies to mainline.
+ arch/x86/pci/xen.c              |   12 ++++++++++++
+ include/xen/interface/physdev.h |    7 +++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
- arch/x86/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- next-2011-0929.orig/arch/x86/Kconfig
-+++ next-2011-0929/arch/x86/Kconfig
-@@ -2052,7 +2052,7 @@ config OLPC_XO1_RTC
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 1017c7b..9eea4ed 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -304,6 +304,17 @@ static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ out:
+ 	return ret;
+ }
++
++static void xen_initdom_restore_msi_irqs(struct pci_dev *dev, int irq)
++{
++	int ret = 0;
++	struct physdev_restore_msi restore;
++
++	restore.bus = dev->bus->number;
++	restore.devfn = dev->devfn;
++	ret = HYPERVISOR_physdev_op(PHYSDEVOP_restore_msi, &restore);
++	WARN(ret && ret != -ENOSYS, "restore_msi -> %d\n", ret);
++}
+ #endif
  
- config OLPC_XO1_SCI
- 	bool "OLPC XO-1 SCI extras"
--	depends on OLPC && OLPC_XO1_PM
-+	depends on OLPC && OLPC_XO1_PM && INPUT
- 	select POWER_SUPPLY
- 	select GPIO_CS5535
- 	select MFD_CORE
+ static void xen_teardown_msi_irqs(struct pci_dev *dev)
+@@ -426,6 +437,7 @@ int __init pci_xen_initial_domain(void)
+ #ifdef CONFIG_PCI_MSI
+ 	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++	x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
+ #endif
+ 	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+index 534cac8..44aefa9 100644
+--- a/include/xen/interface/physdev.h
++++ b/include/xen/interface/physdev.h
+@@ -144,6 +144,13 @@ struct physdev_manage_pci {
+ 	uint8_t devfn;
+ };
+ 
++#define PHYSDEVOP_restore_msi            19
++struct physdev_restore_msi {
++	/* IN */
++	uint8_t bus;
++	uint8_t devfn;
++};
++
+ #define PHYSDEVOP_manage_pci_add_ext	20
+ struct physdev_manage_pci_ext {
+ 	/* IN */
+-- 
+1.7.4.1
+
