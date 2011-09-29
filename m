@@ -1,124 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab1I2VDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 17:03:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757982Ab1I2VDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 17:03:03 -0400
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 07/10] mm: vmscan: convert global reclaim to per-memcg LRU lists
-Date: Thu, 29 Sep 2011 23:01:01 +0200
-Message-Id: <1317330064-28893-8-git-send-email-jweiner@redhat.com>
-In-Reply-To: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
-References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
+	id S1758005Ab1I2VCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 17:02:52 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:42450 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757839Ab1I2VCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 17:02:49 -0400
+Message-ID: <4E84DCF4.4020904@gmail.com>
+Date: Thu, 29 Sep 2011 16:02:44 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110925 Thunderbird/7.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org
+Subject: Re: [PATCH 1/2] ARM: gic: add irq_domain support
+References: <1317268436-1613-1-git-send-email-robherring2@gmail.com> <1317268436-1613-2-git-send-email-robherring2@gmail.com> <20110929171540.GC6800@ponder.secretlab.ca>
+In-Reply-To: <20110929171540.GC6800@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The global per-zone LRU lists are about to go away on memcg-enabled
-kernels, global reclaim must be able to find its pages on the
-per-memcg LRU lists.
+On 09/29/2011 12:15 PM, Grant Likely wrote:
+> On Wed, Sep 28, 2011 at 10:53:55PM -0500, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Convert the gic interrupt controller to use irq domains in preparation
+>> for device-tree binding and MULTI_IRQ. This allows for translation between
+>> GIC interrupt IDs and Linux irq numbers.
+>>
+>> The meaning of irq_offset has changed. It now is just the number of skipped
+>> GIC interrupt IDs for the controller. It will be 16 for primary GIC and 32
+>> for secondary GICs.
+> 
+> [...]
+> 
+>>  /*
+>> @@ -81,7 +82,7 @@ static inline unsigned int gic_irq(struct irq_data *d)
+>>   */
+>>  static void gic_mask_irq(struct irq_data *d)
+>>  {
+>> -	u32 mask = 1 << (d->irq % 32);
+>> +	u32 mask = 1 << (gic_irq(d) % 32);
+> 
+> This can probably change simply to d->hwirq if irq_offset is
+> eliminated as I describe below.
+> 
+>>  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+>>  	void __iomem *dist_base, void __iomem *cpu_base)
+>>  {
+>>  	struct gic_chip_data *gic;
+>> +	struct irq_domain *domain;
+>> +	int gic_irqs;
+>>  
+>>  	BUG_ON(gic_nr >= MAX_GIC_NR);
+>>  
+>>  	gic = &gic_data[gic_nr];
+>> +	domain = &gic->domain;
+>>  	gic->dist_base = dist_base;
+>>  	gic->cpu_base = cpu_base;
+>> -	gic->irq_offset = (irq_start - 1) & ~31;
+>>  
+>> -	if (gic_nr == 0)
+>> +	/*
+>> +	 * For primary GICs, skip over SGIs.
+>> +	 * For secondary GICs, skip over PPIs, too.
+>> +	 */
+>> +	if (gic_nr == 0) {
+>>  		gic_cpu_base_addr = cpu_base;
+>> +		gic->irq_offset = 16;
+>> +		irq_start = (irq_start & ~31) + 16;
+> 
+> With the switch to irq_domain, there should no longer be any need for
+> a ~31 mask on the irq_start number.  Yes, you'll want to make sure
+> that it doesn't allocate below irq 16, but the driver should
+> completely use the irq_domain to manage the mapping from linux-irq
+> number to hwirq number.  The ~31 mask appears to have been an
+> optimization to quickly calculate hwirq number from the linux one, but
+> that value is now found in irq_data->hwirq.
 
-Since the LRU pages of a zone are distributed over all existing memory
-cgroups, a scan target for a zone is complete when all memory cgroups
-are scanned for their proportional share of a zone's memory.
+I started out exactly this way removing irq_offset. The problem is the
+core irq domain code assumes that hwirq starts at 0, but for the gic it
+starts at 16 or 32.
 
-The forced scanning of small scan targets from kswapd is limited to
-zones marked unreclaimable, otherwise kswapd can quickly overreclaim
-by force-scanning the LRU lists of multiple memory cgroups.
+It could be fixed in the domain core, but that would effectively mean
+moving irq_offset into the core.
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- mm/vmscan.c |   39 ++++++++++++++++++++++-----------------
- 1 files changed, 22 insertions(+), 17 deletions(-)
+The masking here is mainly to not break exynos. Everyone else passes in
+a value of 16-31 which I could just hardcode to 16. So when exynos gets
+all the interrupts converted over to domains, this can be removed. I
+looked at it briefly and it doesn't look trivial.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 96acc1a..f411e7f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1887,7 +1887,7 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
- 	 * latencies, so it's better to scan a minimum amount there as
- 	 * well.
- 	 */
--	if (current_is_kswapd())
-+	if (current_is_kswapd() && mz->zone->all_unreclaimable)
- 		force_scan = true;
- 	if (!global_reclaim(sc))
- 		force_scan = true;
-@@ -2111,16 +2111,6 @@ static void shrink_zone(int priority, struct zone *zone,
- 	};
- 	struct mem_cgroup *memcg;
- 
--	if (global_reclaim(sc)) {
--		struct mem_cgroup_zone mz = {
--			.mem_cgroup = NULL,
--			.zone = zone,
--		};
--
--		shrink_mem_cgroup_zone(priority, &mz, sc);
--		return;
--	}
--
- 	memcg = mem_cgroup_iter(root, NULL, &reclaim);
- 	do {
- 		struct mem_cgroup_zone mz = {
-@@ -2134,6 +2124,10 @@ static void shrink_zone(int priority, struct zone *zone,
- 		 * scanned it with decreasing priority levels until
- 		 * nr_to_reclaim had been reclaimed.  This priority
- 		 * cycle is thus over after a single memcg.
-+		 *
-+		 * Direct reclaim and kswapd, on the other hand, have
-+		 * to scan all memory cgroups to fulfill the overall
-+		 * scan target for the zone.
- 		 */
- 		if (!global_reclaim(sc)) {
- 			mem_cgroup_iter_break(root, memcg);
-@@ -2451,13 +2445,24 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- static void age_active_anon(struct zone *zone, struct scan_control *sc,
- 			    int priority)
- {
--	struct mem_cgroup_zone mz = {
--		.mem_cgroup = NULL,
--		.zone = zone,
--	};
-+	struct mem_cgroup *memcg;
- 
--	if (inactive_anon_is_low(&mz))
--		shrink_active_list(SWAP_CLUSTER_MAX, &mz, sc, priority, 0);
-+	if (!total_swap_pages)
-+		return;
-+
-+	memcg = mem_cgroup_iter(NULL, NULL, NULL);
-+	do {
-+		struct mem_cgroup_zone mz = {
-+			.mem_cgroup = memcg,
-+			.zone = zone,
-+		};
-+
-+		if (inactive_anon_is_low(&mz))
-+			shrink_active_list(SWAP_CLUSTER_MAX, &mz,
-+					   sc, priority, 0);
-+
-+		memcg = mem_cgroup_iter(NULL, memcg, NULL);
-+	} while (memcg);
- }
- 
- /*
--- 
-1.7.6.2
+> 
+> irq_offset could almost be dropped entirely outside of probe because
+> it no longer matters.  Instead, populate the to_irq() hook so that the
+> hwirq value gets set correctly from the outset.
+> 
+> It would be better in general to have a consistent view of what the
+> hwirq number means regardless of if it is a root GIC.
 
+Agreed.
+
+Rob
