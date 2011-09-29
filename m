@@ -1,131 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab1I2T4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:56:09 -0400
-Received: from mx2.compro.net ([12.186.155.4]:7993 "EHLO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614Ab1I2T4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:56:06 -0400
-X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 15:56:06 EDT
-X-IronPort-AV: E=Sophos;i="4.68,462,1312171200"; 
-   d="scan'208";a="7091379"
-Message-ID: <4E84CA01.2060907@compro.net>
-Date: Thu, 29 Sep 2011 15:41:53 -0400
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1757463Ab1I2UAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:00:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47410 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab1I2UAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 16:00:47 -0400
+Date: Thu, 29 Sep 2011 17:01:22 -0300
+From: Gustavo Padovan <padovan@profusion.mobi>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-bluetooth@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Keith Packard <keithp@keithp.com>,
+        Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>,
+        Luiz Augusto von Dentz <luiz.von.dentz@intel.com>,
+        Ilia Kolomisnky <ilia.kolominsky@gmail.com>
+Subject: Re: Bluetooth regression with headphones
+Message-ID: <20110929200122.GF2605@joana>
+Mail-Followup-To: Jeremy Fitzhardinge <jeremy@goop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-bluetooth@vger.kernel.org, linux-wireless@vger.kernel.org,
+	Keith Packard <keithp@keithp.com>,
+	Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>,
+	Luiz Augusto von Dentz <luiz.von.dentz@intel.com>,
+	Ilia Kolomisnky <ilia.kolominsky@gmail.com>
+References: <4E6EB2DE.8090102@goop.org>
+ <4E73CEB5.9090406@goop.org>
+ <4E73CFEF.5000509@goop.org>
+ <4E84AF39.7090205@goop.org>
 MIME-Version: 1.0
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Hounschell <dmarkh@cfl.rr.com>
-Subject: Problem with AMD chipsets. Was "Re: problems doing direct dma from
- a pci device to pci-e device"
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E84AF39.7090205@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original thread is a year or so old but I never actually figured out 
-what the problem was. It's still an issue I need to try to understand so 
-I thought I would try again. As then, I know this is a PCI thing but 
-have CC'd LMKL just in case. Sorry for the noise LMKL.
+Hi Jeremy,
 
-Briefly, we have a couple of PCI cards that talk to each other over the 
-pci bus. One is a reflective memory type (rms) card and the other is a 
-special I/O (gpiohsd) card. These are both regular PCI cards. The way 
-this gpiohsd writes and reads data to and from this rms card mamory and 
-also to regular application SHM memory is by way of internal page tables 
-in the gpiohsd containing bus addresses of the rms cards memory or 
-application SHM memory. We stuff the gpiohsd page tables with bus 
-addresses we get from  the  page_to_phys call. We used to use 
-virt_to_bus. The gpiohsd may do a single read or write, or a large DMA 
-read or write. Software never directly tells this gpiohsd card to do any 
-xfer, DMA or not. I've looked at the kernel DMA Documentation and don't 
-really see anything there that will help me with my problem (which I 
-will explain below). Here is a blurp of the code in one of our GPL 
-drivers we use for getting bus addresses for our rms card memory and/or 
-our application SHM memory that we stuff into the gpiohsd page tables. 
-FYI, a device connected to this gpiohsd card can, by its self, cause the 
-gpiohsd to initiate these data transfers.
+* Jeremy Fitzhardinge <jeremy@goop.org> [2011-09-29 10:47:37 -0700]:
 
-     /*
-      * Get a physical/bus address from our virtual address
-      */
-     down_read(&current->mm->mmap_sem);
+> On 09/16/2011 03:38 PM, Jeremy Fitzhardinge wrote:
+> > On 09/16/2011 03:33 PM, Jeremy Fitzhardinge wrote:
+> >> On 09/12/2011 06:33 PM, Jeremy Fitzhardinge wrote:
+> >>> Hi all,
+> >>>
+> >>> I reported a regression in connecting my Nokia BH-905i headphones in
+> >>> June this year (https://lkml.org/lkml/2011/6/23/770), which was the same
+> >>> problem Keith Packard reported in https://lkml.org/lkml/2011/6/9/63.  
+> >>> It was briefly fixed in
+> >>> git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git.
+> >>>
+> >>> Unfortunately it regressed again by the time of the linux-3.0 release,
+> >>> to something with similar symptoms: the headphones won't reliably
+> >>> connect to my laptop unless I freshly re-pair them.  However, unlike the
+> >>> original bug, they will very occasionally connect normally, though I
+> >>> don't know why.
+> >>>
+> >>> This behaviour has been consistent since 3.0 up until the current
+> >>> 3.1-rc6 kernel.
+> >>>
+> >>> What further information can I provide?  How can I help debug this?
+> >> I turned on debugging by running "bluetoothd -n -d", and got the
+> >> following when trying to connect my headphones:
+> >>
+> >> Sep 16 15:30:47 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: HEADSET_STATE_DISCONNECTED -> HEADSET_STATE_CONNECTING
+> >> Sep 16 15:30:47 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> >> Sep 16 15:30:47 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:remote_features_information() hci0 status 0
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:remote_name_information() hci0 status 0
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_channel() Discovered Handsfree service on channel 1
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:rfcomm_connect() /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: Connecting to 00:0B:E4:A6:6C:0D channel 1
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() hci0 dba 00:0B:E4:A6:6C:0D
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() kernel auth requirements = 0x04
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() Matching key found
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() link key type 0x04
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:auth_complete() hci0 status 0
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_bonding_process_complete() status=00
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> >> Sep 16 15:30:48 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_bonding_process_complete() no pending auth request
+> >> Sep 16 15:30:50 saboo bluetoothd[22025]: bluetoothd[22025]: Permission denied (13)
+> >> Sep 16 15:30:50 saboo bluetoothd[22025]: Permission denied (13)
+> >> Sep 16 15:30:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: HEADSET_STATE_CONNECTING -> HEADSET_STATE_DISCONNECTED
+> >> Sep 16 15:30:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> >>
+> > And I get this when I successfully re-pair and connect the headphones:
+> >
+> > Sep 16 15:36:30 saboo bluetoothd[22025]: Discovery session 0x7f1059478630 with :1.326 activated
+> > Sep 16 15:36:30 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_start_inquiry() hci0 length 8 periodic 1
+> > Sep 16 15:36:30 saboo bluetoothd[22025]: bluetoothd[22025]: Discovery session 0x7f1059478630 with :1.326 activated
+> > Sep 16 15:36:30 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:session_ref() 0x7f1059478630: ref=1
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:session_unref() 0x7f1059478630: ref=0
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:session_remove() Discovery session 0x7f1059478630 with :1.326 deactivated
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:session_remove() Stopping discovery
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_stop_inquiry() hci0
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: Stopping discovery
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: Stopping discovery
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: Inquiry Failed with status 0x12
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: Inquiry Failed with status 0x12
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_create_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:device_create() Creating device /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:btd_device_ref() 0x7f105947ef70: ref=1
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:bonding_request_new() Requesting bonding for 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:35 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:bonding_request_new() Temporary agent registered for 00:0B:E4:A6:6C:0D at :1.326:/org/bluez/agent/wizard
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:remote_features_information() hci0 status 0
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:remote_name_information() hci0 status 0
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() hci0 dba 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() kernel auth requirements = 0x03
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_request() Matching key not found
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:io_capa_request() hci0 IO capability request for 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_get_auth_info() hci0 dba 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_get_io_cap() initial authentication requirement is 0x03
+> > Sep 16 15:36:42 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_get_io_cap() final authentication requirement is 0x03
+> > Sep 16 15:36:44 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:io_capa_response() hci0 IO capability response from 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:44 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:user_confirm_request() hci0
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_get_auth_info() hci0 dba 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_user_confirm() confirm IO capabilities are 0x01
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_user_confirm() confirm authentication requirement is 0x03
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_user_confirm() remote IO capabilities are 0x03
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_user_confirm() remote authentication requirement is 0x02
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_user_confirm() auto accept of confirmation
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_confirm_reply() hci0 dba 00:0B:E4:A6:6C:0D success 1
+> > Sep 16 15:36:46 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:device_request_authentication() Requesting agent authentication for 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:simple_pairing_complete() hci0 status 0
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_simple_pairing_complete() status=00
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:link_key_notify() hci0 dba 00:0B:E4:A6:6C:0D type 4
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:hciops_get_auth_info() hci0 dba 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_link_key_notify() key type 0x04 old key type 0xff new key type 0x04
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_link_key_notify() local auth 0x03 and remote auth 0x02
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_link_key_notify() storing link key of type 0x04
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: plugins/hciops.c:auth_complete() hci0 status 0
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/event.c:btd_event_bonding_process_complete() status=00
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:btd_device_ref() 0x7f105947ef70: ref=2
+> > Sep 16 15:36:49 saboo bluetoothd[22025]: bluetoothd[22025]: src/agent.c:agent_release() Releasing agent :1.326, /org/bluez/agent/wizard
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:device_probe_drivers() Probing drivers for 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: serial/manager.c:serial_probe() path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: 0000111e-0000-1000-8000-00805f9b34fb
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: serial/port.c:create_serial_device() Registered interface org.bluez.Serial on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: serial/manager.c:serial_probe() path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: 00001108-0000-1000-8000-00805f9b34fb
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: input/manager.c:headset_probe() path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:btd_device_ref() 0x7f105947ef70: ref=3
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: input/device.c:input_device_new() Registered interface org.bluez.Input on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/adapter.c:adapter_get_device() 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:btd_device_ref() 0x7f105947ef70: ref=4
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/device.c:audio_device_register() Registered interface org.bluez.Audio on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/manager.c:handle_uuid() Found Headset record
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_init() Registered interface org.bluez.Headset on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/manager.c:handle_uuid() Found Handsfree record
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/manager.c:handle_uuid() Found Audio Sink
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:sink_init() Registered interface org.bluez.AudioSink on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/manager.c:handle_uuid() Found AV Target
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/control.c:control_init() Registered interface org.bluez.Control on path /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/manager.c:handle_uuid() Found AV Remote
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: src/device.c:btd_device_unref() 0x7f105947ef70: ref=3
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: HEADSET_STATE_DISCONNECTED -> HEADSET_STATE_CONNECTING
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_channel() Discovered Handsfree service on channel 1
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:rfcomm_connect() /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: Connecting to 00:0B:E4:A6:6C:0D channel 1
+> > Sep 16 15:36:50 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_connect_cb() /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: Connected to 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+BRSF=25
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:print_hf_features() HFP HF features: "EC and/or NR function" "Voice recognition activation" "Remote volume control"
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+CIND=?
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+CIND?
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+CMER=3, 0, 0, 1
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:event_reporting() Event reporting (CMER): mode=3, ind=1
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:hfp_slc_complete() HFP Service Level Connection established
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/telephony.c:telephony_device_connected() telephony-dummy: device 0x7f1059492390 connected
+> > Sep 16 15:36:51 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:headset_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: HEADSET_STATE_CONNECTING -> HEADSET_STATE_CONNECTED
+> > Sep 16 15:36:52 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+VGS=10
+> > Sep 16 15:36:52 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+VGM=10
+> > Sep 16 15:36:52 saboo bluetoothd[22025]: Badly formated or unrecognized command: AT+CSRSF=1,1,1,1,1,7
+> > Sep 16 15:36:52 saboo bluetoothd[22025]: bluetoothd[22025]: audio/headset.c:handle_event() Received AT+CSRSF=1,1,1,1,1,7
+> > Sep 16 15:36:52 saboo bluetoothd[22025]: bluetoothd[22025]: Badly formated or unrecognized command: AT+CSRSF=1,1,1,1,1,7
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_ref() 0x7f105947b330: ref=2
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_ref() 0x7f105947b330: ref=3
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:sink_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: SINK_STATE_DISCONNECTED -> SINK_STATE_CONNECTING
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_unref() 0x7f105947b330: ref=2
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_connect_cb() AVDTP: connected signaling channel to 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_connect_cb() AVDTP imtu=672, omtu=895
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/control.c:avctp_set_state() AVCTP Connecting
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() DISCOVER request succeeded
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_discover_resp() seid 1 type 1 media 0 in use 0
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_discover_resp() seid 2 type 1 media 0 in use 0
+> > Sep 16 15:36:53 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_discover_resp() seid 4 type 1 media 0 in use 0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() GET_CAPABILITIES request succeeded
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_get_capabilities_resp() seid 1 type 1 media 0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() GET_CAPABILITIES request succeeded
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_get_capabilities_resp() seid 2 type 1 media 0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() GET_CAPABILITIES request succeeded
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_get_capabilities_resp() seid 4 type 1 media 0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:discovery_complete() Discovery complete
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_ref() 0x7f105947b330: ref=3
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_ref() 0x7f105947e3f0: ref=1
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:a2dp_config() a2dp_config: selected SEP 0x7f1059476ad0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_ref() 0x7f105947e3f0: ref=2
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_set_configuration() 0x7f105947b330: int_seid=1, acp_seid=1
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_unref() 0x7f105947e3f0: ref=1
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() SET_CONFIGURATION request succeeded
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setconf_cfm() Source 0x7f1059476ad0: Set_Configuration_Cfm
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_sep_set_state() stream state changed: IDLE -> CONFIGURED
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/control.c:avctp_connect_cb() AVCTP: connected to 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:54 saboo kernel: [93473.952314] input: 00:0B:E4:A6:6C:0D as /devices/virtual/input/input31
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/control.c:init_uinput() AVRCP: uinput initialized for 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/control.c:avctp_set_state() AVCTP Connected
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() OPEN request succeeded
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_connect_cb() AVDTP: connected transport channel to 00:0B:E4:A6:6C:0D
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:handle_transport_connect() sk 29, omtu 895, send buffer size 63488
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:open_cfm() Source 0x7f1059476ad0: Open_Cfm
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:stream_setup_complete() Stream successfully created
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_unref() 0x7f105947e3f0: ref=0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_free() 0x7f105947e3f0
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_unref() 0x7f105947b330: ref=2
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_sep_set_state() stream state changed: CONFIGURED -> OPEN
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:sink_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: SINK_STATE_CONNECTING -> SINK_STATE_CONNECTED
+> > Sep 16 15:36:54 saboo bluetoothd[22025]: bluetoothd[22025]: audio/unix.c:server_cb() Accepted new client connection on unix socket (fd=30)
+> > Sep 16 15:36:54 saboo rsyslogd-2177: imuxsock begins to drop messages from pid 22025 due to rate-limiting
+> > Sep 16 22:36:54 saboo rtkit-daemon[1543]: Successfully made thread 22178 of process 1866 (/usr/bin/pulseaudio) owned by '500' RT at priority 5.
+> > Sep 16 15:36:55 saboo rsyslogd-2177: imuxsock lost 52 messages from pid 22025 due to rate-limiting
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:session_cb()
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_parse_resp() START request succeeded
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:start_cfm() Source 0x7f1059476ad0: Start_Cfm
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/unix.c:unix_ipc_sendmsg() Audio API: BT_RESPONSE -> BT_START_STREAM
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/unix.c:unix_ipc_sendmsg() Audio API: BT_RESPONSE -> BT_NEW_STREAM
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_unref() 0x7f105947e3f0: ref=0
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/a2dp.c:setup_free() 0x7f105947e3f0
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_unref() 0x7f105947b330: ref=3
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/avdtp.c:avdtp_sep_set_state() stream state changed: OPEN -> STREAMING
+> > Sep 16 15:36:55 saboo bluetoothd[22025]: bluetoothd[22025]: audio/sink.c:sink_set_state() State changed /org/bluez/22025/hci0/dev_00_0B_E4_A6_6C_0D: SINK_STATE_CONNECTED -> SINK_STATE_PLAYING
+> >
+> > Thanks,
+> > 	J
+> 
+> 
+> I tried to bisect this with inconclusive results.
+> 
+> Firstly, it was all working fine up until 13d39315 "Bluetooth: Map
+> sec_level to link key requirements".  This had a couple of known bugs
+> fixed with 6fdf658c "Bluetooth: Fix L2CAP security check" and 33060542
+> "Bluetooth: Fix L2CAP connection establishment".  When I cherry-picked
+> just those onto 13d39315 it all seems to work well again.
+> 
+> However, after that, it regresses again, and reconnection gets pretty
+> unreliable.  From bisection of a linearized history of the net/bluetooth
+> changes, it appears that 60b83f57 "Bluetooth: Ignore key unauthenticated
+> for high security" is at least part of the problem, and when I revert it
+> from the bluetooth branch it seems to help; but when I revert it from an
+> overall v3.1 linux.git head, it doesn't, so perhaps something else in
+> there is also causing a problem.
+> 
+> It seems clear that all the new stricter enforcement of security stuff
+> is upsetting my headphone's reconnection, but I've reached the limit of
+> how much I can diagnose this without some pointers, because I don't
+> really know anything about bluetooth.
+> 
+> How can I help fix this?
 
-     /*
-      * Get around the mlock fix/change in get_user_pages that forces
-      * the call to fail if the VM_IO bit is set in vma->vm_flags
-      *
-      * As of 2.6.16 kernels get_user_pages also fails when the
-      * new VM_PFNMAP bit in vm->flags is set. It is OK to
-      * reset this bit also as long as we return the bit to
-      * its original set condition.
-      */
+Can you send me the hcidump logs of both the working and not working
+scenarios? It helps a lot find issues.
 
-     VM_flags = 0;
-     vma = find_vma(current->mm, (unsigned long)pte_info.virt_addr);
-     VM_flags = (vma->vm_flags & (VM_IO | VM_PFNMAP));
-     vma->vm_flags &= (~VM_IO & ~VM_PFNMAP);
-
-     stat = get_user_pages(current, current->mm,
-                                      (unsigned long)pte_info.virt_addr,
-                                      1,       // one page
-                                      1,        // write access
-                                      1,        // force
-                                      &pages,   // page struct
-                                      NULL);    //
-
-     vma->vm_flags |= VM_flags;   // Set vm_flags back to the way we 
-found them
-
-     up_read(&current->mm->mmap_sem);
-
-     if (stat < 0) {
-             ret = -EFAULT;
-             goto out;
-     } else {
-             phys_addr = page_to_phys(pages);        // on x86 phys = bus
-             page_cache_release(pages);
-     }
-
-     pci_address = phys_addr;
-     pte_info.pcimsa = 0;         // We are running 32 bit
-     pte_info.pcilsa = pci_address;
-     if (PAGE_SIZE < 8192)   // MPX page size
-             pte_info.pagesize = PAGE_SIZE;
-     else
-             pte_info.pagesize = 8192;
-     if (copy_to_user((lcrs_pte_struct_t *) arg,
-                      &pte_info, sizeof(lcrs_pte_struct_t))) {
-             ret = -EFAULT;
-             goto out;
-     }
-
-
-We come into the above code with a virtual address (page aligned) of 
-either the rms memory page, via mmap, or our SHM memory page, using the 
-standard shm API. This has all worked just fine for years. And it still 
-does except for when we are using a more recent MB with an AMD chipset 
-and the data to/from the gpiohsd has to cross a pci-e bridge to get to 
-the rms memory or to our SHM memory. An example of that configuration 
-would be when the rms card is plugged into the MB and the gpiohsd is in 
-a regular PCI expansion rack and the expansion rack interface card is a 
-pci-e card plugged into a pci-e slot. It appears we are unable to cross 
-over pci-e bridges for some reason using the bus addresses obtained 
-using the method described above.
-
-We have no problem with this same configuration using a MB with an 
-nvidia chipset. I suspect it might have something to do with the the MB 
-that usines the AMD chipset having an IOMMU, but I really don't know for 
-sure. I've also read something in the AMD chipset docs about some type 
-of restrictions on peer to peer transfers but again I really have no 
-idea if this is related to why I'm having this problem.
-
-Any pointers from anyone (even an AMD guy) out there would again be 
-appreciated.
-
-Thanks and regards
-Mark
+	Gustavo
