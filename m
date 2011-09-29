@@ -1,161 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab1I2Vtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 17:49:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38008 "EHLO ogre.sisk.pl"
+	id S1755129Ab1I2WGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:06:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18383 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab1I2Vti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 17:49:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: PME via interrupt or SCI mechanism?
-Date: Thu, 29 Sep 2011 23:51:49 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <20110912171003.GA7939@xanatos> <201109292328.45375.rjw@sisk.pl> <201109292338.48690.rjw@sisk.pl>
-In-Reply-To: <201109292338.48690.rjw@sisk.pl>
+	id S1752062Ab1I2WGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 18:06:09 -0400
+Date: Thu, 29 Sep 2011 19:05:48 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+	sample type
+Message-ID: <20110929220548.GA17597@ghostprotocols.net>
+References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109292351.50176.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 29, 2011, Rafael J. Wysocki wrote:
-> On Thursday, September 29, 2011, Rafael J. Wysocki wrote:
-> > On Thursday, September 29, 2011, Sarah Sharp wrote:
-> > > On Thu, Sep 29, 2011 at 09:39:56PM +0200, Rafael J. Wysocki wrote:
-> > > > On Thursday, September 29, 2011, Sarah Sharp wrote:
-> > > > > On Thu, Sep 29, 2011 at 12:21:28AM +0200, Rafael J. Wysocki wrote:
-> > > > Please try the appended patch and check if you see the "Notification error
-> > > > for GPE" message (please keep your previous debug patches applied).
-> > > 
-> > > Do I need to have the ACPI debug_level or debug_layer set to anything in
-> > > particular to see this message?
-> > 
-> > No, I don't think so, but just in case please try the patch below instead
-> > of the previous one.
+Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
+> The event processing relies on all events having the same sample_type.
 > 
-> Actually, please don't, it's a BIOS-related issue after all.  Apparently,
-> wakeup from xHCD is not supported by the BIOS, because the DSDT defines
-> the _L0D method for GPE 0D (13), which is the following:
+> This is being checked when the session is being opened read only.
+> It also needs to be checked when we do record, since events could be
+> read during processing build IDs at the end of the record command.
 > 
->         Method (_L0D, 0, NotSerialized)
->         {
->             Notify (\_SB.PCI0.EHC1, 0x02)
->             Notify (\_SB.PCI0.EHC2, 0x02)
->             Notify (\_SB.PCI0.HDEF, 0x02)
->             Notify (\_SB.PCI0.GLAN, 0x02)
->         }
+> If we process events with different sample_type the processing might
+> skip some events or hang.
 > 
-> so it notifies some devices, but not the xHCD.
+> Following command hangs on my setup:
+>   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
+>    -e LLC-loads -- date '+%F'
 > 
-> We might work around this by doing what Matthew has suggested (ie. polling
-> all PCI and PCIe devices to check if they have PME pending) or perhaps
-> we can do something about this in ACPICA.
+> because hardware and tracepoint events have different sample type.
 > 
-> Still, the right fix is to put Notify () for the ACPI objects
-> corresponding to xHCD into the above method.
+> With the patch applied the record command displays
+> "Non matching sample_type" message and exits.
 
-Or to remove this method altogether (in which case our ACPICA code
-should take care of the notifications).
+That is way too cryptic :-\
 
-Below is a patch (untested!) that should help, but it's kind of
-suboptimal.  Nevertheless, please try if it works for you.
+What is that makes the sample type not match in this case? Can we make
+it match instead?
 
-Thanks,
-Rafael
+This is something to be properly fixed by _allowing_ non matching sample
+types, the evsel/evlist abstractions are getting we close but not there
+yet, multiple files in a perf.data/ directory are needed.
 
+Till then can you check if we can make it match or else just say that
+the mix of events is not yet supported, please collect them in different
+sessions or something along those lines?
 
----
- drivers/pci/pci.c |   57 +++++++++++++++++++-----------------------------------
- 1 file changed, 21 insertions(+), 36 deletions(-)
-
-Index: linux/drivers/pci/pci.c
-===================================================================
---- linux.orig/drivers/pci/pci.c
-+++ linux/drivers/pci/pci.c
-@@ -1458,19 +1458,6 @@ static void pci_pme_list_scan(struct wor
- }
- 
- /**
-- * pci_external_pme - is a device an external PCI PME source?
-- * @dev: PCI device to check
-- *
-- */
--
--static bool pci_external_pme(struct pci_dev *dev)
--{
--	if (pci_is_pcie(dev) || dev->bus->number == 0)
--		return false;
--	return true;
--}
--
--/**
-  * pci_pme_active - enable or disable PCI device's PME# function
-  * @dev: PCI device to handle.
-  * @enable: 'true' to enable PME# generation; 'false' to disable it.
-@@ -1480,6 +1467,7 @@ static bool pci_external_pme(struct pci_
-  */
- void pci_pme_active(struct pci_dev *dev, bool enable)
- {
-+	struct pci_pme_device *pme_dev;
- 	u16 pmcsr;
- 
- 	if (!dev->pm_cap)
-@@ -1503,31 +1491,28 @@ void pci_pme_active(struct pci_dev *dev,
- 	   hit, and the power savings from the devices will still be a
- 	   win. */
- 
--	if (pci_external_pme(dev)) {
--		struct pci_pme_device *pme_dev;
--		if (enable) {
--			pme_dev = kmalloc(sizeof(struct pci_pme_device),
--					  GFP_KERNEL);
--			if (!pme_dev)
--				goto out;
--			pme_dev->dev = dev;
--			mutex_lock(&pci_pme_list_mutex);
--			list_add(&pme_dev->list, &pci_pme_list);
--			if (list_is_singular(&pci_pme_list))
--				schedule_delayed_work(&pci_pme_work,
--						      msecs_to_jiffies(PME_TIMEOUT));
--			mutex_unlock(&pci_pme_list_mutex);
--		} else {
--			mutex_lock(&pci_pme_list_mutex);
--			list_for_each_entry(pme_dev, &pci_pme_list, list) {
--				if (pme_dev->dev == dev) {
--					list_del(&pme_dev->list);
--					kfree(pme_dev);
--					break;
--				}
-+	if (enable) {
-+		pme_dev = kmalloc(sizeof(struct pci_pme_device), GFP_KERNEL);
-+		if (!pme_dev)
-+			goto out;
-+
-+		pme_dev->dev = dev;
-+		mutex_lock(&pci_pme_list_mutex);
-+		list_add(&pme_dev->list, &pci_pme_list);
-+		if (list_is_singular(&pci_pme_list))
-+			schedule_delayed_work(&pci_pme_work,
-+					      msecs_to_jiffies(PME_TIMEOUT));
-+		mutex_unlock(&pci_pme_list_mutex);
-+	} else {
-+		mutex_lock(&pci_pme_list_mutex);
-+		list_for_each_entry(pme_dev, &pci_pme_list, list) {
-+			if (pme_dev->dev == dev) {
-+				list_del(&pme_dev->list);
-+				kfree(pme_dev);
-+				break;
- 			}
--			mutex_unlock(&pci_pme_list_mutex);
- 		}
-+		mutex_unlock(&pci_pme_list_mutex);
- 	}
- 
- out:
+- Arnaldo
