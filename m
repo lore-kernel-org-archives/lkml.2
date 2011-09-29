@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab1I2EVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 00:21:36 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:61051 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab1I2EVf (ORCPT
+	id S1752671Ab1I2EX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 00:23:27 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:43860 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab1I2EXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 00:21:35 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 29 Sep 2011 00:21:29 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
-In-reply-to: <1317243959-26383-3-git-send-email-sboyd@codeaurora.org>
-Message-id: <alpine.LFD.2.02.1109290012400.9106@xanadu.home>
-References: <1317243959-26383-1-git-send-email-sboyd@codeaurora.org>
- <1317243959-26383-3-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 29 Sep 2011 00:23:25 -0400
+Message-ID: <4E83F2A0.3090501@st.com>
+Date: Thu, 29 Sep 2011 09:52:56 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: Alim Akhtar <alim.akhtar@samsung.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/1] dmaengine/amba-pl08x: Add support for s3c64xx
+ DMAC
+References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com> <1317189007-23033-2-git-send-email-alim.akhtar@samsung.com> <4E82D0A1.8050203@st.com> <CAGOxZ53qZy+VUM65oK68W088QR=RgQ=cNxOCbO7_WESJesJaVQ@mail.gmail.com> <4E82EEE1.3020706@st.com> <CAGOxZ535KHUp6An2br0scU9HvCmg4OsnfCj7hWYq4iy+OEpO2Q@mail.gmail.com>
+In-Reply-To: <CAGOxZ535KHUp6An2br0scU9HvCmg4OsnfCj7hWYq4iy+OEpO2Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011, Stephen Boyd wrote:
-
-> Add support for DEBUG_LL on the 8660 and 8960 development boards.
-> While we're here, cleanup the uncompress.h code a bit.
+On 9/28/2011 5:24 PM, Alim Akhtar wrote:
+> I did Modified pl08x_cctl_bits(), but for some reason i reverted it back.
+> what i was doing something like returning just __retbits__ instead of
+> retbits |= tsize << PL080_CONTROL_TRANSFER_SIZE_SHIFT;
+> and doing the below for the __non-s3c__ controllers in the
+> pl08x_fill_lli_for_desc().
+> cctl |= 1 << PL080_CONTROL_TRANSFER_SIZE_SHIFT;
+> pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
 
-[...]
+One way out would be:
+Don't do retbits |= tsize << PL080_CONTROL_TRANSFER_SIZE_SHIFT in
+pl08x_cctl_bits() and do this conditionally in pl08x_fill_lli_for_desc().
+This needs adding tsize argument in fill_lli_**() routine and removing it
+from cctl_bits().
 
->  	.macro	senduart,rd,rx
-> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> +	@ Clear TX_READY by writing to the UARTDM_CR register
-> +	mov	r12, #0x300
-> +	str	r12, [\rx, #0x10]
-> +	@ Write 0x1 to NCF register
-> +	mov 	r12, #0x1
-> +	str	r12, [\rx, #0x40]
-> +	@ UARTDM reg. Read to induce delay
-> +	ldr	r12, [\rx, #0x08]
-> +	@ Write the 1 character to UARTDM_TF
-> +	str	\rd, [\rx, #0x70]
+Probably this is what you were mentioning.
 
-This is a really bad idea to pick a register (r12) when the calling code 
-is completely unaware of that.  This _will_ break on you someday.
-
-Except for the last line, why didn't you simply fold this code into the 
-waituart macro instead?
-
-
-Nicolas
+-- 
+viresh
