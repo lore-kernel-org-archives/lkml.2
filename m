@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab1I2X05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:26:57 -0400
-Received: from claw.goop.org ([74.207.240.146]:43183 "EHLO claw.goop.org"
+	id S932259Ab1I2X07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:26:59 -0400
+Received: from claw.goop.org ([74.207.240.146]:43192 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932171Ab1I2X0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:26:51 -0400
+	id S932190Ab1I2X0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:26:52 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 5/8] mips/jump_label: add arch_jump_label_transform_early()
-Date: Thu, 29 Sep 2011 16:26:35 -0700
-Message-Id: <9f95a611c3b317f412f77ae06753752951afd38b.1317338254.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC 7/8] s390/jump-label: add arch_jump_label_transform_early()
+Date: Thu, 29 Sep 2011 16:26:37 -0700
+Message-Id: <b1d87557dc3001031ee8d7f69ee97b90cecba6aa.1317338254.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.2
 In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
@@ -33,61 +33,82 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 This allows jump-label entries to be modified early, in a pre-SMP
 environment.
 
-XXX TODO: make sure idling CPUs flush their icaches before continuing
-in case this modifies something that's adjacent to their init-idle loops.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: David Daney <david.daney@cavium.com>
+Cc: Jan Glauber <jang@linux.vnet.ibm.com>
 ---
- arch/mips/kernel/jump_label.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
+ arch/s390/kernel/jump_label.c |   49 +++++++++++++++++++++++++----------------
+ 1 files changed, 30 insertions(+), 19 deletions(-)
 
-diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
-index 6001610..ddc9a65 100644
---- a/arch/mips/kernel/jump_label.c
-+++ b/arch/mips/kernel/jump_label.c
-@@ -20,8 +20,8 @@
+diff --git a/arch/s390/kernel/jump_label.c b/arch/s390/kernel/jump_label.c
+index 44cc06b..6001228 100644
+--- a/arch/s390/kernel/jump_label.c
++++ b/arch/s390/kernel/jump_label.c
+@@ -18,23 +18,12 @@ struct insn {
+ } __packed;
  
- #define J_RANGE_MASK ((1ul << 28) - 1)
+ struct insn_args {
+-	unsigned long *target;
+-	struct insn *insn;
+-	ssize_t size;
++	struct jump_entry *entry;
++	enum jump_label_type type;
+ };
  
--void arch_jump_label_transform(struct jump_entry *e,
+-static int __arch_jump_label_transform(void *data)
+-{
+-	struct insn_args *args = data;
+-	int rc;
+-
+-	rc = probe_kernel_write(args->target, args->insn, args->size);
+-	WARN_ON_ONCE(rc < 0);
+-	return 0;
+-}
+-
+-void arch_jump_label_transform(struct jump_entry *entry,
 -			       enum jump_label_type type)
-+static void __jump_label_transform(struct jump_entry *e,
++static void __jump_label_transform(struct jump_entry *entry,
 +				   enum jump_label_type type)
  {
- 	union mips_instruction insn;
- 	union mips_instruction *insn_p =
-@@ -40,15 +40,28 @@ void arch_jump_label_transform(struct jump_entry *e,
- 		insn.word = 0; /* nop */
+ 	struct insn_args args;
+ 	struct insn insn;
+@@ -49,11 +38,33 @@ void arch_jump_label_transform(struct jump_entry *entry,
+ 		insn.offset = 0;
  	}
  
--	get_online_cpus();
--	mutex_lock(&text_mutex);
- 	*insn_p = insn;
- 
- 	flush_icache_range((unsigned long)insn_p,
- 			   (unsigned long)insn_p + sizeof(*insn_p));
+-	args.target = (void *) entry->code;
+-	args.insn = &insn;
+-	args.size = JUMP_LABEL_NOP_SIZE;
++	rc = probe_kernel_write(entry->code, &insn, JUMP_LABEL_NOP_SIZE);
++	WARN_ON_ONCE(rc < 0);
 +}
 +
-+void arch_jump_label_transform(struct jump_entry *e,
++static int __sm_arch_jump_label_transform(void *data)
++{
++	struct insn_args *args = data;
++
++	__jump_label_transform(args->entry, args->type);
++	return 0;
++}
+ 
+-	stop_machine(__arch_jump_label_transform, &args, NULL);
++void arch_jump_label_transform(struct jump_entry *entry,
 +			       enum jump_label_type type)
 +{
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
++	struct insn_args args;
 +
-+	__jump_label_tranform(e, type);
- 
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
- }
- 
-+void __init arch_jump_label_transform_early(struct jump_entry *e,
-+					    enum jump_label_type type)
-+{
-+	__jump_label_tranform(e, type);
++	args.entry = entry;
++	args.type = type;
++
++	stop_machine(__sm_arch_jump_label_transform, &args, NULL);
 +}
 +
- #endif /* HAVE_JUMP_LABEL */
++void __init arch_jump_label_transform_early(struct jump_entry *entry,
++					    enum jump_label_type type)
++{
++	__jump_label_transform(entry, type);
+ }
+ 
+ #endif
 -- 
 1.7.6.2
 
