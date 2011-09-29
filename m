@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1I2OMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:12:01 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:38294 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751133Ab1I2OL7 (ORCPT
+	id S1753788Ab1I2OSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:18:08 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58488 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab1I2OSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:11:59 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Hx13eyQVM1kQ1fSSNfAJNSWgZO49Tk9lfgFDMFVKlUPD73K
- cJ8j1o8zBAPyKh5CsfCd_vUEZEZF_vL3PKPzmIV6_Rx_.wryxATZhhfza9sR
- fqev3THQ1i75c43DGdCSSTeVqjZ9UZ8XfCF9hUyFv..xGKCdIP8NdH8r7QUK
- OqJonuLX_8OUt6woKgIpbX_sm_50rINSOdYflmOo37jiwBCdn4ClJPJ5b5Ib
- 8ykIKW4A2kAQ1ohN6KI0kGle5Y7ZPPXU9GtZ2mjJnZx05iepYamMqOepP8Xm
- Kz0x4d8wmEoWbQcN5HXHRdeoB4AEV5m5djD0037tkUXR20crn9hMY8zGvdwV
- YNEz_gZYLSQFVB4G1z7nZyBDddch6.i8XMj8srdHeXR9wW0tsox6OYXGqkUs
- qt79KFvU3y360vHhl
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 29 Sep 2011 09:11:54 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: Valdis.Kletnieks@vt.edu
-cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        kernel-hardening@lists.openwall.com, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-In-Reply-To: <30918.1317257024@turing-police.cc.vt.edu>
-Message-ID: <alpine.DEB.2.00.1109290911080.9382@router.home>
-References: <20110927175453.GA3393@albatros> <20110927175642.GA3432@albatros> <20110927193810.GA5416@albatros> <alpine.DEB.2.00.1109271459180.13797@router.home> <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com> <alpine.DEB.2.00.1109271546320.13797@router.home>
-            <1317241905.16137.516.camel@nimitz> <30918.1317257024@turing-police.cc.vt.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 29 Sep 2011 10:18:06 -0400
+X-IronPort-AV: E=Sophos;i="4.68,461,1312156800"; 
+   d="scan'208";a="8131637"
+Subject: Re: [Xen-devel] [PATCH v5 2/2] xen: modify kernel mappings
+ corresponding to granted pages
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Sep 2011 15:18:04 +0100
+In-Reply-To: <20110929135558.GA31321@phenom.oracle.com>
+References: <alpine.DEB.2.00.1109291148340.3519@kaball-desktop>
+	 <1317293876-23891-2-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20110929135558.GA31321@phenom.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317305884.26672.190.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011, Valdis.Kletnieks@vt.edu wrote:
+On Thu, 2011-09-29 at 14:55 +0100, Konrad Rzeszutek Wilk wrote:
+> >  /* Xen machine address */
+> > @@ -31,8 +32,10 @@ typedef struct xpaddr {
+> >  #define INVALID_P2M_ENTRY	(~0UL)
+> >  #define FOREIGN_FRAME_BIT	(1UL<<(BITS_PER_LONG-1))
+> >  #define IDENTITY_FRAME_BIT	(1UL<<(BITS_PER_LONG-2))
+> > +#define GRANT_FRAME_BIT	(1UL<<(BITS_PER_LONG-3))
+> 
+> I am going to change that to (BITS_PER_LONG-1) as we aren't
+> using the P2M. (and add that comment in the file).
 
-> > We could also give the imprecise numbers to unprivileged
-> > users and let privileged ones see the page-level ones.
->
-> That also sounds like a good idea.
+You should also move it away from/out of the "/**** MACHINE <-> PHYSICAL
+CONVERSION MACROS ****/" section, otherwise it's just confusing.
 
-Uhh... Another source of confusions for the uninitiated.
+The associated GRANT_FRAME macro seems to be unused.
+
+But what is that bit in page->private actually used for? This patch adds
+it in m2p_add_override and masks it off in m2p_find_override, but
+doesn't otherwise appear to use it.
+
+Ian.
 
