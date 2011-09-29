@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab1I2UpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:45:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:33282 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239Ab1I2UpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:45:18 -0400
-Date: Thu, 29 Sep 2011 22:45:05 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Con Kolivas <kernel@kolivas.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: BFS cpu scheduler and skip list implementation
-Message-ID: <20110929204505.GA8810@1wt.eu>
-References: <201109240945.58879.kernel@kolivas.org> <201109241214.21458.kernel@kolivas.org> <20110924073522.GV7761@one.firstfloor.org> <201109241838.06941.kernel@kolivas.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757975Ab1I2UsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:48:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60763 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756898Ab1I2UsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 16:48:18 -0400
+Date: Thu, 29 Sep 2011 16:47:52 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Pavel Roskin <proski@gnu.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the moduleh tree with the net tree
+Message-ID: <20110929204752.GA2808@windriver.com>
+References: <20110928163406.843e4be56b42dca280d85489@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <201109241838.06941.kernel@kolivas.org>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20110928163406.843e4be56b42dca280d85489@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Con,
+[linux-next: manual merge of the moduleh tree with the net tree] On 28/09/2011 (Wed 16:34) Stephen Rothwell wrote:
 
-On Sat, Sep 24, 2011 at 06:38:06PM +1000, Con Kolivas wrote:
-> That's great then. I'm sure we'd explode in other weird and wonderful ways 
-> before the CPU load ever got to 64k. Plus all that would happen is that it 
-> would start degenerating from O(log n) insertion to O(n) as the number way 
-> surpassed 64k. The number 16 for levels was simply chosen as the one 
-> originally used by William Pugh in his sample code, but seems to be ample for 
-> this application.
+> Hi Paul,
+> 
+> Today's linux-next merge of the moduleh tree got a conflict in
+> drivers/net/wireless/ath/ath5k/debug.c between commit 931be260ed54
+> ("ath5k: clean up base.h and its use") from the net tree and commits
+> 9ec3f961e31a ("drivers/net: Add export.h to files using
+> EXPORT_SYMBOL/THIS_MODULE") and 0cccb17382f1 ("drivers/net: Add
+> moduleparam.h to drivers as required") from the moduleh tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.  (I am
+> pretty sure that this file doesn't need module.h, but not completely).
 
-If you're interested, during the early CFS benchmarks a few years ago, I
-reworked my old binary tree code to make it kernel-compatible. By this, I
-mean that it never needs to allocate memory, it's used just like rbtrees
-or kernel lists, by having a node in your structure and inserting it from
-the root of a tree. It offers the following features :
-  - O(log(N)) insertion/lookup
-  - O(1) removal
-  - O(1) next/prev walk
-  - 20 bytes per node on 32-bit pointers, 36-bytes on 64-bit pointers, plus
-    the key
-  - supports unique or multiple occurrences of the same key (walked in
-    insertion order and classed in trees)
-  - supports 32/64 bit signed/unsigned integers, strings and memory blocks
-  - supports prefixes (eg. to insert IP addresses with masks)
-  - supports lookup of greater than or equal to, less than or equal to.
+The conflict is gone, but you were correct in your original assessment
+that the module.h was no longer needed.  I've added this to the
+post-merge queue of patches.
 
-I replaced the rbtree that was used in haproxy's scheduler with this new
-code and measured a noticeable performance improvement, since haproxy
-does insert/next/remove a lot of times a second, and not having to balance
-a tree saves a huge number of cycles.
+Thanks,
+Paul.
 
-I remember having conducted some tests on CFS a log time ago with it, but
-the only cases where I observed a gain was when running insane amounts of
-tasks at insane context switching rates, which was biased and irrealistic.
-So I stopped trying to put it into the kernel at that time.
+>From 13a6768b382b3d2f96b9caa9fa6df1f2f7f3aeb6 Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 29 Sep 2011 16:37:30 -0400
+Subject: [PATCH] drivers/net: wireless/ath/ath5k/debug.c does not need
+ module.h
 
-Maybe for your usage it might bring some value. Take a look at the code
-here if you want, it's not too much documented but still enough to start
-with it. There are a few examples that can help get it right. I know that
-a few people use it for their own projects and they did not ask for help :-)
+It only has module_param and EXPORT_SYMBOL, so now that export.h
+is in scope at the same time as the recent ath5k update, we can
+delete this module.h include.
 
-    http://git.1wt.eu/web?p=ebtree.git;a=summary
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Cheers,
-Willy
+diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/ath/ath5k/debug.c
+index d2bdd90..f542b41 100644
+--- a/drivers/net/wireless/ath/ath5k/debug.c
++++ b/drivers/net/wireless/ath/ath5k/debug.c
+@@ -59,8 +59,6 @@
+  */
+ #include <linux/export.h>
+ #include <linux/moduleparam.h>
+-
+-#include <linux/module.h>
+ #include <linux/seq_file.h>
+ #include <linux/list.h>
+ #include "debug.h"
+-- 
+1.7.6
 
