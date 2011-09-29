@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab1I2LAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 07:00:15 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58873 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751555Ab1I2LAO (ORCPT
+	id S1754186Ab1I2LCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 07:02:31 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33744 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752768Ab1I2LCa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 07:00:14 -0400
-Date: Thu, 29 Sep 2011 12:00:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Dilan Lee <dilee@nvidia.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110929110011.GL3697@opensource.wolfsonmicro.com>
-References: <20110922184614.25419.84606.stgit@ponder>
- <20110926152634.GN2946@opensource.wolfsonmicro.com>
- <CACxGe6swdnhk_GCAv3siSx4kxNQXmCLDbwBFjsX5VPNfCBc2Mg@mail.gmail.com>
- <201109271550.36427.arnd@arndb.de>
- <20110927210849.GD3994@ponder.secretlab.ca>
- <20110927221308.GA2674@opensource.wolfsonmicro.com>
- <20110928231410.GF2838@ponder.secretlab.ca>
+	Thu, 29 Sep 2011 07:02:30 -0400
+Subject: [PATCH 0/4] Kmemleak patches for -next
+To: linux-kernel@vger.kernel.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Thu, 29 Sep 2011 12:02:17 +0100
+Message-ID: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-118-g0cb4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928231410.GF2838@ponder.secretlab.ca>
-X-Cookie: You will be misunderstood by everyone.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Sep 2011 11:02:25.0473 (UTC) FILETIME=[454CE310:01CC7E97]
+X-MC-Unique: 111092912022802101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 06:14:10PM -0500, Grant Likely wrote:
+Hi,
 
-> For your question, I still think it is the driver that gets to make
-> the decision.  If it can proceed without a resource, then it should go
-> ahead and succeed on the probe, and then arrange to either be notified
-> of new gpio controller (or whatever) registrations, or poll for the
-> resource to be set up.
+This is a set of kmemleak improvements which I would like to push to my
+for-next branch. The second patch touches the percpu code, so it needs
+ack from the corresponding maintainers (cc'ed).
 
-Right, I do tend to agree.  This is something we'll have to bear in mind
-when deploying this stuff - drivers that are doing this sort of stuff
-are going to get surprised.
+Thanks.
+
+
+Catalin Marinas (4):
+      kmemleak: Show where early_log issues come from
+      kmemleak: Handle percpu memory allocation
+      kmemleak: When the early log buffer is exceeded, report the actual number
+      kmemleak: Report previously found leaks even after an error
+
+
+ mm/kmemleak.c |   80 ++++++++++++++++++++++++++++++++++++++++-----------------
+ mm/percpu.c   |   22 +++++++++++++++-
+ 2 files changed, 77 insertions(+), 25 deletions(-)
+
+-- 
+Catalin
+
