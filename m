@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab1I2Uoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:44:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3155 "EHLO mga01.intel.com"
+	id S1757734Ab1I2UpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:45:20 -0400
+Received: from 1wt.eu ([62.212.114.60]:33282 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781Ab1I2Uon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:44:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,463,1312182000"; 
-   d="scan'208";a="72280553"
-Date: Thu, 29 Sep 2011 13:44:40 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: PME via interrupt or SCI mechanism?
-Message-ID: <20110929204440.GA6043@xanatos>
-References: <20110912171003.GA7939@xanatos>
- <201109290021.28407.rjw@sisk.pl>
- <20110929182327.GA4979@xanatos>
- <201109292139.56626.rjw@sisk.pl>
-MIME-Version: 1.0
+	id S1755239Ab1I2UpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 16:45:18 -0400
+Date: Thu, 29 Sep 2011 22:45:05 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: BFS cpu scheduler and skip list implementation
+Message-ID: <20110929204505.GA8810@1wt.eu>
+References: <201109240945.58879.kernel@kolivas.org> <201109241214.21458.kernel@kolivas.org> <20110924073522.GV7761@one.firstfloor.org> <201109241838.06941.kernel@kolivas.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201109292139.56626.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201109241838.06941.kernel@kolivas.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 09:39:56PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, September 29, 2011, Sarah Sharp wrote:
-> > On Thu, Sep 29, 2011 at 12:21:28AM +0200, Rafael J. Wysocki wrote:
-> Please try the appended patch and check if you see the "Notification error
-> for GPE" message (please keep your previous debug patches applied).
+Hi Con,
 
-Do I need to have the ACPI debug_level or debug_layer set to anything in
-particular to see this message?  I don't see this message in dmesg with
-debug_level and debug_layer set to 0x0.
+On Sat, Sep 24, 2011 at 06:38:06PM +1000, Con Kolivas wrote:
+> That's great then. I'm sure we'd explode in other weird and wonderful ways 
+> before the CPU load ever got to 64k. Plus all that would happen is that it 
+> would start degenerating from O(log n) insertion to O(n) as the number way 
+> surpassed 64k. The number 16 for levels was simply chosen as the one 
+> originally used by William Pugh in his sample code, but seems to be ample for 
+> this application.
 
-Sarah Sharp
+If you're interested, during the early CFS benchmarks a few years ago, I
+reworked my old binary tree code to make it kernel-compatible. By this, I
+mean that it never needs to allocate memory, it's used just like rbtrees
+or kernel lists, by having a node in your structure and inserting it from
+the root of a tree. It offers the following features :
+  - O(log(N)) insertion/lookup
+  - O(1) removal
+  - O(1) next/prev walk
+  - 20 bytes per node on 32-bit pointers, 36-bytes on 64-bit pointers, plus
+    the key
+  - supports unique or multiple occurrences of the same key (walked in
+    insertion order and classed in trees)
+  - supports 32/64 bit signed/unsigned integers, strings and memory blocks
+  - supports prefixes (eg. to insert IP addresses with masks)
+  - supports lookup of greater than or equal to, less than or equal to.
 
-> ---
->  drivers/acpi/acpica/evgpe.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> Index: linux/drivers/acpi/acpica/evgpe.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/acpica/evgpe.c
-> +++ linux/drivers/acpi/acpica/evgpe.c
-> @@ -523,10 +523,14 @@ static void ACPI_SYSTEM_XFACE acpi_ev_as
->  				ACPI_NOTIFY_DEVICE_WAKE);
->  
->  		notify_object = local_gpe_event_info->dispatch.device.next;
-> -		while (ACPI_SUCCESS(status) && notify_object) {
-> +		while (notify_object) {
->  			status = acpi_ev_queue_notify_request(
->  					notify_object->node,
->  					ACPI_NOTIFY_DEVICE_WAKE);
-> +			if (ACPI_FAILURE(status))
-> +				ACPI_ERROR((AE_INFO,
-> +					"Notification error for GPE 0x%X",
-> +					local_gpe_event_info->gpe_number));
->  			notify_object = notify_object->next;
->  		}
->  
+I replaced the rbtree that was used in haproxy's scheduler with this new
+code and measured a noticeable performance improvement, since haproxy
+does insert/next/remove a lot of times a second, and not having to balance
+a tree saves a huge number of cycles.
+
+I remember having conducted some tests on CFS a log time ago with it, but
+the only cases where I observed a gain was when running insane amounts of
+tasks at insane context switching rates, which was biased and irrealistic.
+So I stopped trying to put it into the kernel at that time.
+
+Maybe for your usage it might bring some value. Take a look at the code
+here if you want, it's not too much documented but still enough to start
+with it. There are a few examples that can help get it right. I know that
+a few people use it for their own projects and they did not ask for help :-)
+
+    http://git.1wt.eu/web?p=ebtree.git;a=summary
+
+Cheers,
+Willy
+
