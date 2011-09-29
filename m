@@ -1,115 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab1I2SfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:35:08 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:35733
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754414Ab1I2ScR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:32:17 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 10/24] Staging: hv: mousevsc: Cleanup error handling
-Date: Thu, 29 Sep 2011 11:54:50 -0700
-Message-Id: <1317322504-9788-10-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317322504-9788-1-git-send-email-kys@microsoft.com>
-References: <1317322456-9747-1-git-send-email-kys@microsoft.com>
- <1317322504-9788-1-git-send-email-kys@microsoft.com>
+	id S1757281Ab1I2Sgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:36:44 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59861 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab1I2Sgm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 14:36:42 -0400
+Subject: Re: [PATCH 02/11] virtio-pci: add PM notification handlers for
+ restore, freeze, thaw, poweroff
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+In-Reply-To: <9f89dedd5e4e77c9244afde0ce22c1216a35c193.1317309123.git.amit.shah@redhat.com>
+References: <cover.1317309123.git.amit.shah@redhat.com>
+	 <9f89dedd5e4e77c9244afde0ce22c1216a35c193.1317309123.git.amit.shah@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 29 Sep 2011 21:36:38 +0300
+Message-ID: <1317321398.21918.7.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup error handling in this driver; use standard Linux error codes.
+On Thu, 2011-09-29 at 20:55 +0530, Amit Shah wrote:
+> Handle restore and freeze notification from the PM core.  Expose these
+> to individual virtio drivers that can quiesce and resume vq operations.
+> 
+> These functions also save device-specific data so that the device can be
+> put in pre-suspend state after resume.
+> 
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> ---
+>  drivers/virtio/virtio_pci.c |   41 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/virtio.h      |    4 ++++
+>  2 files changed, 45 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index 6947620..cc70662 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -55,6 +55,10 @@ struct virtio_pci_device
+>  	unsigned msix_vectors;
+>  	/* Vectors allocated, excluding per-vq vectors if any */
+>  	unsigned msix_used_vectors;
+> +
+> +	/* Status saved during hibernate/restore */
+> +	u8 saved_status;
+> +
+>  	/* Whether we have vector per vq */
+>  	bool per_vq_vectors;
+>  };
+> @@ -703,9 +707,46 @@ static int virtio_pci_resume(struct device *dev)
+>  	return 0;
+>  }
+>  
+> +static int virtio_pci_freeze(struct device *dev)
+> +{
+> +	struct pci_dev *pci_dev = to_pci_dev(dev);
+> +	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+> +	struct virtio_driver *drv;
+> +
+> +	drv = container_of(vp_dev->vdev.dev.driver,
+> +			   struct virtio_driver, driver);
+> +
+> +	vp_dev->saved_status = vp_get_status(&vp_dev->vdev);
+> +	if (drv && drv->freeze)
+> +		return drv->freeze(&vp_dev->vdev);
+> +
+> +	return 0;
+> +}
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+After drv->freeze() completes, the vq is freed from guest memory, but is
+there anything that prevents from the device to keep writing into that
+vq?
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 8dd902a..fc1f3e6 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -569,7 +569,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 
- 	if (!input_dev) {
- 		pr_err("unable to get input device...device being destroyed?");
--		return -1;
-+		return -ENODEV;
- 	}
- 
- 
-@@ -612,7 +612,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 	if (!response->response.approved) {
- 		pr_err("synthhid protocol request failed (version %d)",
- 		       SYNTHHID_INPUT_VERSION);
--		ret = -1;
-+		ret = -ENODEV;
- 		goto cleanup;
- 	}
- 
-@@ -629,7 +629,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 	if (!input_dev->dev_info_status)
- 		pr_info("**** input channel up and running!! ****");
- 	else
--		ret = -1;
-+		ret = -ENOMEM;
- 
- cleanup:
- 	put_input_device(device);
-@@ -694,10 +694,8 @@ static int mousevsc_on_device_add(struct hv_device *device,
- 
- 	input_dev = alloc_input_device(device);
- 
--	if (!input_dev) {
--		ret = -1;
--		goto cleanup;
--	}
-+	if (!input_dev)
-+		return -ENOMEM;
- 
- 	input_dev->init_complete = false;
- 
-@@ -714,7 +712,7 @@ static int mousevsc_on_device_add(struct hv_device *device,
- 	if (ret != 0) {
- 		pr_err("unable to open channel: %d", ret);
- 		free_input_device(input_dev);
--		return -1;
-+		return ret;
- 	}
- 
- 	pr_info("InputVsc channel open: %d", ret);
-@@ -743,7 +741,6 @@ static int mousevsc_on_device_add(struct hv_device *device,
- 
- 	input_dev->init_complete = true;
- 
--cleanup:
- 	return ret;
- }
- 
-@@ -789,16 +786,10 @@ static int mousevsc_on_device_remove(struct hv_device *device)
- static int mousevsc_probe(struct hv_device *dev,
- 			const struct hv_vmbus_device_id *dev_id)
- {
--	int ret = 0;
--
- 
- 	/* Call to the vsc driver to add the device */
--	ret = mousevsc_on_device_add(dev, NULL);
-+	return mousevsc_on_device_add(dev, NULL);
- 
--	if (ret != 0)
--		return -1;
--
--	return 0;
- }
- 
- static int mousevsc_remove(struct hv_device *dev)
+Shouldn't we set status to '0' before we free vqs?
+
 -- 
-1.7.4.1
+
+Sasha.
 
