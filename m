@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab1I2Pwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:52:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29184 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757125Ab1I2Pw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:52:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,461,1312182000"; 
-   d="scan'208";a="56989750"
-Date: Thu, 29 Sep 2011 17:55:20 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Eric Miao <eric.miao@canonical.com>
-Cc: ashish.jangam@kpitcummins.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dajun <dajun.chen@diasemi.com>, sameo@openedhand.com,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
-Message-ID: <20110929155520.GF4118@sortiz-mobl>
-References: <1316435596.344.132.camel@L-0761.kpit.com>
- <CAMPhdO-jiY+JmgYFSO2JKiCO5KxN3L1YqA_WoOY+rnwkf3cumA@mail.gmail.com>
+	id S1757171Ab1I2P4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:56:45 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39607 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab1I2P4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:56:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMPhdO-jiY+JmgYFSO2JKiCO5KxN3L1YqA_WoOY+rnwkf3cumA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKPcRGr3EzjS2es6HniuQziEivpsfH2r=d_Y=nkrsFW59g6xSw@mail.gmail.com>
+References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
+	<CAKPcRGr3EzjS2es6HniuQziEivpsfH2r=d_Y=nkrsFW59g6xSw@mail.gmail.com>
+Date: Thu, 29 Sep 2011 17:56:43 +0200
+Message-ID: <CAKPcRGpPG2Z_tMQFHz8fpBLhLO4dx58AVhYWmPdZ_0pV7pVK6A@mail.gmail.com>
+Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support
+ MMC-like devices as resume file
+From: Luca Tettamanti <kronos.it@gmail.com>
+To: Barry Song <Barry.Song@csr.com>
+Cc: pavel@ucw.cz, rjw@sisk.pl, frank.hofmann@tomtom.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Barry Song <Baohua.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On Thu, Sep 29, 2011 at 5:47 PM, Luca Tettamanti <kronos.it@gmail.com> wrote:
+> On Thu, Sep 29, 2011 at 11:29 AM, Barry Song <Barry.Song@csr.com> wrote:
+>> From: Barry Song <baohua.song@csr.com>
+>>
+>> Some devices like mmc are async detected very slow. For example,
+>> drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
+>> mmc partitions then add disk.
+>>
+>> we do have wait_for_device_probe and scsi_complete_async_scans
+>> before calling swsusp_check, but it is not enough to wait mmc.
+>>
+>> This patch adds resumewait kernel param just like rootwait so
+>> that we have enough time to wait mmc ready. The differene is
+>> here we wait for resume partition but rootwait waits for rootfs
+>> partition.
+>
+> I assume that such a device would need "rootwait" to boot in the first
+> place; why don't you "overload" the param to also enable waiting in
+> the resume path?
 
-On Mon, Sep 26, 2011 at 05:12:48PM +0800, Eric Miao wrote:
-> On Mon, Sep 19, 2011 at 8:33 PM, ashishj3 <ashish.jangam@kpitcummins.com> wrote:
-> > The DA9052/53 is a highly integrated PMIC subsystem with supply domain flexibility
-> > to support wide range of high performance application.
-> >
-> > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-> > control and other functionality.
-> >
-> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> 
-> Looks good to me.
-> 
-> Acked-by: Eric Miao <eric.miao@linaro.org>
+And in case that makes sense, it might be worthwhile to refactor a
+common helper to be also used in do_mounts.c, e.g.
+dev_t wait_for_device(char *name)
 
-I was not cc'ed on the thread, so I don't even have the patch to review it.
-Would you mind sending it to me ?
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+L
