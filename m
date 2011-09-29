@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab1I2P1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:27:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252Ab1I2P1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:27:00 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH 10/11] virtio: balloon: Move out vq initialization into separate function
-Date: Thu, 29 Sep 2011 20:56:06 +0530
-Message-Id: <c1aefbb62c7447563164f9dcbd00ee0bfb6d11b3.1317309123.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1317309123.git.amit.shah@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1317309123.git.amit.shah@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
+	id S932372Ab1I2P2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:28:15 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14824 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab1I2P2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:28:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 29 Sep 2011 08:27:55 -0700
+Date: Thu, 29 Sep 2011 18:27:52 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v5 2/3] arm/tegra: add support for ventana pinmuxing
+Message-ID: <20110929152752.GO21166@tbergstrom-lnx.Nvidia.com>
+References: <1317248978-10829-1-git-send-email-pdeschrijver@nvidia.com>
+ <1317248978-10829-3-git-send-email-pdeschrijver@nvidia.com>
+ <20110929092951.GE23944@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110929092951.GE23944@n2100.arm.linux.org.uk>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe and PM restore functions will share this code.
+On Thu, Sep 29, 2011 at 11:29:51AM +0200, Russell King - ARM Linux wrote:
+> On Thu, Sep 29, 2011 at 01:29:35AM +0300, Peter De Schrijver wrote:
+> > diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+> > index f11b910..91a07e1 100644
+> > --- a/arch/arm/mach-tegra/Makefile
+> > +++ b/arch/arm/mach-tegra/Makefile
+> > @@ -31,6 +31,7 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
+> >  
+> >  obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
+> >  obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
+> > +obj-${CONFIG_MACH_TEGRA_DT}             += board-seaboard-pinmux.o
+> 
+> Since when did Tegra start using braces instead of parens in its Makefile?
+> I note some of Tegra's makefile is using braces and some of it parens.
+> What's the reason for this alternative style to the rest of kbuild?
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/virtio/virtio_balloon.c |   48 ++++++++++++++++++++++++--------------
- 1 files changed, 30 insertions(+), 18 deletions(-)
+I have no idea. I just followed the style used for the other CONFIG_MACH_TEGRA_DT entries. Colin or Olof, any idea?
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index e058ace..571d443 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -274,32 +274,21 @@ static int balloon(void *_vballoon)
- 	return 0;
- }
- 
--static int virtballoon_probe(struct virtio_device *vdev)
-+static int init_vqs(struct virtio_balloon *vb)
- {
--	struct virtio_balloon *vb;
- 	struct virtqueue *vqs[3];
- 	vq_callback_t *callbacks[] = { balloon_ack, balloon_ack, stats_request };
- 	const char *names[] = { "inflate", "deflate", "stats" };
- 	int err, nvqs;
- 
--	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
--	if (!vb) {
--		err = -ENOMEM;
--		goto out;
--	}
--
--	INIT_LIST_HEAD(&vb->pages);
--	vb->num_pages = 0;
--	init_waitqueue_head(&vb->config_change);
--	vb->vdev = vdev;
--	vb->need_stats_update = 0;
--
--	/* We expect two virtqueues: inflate and deflate,
--	 * and optionally stat. */
-+	/*
-+	 * We expect two virtqueues: inflate and deflate, and
-+	 * optionally stat.
-+	 */
- 	nvqs = virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_STATS_VQ) ? 3 : 2;
--	err = vdev->config->find_vqs(vdev, nvqs, vqs, callbacks, names);
-+	err = vb->vdev->config->find_vqs(vb->vdev, nvqs, vqs, callbacks, names);
- 	if (err)
--		goto out_free_vb;
-+		return err;
- 
- 	vb->inflate_vq = vqs[0];
- 	vb->deflate_vq = vqs[1];
-@@ -316,6 +305,29 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 			BUG();
- 		virtqueue_kick(vb->stats_vq);
- 	}
-+	return 0;
-+}
-+
-+static int virtballoon_probe(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb;
-+	int err;
-+
-+	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
-+	if (!vb) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	INIT_LIST_HEAD(&vb->pages);
-+	vb->num_pages = 0;
-+	init_waitqueue_head(&vb->config_change);
-+	vb->vdev = vdev;
-+	vb->need_stats_update = 0;
-+
-+	err = init_vqs(vb);
-+	if (err)
-+		goto out_free_vb;
- 
- 	vb->thread = kthread_run(balloon, vb, "vballoon");
- 	if (IS_ERR(vb->thread)) {
--- 
-1.7.6.2
+Thanks,
 
+Peter.
