@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab1I2X0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:26:51 -0400
-Received: from claw.goop.org ([74.207.240.146]:43167 "EHLO claw.goop.org"
+	id S932240Ab1I2X05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:26:57 -0400
+Received: from claw.goop.org ([74.207.240.146]:43183 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab1I2X0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:26:49 -0400
+	id S932171Ab1I2X0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:26:51 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 1/8] jump_label: use proper atomic_t initializer
-Date: Thu, 29 Sep 2011 16:26:31 -0700
-Message-Id: <0b202e43573ff2fba673ca375a95d757ed9a3f36.1317338254.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC 5/8] mips/jump_label: add arch_jump_label_transform_early()
+Date: Thu, 29 Sep 2011 16:26:35 -0700
+Message-Id: <9f95a611c3b317f412f77ae06753752951afd38b.1317338254.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.2
 In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
@@ -30,29 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-ATOMIC_INIT() is the proper thing to use.
+This allows jump-label entries to be modified early, in a pre-SMP
+environment.
+
+XXX TODO: make sure idling CPUs flush their icaches before continuing
+in case this modifies something that's adjacent to their init-idle loops.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: David Daney <david.daney@cavium.com>
 ---
- include/linux/jump_label.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/kernel/jump_label.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 66f23dc..1213e9d 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -28,9 +28,9 @@ struct module;
- #ifdef HAVE_JUMP_LABEL
+diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
+index 6001610..ddc9a65 100644
+--- a/arch/mips/kernel/jump_label.c
++++ b/arch/mips/kernel/jump_label.c
+@@ -20,8 +20,8 @@
  
- #ifdef CONFIG_MODULES
--#define JUMP_LABEL_INIT {{ 0 }, NULL, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL, NULL}
- #else
--#define JUMP_LABEL_INIT {{ 0 }, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL}
- #endif
+ #define J_RANGE_MASK ((1ul << 28) - 1)
  
- static __always_inline bool static_branch(struct jump_label_key *key)
+-void arch_jump_label_transform(struct jump_entry *e,
+-			       enum jump_label_type type)
++static void __jump_label_transform(struct jump_entry *e,
++				   enum jump_label_type type)
+ {
+ 	union mips_instruction insn;
+ 	union mips_instruction *insn_p =
+@@ -40,15 +40,28 @@ void arch_jump_label_transform(struct jump_entry *e,
+ 		insn.word = 0; /* nop */
+ 	}
+ 
+-	get_online_cpus();
+-	mutex_lock(&text_mutex);
+ 	*insn_p = insn;
+ 
+ 	flush_icache_range((unsigned long)insn_p,
+ 			   (unsigned long)insn_p + sizeof(*insn_p));
++}
++
++void arch_jump_label_transform(struct jump_entry *e,
++			       enum jump_label_type type)
++{
++	get_online_cpus();
++	mutex_lock(&text_mutex);
++
++	__jump_label_tranform(e, type);
+ 
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
+ }
+ 
++void __init arch_jump_label_transform_early(struct jump_entry *e,
++					    enum jump_label_type type)
++{
++	__jump_label_tranform(e, type);
++}
++
+ #endif /* HAVE_JUMP_LABEL */
 -- 
 1.7.6.2
 
