@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab1I2JkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:40:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56964 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755330Ab1I2JjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756198Ab1I2JjS (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 29 Sep 2011 05:39:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56962 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755330Ab1I2JjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 05:39:16 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 5/8] regmap: Save/restore the bypass state upon syncing
-Date: Thu, 29 Sep 2011 10:39:10 +0100
-Message-Id: <1317289153-21123-5-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/8] regmap: Make _regmap_write() global
+Date: Thu, 29 Sep 2011 10:39:07 +0100
+Message-Id: <1317289153-21123-2-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1317289153-21123-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1317289153-21123-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -22,36 +22,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regcache.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/base/regmap/internal.h |    3 +++
+ drivers/base/regmap/regmap.c   |    4 ++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index 674da82..5362578 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -227,10 +227,13 @@ int regcache_sync(struct regmap *map)
- 	unsigned int val;
- 	unsigned int i;
- 	const char *name;
-+	unsigned int bypass;
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 2d51b1b..348ff02 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -91,6 +91,9 @@ bool regmap_readable(struct regmap *map, unsigned int reg);
+ bool regmap_volatile(struct regmap *map, unsigned int reg);
+ bool regmap_precious(struct regmap *map, unsigned int reg);
  
- 	BUG_ON(!map->cache_ops);
- 
- 	mutex_lock(&map->lock);
-+	/* Remember the initial bypass state */
-+	bypass = map->cache_bypass;
- 	dev_dbg(map->dev, "Syncing %s cache\n",
- 		map->cache_ops->name);
- 	name = map->cache_ops->name;
-@@ -255,6 +258,8 @@ int regcache_sync(struct regmap *map)
- 	}
- out:
- 	trace_regcache_sync(map->dev, name, "stop");
-+	/* Restore the bypass state */
-+	map->cache_bypass = bypass;
- 	mutex_unlock(&map->lock);
- 
++int _regmap_write(struct regmap *map, unsigned int reg,
++		  unsigned int val);
++
+ #ifdef CONFIG_DEBUG_FS
+ extern void regmap_debugfs_initcall(void);
+ extern void regmap_debugfs_init(struct regmap *map);
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 3596465..d786ddc 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -296,8 +296,8 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
  	return ret;
+ }
+ 
+-static int _regmap_write(struct regmap *map, unsigned int reg,
+-			 unsigned int val)
++int _regmap_write(struct regmap *map, unsigned int reg,
++		  unsigned int val)
+ {
+ 	int ret;
+ 	BUG_ON(!map->format.format_write && !map->format.format_val);
 -- 
 1.7.6.4
 
