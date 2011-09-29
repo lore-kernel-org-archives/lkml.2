@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab1I2JtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:49:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48809 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756289Ab1I2JtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 05:49:23 -0400
-Date: Thu, 29 Sep 2011 11:49:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 06/11] mm: memcg: remove optimization of keeping the
- root_mem_cgroup LRU lists empty
-Message-ID: <20110929094918.GA21113@tiehlicka.suse.cz>
-References: <1315825048-3437-1-git-send-email-jweiner@redhat.com>
- <1315825048-3437-7-git-send-email-jweiner@redhat.com>
- <20110920150229.GB3571@tiehlicka.suse.cz>
- <20110929092033.GB6050@redhat.com>
+	id S1756294Ab1I2JwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 05:52:07 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57217 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab1I2JwF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 05:52:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929092033.GB6050@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <007801cc7e75$13dfcfd0$3b9f6f70$%kim@samsung.com>
+References: <CADUNanhyOg-mJtBQ1WFh_YfO0b73JEiOLLowC8fHbwgdkMDaHw@mail.gmail.com>
+	<007201cc7e6f$6019b970$204d2c50$%kim@samsung.com>
+	<CADUNanjVncrzeMofSMZGhKOcYu1qbh4ZcBjziOPFU+wkE6MXbw@mail.gmail.com>
+	<007801cc7e75$13dfcfd0$3b9f6f70$%kim@samsung.com>
+Date: Thu, 29 Sep 2011 15:22:03 +0530
+Message-ID: <CADUNanhXo20thoABe7thTsKG88pU+Avy=zd-0nXpiqyimhS=iA@mail.gmail.com>
+Subject: Re: {Question] Is "kernel.org" down ?
+From: santosh <santosh.iitg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-09-11 11:20:33, Johannes Weiner wrote:
-> On Tue, Sep 20, 2011 at 05:02:29PM +0200, Michal Hocko wrote:
-> > On Mon 12-09-11 12:57:23, Johannes Weiner wrote:
-> > > root_mem_cgroup, lacking a configurable limit, was never subject to
-> > > limit reclaim, so the pages charged to it could be kept off its LRU
-> > > lists.  They would be found on the global per-zone LRU lists upon
-> > > physical memory pressure and it made sense to avoid uselessly linking
-> > > them to both lists.
-> > > 
-> > > The global per-zone LRU lists are about to go away on memcg-enabled
-> > > kernels, with all pages being exclusively linked to their respective
-> > > per-memcg LRU lists.  As a result, pages of the root_mem_cgroup must
-> > > also be linked to its LRU lists again.
-> > 
-> > Nevertheless we still do not charge them so this should be mentioned
-> > here?
-> 
-> Added for the next revision:
-> 
-> 	"This is purely about the LRU list, root_mem_cgroup is still
-> 	not charged."
+Thanks to all of you.
 
-OK, that should be more clear. Thanks!
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--Santosh
+
+On Thu, Sep 29, 2011 at 12:27 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Santosh wrote:
+>>
+>> Kgene,
+>>
+>> https://github.com/torvalds/linux.git
+>>
+>> Thanks for your response. I could not find location in that site to
+>> download linux kernel.
+>>
+>> I need  2.6.38 kernel source.  Can you please help me out ?
+>>
+> Hi Santosh,
+>
+> Please refer to below...
+>
+> $ git clone git://github.com/torvalds/linux.git
+>
+> $ cd linux
+>
+> $ git checkout v2.6.38
+> Or $ git reset --hard v2.6.38
+> Or $ git checkout -b [local branch] v2.6.38
+>
+> Actually, there are many ways and above is one of them...
+>
+> Thanks.
+>
+> Best regards,
+> Kgene.
+> --
+> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+> SW Solution Development Team, Samsung Electronics Co., Ltd.
+>
+>
+>> Thanks
+>> Santosh
+>>
+>> On Thu, Sep 29, 2011 at 11:46 AM, Kukjin Kim <kgene.kim@samsung.com>
+> wrote:
+>> > santosh wrote:
+>> >>
+>> >> Hi
+>> >>
+>> >>  http://kernel.org/
+>> >>
+>> >> When I try to browse the above site, it shows "Down for maintenance".
+>> >> If it is down then from where I can download kernel source ??
+>> >>
+>> >
+>> > You can get it from following:
+>> >  git://github.com/torvalds/linux.git
+>> >
+>> > Thanks.
+>> >
+>> > Best regards,
+>> > Kgene.
+>> > --
+>> > Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+>> > SW Solution Development Team, Samsung Electronics Co., Ltd.
+>> >
+>> >
+>
+>
