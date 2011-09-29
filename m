@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab1I2P0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:26:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56623 "EHLO mx1.redhat.com"
+	id S932268Ab1I2P0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:26:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756952Ab1I2P0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:26:37 -0400
+	id S932252Ab1I2P0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:26:45 -0400
 From: Amit Shah <amit.shah@redhat.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
         Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH 04/11] virtio: console: Add freeze and restore handlers to support S4
-Date: Thu, 29 Sep 2011 20:56:00 +0530
-Message-Id: <3ed73f07d6b1d00b3564fc533883bad02bd82c2a.1317309123.git.amit.shah@redhat.com>
+Subject: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to support S4
+Date: Thu, 29 Sep 2011 20:56:02 +0530
+Message-Id: <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1317309123.git.amit.shah@redhat.com>
 References: <cover.1317309123.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1317309123.git.amit.shah@redhat.com>
@@ -21,91 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all vqs and associated buffers in the freeze callback which
-prepares us to go into hibernation state.  On restore, re-create all the
-vqs and populate the input vqs with buffers to get to the pre-hibernate
-state.
-
-Note: Any outstanding unconsumed buffers are discarded; which means
-there's a possibility of data loss in case the host or the guest didn't
-consume any data already present in the vqs.  This can be addressed in a
-later patch series, perhaps in virtio common code.
+Delete the vq on the freeze callback to prepare for hibernation.
+Re-create the vq in the restore callback to resume normal function.
 
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/char/virtio_console.c |   56 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 56 insertions(+), 0 deletions(-)
+ drivers/block/virtio_blk.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 1bef060..d85d827 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1845,6 +1845,58 @@ static unsigned int features[] = {
- 	VIRTIO_CONSOLE_F_MULTIPORT,
- };
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 509760b..9844d2c 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	kfree(vblk);
+ }
  
 +#ifdef CONFIG_PM
-+static int virtcons_freeze(struct virtio_device *vdev)
++static int virtblk_freeze(struct virtio_device *vdev)
 +{
-+	struct ports_device *portdev;
-+	struct port *port;
-+
-+	portdev = vdev->priv;
-+
-+	remove_controlq_data(portdev);
-+
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		/*
-+		 * We'll ask the host later if the new invocation has
-+		 * the port opened or closed.
-+		 */
-+		port->host_connected = false;
-+		remove_port_data(port);
-+	}
-+	remove_vqs(portdev);
-+
++	vdev->config->del_vqs(vdev);
 +	return 0;
 +}
 +
-+static int virtcons_restore(struct virtio_device *vdev)
++static int virtblk_restore(struct virtio_device *vdev)
 +{
-+	struct ports_device *portdev;
-+	struct port *port;
-+	int ret;
-+
-+	portdev = vdev->priv;
-+
-+	ret = init_vqs(portdev);
-+	if (ret)
-+		return ret;
-+
-+	if (use_multiport(portdev)) {
-+		fill_queue(portdev->c_ivq, &portdev->cvq_lock);
-+	}
-+
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		port->in_vq = portdev->in_vqs[port->id];
-+		port->out_vq = portdev->out_vqs[port->id];
-+
-+		fill_queue(port->in_vq, &port->inbuf_lock);
-+
-+		/* Get port open/close status on the host */
-+		send_control_msg(port, VIRTIO_CONSOLE_PORT_READY, 1);
-+	}
-+	return 0;
++	return init_vq(vdev->priv);;
 +}
 +#endif
 +
- static struct virtio_driver virtio_console = {
- 	.feature_table = features,
- 	.feature_table_size = ARRAY_SIZE(features),
-@@ -1854,6 +1906,10 @@ static struct virtio_driver virtio_console = {
- 	.probe =	virtcons_probe,
- 	.remove =	virtcons_remove,
- 	.config_changed = config_intr,
+ static const struct virtio_device_id id_table[] = {
+ 	{ VIRTIO_ID_BLOCK, VIRTIO_DEV_ANY_ID },
+ 	{ 0 },
+@@ -574,6 +587,10 @@ static struct virtio_driver __refdata virtio_blk = {
+ 	.probe			= virtblk_probe,
+ 	.remove			= __devexit_p(virtblk_remove),
+ 	.config_changed		= virtblk_config_changed,
 +#ifdef CONFIG_PM
-+	.freeze =	virtcons_freeze,
-+	.restore =	virtcons_restore,
++	.freeze			= virtblk_freeze,
++	.restore		= virtblk_restore,
 +#endif
  };
  
