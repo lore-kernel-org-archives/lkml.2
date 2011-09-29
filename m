@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1I2OSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:18:08 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58488 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab1I2OSG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:18:06 -0400
-X-IronPort-AV: E=Sophos;i="4.68,461,1312156800"; 
-   d="scan'208";a="8131637"
-Subject: Re: [Xen-devel] [PATCH v5 2/2] xen: modify kernel mappings
- corresponding to granted pages
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Sep 2011 15:18:04 +0100
-In-Reply-To: <20110929135558.GA31321@phenom.oracle.com>
-References: <alpine.DEB.2.00.1109291148340.3519@kaball-desktop>
-	 <1317293876-23891-2-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <20110929135558.GA31321@phenom.oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317305884.26672.190.camel@zakaz.uk.xensource.com>
+	id S1754225Ab1I2OTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:19:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45431 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752452Ab1I2OTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 10:19:49 -0400
+Date: Thu, 29 Sep 2011 07:18:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [004/244] sfi: table irq 0xFF means no interrupt
+Message-ID: <20110929141827.GC3002@suse.de>
+References: <20110928220225.GA27128@kroah.com>
+ <20110928220125.665499011@clark.kroah.org>
+ <20110929102100.GA6378@shutemov.name>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929102100.GA6378@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 14:55 +0100, Konrad Rzeszutek Wilk wrote:
-> >  /* Xen machine address */
-> > @@ -31,8 +32,10 @@ typedef struct xpaddr {
-> >  #define INVALID_P2M_ENTRY	(~0UL)
-> >  #define FOREIGN_FRAME_BIT	(1UL<<(BITS_PER_LONG-1))
-> >  #define IDENTITY_FRAME_BIT	(1UL<<(BITS_PER_LONG-2))
-> > +#define GRANT_FRAME_BIT	(1UL<<(BITS_PER_LONG-3))
+On Thu, Sep 29, 2011 at 01:21:00PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Sep 28, 2011 at 02:59:28PM -0700, Greg KH wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > commit a94cc4e6c0a26a7c8f79a432ab2c89534aa674d5 upstream.
+> > 
+> > According to the SFI specification irq number 0xFF means device has no
+> > interrupt or interrupt attached via GPIO.
+> > 
+> > Currently, we don't handle this special case and set irq field in
+> > *_board_info structs to 255.  It leads to confusion in some drivers.
+> > Accelerometer driver tries to register interrupt 255, fails and prints
+> > "Cannot get IRQ" to dmesg.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> I am going to change that to (BITS_PER_LONG-1) as we aren't
-> using the P2M. (and add that comment in the file).
+> Please, take this as well:
+> 
+> http://lkml.org/lkml/2011/9/14/40
 
-You should also move it away from/out of the "/**** MACHINE <-> PHYSICAL
-CONVERSION MACROS ****/" section, otherwise it's just confusing.
+Is that patch in Linus's tree?  If so, what is the git commit id of it?
 
-The associated GRANT_FRAME macro seems to be unused.
+thanks,
 
-But what is that bit in page->private actually used for? This patch adds
-it in m2p_add_override and masks it off in m2p_find_override, but
-doesn't otherwise appear to use it.
-
-Ian.
-
+greg k-h
