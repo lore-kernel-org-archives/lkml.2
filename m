@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab1I2LLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 07:11:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47705 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751013Ab1I2LLx (ORCPT
+	id S1754366Ab1I2LTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 07:19:32 -0400
+Received: from science.horizon.com ([71.41.210.146]:49957 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751045Ab1I2LTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 07:11:53 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>, Grant Likely <grant@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Support driver probe deferral
-Date: Thu, 29 Sep 2011 12:11:01 +0100
-Message-Id: <1317294661-22080-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	Thu, 29 Sep 2011 07:19:30 -0400
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 07:19:30 EDT
+Date: 29 Sep 2011 07:11:37 -0400
+Message-ID: <20110929111137.31852.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: Has anyone noticed text console breakage since 3.0?
+Cc: linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail to locate a requested regulator return -EAGAIN. If drivers
-pass this error code through to their caller (which they really should)
-then this will ensure that the probe is retried later when further devices
-become available.
+I'm currently running 3.1-rc7, and for a while, whenever I've been
+running a text console, I've noticed odd dropouts and glitches.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+It used to be mostly ANSI control sequences for fancy graphics.
+welcome2l's splach screen would get some rows shifted left as
+characters were skipped, and "aptitude -u" (which shows multiple
+animated progresss bars) would suffer a lot.
 
-This depends on Grant's change to implement deferred probing, the error
-code for which is going to change in the next revision.  Liam, if you're
-also OK with this change I propose that we both ack it and let it get
-carried along with the deferred probing change.
+But now it's getting to the point that just typing this e-mail
+in black & white is experiencing multiple corruptions.
+What's on my screen is "the poin hthat" and "black w white".
+I expect turning off the "ruler" feature in vim which maintains
+a cursor position display at the bottom of the screen will reduce
+the problem, but I've seen problems at the shell prompt.
 
- drivers/regulator/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This is a quad-core Phenom processor, running a 64-bit kernel
+on ECC memory.  The hardware has been stable for years.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index d5656b7..b39ec9f 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1154,7 +1154,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- {
- 	struct regulator_dev *rdev;
- 	struct regulator_map *map;
--	struct regulator *regulator = ERR_PTR(-ENODEV);
-+	struct regulator *regulator = ERR_PTR(-EAGAIN);
- 	const char *devname = NULL;
- 	int ret;
- 
-@@ -2727,7 +2727,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 		if (!found) {
- 			dev_err(dev, "Failed to find supply %s\n",
- 				init_data->supply_regulator);
--			ret = -ENODEV;
-+			ret = -EAGAIN;
- 			goto scrub;
- 		}
- 
--- 
-1.7.6.3
-
+The problem is specifically with a *text* console, not a frame buffer
+console.  If nobody's sure, I can take a few hours and do a bisect
+run, but it seems hard to believe I'm the only person seeing this.
