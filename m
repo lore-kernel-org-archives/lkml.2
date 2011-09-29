@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab1I2UhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:37:04 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:48893 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757940Ab1I2UhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:37:01 -0400
-Message-ID: <4E84D6EB.3020300@xenotime.net>
-Date: Thu, 29 Sep 2011 13:36:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	id S1757960Ab1I2Uoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:44:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3155 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755781Ab1I2Uon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 16:44:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,463,1312182000"; 
+   d="scan'208";a="72280553"
+Date: Thu, 29 Sep 2011 13:44:40 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        x86 maintainers <x86@kernel.org>, dsd@laptop.org
-Subject: Re: [PATCH] olpc: olpc-xo1-sci.c is an input driver, depends on INPUT
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>	<4E84D259.5020008@xenotime.net> <20110929133446.40ff3250@queued.net>
-In-Reply-To: <20110929133446.40ff3250@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: PME via interrupt or SCI mechanism?
+Message-ID: <20110929204440.GA6043@xanatos>
+References: <20110912171003.GA7939@xanatos>
+ <201109290021.28407.rjw@sisk.pl>
+ <20110929182327.GA4979@xanatos>
+ <201109292139.56626.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109292139.56626.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/11 13:34, Andres Salomon wrote:
-> On Thu, 29 Sep 2011 13:17:29 -0700
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
-> 
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Fix build errors when CONFIG_INPUT is disabled (shortened list):
->>
->> olpc-xo1-sci.c:(.text+0x1aee6): undefined reference to `input_event'
->> olpc-xo1-sci.c:(.text+0x1b077): undefined reference to
->> `input_unregister_device' olpc-xo1-sci.c:(.text+0x1b081): undefined
->> reference to `input_free_device'
->> arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1b270): more undefined
->> references to `input_event' follow
->> olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to
->> `input_allocate_device' olpc-xo1-sci.c:(.devinit.text+0x1a4):
->> undefined reference to `input_register_device'
->>
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Cc: Andres Salomon <dilinger@debian.org>
->> ---
->> Found in linux-next but also applies to mainline.
->>
->>  arch/x86/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- next-2011-0929.orig/arch/x86/Kconfig
->> +++ next-2011-0929/arch/x86/Kconfig
->> @@ -2052,7 +2052,7 @@ config OLPC_XO1_RTC
->>  
->>  config OLPC_XO1_SCI
->>  	bool "OLPC XO-1 SCI extras"
->> -	depends on OLPC && OLPC_XO1_PM
->> +	depends on OLPC && OLPC_XO1_PM && INPUT
->>  	select POWER_SUPPLY
->>  	select GPIO_CS5535
->>  	select MFD_CORE
-> 
-> Thanks!
-> 
-> Hm.  This might actually need a 'select INPUT' though, since
-> OLPC_XO1_SCI is bool while INPUT is tristate.  Sigh, bool..
+On Thu, Sep 29, 2011 at 09:39:56PM +0200, Rafael J. Wysocki wrote:
+> On Thursday, September 29, 2011, Sarah Sharp wrote:
+> > On Thu, Sep 29, 2011 at 12:21:28AM +0200, Rafael J. Wysocki wrote:
+> Please try the appended patch and check if you see the "Notification error
+> for GPE" message (please keep your previous debug patches applied).
 
-I try to avoid using "select", but you can resubmit the patch
-to do that if you must.
+Do I need to have the ACPI debug_level or debug_layer set to anything in
+particular to see this message?  I don't see this message in dmesg with
+debug_level and debug_layer set to 0x0.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Sarah Sharp
+
+> ---
+>  drivers/acpi/acpica/evgpe.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> Index: linux/drivers/acpi/acpica/evgpe.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/acpica/evgpe.c
+> +++ linux/drivers/acpi/acpica/evgpe.c
+> @@ -523,10 +523,14 @@ static void ACPI_SYSTEM_XFACE acpi_ev_as
+>  				ACPI_NOTIFY_DEVICE_WAKE);
+>  
+>  		notify_object = local_gpe_event_info->dispatch.device.next;
+> -		while (ACPI_SUCCESS(status) && notify_object) {
+> +		while (notify_object) {
+>  			status = acpi_ev_queue_notify_request(
+>  					notify_object->node,
+>  					ACPI_NOTIFY_DEVICE_WAKE);
+> +			if (ACPI_FAILURE(status))
+> +				ACPI_ERROR((AE_INFO,
+> +					"Notification error for GPE 0x%X",
+> +					local_gpe_event_info->gpe_number));
+>  			notify_object = notify_object->next;
+>  		}
+>  
