@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1I2GgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 02:36:06 -0400
-Received: from filtromx9.unal.edu.co ([168.176.5.62]:49359 "EHLO
-	filtromx9.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab1I2GgE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 02:36:04 -0400
-X-AuditID: a8b0053d-b7b65ae000006604-af-4e8412186935
-To: undisclosed-recipients:;
-Date: Wed, 28 Sep 2011 23:36:01 -0700
-From: Jovana Stephens <jstephens@unal.edu.co>
-Subject: CONGRATULATION!!!
-Reply-to: torobin01@blumail.org
-Message-id: <fd56c79d543a.4e83af61@unal.edu.co>
-MIME-version: 1.0
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
-Content-type: text/plain; charset=us-ascii
-Content-language: es
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-X-Accept-Language: es
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyYsNCfl0JoRY/g6alchaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj84zVrAVvGCv6n2xgamA8y9jFyMkhIWAisXzZMxYIW0ziwr31
-	bF2MXBxCAjsZJRY+6WECSYgIyEjMnf2YFSLRwCTx4vgVRginhVHizI97YO0sAqoS7+9uZAax
-	2QR0Ja7MfM8GYgsLSEkcv3sbzGYSYJHYeGkaUD0HULO8xOnt+iBhXgF9iWczJzJC2IISPybf
-	g7rIR6L3aBPYEcwCWhLrdx6HskUkfv99zw4yhhlozMHzshBhaYlHf2eAhSUERCWePtQBCQsI
-	CEgcaJrIOoFRZBaSBbOQDJ2FZOgshKGzkAxdwMi6ilE0LTOnpCg/t8JCrxQY/HqpKaV6yfmb
-	GMHRwGq7g7HzrOohRgEORiUe3h9JzX5CrIllxZW5hxglOJiVRHh/rQMK8aYkVlalFuXHF5Xm
-	pBYfYpTmYFES513yq8ZPSCA9sSQ1OzW1ILUIJsvEwSnVwMhu2xlruzL3Xr3dAc/kNsXJTSfM
-	7BZsmGx7T6nNfF7srOwLnwqq2fZyi0VFmosoTjEVvblxp/A63tCVO73vNjKdOy17NlqNqer8
-	/5k8slECjyff+vXq/cOQX/8Tn95r5MvYLFN5Zkmu4v2+vkx/rdUvWB9s5cu8FsL3xWPZGdWu
-	w11bL7El8imxFGckGmoxFxUnAgAMEz8SggIAAA==
+	id S1752426Ab1I2GhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 02:37:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49290 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105Ab1I2GhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 02:37:14 -0400
+Message-ID: <4E8411DC.5020306@cn.fujitsu.com>
+Date: Thu, 29 Sep 2011 14:36:12 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: santosh <santosh.iitg@gmail.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: {Question] Is "kernel.org" down ?
+References: <CADUNanhyOg-mJtBQ1WFh_YfO0b73JEiOLLowC8fHbwgdkMDaHw@mail.gmail.com>	<007201cc7e6f$6019b970$204d2c50$%kim@samsung.com> <CADUNanjVncrzeMofSMZGhKOcYu1qbh4ZcBjziOPFU+wkE6MXbw@mail.gmail.com>
+In-Reply-To: <CADUNanjVncrzeMofSMZGhKOcYu1qbh4ZcBjziOPFU+wkE6MXbw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-29 14:35:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-29 14:35:45,
+	Serialize complete at 2011-09-29 14:35:45
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/29/2011 02:33 PM, santosh wrote:
+
+> Kgene,
+> 
+> https://github.com/torvalds/linux.git
 
 
-You have been chosen by the U.N Foundation to receive a Grant Donation of One Million Dollars. Your Qualification Numbers (G-999-747,UZ-900-77) Contact Mr.Robin Steven with Name,address,country for claim: E-mail: torobin01@blumail.org
+This may be the thing.
+https://github.com/torvalds/linux
+
+Thanks
+-Wanlong Gao
