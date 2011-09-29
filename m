@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab1I2Pv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:51:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54183 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101Ab1I2Pv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:51:58 -0400
+	id S1757139Ab1I2Pwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:52:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29184 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757125Ab1I2Pw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:52:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,461,1312182000"; 
+   d="scan'208";a="56989750"
+Date: Thu, 29 Sep 2011 17:55:20 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Eric Miao <eric.miao@canonical.com>
+Cc: ashish.jangam@kpitcummins.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dajun <dajun.chen@diasemi.com>, sameo@openedhand.com,
+        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
+Message-ID: <20110929155520.GF4118@sortiz-mobl>
+References: <1316435596.344.132.camel@L-0761.kpit.com>
+ <CAMPhdO-jiY+JmgYFSO2JKiCO5KxN3L1YqA_WoOY+rnwkf3cumA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <6324.1317308270@redhat.com>
-References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-	<2150.1314882260@redhat.com>
-	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
-	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
-	<5149.1317036720@redhat.com>
-	<CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
-	<CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com>
-	<6324.1317308270@redhat.com>
-Date: Thu, 29 Sep 2011 08:51:57 -0700
-Message-ID: <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com>
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMPhdO-jiY+JmgYFSO2JKiCO5KxN3L1YqA_WoOY+rnwkf3cumA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 7:57 AM, David Howells <dhowells@redhat.com> wrote:
-> Mark Moseley <moseleymark@gmail.com> wrote:
->
->> Ok, this just popped 15 mins ago. Here's the trace. Some went to IPMI,
->> some made it to the logs, so I'll post both (logs first):
->>
->> [12999.564897] FS-Cache: Cookie 'NFS.fh' still has outstanding reads
->
-> Hopefully the patch set I sent to you will deal with this.
->
-> David
+Hi Eric,
 
-Not sure what you mean. Was there another patch besides the one to get
-more info in the traceback?
+On Mon, Sep 26, 2011 at 05:12:48PM +0800, Eric Miao wrote:
+> On Mon, Sep 19, 2011 at 8:33 PM, ashishj3 <ashish.jangam@kpitcummins.com> wrote:
+> > The DA9052/53 is a highly integrated PMIC subsystem with supply domain flexibility
+> > to support wide range of high performance application.
+> >
+> > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> > control and other functionality.
+> >
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> 
+> Looks good to me.
+> 
+> Acked-by: Eric Miao <eric.miao@linaro.org>
+
+I was not cc'ed on the thread, so I don't even have the patch to review it.
+Would you mind sending it to me ?
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
