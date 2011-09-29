@@ -1,133 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab1I2DcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 23:32:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:63793 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754382Ab1I2DcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 23:32:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,458,1312182000"; 
-   d="scan'208";a="56810079"
-Date: Thu, 29 Sep 2011 11:32:01 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-Message-ID: <20110929033201.GA21722@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020915.942753370@intel.com>
- <1315318179.14232.3.camel@twins>
- <20110907123108.GB6862@localhost>
- <1315822779.26517.23.camel@twins>
- <20110918141705.GB15366@localhost>
- <20110918143721.GA17240@localhost>
- <20110918144751.GA18645@localhost>
- <20110928140205.GA26617@localhost>
- <1317221435.24040.39.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317221435.24040.39.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755825Ab1I2Dnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 23:43:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:64433 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab1I2Dng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 23:43:36 -0400
+Date: Thu, 29 Sep 2011 11:41:35 +0800
+From: "canquan.shen" <shencanquan@huawei.com>
+Subject: Re: [PATCH v5] acpi: Fix CPU hot removal problem
+In-reply-to: <4E83E27E.5090608@linux.intel.com>
+X-Originating-IP: [10.166.80.130]
+To: Chen Gong <gong.chen@linux.intel.com>
+Cc: len.brown@intel.com, Bjorn Helgaas <bhelgaas@google.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>, linqiangmin@huawei.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        khalid.aziz@hp.com
+Message-id: <4E83E8EF.30806@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0) Gecko/20110922 Thunderbird/7.0
+X-CFilter-Loop: Reflected
+References: <4E7D7468.4040506@huawei.com> <4E83E27E.5090608@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 10:50:35PM +0800, Peter Zijlstra wrote:
-> On Wed, 2011-09-28 at 22:02 +0800, Wu Fengguang wrote:
-> 
-> /me attempts to swap back neurons related to writeback
-> 
-> > After lots of experiments, I end up with this bdi reserve point
-> > 
-> > +       x_intercept = bdi_thresh / 2 + MIN_WRITEBACK_PAGES;
-> > 
-> > together with this chunk to avoid a bdi stuck in bdi_thresh=0 state:
-> > 
-> > @@ -590,6 +590,7 @@ static unsigned long bdi_position_ratio(
-> >          */
-> >         if (unlikely(bdi_thresh > thresh))
-> >                 bdi_thresh = thresh;
-> > +       bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
-> >         /*
-> >          * scale global setpoint to bdi's:
-> >          *      bdi_setpoint = setpoint * bdi_thresh / thresh
-> 
-> So you cap bdi_thresh at a minimum of (limit-dirty)/8 which can be
-> pretty close to 0 if we have a spike in dirty or a negative spike in
-> writeout bandwidth (sudden seeks or whatnot).
+On 2011/9/29 11:14, Chen Gong wrote:
+> 于 2011/9/24 14:10, canquan.shen 写道:
+>> We run linux as a guest in Xen environment. When we used the xen tools
+>> (xm vcpu-set <n>) to hot add and remove vcpu to and from the guest, we
+>> encountered the failure on vcpu removal. We found the reason is that it
+>> did't go to really remove cpu in the cpu removal code path.
+>>
+>> This patch adds acpi_bus_hot_remove_device in
+>> acpi_process_hotplug_notify to
+>> fix this issue. With this patch, it works fine for us.
+>>
+>> Signed-off-by: Canquan Shen <shencanquan@huawei.com>
+>> ---
+>> drivers/acpi/processor_driver.c | 13 +------------
+>> drivers/acpi/scan.c | 4 ++--
+>> include/acpi/acpi_bus.h | 1 +
+>> 3 files changed, 4 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/acpi/processor_driver.c
+>> b/drivers/acpi/processor_driver.c
+>> index a4e0f1b..8429688 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -665,18 +665,7 @@ static void
+>> acpi_processor_hotplug_notify(acpi_handle handle,
+>> case ACPI_NOTIFY_EJECT_REQUEST:
+>> ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>> "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+>> -
+>> - if (acpi_bus_get_device(handle, &device)) {
+>> - printk(KERN_ERR PREFIX
+>> - "Device don't exist, dropping EJECT\n");
+>> - break;
+>> - }
+>> - pr = acpi_driver_data(device);
+>> - if (!pr) {
+>> - printk(KERN_ERR PREFIX
+>> - "Driver data is NULL, dropping EJECT\n");
+>> - return;
+>> - }
+>> + acpi_bus_hot_remove_device(handle);
+>
+> As the description in __acpi_os_execute(in acpi_os_hotplug_execute),
+> /*
+> * We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
+> * because the hotplug code may call driver .remove() functions,
+> * which invoke flush_scheduled_work/acpi_os_wait_events_complete
+> * to flush these workqueues.
+> */
+> If so, why not using following call:
+>
+> acpi_os_hotplug_execute(acpi_bus_hot_remove_device, acpi_device->handle);
+>
+>
 
-That's right. However to bring bdi_thresh out of the close-to-zero
-state, it's only required that (limit-dirty)/8 is reasonable large for
-the _majority_ time, which is not a problem for the servers unless
-something goes wrong.
+It is ok if using the acpi_os_hotplug_execute. but it is complex and 
+more time for removal cpu because it is add to queue and some time the 
+work will be called.
+I think that it is clear to call directly acpi_bus_hot_remove_device 
+function in acpi_processor_hotplug_notify.
 
-> 
-> > The above changes are good enough to keep reasonable amount of bdi
-> > dirty pages, so the bdi underrun flag ("[PATCH 11/18] block: add bdi
-> > flag to indicate risk of io queue underrun") is dropped.
-> 
-> That sounds like goodness ;-)
 
-Yeah!
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
+>
+> .
+>
 
-> > I also tried various bdi freerun patches, however the results are not
-> > satisfactory. Basically the bdi reserve area approach (this patch)
-> > yields noticeably more smooth/resilient behavior than the
-> > freerun/underrun approaches. I noticed that the bdi underrun flag
-> > could lead to sudden surge of dirty pages (especially if not
-> > safeguarded by the dirty_exceeded condition) in the very small
-> > window.. 
-> 
-> OK, so let me try and parse this magic:
-> 
-> +       x_intercept = bdi_thresh / 2 + MIN_WRITEBACK_PAGES;
-> +       if (bdi_dirty < x_intercept) {
-> +               if (bdi_dirty > x_intercept / 8) {
-> +                       pos_ratio *= x_intercept;
-> +                       do_div(pos_ratio, bdi_dirty);
-> +               } else
-> +                       pos_ratio *= 8;
-> +       }
-> 
-> So we set our target some place north of MIN_WRITEBACK_PAGES: if we're
-> short we add a factor of: x_intercept/bdi_dirty. 
-> 
-> Now, since bdi_dirty < x_intercept, this is > 1 and thus we promote more
-> dirties.
 
-That's right.
-
-> Additionally we don't let the factor get larger than 8 to avoid silly
-> large fluctuations (8 already seems quite generous to me).
-
-I actually increased 8 to 128 and still think it safe: for the
-promotion ratio to be 128, bdi_dirty should be around bdi_thresh/2/128
-(or 0.4% bdi_thresh). Whatever large the promotion ratio is, it won't
-be more radical than some bdi freerun threshold.
-
-In the tests, what the bdi reserve area protect is mainly small memory
-systems (small dirty threshold comparing to writeout bandwidth), where
-an IO completion could bring down bdi_dirty considerably (relatively)
-and we really need to ramp it up fast at the point to feed the disk.
-
-> Now I guess the only problem is when nr_bdi * MIN_WRITEBACK_PAGES ~
-> limit, at which point things go pear shaped.
-
-Yes. In that case the global @dirty will always be drove up to @limit.
-Once @dirty dropped reasonably below, whichever bdi task wakeup first
-will take the chance to fill the gap, which is not fair for bdi's of
-different speed.
-
-Let me retry the thresh=1M,10M test cases without MIN_WRITEBACK_PAGES.
-Hopefully the removal of it won't impact performance a lot.
-
-Thanks,
-Fengguang
