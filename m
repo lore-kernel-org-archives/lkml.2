@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab1I2UfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:35:03 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45383 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757444Ab1I2Ue6 (ORCPT
+	id S1757906Ab1I2UfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:35:23 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:33756 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757849Ab1I2UfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:34:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
-        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
-        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
-        airlied@linux.ie, alexdeucher@gmail.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH 4/9] swiotlb: Expose swiotlb_nr_tlb function to modules
-Date: Thu, 29 Sep 2011 16:33:47 -0400
-Message-Id: <1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E84D63D.0084:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Thu, 29 Sep 2011 16:35:18 -0400
+Message-ID: <4E84D684.107@xenotime.net>
+Date: Thu, 29 Sep 2011 13:35:16 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        x86 maintainers <x86@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH -next] x86 mrst: fix build error when X86_MRST is not enabled
+References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
+In-Reply-To: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a mechanism to detect whether SWIOTLB is enabled or not.
-We also fix the spelling - it was swioltb instead of
-swiotlb.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-[v1: Ripped out swiotlb_enabled]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Fix build when CONFIG_X86_INTEL_MID is enabled but
+CONFIG_X86_MRST is not enabled.  Fixes this build error:
+
+rtc.c:(.init.text+0x2fbb): undefined reference to `__mrst_cpu_chip'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/xen/swiotlb-xen.c |    2 +-
- include/linux/swiotlb.h   |    2 +-
- lib/swiotlb.c             |    5 +++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/mrst.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 6e8c15a..cbcd8cc 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -149,7 +149,7 @@ void __init xen_swiotlb_init(int verbose)
- 	int rc;
- 	unsigned long nr_tbl;
+--- next-2011-0929.orig/arch/x86/include/asm/mrst.h
++++ next-2011-0929/arch/x86/include/asm/mrst.h
+@@ -32,18 +32,18 @@ enum mrst_cpu_type {
  
--	nr_tbl = swioltb_nr_tbl();
-+	nr_tbl = swiotlb_nr_tbl();
- 	if (nr_tbl)
- 		xen_io_tlb_nslabs = nr_tbl;
- 	else {
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 445702c..e872526 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -24,7 +24,7 @@ extern int swiotlb_force;
+ extern enum mrst_cpu_type __mrst_cpu_chip;
  
- extern void swiotlb_init(int verbose);
- extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
--extern unsigned long swioltb_nr_tbl(void);
-+extern unsigned long swiotlb_nr_tbl(void);
+-#ifdef CONFIG_X86_INTEL_MID
++#ifdef CONFIG_X86_MRST
  
- /*
-  * Enumeration for sync targets
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 99093b3..058935e 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -110,11 +110,11 @@ setup_io_tlb_npages(char *str)
- __setup("swiotlb=", setup_io_tlb_npages);
- /* make io_tlb_overflow tunable too? */
- 
--unsigned long swioltb_nr_tbl(void)
-+unsigned long swiotlb_nr_tbl(void)
+ static inline enum mrst_cpu_type mrst_identify_cpu(void)
  {
- 	return io_tlb_nslabs;
- }
--
-+EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
- /* Note that this doesn't work with highmem page */
- static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 				      volatile void *address)
-@@ -321,6 +321,7 @@ void __init swiotlb_free(void)
- 		free_bootmem_late(__pa(io_tlb_start),
- 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
-+	io_tlb_nslabs = 0;
+ 	return __mrst_cpu_chip;
  }
  
- static int is_swiotlb_buffer(phys_addr_t paddr)
--- 
-1.7.4.1
-
+-#else /* !CONFIG_X86_INTEL_MID */
++#else /* !CONFIG_X86_MRST */
+ 
+ #define mrst_identify_cpu()    (0)
+ 
+-#endif /* !CONFIG_X86_INTEL_MID */
++#endif /* !CONFIG_X86_MRST */
+ 
+ enum mrst_timer_options {
+ 	MRST_TIMER_DEFAULT,
