@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1I2Xds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:33:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:57210 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614Ab1I2Xdr (ORCPT
+	id S1758099Ab1I2XeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:34:04 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:39460 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab1I2Xd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:33:47 -0400
-Message-ID: <4E850056.1090101@gmail.com>
-Date: Thu, 29 Sep 2011 17:33:42 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-References: <20110929230613.GA20083@ghostprotocols.net>
-In-Reply-To: <20110929230613.GA20083@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Sep 2011 19:33:59 -0400
+Date: Thu, 29 Sep 2011 19:31:41 -0400 (EDT)
+From: Doug Ledford <dledford@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jiri Slaby <jslaby@suse.cz>, Manfred Spraul <manfred@colorfullife.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [159/244] ipc/mqueue.c: fix mq_open() return value
+Message-ID: <d089f3ec-ccfc-4350-bd11-b8ccadf4ad3a@zmail05.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20110929190855.GA5381@suse.de>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.11.231.143]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+----- Original Message -----
+> Sorry, I ment Linus's tree, that's where it matters for the stable
+> releases.
 
-On 09/29/2011 05:06 PM, Arnaldo Carvalho de Melo wrote:
->> >From what I can see sample_type has to be the same for all samples:
->> https://lkml.org/lkml/2011/8/15/6
-> 
-> We could add a PERF_SAMPLE_ID2 that if present would be guaranteed to be
-> the last, or we can, as PeterZ prefers/suggests, to use one mmap per
-> sample id, then we know that if we're getting it on that mmap, it has
-> that sample_type.
-> 
-> For record that means we need to dump each per-sample_id mmap onto a
-> separate file, i.e. use a directory, etc.
+The patch in question hasn't hit Linus' tree yet, but it's queued up in Stephen Rothwell's for-next tree.  As I understand it, Andrew's tree gets fed into that on a somewhat regular basis, and Andrew took my four patches (plus a patchcheck fixup he committed) already.  So, I pulled Stephen's for-next, put my patches plus the patchcheck fix on top, then wrote a fixup patch that fixes what I saw as being wrong in the patch in question.
 
-That seems like a major re-write of perf. Why not keep the existing
-restriction and have users who want different sample_types run multiple
-perf commands?
+> Ok, care to get the patch into Linus's tree and then I can take it
+> into
+> stable?
 
-What's to be gained by refactoring the code to support multiple
-sample_types in a single command invocation?
+I made a new patch that fixes the patch I NAKed.  My entire patch set can be applied on top of his now (I was wrong about them conflicting, I think there was just enough space for the context not to overlap in a way that would conflict as I thought it would).  So, since the change isn't life threatening or anything, and can be easily fixed up, I'll withdraw my NAK and just submit the additional patch to correct it once I get home and have access to a mail program that does something besides attachments or mangled text as the only patch sending options.
 
-David
+Now, the question of whether or not you want a patch in -stable that hasn't hit Linus' tree yet is up to you...
+
+-- 
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: CFBFF194
+	      http://people.redhat.com/dledford
+
