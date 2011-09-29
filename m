@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab1I2Syj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 14:54:39 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38243 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab1I2Syi (ORCPT
+	id S1756514Ab1I2Sy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 14:54:56 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41418 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755928Ab1I2Syy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 14:54:38 -0400
-Date: Thu, 29 Sep 2011 19:54:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-kernel@vger.kernel.org, paul@pwsan.com, linaro-dev@lists.linaro.org,
-        linus.walleij@stericsson.com, patches@linaro.org, eric.miao@linaro.org,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, skannan@quicinc.com,
-        linux@arm.linux.org.uk, jeremy.kerr@canonical.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
-Subject: Re: [PATCH v2 0/7] Add a generic struct clk
-Message-ID: <20110929185432.GD2085@sirena.org.uk>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316730422-20027-1-git-send-email-mturquette@ti.com>
-X-Cookie: Whip it, whip it good!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Thu, 29 Sep 2011 14:54:54 -0400
+Date: Thu, 29 Sep 2011 14:54:48 -0400 (EDT)
+Message-Id: <20110929.145448.1099928162641363616.davem@davemloft.net>
+To: jgq516@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] net/fec: add poll controller function for fec
+ nic
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1317298557-2878-2-git-send-email-jgq516@gmail.com>
+References: <1317298557-2878-1-git-send-email-jgq516@gmail.com>
+	<1317298557-2878-2-git-send-email-jgq516@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Sep 2011 11:54:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 03:26:55PM -0700, Mike Turquette wrote:
+From: jgq516@gmail.com
+Date: Thu, 29 Sep 2011 20:15:57 +0800
 
-> more thought.  I also dropped Mark's change to append a device's name to
-> a clk name since device tree might solve this neatly.  Again more
-> discussion around that would be good.
+> From: Xiao Jiang <jgq516@gmail.com>
+> 
+> Add poll controller function for fec nic.
+> 
+> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
 
-Some of that was for debugfs type stuff - if we end up providing
-information about the clocks via a diagnostic interface being able to
-distinguish between things in a textual fashion would be handy (and I'd
-guess the struct device may also be needed by any OF bindings to get at
-the bindings?).
+Applied.
