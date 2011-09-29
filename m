@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab1I2BPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 21:15:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:45048 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab1I2BPY (ORCPT
+	id S1755456Ab1I2B1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 21:27:03 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:38327 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab1I2B1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 21:15:24 -0400
-Date: Thu, 29 Sep 2011 11:15:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110929111516.1fc21972dd78b4e38a17e1d7@canb.auug.org.au>
-In-Reply-To: <CAP=VYLrHGYXpXaHn0GbE5ysRXkNhnqVimC01K3inwXq_KPBtYA@mail.gmail.com>
-References: <20110928184150.0fcf097b7f9128f8639059f3@canb.auug.org.au>
-	<4E83243A.7060408@windriver.com>
-	<CAP=VYLrHGYXpXaHn0GbE5ysRXkNhnqVimC01K3inwXq_KPBtYA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__29_Sep_2011_11_15_16_+1000_gXDNuF.ODsVWBSj5"
+	Wed, 28 Sep 2011 21:27:02 -0400
+X-Greylist: delayed 1137 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Sep 2011 21:27:02 EDT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20099.50407.346360.216442@quad.stoffel.home>
+Date: Wed, 28 Sep 2011 21:07:51 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Will Drewry <wad@chromium.org>, Mandeep Singh Baines <msb@chromium.org>,
+        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        dm-devel@redhat.com, Elly Jones <ellyjones@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dm: verity target
+In-Reply-To: <21505.1317245414@turing-police.cc.vt.edu>
+References: <1316112359-6085-1-git-send-email-msb@chromium.org>
+	<CABqD9hYWK2czEKN87xDu7YPbRcp9xrumJ5PZ8aQTzBLafrnBMw@mail.gmail.com>
+	<21505.1317245414@turing-police.cc.vt.edu>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Sep_2011_11_15_16_+1000_gXDNuF.ODsVWBSj5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>>>> "Valdis" == Valdis Kletnieks <Valdis.Kletnieks@vt.edu> writes:
 
-Hu Paul,
+Valdis> On Tue, 27 Sep 2011 14:02:05 CDT, Will Drewry said:
+>> I was just curious if there is any interest in pulling this change, or
+>> if not, if there is any particular set of concerns, fixes, etc.
 
-On Wed, 28 Sep 2011 20:15:45 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> I figured, given the footprint of the module.h stuff, that it is entirely
-> unfair for you to have to carry all those changes that aren't in the
-> merge-base of the module.h branch.  So I've created a post merge
-> commit series that I'll maintain -- which will have the commits that
-> can't be in the module.h split branch, but will be required, once all
-> the linux-next content has been merged.
->=20
-> If you clone:
->=20
->    git://openlinux.windriver.com/people/paulg/modsplit-post-merge
->=20
-> you will get a repository of commits, and a series file (just like that u=
-sed
-> for longterm/stable queues) that you can deploy onto linux-next to get
-> the changes you'd been carrying, plus new ones I found by testing on
-> linux-next myself.
->=20
-> I'm hoping that you can plug pulls of this post-merge queue into your
-> infrastructure in a way that moves the burden off you and onto me.
+Valdis> Out of curiosity, how much of the stack does this end up eating?  My root
+Valdis> filesystem is already ext4 on an LVM partition that's on a LUKS/dm-crypt
+Valdis> partition on a hard drive, and I'm sure somebody out there will have used xfs
+Valdis> instead - and then exported it via NFS or something. Are we going to get weird
+Valdis> stack overflows if people throw dm-verity into this sort of mix?
 
-OK, that is easy, I will just use your set of patches instead of my set
-of merge fixups - it just drops in.
+>> realize it's not a small amount of code to digest (though it is
+>> smaller than the post from last year[1]).   Would re-posting with an
+>> added blob explaining the name be useful,
 
-Thanks for that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Valdis> Probably will need it to be merged, unless you set up an
+Valdis> auto-reply that says "Patch rejected, 'verity' is *not* a typo
+Valdis> for 'verify'" ;)
 
---Signature=_Thu__29_Sep_2011_11_15_16_+1000_gXDNuF.ODsVWBSj5
-Content-Type: application/pgp-signature
+God, I've been reading this as veriFy all along.  I think your name
+stinks because it's too close to Verify, and too obscure otherwise.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOg8akAAoJEDMEi1NhKgbsa8cIAJeLRlolQMJQ/7RN3R0Fw11E
-ZiNJgwlIZ9JstJkAN9yXgbbjoPxl0lR0YIJ/4PKVp9OsT/er1r78UEsJ+P5wZGXs
-OfRGWZda6RARNppiBsV1GmOEWQ4unZAaSJFk0NiqDyWoDQ4Gpzcy41bPZQKvT1SZ
-Uvr3iLbEqR4nJNyInRkksXMqnNvqMHdEEgHnEugioggDxJRG4iFSQunSuBjweqZk
-VA6LD9ZOPPRqtsBB9z6hJ76wMPkHWrEqtuXgoc+GhVUSyIBJCqdqZs2c8UDC31k/
-LUqfYFHCBP8coP0/GBrnETn2dzG4p+ySlPwNcqgO7KQV54v6uALXHpqYjOTi628=
-=EomF
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Sep_2011_11_15_16_+1000_gXDNuF.ODsVWBSj5--
+John
