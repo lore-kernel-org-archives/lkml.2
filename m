@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab1I2Dsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 23:48:41 -0400
-Received: from mail4.iitk.ac.in ([202.3.77.189]:41402 "EHLO mail4.iitk.ac.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565Ab1I2Dsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 23:48:40 -0400
-Message-ID: <faff0da7d08eeae53889194d93478b48.squirrel@webmail.iitk.ac.in>
-Date: Thu, 29 Sep 2011 08:49:41 +0530
-Subject: Web Notice!!!
-From: "Web Administrator" <akpatel@iitk.ac.in>
-Reply-To: web@iitk.ac.in, support@gala.net
-User-Agent: SquirrelMail/
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1752404Ab1I2DyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 23:54:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52534 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab1I2DyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Sep 2011 23:54:11 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, marc.zyngier@arm.com, thomas.abraham@linaro.org,
+        jamie@jamieiles.com, b-cousson@ti.com, shawn.guo@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 0/2] GIC OF bindings
+Date: Wed, 28 Sep 2011 22:53:54 -0500
+Message-Id: <1317268436-1613-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rob Herring <rob.herring@calxeda.com>
 
+With recent patches for VIC device tree support and GIC MULTI_IRQ support,
+it is evident that the irq domain support should be moved into the core GIC
+code and not be dependent on the DT initialization. So I've split things up
+into 2 patches separating irq_domain and device-tree code.
 
+This should only change the internals of the GIC code. The binding is
+unchanged from the previous version. Yeah!
 
-Dear E-mail User,,
+The full series is available here. This includes Russell's devel-stable and
+for-next branches and Nico's vmalloc branch.
 
+git://git.jdl.com/software/linux-3.0.git gic
 
-Please click this link to verify your account if is still active:
-https://docs.google.com/spreadsheet/viewform?formkey=dHdoRzl4NUtpMWw1VzdtcnI3WkhTZUE6MQ
+Rob
 
+Rob Herring (2):
+  ARM: gic: add irq_domain support
+  ARM: gic: add OF based initialization
 
+ Documentation/devicetree/bindings/arm/gic.txt |   55 ++++++++++
+ arch/arm/common/Kconfig                       |    1 +
+ arch/arm/common/gic.c                         |  144 +++++++++++++++++++------
+ arch/arm/include/asm/hardware/gic.h           |    4 +
+ 4 files changed, 171 insertions(+), 33 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
 
-Note: failure to upgrade may to the closure of your e-mail.
-
-
-Thank you for using Web mail.
-E-mail? CMS Webmail GmbH 2011
+-- 
+1.7.5.4
 
