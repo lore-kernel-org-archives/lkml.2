@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab1I2R1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:27:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46925 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204Ab1I2R1f convert rfc822-to-8bit (ORCPT
+	id S932196Ab1I2R3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:29:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49613 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab1I2R3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:27:35 -0400
-Date: Thu, 29 Sep 2011 13:29:00 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: trond.myklebust@netapp.com, pavel@ucw.cz, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@calva.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] cifs, freezer: add wait_event_freezekillable and
- have cifs use it
-Message-ID: <20110929132900.47a7aa40@barsoom.rdu.redhat.com>
-In-Reply-To: <CAH2r5ms8pg7VW7JMa_eCUomEC1cfiM+rG_JZ6F7cHB=MtZwF0A@mail.gmail.com>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
-	<1317210761-11518-3-git-send-email-jlayton@redhat.com>
-	<CAH2r5mtBwUkTXLQeXzvTC6oAcz1i9jzPGfiE7XTzDTw12A6C_Q@mail.gmail.com>
-	<20110929064119.160cb455@corrin.poochiereds.net>
-	<CAH2r5ms8pg7VW7JMa_eCUomEC1cfiM+rG_JZ6F7cHB=MtZwF0A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Sep 2011 13:29:21 -0400
+Date: Thu, 29 Sep 2011 21:28:21 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@gentwo.org>, kernel-hardening@lists.openwall.com,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110929172821.GA19601@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
+ <20110927193810.GA5416@albatros>
+ <alpine.DEB.2.00.1109271459180.13797@router.home>
+ <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
+ <20110929161848.GA16348@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929161848.GA16348@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011 11:39:53 -0500
-Steve French <smfrench@gmail.com> wrote:
-
-> On Thu, Sep 29, 2011 at 5:41 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> > On Wed, 28 Sep 2011 23:28:02 -0500
-> > Steve French <smfrench@gmail.com> wrote:
-> >
-> >> The general idea of the patch seems like a good idea to
-> >> me.  Assuming testing feedback was good from the problem
-> >> reporters, what tree would you want it merged from?
-> >>
-> >
-> > There's the rub -- this requires a number of changes in different
-> > areas. What I really need at this point is a verdict on patch #1. If
-> > that looks OK, then that should probably go in via the one of the
-> > linux-pm trees. Then patch #2 can probably go in via your tree and 3
-> > and 4 can go in via Trond's.
+On Thu, Sep 29, 2011 at 20:18 +0400, Vasiliy Kulikov wrote:
+> On Tue, Sep 27, 2011 at 13:33 -0700, David Rientjes wrote:
+> > I'd much rather just convert everything to use MB rather than KB so you 
+> > can't determine things at a page level.  I think that gets us much closer 
+> > to what the patch is intending to restrict.  But I also expect some 
+> > breakage from things that just expect meminfo to be in KB units without 
+> > parsing what the kernel is exporting.
 > 
-> Yes - makes sense, but wonder about ways to test the various
-> suspend/hibernate cases to make sure they work.
+> I'm not convinced with rounding the information to MBs.  The attacker
+> still may fill slabs with new objects to trigger new slab pages
+> allocations.  He will be able to see when this MB-granularity barrier is
+> overrun thus seeing how many kbs there were before:
 > 
+>     old = new - filled_obj_size_sum
+> 
+> As `new' is just increased, it means it is known with KB granularity,
+> not MB.  By counting used slab objects he learns filled_obj_size_sum.
 
-I think this set is unlikely to hurt anything (assuming of course that
-waking up TASK_KILLABLE tasks on suspend events is OK). It's possible
-that there are other places that need to be patched in the same way,
-but this seems to cover the main pain points that people have reported.
+s/filled_obj_size_sum/old/ of course.
+
+> So, rounding gives us nothing, but obscurity.
+> 
+> Thanks,
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
