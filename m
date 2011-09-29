@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1I2WGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:06:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18383 "EHLO mx1.redhat.com"
+	id S1755534Ab1I2WGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:06:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:33284 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1I2WGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:06:09 -0400
-Date: Thu, 29 Sep 2011 19:05:48 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
-	sample type
-Message-ID: <20110929220548.GA17597@ghostprotocols.net>
-References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
+	id S1755358Ab1I2WGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 18:06:14 -0400
+Date: Fri, 30 Sep 2011 00:06:10 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Gilbert Strange <gilbert.strange@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: linux 2.4 download
+Message-ID: <20110929220610.GA9086@1wt.eu>
+References: <CAE15VAb93=_FrHgu3bGUSM2Wq0RvS1bqR+Z71g0V3BWP-BkJ2g@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAE15VAb93=_FrHgu3bGUSM2Wq0RvS1bqR+Z71g0V3BWP-BkJ2g@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
-> The event processing relies on all events having the same sample_type.
-> 
-> This is being checked when the session is being opened read only.
-> It also needs to be checked when we do record, since events could be
-> read during processing build IDs at the end of the record command.
-> 
-> If we process events with different sample_type the processing might
-> skip some events or hang.
-> 
-> Following command hangs on my setup:
->   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
->    -e LLC-loads -- date '+%F'
-> 
-> because hardware and tracepoint events have different sample type.
-> 
-> With the patch applied the record command displays
-> "Non matching sample_type" message and exits.
+Hi,
 
-That is way too cryptic :-\
+On Thu, Sep 29, 2011 at 11:24:19PM +0200, Gilbert Strange wrote:
+> Hi,
+> 
+> is there any chance to download Linux 2.4 source?
 
-What is that makes the sample type not match in this case? Can we make
-it match instead?
+Do you need a tar.gz or the git version ? tar.gz will be found at some
+mirrors, and if you need a more recent version, please ask and I'll
+happily send you a patch. I'd just rather avoid uploading the whole
+code from my DSL line.
 
-This is something to be properly fixed by _allowing_ non matching sample
-types, the evsel/evlist abstractions are getting we close but not there
-yet, multiple files in a perf.data/ directory are needed.
+Regards,
+Willy
 
-Till then can you check if we can make it match or else just say that
-the mix of events is not yet supported, please collect them in different
-sessions or something along those lines?
-
-- Arnaldo
