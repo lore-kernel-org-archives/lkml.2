@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab1I2WtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:49:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60159 "EHLO
+	id S1757008Ab1I2WsX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:48:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60149 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757065Ab1I2WsY (ORCPT
+	with ESMTP id S1756197Ab1I2WsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:48:24 -0400
+	Thu, 29 Sep 2011 18:48:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/16] perf script: Add drop monitor script
-Date: Thu, 29 Sep 2011 19:47:56 -0300
-Message-Id: <1317336490-19437-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 03/16] perf buildid-list: Add option to show the running kernel build id
+Date: Thu, 29 Sep 2011 19:47:57 -0300
+Message-Id: <1317336490-19437-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
 References: <1317336490-19437-1-git-send-email-acme@infradead.org>
@@ -25,129 +27,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-A while back I created the dropmonitor protocol, which allowed users to get
-reports of dropped frames communicated to them via a netlink socket.
+[root@emilia ~]# perf buildid-list -k
+07b0c016a2b30004e86132d0239945b1e88f5d75
 
-While useful, several people have now asked that I integrate the ability
-to do drop monitoring with perf, so they don't have to run additional
-tools.
+Useful when diagnosing build id problems in debuginfo packages, etc.
 
-This patch adds a drop monitor script to the perf suite, and provides
-the same output that the netlink socket does.
-
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1309801217-22450-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-po1bl7acn6e1hhne90opmvtl@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../perf/scripts/python/bin/net_dropmonitor-record |    2 +
- .../perf/scripts/python/bin/net_dropmonitor-report |    4 +
- tools/perf/scripts/python/net_dropmonitor.py       |   72 ++++++++++++++++++++
- 3 files changed, 78 insertions(+), 0 deletions(-)
- create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-record
- create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-report
- create mode 100755 tools/perf/scripts/python/net_dropmonitor.py
+ tools/perf/Documentation/perf-buildid-list.txt |    5 ++++
+ tools/perf/builtin-buildid-list.c              |   31 ++++++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/scripts/python/bin/net_dropmonitor-record b/tools/perf/scripts/python/bin/net_dropmonitor-record
-new file mode 100755
-index 0000000..423fb81
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/net_dropmonitor-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -e skb:kfree_skb $@
-diff --git a/tools/perf/scripts/python/bin/net_dropmonitor-report b/tools/perf/scripts/python/bin/net_dropmonitor-report
-new file mode 100755
-index 0000000..8d698f5
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/net_dropmonitor-report
-@@ -0,0 +1,4 @@
-+#!/bin/bash
-+# description: display a table of dropped frames
+diff --git a/tools/perf/Documentation/perf-buildid-list.txt b/tools/perf/Documentation/perf-buildid-list.txt
+index 5eaac6f..770a7f3 100644
+--- a/tools/perf/Documentation/perf-buildid-list.txt
++++ b/tools/perf/Documentation/perf-buildid-list.txt
+@@ -16,6 +16,8 @@ This command displays the buildids found in a perf.data file, so that other
+ tools can be used to fetch packages with matching symbol tables for use by
+ perf report.
+ 
++It can also be used to show the build id of the running kernel.
 +
-+perf script -s "$PERF_EXEC_PATH"/scripts/python/net_dropmonitor.py $@
-diff --git a/tools/perf/scripts/python/net_dropmonitor.py b/tools/perf/scripts/python/net_dropmonitor.py
-new file mode 100755
-index 0000000..a4ffc95
---- /dev/null
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -0,0 +1,72 @@
-+# Monitor the system for dropped packets and proudce a report of drop locations and counts
+ OPTIONS
+ -------
+ -H::
+@@ -27,6 +29,9 @@ OPTIONS
+ -f::
+ --force::
+ 	Don't do ownership validation.
++-k::
++--kernel::
++	Show running kernel build id.
+ -v::
+ --verbose::
+ 	Be more verbose.
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index 5af32ae..4102ead 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -1,7 +1,8 @@
+ /*
+  * builtin-buildid-list.c
+  *
+- * Builtin buildid-list command: list buildids in perf.data
++ * Builtin buildid-list command: list buildids in perf.data or in the running
++ * kernel.
+  *
+  * Copyright (C) 2009, Red Hat Inc.
+  * Copyright (C) 2009, Arnaldo Carvalho de Melo <acme@redhat.com>
+@@ -17,6 +18,7 @@
+ 
+ static char const *input_name = "perf.data";
+ static bool force;
++static bool show_kernel;
+ static bool with_hits;
+ 
+ static const char * const buildid_list_usage[] = {
+@@ -29,12 +31,13 @@ static const struct option options[] = {
+ 	OPT_STRING('i', "input", &input_name, "file",
+ 		    "input file name"),
+ 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
++	OPT_BOOLEAN('k', "kernel", &show_kernel, "Show current kernel build id"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose"),
+ 	OPT_END()
+ };
+ 
+-static int __cmd_buildid_list(void)
++static int perf_session__list_build_ids(void)
+ {
+ 	struct perf_session *session;
+ 
+@@ -52,6 +55,30 @@ static int __cmd_buildid_list(void)
+ 	return 0;
+ }
+ 
++static int sysfs__fprintf_build_id(FILE *fp)
++{
++	u8 kallsyms_build_id[BUILD_ID_SIZE];
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
 +
-+import os
-+import sys
++	if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
++				 sizeof(kallsyms_build_id)) != 0)
++		return -1;
 +
-+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
-+		'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++	build_id__sprintf(kallsyms_build_id, sizeof(kallsyms_build_id),
++			  sbuild_id);
++	fprintf(fp, "%s\n", sbuild_id);
++	return 0;
++}
 +
-+from perf_trace_context import *
-+from Core import *
-+from Util import *
++static int __cmd_buildid_list(void)
++{
 +
-+drop_log = {}
-+kallsyms = []
++	if (show_kernel)
++		return sysfs__fprintf_build_id(stdout);
 +
-+def get_kallsyms_table():
-+	global kallsyms
-+	try:
-+		f = open("/proc/kallsyms", "r")
-+		linecount = 0
-+		for line in f:
-+			linecount = linecount+1
-+		f.seek(0)
-+	except:
-+		return
++	return perf_session__list_build_ids();
++}
 +
-+
-+	j = 0
-+	for line in f:
-+		loc = int(line.split()[0], 16)
-+		name = line.split()[2]
-+		j = j +1
-+		if ((j % 100) == 0):
-+			print "\r" + str(j) + "/" + str(linecount),
-+		kallsyms.append({ 'loc': loc, 'name' : name})
-+
-+	print "\r" + str(j) + "/" + str(linecount)
-+	kallsyms.sort()
-+	return
-+
-+def get_sym(sloc):
-+	loc = int(sloc)
-+	for i in kallsyms:
-+		if (i['loc'] >= loc):
-+			return (i['name'], i['loc']-loc)
-+	return (None, 0)
-+
-+def print_drop_table():
-+	print "%25s %25s %25s" % ("LOCATION", "OFFSET", "COUNT")
-+	for i in drop_log.keys():
-+		(sym, off) = get_sym(i)
-+		if sym == None:
-+			sym = i
-+		print "%25s %25s %25s" % (sym, off, drop_log[i])
-+
-+
-+def trace_begin():
-+	print "Starting trace (Ctrl-C to dump results)"
-+
-+def trace_end():
-+	print "Gathering kallsyms data"
-+	get_kallsyms_table()
-+	print_drop_table()
-+
-+# called from perf, when it finds a correspoinding event
-+def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
-+			skbaddr, protocol, location):
-+	slocation = str(location)
-+	try:
-+		drop_log[slocation] = drop_log[slocation] + 1
-+	except:
-+		drop_log[slocation] = 1
+ int cmd_buildid_list(int argc, const char **argv, const char *prefix __used)
+ {
+ 	argc = parse_options(argc, argv, options, buildid_list_usage, 0);
 -- 
 1.6.2.5
 
