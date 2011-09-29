@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab1I2XrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:47:07 -0400
-Received: from boletus.uvigo.es ([193.146.32.99]:52774 "EHLO boletus.uvigo.es"
+	id S1752997Ab1I2XyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:54:13 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38784 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab1I2XrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:47:06 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Sep 2011 19:47:05 EDT
-Message-ID: <20110930014658.yoyzlzkao0ogo8w8@correoweb.uvigo.es>
-Date: Fri, 30 Sep 2011 01:46:58 +0200
-From: United Nation Promo <info@unf.co.uk>
-Reply-to: torobin01@blumail.org
-To: undisclosed-recipients:;
-Subject: CONGRATULATION!!!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	id S1751675Ab1I2XyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:54:12 -0400
+Date: Fri, 30 Sep 2011 08:49:38 +0900
+To: konrad.wilk@oracle.com
+Cc: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
+        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
+        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
+        airlied@linux.ie, alexdeucher@gmail.com, xen-devel@lists.xensource.com,
+        fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH 4/9] swiotlb: Expose swiotlb_nr_tlb function to modules
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
+References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
+	<1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
-X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1;
-	Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR
-	3.0.30729; Media Center PC 6.0; FW 2.0.5655.p)
-X-Originating-IP: 74.115.6.10
-X-Uvigo-A-Spam_score: -0.6
-X-Uvigo-A-Spam_score_int: -5
-X-Uvigo-A-Spam_bar: /
+Message-Id: <20110930083651R.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 30 Sep 2011 08:49:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 Sep 2011 16:33:47 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
+> As a mechanism to detect whether SWIOTLB is enabled or not.
+> We also fix the spelling - it was swioltb instead of
+> swiotlb.
+> 
+> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> [v1: Ripped out swiotlb_enabled]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/swiotlb-xen.c |    2 +-
+>  include/linux/swiotlb.h   |    2 +-
+>  lib/swiotlb.c             |    5 +++--
+>  3 files changed, 5 insertions(+), 4 deletions(-)
 
-You have been chosen by the U.N Foundation to receive a Grant Donation of One
-Million Dollars. Your Qualification Numbers (G-999-747,UZ-900-77) Contact
-Mr.Robin Steven with Name,address,country for claim: E-mail:
-torobin01@blumail.org
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
