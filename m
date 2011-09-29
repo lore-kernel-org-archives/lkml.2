@@ -1,53 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab1I2Ohx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:37:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53771 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab1I2Ohw (ORCPT
+	id S932150Ab1I2OjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:39:05 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39895 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab1I2OjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:37:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADi559EcS_iyXgw4qZm5RFVZG2oWiFQ-4w489FEn6YGdViPaXg@mail.gmail.com>
-References: <20110929070940.GA2838@udknight.homenetwork> <CA+55aFzjAinwRcw-xd4U8tR+bDdpf2h2kP=cEd5hw+K6ZPt3QQ@mail.gmail.com>
- <CADi559EcS_iyXgw4qZm5RFVZG2oWiFQ-4w489FEn6YGdViPaXg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 29 Sep 2011 07:37:31 -0700
-X-Google-Sender-Auth: hlSZzS-Mn2KzsLXAJ5mjqYrFj1o
-Message-ID: <CA+55aFyP5NcNTuHTjrBY9MFbGM793TiMs6Ejnk8+aU=LYefKFg@mail.gmail.com>
-Subject: Re: [PATCH] init:main.c: start 'usermodehelper_enable()' a little early
-To: wang yanqing <udknight@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Sep 2011 10:39:02 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
+Subject: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
+Date: Thu, 29 Sep 2011 10:38:49 -0400
+Message-Id: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.6.2
+In-Reply-To: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 1:57 AM, wang yanqing <udknight@gmail.com> wrote:
->
-> maybe uvesafb has some specific thing that it requires a userspace
-> helper application called 'v86d' to work!
-> I will try to make uvesafb workaround it, but i don't know whether it
-> will work, and splash boot *really* need
-> early init.
+This patch adds a per-pci-device subdirectory in sysfs called:
+/sys/bus/pci/devices/<device>/msi_irqs
 
-Ok. I guess we cannot avoid this. I really would have preferred to run
-the kernel init routines without usermodehelper enabled, but it looks
-like reality doesn't care about my wishes.
+This sub-directory exports the set of msi vectors allocated by a given
+pci device, by creating a numbered sub-directory for each vector beneath
+msi_irqs.  For each vector various attributes can be exported.  Currently the
+only attribute is called mode, which tracks the operational mode of that vector
+(msi vs. msix)
 
-Your "move it up to before all initcalls" works, and seems to be the
-simplest solution. I considered doing this when we mount the root
-filesystem, but depending on config options that is in multiple
-places. We could do the usermode helper enable as a
-rootfs_initcall()..
+---
 
-I'm nervous about this. Enabling the usermode helpers too early can
-re-introduce the bug where we do it *much* too early before everything
-is initialized. But yes, uvesafb clearly does depend on being able to
-execute v86d from the root filesystem.
+Change Notes:
 
-So I  think I'll just have to apply your patch. The alternatives look uglier.
+(v2)
+Fixed up Documentation to put new sysfs interface descriptions in the right
+place, as per request by Greg K-H
 
-Thanks for the report and the debug help,
+Fixed up oops that resulted from removing pci device.  Not 100% sure I did this
+exactly right, but looking at the crash (triggered by echo 1 >
+/sys/class/net/eth0/device/remove), it looked as though we were freeing the
+pci_dev struct prior to all sysfs objects releasing their use of the device.  AS
+such it seemed most appropriate to hold references on the pci_dev for each msi
+irq sysfs object that we create, and release them on free accordingly.  With
+this change in place, I can remove, and add (via rescan) msi enabled devices
+ad-nauseum without a panic.  Again thanks to Greg K-H
 
-            Linus
+(v3)
+As per Gregs suggestion, I looked further and noted that in fact, yes, it wasn't
+producing any errors on remove, but only because I had a refcounting problem,
+and my new sysfs objects were left orphaned with a dangling refcount.  I've
+fixed that, added a release method to the new ktype, which now drops the
+reference I hold on the pci_dev for us and I've validated that all objects I've
+created, along with the parent directory and pci device are cleaned up and freed
+by enabling the kobject dyanic_debug set and observing the appropriate release
+calls.  I can provide the logs if anyone wants to review them specifically.
+
+(v4)
+Fixed up some spelling mistakes, and added a scissors line with a good
+commitlog, so that git-am drops all the version logging
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org
+---
+ Documentation/ABI/testing/sysfs-bus-pci |   18 +++++
+ drivers/pci/msi.c                       |  111 +++++++++++++++++++++++++++++++
+ include/linux/msi.h                     |    3 +
+ include/linux/pci.h                     |    1 +
+ 4 files changed, 133 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+index 349ecf2..2e445b7 100644
+--- a/Documentation/ABI/testing/sysfs-bus-pci
++++ b/Documentation/ABI/testing/sysfs-bus-pci
+@@ -66,6 +66,24 @@ Description:
+ 		re-discover previously removed devices.
+ 		Depends on CONFIG_HOTPLUG.
+ 
++What:		/sys/bus/pci/devices/.../msi_irqs/
++Date:		September, 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		The /sys/devices/.../msi_irqs directory contains a variable set
++		sub-directories, with each sub-directory being named after a
++		corresponding msi irq vector allocated to that device.  Each
++		numbered sub-directory N contains attributes of that irq.
++		Note that this directory is not created for device drivers which
++		do not support msi irqs
++
++What:		/sys/bus/pci/devices/.../msi_irqs/<N>/mode
++Date:		September 2011
++Contact:	Neil Horman <nhorman@tuxdriver.com>
++Description:
++		This attribute indicates the mode that the irq vector named by
++		the parent directory is in (msi vs. msix)
++
+ What:		/sys/bus/pci/devices/.../remove
+ Date:		January 2009
+ Contact:	Linux PCI developers <linux-pci@vger.kernel.org>
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 2f10328..73613e2 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -322,6 +322,8 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 			if (list_is_last(&entry->list, &dev->msi_list))
+ 				iounmap(entry->mask_base);
+ 		}
++		kobject_del(&entry->kobj);
++		kobject_put(&entry->kobj);
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
+@@ -402,6 +404,98 @@ void pci_restore_msi_state(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL_GPL(pci_restore_msi_state);
+ 
++
++#define to_msi_attr(obj) container_of(obj, struct msi_attribute, attr)
++#define to_msi_desc(obj) container_of(obj, struct msi_desc, kobj)
++
++struct msi_attribute {
++	struct attribute        attr;
++	ssize_t (*show)(struct msi_desc *entry, struct msi_attribute *attr,
++			char *buf);
++	ssize_t (*store)(struct msi_desc *entry, struct msi_attribute *attr,
++			 const char *buf, size_t count);
++};
++
++static ssize_t show_msi_mode(struct msi_desc *entry, struct msi_attribute *atr,
++			     char *buf)
++{
++	return sprintf(buf, "%s\n", entry->msi_attrib.is_msix ? "msix" : "msi");
++}
++
++static ssize_t msi_irq_attr_show(struct kobject *kobj,
++				 struct attribute *attr, char *buf)
++{
++	struct msi_attribute *attribute = to_msi_attr(attr);
++	struct msi_desc *entry = to_msi_desc(kobj);
++
++	if (!attribute->show)
++		return -EIO;
++
++	return attribute->show(entry, attribute, buf);
++}
++
++static const struct sysfs_ops msi_irq_sysfs_ops = {
++	.show = msi_irq_attr_show,
++};
++
++static struct msi_attribute mode_attribute =
++	__ATTR(mode, S_IRUGO, show_msi_mode, NULL);
++
++
++struct attribute *msi_irq_default_attrs[] = {
++	&mode_attribute.attr,
++	NULL
++};
++
++void msi_kobj_release(struct kobject *kobj)
++{
++	struct msi_desc *entry = to_msi_desc(kobj);
++
++	pci_dev_put(entry->dev);
++}
++
++static struct kobj_type msi_irq_ktype = {
++	.release = msi_kobj_release,
++	.sysfs_ops = &msi_irq_sysfs_ops,
++	.default_attrs = msi_irq_default_attrs,
++};
++
++static int populate_msi_sysfs(struct pci_dev *pdev)
++{
++	struct msi_desc *entry;
++	struct kobject *kobj;
++	int ret;
++	int count = 0;
++
++	pdev->msi_kset = kset_create_and_add("msi_irqs", NULL, &pdev->dev.kobj);
++	if (!pdev->msi_kset)
++		return -ENOMEM;
++
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		kobj = &entry->kobj;
++		kobj->kset = pdev->msi_kset;
++		pci_dev_get(pdev);
++		ret = kobject_init_and_add(kobj, &msi_irq_ktype, NULL,
++				     "%u", entry->irq);
++		if (ret)
++			goto out_unroll;
++
++		count++;
++	}
++
++	return 0;
++
++out_unroll:
++	list_for_each_entry(entry, &pdev->msi_list, list) {
++		if (!count)
++			break;
++		kobject_del(&entry->kobj);
++		kobject_put(&entry->kobj);
++		count--;
++	}
++	return ret;
++}
++
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -453,6 +547,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 		return ret;
+ 	}
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
++	}
++
+ 	/* Set MSI enabled bits	 */
+ 	pci_intx_for_msi(dev, 0);
+ 	msi_set_enable(dev, pos, 1);
+@@ -573,6 +674,12 @@ static int msix_capability_init(struct pci_dev *dev,
+ 
+ 	msix_program_entries(dev, entries);
+ 
++	ret = populate_msi_sysfs(dev);
++	if (ret) {
++		ret = 0;
++		goto error;
++	}
++
+ 	/* Set MSI-X enabled bits and unmask the function */
+ 	pci_intx_for_msi(dev, 0);
+ 	dev->msix_enabled = 1;
+@@ -731,6 +838,8 @@ void pci_disable_msi(struct pci_dev *dev)
+ 
+ 	pci_msi_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msi);
+ 
+@@ -829,6 +938,8 @@ void pci_disable_msix(struct pci_dev *dev)
+ 
+ 	pci_msix_shutdown(dev);
+ 	free_msi_irqs(dev);
++	kset_unregister(dev->msi_kset);
++	dev->msi_kset = NULL;
+ }
+ EXPORT_SYMBOL(pci_disable_msix);
+ 
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 05acced..ce93a34 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -1,6 +1,7 @@
+ #ifndef LINUX_MSI_H
+ #define LINUX_MSI_H
+ 
++#include <linux/kobject.h>
+ #include <linux/list.h>
+ 
+ struct msi_msg {
+@@ -44,6 +45,8 @@ struct msi_desc {
+ 
+ 	/* Last set MSI message */
+ 	struct msi_msg msg;
++
++	struct kobject kobj;
+ };
+ 
+ /*
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index f27893b..fff3961 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -332,6 +332,7 @@ struct pci_dev {
+ 	struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
+ #ifdef CONFIG_PCI_MSI
+ 	struct list_head msi_list;
++	struct kset *msi_kset;
+ #endif
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_IOV
+-- 
+1.7.6.2
+
