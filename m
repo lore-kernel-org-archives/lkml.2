@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1I2BC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Sep 2011 21:02:56 -0400
-Received: from [124.207.24.138] ([124.207.24.138]:48055 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150Ab1I2BCz (ORCPT
+	id S1755444Ab1I2BDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Sep 2011 21:03:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42437 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109Ab1I2BDa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Sep 2011 21:02:55 -0400
+	Wed, 28 Sep 2011 21:03:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110928180503.GC1696@barrios-desktop>
-References: <1317174330-2677-1-git-send-email-minchan.kim@gmail.com>
-	<CAF1ivSaf8ER9yDWohudy-huiq5QHS8vE04R+4+nPTQihZ2MAmQ@mail.gmail.com>
-	<20110928180503.GC1696@barrios-desktop>
-Date: Thu, 29 Sep 2011 09:02:36 +0800
-Message-ID: <CAF1ivSbPoC_ngCmwmTC+JJuNxhhSoJyCRhTRcWj9V9VgYwU9jQ@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: add barrier to prevent evictable page in
- unevictable list
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1419276380.765271.1317226086965.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+References: <1316840820-2014-1-git-send-email-linkinjeon@gmail.com>
+	<1419276380.765271.1317226086965.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Date: Thu, 29 Sep 2011 10:03:28 +0900
+Message-ID: <CAKYAXd8q=ksfOxjoC4L3Cmh6EvQg74Saz4b7nO8790Z+1Lo7-w@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc : general purpose partition support.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Andrei Warkentin <awarkentin@vmware.com>
+Cc: linux-kernel@vger.kernel.org, adrian hunter <adrian.hunter@intel.com>,
+        james p freyensee <james_p_freyensee@linux.intel.com>, cjb@laptop.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 2:05 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Wed, Sep 28, 2011 at 11:04:05PM +0800, Lin Ming wrote:
->> On Wed, Sep 28, 2011 at 9:45 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> > When racing between putback_lru_page and shmem_unlock happens,
+2011/9/29 Andrei Warkentin <awarkentin@vmware.com>:
+> Hi Namjae,
+>
+> In general I think your approach is fine and solves the problem. See further inline
+> comments.
+>
+> ----- Original Message -----
+>> From: "Namjae Jeon" <linkinjeon@gmail.com>
+>> To: cjb@laptop.org, linux-mmc@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com, "adrian hunter" <adrian.hunter@intel.com>, "james p
+>> freyensee" <james_p_freyensee@linux.intel.com>, "Namjae Jeon" <linkinjeon@gmail.com>
+>> Sent: Saturday, September 24, 2011 1:07:00 AM
+>> Subject: [PATCH v2] mmc : general purpose partition support.
 >>
->> s/shmem_unlock/shmem_lock/
->
-> I did it intentionally for represent shmem_lock with user = 1, lock = 0.
-> If you think it makes others confusing, I will change in next version.
-> Thanks.
-
-I was confused. Now I understand.
-
->
+>> It allows gerneral purpose partitions in MMC Device.
+>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
+>> structure suggested by Andrei Warkentin.
+>> After patching, we can see general purpose partitions like this.
+>> > cat /proc/partitions
+>>           179 0 847872 mmcblk0
+>>           179 192 4096 mmcblk0gp4
+>>           179 160 4096 mmcblk0gp3
+>>           179 128 4096 mmcblk0gp2
+>>           179 96  1052672 mmcblk0gp1
+>>           179 64  1024 mmcblk0boot1
+>>           179 32  1024 mmcblk0boot0
 >>
->> > progrom execution order is as follows, but clear_bit in processor #1
->> > could be reordered right before spin_unlock of processor #1.
->> > Then, the page would be stranded on the unevictable list.
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 >
-> --
-> Kind regards,
-> Minchan Kim
+>> +             if (ext_csd[EXT_CSD_BOOT_MULT]) {
+>> +                     for (i = 0, boot_part_config = 0x1;
+>> +                             i < MMC_NUM_BOOT_PARTITION;
+>> +                             i++, boot_part_config++) {
+>> +                             card->part[i].size = ...
+>> +                             card->part[i].cookie = ...
+>> +                             sprintf(card->part[i].name, "boot%d", i);
+>> +                             card->part[i].force_ro = ...
+>> +                     }
+>> +             }
+>>       }
+>>
+>>
+>> +             if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
+>> +                     ....
+>> +                     int i, gp_num, gp_part_config, gp_size_mult;
+>> +                     for (i = 2, gp_num = 1, gp_part_config = 0x4,
+>> +                             card->part[i].size = ...
+>> +                             card->part[i].cookie = ...
+>> +                             sprintf(card->part[i].name,
+>> +                                     "gp%d", gp_num);
+>> +                             card->part[i].force_ro = ..
+>> +                     }
+>> +             }
+>>
+>
+> I feel that you should factor out a function that operates on the static part[] array and
+> adds a new entry base name, index (i.e. the %d for gp%d), cookie, size, force.
+> Otherwise you end up with these hidden mines like fixed indeces for
+> particular parts (i = 2, etc...) which becomes indecipherable for others.
+> Plus you're mostly doing the same thing.
+>
+Hi.
+I think that factoring out a function will be not inefficient by many
+agument and size calculation,. etc.
+And I agree about readabiliby, readability is dropped by some fixed
+value. so I will modify current patch.
+plz review one more when I post new patch.
+Thanks.
+> Thanks,
+> A
+>
