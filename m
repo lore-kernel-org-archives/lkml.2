@@ -1,91 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab1I2EtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 00:49:14 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40475 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1I2EtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 00:49:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 29 Sep 2011 13:48:16 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com,
-        levinsasha928@gmail.com
-Subject: Re: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge
- at next window)
-Message-Id: <20110929134816.7f29bf46.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <22173398-de03-43ef-abe4-a3f3231dd2e9@default>
-References: <20110915213305.GA26317@ca-server1.us.oracle.com
- 20110928151558.dca1da5e.kamezawa.hiroyu@jp.fujitsu.com>
-	<22173398-de03-43ef-abe4-a3f3231dd2e9@default>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754581Ab1I2Eto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 00:49:44 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40040 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754020Ab1I2Etn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 00:49:43 -0400
+Date: Wed, 28 Sep 2011 21:49:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20110929044909.GA5432@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAFTL4hy4t4z2GX=Tj5wjVv=BSGaSbcspDw3FGUy_2uK=9HU_2A@mail.gmail.com>
+ <20110926012611.GJ2995@linux.vnet.ibm.com>
+ <20110926092052.GD18553@somewhere>
+ <20110926225032.GQ2399@linux.vnet.ibm.com>
+ <20110927121648.GK18553@somewhere>
+ <20110927180142.GD2335@linux.vnet.ibm.com>
+ <20110928123116.GP18553@somewhere>
+ <20110928184025.GF2383@linux.vnet.ibm.com>
+ <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929005545.GT2383@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11092904-5112-0000-0000-000000A9C9A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011 07:09:18 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-
-> > From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> > Sent: Wednesday, September 28, 2011 12:16 AM
-> > To: Dan Magenheimer
-> > Cc: linux-kernel@vger.kernel.org; linux-mm@kvack.org; jeremy@goop.org; hughd@google.com;
-> > ngupta@vflare.org; Konrad Wilk; JBeulich@novell.com; Kurt Hackel; npiggin@kernel.dk; akpm@linux-
-> > foundation.org; riel@redhat.com; hannes@cmpxchg.org; matthew@wil.cx; Chris Mason;
-> > sjenning@linux.vnet.ibm.com; jackdachef@gmail.com; cyclonusj@gmail.com; levinsasha928@gmail.com
-> > Subject: Re: [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
+On Wed, Sep 28, 2011 at 05:55:45PM -0700, Paul E. McKenney wrote:
+> On Thu, Sep 29, 2011 at 01:46:36AM +0200, Frederic Weisbecker wrote:
+> > On Wed, Sep 28, 2011 at 11:40:25AM -0700, Paul E. McKenney wrote:
+> > > On Wed, Sep 28, 2011 at 02:31:21PM +0200, Frederic Weisbecker wrote:
+> > > > On Tue, Sep 27, 2011 at 11:01:42AM -0700, Paul E. McKenney wrote:
+> > > > > On Tue, Sep 27, 2011 at 02:16:50PM +0200, Frederic Weisbecker wrote:
+> > > 
+> > > [ . . . ]
+> > > 
+> > > > > > > But all of this stuff looks to me to be called from the context
+> > > > > > > of the idle task, so that idle_cpu() will always return "true"...
+> > > > > > 
+> > > > > > I meant "idle_cpu() && !in_interrupt()" that should return false in
+> > > > > > rcu_read_lock_sched_held().
+> > > > > 
+> > > > > The problem is that the idle tasks now seem to make quite a bit of use
+> > > > > of RCU on entry to and exit from the idle loop itself, for example,
+> > > > > via tracing.  So it seems like it is time to have the idle loop
+> > > > > explictly tell RCU when the idle extended quiescent state is in effect.
+> > > > > 
+> > > > > An experimental patch along these lines is included below.  Does this
+> > > > > approach seem reasonable, or am I missing something subtle (or even
+> > > > > not so subtle) here?
+> > > > > 
+> > > > > 							Thanx, Paul
+> > > > > 
+> > > > > ------------------------------------------------------------------------
+> > > > > 
+> > > > > rcu: Explicitly track idle CPUs.
+> > > > > 
+> > > > > In the good old days, RCU simply checked to see if it was running in
+> > > > > the context of an idle task to determine whether or not it was in the
+> > > > > idle extended quiescent state.  However, the entry to and exit from
+> > > > > idle has become more ornate over the years, and some of this processing
+> > > > > now uses RCU while running in the context of the idle task.  It is
+> > > > > therefore no longer reasonable to assume that anything running in the
+> > > > > context of one of the idle tasks is in an extended quiscent state.
+> > > > > 
+> > > > > This commit therefore explicitly tracks whether each CPU is in the
+> > > > > idle loop, allowing the idle task to use RCU anywhere except in those
+> > > > > portions of the idle loops where RCU has been explicitly informed that
+> > > > > it is in a quiescent state.
+> > > > > 
+> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > I fear we indeed need that now.
+> > > 
+> > > And we probably need to factor this patch stack.  Given the number
+> > > of warnings and errors due to RCU's confusion about what means "idle",
+> > > we simply are not bisectable as is.
 > > 
-> > On Thu, 15 Sep 2011 14:33:05 -0700
-> > Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-> > 
-> > > [PATCH V10 0/6] mm: frontswap: overview (and proposal to merge at next window)
-> > >
-> > > (Note: V9->V10 only change is corrections in debugfs-related code/counters)
-> > >
-> > > (Note to earlier reviewers:  This patchset was reorganized at V9 due
-> > > to feedback from Kame Hiroyuki and Andrew Morton.  Additionally, feedback
-> > > on frontswap v8 from Andrew Morton also applies to cleancache, to wit:
-> > >  (1) change usage of sysfs to debugfs to avoid unnecessary kernel ABIs
-> > >  (2) rename all uses of "flush" to "invalidate"
-> > > As a result, additional patches (5of6 and 6of6) were added to this
-> > > series at V9 to patch cleancache core code and cleancache hooks in the mm
-> > > and fs subsystems and update cleancache documentation accordingly.)
-> > 
-> > I'm sorry I couldn't catch following... what happens at hibernation ?
-> > frontswap is effectively stopped/skipped automatically ? or contents of
-> > TMEM can be kept after power off and it can be read correctly when
-> > resume thread reads swap ?
-> > 
-> > In short: no influence to hibernation ?
-> > I'm sorry if I misunderstand some.
+> > Not sure what you mean. You want to split that specific patch or
+> > others?
 > 
-> Hi Kame --
+> It looks to me that having my pair of patches on top of yours is
+> really ugly.  If we are going to introduce the per-CPU idle variable,
+> we should make a patch stack that uses that from the start.  This allows
+> me to bisect to track down the failures I am seeing on Power.
+
+And I should hasten to add that I am not blaming you for these problems.
+You have been finding at least as many problems in other code than in
+your own, in some cases making other problems easier to reproduce.  But
+either way, they need to be fixed to make the upcoming merge window.
+
+							Thanx, Paul
+
+> If you are too busy, I can take this on, but we might get better results
+> if you did it.  (And I certainly cannot complain about the large amount
+> of time and energy that you have put into this -- plus the reduction in
+> OS jitter will be really cool to have!)
 > 
-> Hibernation would need to be handled by the tmem backend (e.g. zcache, Xen
-> tmem).  In the case of Xen tmem, both save/restore and live migration are
-> fully supported.  I'm not sure if zcache works across hibernation; since
-> all memory is kmalloc'ed, I think it should work fine, but it would be an
-> interesting experiment.
+> > > > > diff --git a/include/linux/tick.h b/include/linux/tick.h
+> > > > > index 375e7d8..cd9e2d1 100644
+> > > > > --- a/include/linux/tick.h
+> > > > > +++ b/include/linux/tick.h
+> > > > > @@ -131,8 +131,16 @@ extern ktime_t tick_nohz_get_sleep_length(void);
+> > > > >  extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+> > > > >  extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+> > > > >  # else
+> > > > > -static inline void tick_nohz_idle_enter(bool rcu_ext_qs) { }
+> > > > > -static inline void tick_nohz_idle_exit(void) { }
+> > > > > +static inline void tick_nohz_idle_enter(bool rcu_ext_qs)
+> > > > > +{
+> > > > > +	if (rcu_ext_qs())
+> > > > > +		rcu_idle_enter();
+> > > > > +}
+> > > > 
+> > > > rcu_ext_qs is not a function.
+> > > 
+> > > Ooooh...  Good catch.  Would you believe that gcc didn't complain?
+> > > Or maybe my scripts are missing some gcc complaints.  But I would
+> > > expect the following to catch them:
+> > > 
+> > > 	egrep -q "Stop|Error|error:|warning:|improperly set"
+> > > 
+> > > Anything I am missing?
+> > 
+> > No idea :)
+> > 
+> > > > Although idle and rcu/nohz are still close notions, it sounds
+> > > > more logical the other way around in the ordering:
+> > > > 
+> > > > tick_nohz_idle_enter() {
+> > > > 	rcu_idle_enter() {
+> > > > 		rcu_enter_nohz();
+> > > > 	}
+> > > > }
+> > > > 
+> > > > tick_nohz_irq_exit() {
+> > > >         rcu_idle_enter() {
+> > > >                 rcu_enter_nohz();
+> > > >         }
+> > > > }
+> > > > 
+> > > > Because rcu ext qs is something used by idle, not the opposite.
 > 
-
-I'm afraid that users will lose data on memory of frontswap/zcache/tmem
-by power-off, hibernation. How about adding internal hooks to disable/sync
-frontswap itself before hibernation ? difficult ?
-
-Thanks,
--Kame
-
-
+> Re-reading this makes me realize that I would instead say that idle
+> is an example of an RCU extended quiescent state, or that the rcu_ext_qs
+> argument to the various functions is used to indicate whether or not
+> we are immediately entering/leaving idle from RCU's viewpoint.
+> 
+> So what were you really trying to say here?  ;-)
+> 
+> > > The problem I have with this is that it is rcu_enter_nohz() that tracks
+> > > the irq nesting required to correctly decide whether or not we are going
+> > > to really go to idle state.  Furthermore, there are cases where we
+> > > do enter idle but do not enter nohz, and that has to be handled correctly
+> > > as well.
+> > > 
+> > > Now, it is quite possible that I am suffering a senior moment and just
+> > > failing to see how to structure this in the design where rcu_idle_enter()
+> > > invokes rcu_enter_nohz(), but regardless, I am failing to see how to
+> > > structure this so that it works correctly.
+> > > 
+> > > Please feel free to enlighten me!
+> > 
+> > Ah I realize that you want to call rcu_idle_exit() when we enter
+> > the first level interrupt and rcu_idle_enter() when we exit it
+> > to return to idle loop.
+> > 
+> > But we use that check:
+> > 
+> > 	if (user ||
+> > 	    (rcu_is_cpu_idle() &&
+> >  	     !in_softirq() &&
+> >  	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
+> >  		rcu_sched_qs(cpu);
+> > 
+> > So we ensure that by the time we call rcu_check_callbacks(), we are not nesting
+> > in another interrupt.
+> 
+> But I would like to enable checks for entering/exiting idle while
+> within an RCU read-side critical section.  The idea is to move
+> the checks from their currently somewhat problematic location in
+> rcu_needs_cpu_quick_check() to somewhere more sensible.  My current
+> thought is to move them rcu_enter_nohz() and rcu_exit_nohz() near the
+> calls to rcu_idle_enter() and rcu_idle_exit(), respectively.
+> 
+> This would mean that they operated only in NO_HZ kernels with lockdep
+> enabled, but I am good with that because to do otherwise would require
+> adding nesting-level counters to the non-NO_HZ case, which I would like
+> to avoid, expecially for TINY_RCU.
+> 
+> > That said we found RCU uses after we decrement the hardirq offset and until
+> > we reach rcu_irq_exit(). So rcu_check_callbacks() may miss these places
+> > and account spurious quiescent states.
+> > 
+> > But between sub_preempt_count() and rcu_irq_exit(), irqs are disabled
+> > AFAIK so we can't be interrupted by rcu_check_callbacks(), except during the
+> > softirqs processing. But we have that ordering:
+> > 
+> > add_preempt_count(SOTFIRQ_OFFSET)
+> > local_irq_enable()
+> > 
+> > do softirqs
+> > 
+> > local_irq_disable()
+> > sub_preempt_count(SOTFIRQ_OFFSET)
+> > 
+> > So the !in_softirq() check covers us during the time we process softirqs.
+> > 
+> > The only assumption we need is that there is no place between
+> > sub_preempt_count(IRQ_EXIT_OFFSET) and rcu_irq_ext() that has
+> > irqs enabled and that is an rcu read side critical section.
+> > 
+> > I'm not aware of any automatic check to ensure that though.
+> 
+> Nor am I, which is why I am looking to the checks in
+> rcu_enter_nohz() and rcu_exit_nohz() called out above.
+> 
+> > Anyway, the delta patch looks good.
+> 
+> OK, my current plans are to start forward-porting to -rc8, and I would
+> like to have this pair of delta patches or something like them pulled
+> into your stack.
+> 
+> >                                     Just a little thing:
+> > 
+> > > -void tick_nohz_idle_exit(void)
+> > > +void tick_nohz_idle_exit(bool rcu_ext_qs)
+> > 
+> > It becomes weird to have both idle_enter/idle_exit having
+> > that parameter.
+> > 
+> > Would it make sense to have tick_nohz_idle_[exit|enter]_norcu()
+> > and a version without norcu?
+> 
+> Given that we need to make this work in CONFIG_NO_HZ=n kernels, I believe
+> that the current API is OK.  But if you would like to change the API
+> during the forward-port to -rc8, I am also OK with the alternative API
+> you suggest.
+> 
+> 							Thanx, Paul
+> 
+> > >  {
+> > >  	int cpu = smp_processor_id();
+> > >  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+> > > @@ -559,7 +559,7 @@ void tick_nohz_idle_exit(void)
+> > >  
+> > >  	ts->inidle = 0;
+> > >  
+> > > -	if (ts->rcu_ext_qs) {
+> > > +	if (rcu_ext_qs) {
+> > >  		rcu_exit_nohz();
+> > >  		ts->rcu_ext_qs = 0;
+> > >  	}
 
