@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab1I2PYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 11:24:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44576 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753285Ab1I2PYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 11:24:48 -0400
-Message-ID: <1317309888.1854.18.camel@Joe-Laptop>
-Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for
- dynamic_pr_debug
-From: Joe Perches <joe@perches.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, bart.vanassche@gmail.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 Sep 2011 08:24:48 -0700
-In-Reply-To: <CAJfuBxxoJ=KvzS-XgD6h7oXZ==xOC72_1YiR6shkY=5wC7CNmw@mail.gmail.com>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
-	 <1316642115-20029-26-git-send-email-jim.cromie@gmail.com>
-	 <1316725066.29447.16.camel@Joe-Laptop>
-	 <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
-	 <1317166589.19340.14.camel@Joe-Laptop>
-	 <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
-	 <1317185489.19340.22.camel@Joe-Laptop>
-	 <CAJfuBxxoJ=KvzS-XgD6h7oXZ==xOC72_1YiR6shkY=5wC7CNmw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.92- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756778Ab1I2P0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 11:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756470Ab1I2P0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 11:26:22 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH 00/11] virtio: Support for hibernation (S4)
+Date: Thu, 29 Sep 2011 20:55:56 +0530
+Message-Id: <cover.1317309123.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 11:27 -0600, Jim Cromie wrote:
-> On Tue, Sep 27, 2011 at 10:51 PM, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2011-09-27 at 20:54 -0600, Jim Cromie wrote:
-> >> Cleanest way is to drop the original synonym, and just use
-> >> warn (its shorter), but that creates some churn (havent grepped to see
-> >> how much).
-> >> I picked what looked like least effort & fewest corner-cases.
-> >> ICBW..
-> >
-> > #ifndef pr_fmt_warning
-> > #define pr_fmt_warning pr_fmt_warn
-> > #endif
-> >
-> 
-> you've made it conditional, where line 203 is not. why ?
->     201 #define pr_warning(fmt, ...) \
->     202         printk(KERN_WARNING pr_fmt_warn(fmt), ##__VA_ARGS__)
->     203 #define pr_warn pr_warning
->     204 #define pr_notice(fmt, ...) \
-> 
-> Also, though minor, 203 adds pr_warn as the shortcut,
-> youve suggested the opposite.  I presume this is an oversight.
+Hello,
 
-I think pr_warning should be deprecated.
-I think not #defining pr_fmt_warning is just fine.
+These patches add support for S4 to virtio (pci) and all drivers.  The
+patches are based on the virtio-console patch series in Rusty's queue.
 
-> >> > What did you think of avoiding all of this and
-> >> > having __dynamic_pr_debug move the fmt pointer over
-> >> > any initial KBUILD_MODULE ": "
-> >> >
-> >> > int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
-> >> > {
-> >> > [...]
-> >> >        size_t modsize = strlen(descriptor->modname);
-> >> >        if (0 == strncmp(fmt, descriptor->modname, modsize) &&
-> >> >            0 == strncmp(fmt + modsize, ": ", 2))
-> >> >                fmt += modsize + 2;
-> >> >        vprintk(fmt, ...)
-> >> > ?
-> >>
-> >> I was getting to that... ;-)
-> >> Im not crazy about it.  It feels like too much ..
-> >> Its a runtime workaround for what I think is a
-> >> problem in users' (or header's) #defines.
+For each driver, all vqs are removed before hibernation, and then
+re-created after restore.
 
-> > I think exactly the opposite myself.
-> >
-> > I think all of the '#define pr_fmt(fmt) KBUILD_MODNAME ": "'
-> > are effectivly useless and I will eventually delete them.
-> >
-> > The printk subsystem should look up the module name and
-> > prefix them to the printk akin to how the dynamic_debug
-> > system does.  Except the module name should be a singleton.
-> 
-> hmm, maybe Ive missed something in your argument.
-> 
-> For non-dynamic-debug builds, it seems you still want
-> the MODNAME in the pr_(crit|warn|info|debug) output,
-> you just dont like the hundreds of defines throughout drivers/*
+All the drivers in testing work fine:
 
-Yes. I've added most all of them.
+* virtio-blk is used for the only disk in the VM, IO works fine before
+  and after.
 
-It's because the current printk / pr_<level>
-subsystem chose to not prefix by default.
-Over the last couple of years, I've helped
-slowly converted about half of the kernel to
-pr_<level> and pr_fmt.
+* virtio-console: port IO keeps working fine before and after.
+  * If a port is waiting for data from the host (blocking read(2)
+    call), this works fine in both the cases: host-side connection is
+    available or unavailable after resume.  In case the host-side
+    connection isn't available, the blocking call is terminated.  If
+    it is available, the call continues to remain in blocked state
+    till further data arrives.
 
-At some point next year or so, enough of the
-kernel should be converted so that marking
-the last few uses of pr_debug or other
-pr_<level> without a preceding pr_fmt should
-be be relatively easy to convert to a more
-standard KBUILD_MODNAME or other user specified
-prefix.
+* virtio-net: ping remains active across S4.  One packet is lost.
+  (Current qemu.git has a regression in slirp code causing qemu
+  segfault, commit 1ab74cea060 is the offender).
 
-It takes awhile though.
+* virtio-balloon: Works fine before and after.  Forgets the ballooned
+  value across S4.  If it's desirable to maintain the ballooned value,
+  a new config option can be created to do this.
 
-> IOW, it seems to take care of everything, w/o runtime workarounds.
+All in all, this looks pretty good.
 
-Nope.  Try it with and without DEBUG.
+Please review and apply.
 
-Also, look at the pr_debug uses that include __func__.
-These also duplicate output.
 
-I'd prefer a solution that allows deduplication.
-Having a dynamic_debug output to a fixed buffer
-via vsnprintf, scanning that output for leading
-KBUILD_MODNAME/__file__/__func__/__LINE__ prefixes
-and then skipping them when enabled would seem
-appropriate to me.
+Amit Shah (11):
+  virtio: pci: switch to new PM API
+  virtio-pci: add PM notification handlers for restore, freeze, thaw,
+    poweroff
+  virtio: console: Move out vq and vq buf removal into separate
+    functions
+  virtio: console: Add freeze and restore handlers to support S4
+  virtio: blk: Move out vq initialization to separate function
+  virtio: blk: Add freeze, restore handlers to support S4
+  virtio: net: Move out vq initialization into separate function
+  virtio: net: Move out vq and vq buf removal into separate function
+  virtio: net: Add freeze, restore handlers to support S4
+  virtio: balloon: Move out vq initialization into separate function
+  virtio: balloon: Add freeze, restore handlers to support S4
 
-cheers, Joe
+ drivers/block/virtio_blk.c      |   36 ++++++++++--
+ drivers/char/virtio_console.c   |  124 ++++++++++++++++++++++++++++++---------
+ drivers/net/virtio_net.c        |   98 ++++++++++++++++++++++---------
+ drivers/virtio/virtio_balloon.c |   65 +++++++++++++++------
+ drivers/virtio/virtio_pci.c     |   57 +++++++++++++++++-
+ include/linux/virtio.h          |    4 +
+ 6 files changed, 301 insertions(+), 83 deletions(-)
+
+-- 
+1.7.6.2
 
