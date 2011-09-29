@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab1I2XSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:18:34 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:56733 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab1I2XSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:18:33 -0400
-Date: Thu, 29 Sep 2011 16:18:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20110929231828.GA4931@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110926225032.GQ2399@linux.vnet.ibm.com>
- <20110927121648.GK18553@somewhere>
- <20110927180142.GD2335@linux.vnet.ibm.com>
- <20110928123116.GP18553@somewhere>
- <20110928184025.GF2383@linux.vnet.ibm.com>
- <20110928234633.GA3537@somewhere>
- <20110929005545.GT2383@linux.vnet.ibm.com>
- <20110929123040.GB3537@somewhere>
- <20110929171205.GA2362@linux.vnet.ibm.com>
- <20110929171901.GA6900@linux.vnet.ibm.com>
+	id S1758054Ab1I2XVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:21:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47602 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1I2XVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:21:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929171901.GA6900@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAKPcRGpPG2Z_tMQFHz8fpBLhLO4dx58AVhYWmPdZ_0pV7pVK6A@mail.gmail.com>
+References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
+ <CAKPcRGr3EzjS2es6HniuQziEivpsfH2r=d_Y=nkrsFW59g6xSw@mail.gmail.com> <CAKPcRGpPG2Z_tMQFHz8fpBLhLO4dx58AVhYWmPdZ_0pV7pVK6A@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 30 Sep 2011 07:21:00 +0800
+Message-ID: <CAGsJ_4x=tC3sVdXbsN_U-xc6CH5AVqOJEjY0a3h1SuH6Xobpiw@mail.gmail.com>
+Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support
+ MMC-like devices as resume file
+To: Luca Tettamanti <kronos.it@gmail.com>
+Cc: frank.hofmann@tomtom.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com, rjw@sisk.pl,
+        pavel@ucw.cz, Barry Song <Baohua.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 10:19:01AM -0700, Paul E. McKenney wrote:
-> On Thu, Sep 29, 2011 at 10:12:05AM -0700, Paul E. McKenney wrote:
-> > On Thu, Sep 29, 2011 at 02:30:44PM +0200, Frederic Weisbecker wrote:
-> 
-> [ . . . ]
-> 
-> > > Sure I can take your patches (I'm going to merge the delta into the first).
-> > > But if you want a rebase against -rc8, it's going to be easier if you
-> > > do that rebase on the branch you want me to work on. Then I work on top
-> > > of it.
-> > > 
-> > > For example we can take your rcu/dynticks, rewind to
-> > > "rcu: Make synchronize_sched_expedited() better at work sharing"
-> > > 771c326f20029a9f30b9a58237c9a5d5ddc1763d, rebase on top of -rc8
-> > > and I rebase my patches (yours included) on top of it and I repost.
-> > > 
-> > > Right?
-> > 
-> > Yep!  Your earlier three patches look to need some extended-quiescent-state
-> > rework as well:
-> > 
-> > b5566f3d: Detect illegal rcu dereference in extended quiescent state
-> > ee05e5a4: Inform the user about dynticks-idle mode on PROVE_RCU warning
-> > fa5d22cf: Warn when rcu_read_lock() is used in extended quiescent state
-> > 
-> > So I will leave these out and let you rebase them.
-> 
-> And for whatever it is worth, my following patches depend on yours as
-> well, so will not include them in the rebase:
-> 
-> 61cf7640: Remove one layer of abstraction from PROVE_RCU checking
-> 9a4d1ce3: Warn when srcu_read_lock() is used in an extended quiescent state
+2011/9/29 Luca Tettamanti <kronos.it@gmail.com>:
+> On Thu, Sep 29, 2011 at 5:47 PM, Luca Tettamanti <kronos.it@gmail.com> wrote:
+>> On Thu, Sep 29, 2011 at 11:29 AM, Barry Song <Barry.Song@csr.com> wrote:
+>>> From: Barry Song <baohua.song@csr.com>
+>>>
+>>> Some devices like mmc are async detected very slow. For example,
+>>> drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
+>>> mmc partitions then add disk.
+>>>
+>>> we do have wait_for_device_probe and scsi_complete_async_scans
+>>> before calling swsusp_check, but it is not enough to wait mmc.
+>>>
+>>> This patch adds resumewait kernel param just like rootwait so
+>>> that we have enough time to wait mmc ready. The differene is
+>>> here we wait for resume partition but rootwait waits for rootfs
+>>> partition.
+>>
+>> I assume that such a device would need "rootwait" to boot in the first
+>> place; why don't you "overload" the param to also enable waiting in
+>> the resume path?
+>
+> And in case that makes sense, it might be worthwhile to refactor a
+> common helper to be also used in do_mounts.c, e.g.
+> dev_t wait_for_device(char *name)
 
-And the new stack passes moderate rcutorture testing, and is available
-at https://github.com/paulmckrcu/linux on branch rcu/next.
+it is ok until we have many cases which wait for devices by polling.
+but there are only two by the moment.
+here i don't see it is worthwhile since the current codes are short
+and clear enough.
 
-							Thanx, Paul
+>
+> L
+
+-barry
