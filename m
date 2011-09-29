@@ -1,135 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab1I2UaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:30:21 -0400
-Received: from mx2.compro.net ([12.186.155.4]:20567 "EHLO mx2.compro.net"
+	id S1757793Ab1I2UbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:31:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:40544 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab1I2UaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:30:19 -0400
-X-IronPort-AV: E=Sophos;i="4.68,463,1312171200"; 
-   d="scan'208";a="7091617"
-Message-ID: <4E84D55A.5050406@compro.net>
-Date: Thu, 29 Sep 2011 16:30:18 -0400
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1757471Ab1I2UbE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 16:31:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,463,1312182000"; 
+   d="scan'208";a="21928491"
+From: "Cihula, Joseph" <joseph.cihula@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Wang, Shane" <shane.wang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "liang.tang@oracle.com" <liang.tang@oracle.com>,
+        "Yu, Ke" <ke.yu@intel.com>, "Tian, Kevin" <kevin.tian@intel.com>,
+        "jeremy@goop.org" <jeremy@goop.org>
+Subject: RE: [PATCH 3/8] x86/acpi/sleep: Provide registration for
+ acpi_suspend_lowlevel.
+Thread-Topic: [PATCH 3/8] x86/acpi/sleep: Provide registration for
+ acpi_suspend_lowlevel.
+Thread-Index: AQHMfuTWyLtvImwM7EyberMoVXrmdJVkz30Q
+Date: Thu, 29 Sep 2011 20:30:36 +0000
+Message-ID: <9F57BF860713DF4BA3EFA4F8C6DFEDAC16F7CD7D@ORSMSX101.amr.corp.intel.com>
+References: <1317327414-24072-1-git-send-email-konrad.wilk@oracle.com>
+ <1317327414-24072-4-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1317327414-24072-4-git-send-email-konrad.wilk@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: markh@compro.net
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Hounschell <dmarkh@cfl.rr.com>
-Subject: Re: Problem with AMD chipsets. Was "Re: problems doing direct dma
- from a pci device to pci-e device"
-References: <4E84CA01.2060907@compro.net>
-In-Reply-To: <4E84CA01.2060907@compro.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2011 03:41 PM, Mark Hounschell wrote:
-> The original thread is a year or so old but I never actually figured out
-> what the problem was. It's still an issue I need to try to understand so
-> I thought I would try again. As then, I know this is a PCI thing but
-> have CC'd LMKL just in case. Sorry for the noise LMKL.
->
-> Briefly, we have a couple of PCI cards that talk to each other over the
-> pci bus. One is a reflective memory type (rms) card and the other is a
-> special I/O (gpiohsd) card. These are both regular PCI cards. The way
-> this gpiohsd writes and reads data to and from this rms card mamory and
-> also to regular application SHM memory is by way of internal page tables
-> in the gpiohsd containing bus addresses of the rms cards memory or
-> application SHM memory. We stuff the gpiohsd page tables with bus
-> addresses we get from the page_to_phys call. We used to use virt_to_bus.
-> The gpiohsd may do a single read or write, or a large DMA read or write.
-> Software never directly tells this gpiohsd card to do any xfer, DMA or
-> not. I've looked at the kernel DMA Documentation and don't really see
-> anything there that will help me with my problem (which I will explain
-> below). Here is a blurp of the code in one of our GPL drivers we use for
-> getting bus addresses for our rms card memory and/or our application SHM
-> memory that we stuff into the gpiohsd page tables. FYI, a device
-> connected to this gpiohsd card can, by its self, cause the gpiohsd to
-> initiate these data transfers.
->
-> /*
-> * Get a physical/bus address from our virtual address
-> */
-> down_read(&current->mm->mmap_sem);
->
-> /*
-> * Get around the mlock fix/change in get_user_pages that forces
-> * the call to fail if the VM_IO bit is set in vma->vm_flags
-> *
-> * As of 2.6.16 kernels get_user_pages also fails when the
-> * new VM_PFNMAP bit in vm->flags is set. It is OK to
-> * reset this bit also as long as we return the bit to
-> * its original set condition.
-> */
->
-> VM_flags = 0;
-> vma = find_vma(current->mm, (unsigned long)pte_info.virt_addr);
-> VM_flags = (vma->vm_flags & (VM_IO | VM_PFNMAP));
-> vma->vm_flags &= (~VM_IO & ~VM_PFNMAP);
->
-> stat = get_user_pages(current, current->mm,
-> (unsigned long)pte_info.virt_addr,
-> 1, // one page
-> 1, // write access
-> 1, // force
-> &pages, // page struct
-> NULL); //
->
-> vma->vm_flags |= VM_flags; // Set vm_flags back to the way we found them
->
-> up_read(&current->mm->mmap_sem);
->
-> if (stat < 0) {
-> ret = -EFAULT;
-> goto out;
-> } else {
-> phys_addr = page_to_phys(pages); // on x86 phys = bus
-> page_cache_release(pages);
-> }
->
-> pci_address = phys_addr;
-> pte_info.pcimsa = 0; // We are running 32 bit
-> pte_info.pcilsa = pci_address;
-> if (PAGE_SIZE < 8192) // MPX page size
-> pte_info.pagesize = PAGE_SIZE;
-> else
-> pte_info.pagesize = 8192;
-> if (copy_to_user((lcrs_pte_struct_t *) arg,
-> &pte_info, sizeof(lcrs_pte_struct_t))) {
-> ret = -EFAULT;
-> goto out;
-> }
->
->
+ACK
 
-The above code is only used for the SHM case, Sorry. For the rms case we 
-get the bus address directly from the rms cards driver.
+> -----Original Message-----
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Thursday, September 29, 2011 1:17 PM
+> To: linux-kernel@vger.kernel.org; rjw@sisk.pl; tglx@linutronix.de; hpa@zytor.com; x86@kernel.org;
+> Brown, Len; Cihula, Joseph; Wang, Shane; xen-devel@lists.xensource.com; linux-pm@lists.linux-
+> foundation.org; tboot-devel@lists.sourceforge.net; linux-acpi@vger.kernel.org;
+> liang.tang@oracle.com; Yu, Ke; Tian, Kevin; jeremy@goop.org
+> Cc: Konrad Rzeszutek Wilk
+> Subject: [PATCH 3/8] x86/acpi/sleep: Provide registration for acpi_suspend_lowlevel.
+> 
+> From: Liang Tang <liang.tang@oracle.com>
+> 
+> Which by default will be x86_acpi_suspend_lowlevel.
+> This registration allows us to register another callback if there is a need to use another
+> platform specific callback.
+> 
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: x86@kernel.org
+> CC: Len Brown <len.brown@intel.com>
+> CC: Joseph Cihula <joseph.cihula@intel.com>
+> CC: Shane Wang <shane.wang@intel.com>
+> CC: linux-pm@lists.linux-foundation.org
+> CC: linux-acpi@vger.kernel.org
+> CC: Len Brown <len.brown@intel.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Liang Tang <liang.tang@oracle.com>
+> ---
+>  arch/x86/include/asm/acpi.h  |    2 +-
+>  arch/x86/kernel/acpi/boot.c  |    2 ++
+>  arch/x86/kernel/acpi/sleep.c |    4 ++--
+>  arch/x86/kernel/acpi/sleep.h |    2 ++
+>  drivers/acpi/sleep.c         |    2 ++
+>  5 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h index 0a46696..9b538dc
+> 100644
+> --- a/arch/x86/include/asm/acpi.h
+> +++ b/arch/x86/include/asm/acpi.h
+> @@ -119,7 +119,7 @@ static inline void acpi_disable_pci(void)  }
+> 
+>  /* Low-level suspend routine. */
+> -extern int acpi_suspend_lowlevel(void);
+> +extern int (*acpi_suspend_lowlevel)(void);
+> 
+>  extern const unsigned char acpi_wakeup_code[];  #define acpi_wakeup_address
+> (__pa(TRAMPOLINE_SYM(acpi_wakeup_code)))
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c index 7f30806..ddd081b
+> 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -44,6 +44,7 @@
+>  #include <asm/mpspec.h>
+>  #include <asm/smp.h>
+> 
+> +#include "sleep.h" /* To include x86_acpi_suspend_lowlevel */
+>  static int __initdata acpi_force = 0;
+>  u32 acpi_rsdt_forced;
+>  int acpi_disabled;
+> @@ -556,6 +557,7 @@ int (*__acpi_override_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+>  			     u32 pm1b_ctrl, bool *skip_rest) \
+>  			   __attribute__ ((unused)) = NULL;
+> 
+> +int (*acpi_suspend_lowlevel)(void) = x86_acpi_suspend_lowlevel;
+>  /*
+>   * success: return IRQ number (>=0)
+>   * failure: return < 0
+> diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c index 103b6ab..4d2d0b1
+> 100644
+> --- a/arch/x86/kernel/acpi/sleep.c
+> +++ b/arch/x86/kernel/acpi/sleep.c
+> @@ -25,12 +25,12 @@ static char temp_stack[4096];  #endif
+> 
+>  /**
+> - * acpi_suspend_lowlevel - save kernel state
+> + * x86_acpi_suspend_lowlevel - save kernel state
+>   *
+>   * Create an identity mapped page table and copy the wakeup routine to
+>   * low memory.
+>   */
+> -int acpi_suspend_lowlevel(void)
+> +int x86_acpi_suspend_lowlevel(void)
+>  {
+>  	struct wakeup_header *header;
+>  	/* address in low memory of the wakeup routine. */ diff --git a/arch/x86/kernel/acpi/sleep.h
+> b/arch/x86/kernel/acpi/sleep.h index 416d4be..4d3feb5 100644
+> --- a/arch/x86/kernel/acpi/sleep.h
+> +++ b/arch/x86/kernel/acpi/sleep.h
+> @@ -13,3 +13,5 @@ extern unsigned long acpi_copy_wakeup_routine(unsigned long);  extern void
+> wakeup_long64(void);
+> 
+>  extern void do_suspend_lowlevel(void);
+> +
+> +extern int x86_acpi_suspend_lowlevel(void);
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c index 3ed80b2..3570c00 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -254,6 +254,8 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  		break;
+> 
+>  	case ACPI_STATE_S3:
+> +		if (!acpi_suspend_lowlevel)
+> +			return -ENODEV;
+>  		error = acpi_suspend_lowlevel();
+>  		if (error)
+>  			return error;
+> --
+> 1.7.4.1
 
-> We come into the above code with a virtual address (page aligned) of
-> either the rms memory page, via mmap, or our SHM memory page, using the
-> standard shm API. This has all worked just fine for years. And it still
-> does except for when we are using a more recent MB with an AMD chipset
-> and the data to/from the gpiohsd has to cross a pci-e bridge to get to
-> the rms memory or to our SHM memory. An example of that configuration
-> would be when the rms card is plugged into the MB and the gpiohsd is in
-> a regular PCI expansion rack and the expansion rack interface card is a
-> pci-e card plugged into a pci-e slot. It appears we are unable to cross
-> over pci-e bridges for some reason using the bus addresses obtained
-> using the method described above.
->
-> We have no problem with this same configuration using a MB with an
-> nvidia chipset. I suspect it might have something to do with the the MB
-> that usines the AMD chipset having an IOMMU, but I really don't know for
-> sure. I've also read something in the AMD chipset docs about some type
-> of restrictions on peer to peer transfers but again I really have no
-> idea if this is related to why I'm having this problem.
->
-> Any pointers from anyone (even an AMD guy) out there would again be
-> appreciated.
->
