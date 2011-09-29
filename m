@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab1I2Tu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:50:28 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:53030 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753614Ab1I2Tu0 (ORCPT
+	id S1757347Ab1I2TxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:53:16 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:36368 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab1I2TxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:50:26 -0400
-Message-ID: <4E84CC00.8090702@xenotime.net>
-Date: Thu, 29 Sep 2011 12:50:24 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: linux-next: Tree for Sept 29 (kvm)
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-In-Reply-To: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 29 Sep 2011 15:53:05 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Carpenter <error27@gmail.com>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 9/9] xen/p2m/debugfs: Fix potential pointer exception.
+Date: Thu, 29 Sep 2011 15:52:51 -0400
+Message-Id: <1317325971-21603-10-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
+References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4E84CC9E.00C4:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/11 23:57, Stephen Rothwell wrote:
-> Hi all,
-> 
-> The linux-next tree is now available from
-> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> the kernel.org servers are unavailable.
+We could be referencing the last + 1 element of level_name[]
+array which would cause a pointer exception.
 
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/p2m.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-kvm build on i386 says:
-
-ERROR: "__udivdi3" [arch/x86/kvm/kvm.ko] undefined!
-
-which is used in somewhere in start_apic_timer()  (probably the divide :).
-
-
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 58efeb9..bc4cf0a 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -786,9 +786,9 @@ EXPORT_SYMBOL_GPL(m2p_find_override_pfn);
+ int p2m_dump_show(struct seq_file *m, void *v)
+ {
+ 	static const char * const level_name[] = { "top", "middle",
+-						"entry", "abnormal" };
++						"entry", "abnormal", NULL};
+ 	static const char * const type_name[] = { "identity", "missing",
+-						"pfn", "abnormal"};
++						"pfn", "abnormal", NULL};
+ #define TYPE_IDENTITY 0
+ #define TYPE_MISSING 1
+ #define TYPE_PFN 2
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.4.1
+
