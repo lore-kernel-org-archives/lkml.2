@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab1I2UcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:32:19 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33717 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab1I2UcR convert rfc822-to-8bit (ORCPT
+	id S1757630Ab1I2UdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:33:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49530 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab1I2UdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:32:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=xw6qHde5KNTtQyYgB8AS3Lu4IkZGdObGpXbpOqfSLoTg2ZKBSwkqNnAAFv/Sg3Ye4
-	VovFADC+D/os66UyroRLQ==
-MIME-Version: 1.0
-In-Reply-To: <20110929164319.GA3509@mgebm.net>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-	<20110929164319.GA3509@mgebm.net>
-Date: Thu, 29 Sep 2011 13:25:00 -0700
-Message-ID: <CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
-Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
-From: Michel Lespinasse <walken@google.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 29 Sep 2011 16:33:24 -0400
+Date: Thu, 29 Sep 2011 16:31:12 -0400 (EDT)
+Message-Id: <20110929.163112.1523715692737597332.davem@davemloft.net>
+To: david.daney@cavium.com
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] netdev/of/phy: MDIO bus multiplexer support.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
+References: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Sep 2011 13:31:17 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 9:43 AM, Eric B Munson <emunson@mgebm.net> wrote:
-> I have been trying to test these patches since yesterday afternoon.  When my
-> machine is idle, they behave fine.  I started looking at performance to make
-> sure they were a big regression by testing kernel builds with the scanner
-> disabled, and then enabled (set to 120 seconds).  The scanner disabled builds
-> work fine, but with the scanner enabled the second time I build my kernel hangs
-> my machine every time.  Unfortunately, I do not have any more information than
-> that for you at the moment.  My next step is to try the same tests in qemu to
-> see if I can get more state information when the kernel hangs.
+From: David Daney <david.daney@cavium.com>
+Date: Tue, 27 Sep 2011 16:26:52 -0700
 
-Could you please send me your .config file ? Also, did you apply the
-patches on top of straight v3.0 and what is your machine like ?
+> v2: Update bindings to use "reg" and "mdio-parent-bus" insutead of
+>     "cell-index" and "parent-bus"
 
-Thanks,
+Grant, when the final version of this patch set is ready how do
+you want to handle merging it in?
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+I think it would be safe to merge this via your tree, since the
+changes made to existing network driver files are rather trivial and
+thus merge conflict friendly.
+
+Actually, I feel like we've discussed this before :-)
