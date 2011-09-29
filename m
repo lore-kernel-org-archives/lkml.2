@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab1I2Mkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 08:40:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48562 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1I2Mka (ORCPT
+	id S1756102Ab1I2MnM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 08:43:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43340 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754512Ab1I2MnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 08:40:30 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=jRhu4G1yBvdpZJKnbfUA:9 a=cb4raEPhQav7qsLoPIAA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: Jump Label initialization
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Glauber <jang@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Jason Baron <jbaron@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        David Daney <ddaney@caviumnetworks.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Thu, 29 Sep 2011 08:40:26 -0400
-In-Reply-To: <1317297894.23938.9.camel@localhost.localdomain>
-References: <4E83D49C.9080809@goop.org>
-	 <1317297894.23938.9.camel@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317300028.4588.15.camel@gandalf.stny.rr.com>
+	Thu, 29 Sep 2011 08:43:11 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Mark Salter <msalter@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH v3 00/24] C6X: New architecture
+In-Reply-To: Your message of "Thu, 29 Sep 2011 08:21:58 EDT."
+             <1317298919.2580.92.camel@deneb.redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com> <22021.1317246541@turing-police.cc.vt.edu> <201109291233.24623.arnd@arndb.de>
+            <1317298919.2580.92.camel@deneb.redhat.com>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1317300157_4421P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 29 Sep 2011 08:42:37 -0400
+Message-ID: <60327.1317300157@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4E8467D6.0079,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 14:04 +0200, Jan Glauber wrote:
-> On Wed, 2011-09-28 at 19:14 -0700, Jeremy Fitzhardinge wrote:
-> > Hi all,
-> > 
-> > I'm trying to use the jump label machinery as part of the pv ticketlock
-> > work I'm doing on x86.
-> > 
-> > The problem I'm having at the moment is that I do my spinlock setup in
-> > smp_prepare_boot_cpu(), which happens before jump_label_init() gets
-> > called, and so the latter goes and nops out all my enabled jump label key.
-> > 
-> > I'm experimenting at the moment with a patch to allow
-> > jump_label_enable() to be called fairly early, and have that be
-> > respected by jump_label_init().  I'm doing this by replacing
-> > arch_jump_label_poke_text_early() with
-> > arch_jump_label_transform_early(), which shares most of its code with
-> > its non-early variant, except that it expects to run in a pre-SMP
-> > environment.
-> > 
-> > Does this seem plausible? (I haven't tested it yet.)
-> > 
-> > The x86, mips and sparc patches are fairly simple; I forgot to look at
-> > powerpc, and I didn't fully investigate s390.
-> 
-> s390 does not have the early() variant since it didn't need it. On
-> pre-SMP we probably don't need stop_machine() so creating
-> arch_jump_label_transform_early() by leaving out stop_machine()
-> and patching the code directly should be fine.
+--==_Exmh_1317300157_4421P
+Content-Type: text/plain; charset=us-ascii
 
-Also note that stop_machine() may only be needed by a few archs (maybe
-only x86).
+On Thu, 29 Sep 2011 08:21:58 EDT, Mark Salter said:
 
-x86 has a nasty condition if you change code that is being loaded in
-another CPUs pipeline, it could cause a GPF. I've been playing with this
-on PPC and this does not have that same bug. In fact Benjamin told me
-that PPC is fine with modifying instructions on a running system.
+> One thing that we plan to push later is an XIP model where cores can share a
+> single kernel text image but run with their own copies of data. So you end up
+> with something like a loosely coupled multiprocessor system with some hardware
+> support for multicore communication and peripheral sharing.
 
-I plan on removing the stop_machine() from ftrace for those boxes. I
-already have patches made, just need to spiffy them up a bit.
+Ah, OK.  I eventually came across a mention in one of the patches of running
+a separate instance of Linux on each core, whick left me even more mystified.
+But the above clarifies it, thanks...
 
--- Steve
+I wonder how many currently global variables will need to be moved to per_cpu
+structures to make it work, and how intrusive that will end up.  Or is the plan
+to have the boot loader simply plonk the entire .data/.bss in different locations
+for each core?
 
 
+--==_Exmh_1317300157_4421P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOhGe9cC3lWbTT17ARAjxVAJ9BK60NbcVXSY506pqOWLd94GQz6QCgs58c
+2poKcwjoj4HP1RBqkzd9Tp0=
+=ms+8
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317300157_4421P--
 
