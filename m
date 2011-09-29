@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab1I2Wsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:48:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43983 "EHLO
+	id S1757504Ab1I2Wsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:48:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43974 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756792Ab1I2Wsh (ORCPT
+	with ESMTP id S1756993Ab1I2Ws1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:48:37 -0400
+	Thu, 29 Sep 2011 18:48:27 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jim Cromie <jim.cromie@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Neil Horman <nhorman@tuxdriver.com>,
-        Paul Mackerras <paulus@samba.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 00/16] perf/core improvements and fixes
-Date: Thu, 29 Sep 2011 19:47:54 -0300
-Message-Id: <1317336490-19437-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 05/16] perf top browser: Fix up line width calculation
+Date: Thu, 29 Sep 2011 19:47:59 -0300
+Message-Id: <1317336490-19437-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
+References: <1317336490-19437-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+Fixing an artifact where the last 3 chars of a long DSO name would
+remain on the screen sometimes.
 
-git://github.com/acmel/linux.git perf/core
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-dkiakcl3z69dh1bt9uegaktv@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/top.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-	This was rebased against your perf/core on tesla.
-
-Regards,
-
-- Arnaldo
-
-Andi Kleen (2):
-  perf tools: Make stat/record print fatal signals of the target program
-  perf: Support setting the disassembler style
-
-Arnaldo Carvalho de Melo (6):
-  perf symbols: Stop using 'self' in map_groups__ methods
-  perf buildid-list: Add option to show the running kernel build id
-  perf buildid-list: Support showing the build id in an ELF file
-  perf top browser: Fix up line width calculation
-  perf top: Improve lost events warning
-  perf report: Fix stdio event name header printing
-
-Jim Cromie (5):
-  perf stat: Add --log-fd <N> option to redirect stderr elsewhere
-  perf stat: Fix +- nan% in --no-aggr runs
-  perf stat: Suppress printing std-dev when its 0
-  perf stat: Allow tab as cvs delimiter
-  perf stat: Fix spelling in comment
-
-Jiri Olsa (2):
-  perf sched: Fix script command documentation
-  perf symbols: Treat all memory maps without dso file as loaded
-
-Neil Horman (1):
-  perf script: Add drop monitor script
-
- tools/perf/Documentation/perf-annotate.txt         |    3 +
- tools/perf/Documentation/perf-buildid-list.txt     |    6 +
- tools/perf/Documentation/perf-report.txt           |    3 +
- tools/perf/Documentation/perf-sched.txt            |    6 +-
- tools/perf/Documentation/perf-stat.txt             |   11 ++-
- tools/perf/builtin-annotate.c                      |    2 +
- tools/perf/builtin-buildid-list.c                  |   52 ++++++++++-
- tools/perf/builtin-record.c                        |   19 ++++-
- tools/perf/builtin-report.c                        |    7 +-
- tools/perf/builtin-stat.c                          |   35 ++++++-
- tools/perf/builtin-top.c                           |   34 ++++----
- .../perf/scripts/python/bin/net_dropmonitor-record |    2 +
- .../perf/scripts/python/bin/net_dropmonitor-report |    4 +
- tools/perf/scripts/python/net_dropmonitor.py       |   72 ++++++++++++++
- tools/perf/util/annotate.c                         |    6 +-
- tools/perf/util/annotate.h                         |    2 +
- tools/perf/util/map.c                              |   98 +++++++++++---------
- tools/perf/util/map.h                              |   42 ++++----
- tools/perf/util/top.h                              |    3 +
- tools/perf/util/ui/browsers/top.c                  |   28 +++++-
- 20 files changed, 333 insertions(+), 102 deletions(-)
- create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-record
- create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-report
- create mode 100755 tools/perf/scripts/python/net_dropmonitor.py
+diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
+index 88403cf..9d93810 100644
+--- a/tools/perf/util/ui/browsers/top.c
++++ b/tools/perf/util/ui/browsers/top.c
+@@ -43,10 +43,10 @@ static void perf_top_browser__write(struct ui_browser *browser, void *entry, int
+ 
+ 	if (top->evlist->nr_entries == 1 || !top->display_weighted) {
+ 		slsmg_printf("%20.2f ", syme->weight);
+-		width -= 24;
++		width -= 21;
+ 	} else {
+ 		slsmg_printf("%9.1f %10ld ", syme->weight, syme->snap_count);
+-		width -= 23;
++		width -= 20;
+ 	}
+ 
+ 	slsmg_printf("%4.1f%%", pcnt);
+-- 
+1.6.2.5
 
