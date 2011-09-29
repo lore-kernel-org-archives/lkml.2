@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab1I2T2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:28:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64464 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab1I2T2X (ORCPT
+	id S1757500Ab1I2T2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:28:49 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:51212 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757486Ab1I2T2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:28:23 -0400
-Date: Thu, 29 Sep 2011 12:28:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
-Message-ID: <20110929192818.GB10425@mtj.dyndns.org>
-References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
- <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 Sep 2011 15:28:47 -0400
+Subject: Re: Oops in ecryptfs (apparently) with 3.1-rc6
+From: Luciano Coelho <coelho@ti.com>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: ecryptfs@vger.kernel.org, kirkland@canonical.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110929143058.GA15933@boyd>
+References: <1316781869.4051.7.camel@cumari>
+	 <1317235816.2171.158.camel@cumari>  <20110929143058.GA15933@boyd>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Sep 2011 22:28:42 +0300
+Message-ID: <1317324522.2171.170.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 2011-09-29 at 09:30 -0500, Tyler Hicks wrote: 
+> On 2011-09-28 21:50:15, Luciano Coelho wrote:
+> > On Fri, 2011-09-23 at 15:44 +0300, Luciano Coelho wrote: 
+> > > [255264.517399] Call Trace:
+> > > [255264.517406]  [<ffffffff81163f35>] ? vfs_read+0xc5/0x190
+> > > [255264.517409]  [<ffffffff8125e0b2>] ecryptfs_decrypt_page+0xb2/0x190
+> > > [255264.517413]  [<ffffffff8125bb08>] ecryptfs_readpage+0xd8/0x120
+> > > [255264.517418]  [<ffffffff8110daf4>] generic_file_aio_read+0x234/0x740
+> > > [255264.517424]  [<ffffffff8125863c>] ecryptfs_read_update_atime+0x1c/0x60
+> > > [255264.517428]  [<ffffffff811637fa>] do_sync_read+0xda/0x120
+> > > [255264.517434]  [<ffffffff81286a3b>] ? security_file_permission+0x8b/0x90
+> > > [255264.517438]  [<ffffffff81163f35>] vfs_read+0xc5/0x190
+> > > [255264.517441]  [<ffffffff81164101>] sys_read+0x51/0x90
+> > > [255264.517446]  [<ffffffff815dc082>] system_call_fastpath+0x16/0x1b
+> > > [255264.517448] Code: 98 41 0f af c5 89 85 58 ff ff ff 49 8b 44 24 40 48 89 45 90 e8 c5 4d 37 00 49 8b 44 24 40 49 8b 54 24 20 49 8d 74 24 70 48 89 c7 <ff> 50 10 85 c0 0f 85 40 01 00 00 31 c0 44 89 ea 48 c7 c6 50 cf 
+> > > [255264.517481] RIP  [<ffffffff8125dddd>] ecryptfs_decrypt_extent+0x13d/0x360
+> > > [255264.517485]  RSP <ffff88031c03db78>
+> > > [255264.517487] CR2: 0000000000000010
+> > > [255264.517490] ---[ end trace 6beaa9aa4bd67546 ]---
+> > 
+> > Did anyone else get a similar oops? Or does anyone have any clue what
+> > this is about? I haven't seen any fix that could be related to this, so
+> > I'm still really wary of using 3.1-rc*. ;)
+> 
+> I haven't seen that one. Was your kernel build using more than one job?
 
-On Thu, Sep 29, 2011 at 12:02:28PM +0100, Catalin Marinas wrote:
-> This patch adds kmemleak callbacks from the percpu allocator, reducing a
-> number of false positives caused by kmemleak not scanning such memory
-> blocks. The percpu chunks are never reported as leaks because of current
-> kmemleak limitations with the __percpu pointer not pointing directly to
-> the actual chunks.
-...
-> @@ -801,7 +804,16 @@ area_found:
->  	mutex_unlock(&pcpu_alloc_mutex);
->  
->  	/* return address relative to base address */
-> -	return __addr_to_pcpu_ptr(chunk->base_addr + off);
-> +	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
-> +
-> +	/*
-> +	 * Percpu allocations are currently reported as leaks (kmemleak false
-> +	 * positives). To avoid this, just set min_count to 0.
-> +	 */
-> +	for_each_possible_cpu(cpu)
-> +		kmemleak_alloc(per_cpu_ptr(ptr, cpu), size, 0, GFP_KERNEL);
-> +
-> +	return ptr;
+Yes, I always build my kernel using 20 jobs on my quadcore with 8
+threads.
 
-I'm pretty ignorant about kmemleak but it scans memories looking for
-references to allocated objects, right?  There currently is no way for
-such scanner to tell a percpu pointer in memory from a regular pointer
-making it impossible to track percpu objects properly from kmemleak.
-If my understanding is correct, I don't see much point in tracking
-each percpu alloc/free.  Why not just mark all pages taken by percpu
-allocator as untrackable?
 
-If we want to track percpu memory leak properly, I think we'll need
-more invasive changes.  If kmemleak is enabled, we can offset percpu
-pointer so that the scanner can tell percpu pointers and then kmemleak
-should properly account for all percpu areas pointed to by the percpu
-pointer.  Hmmm... or, alternatively, we can make kmemleak only track
-allocations for the first possible cpu and ignore all the rest and
-modify percpu such that percpu pointer points to the actual address of
-the first cpu if kmemleak is enabled.
+> I'll take a closer look and try to reproduce it here. Thanks for the
+> report!
 
-Thank you.
+You're welcome.  Let me know if you need any more info.  As I said
+originally, I had been using the kernel for about a week before this
+happened, so I'm not sure it's easily reproducible.
 
 -- 
-tejun
+Cheers,
+Luca.
+
