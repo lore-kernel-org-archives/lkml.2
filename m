@@ -1,385 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab1I2WsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:48:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60152 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718Ab1I2WsU (ORCPT
+	id S1757941Ab1I2WtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:49:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43967 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757045Ab1I2WsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:48:20 -0400
+	Thu, 29 Sep 2011 18:48:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/16] perf symbols: Stop using 'self' in map_groups__ methods
-Date: Thu, 29 Sep 2011 19:47:55 -0300
-Message-Id: <1317336490-19437-2-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 13/16] perf: Support setting the disassembler style
+Date: Thu, 29 Sep 2011 19:48:07 -0300
+Message-Id: <1317336490-19437-14-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
 References: <1317336490-19437-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-Stop using this python/OOP convention, doesn't really helps. Will do
-more from time to time till we get it cleaned up in all of /perf.
+Add -M option to report/annotate to pass directly to objdump.  This
+allows to use -M intel for intel style disassembler syntax, which is
+useful for people who are very used to the Intel syntax.
 
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1316122302-24306-2-git-send-email-andi@firstfloor.org
+[committer note: Add missing Documentation bits, fixup conflicts with 3e6a2a7]
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-rl9e690y60vnuyng05yp1zd3@git.kernel.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/map.c |   74 ++++++++++++++++++++++++------------------------
- tools/perf/util/map.h |   42 ++++++++++++++--------------
- 2 files changed, 58 insertions(+), 58 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |    3 +++
+ tools/perf/Documentation/perf-report.txt   |    3 +++
+ tools/perf/builtin-annotate.c              |    2 ++
+ tools/perf/builtin-report.c                |    2 ++
+ tools/perf/util/annotate.c                 |    6 +++++-
+ tools/perf/util/annotate.h                 |    2 ++
+ 6 files changed, 17 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a16ecab..aa2f9fd 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -220,55 +220,55 @@ u64 map__objdump_2ip(struct map *map, u64 addr)
- 	return ip;
- }
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 98a31e3..0102d83 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -83,6 +83,9 @@ OPTIONS
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
  
--void map_groups__init(struct map_groups *self)
-+void map_groups__init(struct map_groups *mg)
++-M::
++--disassembler-style=:: Set disassembler style for objdump.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 04253c0..6349b6c 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -134,6 +134,9 @@ OPTIONS
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+ 	CPUs.
+ 
++-M::
++--disassembler-style=:: Set disassembler style for objdump.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index c5be288..cf68819 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -273,6 +273,8 @@ static const struct option options[] = {
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
+ 		    "Display raw encoding of assembly instructions (default)"),
++	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
++		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d7ff277..a0673ee 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -487,6 +487,8 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
++		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 01d36ba..bc8f477 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -16,6 +16,8 @@
+ #include "annotate.h"
+ #include <pthread.h>
+ 
++const char 	*disassembler_style;
++
+ int symbol__annotate_init(struct map *map __used, struct symbol *sym)
  {
- 	int i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i) {
--		self->maps[i] = RB_ROOT;
--		INIT_LIST_HEAD(&self->removed_maps[i]);
-+		mg->maps[i] = RB_ROOT;
-+		INIT_LIST_HEAD(&mg->removed_maps[i]);
- 	}
--	self->machine = NULL;
-+	mg->machine = NULL;
- }
+ 	struct annotation *notes = symbol__annotation(sym);
+@@ -323,9 +325,11 @@ fallback:
+ 		 dso, dso->long_name, sym, sym->name);
  
--static void maps__delete(struct rb_root *self)
-+static void maps__delete(struct rb_root *maps)
- {
--	struct rb_node *next = rb_first(self);
-+	struct rb_node *next = rb_first(maps);
+ 	snprintf(command, sizeof(command),
+-		 "objdump --start-address=0x%016" PRIx64
++		 "objdump %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+ 		 " -d %s %s -C %s|grep -v %s|expand",
++		 disassembler_style ? "-M " : "",
++		 disassembler_style ? disassembler_style : "",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
+ 		 symbol_conf.annotate_asm_raw ? "" : "--no-show-raw",
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index c2c2868..6ede128 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -100,4 +100,6 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 int refresh);
+ #endif
  
- 	while (next) {
- 		struct map *pos = rb_entry(next, struct map, rb_node);
- 
- 		next = rb_next(&pos->rb_node);
--		rb_erase(&pos->rb_node, self);
-+		rb_erase(&pos->rb_node, maps);
- 		map__delete(pos);
- 	}
- }
- 
--static void maps__delete_removed(struct list_head *self)
-+static void maps__delete_removed(struct list_head *maps)
- {
- 	struct map *pos, *n;
- 
--	list_for_each_entry_safe(pos, n, self, node) {
-+	list_for_each_entry_safe(pos, n, maps, node) {
- 		list_del(&pos->node);
- 		map__delete(pos);
- 	}
- }
- 
--void map_groups__exit(struct map_groups *self)
-+void map_groups__exit(struct map_groups *mg)
- {
- 	int i;
- 
- 	for (i = 0; i < MAP__NR_TYPES; ++i) {
--		maps__delete(&self->maps[i]);
--		maps__delete_removed(&self->removed_maps[i]);
-+		maps__delete(&mg->maps[i]);
-+		maps__delete_removed(&mg->removed_maps[i]);
- 	}
- }
- 
--void map_groups__flush(struct map_groups *self)
-+void map_groups__flush(struct map_groups *mg)
- {
- 	int type;
- 
- 	for (type = 0; type < MAP__NR_TYPES; type++) {
--		struct rb_root *root = &self->maps[type];
-+		struct rb_root *root = &mg->maps[type];
- 		struct rb_node *next = rb_first(root);
- 
- 		while (next) {
-@@ -280,17 +280,17 @@ void map_groups__flush(struct map_groups *self)
- 			 * instance in some hist_entry instances, so
- 			 * just move them to a separate list.
- 			 */
--			list_add_tail(&pos->node, &self->removed_maps[pos->type]);
-+			list_add_tail(&pos->node, &mg->removed_maps[pos->type]);
- 		}
- 	}
- }
- 
--struct symbol *map_groups__find_symbol(struct map_groups *self,
-+struct symbol *map_groups__find_symbol(struct map_groups *mg,
- 				       enum map_type type, u64 addr,
- 				       struct map **mapp,
- 				       symbol_filter_t filter)
- {
--	struct map *map = map_groups__find(self, type, addr);
-+	struct map *map = map_groups__find(mg, type, addr);
- 
- 	if (map != NULL) {
- 		if (mapp != NULL)
-@@ -301,7 +301,7 @@ struct symbol *map_groups__find_symbol(struct map_groups *self,
- 	return NULL;
- }
- 
--struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
-+struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
- 					       enum map_type type,
- 					       const char *name,
- 					       struct map **mapp,
-@@ -309,7 +309,7 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
- {
- 	struct rb_node *nd;
- 
--	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&mg->maps[type]); nd; nd = rb_next(nd)) {
- 		struct map *pos = rb_entry(nd, struct map, rb_node);
- 		struct symbol *sym = map__find_symbol_by_name(pos, name, filter);
- 
-@@ -323,13 +323,13 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
- 	return NULL;
- }
- 
--size_t __map_groups__fprintf_maps(struct map_groups *self,
-+size_t __map_groups__fprintf_maps(struct map_groups *mg,
- 				  enum map_type type, int verbose, FILE *fp)
- {
- 	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
- 	struct rb_node *nd;
- 
--	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&mg->maps[type]); nd; nd = rb_next(nd)) {
- 		struct map *pos = rb_entry(nd, struct map, rb_node);
- 		printed += fprintf(fp, "Map:");
- 		printed += map__fprintf(pos, fp);
-@@ -342,22 +342,22 @@ size_t __map_groups__fprintf_maps(struct map_groups *self,
- 	return printed;
- }
- 
--size_t map_groups__fprintf_maps(struct map_groups *self, int verbose, FILE *fp)
-+size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp)
- {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_maps(self, i, verbose, fp);
-+		printed += __map_groups__fprintf_maps(mg, i, verbose, fp);
- 	return printed;
- }
- 
--static size_t __map_groups__fprintf_removed_maps(struct map_groups *self,
-+static size_t __map_groups__fprintf_removed_maps(struct map_groups *mg,
- 						 enum map_type type,
- 						 int verbose, FILE *fp)
- {
- 	struct map *pos;
- 	size_t printed = 0;
- 
--	list_for_each_entry(pos, &self->removed_maps[type], node) {
-+	list_for_each_entry(pos, &mg->removed_maps[type], node) {
- 		printed += fprintf(fp, "Map:");
- 		printed += map__fprintf(pos, fp);
- 		if (verbose > 1) {
-@@ -368,26 +368,26 @@ static size_t __map_groups__fprintf_removed_maps(struct map_groups *self,
- 	return printed;
- }
- 
--static size_t map_groups__fprintf_removed_maps(struct map_groups *self,
-+static size_t map_groups__fprintf_removed_maps(struct map_groups *mg,
- 					       int verbose, FILE *fp)
- {
- 	size_t printed = 0, i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		printed += __map_groups__fprintf_removed_maps(self, i, verbose, fp);
-+		printed += __map_groups__fprintf_removed_maps(mg, i, verbose, fp);
- 	return printed;
- }
- 
--size_t map_groups__fprintf(struct map_groups *self, int verbose, FILE *fp)
-+size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp)
- {
--	size_t printed = map_groups__fprintf_maps(self, verbose, fp);
-+	size_t printed = map_groups__fprintf_maps(mg, verbose, fp);
- 	printed += fprintf(fp, "Removed maps:\n");
--	return printed + map_groups__fprintf_removed_maps(self, verbose, fp);
-+	return printed + map_groups__fprintf_removed_maps(mg, verbose, fp);
- }
- 
--int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
-+int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
- 				   int verbose, FILE *fp)
- {
--	struct rb_root *root = &self->maps[map->type];
-+	struct rb_root *root = &mg->maps[map->type];
- 	struct rb_node *next = rb_first(root);
- 	int err = 0;
- 
-@@ -418,7 +418,7 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
- 			}
- 
- 			before->end = map->start - 1;
--			map_groups__insert(self, before);
-+			map_groups__insert(mg, before);
- 			if (verbose >= 2)
- 				map__fprintf(before, fp);
- 		}
-@@ -432,7 +432,7 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
- 			}
- 
- 			after->start = map->end + 1;
--			map_groups__insert(self, after);
-+			map_groups__insert(mg, after);
- 			if (verbose >= 2)
- 				map__fprintf(after, fp);
- 		}
-@@ -441,7 +441,7 @@ move_map:
- 		 * If we have references, just move them to a separate list.
- 		 */
- 		if (pos->referenced)
--			list_add_tail(&pos->node, &self->removed_maps[map->type]);
-+			list_add_tail(&pos->node, &mg->removed_maps[map->type]);
- 		else
- 			map__delete(pos);
- 
-@@ -455,7 +455,7 @@ move_map:
- /*
-  * XXX This should not really _copy_ te maps, but refcount them.
-  */
--int map_groups__clone(struct map_groups *self,
-+int map_groups__clone(struct map_groups *mg,
- 		      struct map_groups *parent, enum map_type type)
- {
- 	struct rb_node *nd;
-@@ -464,7 +464,7 @@ int map_groups__clone(struct map_groups *self,
- 		struct map *new = map__clone(map);
- 		if (new == NULL)
- 			return -ENOMEM;
--		map_groups__insert(self, new);
-+		map_groups__insert(mg, new);
- 	}
- 	return 0;
- }
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index b397c03..890d855 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -123,17 +123,17 @@ void map__fixup_end(struct map *self);
- 
- void map__reloc_vmlinux(struct map *self);
- 
--size_t __map_groups__fprintf_maps(struct map_groups *self,
-+size_t __map_groups__fprintf_maps(struct map_groups *mg,
- 				  enum map_type type, int verbose, FILE *fp);
- void maps__insert(struct rb_root *maps, struct map *map);
--void maps__remove(struct rb_root *self, struct map *map);
-+void maps__remove(struct rb_root *maps, struct map *map);
- struct map *maps__find(struct rb_root *maps, u64 addr);
--void map_groups__init(struct map_groups *self);
--void map_groups__exit(struct map_groups *self);
--int map_groups__clone(struct map_groups *self,
-+void map_groups__init(struct map_groups *mg);
-+void map_groups__exit(struct map_groups *mg);
-+int map_groups__clone(struct map_groups *mg,
- 		      struct map_groups *parent, enum map_type type);
--size_t map_groups__fprintf(struct map_groups *self, int verbose, FILE *fp);
--size_t map_groups__fprintf_maps(struct map_groups *self, int verbose, FILE *fp);
-+size_t map_groups__fprintf(struct map_groups *mg, int verbose, FILE *fp);
-+size_t map_groups__fprintf_maps(struct map_groups *mg, int verbose, FILE *fp);
- 
- typedef void (*machine__process_t)(struct machine *self, void *data);
- 
-@@ -162,29 +162,29 @@ static inline bool machine__is_host(struct machine *self)
- 	return self ? self->pid == HOST_KERNEL_ID : false;
- }
- 
--static inline void map_groups__insert(struct map_groups *self, struct map *map)
-+static inline void map_groups__insert(struct map_groups *mg, struct map *map)
- {
--	maps__insert(&self->maps[map->type], map);
--	map->groups = self;
-+	maps__insert(&mg->maps[map->type], map);
-+	map->groups = mg;
- }
- 
--static inline void map_groups__remove(struct map_groups *self, struct map *map)
-+static inline void map_groups__remove(struct map_groups *mg, struct map *map)
- {
--	maps__remove(&self->maps[map->type], map);
-+	maps__remove(&mg->maps[map->type], map);
- }
- 
--static inline struct map *map_groups__find(struct map_groups *self,
-+static inline struct map *map_groups__find(struct map_groups *mg,
- 					   enum map_type type, u64 addr)
- {
--	return maps__find(&self->maps[type], addr);
-+	return maps__find(&mg->maps[type], addr);
- }
- 
--struct symbol *map_groups__find_symbol(struct map_groups *self,
-+struct symbol *map_groups__find_symbol(struct map_groups *mg,
- 				       enum map_type type, u64 addr,
- 				       struct map **mapp,
- 				       symbol_filter_t filter);
- 
--struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
-+struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
- 					       enum map_type type,
- 					       const char *name,
- 					       struct map **mapp,
-@@ -208,11 +208,11 @@ struct symbol *machine__find_kernel_function(struct machine *self, u64 addr,
- }
- 
- static inline
--struct symbol *map_groups__find_function_by_name(struct map_groups *self,
-+struct symbol *map_groups__find_function_by_name(struct map_groups *mg,
- 						 const char *name, struct map **mapp,
- 						 symbol_filter_t filter)
- {
--	return map_groups__find_symbol_by_name(self, MAP__FUNCTION, name, mapp, filter);
-+	return map_groups__find_symbol_by_name(mg, MAP__FUNCTION, name, mapp, filter);
- }
- 
- static inline
-@@ -225,13 +225,13 @@ struct symbol *machine__find_kernel_function_by_name(struct machine *self,
- 						 filter);
- }
- 
--int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
-+int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
- 				   int verbose, FILE *fp);
- 
--struct map *map_groups__find_by_name(struct map_groups *self,
-+struct map *map_groups__find_by_name(struct map_groups *mg,
- 				     enum map_type type, const char *name);
- struct map *machine__new_module(struct machine *self, u64 start, const char *filename);
- 
--void map_groups__flush(struct map_groups *self);
-+void map_groups__flush(struct map_groups *mg);
- 
- #endif /* __PERF_MAP_H */
++extern const char	*disassembler_style;
++
+ #endif	/* __PERF_ANNOTATE_H */
 -- 
 1.6.2.5
 
