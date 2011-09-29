@@ -1,119 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab1I2OUs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:20:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44288 "EHLO mx1.redhat.com"
+	id S1755123Ab1I2OUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:20:53 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60718 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab1I2OUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:20:46 -0400
-Date: Thu, 29 Sep 2011 16:17:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stephen Wilson <wilsons@start.ca>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Q: proc: disable mem_write after exec
-Message-ID: <20110929141706.GA17119@redhat.com>
-MIME-Version: 1.0
+	id S1754806Ab1I2OUu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 10:20:50 -0400
+Subject: Re: [PATCH 4/4] powerpc/fsl: Document rapidio node binding-information
+Mime-Version: 1.0 (Apple Message framework v1244.3)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1317263341-19010-4-git-send-email-Gang.Liu@freescale.com>
+Date: Thu, 29 Sep 2011 09:20:47 -0500
+Cc: <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <r58472@freescale.com>,
+        <B11780@freescale.com>, <r61911@freescale.com>,
+        Li Yang <leoli@freescale.com>, Jin Qing <b24347@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1953FF3D-EE9F-400F-880A-072DE37AEE8C@kernel.crashing.org>
+References: <1317263341-19010-1-git-send-email-Gang.Liu@freescale.com> <1317263341-19010-4-git-send-email-Gang.Liu@freescale.com>
+To: Liu Gang <Gang.Liu@freescale.com>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-The last question, I promise ;)
+On Sep 28, 2011, at 9:29 PM, Liu Gang wrote:
 
-Another change we probably need to backport,
+> This document is created for powerpc rapidio and rmu nodes in dts file. These nodes
+> can support two rapidio ports and message units. In addition, It explicates the properties
+> and gives examples about rapidio and rmu nodes.
+> 
+> Signed-off-by: Li Yang <leoli@freescale.com>
+> Signed-off-by: Jin Qing <b24347@freescale.com>
+> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+> ---
+> .../devicetree/bindings/powerpc/fsl/srio.txt       |   85 ++++++++++++++++++++
+> 1 files changed, 85 insertions(+), 0 deletions(-)
+> create mode 100644 Documentation/devicetree/bindings/powerpc/fsl/srio.txt
 
-    commit 26947f8c8f9598209001cdcd31bb2162a2e54691
-    proc: disable mem_write after exec
+You need to fix this for 80 char column line wrap.
 
-    This change makes mem_write() observe the same constraints as mem_read().
-
-mem_read() looks equally confusing to me, may be Linus can explain.
-This self_exec_id check was added in 29f279c7 (history tree)
-"v2.4.5.5 -> v2.4.5.6", the changelog can't help.
-
-    This
-    is particularly important for mem_write as an accidental leak of the fd across
-    an exec could result in arbitrary modification of the target process' memory.
-
-    ...
-
-	@@ -850,6 +850,10 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
-		if (check_mem_permission(task))
-			goto out;
-	 
-	+	copied = -EIO;
-	+	if (file->private_data != (void *)((long)current->self_exec_id))
-	+		goto out;
-	+
-		copied = -ENOMEM;
-		page = (char *)__get_free_page(GFP_TEMPORARY);
-		if (!page)
-
-
-Could you explain this? Why this is wrong from the security pov? We are
-the tracer, this was checked by check_mem_permission(). We can modify
-this memory even without /proc/pid/mem.
-
-And in any case, why do we check current's self_exec_id? I'd understand
-if mem_open/mem_read/mem_writed used task->self_exec_id, see the trivial
-patch below. With this patch this check means: this task has changed its
-->mm after /proc/pid/mem was opened, abort. And perhaps this was the
-actual intent. May be makes sense.
-
-But the real question is, why (from the security pov) we can't simply kill
-these self_exec_id checks?
-
-Not to mention, it would be nice to remove self_exec_id/parent_exec_id too.
-Ignoring mem_open(), afaics the _only_ reason we need these id's is that
-linux allows clone(CLONE_PARENT | SIGKILL).
-
-Thanks,
-
-Oleg.
+> 
+> diff --git a/Documentation/devicetree/bindings/powerpc/fsl/srio.txt b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+> new file mode 100644
+> index 0000000..01f2da1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/powerpc/fsl/srio.txt
+> @@ -0,0 +1,85 @@
+> +* Freescale Rapidio Controller
+> +
+> +Rapidio port node:
+> +Properties:
+> +	- compatible: "fsl,rapidio-delta".
+> +	  "fsl,rapidio-delta" should be listed for any chip whose rapidio controller is compatible.
+> +	  At first, rapidio controller was introduced with the version of delta and has no revision
+> +	  register. Rapidio driver and controller were matched by "fsl,rapidio-delta". After the
+> +	  addition of two revision registers in rapidio controller, we can read some revision and
+> +	  configuration information about rapidio controller IP block, and the compatible with
+> +	  "fsl,rapidio-delta" was still used.
 
 
---- x/fs/proc/base.c
-+++ x/fs/proc/base.c
-@@ -816,7 +816,17 @@ static const struct file_operations proc
- 
- static int mem_open(struct inode* inode, struct file* file)
- {
--	file->private_data = (void*)((long)current->self_exec_id);
-+	struct task_struct *task;
-+
-+	rcu_read_lock();
-+	task = pid_task(proc_pid(file->f_path.dentry->d_inode), PIDTYPE_PID);
-+	if (task)
-+		file->private_data = (void*)((long)task->self_exec_id);
-+	rcu_read_unlock();
-+
-+	if (!task)
-+		return -EINVAL;
-+
- 	/* OK to pass negative loff_t, we can catch out-of-range */
- 	file->f_mode |= FMODE_UNSIGNED_OFFSET;
- 	return 0;
-@@ -846,7 +856,7 @@ static ssize_t mem_read(struct file * fi
- 
- 	ret = -EIO;
-  
--	if (file->private_data != (void*)((long)current->self_exec_id))
-+	if (file->private_data != (void*)((long)task->self_exec_id))
- 		goto out_put;
- 
- 	ret = 0;
-@@ -908,7 +918,7 @@ static ssize_t mem_write(struct file * f
- 		goto out_free;
- 
- 	copied = -EIO;
--	if (file->private_data != (void *)((long)current->self_exec_id))
-+	if (file->private_data != (void *)((long)task->self_exec_id))
- 		goto out_mm;
- 
- 	copied = 0;
+Lets go ahead and change this from 'fsl,rapdio-delta' to 'fsl,srio' since you're changing how the binding is defined completely.  This way old .dts will fail graceful with the new code.
+
+> +
+> +	- reg: For devices compatible with "fsl,rapidio-delta", should contain the address and
+> +	  the length about all the rapidio controller's registers.
+> +
+> +	- ranges: Should be defined according to the u-boot settings about SRIO. Describe the memory
+> +	  mapped I/O space used by the rapidio controller.
+> +
+> +	- interrupts: Interrupt mapping for rapidio IRQ. Three interrupts in the group, and starting
+> +	  with SRIO error/port-write IRQ, an error interrupt and with interrupt type 1. The other
+> +	  two interrupts are doorbell outbound IRQ and doorbell inbound IRQ, and they are external
+> +	  interrupts.
+
+be clear about the order of the interrupts
+
+> +
+> +	- fsl,rio-num-ports: The number of rapidio ports supported by this controller.
+> +
+> +	- fsl,liodn: The logical I/O device number for the PAMU to be correctly configured for SRIO
+> +	  accesses. This property is added in SRIO node by u-boot and usually used by hypervisor.
+> +	  The number of elements may either be 2 or 4 LIODN values. For HW that only supports LIODNs
+> +	  for ALL memory & maintenance transactions we have 2 cells.
+
+We need to add something like:
+
+In this case, the first cell is the LIODN associated with the port 1 and the second LIODN is associated with port 2.
+
+
+> For HW that has separate LIODNs
+> +	  for memory & maintenance transaction we utilize 4 cells.
+
+In this case, the first pair of cells are associated with port 1.  The first cell is the LIODN associated with memory transactions, the second cell is the LIODN associated with maintenance transactions.  The 3 and 4 cells follow the same pattern for port 2.
+
+> +
+> +	- rmu-handle: The phandle for the rmu connected to this rapidio controller.
+> +
+> +Example:
+> +
+> +	rapidio: rapidio@ffe0c0000 {
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		compatible = "fsl,rapidio-delta";
+> +		interrupts = <
+> +			16 2 1 11 /* err_irq */
+> +			56 2 0 0  /* bell_outb_irq */
+> +			57 2 0 0>;/* bell_inb_irq */
+> +		fsl,rio-num-ports = <2>;
+> +		rmu-handle = <&rmu>;
+> +	};
+> +
+> +Message unit node:
+> +Properties:
+> +	- compatible: "fsl,rmu".
+> +	  "fsl,rmu" should be listed for any chip whose message unit is compatible. In addition,
+> +	  RMAN will replace RMU for rapidio message transaction in some chips using DPAA architecture.
+> +	  Then instead of RMU node, RMAN node will be used in dts file and the compatible property
+> +	  "fsl,rmu" should be replaced.
+> +
+> +	- reg: Registers mapping for message unit.
+> +
+> +	- interrupts: Interrupt mapping for message unit controller. Every message
+> +	  unit controller has two external interrupts: message outbound IRQ and
+> +	  message inbound IRQ.
+
+be clear about the order of the interrupts being TX first and RX second.
+
+> +
+> +	- fsl,liodn: The logical I/O device number for rmuliodnr and added by u-boot.
+> +
+> +Example:
+> +
+> +	rmu: rmu@d3000 {
+> +		fsl,liodn = <0xc8>;
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		compatible = "fsl,rmu";
+> +		reg = <0xd3000 0x200>;
+> +
+> +		message-unit@0 {
+> +		reg = <0x0 0x100>;
+> +		interrupts = <
+> +			60 2 0 0  /* msg1_tx_irq */
+> +			61 2 0 0>;/* msg1_rx_irq */
+> +		};
+> +		message-unit@1 {
+
+should be message-unit@100
+
+> +		reg = <0x100 0x100>;
+> +		interrupts = <
+> +			62 2 0 0  /* msg2_tx_irq */
+> +			63 2 0 0>;/* msg2_rx_irq */
+> +		};
+> +	};
+> -- 
+> 1.7.3.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
