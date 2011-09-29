@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab1I2XyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:54:13 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38784 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab1I2XyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:54:12 -0400
-Date: Fri, 30 Sep 2011 08:49:38 +0900
-To: konrad.wilk@oracle.com
-Cc: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
-        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
-        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
-        airlied@linux.ie, alexdeucher@gmail.com, xen-devel@lists.xensource.com,
-        fujita.tomonori@lab.ntt.co.jp
-Subject: Re: [PATCH 4/9] swiotlb: Expose swiotlb_nr_tlb function to modules
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
-References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
-	<1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
+	id S1753747Ab1I2XyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:54:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34686 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab1I2XyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:54:20 -0400
+Date: Thu, 29 Sep 2011 16:54:17 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: Mike Miller <mike.miller@hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, scameron@beardog.cce.hp.com,
+        thenzel@redhat.com
+Subject: Re: PATCH [1/1] cciss: auto engage scsi subsystem for tape support
+Message-Id: <20110929165417.59fc03c7.akpm00@gmail.com>
+In-Reply-To: <20110916213200.GA24786@beardog.cce.hp.com>
+References: <20110916213200.GA24786@beardog.cce.hp.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20110930083651R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 30 Sep 2011 08:49:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011 16:33:47 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Fri, 16 Sep 2011 16:32:00 -0500
+Mike Miller <mike.miller@hp.com> wrote:
 
-> As a mechanism to detect whether SWIOTLB is enabled or not.
-> We also fix the spelling - it was swioltb instead of
-> swiotlb.
 > 
-> CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> [v1: Ripped out swiotlb_enabled]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/swiotlb-xen.c |    2 +-
->  include/linux/swiotlb.h   |    2 +-
->  lib/swiotlb.c             |    5 +++--
->  3 files changed, 5 insertions(+), 4 deletions(-)
+> commit 608b0262ce818901b931d7e6534aad375c698924
+> Author: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> Date:   Mon Aug 29 13:27:46 2011 -0500
+> 
+>     cciss: auto engage scsi mid-layer
+> 
+> Acked-by: Mike Miller <mike.miller@hp.com>
 
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Nobody seems to have applied this to anything.
+
+The patch has no signoffs.
+
+The changelog is awful.  What are the end-user-visible effects of this
+change?  How is anyone supposed to tell?
+
+> --- a/drivers/block/cciss_scsi.c
+> +++ b/drivers/block/cciss_scsi.c
+> @@ -1720,5 +1720,6 @@ static int  cciss_eh_abort_handler(struct scsi_cmnd *scsicmd)
+>  /* If no tape support, then these become defined out of existence */
+>  
+>  #define cciss_scsi_setup(cntl_num)
+> +#define cciss_engage_scsi(h)
+>  
+>  #endif /* CONFIG_CISS_SCSI_TAPE */
+
+cciss #includes .c files?  I can't believe you did that :(
