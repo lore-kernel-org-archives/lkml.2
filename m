@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab1I2Ogo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:36:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33091 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab1I2Ogm convert rfc822-to-8bit (ORCPT
+	id S932134Ab1I2Ohx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:37:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53771 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050Ab1I2Ohw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:36:42 -0400
+	Thu, 29 Sep 2011 10:37:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E847ED4.5090703@fnarfbargle.com>
-References: <4E847ED4.5090703@fnarfbargle.com>
-Date: Thu, 29 Sep 2011 10:36:41 -0400
-Message-ID: <CADnq5_PUcDVL+RPZPDGiAxHjn=vL7dnNsiQYG2F5e6GWnoX7Kg@mail.gmail.com>
-Subject: Re: Radeon regression fix
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Brad Campbell <brad@fnarfbargle.com>
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CADi559EcS_iyXgw4qZm5RFVZG2oWiFQ-4w489FEn6YGdViPaXg@mail.gmail.com>
+References: <20110929070940.GA2838@udknight.homenetwork> <CA+55aFzjAinwRcw-xd4U8tR+bDdpf2h2kP=cEd5hw+K6ZPt3QQ@mail.gmail.com>
+ <CADi559EcS_iyXgw4qZm5RFVZG2oWiFQ-4w489FEn6YGdViPaXg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Sep 2011 07:37:31 -0700
+X-Google-Sender-Auth: hlSZzS-Mn2KzsLXAJ5mjqYrFj1o
+Message-ID: <CA+55aFyP5NcNTuHTjrBY9MFbGM793TiMs6Ejnk8+aU=LYefKFg@mail.gmail.com>
+Subject: Re: [PATCH] init:main.c: start 'usermodehelper_enable()' a little early
+To: wang yanqing <udknight@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 10:21 AM, Brad Campbell <brad@fnarfbargle.com> wrote:
-> This patch fixes a regression introduced between 2.6.39 & 3.1-rc1 whereby
-> the displayport AUX channel stopped re-trying commands that elicited a DEFER
-> response.
+On Thu, Sep 29, 2011 at 1:57 AM, wang yanqing <udknight@gmail.com> wrote:
 >
+> maybe uvesafb has some specific thing that it requires a userspace
+> helper application called 'v86d' to work!
+> I will try to make uvesafb workaround it, but i don't know whether it
+> will work, and splash boot *really* need
+> early init.
 
-It should still be retrying, just restructured slightly.  The retry
-logic just moved into radeon_dp_i2c_aux_ch(),
-radeon_dp_aux_native_write(), and radeon_dp_aux_native_read(), e.g.,
+Ok. I guess we cannot avoid this. I really would have preferred to run
+the kernel init routines without usermodehelper enabled, but it looks
+like reality doesn't care about my wishes.
 
-		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
-			udelay(400);
+Your "move it up to before all initcalls" works, and seems to be the
+simplest solution. I considered doing this when we mount the root
+filesystem, but depending on config options that is in multiple
+places. We could do the usermode helper enable as a
+rootfs_initcall()..
 
-Perhaps the delay is causing a problem.  Does removing the udelay(400); help?
+I'm nervous about this. Enabling the usermode helpers too early can
+re-introduce the bug where we do it *much* too early before everything
+is initialized. But yes, uvesafb clearly does depend on being able to
+execute v86d from the root filesystem.
 
-Alex
+So I  think I'll just have to apply your patch. The alternatives look uglier.
 
-> Signed-off-by: Brad Campbell <brad@fnarfbargle.com>
->
-> diff --git a/drivers/gpu/drm/radeon/atombios_dp.c
-> b/drivers/gpu/drm/radeon/atombios_dp.c
-> index 7ad43c6..b8450f4 100644
-> --- a/drivers/gpu/drm/radeon/atombios_dp.c
-> +++ b/drivers/gpu/drm/radeon/atombios_dp.c
-> @@ -60,11 +60,13 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan
-> *chan,
->        int index = GetIndexIntoMasterTable(COMMAND,
-> ProcessAuxChannelTransaction);
->        unsigned char *base;
->        int recv_bytes;
-> +       int retry_count = 0;
->
->        memset(&args, 0, sizeof(args));
->
->        base = (unsigned char *)rdev->mode_info.atom_context->scratch;
->
-> +retry:
->        memcpy(base, send, send_bytes);
->
->        args.v1.lpAuxRequest = 0;
-> @@ -79,6 +81,16 @@ static int radeon_process_aux_ch(struct radeon_i2c_chan
-> *chan,
->
->        *ack = args.v1.ucReplyStatus;
->
-> +       /* defer */
-> +       if (args.v1.ucReplyStatus == 0x20){
-> +               DRM_DEBUG_KMS("dp_aux_ch defer\n");
-> +                       /* 10 is an arbitrary value from the pre-regression
-> patch
-> +                       in practice I've never seen more than one */
-> +                       if (retry_count++ < 10)
-> +                               goto retry;
-> +               return -EBUSY;
-> +       }
-> +
->        /* timeout */
->        if (args.v1.ucReplyStatus == 1) {
->                DRM_DEBUG_KMS("dp_aux_ch timeout\n");
->
+Thanks for the report and the debug help,
+
+            Linus
