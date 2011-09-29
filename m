@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab1I2R3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 13:29:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49613 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847Ab1I2R3V (ORCPT
+	id S1757146Ab1I2Raw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 13:30:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46434 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751036Ab1I2Rav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 13:29:21 -0400
-Date: Thu, 29 Sep 2011 21:28:21 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@gentwo.org>, kernel-hardening@lists.openwall.com,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Kees Cook <kees@ubuntu.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-Message-ID: <20110929172821.GA19601@albatros>
-References: <20110927175453.GA3393@albatros>
- <20110927175642.GA3432@albatros>
- <20110927193810.GA5416@albatros>
- <alpine.DEB.2.00.1109271459180.13797@router.home>
- <alpine.DEB.2.00.1109271328151.24402@chino.kir.corp.google.com>
- <20110929161848.GA16348@albatros>
+	Thu, 29 Sep 2011 13:30:51 -0400
+Date: Thu, 29 Sep 2011 18:30:06 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCHv2 2/2] ARM: debug: Move DEBUG_ICEDCC into the DEBUG_LL
+ choice
+Message-ID: <20110929173006.GI25061@e102144-lin.cambridge.arm.com>
+References: <1316568208-4518-1-git-send-email-sboyd@codeaurora.org>
+ <1316568208-4518-2-git-send-email-sboyd@codeaurora.org>
+ <4E83D25C.6020306@codeaurora.org>
+ <20110929092102.GB25061@e102144-lin.cambridge.arm.com>
+ <20110929094243.GC25061@e102144-lin.cambridge.arm.com>
+ <20110929094602.GH23944@n2100.arm.linux.org.uk>
+ <20110929103939.GD25061@e102144-lin.cambridge.arm.com>
+ <4E84A962.9030806@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110929161848.GA16348@albatros>
+In-Reply-To: <4E84A962.9030806@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 20:18 +0400, Vasiliy Kulikov wrote:
-> On Tue, Sep 27, 2011 at 13:33 -0700, David Rientjes wrote:
-> > I'd much rather just convert everything to use MB rather than KB so you 
-> > can't determine things at a page level.  I think that gets us much closer 
-> > to what the patch is intending to restrict.  But I also expect some 
-> > breakage from things that just expect meminfo to be in KB units without 
-> > parsing what the kernel is exporting.
+On Thu, Sep 29, 2011 at 06:22:42PM +0100, Stephen Boyd wrote:
+> On 09/29/11 03:39, Will Deacon wrote:
+> > Agreed, software timing loops are the only option and it's impossible to get
+> > them right everywhere. I think the Kconfig help text should be updated so
+> > that the timeout paragraph is removed.
 > 
-> I'm not convinced with rounding the information to MBs.  The attacker
-> still may fill slabs with new objects to trigger new slab pages
-> allocations.  He will be able to see when this MB-granularity barrier is
-> overrun thus seeing how many kbs there were before:
-> 
->     old = new - filled_obj_size_sum
-> 
-> As `new' is just increased, it means it is known with KB granularity,
-> not MB.  By counting used slab objects he learns filled_obj_size_sum.
+> Yes if you wait a long time the timeout for each character will expire
+> and the execution will continue.
 
-s/filled_obj_size_sum/old/ of course.
+Well I got impatient, so I figured it was best to update the help text!
 
-> So, rounding gives us nothing, but obscurity.
+> > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> > index 32b1be4..bfdf86b 100644
+> > --- a/arch/arm/Kconfig.debug
+> > +++ b/arch/arm/Kconfig.debug
+> > @@ -81,6 +81,14 @@ choice
+> >         prompt "Kernel low-level debugging port"
+> >         depends on DEBUG_LL
+> >  
+> > +       config DEBUG_LL_UART_NONE
+> > +               bool "No low-level debugging UART"
 > 
-> Thanks,
+> Should this grow a long list of platforms that are in this choice menu?
+> For example:
+> 
+>     depends on !FOOTBRIDGE && !ARCH_CLPS711X && ...
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+It might be nice to avoid that if we can. Once all the platforms have moved
+over to the choice, we can delete the dummy option anyway.
+
+> Otherwise
+> 
+> Acked-by: Stephen Boyd <sboyd@codeaurora.org>
+
+Thanks,
+
+Will
