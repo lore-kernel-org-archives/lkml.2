@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab1I2Uev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 16:34:51 -0400
-Received: from lunge.queued.net ([173.255.254.236]:45618 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757817Ab1I2Uet (ORCPT
+	id S1757203Ab1I2UfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 16:35:03 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:45383 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757444Ab1I2Ue6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 16:34:49 -0400
-Date: Thu, 29 Sep 2011 13:34:46 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        x86 maintainers <x86@kernel.org>, dsd@laptop.org
-Subject: Re: [PATCH] olpc: olpc-xo1-sci.c is an input driver, depends on
- INPUT
-Message-ID: <20110929133446.40ff3250@queued.net>
-In-Reply-To: <4E84D259.5020008@xenotime.net>
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-	<4E84D259.5020008@xenotime.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Sep 2011 16:34:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, thellstrom@vmware.com,
+        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
+        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
+        airlied@linux.ie, alexdeucher@gmail.com
+Cc: xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH 4/9] swiotlb: Expose swiotlb_nr_tlb function to modules
+Date: Thu, 29 Sep 2011 16:33:47 -0400
+Message-Id: <1317328432-25620-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
+References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E84D63D.0084:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011 13:17:29 -0700
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+As a mechanism to detect whether SWIOTLB is enabled or not.
+We also fix the spelling - it was swioltb instead of
+swiotlb.
 
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix build errors when CONFIG_INPUT is disabled (shortened list):
-> 
-> olpc-xo1-sci.c:(.text+0x1aee6): undefined reference to `input_event'
-> olpc-xo1-sci.c:(.text+0x1b077): undefined reference to
-> `input_unregister_device' olpc-xo1-sci.c:(.text+0x1b081): undefined
-> reference to `input_free_device'
-> arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1b270): more undefined
-> references to `input_event' follow
-> olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to
-> `input_allocate_device' olpc-xo1-sci.c:(.devinit.text+0x1a4):
-> undefined reference to `input_register_device'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Andres Salomon <dilinger@debian.org>
-> ---
-> Found in linux-next but also applies to mainline.
-> 
->  arch/x86/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- next-2011-0929.orig/arch/x86/Kconfig
-> +++ next-2011-0929/arch/x86/Kconfig
-> @@ -2052,7 +2052,7 @@ config OLPC_XO1_RTC
->  
->  config OLPC_XO1_SCI
->  	bool "OLPC XO-1 SCI extras"
-> -	depends on OLPC && OLPC_XO1_PM
-> +	depends on OLPC && OLPC_XO1_PM && INPUT
->  	select POWER_SUPPLY
->  	select GPIO_CS5535
->  	select MFD_CORE
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+[v1: Ripped out swiotlb_enabled]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/swiotlb-xen.c |    2 +-
+ include/linux/swiotlb.h   |    2 +-
+ lib/swiotlb.c             |    5 +++--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-Thanks!
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 6e8c15a..cbcd8cc 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -149,7 +149,7 @@ void __init xen_swiotlb_init(int verbose)
+ 	int rc;
+ 	unsigned long nr_tbl;
+ 
+-	nr_tbl = swioltb_nr_tbl();
++	nr_tbl = swiotlb_nr_tbl();
+ 	if (nr_tbl)
+ 		xen_io_tlb_nslabs = nr_tbl;
+ 	else {
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 445702c..e872526 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -24,7 +24,7 @@ extern int swiotlb_force;
+ 
+ extern void swiotlb_init(int verbose);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+-extern unsigned long swioltb_nr_tbl(void);
++extern unsigned long swiotlb_nr_tbl(void);
+ 
+ /*
+  * Enumeration for sync targets
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 99093b3..058935e 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -110,11 +110,11 @@ setup_io_tlb_npages(char *str)
+ __setup("swiotlb=", setup_io_tlb_npages);
+ /* make io_tlb_overflow tunable too? */
+ 
+-unsigned long swioltb_nr_tbl(void)
++unsigned long swiotlb_nr_tbl(void)
+ {
+ 	return io_tlb_nslabs;
+ }
+-
++EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+ /* Note that this doesn't work with highmem page */
+ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+ 				      volatile void *address)
+@@ -321,6 +321,7 @@ void __init swiotlb_free(void)
+ 		free_bootmem_late(__pa(io_tlb_start),
+ 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	}
++	io_tlb_nslabs = 0;
+ }
+ 
+ static int is_swiotlb_buffer(phys_addr_t paddr)
+-- 
+1.7.4.1
 
-Hm.  This might actually need a 'select INPUT' though, since
-OLPC_XO1_SCI is bool while INPUT is tristate.  Sigh, bool..
