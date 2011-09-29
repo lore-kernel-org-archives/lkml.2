@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1I2Jqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 05:46:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33570 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab1I2Jqc (ORCPT
+	id S1756272Ab1I2JsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 05:48:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54364 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752643Ab1I2JsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 05:46:32 -0400
-Date: Thu, 29 Sep 2011 10:46:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCHv2 2/2] ARM: debug: Move DEBUG_ICEDCC into the DEBUG_LL
-	choice
-Message-ID: <20110929094602.GH23944@n2100.arm.linux.org.uk>
-References: <1316568208-4518-1-git-send-email-sboyd@codeaurora.org> <1316568208-4518-2-git-send-email-sboyd@codeaurora.org> <4E83D25C.6020306@codeaurora.org> <20110929092102.GB25061@e102144-lin.cambridge.arm.com> <20110929094243.GC25061@e102144-lin.cambridge.arm.com>
+	Thu, 29 Sep 2011 05:48:10 -0400
+Date: Thu, 29 Sep 2011 10:48:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Timur Tabi <timur@freescale.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3/6] ASoC: Remove unused "control_data" field of struct
+ cs4270_private
+Message-ID: <20110929094805.GC3697@opensource.wolfsonmicro.com>
+References: <1317175218.14102.1.camel@phoenix>
+ <1317175838.14102.4.camel@phoenix>
+ <4E8375ED.1060209@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110929094243.GC25061@e102144-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4E8375ED.1060209@freescale.com>
+X-Cookie: You will be misunderstood by everyone.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 10:42:43AM +0100, Will Deacon wrote:
-> Bah, just took this for a spin on my Realview-PBX (Cortex-A9) platform and
-> the board won't boot unless I have a hardware debugger enabled that can
-> service the comms channel. This contradicts the Kconfig text which says:
-> 
-> 	  It does include a timeout to ensure that the system does not
-> 	  totally freeze when there is nothing connected to read.
-> 
-> so we certainly need to fix something!
+On Wed, Sep 28, 2011 at 02:30:53PM -0500, Timur Tabi wrote:
 
-One of the problems you'll encounter is that there's places where we
-don't have any timer infrastructure (eg, decompressor) and software
-timing loops won't work (they'll be too slow for the lower-end CPUs
-and too fast for the upper-end CPUs.)
+> Although Mark, it would have been nice if you had given me a chance to test this
+> change before applying the patch.
 
-The best fix is probably to leave that as-is, but introduce a 'default'
-output entry instead - so platforms which don't have any listed will
-get that instead of the ICEDDC stuff.
+With this sort of repetitive change by Axel I'm often not really going
+to register which particular dirver he's fixing in a given patch - he's
+generally very good and one of the advantages of keeping all the drivers
+consistent is that it's easy to deploy subsystem wide changes.
