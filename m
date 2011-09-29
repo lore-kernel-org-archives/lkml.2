@@ -1,191 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab1I2OJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 10:09:03 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59795 "EHLO
+	id S1756595Ab1I2OKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 10:10:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59800 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756536Ab1I2OI7 (ORCPT
+	with ESMTP id S1756543Ab1I2OJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 10:08:59 -0400
+	Thu, 29 Sep 2011 10:09:02 -0400
 From: Keshava Munegowda <keshava_mgowda@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
         <b-cousson@ti.com>, <paul@pwsan.com>
 CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
         <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
-Subject: [PATCH 3/5] arm: omap: usb: register hwmods of usbhs
-Date: Thu, 29 Sep 2011 19:37:19 +0530
-Message-ID: <1317305241-611-4-git-send-email-keshava_mgowda@ti.com>
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v12] mfd: omap: usb: Runtime PM support for EHCI and OHCI drivers
+Date: Thu, 29 Sep 2011 19:37:16 +0530
+Message-ID: <1317305241-611-1-git-send-email-keshava_mgowda@ti.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1317305241-611-3-git-send-email-keshava_mgowda@ti.com>
-References: <1317305241-611-1-git-send-email-keshava_mgowda@ti.com>
- <1317305241-611-2-git-send-email-keshava_mgowda@ti.com>
- <1317305241-611-3-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwmod structure of usb_host_hs  and usb_tll are
-retrieved and registered with omap device
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-Reviewed-by: Partha Basak <parthab@india.ti.com>
----
- arch/arm/mach-omap2/usb-host.c |  100 ++++++++++++++--------------------------
- 1 files changed, 34 insertions(+), 66 deletions(-)
+The Hwmod structures and Runtime PM features are implemented
+For EHCI and OHCI drivers of OMAP3 and OMAP4.
+The global suspend/resume of EHCI and OHCI
+is validated on OMAP3430 sdp board with these patches.
 
-diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-index 89ae298..771dc78 100644
---- a/arch/arm/mach-omap2/usb-host.c
-+++ b/arch/arm/mach-omap2/usb-host.c
-@@ -28,51 +28,28 @@
- #include <mach/hardware.h>
- #include <mach/irqs.h>
- #include <plat/usb.h>
-+#include <plat/omap_device.h>
- 
- #include "mux.h"
- 
- #ifdef CONFIG_MFD_OMAP_USB_HOST
- 
--#define OMAP_USBHS_DEVICE	"usbhs-omap"
--
--static struct resource usbhs_resources[] = {
--	{
--		.name	= "uhh",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "tll",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ehci",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ehci-irq",
--		.flags	= IORESOURCE_IRQ,
--	},
--	{
--		.name	= "ohci",
--		.flags	= IORESOURCE_MEM,
--	},
--	{
--		.name	= "ohci-irq",
--		.flags	= IORESOURCE_IRQ,
--	}
--};
--
--static struct platform_device usbhs_device = {
--	.name		= OMAP_USBHS_DEVICE,
--	.id		= 0,
--	.num_resources	= ARRAY_SIZE(usbhs_resources),
--	.resource	= usbhs_resources,
--};
-+#define OMAP_USBHS_DEVICE	"usbhs_omap"
-+#define	USBHS_UHH_HWMODNAME	"usb_host_hs"
-+#define USBHS_TLL_HWMODNAME	"usb_tll_hs"
- 
- static struct usbhs_omap_platform_data		usbhs_data;
- static struct ehci_hcd_omap_platform_data	ehci_data;
- static struct ohci_hcd_omap_platform_data	ohci_data;
- 
-+static struct omap_device_pm_latency omap_uhhtll_latency[] = {
-+	  {
-+		.deactivate_func = omap_device_idle_hwmods,
-+		.activate_func	 = omap_device_enable_hwmods,
-+		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
-+	  },
-+};
-+
- /* MUX settings for EHCI pins */
- /*
-  * setup_ehci_io_mux - initialize IO pad mux for USBHOST
-@@ -508,7 +485,10 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
- 
- void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
- {
--	int	i;
-+	struct omap_hwmod	*oh[2];
-+	struct omap_device	*od;
-+	int			bus_id = -1;
-+	int			i;
- 
- 	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
- 		usbhs_data.port_mode[i] = pdata->port_mode[i];
-@@ -523,44 +503,34 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
- 	usbhs_data.ohci_data = &ohci_data;
- 
- 	if (cpu_is_omap34xx()) {
--		usbhs_resources[0].start = OMAP34XX_UHH_CONFIG_BASE;
--		usbhs_resources[0].end = OMAP34XX_UHH_CONFIG_BASE + SZ_1K - 1;
--		usbhs_resources[1].start = OMAP34XX_USBTLL_BASE;
--		usbhs_resources[1].end = OMAP34XX_USBTLL_BASE + SZ_4K - 1;
--		usbhs_resources[2].start	= OMAP34XX_EHCI_BASE;
--		usbhs_resources[2].end	= OMAP34XX_EHCI_BASE + SZ_1K - 1;
--		usbhs_resources[3].start = INT_34XX_EHCI_IRQ;
--		usbhs_resources[4].start	= OMAP34XX_OHCI_BASE;
--		usbhs_resources[4].end	= OMAP34XX_OHCI_BASE + SZ_1K - 1;
--		usbhs_resources[5].start = INT_34XX_OHCI_IRQ;
- 		setup_ehci_io_mux(pdata->port_mode);
- 		setup_ohci_io_mux(pdata->port_mode);
- 	} else if (cpu_is_omap44xx()) {
--		usbhs_resources[0].start = OMAP44XX_UHH_CONFIG_BASE;
--		usbhs_resources[0].end = OMAP44XX_UHH_CONFIG_BASE + SZ_1K - 1;
--		usbhs_resources[1].start = OMAP44XX_USBTLL_BASE;
--		usbhs_resources[1].end = OMAP44XX_USBTLL_BASE + SZ_4K - 1;
--		usbhs_resources[2].start = OMAP44XX_HSUSB_EHCI_BASE;
--		usbhs_resources[2].end = OMAP44XX_HSUSB_EHCI_BASE + SZ_1K - 1;
--		usbhs_resources[3].start = OMAP44XX_IRQ_EHCI;
--		usbhs_resources[4].start = OMAP44XX_HSUSB_OHCI_BASE;
--		usbhs_resources[4].end = OMAP44XX_HSUSB_OHCI_BASE + SZ_1K - 1;
--		usbhs_resources[5].start = OMAP44XX_IRQ_OHCI;
- 		setup_4430ehci_io_mux(pdata->port_mode);
- 		setup_4430ohci_io_mux(pdata->port_mode);
- 	}
- 
--	if (platform_device_add_data(&usbhs_device,
--				&usbhs_data, sizeof(usbhs_data)) < 0) {
--		printk(KERN_ERR "USBHS platform_device_add_data failed\n");
--		goto init_end;
-+	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
-+	if (!oh[0]) {
-+		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
-+		return;
- 	}
- 
--	if (platform_device_register(&usbhs_device) < 0)
--		printk(KERN_ERR "USBHS platform_device_register failed\n");
-+	oh[1] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
-+	if (!oh[1]) {
-+		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
-+		return;
-+	}
- 
--init_end:
--	return;
-+	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
-+				(void *)&usbhs_data, sizeof(usbhs_data),
-+				omap_uhhtll_latency,
-+				ARRAY_SIZE(omap_uhhtll_latency), false);
-+	if (IS_ERR(od)) {
-+		pr_err("Could not build hwmod devices %s,%s\n",
-+			USBHS_UHH_HWMODNAME, USBHS_TLL_HWMODNAME);
-+		return;
-+	}
- }
- 
- #else
-@@ -570,5 +540,3 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
- }
- 
- #endif
--
--
--- 
-1.6.0.4
+TODO:
+  - Adding mux-information to Hwmods.
+  - Aggressive Clock Management around USB bus suspend/resume.
+  - Remote Wakeup support implementation using IO-ring Wakeup
+    on EHCI/OHCI pads via PRCM IRQ chain handler.
+
+
+In version 12:
+  - The ehci, ohci and usb_host_hs hwmods combined as a single hwmod
+    usb_host_hs.
+  - for omap3
+	the usbhost_ick and and usbtll_ick clocks are changed as interface
+        clocks. The usbtll_fck, usbhost_48m_fck clocks are changed as main
+        clocks and the 120mhz functional clock is changed to optional clock 
+  - the usbhs mfd driver enable/disable this optional clock in 
+    runtime_resume and runtime_suspend callbacks of pm_runtime_get_sync
+    and pm_runtime_put_sync APIs.
+
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
+
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  mfd: omap: usb: Runtime PM support
+
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  195 ++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  171 +++++++-
+ arch/arm/mach-omap2/usb-host.c             |  100 ++---
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |  748 +++++++++++-----------------
+ drivers/usb/host/ehci-omap.c               |   17 +-
+ drivers/usb/host/ohci-omap3.c              |   18 +-
+ 9 files changed, 727 insertions(+), 561 deletions(-)
 
