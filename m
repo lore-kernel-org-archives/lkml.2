@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab1I2TAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:00:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58282 "EHLO mx2.suse.de"
+	id S1757427Ab1I2TBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:01:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58295 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab1I2TAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:00:45 -0400
-Date: Thu, 29 Sep 2011 11:55:22 -0700
+	id S1754200Ab1I2TBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 15:01:04 -0400
+Date: Thu, 29 Sep 2011 11:56:23 -0700
 From: Greg KH <gregkh@suse.de>
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [134/244] drm/radeon/kms: fix typo in r100_blit_copy
-Message-ID: <20110929185522.GA8183@suse.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [004/244] sfi: table irq 0xFF means no interrupt
+Message-ID: <20110929185623.GB8183@suse.de>
 References: <20110928220225.GA27128@kroah.com>
- <20110928220139.453112165@clark.kroah.org>
- <82951087A1ED9648A152812B736362500A8F294274@sausexmbp02.amd.com>
+ <20110928220125.665499011@clark.kroah.org>
+ <20110929102100.GA6378@shutemov.name>
+ <20110929141827.GC3002@suse.de>
+ <20110929143346.GA7357@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <82951087A1ED9648A152812B736362500A8F294274@sausexmbp02.amd.com>
+In-Reply-To: <20110929143346.GA7357@shutemov.name>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 09:31:47PM -0500, Deucher, Alexander wrote:
-> Please don't apply this to stable.  The patch ended up being in error.
+On Thu, Sep 29, 2011 at 05:33:46PM +0300, Kirill A. Shutemov wrote:
+> On Thu, Sep 29, 2011 at 07:18:27AM -0700, Greg KH wrote:
+> > On Thu, Sep 29, 2011 at 01:21:00PM +0300, Kirill A. Shutemov wrote:
+> > > On Wed, Sep 28, 2011 at 02:59:28PM -0700, Greg KH wrote:
+> > > > 3.0-stable review patch.  If anyone has any objections, please let us know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > > 
+> > > > commit a94cc4e6c0a26a7c8f79a432ab2c89534aa674d5 upstream.
+> > > > 
+> > > > According to the SFI specification irq number 0xFF means device has no
+> > > > interrupt or interrupt attached via GPIO.
+> > > > 
+> > > > Currently, we don't handle this special case and set irq field in
+> > > > *_board_info structs to 255.  It leads to confusion in some drivers.
+> > > > Accelerometer driver tries to register interrupt 255, fails and prints
+> > > > "Cannot get IRQ" to dmesg.
+> > > > 
+> > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > > > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > > 
+> > > Please, take this as well:
+> > > 
+> > > http://lkml.org/lkml/2011/9/14/40
+> > 
+> > Is that patch in Linus's tree?
+> 
+> No, it isn't.
+> 
+> Do not apply "sfi: table irq 0xFF means no interrupt" in this case. It
+> breaks kexec. Better to take both patches into next stable release.
 
-Was it also reverted upstream?
+Ok, I've dropped this patch from the release.
 
-I'll go drop it now, thanks.
+Please let me know when you get the fixup patch into Linus's tree, and
+let me know that it needs to be added to the 3.0-stable tree, along with
+this one.
 
 greg k-h
