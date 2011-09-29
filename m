@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab1I2X1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 19:27:51 -0400
-Received: from claw.goop.org ([74.207.240.146]:43211 "EHLO claw.goop.org"
+	id S1758050Ab1I2X0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 19:26:49 -0400
+Received: from claw.goop.org ([74.207.240.146]:43158 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932200Ab1I2X0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 19:26:54 -0400
+	id S1752734Ab1I2X0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 19:26:48 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,92 +16,65 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 2/8] jump_label: if a key has already been initialized, don't nop it out
-Date: Thu, 29 Sep 2011 16:26:32 -0700
-Message-Id: <9305c40efff18a742f1446fa8013af3ed72b01ce.1317338254.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC 0/8] jump-label: allow early jump_label_enable()
+Date: Thu, 29 Sep 2011 16:26:30 -0700
+Message-Id: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.2
-In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If a key has been enabled before jump_label_init() is called, don't
-nop it out.
+Hi all,
 
-This replaces arch_jump_label_text_poke_early() (which can only nop
-out a site) with arch_jump_label_transform_early(), which is functionally
-equivalent to arch_jump_label_transform().
+While trying to use the jump-label stuff for my PV ticketlock changes,
+I had some problems using jump labels early in the kernel's lifetime
+(pre-SMP).
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- include/linux/jump_label.h |    3 ++-
- kernel/jump_label.c        |   17 +++++++++++------
- 2 files changed, 13 insertions(+), 7 deletions(-)
+The basic problem is that even if I enable a jump_label_key, the
+jump_label_init() initializer ends up nopping out all the code sites.
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 1213e9d..c8fb1b3 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -45,7 +45,8 @@ extern void jump_label_lock(void);
- extern void jump_label_unlock(void);
- extern void arch_jump_label_transform(struct jump_entry *entry,
- 				 enum jump_label_type type);
--extern void arch_jump_label_text_poke_early(jump_label_t addr);
-+extern void arch_jump_label_transform_early(struct jump_entry *entry,
-+				 enum jump_label_type type);
- extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_inc(struct jump_label_key *key);
- extern void jump_label_dec(struct jump_label_key *key);
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index a8ce450..54e8e2d 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -124,8 +124,10 @@ static void __jump_label_update(struct jump_label_key *key,
- /*
-  * Not all archs need this.
-  */
--void __weak arch_jump_label_text_poke_early(jump_label_t addr)
-+void __weak arch_jump_label_transform_early(struct jump_entry *entry,
-+					    enum jump_label_type type)
- {
-+	arch_jump_label_transform(entry, type);	
- }
- 
- static __init int jump_label_init(void)
-@@ -139,12 +141,15 @@ static __init int jump_label_init(void)
- 	jump_label_sort_entries(iter_start, iter_stop);
- 
- 	for (iter = iter_start; iter < iter_stop; iter++) {
--		arch_jump_label_text_poke_early(iter->code);
--		if (iter->key == (jump_label_t)(unsigned long)key)
-+		struct jump_label_key *iterk;
-+
-+		iterk = (struct jump_label_key *)(unsigned long)iter->key;
-+		arch_jump_label_transform_early(iter, jump_label_enabled(iterk) ?
-+						JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
-+		if (iterk == key)
- 			continue;
- 
--		key = (struct jump_label_key *)(unsigned long)iter->key;
--		atomic_set(&key->enabled, 0);
-+		key = iterk;
- 		key->entries = iter;
- #ifdef CONFIG_MODULES
- 		key->next = NULL;
-@@ -212,7 +217,7 @@ void jump_label_apply_nops(struct module *mod)
- 		return;
- 
- 	for (iter = iter_start; iter < iter_stop; iter++)
--		arch_jump_label_text_poke_early(iter->code);
-+		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
- }
- 
- static int jump_label_add_module(struct module *mod)
+This series enables early use of jump labels by making
+jump_label_init() respect already-enabled keys.
+
+To do this, I've dropped arch_jump_label_poke_text_early() and
+replaced it with arch_jump_label_transform_early(), which is the same
+as the non-_early variant except that it expects to be operating in a
+pre-SMP environment.
+
+I've tested this on x86, but all the other architecture changes are
+completely untested (not even breathed on by a compiler).
+
+One big question which arises is whether the _early() function is
+necessary at all.  All the stop_machine/mutex/etc stuff that
+arch_jump_label_transform() ends up doing is redundant pre-SMP, but it
+shouldn't hurt.  Maybe we can just drop the _early function?  It works
+on x86, at least, because jump_label_enable() works, which uses the full
+form.  And dropping it would reduce this to a very much smaller series.
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (8):
+  jump_label: use proper atomic_t initializer
+  jump_label: if a key has already been initialized, don't nop it out
+  x86/jump_label: add arch_jump_label_transform_early()
+  sparc/jump_label: add arch_jump_label_transform_early()
+  mips/jump_label: add arch_jump_label_transform_early()
+  powerpc/jump_label: add arch_jump_label_transform_early()
+  s390/jump-label: add arch_jump_label_transform_early()
+  jump_label: drop default arch_jump_label_transform_early
+
+ arch/mips/kernel/jump_label.c    |   21 +++++++++++++---
+ arch/powerpc/kernel/jump_label.c |    6 ++++
+ arch/s390/kernel/jump_label.c    |   49 +++++++++++++++++++++++--------------
+ arch/sparc/kernel/jump_label.c   |   24 +++++++++++-------
+ arch/x86/kernel/jump_label.c     |   20 +++++++++++----
+ include/linux/jump_label.h       |    7 +++--
+ kernel/jump_label.c              |   20 ++++++---------
+ 7 files changed, 94 insertions(+), 53 deletions(-)
+
 -- 
 1.7.6.2
 
