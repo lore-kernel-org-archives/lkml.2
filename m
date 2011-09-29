@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab1I2TWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:22:16 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:26791 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755308Ab1I2TWP convert rfc822-to-8bit (ORCPT
+	id S1757366Ab1I2TXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:23:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61213 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab1I2TXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:22:15 -0400
-X-IronPort-AV: E=Sophos;i="4.68,462,1312182000"; 
-   d="scan'208";a="585715230"
-Subject: Re: 3.1rc7+ FSX failure over NFS
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 Sep 2011 15:22:13 -0400
-In-Reply-To: <20110929190519.GA15165@redhat.com>
-References: <20110929184127.GA12236@redhat.com>
-	 <1317322772.8708.30.camel@lade.trondhjem.org>
-	 <20110929190519.GA15165@redhat.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1317324133.8708.43.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 29 Sep 2011 19:22:14.0035 (UTC) FILETIME=[17E04E30:01CC7EDD]
+	Thu, 29 Sep 2011 15:23:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=Nb7uqGm5lt32T2FZoy1zW4dXj+hwH5x5wDJAjUyiPPmkxLHgHrx6o5+EVfmopIr1W
+	5jcnGrSc0t99H+/SyJKbQ==
+From: Muraliraja Muniraju <muralira@google.com>
+To: "David S. Miller\"" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Murali Raja <muralira@google.com>
+Subject: [PATCH] net-proc: expose the tos values in /proc/net/[tcp|udp]
+Date: Thu, 29 Sep 2011 12:22:42 -0700
+Message-Id: <1317324162-21621-1-git-send-email-muralira@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 15:05 -0400, Dave Jones wrote: 
-> On Thu, Sep 29, 2011 at 02:59:32PM -0400, Trond Myklebust wrote:
->  
->  > 1) What filesystem are you using on the server, and does that filesystem
->  > support high resolution timestamps?
-> 
-> ext3
+From: Murali Raja <muralira@google.com>
 
-Hmm... Is the problem also reproducible with ext4 or xfs?
+This patch exports the tos values from the inet_sock struct
+for tcp and udp into the /proc/net/tcp or /proc/net/udp respectively.
+This will not pickup per packet tos changes but it will address most
+of the cases. This is mainly useful as it would decrease reliance on
+tcpdump and also people without root access will be able to read
+the values.
 
-ext3 has the issue that mtime/ctime timestamps are only accurate to
-within 1 second, and so the client often has trouble figuring out which
-returned attribute values reflect the most recent state on the server
-when several RPC calls have been transmitted in parallel. 
+Signed-off-by: Murali Raja <muralira@google.com>
+---
+ net/ipv4/tcp_ipv4.c |    7 +++++--
+ net/ipv4/udp.c      |    5 +++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-> > 2) Does the file length on the server match the reported erroneous file
->  > length on the client?
-> 
-> No. Server side is 213853 bytes (0x3435d)
-
-Ouch. That would seem to indicate that something is happening after the
-truncate(). I would have expected the server to show 0x3210a...
-
-> > 3) Do the mtime and ctime on the erroneous file match on the client and
->  > server?
->  
-> both show..
-> Modify: 2011-09-29 13:50:00.000000000 -0400
-
-OK. This result looks consistent with the hypothesis put forward under
-question (1) above. However your reply to (2) does not. Let me
-investigate and see if I can reproduce it...
-
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index dd3fad9..b036184 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -2416,6 +2416,7 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
+ 	__u16 destp = ntohs(inet->inet_dport);
+ 	__u16 srcp = ntohs(inet->inet_sport);
+ 	int rx_queue;
++	unsigned int tos;
+ 
+ 	if (icsk->icsk_pending == ICSK_TIME_RETRANS) {
+ 		timer_active	= 1;
+@@ -2439,8 +2440,10 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
+ 		 */
+ 		rx_queue = max_t(int, tp->rcv_nxt - tp->copied_seq, 0);
+ 
++	tos = inet->tos;
++
+ 	seq_printf(f, "%4d: %08X:%04X %08X:%04X %02X %08X:%08X %02X:%08lX "
+-			"%08X %5d %8d %lu %d %pK %lu %lu %u %u %d%n",
++			"%08X %5d %8d %lu %d %pK %lu %lu %u %u %d %u%n",
+ 		i, src, srcp, dest, destp, sk->sk_state,
+ 		tp->write_seq - tp->snd_una,
+ 		rx_queue,
+@@ -2455,7 +2458,7 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
+ 		jiffies_to_clock_t(icsk->icsk_ack.ato),
+ 		(icsk->icsk_ack.quick << 1) | icsk->icsk_ack.pingpong,
+ 		tp->snd_cwnd,
+-		tcp_in_initial_slowstart(tp) ? -1 : tp->snd_ssthresh,
++		tcp_in_initial_slowstart(tp) ? -1 : tp->snd_ssthresh, tos,
+ 		len);
+ }
+ 
+diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
+index ebaa96b..588786e 100644
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -2092,15 +2092,16 @@ static void udp4_format_sock(struct sock *sp, struct seq_file *f,
+ 	__be32 src  = inet->inet_rcv_saddr;
+ 	__u16 destp	  = ntohs(inet->inet_dport);
+ 	__u16 srcp	  = ntohs(inet->inet_sport);
++	unsigned int tos = inet->tos;
+ 
+ 	seq_printf(f, "%5d: %08X:%04X %08X:%04X"
+-		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %pK %d%n",
++		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %pK %d %d%n",
+ 		bucket, src, srcp, dest, destp, sp->sk_state,
+ 		sk_wmem_alloc_get(sp),
+ 		sk_rmem_alloc_get(sp),
+ 		0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
+ 		atomic_read(&sp->sk_refcnt), sp,
+-		atomic_read(&sp->sk_drops), len);
++		atomic_read(&sp->sk_drops), tos, len);
+ }
+ 
+ int udp4_seq_show(struct seq_file *seq, void *v)
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+1.7.3.1
 
