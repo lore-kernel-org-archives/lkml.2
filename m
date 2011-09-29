@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab1I2TXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 15:23:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61213 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab1I2TXf (ORCPT
+	id S1757401Ab1I2T2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 15:28:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64464 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab1I2T2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 15:23:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=Nb7uqGm5lt32T2FZoy1zW4dXj+hwH5x5wDJAjUyiPPmkxLHgHrx6o5+EVfmopIr1W
-	5jcnGrSc0t99H+/SyJKbQ==
-From: Muraliraja Muniraju <muralira@google.com>
-To: "David S. Miller\"" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Murali Raja <muralira@google.com>
-Subject: [PATCH] net-proc: expose the tos values in /proc/net/[tcp|udp]
-Date: Thu, 29 Sep 2011 12:22:42 -0700
-Message-Id: <1317324162-21621-1-git-send-email-muralira@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 29 Sep 2011 15:28:23 -0400
+Date: Thu, 29 Sep 2011 12:28:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
+Message-ID: <20110929192818.GB10425@mtj.dyndns.org>
+References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+ <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Raja <muralira@google.com>
+Hello,
 
-This patch exports the tos values from the inet_sock struct
-for tcp and udp into the /proc/net/tcp or /proc/net/udp respectively.
-This will not pickup per packet tos changes but it will address most
-of the cases. This is mainly useful as it would decrease reliance on
-tcpdump and also people without root access will be able to read
-the values.
+On Thu, Sep 29, 2011 at 12:02:28PM +0100, Catalin Marinas wrote:
+> This patch adds kmemleak callbacks from the percpu allocator, reducing a
+> number of false positives caused by kmemleak not scanning such memory
+> blocks. The percpu chunks are never reported as leaks because of current
+> kmemleak limitations with the __percpu pointer not pointing directly to
+> the actual chunks.
+...
+> @@ -801,7 +804,16 @@ area_found:
+>  	mutex_unlock(&pcpu_alloc_mutex);
+>  
+>  	/* return address relative to base address */
+> -	return __addr_to_pcpu_ptr(chunk->base_addr + off);
+> +	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
+> +
+> +	/*
+> +	 * Percpu allocations are currently reported as leaks (kmemleak false
+> +	 * positives). To avoid this, just set min_count to 0.
+> +	 */
+> +	for_each_possible_cpu(cpu)
+> +		kmemleak_alloc(per_cpu_ptr(ptr, cpu), size, 0, GFP_KERNEL);
+> +
+> +	return ptr;
 
-Signed-off-by: Murali Raja <muralira@google.com>
----
- net/ipv4/tcp_ipv4.c |    7 +++++--
- net/ipv4/udp.c      |    5 +++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+I'm pretty ignorant about kmemleak but it scans memories looking for
+references to allocated objects, right?  There currently is no way for
+such scanner to tell a percpu pointer in memory from a regular pointer
+making it impossible to track percpu objects properly from kmemleak.
+If my understanding is correct, I don't see much point in tracking
+each percpu alloc/free.  Why not just mark all pages taken by percpu
+allocator as untrackable?
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index dd3fad9..b036184 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -2416,6 +2416,7 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
- 	__u16 destp = ntohs(inet->inet_dport);
- 	__u16 srcp = ntohs(inet->inet_sport);
- 	int rx_queue;
-+	unsigned int tos;
- 
- 	if (icsk->icsk_pending == ICSK_TIME_RETRANS) {
- 		timer_active	= 1;
-@@ -2439,8 +2440,10 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
- 		 */
- 		rx_queue = max_t(int, tp->rcv_nxt - tp->copied_seq, 0);
- 
-+	tos = inet->tos;
-+
- 	seq_printf(f, "%4d: %08X:%04X %08X:%04X %02X %08X:%08X %02X:%08lX "
--			"%08X %5d %8d %lu %d %pK %lu %lu %u %u %d%n",
-+			"%08X %5d %8d %lu %d %pK %lu %lu %u %u %d %u%n",
- 		i, src, srcp, dest, destp, sk->sk_state,
- 		tp->write_seq - tp->snd_una,
- 		rx_queue,
-@@ -2455,7 +2458,7 @@ static void get_tcp4_sock(struct sock *sk, struct seq_file *f, int i, int *len)
- 		jiffies_to_clock_t(icsk->icsk_ack.ato),
- 		(icsk->icsk_ack.quick << 1) | icsk->icsk_ack.pingpong,
- 		tp->snd_cwnd,
--		tcp_in_initial_slowstart(tp) ? -1 : tp->snd_ssthresh,
-+		tcp_in_initial_slowstart(tp) ? -1 : tp->snd_ssthresh, tos,
- 		len);
- }
- 
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index ebaa96b..588786e 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -2092,15 +2092,16 @@ static void udp4_format_sock(struct sock *sp, struct seq_file *f,
- 	__be32 src  = inet->inet_rcv_saddr;
- 	__u16 destp	  = ntohs(inet->inet_dport);
- 	__u16 srcp	  = ntohs(inet->inet_sport);
-+	unsigned int tos = inet->tos;
- 
- 	seq_printf(f, "%5d: %08X:%04X %08X:%04X"
--		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %pK %d%n",
-+		" %02X %08X:%08X %02X:%08lX %08X %5d %8d %lu %d %pK %d %d%n",
- 		bucket, src, srcp, dest, destp, sp->sk_state,
- 		sk_wmem_alloc_get(sp),
- 		sk_rmem_alloc_get(sp),
- 		0, 0L, 0, sock_i_uid(sp), 0, sock_i_ino(sp),
- 		atomic_read(&sp->sk_refcnt), sp,
--		atomic_read(&sp->sk_drops), len);
-+		atomic_read(&sp->sk_drops), tos, len);
- }
- 
- int udp4_seq_show(struct seq_file *seq, void *v)
+If we want to track percpu memory leak properly, I think we'll need
+more invasive changes.  If kmemleak is enabled, we can offset percpu
+pointer so that the scanner can tell percpu pointers and then kmemleak
+should properly account for all percpu areas pointed to by the percpu
+pointer.  Hmmm... or, alternatively, we can make kmemleak only track
+allocations for the first possible cpu and ignore all the rest and
+modify percpu such that percpu pointer points to the actual address of
+the first cpu if kmemleak is enabled.
+
+Thank you.
+
 -- 
-1.7.3.1
-
+tejun
