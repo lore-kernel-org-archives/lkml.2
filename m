@@ -1,143 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab1I2WsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:48:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60149 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab1I2WsU (ORCPT
+	id S1757769Ab1I2Wto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:49:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43965 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978Ab1I2WsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 18:48:20 -0400
+	Thu, 29 Sep 2011 18:48:23 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/16] perf buildid-list: Add option to show the running kernel build id
-Date: Thu, 29 Sep 2011 19:47:57 -0300
-Message-Id: <1317336490-19437-4-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 16/16] perf symbols: Treat all memory maps without dso file as loaded
+Date: Thu, 29 Sep 2011 19:48:10 -0300
+Message-Id: <1317336490-19437-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
 References: <1317336490-19437-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-[root@emilia ~]# perf buildid-list -k
-07b0c016a2b30004e86132d0239945b1e88f5d75
+The stack/vdso/heap memory maps dont have any dso file.  Setting the
+perf dso objects as 'loaded' for these maps, we avoid unnecessary
+warnings like:
 
-Useful when diagnosing build id problems in debuginfo packages, etc.
+  "Failed to open [stack], continuing without symbols"
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
+All map__find_* functions still return NULL when searching for symbols
+in these maps.
+
+Link: http://lkml.kernel.org/r/20110824131834.GA2007@jolsa.brq.redhat.com
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-po1bl7acn6e1hhne90opmvtl@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-buildid-list.txt |    5 ++++
- tools/perf/builtin-buildid-list.c              |   31 ++++++++++++++++++++++-
- 2 files changed, 34 insertions(+), 2 deletions(-)
+ tools/perf/util/map.c |   24 ++++++++++++++++++------
+ 1 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-buildid-list.txt b/tools/perf/Documentation/perf-buildid-list.txt
-index 5eaac6f..770a7f3 100644
---- a/tools/perf/Documentation/perf-buildid-list.txt
-+++ b/tools/perf/Documentation/perf-buildid-list.txt
-@@ -16,6 +16,8 @@ This command displays the buildids found in a perf.data file, so that other
- tools can be used to fetch packages with matching symbol tables for use by
- perf report.
- 
-+It can also be used to show the build id of the running kernel.
-+
- OPTIONS
- -------
- -H::
-@@ -27,6 +29,9 @@ OPTIONS
- -f::
- --force::
- 	Don't do ownership validation.
-+-k::
-+--kernel::
-+	Show running kernel build id.
- -v::
- --verbose::
- 	Be more verbose.
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 5af32ae..4102ead 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -1,7 +1,8 @@
- /*
-  * builtin-buildid-list.c
-  *
-- * Builtin buildid-list command: list buildids in perf.data
-+ * Builtin buildid-list command: list buildids in perf.data or in the running
-+ * kernel.
-  *
-  * Copyright (C) 2009, Red Hat Inc.
-  * Copyright (C) 2009, Arnaldo Carvalho de Melo <acme@redhat.com>
-@@ -17,6 +18,7 @@
- 
- static char const *input_name = "perf.data";
- static bool force;
-+static bool show_kernel;
- static bool with_hits;
- 
- static const char * const buildid_list_usage[] = {
-@@ -29,12 +31,13 @@ static const struct option options[] = {
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
-+	OPT_BOOLEAN('k', "kernel", &show_kernel, "Show current kernel build id"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose"),
- 	OPT_END()
- };
- 
--static int __cmd_buildid_list(void)
-+static int perf_session__list_build_ids(void)
- {
- 	struct perf_session *session;
- 
-@@ -52,6 +55,30 @@ static int __cmd_buildid_list(void)
- 	return 0;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index aa2f9fd..9cf0d43 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -18,6 +18,13 @@ static inline int is_anon_memory(const char *filename)
+ 	return strcmp(filename, "//anon") == 0;
  }
  
-+static int sysfs__fprintf_build_id(FILE *fp)
++static inline int is_no_dso_memory(const char *filename)
 +{
-+	u8 kallsyms_build_id[BUILD_ID_SIZE];
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+
-+	if (sysfs__read_build_id("/sys/kernel/notes", kallsyms_build_id,
-+				 sizeof(kallsyms_build_id)) != 0)
-+		return -1;
-+
-+	build_id__sprintf(kallsyms_build_id, sizeof(kallsyms_build_id),
-+			  sbuild_id);
-+	fprintf(fp, "%s\n", sbuild_id);
-+	return 0;
++	return !strcmp(filename, "[stack]") ||
++	       !strcmp(filename, "[vdso]")  ||
++	       !strcmp(filename, "[heap]");
 +}
 +
-+static int __cmd_buildid_list(void)
-+{
-+
-+	if (show_kernel)
-+		return sysfs__fprintf_build_id(stdout);
-+
-+	return perf_session__list_build_ids();
-+}
-+
- int cmd_buildid_list(int argc, const char **argv, const char *prefix __used)
+ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
  {
- 	argc = parse_options(argc, argv, options, buildid_list_usage, 0);
+@@ -42,9 +49,10 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 	if (self != NULL) {
+ 		char newfilename[PATH_MAX];
+ 		struct dso *dso;
+-		int anon;
++		int anon, no_dso;
+ 
+ 		anon = is_anon_memory(filename);
++		no_dso = is_no_dso_memory(filename);
+ 
+ 		if (anon) {
+ 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
+@@ -57,12 +65,16 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 
+ 		map__init(self, type, start, start + len, pgoff, dso);
+ 
+-		if (anon) {
+-set_identity:
++		if (anon || no_dso) {
+ 			self->map_ip = self->unmap_ip = identity__map_ip;
+-		} else if (strcmp(filename, "[vdso]") == 0) {
+-			dso__set_loaded(dso, self->type);
+-			goto set_identity;
++
++			/*
++			 * Set memory without DSO as loaded. All map__find_*
++			 * functions still return NULL, and we avoid the
++			 * unnecessary map__load warning.
++			 */
++			if (no_dso)
++				dso__set_loaded(dso, self->type);
+ 		}
+ 	}
+ 	return self;
 -- 
 1.6.2.5
 
