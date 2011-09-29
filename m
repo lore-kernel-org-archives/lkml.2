@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1I2HpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 03:45:07 -0400
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:4599 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754256Ab1I2HpA (ORCPT
+	id S1754750Ab1I2Hq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 03:46:28 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:50107 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab1I2HqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 03:45:00 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [RFCv4 PATCH 2/6] ivtv: only start streaming in poll() if polling for input.
-Date: Thu, 29 Sep 2011 09:44:08 +0200
-Message-Id: <32566dbc40ed36da1ef324afd8a09813c1bc080c.1317281827.git.hans.verkuil@cisco.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317282252-8290-1-git-send-email-hverkuil@xs4all.nl>
-References: <1317282252-8290-1-git-send-email-hverkuil@xs4all.nl>
-In-Reply-To: <8488cb7deae3c3da6b079c8ebdcacce1f86dd433.1317281827.git.hans.verkuil@cisco.com>
-References: <8488cb7deae3c3da6b079c8ebdcacce1f86dd433.1317281827.git.hans.verkuil@cisco.com>
+	Thu, 29 Sep 2011 03:46:24 -0400
+Date: Thu, 29 Sep 2011 09:46:20 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 3.1-rc7
+Message-ID: <20110929094620.1ea35330@de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+Hi Linus,
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
----
- drivers/media/video/ivtv/ivtv-fileops.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+please pull from 'for-linus' branch of
 
-diff --git a/drivers/media/video/ivtv/ivtv-fileops.c b/drivers/media/video/ivtv/ivtv-fileops.c
-index 38f0522..a931ecf 100644
---- a/drivers/media/video/ivtv/ivtv-fileops.c
-+++ b/drivers/media/video/ivtv/ivtv-fileops.c
-@@ -744,8 +744,9 @@ unsigned int ivtv_v4l2_dec_poll(struct file *filp, poll_table *wait)
- 	return res;
- }
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
+
+to receive the following updates:
+
+Carsten Otte (1):
+      [S390] gmap: always up mmap_sem properly
+
+Martin Schwidefsky (1):
+      [S390] Do not clobber personality flags on exec
+
+Peter Oberparleiter (1):
+      [S390] cio: fix cio_tpi ignoring adapter interrupts
+
+ arch/s390/include/asm/elf.h |    3 ++-
+ arch/s390/mm/pgtable.c      |    7 ++++---
+ drivers/s390/cio/cio.c      |    8 ++++++--
+ 3 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/arch/s390/include/asm/elf.h b/arch/s390/include/asm/elf.h
+index 64b61bf..547f1a6 100644
+--- a/arch/s390/include/asm/elf.h
++++ b/arch/s390/include/asm/elf.h
+@@ -188,7 +188,8 @@ extern char elf_platform[];
+ #define SET_PERSONALITY(ex)					\
+ do {								\
+ 	if (personality(current->personality) != PER_LINUX32)	\
+-		set_personality(PER_LINUX);			\
++		set_personality(PER_LINUX |			\
++			(current->personality & ~PER_MASK));	\
+ 	if ((ex).e_ident[EI_CLASS] == ELFCLASS32)		\
+ 		set_thread_flag(TIF_31BIT);			\
+ 	else							\
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index f69ff3c..5d56c2b 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -303,15 +303,15 @@ int gmap_unmap_segment(struct gmap *gmap, unsigned long to, unsigned long len)
+ 		/* Walk the guest addr space page table */
+ 		table = gmap->table + (((to + off) >> 53) & 0x7ff);
+ 		if (*table & _REGION_ENTRY_INV)
+-			return 0;
++			goto out;
+ 		table = (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+ 		table = table + (((to + off) >> 42) & 0x7ff);
+ 		if (*table & _REGION_ENTRY_INV)
+-			return 0;
++			goto out;
+ 		table = (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+ 		table = table + (((to + off) >> 31) & 0x7ff);
+ 		if (*table & _REGION_ENTRY_INV)
+-			return 0;
++			goto out;
+ 		table = (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+ 		table = table + (((to + off) >> 20) & 0x7ff);
  
--unsigned int ivtv_v4l2_enc_poll(struct file *filp, poll_table * wait)
-+unsigned int ivtv_v4l2_enc_poll(struct file *filp, poll_table *wait)
+@@ -319,6 +319,7 @@ int gmap_unmap_segment(struct gmap *gmap, unsigned long to, unsigned long len)
+ 		flush |= gmap_unlink_segment(gmap, table);
+ 		*table = _SEGMENT_ENTRY_INV;
+ 	}
++out:
+ 	up_read(&gmap->mm->mmap_sem);
+ 	if (flush)
+ 		gmap_flush_tlb(gmap);
+diff --git a/drivers/s390/cio/cio.c b/drivers/s390/cio/cio.c
+index cbde448..eb3140e 100644
+--- a/drivers/s390/cio/cio.c
++++ b/drivers/s390/cio/cio.c
+@@ -654,8 +654,8 @@ static struct io_subchannel_private console_priv;
+ static int console_subchannel_in_use;
+ 
+ /*
+- * Use tpi to get a pending interrupt, call the interrupt handler and
+- * return a pointer to the subchannel structure.
++ * Use cio_tpi to get a pending interrupt and call the interrupt handler.
++ * Return non-zero if an interrupt was processed, zero otherwise.
+  */
+ static int cio_tpi(void)
  {
-+	unsigned long req_events = poll_requested_events(wait);
- 	struct ivtv_open_id *id = fh2id(filp->private_data);
- 	struct ivtv *itv = id->itv;
- 	struct ivtv_stream *s = &itv->streams[id->type];
-@@ -753,7 +754,8 @@ unsigned int ivtv_v4l2_enc_poll(struct file *filp, poll_table * wait)
- 	unsigned res = 0;
- 
- 	/* Start a capture if there is none */
--	if (!eof && !test_bit(IVTV_F_S_STREAMING, &s->s_flags)) {
-+	if (!eof && !test_bit(IVTV_F_S_STREAMING, &s->s_flags) &&
-+			(req_events & (POLLIN | POLLRDNORM))) {
- 		int rc;
- 
- 		mutex_lock(&itv->serialize_lock);
--- 
-1.7.5.4
-
+@@ -667,6 +667,10 @@ static int cio_tpi(void)
+ 	tpi_info = (struct tpi_info *)&S390_lowcore.subchannel_id;
+ 	if (tpi(NULL) != 1)
+ 		return 0;
++	if (tpi_info->adapter_IO) {
++		do_adapter_IO(tpi_info->isc);
++		return 1;
++	}
+ 	irb = (struct irb *)&S390_lowcore.irb;
+ 	/* Store interrupt response block to lowcore. */
+ 	if (tsch(tpi_info->schid, irb) != 0)
