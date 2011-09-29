@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1I2His (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 03:38:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52530 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab1I2Hir convert rfc822-to-8bit (ORCPT
+	id S1754594Ab1I2Ho7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 03:44:59 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:3947 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab1I2Hoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 03:38:47 -0400
-Subject: Re: Jump Label initialization
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 29 Sep 2011 09:37:59 +0200
-In-Reply-To: <4E83D49C.9080809@goop.org>
-References: <4E83D49C.9080809@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317281879.22384.1.camel@twins>
-Mime-Version: 1.0
+	Thu, 29 Sep 2011 03:44:54 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [RFCv4 PATCH 3/6] videobuf2: only start streaming in poll() if so requested by the poll mask.
+Date: Thu, 29 Sep 2011 09:44:09 +0200
+Message-Id: <47dc03d0de07b08b43188d0ef3a53f431aa6b955.1317281827.git.hans.verkuil@cisco.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317282252-8290-1-git-send-email-hverkuil@xs4all.nl>
+References: <1317282252-8290-1-git-send-email-hverkuil@xs4all.nl>
+In-Reply-To: <8488cb7deae3c3da6b079c8ebdcacce1f86dd433.1317281827.git.hans.verkuil@cisco.com>
+References: <8488cb7deae3c3da6b079c8ebdcacce1f86dd433.1317281827.git.hans.verkuil@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 19:14 -0700, Jeremy Fitzhardinge wrote:
-> Hi all,
-> 
-> I'm trying to use the jump label machinery as part of the pv ticketlock
-> work I'm doing on x86.
-> 
-> The problem I'm having at the moment is that I do my spinlock setup in
-> smp_prepare_boot_cpu(), which happens before jump_label_init() gets
-> called, and so the latter goes and nops out all my enabled jump label key.
-> 
-> I'm experimenting at the moment with a patch to allow
-> jump_label_enable() to be called fairly early, and have that be
-> respected by jump_label_init().  I'm doing this by replacing
-> arch_jump_label_poke_text_early() with
-> arch_jump_label_transform_early(), which shares most of its code with
-> its non-early variant, except that it expects to run in a pre-SMP
-> environment.
-> 
-> Does this seem plausible? (I haven't tested it yet.)
-> 
-> The x86, mips and sparc patches are fairly simple; I forgot to look at
-> powerpc, and I didn't fully investigate s390.
-> 
-> While my current use-case is x86-specific, it seems generally useful to
-> make the jump_label machinery available as early as possible. I wonder
-> if you have any suggestions about how to handle this?
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-I also remember talking to Jason about a way to initialize a jump label
-enabled, instead of the default disabled.
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ drivers/media/video/videobuf2-core.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-So yeah, I think your stuff would be useful..
+diff --git a/drivers/media/video/videobuf2-core.c b/drivers/media/video/videobuf2-core.c
+index 6687ac3..a921638 100644
+--- a/drivers/media/video/videobuf2-core.c
++++ b/drivers/media/video/videobuf2-core.c
+@@ -1368,6 +1368,7 @@ static int __vb2_cleanup_fileio(struct vb2_queue *q);
+  */
+ unsigned int vb2_poll(struct vb2_queue *q, struct file *file, poll_table *wait)
+ {
++	unsigned long req_events = poll_requested_events(wait);
+ 	unsigned long flags;
+ 	unsigned int ret;
+ 	struct vb2_buffer *vb = NULL;
+@@ -1376,12 +1377,14 @@ unsigned int vb2_poll(struct vb2_queue *q, struct file *file, poll_table *wait)
+ 	 * Start file I/O emulator only if streaming API has not been used yet.
+ 	 */
+ 	if (q->num_buffers == 0 && q->fileio == NULL) {
+-		if (!V4L2_TYPE_IS_OUTPUT(q->type) && (q->io_modes & VB2_READ)) {
++		if (!V4L2_TYPE_IS_OUTPUT(q->type) && (q->io_modes & VB2_READ) &&
++				(req_events & (POLLIN | POLLRDNORM))) {
+ 			ret = __vb2_init_fileio(q, 1);
+ 			if (ret)
+ 				return POLLERR;
+ 		}
+-		if (V4L2_TYPE_IS_OUTPUT(q->type) && (q->io_modes & VB2_WRITE)) {
++		if (V4L2_TYPE_IS_OUTPUT(q->type) && (q->io_modes & VB2_WRITE) &&
++				(req_events & (POLLOUT | POLLWRNORM))) {
+ 			ret = __vb2_init_fileio(q, 0);
+ 			if (ret)
+ 				return POLLERR;
+-- 
+1.7.5.4
+
