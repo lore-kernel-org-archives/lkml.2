@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab1I2Na7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 09:30:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37137 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab1I2Na6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 09:30:58 -0400
-Subject: Re: [PATCH RFC] lockdep: Update documentation for lock-class leak
- detection
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Thu, 29 Sep 2011 15:30:19 +0200
-In-Reply-To: <20110928181139.GA8217@linux.vnet.ibm.com>
-References: <20110928181139.GA8217@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317303019.22581.8.camel@twins>
+	id S1756364Ab1I2NcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 09:32:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752794Ab1I2NcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 09:32:04 -0400
+Subject: Re: [PATCH v3 19/24] C6X: headers
+From: Mark Salter <msalter@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Date: Thu, 29 Sep 2011 09:32:00 -0400
+In-Reply-To: <201109281607.11228.arnd@arndb.de>
+References: <1317155405-26235-1-git-send-email-msalter@redhat.com>
+	 <1317155405-26235-20-git-send-email-msalter@redhat.com>
+	 <201109281607.11228.arnd@arndb.de>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317303121.2580.113.camel@deneb.redhat.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-28 at 11:11 -0700, Paul E. McKenney wrote:
-> There are a number of bugs that can leak lock classes, which will
-> eventually exhaust the maximum number (currently 8191).  However,
-> the documentation does not tell you how to track down the leakers.
-> This commit addresses this shortcoming.
+On Wed, 2011-09-28 at 16:07 +0200, Arnd Bergmann wrote:
+> On Tuesday 27 September 2011, Mark Salter wrote:
 > 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > +
+> > +static inline void __delay(unsigned long loops)
+> > +{
+> > +	uint32_t tmp;
+> > +
+> > +	/* 6 cycles per loop */
+> > +	asm volatile ("        mv    .s1  %0,%1\n"
+> > +		      "0: [%1] b     .s1  0b\n"
+> > +		      "        add   .l1  -6,%0,%0\n"
+> > +		      "        cmplt .l1  1,%0,%1\n"
+> > +		      "        nop   3\n"
+> > +		      : "+a"(loops), "=A"(tmp));
+> > +}
+> > +
+> > +static inline void _c6x_tickdelay(unsigned int x)
+> > +{
+> > +	uint32_t cnt, endcnt;
+> > +
+> > +	asm volatile ("        mvc   .s2   TSCL,%0\n"
+> > +		      "        add   .s2x  %0,%1,%2\n"
+> > +		      " ||     mvk   .l2   1,B0\n"
+> > +		      "0: [B0] b     .s2   0b\n"
+> > +		      "        mvc   .s2   TSCL,%0\n"
+> > +		      "        sub   .s2   %0,%2,%0\n"
+> > +		      "        cmpgt .l2   0,%0,B0\n"
+> > +		      "        nop   2\n"
+> > +		      : "=b"(cnt), "+a"(x), "=b"(endcnt) : : "B0");
+> > +}
 > 
-> diff --git a/Documentation/lockdep-design.txt b/Documentation/lockdep-design.txt
-> index abf768c..24bfd9f 100644
-> --- a/Documentation/lockdep-design.txt
-> +++ b/Documentation/lockdep-design.txt
-> @@ -221,3 +221,55 @@ when the chain is validated for the first time, is then put into a hash
->  table, which hash-table can be checked in a lockfree manner. If the
->  locking chain occurs again later on, the hash table tells us that we
->  dont have to validate the chain again.
-> +
-> +Troubleshooting:
-> +----------------
-> +
-> +The validator tracks a maximum of MAX_LOCKDEP_KEYS number of lock classes.
-> +Exceeding this number will trigger the following lockdep warning:
-> +
-> +	(DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
-> +
-> +By default, MAX_LOCKDEP_KEYS is currently set to 8191, and typical
-> +desktop systems have less than 1,000 lock classes, so this warning
-> +normally results from lock-class leakage.  Such leakage can result
-> +from the following:
-> +
-> +1.	Repeated module loading and unloading while running the validator.
-> +	The issue here is that each load of the module will create a
-> +	new set of lock classes for that module's locks, and module
-> +	unloading cannot remove old classes.  Therefore, if that module
-> +	is loaded and unloaded repeatedly, the number of lock classes
-> +	will eventually reach the maximum.
-> +
-> +2.	Dynamically allocating and freeing structures containing fields
-> +	of type "struct lock_class_key".  Again, the fact that old
-> +	lock classes cannot be reused means that repeating allocation/free
-> +	cycles for long enough will cause the number of lock classes to
-> +	eventually reach the maximum.
-> +
+> Do you actually need to provide the __delay function here?
+> I think it's really only used by the calibrate_delay() function
+> that you don't need.
+> 
 
-This isn't actually true, we check for keys to be in .data or .bss:
+It is still used in spinlock_debug.c and a few drivers.
 
-register_lock_class():
-        /*
-         * Debug-check: all keys must be persistent!
-         */
-        if (!static_obj(lock->key)) {
-                debug_locks_off();
-                printk("INFO: trying to register non-static key.\n");
-                printk("the code is fine but needs lockdep annotation.\n");
-                printk("turning off the locking correctness validator.\n");
-                dump_stack();
-
-                return NULL;
-        }
-
-
-But what can happen is that you 'accidentally' create a lot of static
-locks, eg.
-
-struct {
-	spinlock_t lock;
-	struct hlist_head hlist;
-} my_hash[1 << HASH_BITS];
-
-If you don't initialize the lock members you'll find that each will get
-a separate lock class based on its static address. This can quickly
-deplete the class storage.
-
-Now really, you shouldn't ever not initialize a lock, but the above has
-actually happened, although I can't find the commit atm.
+--Mark
 
 
