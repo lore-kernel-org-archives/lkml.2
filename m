@@ -1,142 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab1I2WtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 18:49:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43967 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757045Ab1I2WsY (ORCPT
+	id S1757911Ab1I2WtG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 18:49:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60159 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757065Ab1I2WsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Sep 2011 18:48:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/16] perf: Support setting the disassembler style
-Date: Thu, 29 Sep 2011 19:48:07 -0300
-Message-Id: <1317336490-19437-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/16] perf script: Add drop monitor script
+Date: Thu, 29 Sep 2011 19:47:56 -0300
+Message-Id: <1317336490-19437-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317336490-19437-1-git-send-email-acme@infradead.org>
 References: <1317336490-19437-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-Add -M option to report/annotate to pass directly to objdump.  This
-allows to use -M intel for intel style disassembler syntax, which is
-useful for people who are very used to the Intel syntax.
+A while back I created the dropmonitor protocol, which allowed users to get
+reports of dropped frames communicated to them via a netlink socket.
 
-Link: http://lkml.kernel.org/r/1316122302-24306-2-git-send-email-andi@firstfloor.org
-[committer note: Add missing Documentation bits, fixup conflicts with 3e6a2a7]
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+While useful, several people have now asked that I integrate the ability
+to do drop monitoring with perf, so they don't have to run additional
+tools.
+
+This patch adds a drop monitor script to the perf suite, and provides
+the same output that the netlink socket does.
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1309801217-22450-1-git-send-email-nhorman@tuxdriver.com
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-annotate.txt |    3 +++
- tools/perf/Documentation/perf-report.txt   |    3 +++
- tools/perf/builtin-annotate.c              |    2 ++
- tools/perf/builtin-report.c                |    2 ++
- tools/perf/util/annotate.c                 |    6 +++++-
- tools/perf/util/annotate.h                 |    2 ++
- 6 files changed, 17 insertions(+), 1 deletions(-)
+ .../perf/scripts/python/bin/net_dropmonitor-record |    2 +
+ .../perf/scripts/python/bin/net_dropmonitor-report |    4 +
+ tools/perf/scripts/python/net_dropmonitor.py       |   72 ++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 0 deletions(-)
+ create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-record
+ create mode 100755 tools/perf/scripts/python/bin/net_dropmonitor-report
+ create mode 100755 tools/perf/scripts/python/net_dropmonitor.py
 
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index 98a31e3..0102d83 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -83,6 +83,9 @@ OPTIONS
- --symfs=<directory>::
-         Look for files with symbols relative to this directory.
- 
-+-M::
-+--disassembler-style=:: Set disassembler style for objdump.
+diff --git a/tools/perf/scripts/python/bin/net_dropmonitor-record b/tools/perf/scripts/python/bin/net_dropmonitor-record
+new file mode 100755
+index 0000000..423fb81
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/net_dropmonitor-record
+@@ -0,0 +1,2 @@
++#!/bin/bash
++perf record -e skb:kfree_skb $@
+diff --git a/tools/perf/scripts/python/bin/net_dropmonitor-report b/tools/perf/scripts/python/bin/net_dropmonitor-report
+new file mode 100755
+index 0000000..8d698f5
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/net_dropmonitor-report
+@@ -0,0 +1,4 @@
++#!/bin/bash
++# description: display a table of dropped frames
 +
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 04253c0..6349b6c 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -134,6 +134,9 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+-M::
-+--disassembler-style=:: Set disassembler style for objdump.
++perf script -s "$PERF_EXEC_PATH"/scripts/python/net_dropmonitor.py $@
+diff --git a/tools/perf/scripts/python/net_dropmonitor.py b/tools/perf/scripts/python/net_dropmonitor.py
+new file mode 100755
+index 0000000..a4ffc95
+--- /dev/null
++++ b/tools/perf/scripts/python/net_dropmonitor.py
+@@ -0,0 +1,72 @@
++# Monitor the system for dropped packets and proudce a report of drop locations and counts
 +
- SEE ALSO
- --------
- linkperf:perf-stat[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index c5be288..cf68819 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -273,6 +273,8 @@ static const struct option options[] = {
- 		    "Interleave source code with assembly code (default)"),
- 	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
- 		    "Display raw encoding of assembly instructions (default)"),
-+	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
-+		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d7ff277..a0673ee 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -487,6 +487,8 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
-+		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 01d36ba..bc8f477 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -16,6 +16,8 @@
- #include "annotate.h"
- #include <pthread.h>
- 
-+const char 	*disassembler_style;
++import os
++import sys
 +
- int symbol__annotate_init(struct map *map __used, struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -323,9 +325,11 @@ fallback:
- 		 dso, dso->long_name, sym, sym->name);
- 
- 	snprintf(command, sizeof(command),
--		 "objdump --start-address=0x%016" PRIx64
-+		 "objdump %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
- 		 " -d %s %s -C %s|grep -v %s|expand",
-+		 disassembler_style ? "-M " : "",
-+		 disassembler_style ? disassembler_style : "",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
- 		 symbol_conf.annotate_asm_raw ? "" : "--no-show-raw",
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index c2c2868..6ede128 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -100,4 +100,6 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 			 int refresh);
- #endif
- 
-+extern const char	*disassembler_style;
++sys.path.append(os.environ['PERF_EXEC_PATH'] + \
++		'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
 +
- #endif	/* __PERF_ANNOTATE_H */
++from perf_trace_context import *
++from Core import *
++from Util import *
++
++drop_log = {}
++kallsyms = []
++
++def get_kallsyms_table():
++	global kallsyms
++	try:
++		f = open("/proc/kallsyms", "r")
++		linecount = 0
++		for line in f:
++			linecount = linecount+1
++		f.seek(0)
++	except:
++		return
++
++
++	j = 0
++	for line in f:
++		loc = int(line.split()[0], 16)
++		name = line.split()[2]
++		j = j +1
++		if ((j % 100) == 0):
++			print "\r" + str(j) + "/" + str(linecount),
++		kallsyms.append({ 'loc': loc, 'name' : name})
++
++	print "\r" + str(j) + "/" + str(linecount)
++	kallsyms.sort()
++	return
++
++def get_sym(sloc):
++	loc = int(sloc)
++	for i in kallsyms:
++		if (i['loc'] >= loc):
++			return (i['name'], i['loc']-loc)
++	return (None, 0)
++
++def print_drop_table():
++	print "%25s %25s %25s" % ("LOCATION", "OFFSET", "COUNT")
++	for i in drop_log.keys():
++		(sym, off) = get_sym(i)
++		if sym == None:
++			sym = i
++		print "%25s %25s %25s" % (sym, off, drop_log[i])
++
++
++def trace_begin():
++	print "Starting trace (Ctrl-C to dump results)"
++
++def trace_end():
++	print "Gathering kallsyms data"
++	get_kallsyms_table()
++	print_drop_table()
++
++# called from perf, when it finds a correspoinding event
++def skb__kfree_skb(name, context, cpu, sec, nsec, pid, comm,
++			skbaddr, protocol, location):
++	slocation = str(location)
++	try:
++		drop_log[slocation] = drop_log[slocation] + 1
++	except:
++		drop_log[slocation] = 1
 -- 
 1.6.2.5
 
