@@ -1,44 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1I3Rbq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:31:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50936 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab1I3Rbp (ORCPT
+	id S1755927Ab1I3Re5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:34:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52871 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab1I3Re4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:31:45 -0400
-Date: Fri, 30 Sep 2011 19:32:20 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 10/21] drm/i915: Wrap DP EDID fetch functions to enable
- eDP panel power
-Message-ID: <20110930173220.GK2859@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-11-git-send-email-keithp@keithp.com>
+	Fri, 30 Sep 2011 13:34:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317344993-24945-11-git-send-email-keithp@keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317397619-7091-1-git-send-email-linkinjeon@gmail.com>
+References: <1317397619-7091-1-git-send-email-linkinjeon@gmail.com>
+Date: Fri, 30 Sep 2011 13:34:24 -0400
+Message-ID: <CANz0V+474_SvriQmUWx9VJwAk-iggu-h+A1WH-zGPBJgLzJDAg@mail.gmail.com>
+Subject: Re: [PATCH v4] mmc : general purpose partition support.
+From: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, adrian.hunter@intel.com,
+        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
+        sebras@gmail.com, Ulf.Hansson@stericsson.com,
+        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
+        johan.rudholm@stericsson.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 06:09:42PM -0700, Keith Packard wrote:
-> Talking to the eDP DDC channel requires that the panel be powered
-> up. Wrap both the EDID and modes fetch code with calls to turn the vdd
-> power on and back off.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Hi Namjae,
+
+Why don't you update card->nr_parts inside mmc_part_add? You're making
+this too complicated. There
+is also no need for the part_cfg array.
+
+2011/9/30 Namjae Jeon <linkinjeon@gmail.com>:
+> It allows gerneral purpose partitions in MMC Device.
+> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+> After patching, we can see general purpose partitions like this.
+>> cat /proc/partitions
+>          179 0 847872 mmcblk0
+>          179 192 4096 mmcblk0gp3
+>          179 160 4096 mmcblk0gp2
+>          179 128 4096 mmcblk0gp1
+>          179 96  1052672 mmcblk0gp0
+>          179 64  1024 mmcblk0boot1
+>          179 32  1024 mmcblk0boot0
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+
+>
+> +/* partition configuration array */
+> +static const unsigned int part_cfg[] = {
+> +       0x1,    0x2,    0x4,    0x5,    0x6,    7,
+> +};
+> +
+
+No need. Plus this is obscure.
+
+> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+> +                       card->nr_parts = MMC_NUM_BOOT_PARTITION;
+> +                       for (idx = 0, part_num = 0;
+> +                               idx < MMC_NUM_BOOT_PARTITION; idx++,
+> +                               part_num++) {
+> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +                               mmc_part_add(card, part_size, part_cfg[idx],
+> +                                       "boot%d", idx, part_num, true);
+> +                       }
+> +               }
+>        }
+
+There is no need for part_num (you have idx for that). And there is no
+need for passing the actual array
+index either - that's why you have mmc_part_add: it will do
+card->parts[card->nr_parts++] = new_part.
+
+               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+                       for (idx = 0, part_num = 0;
+                               idx < MMC_NUM_BOOT_PARTITION; idx++) {
+                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+                               mmc_part_add(card, part_size,
+EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
+                                       "boot%d", idx, true);
+                       }
+               }
+
+
+> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
+> +                       u8 hc_erase_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> +                       u8 hc_wp_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+> +
+> +                       card->ext_csd.enhanced_area_en = 1;
+> +
+> +                       card->nr_parts += MMC_NUM_GP_PARTITION;
+> +                       for (part_num = 0, gp_size_mult = 143;
+> +                               idx < card->nr_parts;
+> +                               idx++, part_num++, gp_size_mult += 3) {
+> +                               if (!ext_csd[gp_size_mult] &&
+> +                                       !ext_csd[gp_size_mult + 1] &&
+> +                                       !ext_csd[gp_size_mult + 2])
+> +                                       continue;
+> +                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
+> +                                       (ext_csd[gp_size_mult + 1] << 8) +
+> +                                       ext_csd[gp_size_mult];
+> +                               part_size *= (size_t)(hc_erase_grp_sz *
+> +                                       hc_wp_grp_sz);
+> +                               part_size <<= 19;
+> +                               mmc_part_add(card, part_size, part_cfg[idx],
+> +                                       "gp%d", idx, part_num, false);
+> +                       }
+> +               }
+
+Same story: get rid of part_num, don't touch card->nr_parts, and get
+rid of part_cfg array access.
+
+                       card->ext_csd.enhanced_area_en = 1;
+                       for (idx = 0, gp_size_mult = 143;
+                               idx < MMC_NUM_GP_PARTITION;
+                               idx++, gp_size_mult += 3) {
+                               if (!ext_csd[gp_size_mult] &&
+                                       !ext_csd[gp_size_mult + 1] &&
+                                       !ext_csd[gp_size_mult + 2])
+                                       continue;
+                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
+                                       (ext_csd[gp_size_mult + 1] << 8) +
+                                       ext_csd[gp_size_mult];
+                               part_size *= (size_t)(hc_erase_grp_sz *
+                                       hc_wp_grp_sz);
+                               part_size <<= 19;
+                               mmc_part_add(card, part_size, idx +
+EXT_CSD_PART_CONFIG_ACC_GP0,
+                                       "gp%d", idx, false);
+                       }
+               }
+
+
+>  /*
+> + * This function fill contents in mmc_part.
+> + */
+> +static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
+> +       unsigned int part_cfg, char *name, int idx, int part_num, bool ro)
+> +{
+> +       card->part[idx].size = size;
+> +       card->part[idx].cookie = part_cfg;
+> +       sprintf(card->part[idx].name, name, part_num);
+> +       card->part[idx].force_ro = ro;
+> +}
+
+static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
+       unsigned int part_cfg, char *name, int idx, bool ro)
+{
+       card->part[card->nr_parts].size = size;
+       card->part[card->nr_parts].cookie = part_cfg;
+       sprintf(card->part[card->nr_parts].name, name, idx);
+       card->part[card->nr_parts].force_ro = ro;
+       card->nr_parts++;
+}
+
+>  #define EXT_CSD_PART_CONFIG_ACC_MASK   (0x7)
+> -#define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
+> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
+>
+
+I'd also keep the MMC_NUM_BOOT_PARTITION and MMC_NUM_GP_PARTITION defs
+at the same location.
+
+/* The number of MMC physical partitions
+ * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
+ */
+#define MMC_NUM_BOOT_PARTITION 2
+#define MMC_NUM_GP_PARTITION   4
+
+#define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
+#define EXT_CSD_PART_CONFIG_ACC_GP0       (0x4)
+
+A
