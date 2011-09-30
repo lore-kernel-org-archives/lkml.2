@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab1I3UTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:19:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50095 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab1I3UTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:19:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas FERRE <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91 fixes for 3.1
-Date: Fri, 30 Sep 2011 22:17:13 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <4E838F77.2040705@atmel.com>
-In-Reply-To: <4E838F77.2040705@atmel.com>
+	id S1758799Ab1I3UUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:20:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40400 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755760Ab1I3UUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 16:20:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Zan Lynx <zlynx@acm.org>
+Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
+Date: Fri, 30 Sep 2011 22:22:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1317329529.3151.10.camel@knife> <1317413360.2629.2.camel@knife>
+In-Reply-To: <1317413360.2629.2.camel@knife>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109302217.13937.arnd@arndb.de>
-X-Provags-ID: V02:K0:9UVdopYTn9bWn692zv2/mpr+JTweGcIwtptV7oyT774
- IiktFY3USqSZtgT2VtIQXAMHDFAfkFosq8Dsk7gLR99s5uvpVV
- 10QhMDGs59jxbgbwWPFNHIhhEmTCL8qCCWBiOjEHt1/gYVx7A0
- 3b1cIFmLHUZP2qFBLsC+LmR5TW9qY/Kljo63HKKJf6o3I3mlhz
- 6QKo3VY0h+qCbcJ5BlpXZO4muLm43PsKJQGGrwsOinwbMmDNGy
- t2ipy0oG9kDDvry84tjtwk4cN94OuqSnFT6ssAPIhCzM3CKwI9
- PkNqekNYOx787Mvl7+PlGn8ENN+efsjMo2LQ3iX0DZzmNmyZvX
- uVwplHhXqh2aTdNjEPSM=
+Message-Id: <201109302222.22528.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 September 2011, Nicolas FERRE wrote:
-> Here is a couple of fixes that may be included in 3.1-final.
-> The Kconfig modification will allow to select the PWM driver for SAM9G45 
-> SoC. This will also benefit to stable kernels.
-> The new defconfig for SAM9G45 family will allow us to better monitor the 
-> health of this port through automatic compilation mechanism. I find it 
-> interesting to have it included the sooner.
+On Friday, September 30, 2011, Zan Lynx wrote:
+> On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
+> > After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
+> > kernels would not suspend/resume on my laptop I followed a Ubuntu forum
+> > suggestion to use acpi=nonvs. This worked, or at least it is working
+> > today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
+> > 
+> > The system is also booting via UEFI if that makes any difference.
+> > 
+> > I understand that there is a no-NVS blacklist in the kernel. Should the
+> > Samsung Series 9 be added to this list? Or could it be a different
+> > suspend/resume problem entirely?
 > 
-> The pull is based on the following changes since commit 
-> a102a9ece5489e1718cd7543aa079082450ac3a2:
+> Please ignore this about nonvs. nonvs has nothing to do with the
+> suspend/resume problem on this laptop.
 > 
->    Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
+> Instead it seems to involve reboots, which is crazy. From a cold
+> power-on start, suspend resume will always fail. But if the laptop is
+> rebooted first, suspend and resume appear to work. What the heck? I have
+> no clue how to debug this.
 > 
-> are available in the git repository at:
->    git://github.com/at91linux/linux-at91.git at91-fixes
+> So now it appears that everything I ever tried to fix this only seemed
+> to work because I rebooted after changing GRUB or module options.
 
-Hi Nicolas,
+What graphics is there in the system?
 
-I've pulled them into the fixes branch now. My feeling however is that
-these by themselves are not reason enough to send a pull request to Linus,
-so they will probably be the first thing I send in the 3.2 merge window,
-unless some other important fixes appear.
-
-	Arnd
+Rafael
