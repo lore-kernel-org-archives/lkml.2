@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab1I3SAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:00:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43336 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757028Ab1I3SAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:00:36 -0400
-Date: Fri, 30 Sep 2011 20:01:11 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
+	id S1757465Ab1I3SBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:01:12 -0400
+Received: from home.keithp.com ([63.227.221.253]:41779 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755967Ab1I3SBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 14:01:10 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
 Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 13/21] drm/i915: Place long delays after each
- eDP VDD operation
-Message-ID: <20110930180111.GO2859@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-14-git-send-email-keithp@keithp.com>
+Subject: Re: [Intel-gfx] [PATCH 05/21] drm/i915: Check eDP power when doing aux channel communications
+In-Reply-To: <20110930170242.GE2859@phenom.ffwll.local>
+References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-6-git-send-email-keithp@keithp.com> <20110930170242.GE2859@phenom.ffwll.local>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 30 Sep 2011 11:01:06 -0700
+Message-ID: <yun1uux9afx.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317344993-24945-14-git-send-email-keithp@keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 06:09:45PM -0700, Keith Packard wrote:
-> This ensures that the panel power sequencing is complete before
-> attempting to communicate over the aux channel.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-Looks like a patch useful for fixing up this mess, but I don't quite see
-the point of merging this given that you fix things for real in the next
-one ... 
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, 30 Sep 2011 19:02:42 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+
+> Use pp_control instead of re-reading?
+
+Could, but you'll note a later patch eliminates both pp_status and
+pp_control local variables, so I didn't bother to clean this up when
+refactoring.
+
+> dp_aux_ch does the low-level io for the below, so either this one or the
+> below three hunks look a bit redundant.
+
+Yeah, probably not necessary. I just added checks everywhere I could
+think of to try and figure out where power was not being applied when
+needed.
+
+Should I bother to include this patch in the series at all? It's purely
+for diagnostics to make sure the panel is powered during all aux channel
+transactions.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOhgPiQp8BWwlsTdMRAnjdAJ0X2w10KVBOrd37FC3WZvMiWldP/QCgwuq7
+FFD0FmKGs5jjqLBm36y8Z2Q=
+=2szm
+-----END PGP SIGNATURE-----
+--=-=-=--
