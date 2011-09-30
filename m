@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab1I3Ucf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:32:35 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42189 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1I3Ucc (ORCPT
+	id S1756309Ab1I3Udr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:33:47 -0400
+Received: from 74-92-214-37-Colorado.hfc.comcastbusiness.net ([74.92.214.37]:36493
+	"EHLO zlynx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab1I3Udp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:32:32 -0400
-Subject: [RFCv2][PATCH 3/4] add seq_print_pow2() function
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
-        James.Bottomley@HansenPartnership.com, hpa@zytor.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 30 Sep 2011 13:32:21 -0700
-References: <20110930203219.60D507CB@kernel>
-In-Reply-To: <20110930203219.60D507CB@kernel>
-Message-Id: <20110930203221.DE0A3B4A@kernel>
+	Fri, 30 Sep 2011 16:33:45 -0400
+Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
+From: Zan Lynx <zlynx@acm.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Sep 2011 14:34:46 -0600
+In-Reply-To: <201109302222.22528.rjw@sisk.pl>
+References: <1317329529.3151.10.camel@knife> <1317413360.2629.2.camel@knife>
+	 <201109302222.22528.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-iz8r/8tDVCwGHsPvJIp7"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1317414897.2629.5.camel@knife>
+Mime-Version: 1.0
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20110930/1R9jmA-0006Pd-4S-linux-kernel@vger.kernel.org:zlynx@acm.org:74.92.214.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-In order to get nice, human-readable output, we are going to
-use MiB/KiB, etc... in numa_maps.  Introduce a helper to do
-the conversion from a raw integer over to a string.
+--=-iz8r/8tDVCwGHsPvJIp7
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I thought about doing this as a new printk() format specifier.
-That would be interesting, but it's hard to argue with this
-since it's so short and sweet.
+On Fri, 2011-09-30 at 22:22 +0200, Rafael J. Wysocki wrote:
+> On Friday, September 30, 2011, Zan Lynx wrote:
+> > On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
+> > > After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
+> > > kernels would not suspend/resume on my laptop I followed a Ubuntu for=
+um
+> > > suggestion to use acpi=3Dnonvs. This worked, or at least it is workin=
+g
+> > > today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
+> > >=20
+> > > The system is also booting via UEFI if that makes any difference.
+> > >=20
+> > > I understand that there is a no-NVS blacklist in the kernel. Should t=
+he
+> > > Samsung Series 9 be added to this list? Or could it be a different
+> > > suspend/resume problem entirely?
+> >=20
+> > Please ignore this about nonvs. nonvs has nothing to do with the
+> > suspend/resume problem on this laptop.
+> >=20
+> > Instead it seems to involve reboots, which is crazy. From a cold
+> > power-on start, suspend resume will always fail. But if the laptop is
+> > rebooted first, suspend and resume appear to work. What the heck? I hav=
+e
+> > no clue how to debug this.
+> >=20
+> > So now it appears that everything I ever tried to fix this only seemed
+> > to work because I rebooted after changing GRUB or module options.
+>=20
+> What graphics is there in the system?
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
+It is the Intel i915 driver. It is an Intel i5-2537M system with the
+integrated video on the CPU.
 
- linux-2.6.git-dave/fs/seq_file.c            |   11 +++++++++++
- linux-2.6.git-dave/include/linux/seq_file.h |    2 ++
- 2 files changed, 13 insertions(+)
+lspci shows it as:
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core
+Processor Family Integrated Graphics Controller (rev 09) (prog-if 00
+[VGA controller])
 
-diff -puN fs/seq_file.c~add-seq_print_size fs/seq_file.c
---- linux-2.6.git/fs/seq_file.c~add-seq_print_size	2011-09-30 13:00:29.160632197 -0700
-+++ linux-2.6.git-dave/fs/seq_file.c	2011-09-30 13:22:57.229978028 -0700
-@@ -386,6 +386,17 @@ int seq_printf(struct seq_file *m, const
- }
- EXPORT_SYMBOL(seq_printf);
- 
-+/*
-+ * Prints output with KiB/MiB/etc... suffixes
-+ */
-+int seq_print_pow2(struct seq_file *seq, u64 size)
-+{
-+	u64 shifted_size;
-+	char *unit_str;
-+	shifted_size = string_get_size_pow2(size, &unit_str);
-+	return seq_printf(seq, "%llu%s", shifted_size, unit_str);
-+}
-+
- /**
-  *	mangle_path -	mangle and copy path to buffer beginning
-  *	@s: buffer start
-diff -puN include/linux/seq_file.h~add-seq_print_size include/linux/seq_file.h
---- linux-2.6.git/include/linux/seq_file.h~add-seq_print_size	2011-09-30 13:00:29.164632191 -0700
-+++ linux-2.6.git-dave/include/linux/seq_file.h	2011-09-30 13:22:43.910000779 -0700
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include <linux/string.h>
-+#include <linux/string_helpers.h>
- #include <linux/mutex.h>
- #include <linux/cpumask.h>
- #include <linux/nodemask.h>
-@@ -83,6 +84,7 @@ int seq_escape(struct seq_file *, const 
- int seq_putc(struct seq_file *m, char c);
- int seq_puts(struct seq_file *m, const char *s);
- int seq_write(struct seq_file *seq, const void *data, size_t len);
-+int seq_print_pow2(struct seq_file *seq, u64 size);
- 
- int seq_printf(struct seq_file *, const char *, ...)
- 	__attribute__ ((format (printf,2,3)));
-_
+--=20
+Knowledge Is Power
+Power Corrupts
+Study Hard
+Be Evil
+
+--=-iz8r/8tDVCwGHsPvJIp7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk6GJ+YACgkQ1IRuMHS+h7E4AgCfYruMsbBU2x898zsBbnoUYknv
+tTkAnRI8XURIc2MHIAd3CvipeOe6To3o
+=ZUdx
+-----END PGP SIGNATURE-----
+
+--=-iz8r/8tDVCwGHsPvJIp7--
+
