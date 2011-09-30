@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1I3Jsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:48:42 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59529 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754563Ab1I3Jsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:48:41 -0400
-Date: Fri, 30 Sep 2011 10:47:07 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: IIO (+ more general?) Error condition handling (e.g. wire fell
- out errors)
-Message-ID: <20110930104707.0645afda@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E858F5A.5000901@cam.ac.uk>
-References: <4E858F5A.5000901@cam.ac.uk>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1756983Ab1I3JuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:50:14 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47407 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754563Ab1I3JuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:50:13 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Francis Moro <francis.moro@gmail.com>
+Subject: Re: Linux 3.1-rc8
+Date: Fri, 30 Sep 2011 09:47:12 +0000 (UTC)
+Message-ID: <loom.20110930T114431-313@post.gmane.org>
+References: <CA+55aFwFN33fnvkHRD2FfMiucvyOhcFzdzmAm0MV6Z6OLRffEQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 82.235.205.153 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20110518 Firefox/4.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 3) Consider these out of band (from the out of band event data)
-> and look at other options for reporting them.
+Linus Torvalds <torvalds <at> linux-foundation.org> writes:
 
-Treat it like a socket/pipe perhaps - if it "goes down" then report it as
-having hung up and deliver a SIGPIPE or similar and with an appropriate
-error code for those catching it (-EIO ?)
+> 
+> Another week, another -rc at
+> 
+>   git://github.com/torvalds/linux
+> 
 
-That generally gets noticed.
+Just a quick note that I'm still getting this message after resuming:
 
-> Is there anything general out there for reporting hardware failures
-> that would be appropriate?  Sometime these conditions are the sort
-> of thing that should cause a siren to go off.
-> They might be sensor failure
+[40264.796504] Uhhuh. NMI received for unknown reason 2d on CPU 0.
+[40264.796506] Do you have a strange power saving mode enabled?
+[40264.796507] Dazed and confused, but trying to continue
 
-There are two things here - one is making sure the app notices (where we
-have equivalent handling in other interfaces) the other is what to do
-about it. We don't have a general framework for reporting system
-component failure. That's something that ought to get fixed generally to
-report everything from "that new nasty smell was formerly your hard disk"
-to a sensor fail.
+It's been there since 2.6.39 IIRC.
 
-> (p.s. I hope no one is using the current driver for trains, though
-> that might explain British trains...)
+Thanks
 
-Tssh... there is Linux on UK trains, but it's usually driving annoying
-announcement/video systems.
-
-Alan
