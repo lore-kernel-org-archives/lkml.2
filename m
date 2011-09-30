@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab1I3Fsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 01:48:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21278 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab1I3Fsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 01:48:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,465,1312182000"; 
-   d="scan'208";a="72523746"
-Message-ID: <4E855832.4030603@intel.com>
-Date: Fri, 30 Sep 2011 08:48:34 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: NamJae Jeon <linkinjeon@gmail.com>
-CC: Andrei Warkentin <awarkentin@vmware.com>, linux-kernel@vger.kernel.org,
-        linus walleij <linus.walleij@linaro.org>,
-        james p freyensee <james_p_freyensee@linux.intel.com>,
-        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
-        per forlin <per.forlin@stericsson.com>,
-        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v3] mmc : general purpose partition support.
-References: <1317309431-1898-1-git-send-email-linkinjeon@gmail.com> <1522108758.811204.1317316828352.JavaMail.root@zimbra-prod-mbox-2.vmware.com> <CAKYAXd_1jY23C8NTvP7NizZEseb7G2bbtJYq7RvF1vaJaZgh_Q@mail.gmail.com>
-In-Reply-To: <CAKYAXd_1jY23C8NTvP7NizZEseb7G2bbtJYq7RvF1vaJaZgh_Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756111Ab1I3F5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 01:57:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41094 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab1I3F5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 01:57:11 -0400
+Subject: [PATCH] ASoC: sn95031: Do not use static variable for channel_index
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@linux.intel.com>,
+        Harsha Priya <priya.harsha@intel.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Sep 2011 13:56:59 +0800
+Message-ID: <1317362219.6646.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps rebase against Chris' mmc-next branch
+No reason to use static variable for channel_index.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/sn95031.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/codecs/sn95031.c b/sound/soc/codecs/sn95031.c
+index adb85bf..02a4857 100644
+--- a/sound/soc/codecs/sn95031.c
++++ b/sound/soc/codecs/sn95031.c
+@@ -103,7 +103,7 @@ static int sn95031_initialize_adc(struct snd_soc_codec *sn95031_codec)
+ {
+ 	int base_addr, chnl_addr;
+ 	int value;
+-	static int channel_index;
++	int channel_index;
+ 
+ 	/* Index of the first channel in which the stop bit is set */
+ 	channel_index = find_free_channel(sn95031_codec);
+-- 
+1.7.4.1
+
 
 
