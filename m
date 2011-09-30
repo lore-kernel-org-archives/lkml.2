@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab1I3Hek (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:34:40 -0400
+	id S1756553Ab1I3Hej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:34:39 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:44723 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab1I3Hei (ORCPT
+	with ESMTP id S1753502Ab1I3Heh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 03:34:38 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-e3-4e85705f6afd
+	Fri, 30 Sep 2011 03:34:37 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-8c-4e85701aba6e
 From: Kukjin Kim <kgene.kim@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
@@ -15,84 +15,70 @@ Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>, joerg.roedel@amd.com,
         "'Ohad Ben-Cohen'" <ohad@wizery.com>,
         "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
         younglak1004.kim@samsung.com, "'Kukjin Kim'" <kgene.kim@samsung.com>
-Subject: [PATCH v2 4/5] iommu/exynos: Add iommu fault handler
-Date: Fri, 30 Sep 2011 16:31:43 +0900
-Message-id: <016f01cc7f43$00616120$01242360$%kim@samsung.com>
+Subject: [PATCH v2 0/5] iommu/exynos: Add IOMMU and Enhance System MMU driver
+ for Exynos4
+Date: Fri, 30 Sep 2011 16:30:33 +0900
+Message-id: <016b01cc7f42$d72420e0$856c62a0$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acx/QwAgP1EnMZBURDa/auGimkqe8w==
+Thread-index: Acx/QtbEYaiyoRTxSla6v1tdfTQXZw==
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KyongHo Cho <pullip.cho@samsung.com>
+Hi all,
 
-This adds IOMMU fault handler that is suggested by Ohad Ben-Cohen.
+This is the second try of submitting patches about IOMMU/System MMU
+driver for Exynos4 SoCs with the fixes of the following problems
+pointed by Russell King.:
 
-Users of IOMMU API can register its own fault handler with
-iommu_set_fault_handler() and the handler is called by IRQ handler
-of System MMU.
+ - Missing unlocking a spinlock in exynos_iommu_attach_dev().
+ - atomic_t -> int in sysmmu_drvdata.activations
+ - sysmmu_platdata -> sysmmu_drvdata
+ - Change in error messages in irq handler 
+ - Removed casting in format of error message
+ - omap_iommu_ops -> exynos_iommu_ops in the last patch.
 
-If no user installs fault handler, IOMMU driver prints debugging
-message and generates kernel oops.
+First 2 patches enhance System MMU platform device definition:
+ - Removed System MMU for MDMA0 in LCD block because it is not used.
+  Use MDMA2 in TOP block. 
+ - Removed System MMU ID. Instead a System MMU is bound to a device that
+  the System MMU is dedicated during machin initialization. If a device
+  driver wants to handle System MMU, it must bind its device with System
+  MMU with sysmmu_set_owner().
+ - clkdev
+ - System MMU device driver is removed from arch/arm/plat-s5p to move it
+  to driver/iommu directory.
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
----
- drivers/iommu/exynos_iommu.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+Last 3 patches implements IOMMU API:
+ - Implements IOMMU API and System MMU driver that is moved from
+  arch/arm/plat-s5p.
+ - Implements fault handling that is suggested by Ohad.
+ - Used bus_set_iommu instead of register_iommu that is suggested by Joerg.
 
-diff --git a/drivers/iommu/exynos_iommu.c b/drivers/iommu/exynos_iommu.c
-index 33fa4a8..d355a2e 100644
---- a/drivers/iommu/exynos_iommu.c
-+++ b/drivers/iommu/exynos_iommu.c
-@@ -207,28 +207,33 @@ static int default_fault_handler(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
- static irqreturn_t exynos_sysmmu_irq(int irq, void * dev_id)
- {
- 	/* SYSMMU is in blocked when interrupt occurred. */
-+	unsigned long addr;
- 	struct sysmmu_drvdata *data = dev_id;
- 	enum S5P_SYSMMU_INTERRUPT_TYPE itype;
--	bool handled = false;
-+	int ret = -ENOSYS;
- 
- 	WARN_ON(!is_sysmmu_active(data));
- 
- 	itype = (enum S5P_SYSMMU_INTERRUPT_TYPE)
- 		__ffs(__raw_readl(data->sfrbase + S5P_INT_STATUS));
- 
--	if (WARN_ON((itype < 0) && (itype >= 8))) {
-+	if (WARN_ON((itype < 0) && (itype >= 8)))
- 		itype = SYSMMU_FAULT_UNKNOWN;
--	} else if (data->fault_handler) {
-+
-+	addr = __raw_readl(data->sfrbase + fault_reg_offset[itype]);
-+
-+	if (data->domain)
-+		ret = report_iommu_fault(data->domain, data->owner, addr,
-+									itype);
-+
-+	if ((ret == -ENOSYS) && (data->fault_handler)) {
- 		unsigned long base;
--		unsigned long addr;
--		addr = __raw_readl(data->sfrbase + fault_reg_offset[itype]);
- 		base = __raw_readl(data->sfrbase + S5P_PT_BASE_ADDR);
- 
--		if (!data->fault_handler(itype, base, addr))
--			handled = true;
-+		ret = data->fault_handler(itype, base, addr);
- 	}
- 
--	if (handled)
-+	if (ret == 0)
- 		__raw_writel(1 << itype, data->sfrbase + S5P_INT_CLEAR);
- 	else
- 		dev_dbg(data->dev, "%s is not handled.\n",
--- 
-1.7.1
+
+[PATCH v2 1/5] ARM: EXYNOS4: Change System MMU device definition
+
+
+arch/arm/mach-exynos4/Kconfig               |    2 -
+arch/arm/mach-exynos4/clock.c               |   43 +-
+arch/arm/mach-exynos4/dev-sysmmu.c          |  270 ++------
+arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
+arch/arm/mach-exynos4/include/mach/map.h    |    1 -
+arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
+arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
+arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
+arch/arm/plat-s5p/Kconfig                   |    8 -
+arch/arm/plat-s5p/Makefile                  |    1 -
+arch/arm/plat-s5p/include/plat/sysmmu.h     |   95 ---
+arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
+drivers/iommu/Kconfig                       |   14 +
+drivers/iommu/Makefile                      |    1 +
+drivers/iommu/exynos_iommu.c                |  919 +++++++++++++++++++++++++++
+15 files changed, 1120 insertions(+), 684 deletions(-)
 
 
