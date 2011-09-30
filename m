@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab1I3RRe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:17:34 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:59368 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755261Ab1I3RRb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:17:31 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Munegowda\, Keshava" <keshava_mgowda@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 2/5 v12] arm: omap: usb: ehci and ohci hwmod structures for omap3
-Organization: Texas Instruments, Inc.
-References: <1317361216-28248-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109300107150.32653@utopia.booyaka.com>
-	<CAP05o4LJ2P8DCri1Vf-opezP8eNX+Wghm9FBSYwy8Vrct8_YDw@mail.gmail.com>
-Date: Fri, 30 Sep 2011 10:17:22 -0700
-In-Reply-To: <CAP05o4LJ2P8DCri1Vf-opezP8eNX+Wghm9FBSYwy8Vrct8_YDw@mail.gmail.com>
-	(Keshava Munegowda's message of "Fri, 30 Sep 2011 16:02:06 +0530")
-Message-ID: <877h4qj6fx.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1755649Ab1I3RU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:20:57 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:32962 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab1I3RU4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 13:20:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+	<20110930020754.GK12606@ponder.secretlab.ca>
+	<CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
+	<CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
+Date: Fri, 30 Sep 2011 19:20:56 +0200
+Message-ID: <CACRpkdZxxLdJQEkG--5Uf8DX+-00yOecb_NMpf0QSpP8u5hR4w@mail.gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Munegowda, Keshava" <keshava_mgowda@ti.com> writes:
+On Fri, Sep 30, 2011 at 7:07 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
 
-[...]
-
->>> +
->>> +static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
->>> +     .clk            = "usbtll_ick",
->>> +     .user           = OCP_USER_MPU,
->>> +     .flags          = OCPIF_SWSUP_IDLE,
->>> +};
->>
->> Does this really need OCPIF_SWSUP_IDLE?  If so, then there is a hardware
->> bug, and some explanation is needed.
+> [Me]
+>> That is not the reason it's there actually, what we have
+>> discussed on the mailing list is getting sysfs entries for the same
+>> reason gpiolib registers a class: handle pin control from userspace,
+>>(...)
 >
->
-> it was not allowing enter usbhs pw domain to enter to low power idle mode; so
-> I add a comment here.
->
+> Sure, but you don't need the bus yet. �It can be added when it is
+> actually needed. �I'm not convinced that the sysfs approach is
+> actually the right interface here (I'm certainly not a fan of the gpio
+> sysfs i/f), and I'd rather not be putting in unneeded stuff until the
+> userspace i/f is hammered out.
 
-When you add this comment, please be sure it describes *why* the power
-domain was not hitting the target power state, and reference any
-relevant eerrata.
+OK I buy that, I will post a v9 without bus...
 
-Thanks,
-
-Kevin
+Thanks!
+Linus Walleij
