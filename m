@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab1I3GNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 02:13:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53716 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756830Ab1I3GNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 02:13:04 -0400
-From: Abhilash K V <abhilash.kv@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
-        <paul@pwsan.com>, <aneesh@ti.com>, <khilman@ti.com>,
-        <santosh.shilimkar@ti.com>, <christian.gmeiner@gmail.com>,
-        Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH v5 3/3] OMAP2+: voltage: add check for missing PMIC info in vp init
-Date: Fri, 30 Sep 2011 11:42:33 +0530
-Message-ID: <1317363153-10259-4-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1317363153-10259-3-git-send-email-abhilash.kv@ti.com>
-References: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com>
- <1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
- <1317363153-10259-3-git-send-email-abhilash.kv@ti.com>
+	id S1756696Ab1I3GZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 02:25:04 -0400
+Received: from 8bytes.org ([88.198.83.132]:41485 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754974Ab1I3GZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 02:25:02 -0400
+Date: Fri, 30 Sep 2011 08:24:59 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Greg KH <greg@kroah.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+Message-ID: <20110930062459.GA1512@8bytes.org>
+References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com> <1316792756-3395-3-git-send-email-joerg.roedel@amd.com> <20110929200526.GC26760@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929200526.GC26760@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhilash K V <abhilash.kv@ti.com>
+Hi Greg,
 
-If PMIC info is not available in omap_vp_init(), abort.
+On Thu, Sep 29, 2011 at 01:05:26PM -0700, Greg KH wrote:
+> On Fri, Sep 23, 2011 at 05:45:48PM +0200, Joerg Roedel wrote:
+> > This is the starting point to make the iommu_ops used for
+> > the iommu-api a per-bus-type structure. It is required to
+> > easily implement bus-specific setup in the iommu-layer.
+> > The first user will be the iommu-group attribute in sysfs.
+> > 
+> > Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> 
+> Ok, this looks good to me now, thanks for all of the revisions.
+> 
+> Do you want me to take this through my tree, or do you want it to go
+> through some other one?
 
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
----
- arch/arm/mach-omap2/vp.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Thanks for all your feedback :) I would prefer to carry this in my tree
+so that we can start to modify the IOMMU driver on-top of it. So can I
+add your acked-by to this one?
 
-diff --git a/arch/arm/mach-omap2/vp.c b/arch/arm/mach-omap2/vp.c
-index 66bd700..0ed3d13 100644
---- a/arch/arm/mach-omap2/vp.c
-+++ b/arch/arm/mach-omap2/vp.c
-@@ -41,6 +41,13 @@ void __init omap_vp_init(struct voltagedomain *voltdm)
- 	u32 val, sys_clk_rate, timeout, waittime;
- 	u32 vddmin, vddmax, vstepmin, vstepmax;
- 
-+	if (!voltdm->pmic || !voltdm->pmic->uv_to_vsel) {
-+		pr_err("%s: PMIC info requried to configure VP for "
-+			"vdd_%s not populated.Hence cannot initialize VP\n",
-+			__func__, voltdm->name);
-+		return;
-+	}
-+
- 	if (!voltdm->read || !voltdm->write) {
- 		pr_err("%s: No read/write API for accessing vdd_%s regs\n",
- 			__func__, voltdm->name);
--- 
-1.7.1
+	Joerg
 
