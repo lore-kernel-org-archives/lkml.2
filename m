@@ -1,111 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab1I3E7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 00:59:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37507 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1I3E7M convert rfc822-to-8bit (ORCPT
+	id S1754709Ab1I3E7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 00:59:53 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:47758 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab1I3E7w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 00:59:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E850BE6.2050306@fnarfbargle.com>
-References: <4E847ED4.5090703@fnarfbargle.com>
-	<CADnq5_PUcDVL+RPZPDGiAxHjn=vL7dnNsiQYG2F5e6GWnoX7Kg@mail.gmail.com>
-	<4E848CDE.1020707@fnarfbargle.com>
-	<4E850BE6.2050306@fnarfbargle.com>
-Date: Fri, 30 Sep 2011 00:59:12 -0400
-Message-ID: <CADnq5_NJuGLWB-1d+TGqTxW6ZOOQ4QeQj1e6dXOffL5egZuw1g@mail.gmail.com>
-Subject: Re: Radeon regression fix
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Brad Campbell <lists2009@fnarfbargle.com>
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 Sep 2011 00:59:52 -0400
+X-Greylist: delayed 1223 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Sep 2011 00:59:52 EDT
+From: Josh Zimmerman <jzimmerm@andrew.cmu.edu>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] kernel/groups.c: Minor bugfix for overflow in binary search
+Date: Fri, 30 Sep 2011 00:39:17 -0400
+Message-Id: <1FB729E1-8CAA-4EEF-ABA4-200471843503@andrew.cmu.edu>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+To: akpm@linux-foundation.org, serge.hallyn@canonical.com,
+        ebiederm@xmission.com, dhowells@redhat.com, daniel.lezcano@free.fr
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
+X-SMTP-Spam-Clean: 8% (
+ BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_600_699 0, BODY_SIZE_7000_LESS 0, __ANY_URI 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MIME_VERSION_APPLEMAIL 0, __MSGID_APPLEMAIL 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT_APPLEMAIL 0, __X_MAILER_APPLEMAIL 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 8:23 PM, Brad Campbell
-<lists2009@fnarfbargle.com> wrote:
-> On 29/09/11 23:21, Brad Campbell wrote:
->>
->> On 29/09/11 22:36, Alex Deucher wrote:
->>>
->>> On Thu, Sep 29, 2011 at 10:21 AM, Brad Campbell<brad@fnarfbargle.com>
->>> wrote:
->>>>
->>>> This patch fixes a regression introduced between 2.6.39& 3.1-rc1 whereby
->>>> the displayport AUX channel stopped re-trying commands that elicited
->>>> a DEFER
->>>> response.
->>>>
->>>
->>> It should still be retrying, just restructured slightly. The retry
->>> logic just moved into radeon_dp_i2c_aux_ch(),
->>> radeon_dp_aux_native_write(), and radeon_dp_aux_native_read(), e.g.,
->>>
->>> else if ((ack& AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
->>> udelay(400);
->>>
->>> Perhaps the delay is causing a problem. Does removing the udelay(400);
->>> help?
->
-> Looking at it with a nights sleep, it's obvious the code path in
-> aux_native_write is ok. Is this a bit cleaner than the last patch?
+From: Josh Zimmerman
 
-Looks pretty good.  I was thinking of something more like this (sorry
-for the lack of a patch, I'm away from my source trees at the moment):
+Fixed possible unsigned int overflow bug. (2 + 2^(32) - 1)/2 results in overflow; 2 + (2^(32)-1-2)/2 does not.
 
-	while (1) {
-		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
-					    msg, msg_bytes, recv, recv_bytes, delay, &ack);
+Signed-off-by: Josh Zimmerman <joshz@cmu.edu>
 
-		if (ret < 0)
-			return ret;
-		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
-			return ret;
-		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
-			udelay(400);
-		else if (ret == 0)
-			return -EPROTO;
-		else
-			return -EIO;
-	}
+---
 
-Thanks for tracking this down.
+--- kernel/groups.c.orig	2011-09-29 23:58:45.000000000 -0400
++++ kernel/groups.c	2011-09-29 23:59:13.000000000 -0400
+@@ -142,7 +142,7 @@ int groups_search(const struct group_inf
+ 	left = 0;
+ 	right = group_info->ngroups;
+ 	while (left < right) {
+-		unsigned int mid = (left+right)/2;
++		unsigned int mid = left +  (right - left)/2;
+ 		if (grp > GROUP_AT(group_info, mid))
+ 			left = mid + 1;
+ 		else if (grp < GROUP_AT(group_info, mid))
 
-Alex
 
->
-> diff --git a/drivers/gpu/drm/radeon/atombios_dp.c
-> b/drivers/gpu/drm/radeon/atombios_dp.c
-> index 7ad43c6..aacc97d 100644
-> --- a/drivers/gpu/drm/radeon/atombios_dp.c
-> +++ b/drivers/gpu/drm/radeon/atombios_dp.c
-> @@ -158,14 +158,17 @@ static int radeon_dp_aux_native_read(struct
-> radeon_connector *radeon_connector,
->        while (1) {
->                ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
->                                            msg, msg_bytes, recv, recv_bytes,
-> delay, &ack);
-> -               if (ret == 0)
-> +               if (ret == 0){
-> +                       if ((ack & AUX_NATIVE_REPLY_MASK) ==
-> AUX_NATIVE_REPLY_DEFER){
-> +                               udelay(400);
-> +                               continue;
-> +                       }
->                        return -EPROTO;
-> +               }
->                if (ret < 0)
->                        return ret;
->                if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
->                        return ret;
-> -               else if ((ack & AUX_NATIVE_REPLY_MASK) ==
-> AUX_NATIVE_REPLY_DEFER)
-> -                       udelay(400);
->                else
->                        return -EIO;
->        }
->
