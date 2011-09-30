@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab1I3Ttx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 15:49:53 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:41569 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753616Ab1I3Ttv (ORCPT
+	id S932472Ab1I3Tyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 15:54:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63569 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab1I3Ty3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 15:49:51 -0400
-Message-ID: <4E861D4A.9030009@micron.com>
-Date: Fri, 30 Sep 2011 13:49:30 -0600
-From: Asai Thambi S P <asamymuthupa@micron.com>
-Reply-To: <asamymuthupa@micron.com>
-Organization: Micron
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+	Fri, 30 Sep 2011 15:54:29 -0400
+Date: Fri, 30 Sep 2011 23:53:29 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110930195329.GA2020@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
+ <20110927193810.GA5416@albatros>
+ <20110928144614.38591e97.akpm00@gmail.com>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>
-Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
-References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org> <4E69D519.8070802@fusionio.com>
-In-Reply-To: <4E69D519.8070802@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.30.125]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
-X-TM-AS-Result: No--12.130500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928144614.38591e97.akpm00@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/9/2011 2:58 AM, Jens Axboe wrote:
-> On 2011-09-09 10:54, Christoph Hellwig wrote:
->> On Mon, Aug 22, 2011 at 02:28:11PM -0700, Sam Bradshaw (sbradshaw) wrote:
->>> New patch for mtip32xx driver based on feedback from
->>> Jens Axboe, Christoph Hellwig, and Alan Cox.
->>
->> A few comments that need addressing:
->>
->>  - the ioctl handler always returns 0 for the BLKFLSBUF ioctl, without
->>    doing anything.  Given that the ioctl is supposed to flush all kinds
->>    of higher level cached data this is a serious data integrity issue.
->>    It must simply do the default -ENOTTY return for it and let the block
->>    layer do the right thing.
->>  - handling of REQ_FUA / REQ_FLUSH requests is completely broken.
->>    There is a weird barrier flag to mtip_hw_submit_io which set the
->>    hwardware FUA bit if the FLUSH bit is set on a request.
->>    Please take a look at how this should be handled, the
->>    Documentation/block/writeback_cache_control.txt file is the canonical
->>    resource.  Implementing your driver at the make_request layer
->>    unfortunately means you will have to do all the hard work yourself.
->>  - also the call to blk_queue_flush(queue, 0); from ->make_request for
->>    a non-data request is completely wrong.
+On Wed, Sep 28, 2011 at 14:46 -0700, Andrew Morton wrote:
+> On Tue, 27 Sep 2011 23:38:10 +0400
+> Vasiliy Kulikov <segoon@openwall.com> wrote:
 > 
-> I noticed both of these flush/fua problems too and have fixed them up.
+> > On Tue, Sep 27, 2011 at 21:56 +0400, Vasiliy Kulikov wrote:
+> > > /proc/meminfo stores information related to memory pages usage, which
+> > > may be used to monitor the number of objects in specific caches (and/or
+> > > the changes of these numbers).  This might reveal private information
+> > > similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
+> > > restrict meminfo to root.  If it is used by unprivileged daemons,
+> > > meminfo permissions can be altered the same way as slabinfo:
+> > > 
+> > >     groupadd meminfo
+> > >     usermod -a -G meminfo $MONITOR_USER
+> > >     chmod g+r /proc/meminfo
+> > >     chgrp meminfo /proc/meminfo
+> > 
+> > Just to make it clear: since this patch breaks "free", I don't propose
+> > it anymore.
 > 
->>  - the 64-bit case in fill_command_sg will blow up on big endian
->>    systems, please use your current 32-bit case unconditionally
->>  - mtip_block_getgeo should just use sector_div instead of the ifdef
->>    mess.
->>  - please check the driver using sparse, and most importantly the
->>    optional endianess checking pass of it.  Currently the driver
->>    uses plain unsigned int and similar types for little endian
->>    hardware structures.  Take a look at Documentation/sparse.txt
->>    on how to use it.
->>  - the mtip_check_surprise_removal check should be unconditional, not
->>    under #ifdef CONFIG_HOTPLUG
-> 
-> In general, the dependency on HOTPLUG_PCI_PCIE is odd as well.
+> It will break top(1) too.  It isn't my favoritest-ever patch :)
 
-For the device to support surprise removal and surprise insertion
-(SRSI), need pciehp module loaded.
+FWIW, I consider it as a top's bug.  It tries to handle failed open(),
+but forgets to reset tty mode.
 
+
+Anyway, how do we expect userspace apps handle meminfo data?  Is it used
+as a debugging information only?  E.g. admin wants to see how much
+memory is used, monitoring daemon looks for memleaks and running out of
+memory (1)?  Or the numbers are used in some calculations e.g.
+calculation of approximate number of parallel processes to spawn (2)?
+
+If we care about (1) only, we may do the same as we do with kernel
+pointers, i.e. show zeroes to non-CAP_SYS_ADMIN users (plus emit a
+sinlge warning in syslog).  It will not break top, and top will simply
+show zero counters.  Admins who still want to read this information as
+non-root should chmod/chgrp it in boot scripts.  (And distros should
+provide a default "debugging" group for these needs.)
+
+If we care about (2), we should pass non-zero counters, but imagine some
+default values, which will result in sane processes numbers.  But it
+might depend on specific applications, I'm not aware whether (2) is
+real.
+
+
+Other ideas?
 
 -- 
-Regards,
-Asai Thambi
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
