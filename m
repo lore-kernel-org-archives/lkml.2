@@ -1,135 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab1I3OYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 10:24:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32922 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab1I3OYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 10:24:09 -0400
-Date: Fri, 30 Sep 2011 10:22:59 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        stable@kernel.org, stefan.bader@canonical.com
-Subject: Re: Is: [PATCH] x86/paravirt: PTE updates in k(un)map_atomic need to
- be synchronous, regardless of lazy_mmu mode. Was: Re: [PATCH] x86/paravirt:
- Partially revert "remove lazy mode in interrupts"
-Message-ID: <20110930142259.GA25454@phenom.oracle.com>
-References: <1317042797-19975-1-git-send-email-konrad.wilk@oracle.com>
- <4E80A6BD.3070703@goop.org>
- <20110926193453.GA9717@phenom.oracle.com>
+	id S1757981Ab1I3O1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 10:27:17 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:13056
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751620Ab1I3O1Q convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 10:27:16 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zzc89bh98dK4015Lzz1202hzzz32i668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LSCAS0-01-1A9-02
+X-M-MSG: 
+Date: Fri, 30 Sep 2011 16:25:49 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "avi@redhat.com" <avi@redhat.com>, "jeremy@goop.org" <jeremy@goop.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>, Corey Minyard <minyard@acm.org>,
+        Jack Steiner <steiner@sgi.com>
+Subject: Re: [V6][PATCH 3/6] x86, nmi: wire up NMI handlers to new routines
+Message-ID: <20110930142549.GA21506@erda.amd.com>
+References: <1316805435-14832-1-git-send-email-dzickus@redhat.com>
+ <1316805435-14832-4-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20110926193453.GA9717@phenom.oracle.com>
+In-Reply-To: <1316805435-14832-4-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E85D0D4.00E6:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 23.09.11 15:17:12, Don Zickus wrote:
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 594d425..90ffec5 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1377,68 +1377,14 @@ struct pmu_nmi_state {
+>  static DEFINE_PER_CPU(struct pmu_nmi_state, pmu_nmi);
 
-> >From 09966678dd645b68a422c9bf0223b13e73387302 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Fri, 23 Sep 2011 17:02:29 -0400
-> Subject: [PATCH] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode.
-> 
-> This patch fixes an outstanding issue that has been reported since 2.6.37.
-> Under a heavy loaded machine processing "fork()" calls could keepover with:
+Don, please remove this too and also struct pmu_nmi_state:
 
-Hm, looks like I forgot to include Andrew on this.
+ arch/x86/kernel/cpu/perf_event.c:1066: warning: ‘pmu_nmi’ defined but not used
 
-Andrew, what is your opinion on this tiny little critical patch?
+Thanks,
 
-> 
-> BUG: unable to handle kernel paging request at f573fc8c
-> IP: [<c01abc54>] swap_count_continued+0x104/0x180
-> *pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000
-> Oops: 0000 [#1] SMP
-> Modules linked in:
-> Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
-> EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
-> EIP is at swap_count_continued+0x104/0x180
-> .. snip..
-> Call Trace:
->  [<c01ac222>] ? __swap_duplicate+0xc2/0x160
->  [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
->  [<c01ac2e4>] ? swap_duplicate+0x14/0x40
->  [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
->  [<c01a0ca5>] ? copy_page_range+0x195/0x200
->  [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
->  [<c0132cf8>] ? dup_mm+0xa8/0x130
->  [<c013376a>] ? copy_process+0x98a/0xb30
->  [<c013395f>] ? do_fork+0x4f/0x280
->  [<c01573b3>] ? getnstimeofday+0x43/0x100
->  [<c010f770>] ? sys_clone+0x30/0x40
->  [<c06c048d>] ? ptregs_clone+0x15/0x48
->  [<c06bfb71>] ? syscall_call+0x7/0xb
-> 
-> The problem is that in copy_page_range we turn lazy mode on, and then
-> in swap_entry_free we call swap_count_continued which ends up in:
-> 
->          map = kmap_atomic(page, KM_USER0) + offset;
-> 
-> and then later we touch *map.
-> 
-> Since we are running in batched mode (lazy) we don't actually set up the
-> PTE mappings and the kmap_atomic is not done synchronously and ends up
-> trying to dereference a page that has not been set.
-> 
-> Looking at kmap_atomic_prot_pfn, it uses 'arch_flush_lazy_mmu_mode' and
-> doing the same in kmap_atomic_prot and __kunmap_atomic makes the problem
-> go away.
-> 
-> Interestingly, git commit b8bcfe997e46150fedcc3f5b26b846400122fdd9
-> removed part of this to fix an interrupt issue - but it went to far
-> and did not consider this scenario.
-> 
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: x86@kernel.org
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> CC: stable@kernel.org
-> [v1: Redid the commit description per Jeremy's apt suggestion]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/mm/highmem_32.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
-> index b499626..f4f29b1 100644
-> --- a/arch/x86/mm/highmem_32.c
-> +++ b/arch/x86/mm/highmem_32.c
-> @@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
->  	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
->  	BUG_ON(!pte_none(*(kmap_pte-idx)));
->  	set_pte(kmap_pte-idx, mk_pte(page, prot));
-> +	arch_flush_lazy_mmu_mode();
->  
->  	return (void *)vaddr;
->  }
-> @@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
->  		 */
->  		kpte_clear_flush(kmap_pte-idx, vaddr);
->  		kmap_atomic_idx_pop();
-> +		arch_flush_lazy_mmu_mode();
->  	}
->  #ifdef CONFIG_DEBUG_HIGHMEM
->  	else {
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
