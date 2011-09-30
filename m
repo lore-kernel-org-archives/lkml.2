@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab1I3Xux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 19:50:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38361 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753984Ab1I3Xuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 19:50:46 -0400
-Message-ID: <4E8655CD.90107@zytor.com>
-Date: Fri, 30 Sep 2011 16:50:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755114Ab1I3XvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 19:51:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51372 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755612Ab1I3Xuw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 19:50:52 -0400
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: kernel.org status: establishing a PGP web of trust
-X-Enigmail-Version: 1.3
+In-Reply-To: <20110930134243.GR2138@amd.com>
+References: <016d01cc7f42$e58a0aa0$b09e1fe0$%kim@samsung.com>
+	<20110930134243.GR2138@amd.com>
+Date: Sat, 1 Oct 2011 08:50:51 +0900
+X-Google-Sender-Auth: Qj108dTNZ359LTjayaleyCZbOuk
+Message-ID: <CAHQjnOPVReT3Lk7_Mk864Z8fPVC1dMRCoXmr1tHuBvxspYBGiw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/5] ARM: S5P: Remove system MMU driver from arm/plat-s5p
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        "younglak1004.kim@samsung.com" <younglak1004.kim@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, Sep 30, 2011 at 10:42 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> On Fri, Sep 30, 2011 at 03:30:57AM -0400, Kukjin Kim wrote:
+>> From: KyongHo Cho <pullip.cho@samsung.com>
+>>
+>> Due to Ohad Ben-Cohen gathered IOMMU drivers in drivers/iommu directory,
+>> System MMU driver is moved to drivers/iommu directory and removed
+>> from arch/arm/plat-s5p directory.
+>>
+>> Please see
+>> https://lkml.org/lkml/2011/6/8/69
+>>
+>> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+>> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+>> ---
+>>  arch/arm/plat-s5p/Kconfig               |    8 -
+>>  arch/arm/plat-s5p/Makefile              |    1 -
+>>  arch/arm/plat-s5p/include/plat/sysmmu.h |   95 ----------
+>>  arch/arm/plat-s5p/sysmmu.c              |  312 -------------------------------
+>
+> You can use 'git mv' to just move the file. This ensures bisectability
+> of your patches. No need to delete the code in one patch and re-add it
+> in the next one (which breaks bisectability).
+>
+Thanks.
+I will do that
 
-Hi all,
-
-Since the kernel.org status announcement last week a number of you
-have contacted me about re-establishing credentials.  In order to
-establish a proper PGP web of trust we need keys that are cross-signed
-by other developers.  As such, we ask that you follow the following
-steps:
-
-1. Make sure your systems are uncompromised.  We will address specific
-   recommended steps for that in a separate email.
-
-2. Create a new PGP/GPG key, and also generate a key revocation
-   certificate (but don't import it anywhere -- save it for the
-   future) for your new key.  In the near future we are considering
-   setting up an escrow service for key revocation certificates.
-
-   I recommend using a 4096-bit RSA key.  Given how fast computers are
-   these days, there is no reason to use a shorter key.  DSA keys
-   should be considered obsolete; substantial weaknesses have been
-   found in DSA.
-
-   $ gpg --gen-key
-   $ gpg -u <key ID> -o <key ID>.revoke --gen-revoke
-
-3. If you are reasonably certain that your old key has never been
-   jeopardized, sign the new key with the old key.
-
-   $ gpg -u <your old key ID> --sign-key <your new key ID>
-
-   If you are *not* sure about your old keys, please revoke them if
-   you haven't already done so (create a revocation certificate and
-   import it into your keyring, then push the key to the key servers.)
-
-   $ gpg -u <your old key ID> -o <your old key ID>.revoke --gen-revoke
-   $ gpg --import <your old key ID>.revoke
-   $ gpg --keyserver pgp.mit.edu --send-key <your old key ID>
-
-4. Upload the signed keys to the keyserver system (I usually use
-   pgp.mit.edu, but most of the keyservers sync with each other with
-   roughly a 24-hour delay.)  By publishing the keys we make them
-   available not only to kernel.org but for other uses, like signing
-   email, and you can verify yourself by looking at http://pgp.mit.edu/
-   if there is someone out there who has published a key with your name
-   on it.  Furthermore, it allows us to tap other webs of trust already
-   established.
-
-   $ gpg --keyserver pgp.mit.edu --send-key <your key ID>
-
-5. Get as many other kernel developers that you have physical access to
-   to sign your key after verifying the fingerprint.  Verifying keys
-   over the phone is OK if and only if you know them *extremely* well;
-   think "would I be willing to testify in court that the person I
-   talked to was X"?
-
-   If you work in an office with multiple other Linux developers, it
-   would be a very good thing to organize a local key signing.  We will
-   do a key signing at Kernel Summit for the core kernel developers.
-
-   A web site with recommendations for running a key signing:
-
-
-http://www.cryptnet.net/fdp/crypto/keysigning_party/en/keysigning_party.html
-
-   $ gpg --fingerprint <key ID>
-   $ gpg --keyserver pgp.mit.edu --recv-key <their key ID>
-   $ gpg -u <your key ID> --sign-key <their key ID>
-   $ gpg --keyserver pgp.mit.edu --send-key <their key ID>
-   $ gpg --keyserver pgp.mit.edu --recv-key <your key ID>
-
-6. Please send me the key identifier and fingerprint to
-   <keys@zytor.com>.  This is a temporary address until the kernel.org
-   MX is ready to put back online; eventually we will probably have a
-   web form interface for this.
-
-	-hpa
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJOhlXFAAoJEL2gYIVJO6zkc7MP/2Qb6iOGCMEd3ncV8N9Znqsf
-nPYnjS7Eo8EafbC5A/Pe5UaqzVw3UrWAewTENUaNndXuTDRYhvt2SeQEbASpCTfG
-Wr0WPzcrrnIOhJDk9WyLUIE+wR52Alq/EYmiRBDBNJmNqwo7SgXVpyDqMvLeH9IH
-LCey68XfQ2WrD25p3a3zmi5woGuluQsUVYNJCB0yC1RpESJDO6GNx+tUWWR6kRk1
-GmaUs0qrx9nHrycQZIq1pga3v/uxSvxr7pYAvLMLvl0pCFE+GbQ+wCMqpddOTA0/
-0d5QVRqL1neCMGYUm+9Ff3AzzyaqTKHPOm6grnUp+M73+3FJIMzr3BOEIJnusJA5
-vDPjHl8j3+LJXeTNNp3V/pmM89uc9vWjdyRoMyeufN2simC07csxh8E8s35hz3gj
-z6tdch9ygHJt1rS3XuJva9p5kNm0ptMtbF1wWzJCci8Lo7iiMoj0GECyeIzvEbic
-qG6sUfgIORGe3OH8MPCdmn2BY1y0Rz6rD05s1nZOBxOoYihrtDrnNC5MJl4+lvTW
-7fzTFVzbjQO7Ybu/PqLeAJ4ieTFflbp4j7dI9dTKxHfTKQ+NT1YgiRpS7gcZeDhS
-YmVKMmN5QpxFqMYhr9gc2S/6iYwRTP1juWMf0bxP9xiY/SaBhW8XrpyxE85svc+o
-9j39P8QGHPb35HQ2HPgn
-=PdWd
------END PGP SIGNATURE-----
+Regards,
+KyongHo.
