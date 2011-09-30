@@ -1,61 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab1I3Mc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 08:32:26 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53318 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab1I3McY (ORCPT
+	id S1758571Ab1I3Mm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:42:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61622 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab1I3Mmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 08:32:24 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 30 Sep 2011 14:32:11 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
-Message-ID: <20110930143211.5ab39c02@stein>
-In-Reply-To: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
-	<1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Sep 2011 08:42:55 -0400
+Date: Fri, 30 Sep 2011 14:42:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.osdl.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 06/11] cgroups: Add res counter common ancestor searching
+Message-ID: <20110930124243.GA19053@somewhere>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+ <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
+ <20110918195932.GD28057@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110918195932.GD28057@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 29 Neil Horman wrote:
-> (v4)
-> Fixed up some spelling mistakes, and added a scissors line with a good
-> commitlog, so that git-am drops all the version logging
+On Sun, Sep 18, 2011 at 10:59:32PM +0300, Kirill A. Shutemov wrote:
+> On Tue, Sep 13, 2011 at 01:11:26AM +0200, Frederic Weisbecker wrote:
+> > Add a new API to find the common ancestor between two resource
+> > counters. This includes the passed resource counter themselves.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Acked-by: Paul Menage <paul@paulmenage.org>
+> > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Aditya Kali <adityakali@google.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Kay Sievers <kay.sievers@vrfy.org>
+> > Cc: Tim Hockin <thockin@hockin.org>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > ---
+> >  include/linux/res_counter.h |    3 +++
+> >  kernel/res_counter.c        |   22 ++++++++++++++++++++++
+> >  2 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> > index de4ba29..558f39b 100644
+> > --- a/include/linux/res_counter.h
+> > +++ b/include/linux/res_counter.h
+> > @@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
+> >  	res_counter_uncharge_until(counter, NULL, val);
+> >  }
+> >  
+> > +struct res_counter *res_counter_common_ancestor(struct res_counter *l,
+> > +						struct res_counter *r);
+> > +
+> >  /**
+> >   * res_counter_margin - calculate chargeable space of a counter
+> >   * @cnt: the counter
+> > diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> > index 0cc9c7e..22f07cc 100644
+> > --- a/kernel/res_counter.c
+> > +++ b/kernel/res_counter.c
+> > @@ -91,6 +91,28 @@ void res_counter_uncharge_until(struct res_counter *counter,
+> >  	local_irq_restore(flags);
+> >  }
+> >  
+> > +/*
+> > + * Walk through r1 and r2 parents and try to find the closest common one
+> > + * between both. If none is found, it returns NULL.
+> > + */
+> > +struct res_counter *
+> > +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> > +{
+> > +	struct res_counter *iter;
+> > +
+> > +	while (r1) {
+> > +		iter = r2;
+> > +		while (iter) {
+> > +			if (iter == r1)
+> > +				return iter;
+> > +			iter = iter->parent;
+> > +		}
+> > +
+> > +		r1 = r1->parent;
+> > +	}
+> > +
+> > +	return NULL;
+> > +}
 > 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> CC: Bjorn Helgaas <bhelgaas@google.com>
-> CC: linux-pci@vger.kernel.org
+> Your implementation is O(n*m).
 
-It drops these last 5 lines then too, doesn't it?
+Paul Menage said that shouldn't harm because in practice
+cgroups hierarchies are not very deep.
 
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -66,6 +66,24 @@ Description:
->  		re-discover previously removed devices.
->  		Depends on CONFIG_HOTPLUG.
->  
-> +What:		/sys/bus/pci/devices/.../msi_irqs/
-> +Date:		September, 2011
-> +Contact:	Neil Horman <nhorman@tuxdriver.com>
-> +Description:
-> +		The /sys/devices/.../msi_irqs directory contains a variable set
-> +		sub-directories, with each sub-directory being named after a
-> +		corresponding msi irq vector allocated to that device.
+But I can take your implementation below, it won't harm
+further and might behave better on some corner cases.
 
-"contains a variable set _of_ sub-directories"?
--- 
-Stefan Richter
--=====-==-== =--= ====-
-http://arcgraph.de/sr/
+> 
+> What about:
+> 
+> struct res_counter *
+> res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> {
+> 	struct res_counter *iter;
+> 	int r1_depth = 0, r2_depth = 0;
+> 
+> 	for (iter = r1; iter; iter = iter->parent)
+> 		r1_depth++;
+> 	for (iter = r2; iter; iter = iter->parent)
+> 		r2_depth++;
+> 
+> 	while (r1_depth > r2_depth) {
+> 		r1 = r1->parent;
+> 		r1_depth--;
+> 	}
+> 	while (r2_depth > r1_depth) {
+> 		r2 = r2->parent;
+> 		r2_depth--;
+> 	}
+> 
+> 	while (r1 != r2) {
+> 		r1 = r1->parent;
+> 		r2 = r2->parent;
+> 	}
+> 
+> 	return r1;
+> }
+> 
+> Untested. It's O(n+m).
+> 
+> -- 
+>  Kirill A. Shutemov
