@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab1I3TIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 15:08:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758704Ab1I3THT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 15:07:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        avi@redhat.com, jeremy@goop.org, Don Zickus <dzickus@redhat.com>
-Subject: [V7][PATCH 0/6] x86, nmi: new NMI handling routines
-Date: Fri, 30 Sep 2011 15:06:18 -0400
-Message-Id: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
+	id S1758712Ab1I3TNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 15:13:00 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55296 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab1I3TM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 15:12:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
+References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
+Date: Fri, 30 Sep 2011 21:12:58 +0200
+Message-ID: <CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
+Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
+From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I had the pleasure of hosting Robert Richter at Red Hat in August.  One of
-the issues he wanted to talk with me about was having the NMI handling 
-routines execute all the NMI handlers for each NMI mainly for his AMD IBS
-work.  But he also brought up another good point that because of the way NMIs
-work, it is possible to lose them if multiple NMIs happen at the same time.
+Anyone familiar with the Linux scheduler, please?
 
-As a result, we sat around and discussed how we could go about executing
-all the nmi handlers for each NMI to ensure that we would not lose any events.
-
-We decided the best way to do this would be to have the NMI handlers break
-away from the notifier routines and create our own.  This would allow us to
-execute all the handlers without hacking up the notifier stuff and easily
-track the number of events processed at a higher level to deal with the new
-problemm of extra NMIs.
-
-I spent some time hacking and came up with this patch.  I tested it on my
-core2quad machine trying to enable all the NMI handler I could, mainly
-perf and kgdb (and oprofile too when perf was disabled).  Everything seems
-to work correctly.  If people are ok with this approach, I'll try and test
-this on more machines.
-
-More details about the patch are in the individual changelogs.
-
-I rebased this on top of tglx/perf/core [cba9bd22], I hope that is the right
-branch?
-
-V7:
-  - removed the b2b optimization in the nmi_handle call
-  - small code cleanups in patch 3/4
-
-Don Zickus (6):
-  x86, nmi: split out nmi from traps.c
-  x86, nmi: create new NMI handler routines
-  x86, nmi: wire up NMI handlers to new routines
-  x86, nmi:  add in logic to handle multiple events and unknown NMIs
-  x86, nmi: track NMI usage stats
-  x86, nmi: print out NMI stats in /proc/interrupts
-
- arch/x86/include/asm/nmi.h              |   39 ++--
- arch/x86/include/asm/reboot.h           |    2 +-
- arch/x86/kernel/Makefile                |    2 +-
- arch/x86/kernel/apic/hw_nmi.c           |   27 +--
- arch/x86/kernel/apic/x2apic_uv_x.c      |   20 +-
- arch/x86/kernel/cpu/mcheck/mce-inject.c |   20 +-
- arch/x86/kernel/cpu/mcheck/mce.c        |    3 -
- arch/x86/kernel/cpu/perf_event.c        |   69 +-----
- arch/x86/kernel/crash.c                 |    5 +-
- arch/x86/kernel/irq.c                   |    2 +
- arch/x86/kernel/kgdb.c                  |   60 +++-
- arch/x86/kernel/nmi.c                   |  464 +++++++++++++++++++++++++++++++
- arch/x86/kernel/process_32.c            |    2 +
- arch/x86/kernel/process_64.c            |    2 +
- arch/x86/kernel/reboot.c                |   23 +-
- arch/x86/kernel/traps.c                 |  155 ----------
- arch/x86/oprofile/nmi_int.c             |   40 +--
- arch/x86/oprofile/nmi_timer_int.c       |   28 +--
- drivers/acpi/apei/ghes.c                |   22 +-
- drivers/char/ipmi/ipmi_watchdog.c       |   32 +--
- drivers/watchdog/hpwdt.c                |   23 +--
- 21 files changed, 607 insertions(+), 433 deletions(-)
- create mode 100644 arch/x86/kernel/nmi.c
-
--- 
-1.7.6
-
+On Wed, Sep 28, 2011 at 1:06 AM, Tadeus (Eus) Prastowo
+<0x657573@googlemail.com> wrote:
+> Hi!
+>
+> When a SCHED_RR task with RT priority X blocks on a
+> priority-inheriting mutex held by a SCHED_NORMAL task with nice value
+> Y, RT-Mutex code will change the SCHED_NORMAL task priority to that of
+> the SCHED_RR task and based on the new priority, will change the
+> scheduling class too. But, each task retains its own scheduling
+> policy.
+>
+> This means that the task inheriting the SCHED_RR priority will be
+> scheduled using SCHED_FIFO policy because task_tick_rt does not
+> enforce the SCHED_RR time slice when the task policy is not SCHED_RR.
+>
+> Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
+> task get the privilege of SCHED_FIFO task for running as long as it
+> wishes even when the task giving the inheritance does not have such
+> privilege?
+>
+> Thank you very much.
+>
+> Please kindly put me in the CC since I am not subscribed to the list.
+>
+> --
+> Eus
