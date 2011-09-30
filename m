@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab1I3IqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 04:46:08 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.31.102]:58370 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab1I3IqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 04:46:06 -0400
-Message-ID: <4E858200.8070302@ladisch.de>
-Date: Fri, 30 Sep 2011 10:46:56 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1758191Ab1I3Ita (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 04:49:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44698 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755247Ab1I3It1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 04:49:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,466,1312182000"; 
+   d="scan'208";a="72621533"
+Message-ID: <4E858292.40905@intel.com>
+Date: Fri, 30 Sep 2011 11:49:22 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: markh@compro.net
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Hounschell <dmarkh@cfl.rr.com>
-Subject: Re: Problem with AMD chipsets. Was "Re: problems doing direct dma
- from a pci device to pci-e device"
-References: <4E84CA01.2060907@compro.net> <4E84D55A.5050406@compro.net>
-In-Reply-To: <4E84D55A.5050406@compro.net>
-Content-Type: text/plain; charset=us-ascii
+To: NamJae Jeon <linkinjeon@gmail.com>
+CC: Andrei Warkentin <awarkentin@vmware.com>, linux-kernel@vger.kernel.org,
+        linus walleij <linus.walleij@linaro.org>,
+        james p freyensee <james_p_freyensee@linux.intel.com>,
+        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
+        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
+        per forlin <per.forlin@stericsson.com>,
+        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v3] mmc : general purpose partition support.
+References: <1317309431-1898-1-git-send-email-linkinjeon@gmail.com> <1522108758.811204.1317316828352.JavaMail.root@zimbra-prod-mbox-2.vmware.com> <CAKYAXd_1jY23C8NTvP7NizZEseb7G2bbtJYq7RvF1vaJaZgh_Q@mail.gmail.com> <4E855832.4030603@intel.com> <CAKYAXd-rHyL3uwF0B3UpY=ejxkB=+iNYfHQR7kt2ARcHV1NPkg@mail.gmail.com> <CAKYAXd9HzXOpKON+k=Prr-9wMq1Cr6+mZaDbvhTGe=r-1xpGSA@mail.gmail.com>
+In-Reply-To: <CAKYAXd9HzXOpKON+k=Prr-9wMq1Cr6+mZaDbvhTGe=r-1xpGSA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Hounschell wrote:
-> We have no problem with this same configuration using a MB with an
-> nvidia chipset. I suspect it might have something to do with the the MB
-> that usines the AMD chipset having an IOMMU, but I really don't know for
-> sure. I've also read something in the AMD chipset docs about some type
-> of restrictions on peer to peer transfers but again I really have no
-> idea if this is related to why I'm having this problem.
+On 30/09/11 11:11, NamJae Jeon wrote:
+> 2011/9/30 NamJae Jeon<linkinjeon@gmail.com>:
+>> 2011/9/30 Adrian Hunter<adrian.hunter@intel.com>:
+>>> Perhaps rebase against Chris' mmc-next branch
+>> I made this patch after rebasing Chris'mmc-next yesterday.
+> Hi. Adrian.
+> There is the overlapped code between your patch and my patch.
+> What should we do ?
 
-According to the published RS780 docs, "P2P traffic could be only memory
-writes" (RPR 2.7).  In any case, check the P2P bits (MISC is described
-in BDG 2.4).
+Rebase and ensure that boot partitions are only added if
+mmc_boot_partition_access(card->host) is true
 
+>>>
+>>>
+>>>
+>>
+>
 
-Regards,
-Clemens
