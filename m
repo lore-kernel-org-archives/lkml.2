@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab1I3UD5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:03:57 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:38859 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab1I3UD4 (ORCPT
+	id S1758767Ab1I3UIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:08:09 -0400
+Received: from 74-92-214-37-Colorado.hfc.comcastbusiness.net ([74.92.214.37]:36486
+	"EHLO zlynx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab1I3UII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:03:56 -0400
-Date: Fri, 30 Sep 2011 13:03:53 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
-Message-Id: <20110930130353.0da54517.akpm00@gmail.com>
-In-Reply-To: <20110930195329.GA2020@albatros>
-References: <20110927175453.GA3393@albatros>
-	<20110927175642.GA3432@albatros>
-	<20110927193810.GA5416@albatros>
-	<20110928144614.38591e97.akpm00@gmail.com>
-	<20110930195329.GA2020@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 30 Sep 2011 16:08:08 -0400
+Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
+From: Zan Lynx <zlynx@acm.org>
+To: rjw@sisk.pl
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Sep 2011 14:09:14 -0600
+In-Reply-To: <1317329529.3151.10.camel@knife>
+References: <1317329529.3151.10.camel@knife>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-YVcidAY6MNliwgXS/ON5"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1317413360.2629.2.camel@knife>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20110930/1R9jNM-0006Ev-Me-linux-kernel@vger.kernel.org:zlynx@acm.org:74.92.214.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011 23:53:29 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-> On Wed, Sep 28, 2011 at 14:46 -0700, Andrew Morton wrote:
-> > On Tue, 27 Sep 2011 23:38:10 +0400
-> > Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > 
-> > > On Tue, Sep 27, 2011 at 21:56 +0400, Vasiliy Kulikov wrote:
-> > > > /proc/meminfo stores information related to memory pages usage, which
-> > > > may be used to monitor the number of objects in specific caches (and/or
-> > > > the changes of these numbers).  This might reveal private information
-> > > > similar to /proc/slabinfo infoleaks.  To remove the infoleak, just
-> > > > restrict meminfo to root.  If it is used by unprivileged daemons,
-> > > > meminfo permissions can be altered the same way as slabinfo:
-> > > > 
-> > > >     groupadd meminfo
-> > > >     usermod -a -G meminfo $MONITOR_USER
-> > > >     chmod g+r /proc/meminfo
-> > > >     chgrp meminfo /proc/meminfo
-> > > 
-> > > Just to make it clear: since this patch breaks "free", I don't propose
-> > > it anymore.
-> > 
-> > It will break top(1) too.  It isn't my favoritest-ever patch :)
-> 
-> FWIW, I consider it as a top's bug.  It tries to handle failed open(),
-> but forgets to reset tty mode.
-> 
-> 
-> Anyway, how do we expect userspace apps handle meminfo data?  Is it used
-> as a debugging information only?  E.g. admin wants to see how much
-> memory is used, monitoring daemon looks for memleaks and running out of
-> memory (1)?  Or the numbers are used in some calculations e.g.
-> calculation of approximate number of parallel processes to spawn (2)?
+--=-YVcidAY6MNliwgXS/ON5
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Well.  Both, of course.  And more.  eg, monitor it and send an SMS
-message to the admin when things start to go wrong.
+On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
+> After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
+> kernels would not suspend/resume on my laptop I followed a Ubuntu forum
+> suggestion to use acpi=3Dnonvs. This worked, or at least it is working
+> today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
+>=20
+> The system is also booting via UEFI if that makes any difference.
+>=20
+> I understand that there is a no-NVS blacklist in the kernel. Should the
+> Samsung Series 9 be added to this list? Or could it be a different
+> suspend/resume problem entirely?
 
-> If we care about (1) only, we may do the same as we do with kernel
-> pointers, i.e. show zeroes to non-CAP_SYS_ADMIN users (plus emit a
-> sinlge warning in syslog).  It will not break top, and top will simply
-> show zero counters.  Admins who still want to read this information as
-> non-root should chmod/chgrp it in boot scripts.  (And distros should
-> provide a default "debugging" group for these needs.)
+Please ignore this about nonvs. nonvs has nothing to do with the
+suspend/resume problem on this laptop.
 
-meminfo has been around for a very long time and is a convenient and
-centralised point for collecting memory data.  There will be a large
-number of apps/scripts/tools out there which use it.  Many of these
-won't even be available to us.
+Instead it seems to involve reboots, which is crazy. From a cold
+power-on start, suspend resume will always fail. But if the laptop is
+rebooted first, suspend and resume appear to work. What the heck? I have
+no clue how to debug this.
 
-All of which makes it very hard for us to predict how much breakage we
-will cause.
+So now it appears that everything I ever tried to fix this only seemed
+to work because I rebooted after changing GRUB or module options.
 
-> If we care about (2), we should pass non-zero counters, but imagine some
-> default values, which will result in sane processes numbers.  But it
-> might depend on specific applications, I'm not aware whether (2) is
-> real.
-> 
-> 
-> Other ideas?
+--=20
+Knowledge Is Power
+Power Corrupts
+Study Hard
+Be Evil
 
-echo "chmod 0400 /proc/meminfo" >> /etc/rc.local
+--=-YVcidAY6MNliwgXS/ON5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk6GIeoACgkQ1IRuMHS+h7EsFACfaR44Pkr6pYVb3//DbpiDBE4Q
+7i4AoM2FrBBkikzZ6eVVBRfpl5A9qUMS
+=Smp0
+-----END PGP SIGNATURE-----
+
+--=-YVcidAY6MNliwgXS/ON5--
+
