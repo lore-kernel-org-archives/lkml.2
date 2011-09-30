@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523Ab1I3MFm (ORCPT <rfc822;w@1wt.eu>);
+	id S1758545Ab1I3MGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:06:38 -0400
+Received: from mx.kernel.net.pl ([217.73.31.3]:55545 "EHLO an2.kernel.pl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758509Ab1I3MFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Sep 2011 08:05:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46586 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758506Ab1I3MFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 08:05:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110930114747.GA8702@lg3.synalogic.ca>
-References: <CAE15VAb93=_FrHgu3bGUSM2Wq0RvS1bqR+Z71g0V3BWP-BkJ2g@mail.gmail.com>
-	<20110929220610.GA9086@1wt.eu>
-	<20110930114747.GA8702@lg3.synalogic.ca>
-Date: Fri, 30 Sep 2011 14:05:39 +0200
-Message-ID: <CAE15VAa14ob6SMQvU4wurk1fPYAFnsV=dN80hU6bPoGB8q4EFw@mail.gmail.com>
-Subject: Re: linux 2.4 download
-From: Gilbert Strange <gilbert.strange@gmail.com>
-To: Benjamin Poirier <benjamin.poirier@gmail.com>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+From: Witold Krecicki <wpk@culm.net>
+To: Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Witold Krecicki <wpk@culm.net>
+Subject: [PATCH 5/6] cgroup: make cgroup filesystem mounts performed by task inside isolation root see its isolation root as top cgroup
+Date: Fri, 30 Sep 2011 13:36:24 +0200
+Message-Id: <1317382585-12172-6-git-send-email-wpk@culm.net>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317382585-12172-1-git-send-email-wpk@culm.net>
+References: <1317382585-12172-1-git-send-email-wpk@culm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 1:47 PM, Benjamin Poirier
-<benjamin.poirier@gmail.com> wrote:
-> On 11-09-30 00:06, Willy Tarreau wrote:
->> Hi,
->>
->> On Thu, Sep 29, 2011 at 11:24:19PM +0200, Gilbert Strange wrote:
->> > Hi,
->> >
->> > is there any chance to download Linux 2.4 source?
->>
->> Do you need a tar.gz or the git version ? tar.gz will be found at some
->> mirrors, and if you need a more recent version, please ask and I'll
->> happily send you a patch. I'd just rather avoid uploading the whole
->> code from my DSL line.
->
-> Seems like 2.4.37.11 can be found on github, alas without tags it seems.
->
-> https://github.com/jmesmon/linux-2.4.37.y/commit/632faa2d548dabaf55ac0bfcb21599da946f9936
->
-> -Ben
->
->>
->> Regards,
->> Willy
->>
+This patch makes all mounts of cgroup filesystems performed by task
+contained in isolation root see its isolation root as top cgroup.
 
-Thanks a lot, this should be enough for me. I think that older
-Slackware releases could be also OK.
+Signed-off-by: Witold Krecicki <wpk@culm.net>
+---
+ kernel/cgroup.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-GS
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index c3fee33..db66a82 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1504,6 +1504,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 	int ret = 0;
+ 	struct super_block *sb;
+ 	struct cgroupfs_root *new_root;
++	struct dentry *dret;
+ 
+ 	/* First find the desired set of subsystems */
+ 	mutex_lock(&cgroup_mutex);
+@@ -1624,7 +1625,9 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		revert_creds(cred);
+ 		mutex_unlock(&cgroup_mutex);
+ 		mutex_unlock(&inode->i_mutex);
++		dret = sb->s_root;
+ 	} else {
++		struct cgroup *isol_root;
+ 		/*
+ 		 * We re-used an existing hierarchy - the new root (if
+ 		 * any) is not needed
+@@ -1632,11 +1635,20 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		cgroup_drop_root(opts.new_root);
+ 		/* no subsys rebinding, so refcounts don't change */
+ 		drop_parsed_module_refcounts(opts.subsys_bits);
++		/* If root isolation is enabled give partial root */
++		cgroup_lock();
++		isol_root = cgroup_get_isolation_root(
++				task_cgroup_from_root(current, root));
++		if (isol_root)
++			dret = isol_root->dentry;
++		else
++			dret = sb->s_root;
++		cgroup_unlock();
+ 	}
+ 
+ 	kfree(opts.release_agent);
+ 	kfree(opts.name);
+-	return dget(sb->s_root);
++	return dget(dret);
+ 
+  drop_new_super:
+ 	deactivate_locked_super(sb);
+-- 
+1.7.4.1
+
