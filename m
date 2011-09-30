@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab1I3UUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:20:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40400 "EHLO ogre.sisk.pl"
+	id S1756217Ab1I3UcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:32:24 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:50086 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755760Ab1I3UUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:20:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zan Lynx <zlynx@acm.org>
-Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
-Date: Fri, 30 Sep 2011 22:22:22 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1317329529.3151.10.camel@knife> <1317413360.2629.2.camel@knife>
-In-Reply-To: <1317413360.2629.2.camel@knife>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109302222.22528.rjw@sisk.pl>
+	id S1751745Ab1I3UcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 16:32:23 -0400
+Subject: [RFCv2][PATCH 1/4] break units out of string_get_size()
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
+        James.Bottomley@HansenPartnership.com, hpa@zytor.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Fri, 30 Sep 2011 13:32:19 -0700
+Message-Id: <20110930203219.60D507CB@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 30, 2011, Zan Lynx wrote:
-> On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
-> > After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
-> > kernels would not suspend/resume on my laptop I followed a Ubuntu forum
-> > suggestion to use acpi=nonvs. This worked, or at least it is working
-> > today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
-> > 
-> > The system is also booting via UEFI if that makes any difference.
-> > 
-> > I understand that there is a no-NVS blacklist in the kernel. Should the
-> > Samsung Series 9 be added to this list? Or could it be a different
-> > suspend/resume problem entirely?
-> 
-> Please ignore this about nonvs. nonvs has nothing to do with the
-> suspend/resume problem on this laptop.
-> 
-> Instead it seems to involve reboots, which is crazy. From a cold
-> power-on start, suspend resume will always fail. But if the laptop is
-> rebooted first, suspend and resume appear to work. What the heck? I have
-> no clue how to debug this.
-> 
-> So now it appears that everything I ever tried to fix this only seemed
-> to work because I rebooted after changing GRUB or module options.
 
-What graphics is there in the system?
+I would like to use these (well one of them) arrays in
+another function.  Might as well break both versions
+out for consistency.
 
-Rafael
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+---
+
+ linux-2.6.git-dave/lib/string_helpers.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
+
+diff -puN lib/string_helpers.c~string_get_size-pow2 lib/string_helpers.c
+--- linux-2.6.git/lib/string_helpers.c~string_get_size-pow2	2011-09-30 12:58:43.856800824 -0700
++++ linux-2.6.git-dave/lib/string_helpers.c	2011-09-30 12:58:43.864800812 -0700
+@@ -8,6 +8,19 @@
+ #include <linux/module.h>
+ #include <linux/string_helpers.h>
+ 
++const char *units_10[] = { "B", "kB", "MB", "GB", "TB", "PB",
++			   "EB", "ZB", "YB", NULL};
++const char *units_2[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB",
++			 "EiB", "ZiB", "YiB", NULL };
++static const char **units_str[] = {
++	[STRING_UNITS_10] =  units_10,
++	[STRING_UNITS_2] = units_2,
++};
++static const unsigned int divisor[] = {
++	[STRING_UNITS_10] = 1000,
++	[STRING_UNITS_2] = 1024,
++};
++
+ /**
+  * string_get_size - get the size in the specified units
+  * @size:	The size to be converted
+@@ -23,18 +36,6 @@
+ int string_get_size(u64 size, const enum string_size_units units,
+ 		    char *buf, int len)
+ {
+-	const char *units_10[] = { "B", "kB", "MB", "GB", "TB", "PB",
+-				   "EB", "ZB", "YB", NULL};
+-	const char *units_2[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB",
+-				 "EiB", "ZiB", "YiB", NULL };
+-	const char **units_str[] = {
+-		[STRING_UNITS_10] =  units_10,
+-		[STRING_UNITS_2] = units_2,
+-	};
+-	const unsigned int divisor[] = {
+-		[STRING_UNITS_10] = 1000,
+-		[STRING_UNITS_2] = 1024,
+-	};
+ 	int i, j;
+ 	u64 remainder = 0, sf_cap;
+ 	char tmp[8];
+_
