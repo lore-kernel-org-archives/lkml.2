@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab1I3QcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:32:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35962 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab1I3QcB (ORCPT
+	id S1757448Ab1I3QeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:34:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17360 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab1I3QeC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:32:01 -0400
-Date: Fri, 30 Sep 2011 18:32:35 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 04/21] drm/i915: Only use VBT panel mode on eDP if no
- EDID is found
-Message-ID: <20110930163235.GD2859@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-5-git-send-email-keithp@keithp.com>
+	Fri, 30 Sep 2011 12:34:02 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Qiqstc6s+s0HOqnYwk6Juaz7grMKGZoF3i/xWfVASXZkpGzYEpZAgzdLgqn16K/X2
+	h4lK9zNUvJK/ZB04ke3ig==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317344993-24945-5-git-send-email-keithp@keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110930153321.GA31760@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com> <20110930143211.5ab39c02@stein>
+ <20110930153321.GA31760@hmsreliant.think-freely.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 30 Sep 2011 10:33:36 -0600
+Message-ID: <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 06:09:36PM -0700, Keith Packard wrote:
-> We're going to assume that EDID is more reliable than the VBT tables
-> for eDP panels, which is notably true on MacBook machines where the
-> VBT contains completely bogus data.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-Ok, this is way over my head, just checked whether the patch does what it
-claims to - nice exercise in reading dp modeset code ;-)
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+On Fri, Sep 30, 2011 at 9:33 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>
+> On Fri, Sep 30, 2011 at 02:32:11PM +0200, Stefan Richter wrote:
+> > On Sep 29 Neil Horman wrote:
+> > > (v4)
+> > > Fixed up some spelling mistakes, and added a scissors line with a good
+> > > commitlog, so that git-am drops all the version logging
+> > >
+> > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> > > CC: Greg Kroah-Hartman <gregkh@suse.de>
+> > > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > > CC: linux-pci@vger.kernel.org
+> >
+> > It drops these last 5 lines then too, doesn't it?
+> >
+> I would have thought so, but I tested a git-format-patch / git-am operation here
+> on a temporary branch, and it worked properly.
+>
+> > > --- a/Documentation/ABI/testing/sysfs-bus-pci
+> > > +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> > > @@ -66,6 +66,24 @@ Description:
+> > >             re-discover previously removed devices.
+> > >             Depends on CONFIG_HOTPLUG.
+> > >
+> > > +What:              /sys/bus/pci/devices/.../msi_irqs/
+> > > +Date:              September, 2011
+> > > +Contact:   Neil Horman <nhorman@tuxdriver.com>
+> > > +Description:
+> > > +           The /sys/devices/.../msi_irqs directory contains a variable set
+> > > +           sub-directories, with each sub-directory being named after a
+> > > +           corresponding msi irq vector allocated to that device.
+> >
+> > "contains a variable set _of_ sub-directories"?
+> Gah, bad ispell foo on my part.  Bjorn, can you add that in, or shall I repost?
+
+I'll try to remember to add that in.
+
+Bjorn
