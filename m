@@ -1,107 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab1I3J0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:26:43 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:33179 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753567Ab1I3J0l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:26:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110930091957.GC3458@legolas.emea.dhcp.ti.com>
-References: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
-	<20110930073449.GA13825@legolas.emea.dhcp.ti.com>
-	<CAP05o4L1iR++BhYmYYEc-uV6pGfjBeSPPcFqhRizdBeV7Ko26g@mail.gmail.com>
-	<20110930091957.GC3458@legolas.emea.dhcp.ti.com>
-Date: Fri, 30 Sep 2011 14:56:40 +0530
-Message-ID: <CAP05o4+Ww=R-hOVMbW5St2ZvwrK5cmPtM5_5Gj2pV8W1tdiQ-Q@mail.gmail.com>
-Subject: Re: [PATCH 3/5 v12] arm: omap: usb: register hwmods of usbhs
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: balbi@ti.com
-Cc: Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756501Ab1I3J23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:28:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37558 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab1I3J22 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:28:28 -0400
+Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
+ flags
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 30 Sep 2011 11:27:45 +0200
+In-Reply-To: <20110930034815.GF10425@mtj.dyndns.org>
+References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+	 <20110930034815.GF10425@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317374865.19415.15.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 2:49 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Fri, Sep 30, 2011 at 02:45:32PM +0530, Munegowda, Keshava wrote:
->> On Fri, Sep 30, 2011 at 1:04 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Fri, Sep 30, 2011 at 01:15:55AM -0600, Paul Walmsley wrote:
->> >> > The hwmod structure of usb_host_hs  and usb_tll are
->> >> > retrieved and registered with omap device
->> >> >
->> >> > Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->> >> > Reviewed-by: Partha Basak <parthab@india.ti.com>
->> >> > ---
->> >> >  arch/arm/mach-omap2/usb-host.c |  100 ++++++++++++++--------------------------
->> >> >  1 files changed, 34 insertions(+), 66 deletions(-)
->> >> >
->> >> > diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
->> >> > index 89ae298..771dc78 100644
->> >> > --- a/arch/arm/mach-omap2/usb-host.c
->> >> > +++ b/arch/arm/mach-omap2/usb-host.c
->> >> > @@ -28,51 +28,28 @@
->> >>
->> >> > +   oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
->> >> > +   if (!oh[0]) {
->> >> > +           pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
->> >> > +           return;
->> >> >     }
->> >> >
->> >> > -   if (platform_device_register(&usbhs_device) < 0)
->> >> > -           printk(KERN_ERR "USBHS platform_device_register failed\n");
->> >> > +   oh[1] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
->> >> > +   if (!oh[1]) {
->> >> > +           pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
->> >> > +           return;
->> >> > +   }
->> >> >
->> >> > -init_end:
->> >> > -   return;
->> >> > +   od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
->> >> > +                           (void *)&usbhs_data, sizeof(usbhs_data),
->> >> > +                           omap_uhhtll_latency,
->> >> > +                           ARRAY_SIZE(omap_uhhtll_latency), false);
->> >>
->> >> Usually there's something wrong with omap_devices that contain
->> >> multiple hwmods.  Is there some reason why there isn't a separate driver
->> >> for the TLL?  Judging by a brief look at drivers/mfd/omap_usb_host.c, the
->> >> TLL handling looks logically distinct?
->> >
->> > Yes, I have the same feeling. To my understanding, USB Host Subsystem on
->> > OMAP is composed of the Transceiver-less link (TLL) and USB Host (UHH).
->> > Aparently, they could be handled by separate drivers.
->> >
->> > --
->> > balbi
->>
->> yes, it can be as two separate drivers for uhh and tll;  But i don't
->> think driver can be used effectively.
->> Now ehci and ohci gets the clocks , config reg and port settings
->> through usb host which is sufficient.
->> If you make them as two different drivers; then ehci and ohci has to
->> interact with both the drivers separately.
->> which will be an unnecessary complications. I feel not divided this
->> driver into two
->
-> Come again, EHCI/OHCI need clocks from UHH and TLL ?? If that's the
-> case, then there's really no easy way to handle this as a device can
-> have only one parent.
+On Thu, 2011-09-29 at 20:48 -0700, Tejun Heo wrote:
+> IIRC, this was because there was no way to set PF_THREAD_BOUND once a
+> kthread starts to run and workers can stay active across CPU bring
+> down/up cycle.  Per-cpu kthreads need PF_THREAD_BOUND to prevent cpu
+> affinity manipulation by third party for correctness. 
 
-yes,  if you are using ehci phy mode ( port modes of UHH_HOSTCONFIG register)
-then uhh functional ( omap3: interface clocks too) is sufficient;
-if you are using ehci in tll mode , then you need tll functional clock too.
+But that's the whole point isn't it. You mark threads that aren't
+strictly per-cpu with that. Aside from the unplug trainwreck, you also
+mark your unbound workers with that.
 
-regards
-keshava
+There is no correctness issue what so ever with those, and userspace
+moving them about doesn't matter one whit.
+
+
