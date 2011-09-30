@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1IDXai (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 19:30:38 -0400
-Received: from mail.k2construction.biz ([173.190.230.161]:25989 "EHLO
-	k2construction.biz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752406Ab1IDXad (ORCPT
+	id S1758053Ab1I3WBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 18:01:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53879 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab1I3WBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 19:30:33 -0400
-X-Greylist: delayed 25023 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 19:30:33 EDT
-Reply-To: <1339625218@qq.com>
-Message-ID: <20111001172616546164@k2construction.biz>
-From: =?utf-8?B?5q+P5aSp6YO95pyJ5paw5Lmw5a62?= <admin@k2construction.biz>
-Subject: =?utf-8?B?5pyA5paw5bm/5Lqk5Lya5Lmw5a625bqTKzUwMOS4h+a1t+WkluS5sOWutui1hOa6kCs=?=
-	=?utf-8?B?6YKu5Lu25Y+R6YCB5pa55qGIPeavj+WkqemDveacieaWsOS5sOWutuWbnuWkje+8gQ==?=
-Date: Sat, 1 Oct 2011 17:26:07 +0800
+	Fri, 30 Sep 2011 18:01:01 -0400
+Date: Sat, 1 Oct 2011 00:01:36 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 18/21] drm/i915: Disable eDP VDD in a delayed work proc
+ instead of synchronously
+Message-ID: <20110930220136.GZ2859@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+ <1317344993-24945-1-git-send-email-keithp@keithp.com>
+ <1317344993-24945-19-git-send-email-keithp@keithp.com>
+ <20110930184700.GV2859@phenom.ffwll.local>
+ <yun4nzt7nrq.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-mailer: Enjvh 2
-X-OriginalArrivalTime: 04 Sep 2011 09:25:35.0527 (UTC) FILETIME=[99F9BB70:01CC6AE4]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yun4nzt7nrq.fsf@aiko.keithp.com>
+X-Operating-System: Linux phenom 3.1.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p84NUo4c005427
 
-500万海外买家资源+邮件发送方案+海外买家Email搜索机=每天都有客户回复！
-500万海外买家资源+邮件发送方案+海外买家Email搜索机=每天都有客户回复！
+On Fri, Sep 30, 2011 at 01:56:09PM -0700, Keith Packard wrote:
+> On Fri, 30 Sep 2011 20:47:00 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+> 
+> > A cancel_work might be good here, not point in waking up the cpu for no
+> > reason. And can you add "panel off timer: " to the deboug output?
+> 
+> No, that's not correct, this is run before turning the panel back on and
+> must check that enough time has elapsed since it was turned off, which
+> may have happened in the work proc.
 
-1、500万买家资源： 赠送的500万买家资源库，更新 (可以按照您的产品提取出来，更精准开发)。 
-2、超级海外买家Email搜索机： 内置了600万行业关键词，根据长尾词搜索，结果更精确匹配；每天能搜索1-2万以上买家真实EMAIL，成单率高。 
-3、群发软件： 操作简单，功能强大，模仿人工操作模式，到达率高，日发送5万封以上。 
- 
-支持支付宝担保交易 (先发货并安装设置群发软件，然后付款) 彻底打消您的 顾虑。
+You're right, I've got a bit confused between wait_panel_off and
+vdd_panel_off.
 
-请联系：
-QQ:1339625218   email: 1339625218@qq.com
-QQ:1339625218   email: 1339625218@qq.com
-QQ:1339625218   email: 1339625218@qq.com
-QQ:1339625218   email: 1339625218@qq.com
-QQ:1339625218   email: 1339625218@qq.com
-QQ:1339625218   email: 1339625218@qq.com
+> However, you are right in saying that I could call the cancel work
+> function when the panel is forced off synchronously. I'll add that.
 
-免费赠送:
-1、超级海外买家搜索机,可以轻松扫描出 500-1000万买家Email，建立自己的营销数据库。
-2、2009年海关提单数据piers版数据 1千万。
-3、2011春季109届广交会买家现场询盘数据库新鲜出炉，超级新鲜买家，新鲜数据，容易成单！ 
-4、2008年至2010年 春季+秋季广交会买家名录，103 104 105 106 107 108 共六届，共120.6万数据。 
-5、最新全球买家库,共451660条数据，每个均有Email。
-6、2010年国际促销协会（PPAI）成员名单 PPAI Members Directory，非常重要的大买家。
-7、2010年到香港采购的国外客人名录(香港贸发局提供)，共7.2万数据，超级重要的买家。
-8、100万条国外贸易询盘，每个均有Email。
-9、买家资源更新中。。。
-全部都有。
- 
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Sounds good.
+
+> > Like Chris already mentioned, s/struct_mutex/mode_config.mutex/ Maybe also
+> > move the intel_dp->want_panel_vdd check in here - we need it only here to
+> > avoid a race with vdd_on. I've almost overlooked it and already started to
+> > write the complaint about the race ;-)
+> 
+> With the right mutex held, there won't be a race, we just need to check the
+> value somewhere. Do you still see a race condition that needs to be avoided?
+
+Nope, with the right mutex protection the race is gone. And judging by
+your other response my 2nd trial at formulating the issue I see seems to
+have come out much better ;-)
+
+> > > @@ -1111,10 +1175,10 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
+> > >  			intel_dp_start_link_train(intel_dp);
+> > >  			if (is_edp(intel_dp))
+> > >  				ironlake_edp_panel_on(intel_dp);
+> > > -			ironlake_edp_panel_vdd_off(intel_dp);
+> > > +			ironlake_edp_panel_vdd_off(intel_dp, true);
+> > >  			intel_dp_complete_link_train(intel_dp);
+> > >  		} else
+> > > -			ironlake_edp_panel_vdd_off(intel_dp);
+> > > +			ironlake_edp_panel_vdd_off(intel_dp, false);
+> > 
+> > Any reason why one vdd_off is sync while the other isn't?
+> 
+> After the panel is turned on, I want to synchronously turn off the VDD
+> AUX bits, as that's what the driver did before. That's 'free' because
+> the panel is on. In the other (failure) path, I don't want to impose a
+> delay if the application wants to try the mode set again.
+
+Ok, makes sense. Maybe add a comment explaining why the sync case is free
+for dummies like me?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
