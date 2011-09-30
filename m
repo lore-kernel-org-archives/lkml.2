@@ -1,49 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab1I3BVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 21:21:52 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40157
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755221Ab1I3BV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 21:21:29 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 06/24] Staging: hv: mousevsc: Correctly initialize the header size
-Date: Thu, 29 Sep 2011 11:54:46 -0700
-Message-Id: <1317322504-9788-6-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317322504-9788-1-git-send-email-kys@microsoft.com>
-References: <1317322456-9747-1-git-send-email-kys@microsoft.com>
- <1317322504-9788-1-git-send-email-kys@microsoft.com>
+	id S1756215Ab1I3BXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 21:23:42 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:37063 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961Ab1I3BXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 21:23:40 -0400
+Date: Fri, 30 Sep 2011 11:23:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Lu Guanqun <guanqun.lu@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, devel@driverdev.osuosl.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20110930112337.02e0ba383ffd12b6d5d24f39@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Sep_2011_11_23_37_+1000_mT8Qs1FfyfKFusI1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly initialize the header size.
+--Signature=_Fri__30_Sep_2011_11_23_37_+1000_mT8Qs1FfyfKFusI1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi all,
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index 19cfc23..74faa26 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -590,7 +590,7 @@ static int mousevsc_connect_to_vsp(struct hv_device *device)
- 	request->size = sizeof(struct synthhid_protocol_request);
- 
- 	request->request.header.type = SynthHidProtocolRequest;
--	request->request.header.size = sizeof(unsigned long);
-+	request->request.header.size = sizeof(unsigned int);
- 	request->request.version_requested.version = SYNTHHID_INPUT_VERSION;
- 
- 	pr_info("synthhid protocol request...");
--- 
-1.7.4.1
+After merging the final tree, today's linux-next build (i386 allmodconfig)
+failed like this:
 
+drivers/staging/intel_sst/intelmid.c:52: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:52: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:52: warning: type defaults to 'int' in=
+ declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:52: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:53: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:53: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:53: warning: type defaults to 'int' in=
+ declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:53: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:54: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:54: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:54: warning: type defaults to 'int' in=
+ declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:54: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:55: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:55: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:55: warning: type defaults to 'int' in=
+ declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:55: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:56: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:56: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:56: warning: type defaults to 'int' in=
+ declaration of 'MODULE_DESCRIPTION'
+drivers/staging/intel_sst/intelmid.c:56: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:57: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:57: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:57: warning: type defaults to 'int' in=
+ declaration of 'MODULE_LICENSE'
+drivers/staging/intel_sst/intelmid.c:57: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:58: error: expected declaration specif=
+iers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:58: warning: data definition has no ty=
+pe or storage class
+drivers/staging/intel_sst/intelmid.c:58: warning: type defaults to 'int' in=
+ declaration of 'MODULE_SUPPORTED_DEVICE'
+drivers/staging/intel_sst/intelmid.c:58: warning: function declaration isn'=
+t a prototype
+drivers/staging/intel_sst/intelmid.c:64: error: expected ')' before 'int'
+drivers/staging/intel_sst/intelmid.c:65: error: expected ')' before string =
+constant
+drivers/staging/intel_sst/intelmid.c:66: error: expected ')' before numeric=
+ constant
+drivers/staging/intel_sst/intelmid.c:67: error: expected ')' before string =
+constant
+drivers/staging/intel_sst/intelmid.c:461: warning: data definition has no t=
+ype or storage class
+drivers/staging/intel_sst/intelmid.c:461: warning: type defaults to 'int' i=
+n declaration of 'EXPORT_SYMBOL_GPL'
+drivers/staging/intel_sst/intelmid.c:461: warning: parameter names (without=
+ types) in function declaration
+drivers/staging/intel_sst/intelmid.c:475: warning: data definition has no t=
+ype or storage class
+drivers/staging/intel_sst/intelmid.c:475: warning: type defaults to 'int' i=
+n declaration of 'EXPORT_SYMBOL_GPL'
+drivers/staging/intel_sst/intelmid.c:475: warning: parameter names (without=
+ types) in function declaration
+drivers/staging/intel_sst/intelmid.c: In function 'snd_intelmad_probe':
+drivers/staging/intel_sst/intelmid.c:859: error: 'THIS_MODULE' undeclared (=
+first use in this function)
+drivers/staging/intel_sst/intelmid.c:859: error: (Each undeclared identifie=
+r is reported only once
+drivers/staging/intel_sst/intelmid.c:859: error: for each function it appea=
+rs in.)
+drivers/staging/intel_sst/intelmid.c: At top level:
+drivers/staging/intel_sst/intelmid.c:989: error: 'THIS_MODULE' undeclared h=
+ere (not in a function)
+
+Presumably revealed by the module.h split up.  This file needs to include
+mofdule.h.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__30_Sep_2011_11_23_37_+1000_mT8Qs1FfyfKFusI1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOhRoZAAoJEDMEi1NhKgbsCloH/1LPmSSfds3ZEWiHIkqGEZ6q
+LMaPGNwVq8Cv641L/33cYQC/5s0Lr47n0ddgmVjDPxnsitiMgUUe9XGWiaU9CUQ/
+jnk8qXOBB/YoP7sb93ukDC0ZJvfWFYpcjWlq5vMaBj3avYk8iyovVHxDKSJ3WKOd
+gQWOV++LjU6KfBxCWpewrW9UN0qI23N0iT89AXoB25arP27OSpKs1alsPopu8MK/
+txEHCuA9+l2KAlcHdIKvgBkxf0wJcvBKqQEhAaf+SQ1hd5Q4I04yrLw2H9h37Ez7
+A1brycyroh9XWwvv7YEx8VPboVMzIRMyi8iJr8LxzgGa2AS3fUEUysFKKuuGqBM=
+=kE+I
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Sep_2011_11_23_37_+1000_mT8Qs1FfyfKFusI1--
