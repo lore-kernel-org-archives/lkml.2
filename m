@@ -1,253 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab1I3JZc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:25:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59836 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab1I3JZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:25:30 -0400
-Date: Fri, 30 Sep 2011 11:25:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 04/10] mm: memcg: per-priority per-zone hierarchy scan
- generations
-Message-ID: <20110930092200.GD32134@tiehlicka.suse.cz>
-References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
- <1317330064-28893-5-git-send-email-jweiner@redhat.com>
+	id S1756191Ab1I3J0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:26:43 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:33179 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753567Ab1I3J0l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:26:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317330064-28893-5-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110930091957.GC3458@legolas.emea.dhcp.ti.com>
+References: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
+	<20110930073449.GA13825@legolas.emea.dhcp.ti.com>
+	<CAP05o4L1iR++BhYmYYEc-uV6pGfjBeSPPcFqhRizdBeV7Ko26g@mail.gmail.com>
+	<20110930091957.GC3458@legolas.emea.dhcp.ti.com>
+Date: Fri, 30 Sep 2011 14:56:40 +0530
+Message-ID: <CAP05o4+Ww=R-hOVMbW5St2ZvwrK5cmPtM5_5Gj2pV8W1tdiQ-Q@mail.gmail.com>
+Subject: Re: [PATCH 3/5 v12] arm: omap: usb: register hwmods of usbhs
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: balbi@ti.com
+Cc: Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[linux-foundation.org seems to be down, so I have changed Andrew's
-address]
+On Fri, Sep 30, 2011 at 2:49 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Fri, Sep 30, 2011 at 02:45:32PM +0530, Munegowda, Keshava wrote:
+>> On Fri, Sep 30, 2011 at 1:04 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > Hi,
+>> >
+>> > On Fri, Sep 30, 2011 at 01:15:55AM -0600, Paul Walmsley wrote:
+>> >> > The hwmod structure of usb_host_hs  and usb_tll are
+>> >> > retrieved and registered with omap device
+>> >> >
+>> >> > Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> >> > Reviewed-by: Partha Basak <parthab@india.ti.com>
+>> >> > ---
+>> >> >  arch/arm/mach-omap2/usb-host.c |  100 ++++++++++++++--------------------------
+>> >> >  1 files changed, 34 insertions(+), 66 deletions(-)
+>> >> >
+>> >> > diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+>> >> > index 89ae298..771dc78 100644
+>> >> > --- a/arch/arm/mach-omap2/usb-host.c
+>> >> > +++ b/arch/arm/mach-omap2/usb-host.c
+>> >> > @@ -28,51 +28,28 @@
+>> >>
+>> >> > +   oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
+>> >> > +   if (!oh[0]) {
+>> >> > +           pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
+>> >> > +           return;
+>> >> >     }
+>> >> >
+>> >> > -   if (platform_device_register(&usbhs_device) < 0)
+>> >> > -           printk(KERN_ERR "USBHS platform_device_register failed\n");
+>> >> > +   oh[1] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
+>> >> > +   if (!oh[1]) {
+>> >> > +           pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
+>> >> > +           return;
+>> >> > +   }
+>> >> >
+>> >> > -init_end:
+>> >> > -   return;
+>> >> > +   od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
+>> >> > +                           (void *)&usbhs_data, sizeof(usbhs_data),
+>> >> > +                           omap_uhhtll_latency,
+>> >> > +                           ARRAY_SIZE(omap_uhhtll_latency), false);
+>> >>
+>> >> Usually there's something wrong with omap_devices that contain
+>> >> multiple hwmods.  Is there some reason why there isn't a separate driver
+>> >> for the TLL?  Judging by a brief look at drivers/mfd/omap_usb_host.c, the
+>> >> TLL handling looks logically distinct?
+>> >
+>> > Yes, I have the same feeling. To my understanding, USB Host Subsystem on
+>> > OMAP is composed of the Transceiver-less link (TLL) and USB Host (UHH).
+>> > Aparently, they could be handled by separate drivers.
+>> >
+>> > --
+>> > balbi
+>>
+>> yes, it can be as two separate drivers for uhh and tll;  But i don't
+>> think driver can be used effectively.
+>> Now ehci and ohci gets the clocks , config reg and port settings
+>> through usb host which is sufficient.
+>> If you make them as two different drivers; then ehci and ohci has to
+>> interact with both the drivers separately.
+>> which will be an unnecessary complications. I feel not divided this
+>> driver into two
+>
+> Come again, EHCI/OHCI need clocks from UHH and TLL ?? If that's the
+> case, then there's really no easy way to handle this as a device can
+> have only one parent.
 
-On Thu 29-09-11 23:00:58, Johannes Weiner wrote:
-> Memory cgroup limit reclaim currently picks one memory cgroup out of
-> the target hierarchy, remembers it as the last scanned child, and
-> reclaims all zones in it with decreasing priority levels.
-> 
-> The new hierarchy reclaim code will pick memory cgroups from the same
-> hierarchy concurrently from different zones and priority levels, it
-> becomes necessary that hierarchy roots not only remember the last
-> scanned child, but do so for each zone and priority level.
-> 
-> Until now, we reclaimed memcgs like this:
-> 
->     mem = mem_cgroup_iter(root)
->     for each priority level:
->       for each zone in zonelist:
->         reclaim(mem, zone)
-> 
-> But subsequent patches will move the memcg iteration inside the loop
-> over the zones:
-> 
->     for each priority level:
->       for each zone in zonelist:
->         mem = mem_cgroup_iter(root)
->         reclaim(mem, zone)
-> 
-> And to keep with the original scan order - memcg -> priority -> zone -
-> the last scanned memcg has to be remembered per zone and per priority
-> level.
-> 
-> Furthermore, global reclaim will be switched to the hierarchy walk as
-> well.  Different from limit reclaim, which can just recheck the limit
-> after some reclaim progress, its target is to scan all memcgs for the
-> desired zone pages, proportional to the memcg size, and so reliably
-> detecting a full hierarchy round-trip will become crucial.
-> 
-> Currently, the code relies on one reclaimer encountering the same
-> memcg twice, but that is error-prone with concurrent reclaimers.
-> Instead, use a generation counter that is increased every time the
-> child with the highest ID has been visited, so that reclaimers can
-> stop when the generation changes.
+yes,  if you are using ehci phy mode ( port modes of UHH_HOSTCONFIG register)
+then uhh functional ( omap3: interface clocks too) is sufficient;
+if you are using ehci in tll mode , then you need tll functional clock too.
 
-Both naming and the patch description is much nicer. Thanks!
-
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |   65 +++++++++++++++++++++++++++++++++++++++---------------
->  1 files changed, 47 insertions(+), 18 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 0ba59f6..38d195d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -121,6 +121,13 @@ struct mem_cgroup_stat_cpu {
->  	unsigned long targets[MEM_CGROUP_NTARGETS];
->  };
->  
-> +struct mem_cgroup_reclaim_iter {
-> +	/* css_id of the last scanned hierarchy member */
-> +	int position;
-> +	/* scan generation, increased every round-trip */
-> +	unsigned int generation;
-> +};
-> +
->  /*
->   * per-zone information in memory controller.
->   */
-> @@ -131,6 +138,8 @@ struct mem_cgroup_per_zone {
->  	struct list_head	lists[NR_LRU_LISTS];
->  	unsigned long		count[NR_LRU_LISTS];
->  
-> +	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
-> +
->  	struct zone_reclaim_stat reclaim_stat;
->  	struct rb_node		tree_node;	/* RB tree node */
->  	unsigned long long	usage_in_excess;/* Set to the value by which */
-> @@ -231,11 +240,6 @@ struct mem_cgroup {
->  	 * per zone LRU lists.
->  	 */
->  	struct mem_cgroup_lru_info info;
-> -	/*
-> -	 * While reclaiming in a hierarchy, we cache the last child we
-> -	 * reclaimed from.
-> -	 */
-> -	int last_scanned_child;
->  	int last_scanned_node;
->  #if MAX_NUMNODES > 1
->  	nodemask_t	scan_nodes;
-> @@ -781,9 +785,16 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
->  	return memcg;
->  }
->  
-> -static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
-> -					  struct mem_cgroup *prev,
-> -					  bool reclaim)
-> +struct mem_cgroup_reclaim_cookie {
-> +	struct zone *zone;
-> +	int priority;
-> +	unsigned int generation;
-> +};
-> +
-> +static struct mem_cgroup *
-> +mem_cgroup_iter(struct mem_cgroup *root,
-> +		struct mem_cgroup *prev,
-> +		struct mem_cgroup_reclaim_cookie *reclaim)
->  {
->  	struct mem_cgroup *mem = NULL;
->  	int id = 0;
-> @@ -804,10 +815,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  	}
->  
->  	while (!mem) {
-> +		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
->  		struct cgroup_subsys_state *css;
->  
-> -		if (reclaim)
-> -			id = root->last_scanned_child;
-> +		if (reclaim) {
-> +			int nid = zone_to_nid(reclaim->zone);
-> +			int zid = zone_idx(reclaim->zone);
-> +			struct mem_cgroup_per_zone *mz;
-> +
-> +			mz = mem_cgroup_zoneinfo(root, nid, zid);
-> +			iter = &mz->reclaim_iter[reclaim->priority];
-> +			if (prev && reclaim->generation != iter->generation)
-> +				return NULL;
-> +			id = iter->position;
-> +		}
->  
->  		rcu_read_lock();
->  		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
-> @@ -818,8 +839,13 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  			id = 0;
->  		rcu_read_unlock();
->  
-> -		if (reclaim)
-> -			root->last_scanned_child = id;
-> +		if (reclaim) {
-> +			iter->position = id;
-> +			if (!css)
-> +				iter->generation++;
-> +			else if (!prev && mem)
-> +				reclaim->generation = iter->generation;
-> +		}
->  
->  		if (prev && !css)
->  			return NULL;
-> @@ -842,14 +868,14 @@ static void mem_cgroup_iter_break(struct mem_cgroup *root,
->   * be used for reference counting.
->   */
->  #define for_each_mem_cgroup_tree(iter, root)		\
-> -	for (iter = mem_cgroup_iter(root, NULL, false);	\
-> +	for (iter = mem_cgroup_iter(root, NULL, NULL);	\
->  	     iter != NULL;				\
-> -	     iter = mem_cgroup_iter(root, iter, false))
-> +	     iter = mem_cgroup_iter(root, iter, NULL))
->  
->  #define for_each_mem_cgroup(iter)			\
-> -	for (iter = mem_cgroup_iter(NULL, NULL, false);	\
-> +	for (iter = mem_cgroup_iter(NULL, NULL, NULL);	\
->  	     iter != NULL;				\
-> -	     iter = mem_cgroup_iter(NULL, iter, false))
-> +	     iter = mem_cgroup_iter(NULL, iter, NULL))
->  
->  static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
->  {
-> @@ -1619,6 +1645,10 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
->  	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
->  	unsigned long excess;
->  	unsigned long nr_scanned;
-> +	struct mem_cgroup_reclaim_cookie reclaim = {
-> +		.zone = zone,
-> +		.priority = 0,
-> +	};
->  
->  	excess = res_counter_soft_limit_excess(&root_memcg->res) >> PAGE_SHIFT;
->  
-> @@ -1627,7 +1657,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
->  		noswap = true;
->  
->  	while (1) {
-> -		victim = mem_cgroup_iter(root_memcg, victim, true);
-> +		victim = mem_cgroup_iter(root_memcg, victim, &reclaim);
->  		if (!victim) {
->  			loop++;
->  			/*
-> @@ -4878,7 +4908,6 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
->  		res_counter_init(&memcg->res, NULL);
->  		res_counter_init(&memcg->memsw, NULL);
->  	}
-> -	memcg->last_scanned_child = 0;
->  	memcg->last_scanned_node = MAX_NUMNODES;
->  	INIT_LIST_HEAD(&memcg->oom_notify);
->  
-> -- 
-> 1.7.6.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+regards
+keshava
