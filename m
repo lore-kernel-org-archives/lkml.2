@@ -1,149 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab1I3N7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 09:59:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754165Ab1I3N7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 09:59:23 -0400
-Date: Fri, 30 Sep 2011 15:58:58 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] thp: tail page refcounting fix #6
-Message-ID: <20110930135858.GN7768@redhat.com>
-References: <20110826062436.GA5847@google.com>
- <20110826161048.GE23870@redhat.com>
- <20110826185430.GA2854@redhat.com>
- <20110827094152.GA16402@google.com>
- <20110827173421.GA2967@redhat.com>
- <CAEwNFnDk0bQZKReKccuQMPEw_6EA2DxN4dm9cmjr01BVT4A7Dw@mail.gmail.com>
- <20110901152417.GF10779@redhat.com>
- <20110901170353.6f92b50f.akpm@linux-foundation.org>
- <20110908165118.GC24539@redhat.com>
- <1316793432.9084.47.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1316793432.9084.47.camel@twins>
+	id S1758628Ab1I3N75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 09:59:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51995 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab1I3N74 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 09:59:56 -0400
+Subject: [PATCH -rt] softirq: Fix unplug deadlock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: rostedt <rostedt@goodmis.org>, Clark Williams <williams@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Sep 2011 15:59:16 +0200
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317391156.12973.3.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Subject: [RT] softirq: Fix unplug deadlock
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri Sep 30 15:52:14 CEST 2011
 
-On Fri, Sep 23, 2011 at 05:57:12PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-09-08 at 18:51 +0200, Andrea Arcangeli wrote:
-> 
-> > +++ b/arch/powerpc/mm/gup.c
-> > +++ b/arch/x86/mm/gup.c
-> 
-> lacking a diffstat a quick look seems to suggest you missed a few:
-> 
-> $ ls arch/*/mm/gup.c
-> arch/powerpc/mm/gup.c  
-> arch/s390/mm/gup.c  
-> arch/sh/mm/gup.c  
-> arch/sparc/mm/gup.c  
-> arch/x86/mm/gup.c
+If ksoftirqd gets woken during hot-unplug, __thread_do_softirq() will
+call pin_current_cpu() which will block on the held cpu_hotplug.lock.
+Moving the offline check in __thread_do_softirq() before the
+pin_current_cpu() call doesn't work, since the wakeup can happen
+before we mark the cpu offline.
 
-sh should be already ok, sparc too as they don't seem to support
-hugetlbfs or THP. s390 32bit probably too. sh actually has some
-HUGETLB optional thing but I don't see it handling it in gup...
+So here we have the ksoftirq thread stuck until hotplug finishes, but
+then the ksoftirq CPU_DOWN notifier issues kthread_stop() which will
+wait for the ksoftirq thread to go away -- while holding the hotplug
+lock.
 
-But I think I missed s39064bit! But after a closer look surprisingly
-they weren't ok before this change too! Even ppc.
+Sort this by delaying the kthread_stop() until CPU_POST_DEAD, which is
+outside of the cpu_hotplug.lock, but still serialized by the
+cpu_add_remove_lock.
 
-In fact they will work better with this change applied because
-succeeding a page_cache_get_speculative on a TailPage (like it could
-have happened before) would have resulted in a VM_BUG_ON before
-returning from page_cache_get_speculative. I guess not many are
-testing O_DIRECT on hugetlbfs on ppc64,s39064bit. The PageTail check
-in powerpc/mm/gup.c suddenly looks like a noop. Weird.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/softirq.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Also while doing this I found longstanding bugs in powerpc. nr
-includes also pages found before calling gup_hugepte. So if that race
-triggers (mremap,munmap changing the huge pagetable under gup_fast,
-which can definitely happen) it'd lead to put_page being called too
-many times on the hugetlbfs page.
+Index: linux-rt/kernel/softirq.c
+===================================================================
+--- linux-rt.orig/kernel/softirq.c
++++ linux-rt/kernel/softirq.c
+@@ -1104,9 +1104,8 @@ static int __cpuinit cpu_callback(struct
+ 	int hotcpu = (unsigned long)hcpu;
+ 	struct task_struct *p;
+ 
+-	switch (action) {
++	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+ 		p = kthread_create_on_node(run_ksoftirqd,
+ 					   hcpu,
+ 					   cpu_to_node(hotcpu),
+@@ -1119,19 +1118,16 @@ static int __cpuinit cpu_callback(struct
+   		per_cpu(ksoftirqd, hotcpu) = p;
+  		break;
+ 	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+ 		wake_up_process(per_cpu(ksoftirqd, hotcpu));
+ 		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+ 		if (!per_cpu(ksoftirqd, hotcpu))
+ 			break;
+ 		/* Unbind so it can run.  Fall thru. */
+ 		kthread_bind(per_cpu(ksoftirqd, hotcpu),
+ 			     cpumask_any(cpu_online_mask));
+-	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN: {
++	case CPU_POST_DEAD: {
+ 		static const struct sched_param param = {
+ 			.sched_priority = MAX_RT_PRIO-1
+ 		};
 
-Also in the below code probably they intended to use "head", not
-"page".... "page" is out of bounds... so the rollback in the race case
-was going to free a random page even in older kernels.
-
-       if (unlikely(pte_val(pte) != pte_val(*ptep))) {
-               /* Could be optimized better */
-               while (*nr) {
-                       put_page(page);
-
-But I'm not sure why ppc always checks if the pte changed and tries to
-rollback. There's no need of that, if gup_fast could run it means
-we're not within a mmu_notifier_invalidate_range_start/end critical
-section, and mmu_notifier_invalidate_page won't run until after the
-tlb flush returned (so after gup_fast returned on the other cpu), and
-so the pages are guaranteed to always have page_count >= 0
-(munmap/mremap will stop and wait in
-mmu_notifier_invalidate_range_start or in mmu_notifier_invalidate_page
-where the IPI delivery will wait before releasing the page count, to
-flush any secondary mapping before the primary mapping is allowed to
-free the page).
-
-In short there are two fishy things in ppc code (in addition to the
-race-rollback corrupting memory which is just a minor implementation
-bug trivial to correct, besides after THP we've to put_page the right
-subpage not just the head so it must be refactored anyway):
-
-1) page_cache_get/add_speculative is not needed anywhere in gup_fast
-path of ppc as long as irqs are disabled (it simulates the cpu doing a tlb
-miss). Special care has to be taken so you read the ptep to a local
-variable (stored in cpu register or kernel stack), and then you
-evaluate the local pte_t (stopping reading from the pointer). Then you
-do pte_page on the _local_ pte_t variable, and you know you can
-get_page without doing any get_page_unless_zero (plus there's a
-VM_BUG_ON in get_page to verify we're not running get_page on a page
-with a zero count).
-
-Hmmm explanation of point 1) above self-remind that maybe even x86
-should always use ACCESS_ONCE, even for the pmds (it already does for
-the pte, either that or it has a smp_rmb() after finish reading it),
-(probably not required for upper layers as they can't be tear down
-until the IPI runs), now there's no way gcc is stupid enough to
-re-read from pointer but in theory it could without barrier(). This
-isn't just for THP but for hugetlbfs too, it's only theoretical though.
-
-2) the above pte_val(local_pte_t) != pte(*ptep) checks in theory as
-useless for ppc, as long as you verify the pte is ok (so you arrived
-reading before mremap/munmap changed the pte), the page can't go away
-under you because the tlb flush will wait.
-
-I didn't start yet checking s390 in detail but it looks close to ppc
-code. Let's sort out ppc first.
-
-Now I'd like to know if the soft tlb miss handler of powerpc changes
-something and really requires the code commented point 1) and 2) (even
-if that code and race checks are not required on x86 for the reason I
-just mentioned...).
-
-I can make a patch to try to keep these page_cache_get/add_speculative
-and the pte_val(local_pte_t) != pte(*ptep) checks intact (they're
-superfluous but they can't hurt obviously). So I could make a patch
-that works with current code, but if I could safely delete those I'd
-prefer as they're quite confusing on why they're needed. But before I
-do that I need ack from ppc people to be sure it's ok.. I don't know
-the assembly of the tlb miss hashtable handler to be sure... I don't
-exclude ppc has different ipi/irq semantics for the gup_fast case and
-really requires those checks.
-
-CC'ed Benjamin :)
-
-Comments welcome!
-Andrea
