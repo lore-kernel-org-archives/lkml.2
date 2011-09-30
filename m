@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab1I3Cok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 22:44:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52660 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab1I3Coi convert rfc822-to-8bit (ORCPT
+	id S1756444Ab1I3CtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 22:49:25 -0400
+Received: from relmlor3.renesas.com ([210.160.252.173]:44451 "EHLO
+	relmlor3.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab1I3CtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 22:44:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110928154200.GA2477@ram-ThinkPad-T61>
-References: <CAErSpo70k6UnhvvOMgQQxJ6BHZOwym=-jaPMvOukAaCr-B0+cQ@mail.gmail.com>
- <4E5EFFBD.4050201@logix.net.nz> <CAErSpo6bofeiAxeRo_RjXQSnwmcWrdymn0MK8H4_CwqwoeD1jg@mail.gmail.com>
- <4E634814.4050508@logix.net.nz> <20110909113409.GE2416@ram-ThinkPad-T61>
- <4E6C05B7.9000904@logix.net.nz> <20110913110646.GB2425@ram-ThinkPad-T61>
- <4E6F400A.6090909@logix.net.nz> <20110922074858.GG5085@ram-ThinkPad-T61>
- <4E7B04F8.3090500@logix.net.nz> <20110928154200.GA2477@ram-ThinkPad-T61>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 29 Sep 2011 19:44:17 -0700
-X-Google-Sender-Auth: ucEYbmWB7SRB_iX4Nv4gMZtUMK4
-Message-ID: <CA+55aFxAHTWu=ZVoMdfGwJ4xNgGeyk2CWrD+kJVH-qb4N=vhwA@mail.gmail.com>
-Subject: Re: [PATCH] Resource: wrong resource window calculation
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, weiyang@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com,
-        Michal Ludvig <mludvig@logix.net.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Sep 2011 22:49:24 -0400
+X-IronPort-AV: E=Sophos;i="4.68,464,1312124400";   d="scan'208";a="47951610"
+Message-id: <4E852E32.6090703@renesas.com>
+Date: Fri, 30 Sep 2011 11:49:22 +0900
+From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.23)
+ Gecko/20110920 Thunderbird/3.1.15
+MIME-version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+References: <20110930113811.c2fa2d532dfa799a49c146f4@canb.auug.org.au>
+In-reply-to: <20110930113811.c2fa2d532dfa799a49c146f4@canb.auug.org.au>
+Content-type: text/plain; charset=ISO-2022-JP
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 8:42 AM, Ram Pai <linuxram@us.ibm.com> wrote:
->
->        Do you plan to take this patch for 3.1? It fixes a regression w.r.t 3.0
->        https://bugzilla.kernel.org/show_bug.cgi?id=42002 captures the bug report.
+Hi Stephen,
 
-It looks fine, but that bugzilla thing is currently useless. Do you
-have some other place with the symptoms, discussion etc?  I didn't
-find the original report on lkml..
+Thank you for the report.
+I will submit a patch for the issue soon.
+Since I used the net-next.git, the build failure didn't happen.
+This is because that the linux/device.h of the net-next.git has "#include <linux/module.h>".
+But, I was wrong to remove "#include <linux/module.h>" in the sh_eth.{c,h}.
 
-      Linus
+Thanks,
+Yoshihiro Shimoda
+
+2011/09/30 10:38, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, the next-20110929 build (various sh configs)
+> failed like this:
+> 
+> drivers/net/ethernet/renesas/sh_eth.c:601: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/net/ethernet/renesas/sh_eth.c:1970: error: expected declaration specifiers or '...' before string constant
+> drivers/net/ethernet/renesas/sh_eth.c:1970: warning: data definition has no type or storage class
+> drivers/net/ethernet/renesas/sh_eth.c:1970: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/net/ethernet/renesas/sh_eth.c:1970: warning: function declaration isn't a prototype
+> drivers/net/ethernet/renesas/sh_eth.c:1971: error: expected declaration specifiers or '...' before string constant
+> drivers/net/ethernet/renesas/sh_eth.c:1971: warning: data definition has no type or storage class
+> drivers/net/ethernet/renesas/sh_eth.c:1971: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/net/ethernet/renesas/sh_eth.c:1971: warning: function declaration isn't a prototype
+> drivers/net/ethernet/renesas/sh_eth.c:1972: error: expected declaration specifiers or '...' before string constant
+> drivers/net/ethernet/renesas/sh_eth.c:1972: warning: data definition has no type or storage class
+> drivers/net/ethernet/renesas/sh_eth.c:1972: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/net/ethernet/renesas/sh_eth.c:1972: warning: function declaration isn't a prototype
+> 
+> Presumbly revealed by the module.h split up.  This file needs to include module.h.
