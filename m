@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab1I3BKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 21:10:10 -0400
-Received: from home.keithp.com ([63.227.221.253]:49793 "EHLO keithp.com"
+	id S1756319Ab1I3BKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 21:10:19 -0400
+Received: from home.keithp.com ([63.227.221.253]:49821 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755636Ab1I3BKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 21:10:08 -0400
+	id S1756183Ab1I3BKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 21:10:14 -0400
 From: Keith Packard <keithp@keithp.com>
 To: Dave Airlie <airlied@redhat.com>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 01/21] drm/i915: Enable digital port hotplug on PCH systems
-Date: Thu, 29 Sep 2011 18:09:33 -0700
-Message-Id: <1317344993-24945-2-git-send-email-keithp@keithp.com>
+Subject: [PATCH 06/21] drm/i915: Unlock PCH_PP_CONTROL always
+Date: Thu, 29 Sep 2011 18:09:38 -0700
+Message-Id: <1317344993-24945-7-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.7.6.3
 In-Reply-To: <1317344993-24945-1-git-send-email-keithp@keithp.com>
 References: <20110923085243.6e4b7b4c@jbarnes-x220>
@@ -21,99 +21,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were relying on the BIOS to set these bits, which doesn't always
-happen.
+Avoid any question about locked registers by just writing the unlock
+pattern with every write to the register.
 
 Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/gpu/drm/i915/i915_irq.c |   24 ++++++++++++++++++++++++
- drivers/gpu/drm/i915/i915_reg.h |    5 ++++-
- 2 files changed, 28 insertions(+), 1 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |    1 +
+ drivers/gpu/drm/i915/intel_dp.c |   14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index 9cbb0cd..c22823b 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -1777,6 +1777,26 @@ static void ironlake_irq_preinstall(struct drm_device *dev)
- 	POSTING_READ(SDEIER);
- }
- 
-+/*
-+ * Enable digital hotplug on the PCH, and configure the DP short pulse
-+ * duration to 2ms (which is the minimum in the Display Port spec)
-+ *
-+ * This register is the same on all known PCH chips.
-+ */
-+
-+static void ironlake_enable_pch_hotplug(struct drm_device *dev)
-+{
-+	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
-+	u32	hotplug;
-+
-+	hotplug = I915_READ(PCH_PORT_HOTPLUG);
-+	hotplug &= ~(PORTD_PULSE_DURATION_MASK|PORTC_PULSE_DURATION_MASK|PORTB_PULSE_DURATION_MASK);
-+	hotplug |= PORTD_HOTPLUG_ENABLE | PORTD_PULSE_DURATION_2ms;
-+	hotplug |= PORTC_HOTPLUG_ENABLE | PORTC_PULSE_DURATION_2ms;
-+	hotplug |= PORTB_HOTPLUG_ENABLE | PORTB_PULSE_DURATION_2ms;
-+	I915_WRITE(PCH_PORT_HOTPLUG, hotplug);
-+}
-+
- static int ironlake_irq_postinstall(struct drm_device *dev)
- {
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
-@@ -1839,6 +1859,8 @@ static int ironlake_irq_postinstall(struct drm_device *dev)
- 	I915_WRITE(SDEIER, hotplug_mask);
- 	POSTING_READ(SDEIER);
- 
-+	ironlake_enable_pch_hotplug(dev);
-+
- 	if (IS_IRONLAKE_M(dev)) {
- 		/* Clear & enable PCU event interrupts */
- 		I915_WRITE(DEIIR, DE_PCU_EVENT);
-@@ -1896,6 +1918,8 @@ static int ivybridge_irq_postinstall(struct drm_device *dev)
- 	I915_WRITE(SDEIER, hotplug_mask);
- 	POSTING_READ(SDEIER);
- 
-+	ironlake_enable_pch_hotplug(dev);
-+
- 	return 0;
- }
- 
 diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 542453f..b7fbb74 100644
+index b7fbb74..5596e8e 100644
 --- a/drivers/gpu/drm/i915/i915_reg.h
 +++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -2903,12 +2903,13 @@
- #define SDEIER  0xc400c
+@@ -3311,6 +3311,7 @@
+ #define PCH_PP_STATUS		0xc7200
+ #define PCH_PP_CONTROL		0xc7204
+ #define  PANEL_UNLOCK_REGS	(0xabcd << 16)
++#define  PANEL_UNLOCK_MASK	(0xffff << 16)
+ #define  EDP_FORCE_VDD		(1 << 3)
+ #define  EDP_BLC_ENABLE		(1 << 2)
+ #define  PANEL_POWER_RESET	(1 << 1)
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 3b29a6f..a983d0f 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -840,6 +840,8 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
+ 		msleep(dev_priv->panel_t3);
  
- /* digital port hotplug */
--#define PCH_PORT_HOTPLUG        0xc4030
-+#define PCH_PORT_HOTPLUG        0xc4030		/* SHOTPLUG_CTL */
- #define PORTD_HOTPLUG_ENABLE            (1 << 20)
- #define PORTD_PULSE_DURATION_2ms        (0)
- #define PORTD_PULSE_DURATION_4_5ms      (1 << 18)
- #define PORTD_PULSE_DURATION_6ms        (2 << 18)
- #define PORTD_PULSE_DURATION_100ms      (3 << 18)
-+#define PORTD_PULSE_DURATION_MASK	(3 << 18)
- #define PORTD_HOTPLUG_NO_DETECT         (0)
- #define PORTD_HOTPLUG_SHORT_DETECT      (1 << 16)
- #define PORTD_HOTPLUG_LONG_DETECT       (1 << 17)
-@@ -2917,6 +2918,7 @@
- #define PORTC_PULSE_DURATION_4_5ms      (1 << 10)
- #define PORTC_PULSE_DURATION_6ms        (2 << 10)
- #define PORTC_PULSE_DURATION_100ms      (3 << 10)
-+#define PORTC_PULSE_DURATION_MASK	(3 << 10)
- #define PORTC_HOTPLUG_NO_DETECT         (0)
- #define PORTC_HOTPLUG_SHORT_DETECT      (1 << 8)
- #define PORTC_HOTPLUG_LONG_DETECT       (1 << 9)
-@@ -2925,6 +2927,7 @@
- #define PORTB_PULSE_DURATION_4_5ms      (1 << 2)
- #define PORTB_PULSE_DURATION_6ms        (2 << 2)
- #define PORTB_PULSE_DURATION_100ms      (3 << 2)
-+#define PORTB_PULSE_DURATION_MASK	(3 << 2)
- #define PORTB_HOTPLUG_NO_DETECT         (0)
- #define PORTB_HOTPLUG_SHORT_DETECT      (1 << 0)
- #define PORTB_HOTPLUG_LONG_DETECT       (1 << 1)
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 	pp |= EDP_FORCE_VDD;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+@@ -852,6 +854,8 @@ static void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp)
+ 	u32 pp;
+ 
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 	pp &= ~EDP_FORCE_VDD;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+@@ -871,13 +875,15 @@ static bool ironlake_edp_panel_on (struct intel_dp *intel_dp)
+ 		return true;
+ 
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 
+ 	/* ILK workaround: disable reset around power sequence */
+ 	pp &= ~PANEL_POWER_RESET;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+ 
+-	pp |= PANEL_UNLOCK_REGS | POWER_TARGET_ON;
++	pp |= POWER_TARGET_ON;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+ 
+@@ -900,6 +906,8 @@ static void ironlake_edp_panel_off (struct drm_device *dev)
+ 		PP_CYCLE_DELAY_ACTIVE | PP_SEQUENCE_STATE_MASK;
+ 
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 
+ 	/* ILK workaround: disable reset around power sequence */
+ 	pp &= ~PANEL_POWER_RESET;
+@@ -926,6 +934,8 @@ static void ironlake_edp_backlight_on (struct drm_device *dev)
+ 
+ 	DRM_DEBUG_KMS("\n");
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 	pp |= EDP_BLC_ENABLE;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ }
+@@ -937,6 +947,8 @@ static void ironlake_edp_backlight_off (struct drm_device *dev)
+ 
+ 	DRM_DEBUG_KMS("\n");
+ 	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~PANEL_UNLOCK_MASK;
++	pp |= PANEL_UNLOCK_REGS;
+ 	pp &= ~EDP_BLC_ENABLE;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ }
 -- 
 1.7.6.3
 
