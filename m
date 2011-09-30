@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab1I3QyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:54:16 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48065 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab1I3QyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:54:14 -0400
-Date: Fri, 30 Sep 2011 12:54:03 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
-Message-ID: <20110930165403.GB31760@hmsreliant.think-freely.org>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
- <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
- <20110930143211.5ab39c02@stein>
- <20110930153321.GA31760@hmsreliant.think-freely.org>
- <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+	id S1754308Ab1I3Q4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:56:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753339Ab1I3Q4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 12:56:05 -0400
+Date: Fri, 30 Sep 2011 18:52:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [RFC][PATCH 0/5] Signal scalability series
+Message-ID: <20110930165206.GA22048@redhat.com>
+References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6 (--)
+In-Reply-To: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 10:33:36AM -0600, Bjorn Helgaas wrote:
-> On Fri, Sep 30, 2011 at 9:33 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> >
-> > On Fri, Sep 30, 2011 at 02:32:11PM +0200, Stefan Richter wrote:
-> > > On Sep 29 Neil Horman wrote:
-> > > > (v4)
-> > > > Fixed up some spelling mistakes, and added a scissors line with a good
-> > > > commitlog, so that git-am drops all the version logging
-> > > >
-> > > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > > > CC: Greg Kroah-Hartman <gregkh@suse.de>
-> > > > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > > > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > > > CC: linux-pci@vger.kernel.org
-> > >
-> > > It drops these last 5 lines then too, doesn't it?
-> > >
-> > I would have thought so, but I tested a git-format-patch / git-am operation here
-> > on a temporary branch, and it worked properly.
-> >
-> > > > --- a/Documentation/ABI/testing/sysfs-bus-pci
-> > > > +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> > > > @@ -66,6 +66,24 @@ Description:
-> > > >             re-discover previously removed devices.
-> > > >             Depends on CONFIG_HOTPLUG.
-> > > >
-> > > > +What:              /sys/bus/pci/devices/.../msi_irqs/
-> > > > +Date:              September, 2011
-> > > > +Contact:   Neil Horman <nhorman@tuxdriver.com>
-> > > > +Description:
-> > > > +           The /sys/devices/.../msi_irqs directory contains a variable set
-> > > > +           sub-directories, with each sub-directory being named after a
-> > > > +           corresponding msi irq vector allocated to that device.
-> > >
-> > > "contains a variable set _of_ sub-directories"?
-> > Gah, bad ispell foo on my part.  Bjorn, can you add that in, or shall I repost?
-> 
-> I'll try to remember to add that in.
-> 
-Thank you, apologies for my poor writing skills :)
-Neil
+On 09/30, Matt Fleming wrote:
+>
+> However, it's a good first step and
+> hopefully by keeping it relatively simple it'll make it easier to
+> review.
 
-> Bjorn
-> 
+Cough. I'll try to read this series next week, but currently I feel
+I will never able to understand this code. It surely compliacates
+things a lot.
+
+But. All I can do is to _try_ to check this series from the correctness
+pov. I can't believe (at least at first glance) this worth the trouble,
+but otoh I won't argue unless I'll find the bugs.
+
+>  arch/ia64/kernel/signal.c           |    4 +-
+>  drivers/block/nbd.c                 |    2 +-
+>  drivers/usb/gadget/f_mass_storage.c |    2 +-
+>  drivers/usb/gadget/file_storage.c   |    2 +-
+>  fs/autofs4/waitq.c                  |    5 +-
+>  fs/exec.c                           |   17 +-
+>  fs/jffs2/background.c               |    2 +-
+>  fs/ncpfs/sock.c                     |    2 +
+>  fs/proc/array.c                     |    2 +
+>  fs/signalfd.c                       |   11 +-
+>  include/linux/init_task.h           |    4 +
+>  include/linux/sched.h               |   23 +-
+>  kernel/exit.c                       |   29 +-
+>  kernel/fork.c                       |    4 +
+>  kernel/freezer.c                    |   10 +-
+>  kernel/kmod.c                       |    8 +-
+>  kernel/posix-timers.c               |    5 +-
+>  kernel/ptrace.c                     |   68 ++--
+>  kernel/signal.c                     |  737 +++++++++++++++++++++++++++--------
+>  net/9p/client.c                     |    6 +-
+>  net/sunrpc/svc.c                    |    3 -
+>  security/selinux/hooks.c            |   11 +-
+>  22 files changed, 677 insertions(+), 280 deletions(-)
+
+And, this patch adds 4 new locks:
+
+	sighand_struct->action_lock
+
+	signal_struct->ctrl_lock
+	signal_struct->shared_siglock
+
+	task_struct->siglock
+
+Nice ;) For what? This should be justified, imho.
+
+
+Hmm. Just out of curiosity, I blindly applied the whole series and poke
+the _random_ function to look at, dequeue_signal(). And it looks wrong.
+
+	spin_lock_irqsave(&current->signal->ctrl_lock, flags);
+	current->jobctl |= JOBCTL_STOP_DEQUEUED;
+
+This signal->ctrl_lock can't help. A sig_kernel_stop() should be
+dequeued under the same lock, and we shouldn't release it unless we
+set JOBCTL_STOP_DEQUEUED. Otherwise we race with SIGCONT.
+
+May be do_signal_stop() does something special? At first flance it doesn't.
+But wait, it does while_each_thread() under ->ctrl_lock, why this is safe?
+
+May be I was just lucky ;)
+
+Oleg.
+
