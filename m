@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1I3E27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 00:28:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54443 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab1I3E26 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 00:28:58 -0400
-Date: Thu, 29 Sep 2011 21:28:55 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-Message-ID: <20110930042855.GI10425@mtj.dyndns.org>
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
- <20110930035501.GG10425@mtj.dyndns.org>
- <1317355726.4588.48.camel@gandalf.stny.rr.com>
+	id S1752329Ab1I3ElD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 00:41:03 -0400
+Received: from claw.goop.org ([74.207.240.146]:43828 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751019Ab1I3ElB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 00:41:01 -0400
+Message-ID: <4E854859.4020105@goop.org>
+Date: Thu, 29 Sep 2011 21:40:57 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317355726.4588.48.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH RFC 0/8] jump-label: allow early jump_label_enable()
+References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com> <1317343975.4588.36.camel@gandalf.stny.rr.com>
+In-Reply-To: <1317343975.4588.36.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/29/2011 05:52 PM, Steven Rostedt wrote:
+> On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+>> One big question which arises is whether the _early() function is
+>> necessary at all.  All the stop_machine/mutex/etc stuff that
+>> arch_jump_label_transform() ends up doing is redundant pre-SMP, but it
+>> shouldn't hurt.  Maybe we can just drop the _early function?  It works
+>> on x86, at least, because jump_label_enable() works, which uses the full
+>> form.  And dropping it would reduce this to a very much smaller series.
+> It does slow down the boot process, which is not a good thing when
+> everyone is pushing for the fastest restarts.
 
-On Fri, Sep 30, 2011 at 12:08:45AM -0400, Steven Rostedt wrote:
-> On Thu, 2011-09-29 at 20:55 -0700, Tejun Heo wrote:
-> > On Tue, Sep 27, 2011 at 05:17:34PM -0400, Steven Rostedt wrote:
-> > > For convenience and optimization, we are going to use the task's flag
-> > > PF_THREAD_BOUND as a way to know if a task is bound to a CPU or not. As
-> > > that is what the flag means.
-> > 
-> > And I'm not sure this is a very good idea.  Until now, PF_THREAD_BOUND
-> > meant "this task is explicitly bound to the current affinity (whatever
-> > it is) and thus it shouldn't be manipulated by third party".
-> 
-> That's exactly what we want it to mean. Not manipulated by workqueue or
-> anyone else.
+Would it really though?  stop_machine() doesn't do very much when there
+are no other cpus.
 
-Umm... those are wq workers and wq is third party?  I'm sorry that you
-wasted your time but let's please drop the bickering over the
-interpretation of the flag.
+Not that I measured or anything, but there was no obvious big lag at boot.
 
-> We don't plan on setting this flag if a task just happens
-> to have only one CPU in its affinity. We only set this flag if the task
-> is bounded to a CPU for good. When we see this flag set, we can therefor
-> assume that it will not migrate!
+> What we should probably do is have a global read_mostly variable called,
+> smp_activated or something, then things that can be called before and
+> after can read this variable to determine if it can skip certain
+> protections.
 
-Up to now, it did NOT mean that.  It just blocked out affinity
-manipulation by third party and cpuset attach.  From what you write, I
-think the added assumptions are...
+Could do that if it turns out to be a problem.
 
-* The affinity should be confined to single CPU.
+> While we're at it, perhaps we could add a memory_initialized for things
+> like tracers that want to trace early but need to wait till it can
+> allocate buffers. If we had this flag, it could instead do an early
+> memory init to create the buffers.
 
-* Once set, the flag can't be cleared and affinity can't be changed by
-  anyone.
+That seems orthogonal to the jump_label changes.
 
-Am I right?
-
-> > suggested change makes the flag much less orthogonal and useful.  How
-> > much of convenience and optimization are we talking about?
-> 
-> Enough to not have to manually pin the task to the cpu at every lock.
-
-As I wrote before we can test PF_WQ_WORKER too where appropriate
-(probably just set_cpus_allowed_ptr) and avoid using PF_THREAD_BOUND
-for wq workers.  We can also add a new flag but w/ wq being the only
-user, that probably is an overkill.
-
-Thank you.
-
--- 
-tejun
+    J
