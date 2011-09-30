@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab1I3UIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:08:09 -0400
-Received: from 74-92-214-37-Colorado.hfc.comcastbusiness.net ([74.92.214.37]:36486
-	"EHLO zlynx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab1I3UII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:08:08 -0400
-Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
-From: Zan Lynx <zlynx@acm.org>
-To: rjw@sisk.pl
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Sep 2011 14:09:14 -0600
-In-Reply-To: <1317329529.3151.10.camel@knife>
-References: <1317329529.3151.10.camel@knife>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-YVcidAY6MNliwgXS/ON5"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1317413360.2629.2.camel@knife>
-Mime-Version: 1.0
-X-Envelope-From: zlynx@acm.org
-X-Spam-Id: 20110930/1R9jNM-0006Ev-Me-linux-kernel@vger.kernel.org:zlynx@acm.org:74.92.214.37
+	id S932475Ab1I3ULK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:11:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531Ab1I3ULH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 16:11:07 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
+References: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> 
+To: Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Date: Fri, 30 Sep 2011 21:10:15 +0100
+Message-ID: <29780.1317413415@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark Moseley <moseleymark@gmail.com> wrote:
 
---=-YVcidAY6MNliwgXS/ON5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> [ 6052.503856] [kworke] <== __fscache_write_page() = -ENOBUFS [invalidating]
 
-On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
-> After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
-> kernels would not suspend/resume on my laptop I followed a Ubuntu forum
-> suggestion to use acpi=3Dnonvs. This worked, or at least it is working
-> today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
->=20
-> The system is also booting via UEFI if that makes any difference.
->=20
-> I understand that there is a no-NVS blacklist in the kernel. Should the
-> Samsung Series 9 be added to this list? Or could it be a different
-> suspend/resume problem entirely?
+Nothing to worry about.  I have some kleave() calls to turn into _leave().
 
-Please ignore this about nonvs. nonvs has nothing to do with the
-suspend/resume problem on this laptop.
+> [ 7720.060050]  [<ffffffff81197b24>] fscache_put_operation+0x304/0x330
+> [ 7720.060050]  [<ffffffff81197b8b>] fscache_op_work_func+0x3b/0xd0
+> [ 7720.060050]  [<ffffffff810660c4>] process_one_work+0x164/0x440
+> [ 7720.060050]  [<ffffffff81197b50>] ? fscache_put_operation+0x330/0x330
+> [ 7720.060050]  [<ffffffff8106674b>] worker_thread+0x19b/0x430
+> [ 7720.060050]  [<ffffffff810665b0>] ? manage_workers+0x210/0x210
+> [ 7720.060050]  [<ffffffff8106d11e>] kthread+0x9e/0xb0
+> [ 7720.060050]  [<ffffffff8162d4f4>] kernel_thread_helper+0x4/0x10
+> [ 7720.060050]  [<ffffffff8162ab8a>] ? retint_restore_args+0xe/0xe
+> [ 7720.060050]  [<ffffffff8106d080>] ? kthread_worker_fn+0x190/0x190
+> [ 7720.060050]  [<ffffffff8162d4f0>] ? gs_change+0xb/0xb
 
-Instead it seems to involve reboots, which is crazy. From a cold
-power-on start, suspend resume will always fail. But if the laptop is
-rebooted first, suspend and resume appear to work. What the heck? I have
-no clue how to debug this.
+Hmmm...  That's a new one.  Looks like I've missed another op put.
 
-So now it appears that everything I ever tried to fix this only seemed
-to work because I rebooted after changing GRUB or module options.
+Thanks for testing!
 
---=20
-Knowledge Is Power
-Power Corrupts
-Study Hard
-Be Evil
-
---=-YVcidAY6MNliwgXS/ON5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk6GIeoACgkQ1IRuMHS+h7EsFACfaR44Pkr6pYVb3//DbpiDBE4Q
-7i4AoM2FrBBkikzZ6eVVBRfpl5A9qUMS
-=Smp0
------END PGP SIGNATURE-----
-
---=-YVcidAY6MNliwgXS/ON5--
-
+David
