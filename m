@@ -1,180 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1I3Re5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:34:57 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52871 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab1I3Re4 convert rfc822-to-8bit (ORCPT
+	id S932144Ab1I3Rf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:35:58 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:43147 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754433Ab1I3Rf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:34:56 -0400
+	Fri, 30 Sep 2011 13:35:56 -0400
+Message-ID: <4E85FDF9.7060502@xenotime.net>
+Date: Fri, 30 Sep 2011 10:35:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <1317397619-7091-1-git-send-email-linkinjeon@gmail.com>
-References: <1317397619-7091-1-git-send-email-linkinjeon@gmail.com>
-Date: Fri, 30 Sep 2011 13:34:24 -0400
-Message-ID: <CANz0V+474_SvriQmUWx9VJwAk-iggu-h+A1WH-zGPBJgLzJDAg@mail.gmail.com>
-Subject: Re: [PATCH v4] mmc : general purpose partition support.
-From: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
-        sebras@gmail.com, Ulf.Hansson@stericsson.com,
-        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
-        johan.rudholm@stericsson.com
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Liu >> \"Liu, Jinsong\"" <jinsong.liu@intel.com>,
+        "Tian, Kevin" <kevin.tian@intel.com>
+Subject: Re: [PATCH] KVM: x86: Use do_div for tsc deadline calculation
+References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au> <4E84CC00.8090702@xenotime.net> <20110930085810.11bc8e2e38e1400a8b0b4cec@canb.auug.org.au> <4E85ACFC.1090509@siemens.com>
+In-Reply-To: <4E85ACFC.1090509@siemens.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Namjae,
+On 09/30/11 04:50, Jan Kiszka wrote:
+> Required on i386 hosts.
+> 
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 
-Why don't you update card->nr_parts inside mmc_part_add? You're making
-this too complicated. There
-is also no need for the part_cfg array.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-2011/9/30 Namjae Jeon <linkinjeon@gmail.com>:
-> It allows gerneral purpose partitions in MMC Device.
-> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
-> After patching, we can see general purpose partitions like this.
->> cat /proc/partitions
->          179 0 847872 mmcblk0
->          179 192 4096 mmcblk0gp3
->          179 160 4096 mmcblk0gp2
->          179 128 4096 mmcblk0gp1
->          179 96  1052672 mmcblk0gp0
->          179 64  1024 mmcblk0boot1
->          179 32  1024 mmcblk0boot0
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Thanks.
+
 > ---
-
->
-> +/* partition configuration array */
-> +static const unsigned int part_cfg[] = {
-> +       0x1,    0x2,    0x4,    0x5,    0x6,    7,
-> +};
-> +
-
-No need. Plus this is obscure.
-
-> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
-> +                       card->nr_parts = MMC_NUM_BOOT_PARTITION;
-> +                       for (idx = 0, part_num = 0;
-> +                               idx < MMC_NUM_BOOT_PARTITION; idx++,
-> +                               part_num++) {
-> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-> +                               mmc_part_add(card, part_size, part_cfg[idx],
-> +                                       "boot%d", idx, part_num, true);
-> +                       }
-> +               }
->        }
-
-There is no need for part_num (you have idx for that). And there is no
-need for passing the actual array
-index either - that's why you have mmc_part_add: it will do
-card->parts[card->nr_parts++] = new_part.
-
-               if (ext_csd[EXT_CSD_BOOT_MULT]) {
-                       for (idx = 0, part_num = 0;
-                               idx < MMC_NUM_BOOT_PARTITION; idx++) {
-                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-                               mmc_part_add(card, part_size,
-EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
-                                       "boot%d", idx, true);
-                       }
-               }
+>  arch/x86/kvm/lapic.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index f9385ec..92390dc 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -740,9 +740,10 @@ static void start_apic_timer(struct kvm_lapic *apic)
+>  
+>  		now = apic->lapic_timer.timer.base->get_time();
+>  		guest_tsc = kvm_x86_ops->read_l1_tsc(vcpu);
+> -		if (likely(tscdeadline > guest_tsc))
+> -			ns = (tscdeadline - guest_tsc)
+> -				* 1000000L / this_tsc_khz;
+> +		if (likely(tscdeadline > guest_tsc)) {
+> +			ns = (tscdeadline - guest_tsc) * 1000000ULL;
+> +			do_div(ns, this_tsc_khz);
+> +		}
+>  		hrtimer_start(&apic->lapic_timer.timer,
+>  			ktime_add_ns(now, ns), HRTIMER_MODE_ABS);
+>  
 
 
-> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
-> +                       u8 hc_erase_grp_sz =
-> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-> +                       u8 hc_wp_grp_sz =
-> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-> +
-> +                       card->ext_csd.enhanced_area_en = 1;
-> +
-> +                       card->nr_parts += MMC_NUM_GP_PARTITION;
-> +                       for (part_num = 0, gp_size_mult = 143;
-> +                               idx < card->nr_parts;
-> +                               idx++, part_num++, gp_size_mult += 3) {
-> +                               if (!ext_csd[gp_size_mult] &&
-> +                                       !ext_csd[gp_size_mult + 1] &&
-> +                                       !ext_csd[gp_size_mult + 2])
-> +                                       continue;
-> +                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
-> +                                       (ext_csd[gp_size_mult + 1] << 8) +
-> +                                       ext_csd[gp_size_mult];
-> +                               part_size *= (size_t)(hc_erase_grp_sz *
-> +                                       hc_wp_grp_sz);
-> +                               part_size <<= 19;
-> +                               mmc_part_add(card, part_size, part_cfg[idx],
-> +                                       "gp%d", idx, part_num, false);
-> +                       }
-> +               }
-
-Same story: get rid of part_num, don't touch card->nr_parts, and get
-rid of part_cfg array access.
-
-                       card->ext_csd.enhanced_area_en = 1;
-                       for (idx = 0, gp_size_mult = 143;
-                               idx < MMC_NUM_GP_PARTITION;
-                               idx++, gp_size_mult += 3) {
-                               if (!ext_csd[gp_size_mult] &&
-                                       !ext_csd[gp_size_mult + 1] &&
-                                       !ext_csd[gp_size_mult + 2])
-                                       continue;
-                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
-                                       (ext_csd[gp_size_mult + 1] << 8) +
-                                       ext_csd[gp_size_mult];
-                               part_size *= (size_t)(hc_erase_grp_sz *
-                                       hc_wp_grp_sz);
-                               part_size <<= 19;
-                               mmc_part_add(card, part_size, idx +
-EXT_CSD_PART_CONFIG_ACC_GP0,
-                                       "gp%d", idx, false);
-                       }
-               }
-
-
->  /*
-> + * This function fill contents in mmc_part.
-> + */
-> +static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
-> +       unsigned int part_cfg, char *name, int idx, int part_num, bool ro)
-> +{
-> +       card->part[idx].size = size;
-> +       card->part[idx].cookie = part_cfg;
-> +       sprintf(card->part[idx].name, name, part_num);
-> +       card->part[idx].force_ro = ro;
-> +}
-
-static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
-       unsigned int part_cfg, char *name, int idx, bool ro)
-{
-       card->part[card->nr_parts].size = size;
-       card->part[card->nr_parts].cookie = part_cfg;
-       sprintf(card->part[card->nr_parts].name, name, idx);
-       card->part[card->nr_parts].force_ro = ro;
-       card->nr_parts++;
-}
-
->  #define EXT_CSD_PART_CONFIG_ACC_MASK   (0x7)
-> -#define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
-> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
->
-
-I'd also keep the MMC_NUM_BOOT_PARTITION and MMC_NUM_GP_PARTITION defs
-at the same location.
-
-/* The number of MMC physical partitions
- * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
- */
-#define MMC_NUM_BOOT_PARTITION 2
-#define MMC_NUM_GP_PARTITION   4
-
-#define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
-#define EXT_CSD_PART_CONFIG_ACC_GP0       (0x4)
-
-A
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
