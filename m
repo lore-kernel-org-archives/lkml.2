@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab1I3VDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:03:38 -0400
-Received: from shutemov.name ([188.40.19.243]:59924 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1I3VDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:03:37 -0400
-Date: Sat, 1 Oct 2011 00:03:36 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.osdl.org>,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 09/11] cgroups: Add a task counter subsystem
-Message-ID: <20110930210336.GA15366@shutemov.name>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
- <1315869091-18933-10-git-send-email-fweisbec@gmail.com>
- <20110918202710.GE28057@shutemov.name>
- <20110930125441.GB19053@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110930125441.GB19053@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756023Ab1I3VG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:06:29 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53741 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1I3VG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 17:06:27 -0400
+Date: Fri, 30 Sep 2011 14:06:25 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <htejun@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC] stop_machine: make stop_machine safe and efficient
+ to call early
+Message-Id: <20110930140625.c7faad28.akpm00@gmail.com>
+In-Reply-To: <4E85F596.4050704@goop.org>
+References: <4E85EE1F.7050508@goop.org>
+	<1317400496.4588.54.camel@gandalf.stny.rr.com>
+	<4E85F596.4050704@goop.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 02:54:46PM +0200, Frederic Weisbecker wrote:
-> On Sun, Sep 18, 2011 at 11:27:10PM +0300, Kirill A. Shutemov wrote:
-> > On Tue, Sep 13, 2011 at 01:11:29AM +0200, Frederic Weisbecker wrote:
-> > > +static struct cftype files[] = {
-> > > +	{
-> > > +		.name		= "limit",
-> > > +		.read_u64	= task_counter_read_u64,
-> > > +		.write_u64	= task_counter_write_u64,
-> > > +		.private	= RES_LIMIT,
-> > > +	},
-> > > +
-> > > +	{
-> > > +		.name		= "usage",
-> > > +		.read_u64	= task_counter_read_u64,
-> > 
-> > It would be nice to implement .register_event/.unregister_event as well.
+On Fri, 30 Sep 2011 10:00:06 -0700
+Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+
+> On 09/30/2011 09:34 AM, Steven Rostedt wrote:
+> > Doesn't interrupts need to be disabled here too? As stop machine
+> > functions also guarantee that they will not be interrupted by
+> > interrupts. -- Steve
 > 
-> It adds several complications. I prefer to wait for someone requesting
-> that feature before doing it.
+> Good point.
+> 
+>     J
+> 
+> Make stop_machine() safe to call early in boot, before SMP has been
+> set up, by simply calling the callback function directly if there's
+> only one CPU online.
 
-It may be a good replacement for release_agent. Or not?
+Being a trusting soul, I shall assume that you presently have or soon
+will have some code which requires this change?
 
--- 
- Kirill A. Shutemov
+>
+> ...
+>
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -485,6 +485,17 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+>  					    .num_threads = num_online_cpus(),
+>  					    .active_cpus = cpus };
+>  
+> +	if (smdata.num_threads == 1) {
+> +		unsigned long flags;
+> +		int ret;
+> +
+> +		local_save_flags(flags);
+> +		ret = (*fn)(data);
+> +		local_irq_restore(flags);
+> +
+> +		return ret;
+> +	}
+
+It is quite unobvious to readers why this code exists.  Therefore, we
+should tell them.
+
+Also, bug.  local_save_flags() is used to read the irq flags - it does
+not actually disable interrupts.  We want local_irq_save() here.  None
+of these interfaces are documented and their naming system is crappy. 
+Cause, effect.
+
+
+--- a/kernel/stop_machine.c~stop_machine-make-stop_machine-safe-and-efficient-to-call-early-fix
++++ a/kernel/stop_machine.c
+@@ -486,10 +486,14 @@ int __stop_machine(int (*fn)(void *), vo
+ 					    .active_cpus = cpus };
+ 
+ 	if (smdata.num_threads == 1) {
++		/*
++		 * Handle the case where stop_machine() is called early in boot
++		 * before SMP startup.
++		 */
+ 		unsigned long flags;
+ 		int ret;
+ 
+-		local_save_flags(flags);
++		local_irq_save(flags);
+ 		ret = (*fn)(data);
+ 		local_irq_restore(flags);
+ 
+_
+
+
