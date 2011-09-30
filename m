@@ -1,75 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab1I3HP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:15:57 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:39391 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab1I3HP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 03:15:56 -0400
-Date: Fri, 30 Sep 2011 01:15:55 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 3/5 v12] arm: omap: usb: register hwmods of usbhs
-In-Reply-To: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
-Message-ID: <alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
-References: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753803Ab1I3HSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:18:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43655 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab1I3HSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 03:18:32 -0400
+From: Johannes Weiner <jweiner@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/5] mm: exclude reserved pages from dirtyable memory
+Date: Fri, 30 Sep 2011 09:17:20 +0200
+Message-Id: <1317367044-475-2-git-send-email-jweiner@redhat.com>
+In-Reply-To: <1317367044-475-1-git-send-email-jweiner@redhat.com>
+References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The amount of dirtyable pages should not include the full number of
+free pages: there is a number of reserved pages that the page
+allocator and kswapd always try to keep free.
 
-On Fri, 30 Sep 2011, Keshava Munegowda wrote:
+The closer (reclaimable pages - dirty pages) is to the number of
+reserved pages, the more likely it becomes for reclaim to run into
+dirty pages:
 
-> The hwmod structure of usb_host_hs  and usb_tll are
-> retrieved and registered with omap device
-> 
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-> Reviewed-by: Partha Basak <parthab@india.ti.com>
-> ---
->  arch/arm/mach-omap2/usb-host.c |  100 ++++++++++++++--------------------------
->  1 files changed, 34 insertions(+), 66 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
-> index 89ae298..771dc78 100644
-> --- a/arch/arm/mach-omap2/usb-host.c
-> +++ b/arch/arm/mach-omap2/usb-host.c
-> @@ -28,51 +28,28 @@
+       +----------+ ---
+       |   anon   |  |
+       +----------+  |
+       |          |  |
+       |          |  -- dirty limit new    -- flusher new
+       |   file   |  |                     |
+       |          |  |                     |
+       |          |  -- dirty limit old    -- flusher old
+       |          |                        |
+       +----------+                       --- reclaim
+       | reserved |
+       +----------+
+       |  kernel  |
+       +----------+
 
-> +	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
-> +	if (!oh[0]) {
-> +		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
-> +		return;
->  	}
->  
-> -	if (platform_device_register(&usbhs_device) < 0)
-> -		printk(KERN_ERR "USBHS platform_device_register failed\n");
-> +	oh[1] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
-> +	if (!oh[1]) {
-> +		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
-> +		return;
-> +	}
->  
-> -init_end:
-> -	return;
-> +	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
-> +				(void *)&usbhs_data, sizeof(usbhs_data),
-> +				omap_uhhtll_latency,
-> +				ARRAY_SIZE(omap_uhhtll_latency), false);
+This patch introduces a per-zone dirty reserve that takes both the
+lowmem reserve as well as the high watermark of the zone into account,
+and a global sum of those per-zone values that is subtracted from the
+global amount of dirtyable pages.  The lowmem reserve is unavailable
+to page cache allocations and kswapd tries to keep the high watermark
+free.  We don't want to end up in a situation where reclaim has to
+clean pages in order to balance zones.
 
-Usually there's something wrong with omap_devices that contain 
-multiple hwmods.  Is there some reason why there isn't a separate driver 
-for the TLL?  Judging by a brief look at drivers/mfd/omap_usb_host.c, the 
-TLL handling looks logically distinct?
+Not treating reserved pages as dirtyable on a global level is only a
+conceptual fix.  In reality, dirty pages are not distributed equally
+across zones and reclaim runs into dirty pages on a regular basis.
 
+But it is important to get this right before tackling the problem on a
+per-zone level, where the distance between reclaim and the dirty pages
+is mostly much smaller in absolute numbers.
 
-- Paul
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/mmzone.h |    6 ++++++
+ include/linux/swap.h   |    1 +
+ mm/page-writeback.c    |    6 ++++--
+ mm/page_alloc.c        |   19 +++++++++++++++++++
+ 4 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 1ed4116..37a61e7 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -317,6 +317,12 @@ struct zone {
+ 	 */
+ 	unsigned long		lowmem_reserve[MAX_NR_ZONES];
+ 
++	/*
++	 * This is a per-zone reserve of pages that should not be
++	 * considered dirtyable memory.
++	 */
++	unsigned long		dirty_balance_reserve;
++
+ #ifdef CONFIG_NUMA
+ 	int node;
+ 	/*
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 3808f10..5e70f65 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -209,6 +209,7 @@ struct swap_list_t {
+ /* linux/mm/page_alloc.c */
+ extern unsigned long totalram_pages;
+ extern unsigned long totalreserve_pages;
++extern unsigned long dirty_balance_reserve;
+ extern unsigned int nr_free_buffer_pages(void);
+ extern unsigned int nr_free_pagecache_pages(void);
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index da6d263..c8acf8a 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -170,7 +170,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+ 			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+ 
+ 		x += zone_page_state(z, NR_FREE_PAGES) +
+-		     zone_reclaimable_pages(z);
++		     zone_reclaimable_pages(z) -
++		     zone->dirty_balance_reserve;
+ 	}
+ 	/*
+ 	 * Make sure that the number of highmem pages is never larger
+@@ -194,7 +195,8 @@ static unsigned long determine_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
++	    dirty_balance_reserve;
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1dba05e..f8cba89 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -96,6 +96,14 @@ EXPORT_SYMBOL(node_states);
+ 
+ unsigned long totalram_pages __read_mostly;
+ unsigned long totalreserve_pages __read_mostly;
++/*
++ * When calculating the number of globally allowed dirty pages, there
++ * is a certain number of per-zone reserves that should not be
++ * considered dirtyable memory.  This is the sum of those reserves
++ * over all existing zones that contribute dirtyable memory.
++ */
++unsigned long dirty_balance_reserve __read_mostly;
++
+ int percpu_pagelist_fraction;
+ gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
+ 
+@@ -5076,8 +5084,19 @@ static void calculate_totalreserve_pages(void)
+ 			if (max > zone->present_pages)
+ 				max = zone->present_pages;
+ 			reserve_pages += max;
++			/*
++			 * Lowmem reserves are not available to
++			 * GFP_HIGHUSER page cache allocations and
++			 * kswapd tries to balance zones to their high
++			 * watermark.  As a result, neither should be
++			 * regarded as dirtyable memory, to prevent a
++			 * situation where reclaim has to clean pages
++			 * in order to balance the zones.
++			 */
++			zone->dirty_balance_reserve = max;
+ 		}
+ 	}
++	dirty_balance_reserve = reserve_pages;
+ 	totalreserve_pages = reserve_pages;
+ }
+ 
+-- 
+1.7.6.2
+
