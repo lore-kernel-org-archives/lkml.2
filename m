@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab1I3QJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:09:44 -0400
-Received: from claw.goop.org ([74.207.240.146]:45553 "EHLO claw.goop.org"
+	id S1756785Ab1I3QMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:12:46 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:39803 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab1I3QJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:09:42 -0400
-Message-ID: <4E85E9C4.1090606@goop.org>
-Date: Fri, 30 Sep 2011 09:09:40 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753986Ab1I3QMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 12:12:44 -0400
+Date: Fri, 30 Sep 2011 09:12:23 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Cc: linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] crc32c: Implement CRC32c with slicing-by-8 algorithm
+Message-ID: <20110930161223.GW11984@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC 0/8] jump-label: allow early jump_label_enable()
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>  <1317343975.4588.36.camel@gandalf.stny.rr.com> <4E854859.4020105@goop.org> <1317396484.4588.52.camel@gandalf.stny.rr.com>
-In-Reply-To: <1317396484.4588.52.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2011 08:28 AM, Steven Rostedt wrote:
-> On Thu, 2011-09-29 at 21:40 -0700, Jeremy Fitzhardinge wrote:
->> On 09/29/2011 05:52 PM, Steven Rostedt wrote:
->>> On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
->>>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>>>
->>>> One big question which arises is whether the _early() function is
->>>> necessary at all.  All the stop_machine/mutex/etc stuff that
->>>> arch_jump_label_transform() ends up doing is redundant pre-SMP, but it
->>>> shouldn't hurt.  Maybe we can just drop the _early function?  It works
->>>> on x86, at least, because jump_label_enable() works, which uses the full
->>>> form.  And dropping it would reduce this to a very much smaller series.
->>> It does slow down the boot process, which is not a good thing when
->>> everyone is pushing for the fastest restarts.
->> Would it really though?  stop_machine() doesn't do very much when there
->> are no other cpus.
->>
->> Not that I measured or anything, but there was no obvious big lag at boot.
-> Just bringing up the point, but without measurements, its all hand
-> waving. It may not be a big deal, and simpler code is always better if
-> it doesn't harm anything else.
+[putting mailing lists on cc]
 
-I think the simplest thing is to make stop_machine() well-defined in a
-pre-smp environment, where it just directly calls the callback:
+On Fri, Sep 30, 2011 at 08:01:36AM +0200, Joakim Tjernlund wrote:
+> 
+> (Just happen to see this patch in the archives)
+> 
+> - This is basically an copy of Bobs crc32 work and duplicates code, this
+>   code needs to move into /lib/crc32.c and use the existing framework.
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index ba5070c..b6ad9b3 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -485,6 +485,11 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
- 					    .num_threads = num_online_cpus(),
- 					    .active_cpus = cpus };
- 
-+	if (smdata.num_threads == 1) {
-+		(*fn)(data);
-+		return 0;
-+	}
-+
- 	/* Set the initial state and stop all online cpus. */
- 	set_state(&smdata, STOPMACHINE_PREPARE);
- 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
+Which framework are you talking about?  lib/crc32.c appears to be a simple
+module that exports a utility function.  Do you mean that you want to merge the
+crc32{,c}defs.h and gen_crc32{,c}table.c code?  Do you want a build script that
+starts with only a crc${ALG}_defs.h file and stamps out gencrc${ALG}_table.c
+and crc${ALG}.c boilerplate code and then builds it?
 
-so that its guaranteed safe to use at any point.
+I really don't know; from my perspective there was a slow implementation in
+crypto/crc32c.c and I wanted to speed it up.  crc32c seems to be in crypto/ and
+not lib/ so that the implementation can be replaced with a hardware accelerated
+version at runtime (crc32c-intel).
 
-    J
+For crc32 which has no such hw replacement (as far as I know), moving it into
+crypto/ would incur the overhead of going through the cryptoapi for not much
+benefit.  On the other hand it wouldn't be hard to put the crc32 code into
+crypto/.
+> 
+> - Slice by 8 is just half the speed on my ppc32 compared to slice by 4 so
+>   it can't be enabled for all archs. Best to start with all 64 bit archs
+
+<shrug> I suppose I could make CRC32C_BITS configurable.  What is the hardware
+profile of your ppc32 processor?  How much L1D/L2 cache?  slice-by-8 does have
+a big cache footprint.  On the other hand it's faster than the slice-by-4
+(crc32) and Sarwate (crc32c) code in the kernel, even on old slow 32-bit x86
+processors (PII, PIII, P4).
+
+> - Last time I tested Bobs slice by 8 on ppc32 it didn't work.
+
+... is crc32c broken *now*?  It seems fine on x86/amd64/ppc64.
+
+--D
