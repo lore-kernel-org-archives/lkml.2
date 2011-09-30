@@ -1,142 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab1I3AWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 20:22:12 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:39398 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab1I3AWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 20:22:07 -0400
-Date: Thu, 29 Sep 2011 16:41:19 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Daney <david.daney@cavium.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH v2 1/3] netdev/of/phy: New function: of_mdio_find_bus().
-Message-ID: <20110929214119.GC10886@ponder.secretlab.ca>
-References: <1317166015-20714-1-git-send-email-david.daney@cavium.com>
- <1317166015-20714-2-git-send-email-david.daney@cavium.com>
+	id S1754861Ab1I3AXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 20:23:14 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:55536 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754106Ab1I3AXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 20:23:13 -0400
+Message-ID: <4E850BE6.2050306@fnarfbargle.com>
+Date: Fri, 30 Sep 2011 08:23:02 +0800
+From: Brad Campbell <lists2009@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317166015-20714-2-git-send-email-david.daney@cavium.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Radeon regression fix
+References: <4E847ED4.5090703@fnarfbargle.com> <CADnq5_PUcDVL+RPZPDGiAxHjn=vL7dnNsiQYG2F5e6GWnoX7Kg@mail.gmail.com> <4E848CDE.1020707@fnarfbargle.com>
+In-Reply-To: <4E848CDE.1020707@fnarfbargle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 04:26:53PM -0700, David Daney wrote:
-> Add of_mdio_find_bus() which allows an mii_bus to be located given its
-> associated the device tree node.
-> 
-> This is needed by the follow-on patch to add a driver for MDIO bus
-> multiplexers.
-> 
-> The of_mdiobus_register() function is modified so that the device tree
-> node is recorded in the mii_bus.  Then we can find it again by
-> iterating over all mdio_bus_class devices.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> ---
->  drivers/net/phy/mdio_bus.c |    3 ++-
->  drivers/of/of_mdio.c       |   26 ++++++++++++++++++++++++++
->  include/linux/of_mdio.h    |    2 ++
->  include/linux/phy.h        |    1 +
->  4 files changed, 31 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 6c58da2..227a060 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -70,10 +70,11 @@ static void mdiobus_release(struct device *d)
->  	kfree(bus);
->  }
->  
-> -static struct class mdio_bus_class = {
-> +struct class mdio_bus_class = {
->  	.name		= "mdio_bus",
->  	.dev_release	= mdiobus_release,
->  };
-> +EXPORT_SYMBOL(mdio_bus_class);
+On 29/09/11 23:21, Brad Campbell wrote:
+> On 29/09/11 22:36, Alex Deucher wrote:
+>> On Thu, Sep 29, 2011 at 10:21 AM, Brad Campbell<brad@fnarfbargle.com>
+>> wrote:
+>>> This patch fixes a regression introduced between 2.6.39& 3.1-rc1 whereby
+>>> the displayport AUX channel stopped re-trying commands that elicited
+>>> a DEFER
+>>> response.
+>>>
+>>
+>> It should still be retrying, just restructured slightly. The retry
+>> logic just moved into radeon_dp_i2c_aux_ch(),
+>> radeon_dp_aux_native_write(), and radeon_dp_aux_native_read(), e.g.,
+>>
+>> else if ((ack& AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+>> udelay(400);
+>>
+>> Perhaps the delay is causing a problem. Does removing the udelay(400);
+>> help?
 
-Instead of exporting this, move the iterator into this file. Assuming
-Andy and David are okay with it, I don't see any reason to continue to
-keep the MDIO DT support outside of drivers/net/phy.
+Looking at it with a nights sleep, it's obvious the code path in 
+aux_native_write is ok. Is this a bit cleaner than the last patch?
 
-Bonus points if you craft a patch to move the existing MDIO DT
-support code.
-
-Otherwise, the patch looks good.
-
-g.
-
->  
->  /**
->   * mdiobus_register - bring up all the PHYs on a given bus and attach them to bus
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index d35e300..7c28e8c 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -45,6 +45,8 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
->  		for (i=0; i<PHY_MAX_ADDR; i++)
->  			mdio->irq[i] = PHY_POLL;
->  
-> +	mdio->dev.of_node = np;
-> +
->  	/* Register the MDIO bus */
->  	rc = mdiobus_register(mdio);
->  	if (rc)
-> @@ -189,3 +191,27 @@ struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
->  	return IS_ERR(phy) ? NULL : phy;
->  }
->  EXPORT_SYMBOL(of_phy_connect_fixed_link);
-> +
-> +/**
-> + * of_mdio_find_bus - Given an mii_bus node, find the mii_bus.
-> + * @mdio_np: Pointer to the mii_bus.
-> + *
-> + * Returns a pointer to the mii_bus, or NULL if none found.
-> + *
-> + * Because the association of a device_node and mii_bus is made via
-> + * of_mdiobus_register(), the mii_bus cannot be found before it is
-> + * registered with of_mdiobus_register().
-> + *
-> + */
-> +struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np)
-> +{
-> +	struct device *d;
-> +
-> +	if (!mdio_np)
-> +		return NULL;
-> +
-> +	d = class_find_device(&mdio_bus_class, NULL,  mdio_np, of_phy_match);
-> +
-> +	return d ? to_mii_bus(d) : NULL;
-> +}
-> +EXPORT_SYMBOL(of_mdio_find_bus);
-> diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-> index 53b94e0..912c27a 100644
-> --- a/include/linux/of_mdio.h
-> +++ b/include/linux/of_mdio.h
-> @@ -22,4 +22,6 @@ extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
->  					 void (*hndlr)(struct net_device *),
->  					 phy_interface_t iface);
->  
-> +extern struct mii_bus *of_mdio_find_bus(struct device_node *mdio_np);
-> +
->  #endif /* __LINUX_OF_MDIO_H */
-> diff --git a/include/linux/phy.h b/include/linux/phy.h
-> index 54fc413..e4c3844 100644
-> --- a/include/linux/phy.h
-> +++ b/include/linux/phy.h
-> @@ -528,4 +528,5 @@ int __init mdio_bus_init(void);
->  void mdio_bus_exit(void);
->  
->  extern struct bus_type mdio_bus_type;
-> +extern struct class mdio_bus_class;
->  #endif /* __PHY_H */
-> -- 
-> 1.7.2.3
-> 
+diff --git a/drivers/gpu/drm/radeon/atombios_dp.c 
+b/drivers/gpu/drm/radeon/atombios_dp.c
+index 7ad43c6..aacc97d 100644
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -158,14 +158,17 @@ static int radeon_dp_aux_native_read(struct 
+radeon_connector *radeon_connector,
+         while (1) {
+                 ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
+                                             msg, msg_bytes, recv, 
+recv_bytes, delay, &ack);
+-               if (ret == 0)
++               if (ret == 0){
++                       if ((ack & AUX_NATIVE_REPLY_MASK) == 
+AUX_NATIVE_REPLY_DEFER){
++                               udelay(400);
++                               continue;
++                       }
+                         return -EPROTO;
++               }
+                 if (ret < 0)
+                         return ret;
+                 if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+                         return ret;
+-               else if ((ack & AUX_NATIVE_REPLY_MASK) == 
+AUX_NATIVE_REPLY_DEFER)
+-                       udelay(400);
+                 else
+                         return -EIO;
+         }
