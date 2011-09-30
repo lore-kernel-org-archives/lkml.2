@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab1I3ULx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:11:53 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37157 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751531Ab1I3ULv (ORCPT
+	id S932490Ab1I3UN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:13:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61434 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314Ab1I3UN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:11:51 -0400
-Subject: Re: [PATCH v4 10/10] x86, efi: EFI boot stub support
-From: Matt Fleming <matt@console-pimps.org>
-To: Shea Levy <shea@shealevy.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mike Waychison <mikew@google.com>, Matthew Garrett <mjg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>
-In-Reply-To: <4E85ED25.6060208@shealevy.com>
-References: <1316607036-9235-1-git-send-email-matt@console-pimps.org>
-	 <1317372688-15150-1-git-send-email-matt@console-pimps.org>
-	 <4E85ED25.6060208@shealevy.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Sep 2011 21:11:48 +0100
-Message-ID: <1317413508.3375.40.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Sep 2011 16:13:57 -0400
+Date: Sat, 1 Oct 2011 00:12:56 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, Kees Cook <kees@ubuntu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm: restrict access to /proc/meminfo
+Message-ID: <20110930201256.GB5173@albatros>
+References: <20110927175453.GA3393@albatros>
+ <20110927175642.GA3432@albatros>
+ <20110927193810.GA5416@albatros>
+ <20110928144614.38591e97.akpm00@gmail.com>
+ <20110930195329.GA2020@albatros>
+ <20110930130353.0da54517.akpm00@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930130353.0da54517.akpm00@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 12:24 -0400, Shea Levy wrote:
-> Hi Matt,
+On Fri, Sep 30, 2011 at 13:03 -0700, Andrew Morton wrote:
+> meminfo has been around for a very long time and is a convenient and
+> centralised point for collecting memory data.  There will be a large
+> number of apps/scripts/tools out there which use it.  Many of these
+> won't even be available to us.
 > 
-> I would like to test this patch series (My EFI systems are MBP 5,5, Asus 
-> p8p67 pro, and the VirtualBox EFI setup). Will you want to hear the 
-> results? If so, is there a specific procedure or set of things to test 
-> that you'll want to know about? Also, other than patch 10 should I use 
-> the v3 version of the patches sent to this list, or is there a better 
-> place to pull the patches from?
+> All of which makes it very hard for us to predict how much breakage we
+> will cause.
+> 
+> > If we care about (2), we should pass non-zero counters, but imagine some
+> > default values, which will result in sane processes numbers.  But it
+> > might depend on specific applications, I'm not aware whether (2) is
+> > real.
+> > 
+> > 
+> > Other ideas?
+> 
+> echo "chmod 0400 /proc/meminfo" >> /etc/rc.local
 
-Hi Shea,
-
-I'd definitely like to hear the results if you could try it out on your
-machines! There's no specific procedure to try, just try to break it ;-)
-
-You can find the patches at the top of the 'x86/efi-stub' branch at,
-
-	https://github.com/mfleming/linux-2.6.git
+How will it help to fix apps' dependencies on meminfo?
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
