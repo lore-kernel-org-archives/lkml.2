@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab1I3QIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:08:34 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:45669 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752176Ab1I3QId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:08:33 -0400
-Date: Fri, 30 Sep 2011 12:08:30 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 2.0 prerelease bundle 20110930
-Message-ID: <20110930160830.GA1658@Krystal>
+	id S1756734Ab1I3QJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:09:44 -0400
+Received: from claw.goop.org ([74.207.240.146]:45553 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511Ab1I3QJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 12:09:42 -0400
+Message-ID: <4E85E9C4.1090606@goop.org>
+Date: Fri, 30 Sep 2011 09:09:40 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:57:57 up 310 days, 21:01,  6 users,  load average: 0.75, 1.14,
-	1.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH RFC 0/8] jump-label: allow early jump_label_enable()
+References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>  <1317343975.4588.36.camel@gandalf.stny.rr.com> <4E854859.4020105@goop.org> <1317396484.4588.52.camel@gandalf.stny.rr.com>
+In-Reply-To: <1317396484.4588.52.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-full system tracing solution toolchain. It is composed of several
-components to allow tracing of the kernel, of userspace, trace viewing
-and analysis and trace streaming. LTTng is open source software.
+On 09/30/2011 08:28 AM, Steven Rostedt wrote:
+> On Thu, 2011-09-29 at 21:40 -0700, Jeremy Fitzhardinge wrote:
+>> On 09/29/2011 05:52 PM, Steven Rostedt wrote:
+>>> On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
+>>>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>>>
+>>>> One big question which arises is whether the _early() function is
+>>>> necessary at all.  All the stop_machine/mutex/etc stuff that
+>>>> arch_jump_label_transform() ends up doing is redundant pre-SMP, but it
+>>>> shouldn't hurt.  Maybe we can just drop the _early function?  It works
+>>>> on x86, at least, because jump_label_enable() works, which uses the full
+>>>> form.  And dropping it would reduce this to a very much smaller series.
+>>> It does slow down the boot process, which is not a good thing when
+>>> everyone is pushing for the fastest restarts.
+>> Would it really though?  stop_machine() doesn't do very much when there
+>> are no other cpus.
+>>
+>> Not that I measured or anything, but there was no obvious big lag at boot.
+> Just bringing up the point, but without measurements, its all hand
+> waving. It may not be a big deal, and simpler code is always better if
+> it doesn't harm anything else.
 
-New Features:
+I think the simplest thing is to make stop_machine() well-defined in a
+pre-smp environment, where it just directly calls the callback:
 
-- LTTng 2.0 kernel modules build against a vanilla or distribution
-  kernel, without need for additional patches.
-- Tracepoints, detailed syscall tracing (fast strace replacement),
-  Function tracer, CPU Performance Monitoring Unit (PMU) counters and
-  kprobes support,
-- Have the ability to attach "context" information to events in the
-  trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
-  All the extra information fields to be collected with events are
-  optional, specified on a per-tracing-session basis (except for
-  timestamp and event id, which are mandatory).
-- Allows non-root users part of the "tracing" group to perform kernel
-  and userspace tracing.
-- Allows multiple tracing sessions to be active concurrently, each with
-  its own instrumentation set.
-- Integrated interface for both kernel and userspace tracing,
-- Produces CTF (Common Trace Format) natively,
-  (http://www.efficios.com/ctf)
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index ba5070c..b6ad9b3 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -485,6 +485,11 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ 					    .num_threads = num_online_cpus(),
+ 					    .active_cpus = cpus };
+ 
++	if (smdata.num_threads == 1) {
++		(*fn)(data);
++		return 0;
++	}
++
+ 	/* Set the initial state and stop all online cpus. */
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
 
-You can get a the current release "bundle" (recommanded set of packages)
-at the following URL:
+so that its guaranteed safe to use at any point.
 
-http://lttng.org/bundles/
-
-Project website: http://lttng.org
-Download link: http://lttng.org/lttng2.0
-(please refer to the README files for installation instructions and
-lttng-tools doc/quickstart.txt for usage information)
-
-A notable addition to this new bundle is support for detailed system
-call tracing for x86-32 and x86-64.
-
-Please contact the ltt-dev@lists.casi.polymtl.ca mailing list if you
-have questions. I will be on vacation from Oct. 1st 2011 to Oct. 16th,
-2011, which will delay answer to emails.
-
-Enjoy!
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+    J
