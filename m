@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab1I3LNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 07:13:09 -0400
-Received: from relay.parallels.com ([195.214.232.42]:55416 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758387Ab1I3LNF convert rfc822-to-8bit (ORCPT
+	id S1758388Ab1I3Lr4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 07:47:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40874 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1I3Lry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 07:13:05 -0400
-From: Vasily Averin <vvs@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Vasily Averin <vvs@sw.ru>
-Subject: [PATCH] watchdog: move watchdog_*_all_cpus under CONFIG_SYSCTL
-Date: Fri, 30 Sep 2011 15:12:54 +0400
-Message-ID: <1317381174-19596-1-git-send-email-vvs@parallels.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 30 Sep 2011 07:47:54 -0400
+Date: Fri, 30 Sep 2011 07:47:47 -0400
+From: Benjamin Poirier <benjamin.poirier@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Gilbert Strange <gilbert.strange@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: linux 2.4 download
+Message-ID: <20110930114747.GA8702@lg3.synalogic.ca>
+References: <CAE15VAb93=_FrHgu3bGUSM2Wq0RvS1bqR+Z71g0V3BWP-BkJ2g@mail.gmail.com>
+ <20110929220610.GA9086@1wt.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929220610.GA9086@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasily Averin <vvs@sw.ru>
+On 11-09-30 00:06, Willy Tarreau wrote:
+> Hi,
+> 
+> On Thu, Sep 29, 2011 at 11:24:19PM +0200, Gilbert Strange wrote:
+> > Hi,
+> > 
+> > is there any chance to download Linux 2.4 source?
+> 
+> Do you need a tar.gz or the git version ? tar.gz will be found at some
+> mirrors, and if you need a more recent version, please ask and I'll
+> happily send you a patch. I'd just rather avoid uploading the whole
+> code from my DSL line.
 
-fixed compilation warnings in case of disabled CONFIG_SYSCTL
-kernel/watchdog.c:483:13: warning: ‘watchdog_enable_all_cpus’ defined but not used
-kernel/watchdog.c:500:13: warning: ‘watchdog_disable_all_cpus’ defined but not used
+Seems like 2.4.37.11 can be found on github, alas without tags it seems.
 
-these functions are are static and are used only in sysctl handler,
-so move them inside #ifdef CONFIG_SYSCTL too
+https://github.com/jmesmon/linux-2.4.37.y/commit/632faa2d548dabaf55ac0bfcb21599da946f9936
 
-Signed-off-by: Vasily Averin <vvs@sw.ru>
----
- kernel/watchdog.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+-Ben
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 36491cd..13644ee 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -480,6 +480,8 @@ static void watchdog_disable(int cpu)
- 	}
- }
- 
-+/* sysctl functions */
-+#ifdef CONFIG_SYSCTL
- static void watchdog_enable_all_cpus(void)
- {
- 	int cpu;
-@@ -508,9 +510,6 @@ static void watchdog_disable_all_cpus(void)
- 	watchdog_enabled = 0;
- }
- 
--
--/* sysctl functions */
--#ifdef CONFIG_SYSCTL
- /*
-  * proc handler for /proc/sys/kernel/nmi_watchdog,watchdog_thresh
-  */
--- 
-1.7.4.1
-
+> 
+> Regards,
+> Willy
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
