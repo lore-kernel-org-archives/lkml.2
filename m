@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab1I3N3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 09:29:22 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:33258 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752618Ab1I3N3V (ORCPT
+	id S932120Ab1I3Ndd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 09:33:33 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35890
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754333Ab1I3Ndb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 09:29:21 -0400
-Date: Fri, 30 Sep 2011 16:29:16 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
- uevent
-Message-ID: <20110930132914.GA877@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
- <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+	Fri, 30 Sep 2011 09:33:31 -0400
+Date: Fri, 30 Sep 2011 09:33:23 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+Message-ID: <20110930133323.GA2730@infradead.org>
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com>
+ <4E44E782.7090309@fusionio.com>
+ <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com>
+ <20110909085433.GA9593@infradead.org>
+ <4E69D519.8070802@fusionio.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <4E69D519.8070802@fusionio.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 09, 2011 at 10:58:01AM +0200, Jens Axboe wrote:
+> >  - handling of REQ_FUA / REQ_FLUSH requests is completely broken.
+> >    There is a weird barrier flag to mtip_hw_submit_io which set the
+> >    hwardware FUA bit if the FLUSH bit is set on a request.
+> >    Please take a look at how this should be handled, the
+> >    Documentation/block/writeback_cache_control.txt file is the canonical
+> >    resource.  Implementing your driver at the make_request layer
+> >    unfortunately means you will have to do all the hard work yourself.
+> 
+> I noticed both of these flush/fua problems too and have fixed them up.
 
---cWoXeonUoKmBZSoM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I sitll can't find anything doing that in your tree while all kinds of
+other patches are in.  In fact I can't find a place that sends
+ATA_CMD_FLUSH/ATA_CMD_FLUSH_EXT commands, not the required queue
+draining for it.
 
-Hi,
+And this stuff really makes me nervous - we get a driver for a new,
+expensive high end device and there seems absolutely no concern for
+data integrity, or testing of it.
 
-On Mon, Aug 15, 2011 at 04:51:22PM +0200, Sebastian Andrzej Siewior wrote:
-> If id_entry is available then it is used. However if we remove first the
-> driver followed by the device, then the id_entry is pointing to driver's
-> memory which is long gone.
-> Since id->name and plat->name are equal there is no point in
-> distinguishing them.
->=20
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/base/platform.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 0cad9c7..cd71575 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -614,7 +614,7 @@ static int platform_uevent(struct device *dev, struct=
- kobj_uevent_env *env)
->  		return rc;
-> =20
->  	add_uevent_var(env, "MODALIAS=3D%s%s", PLATFORM_MODULE_PREFIX,
-> -		(pdev->id_entry) ? pdev->id_entry->name : pdev->name);
-> +			pdev->name);
->  	return 0;
->  }
-> =20
-
-Just a gentle reminder on this patch. Greg, has this one been queued to
-your drivers-core tree ? Should it go on -rc or now it's already too
-late and going on merge window ?
-
-thanks
-
---=20
-balbi
-
---cWoXeonUoKmBZSoM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOhcQqAAoJEAv8Txj19kN1fdYH/2ZAqNjWyM3U2ziid1jOnT2L
-kIzCtdAHO5+XpOhjznyumJ+Lzmk3uYy3U9DYDYuE5lJugz6/l1j2JGDpBD4sxJpe
-O85fUrfZwXjPkt8hJOrIJglfXmbTZq75GKoJ23WtLg0KVE9SpcKiEsUUnYC895ND
-Hy5WC+HfY+8G3zAL4T0taupzTICqFYJmQx8PhAswLdGy8sNOr+388SEdHX/uBhhP
-TkPI0eT3If39Zj7KFIv8nVKXKz31rpK8ak0+fJ135nKg1fILiP+tBhR/XiCB8Qa/
-Dtl5sFjCf/1yKP4twIfAgdXlcxWIffWpgf/fO38Y7dPWtHd1Yu0IsPe8axumF/I=
-=+qK2
------END PGP SIGNATURE-----
-
---cWoXeonUoKmBZSoM--
+Or does the device not even have a volatile cache at all, and we could
+just remove the FUA code?  In this case it should be clearly documented
+in the driver.
