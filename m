@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1I3UmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:42:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40440 "EHLO ogre.sisk.pl"
+	id S1754846Ab1I3UsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:48:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40449 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab1I3UmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:42:23 -0400
+	id S1752687Ab1I3UsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 16:48:18 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v13 0/4] Devfreq, DVFS Framework for Non-CPU Devices
-Date: Fri, 30 Sep 2011 22:44:37 +0200
+To: Zan Lynx <zlynx@acm.org>
+Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
+Date: Fri, 30 Sep 2011 22:50:32 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org,
-        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Kevin Hilman <khilman@ti.com>, Nishanth Menon <nm@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Colin Cross <ccross@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@ti.com>, myungjoo.ham@gmail.com
-References: <1317298730-10442-1-git-send-email-myungjoo.ham@samsung.com>
-In-Reply-To: <1317298730-10442-1-git-send-email-myungjoo.ham@samsung.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1317329529.3151.10.camel@knife> <201109302222.22528.rjw@sisk.pl> <1317414897.2629.5.camel@knife>
+In-Reply-To: <1317414897.2629.5.camel@knife>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109302244.37584.rjw@sisk.pl>
+Message-Id: <201109302250.32653.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 29, 2011, MyungJoo Ham wrote:
-> Summary of update from the patchset v12:
+On Friday, September 30, 2011, Zan Lynx wrote:
+> On Fri, 2011-09-30 at 22:22 +0200, Rafael J. Wysocki wrote:
+> > On Friday, September 30, 2011, Zan Lynx wrote:
+> > > On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
+> > > > After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
+> > > > kernels would not suspend/resume on my laptop I followed a Ubuntu forum
+> > > > suggestion to use acpi=nonvs. This worked, or at least it is working
+> > > > today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
+> > > > 
+> > > > The system is also booting via UEFI if that makes any difference.
+> > > > 
+> > > > I understand that there is a no-NVS blacklist in the kernel. Should the
+> > > > Samsung Series 9 be added to this list? Or could it be a different
+> > > > suspend/resume problem entirely?
+> > > 
+> > > Please ignore this about nonvs. nonvs has nothing to do with the
+> > > suspend/resume problem on this laptop.
+> > > 
+> > > Instead it seems to involve reboots, which is crazy. From a cold
+> > > power-on start, suspend resume will always fail. But if the laptop is
+> > > rebooted first, suspend and resume appear to work. What the heck? I have
+> > > no clue how to debug this.
+> > > 
+> > > So now it appears that everything I ever tried to fix this only seemed
+> > > to work because I rebooted after changing GRUB or module options.
+> > 
+> > What graphics is there in the system?
 > 
-> - Bugfix: _remove_devfreq and devfreq_dev_release may be called multiple times.
+> It is the Intel i915 driver. It is an Intel i5-2537M system with the
+> integrated video on the CPU.
 > 
-> - Fixup kerneldoc comments.
-> 
-> Reposting to LKML as Kernel-PM list seems broken.
-> 
-> I didn't put Kevin's ACK at 2/4 patch as there has been changes in 2/4 patch
-> (the bugfix mentioned above).
-> 
-> MyungJoo Ham (4):
->   PM / OPP: Add OPP availability change notifier.
->   PM: Introduce devfreq: generic DVFS framework with device-specific
->     OPPs
->   PM / devfreq: add common sysfs interfaces
->   PM / devfreq: add basic governors
+> lspci shows it as:
+> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core
+> Processor Family Integrated Graphics Controller (rev 09) (prog-if 00
+> [VGA controller])
 
-Applied to linux-pm/pm-devfreq (new branch) and merged into the linux-next
-branch.  I'm going to push this patchset for 3.2, thank everyone involved!
+Well, that should work.  I'm afraid I can't help you with this issue.
 
+Thanks,
 Rafael
