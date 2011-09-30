@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab1I3CWC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 22:22:02 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54571 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755018Ab1I3CWA convert rfc822-to-8bit (ORCPT
+	id S1755333Ab1I3Cb1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 22:31:27 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:64624 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab1I3Cb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 22:22:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110930001633.GA11436@myri.com>
-References: <4E82017C.3010304@redhat.com>
-	<CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com>
-	<4E8215B6.1020108@redhat.com>
-	<20110930001633.GA11436@myri.com>
-Date: Thu, 29 Sep 2011 19:21:58 -0700
-Message-ID: <CAEuXFEzESMrFLeTOq33RVQ7W3vsKuqKAuz8mx2o9K6QgBJZVnQ@mail.gmail.com>
-Subject: Re: Workaround for Intel MPS errata
-From: Jesse Brandeburg <jesse.brandeburg@gmail.com>
-To: Jon Mason <mason@myri.com>
-Cc: Avi Kivity <avi@redhat.com>, Sven Schnelle <svens@stackframe.org>,
-        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Sep 2011 22:31:26 -0400
+Subject: [PATCH 1/2] ASoC: Remove unused "control_data" field of struct
+ cs4271_private
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Sverdlin <subaparts@yandex.ru>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Sep 2011 10:31:10 +0800
+Message-ID: <1317349870.4193.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 5:16 PM, Jon Mason <mason@myri.com> wrote:
-> Hey Avi,
-> Can you try this patch?  It should resolve the issue you are seeing.
->
-> Thanks,
-> Jon
->
->    PCI: Workaround for Intel MPS errata
->
->    Intel 5000 and 5100 series memory controllers have a known issue if read
->    completion coalescing is enabled (the default setting) and the PCI-E
->    Maximum Payload Size is set to 256B.  To work around this issue, disable
->    read completion coalescing if the MPS is 256B.
+The control_data field is used to initialize the codec's control_data field,
+but since this is also done by the snd-soc-cache core, the redundant
+assignment can be removed and the field can be dropped.
 
-Hey Jon, glad I could help out by pointing this erratum out on IRC
-today.  The patch looks mostly fine, with one nit, see below.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/cs4271.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+diff --git a/sound/soc/codecs/cs4271.c b/sound/soc/codecs/cs4271.c
+index 083aab9..23d1bd5 100644
+--- a/sound/soc/codecs/cs4271.c
++++ b/sound/soc/codecs/cs4271.c
+@@ -156,7 +156,6 @@ static const u8 cs4271_dflt_reg[CS4271_NR_REGS] = {
+ struct cs4271_private {
+ 	/* SND_SOC_I2C or SND_SOC_SPI */
+ 	enum snd_soc_control_type	bus_type;
+-	void				*control_data;
+ 	unsigned int			mclk;
+ 	bool				master;
+ 	bool				deemph;
+@@ -466,8 +465,6 @@ static int cs4271_probe(struct snd_soc_codec *codec)
+ 	int ret;
+ 	int gpio_nreset = -EINVAL;
+ 
+-	codec->control_data = cs4271->control_data;
+-
+ 	if (cs4271plat && gpio_is_valid(cs4271plat->gpio_nreset))
+ 		gpio_nreset = cs4271plat->gpio_nreset;
+ 
+@@ -555,7 +552,6 @@ static int __devinit cs4271_spi_probe(struct spi_device *spi)
+ 		return -ENOMEM;
+ 
+ 	spi_set_drvdata(spi, cs4271);
+-	cs4271->control_data = spi;
+ 	cs4271->bus_type = SND_SOC_SPI;
+ 
+ 	return snd_soc_register_codec(&spi->dev, &soc_codec_dev_cs4271,
+@@ -595,7 +591,6 @@ static int __devinit cs4271_i2c_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 
+ 	i2c_set_clientdata(client, cs4271);
+-	cs4271->control_data = client;
+ 	cs4271->bus_type = SND_SOC_I2C;
+ 
+ 	return snd_soc_register_codec(&client->dev, &soc_codec_dev_cs4271,
+-- 
+1.7.4.1
 
 
-> +       /* Disable read completion coalescing to allow an MPS of 256 */
-> +       if (mps == 256) {
-> +               int err;
-> +               u16 rcc;
-> +
-> +               /* Intel errata specifies bits to change but does not say what
-> +                * they are.  Keeping them magical until such time as the
-> +                * registers and values can be explained.
-> +                */
-> +               err = pci_read_config_word(dev, 0x48, &rcc);
-> +               if (err) {
-> +                       dev_err(&dev->dev, "Error attempting to read the read "
-> +                               "completion coalescing register.\n");
-> +                       return;
-> +               }
-> +
-> +               rcc &= ~(1 << 10);
-> +
-> +               err = pci_write_config_word(dev, 0x48, rcc);
-> +               if (err) {
-> +                       dev_err(&dev->dev, "Error attempting to read the read "
 
-this should be "to write the read "
-
-> +                               "completion coalescing register.\n");
-> +                       return;
-> +               }
-
-do you have to do anything to change the bit back to 1 if something
-sets the mps back to 128?
