@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab1I3SGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:06:30 -0400
-Received: from home.keithp.com ([63.227.221.253]:46724 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615Ab1I3SG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:06:28 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org
-Subject: Re: [PATCH 18/21] drm/i915: Disable eDP VDD in a delayed work proc instead of synchronously
-In-Reply-To: <d08817$1mllv9@azsmga001.ch.intel.com>
-References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-19-git-send-email-keithp@keithp.com> <d08817$1mllv9@azsmga001.ch.intel.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 30 Sep 2011 11:06:25 -0700
-Message-ID: <yunsjnd7vmm.fsf@aiko.keithp.com>
+	id S1757644Ab1I3SIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:08:51 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19496 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab1I3SIt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 14:08:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 30 Sep 2011 11:08:46 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>
+CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stijn Devriendt <highguy@gmail.com>
+Date: Fri, 30 Sep 2011 11:08:44 -0700
+Subject: RE: [PATCH] drivers: create a pin control subsystem v8
+Thread-Topic: [PATCH] drivers: create a pin control subsystem v8
+Thread-Index: Acx91swYFc+wrvp4QIiXTlfEKpgXmABxQvWw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6A63@HQMAIL01.nvidia.com>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Linus Walleij wrote at Wednesday, September 28, 2011 6:04 AM:
+> This creates a subsystem for handling of pin control devices.
+> These are devices that control different aspects of package
+> pins.
 
-On Fri, 30 Sep 2011 11:31:45 +0100, Chris Wilson <chris@chris-wilson.co.uk>=
- wrote:
+I still haven't had a chance to look through the .c files, just the docs
+and headers, but they look good to me now, so:
 
-> I think you want the dev->mode_config.mutex here.
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-oops. good catch.
+-- 
+nvpublic
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOhgUhQp8BWwlsTdMRAltqAJ4/t+ZoA3zrdiZJaVY/as+ut6khSQCgyCR0
-VhTi2Sufw33atQJ+/DdXscA=
-=XrPN
------END PGP SIGNATURE-----
---=-=-=--
