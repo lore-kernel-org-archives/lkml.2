@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab1I3HuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:50:09 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:19826 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1I3HuH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:4:1>);
-	Fri, 30 Sep 2011 03:50:07 -0400
-Message-Id: <4E8590CD0200007800058ABA@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 30 Sep 2011 08:50:05 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Dan Carpenter" <error27@gmail.com>, <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 3/9] xen/pciback: Check if the device
-	 is found instead of blindly assuming so.
+	id S1757321Ab1I3Hz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:55:56 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:1513 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab1I3Hzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 03:55:55 -0400
+X-IronPort-AV: E=Sophos;i="4.68,465,1312156800"; 
+   d="scan'208";a="8142765"
+Subject: Re: [Xen-devel] [PATCH 4/9] xen/events: BUG() when we can't
+ allocate our event->irq array.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Dan Carpenter <error27@gmail.com>
+Date: Fri, 30 Sep 2011 08:55:53 +0100
+In-Reply-To: <1317325971-21603-5-git-send-email-konrad.wilk@oracle.com>
 References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
- <1317325971-21603-4-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1317325971-21603-4-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	 <1317325971-21603-5-git-send-email-konrad.wilk@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317369353.26672.215.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 29.09.11 at 21:52, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> Just in case it is not found, don't try to dereference it.
+On Thu, 2011-09-29 at 20:52 +0100, Konrad Rzeszutek Wilk wrote:
+> In case we can't allocate we are doomed. We should BUG_ON
+> instead of trying to dereference it later on.
 > 
 > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  drivers/xen/xen-pciback/pci_stub.c |    2 ++
+>  drivers/xen/events.c |    2 ++
 >  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c 
-> b/drivers/xen/xen-pciback/pci_stub.c
-> index d985b65..55086e9 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -222,6 +222,8 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->  	}
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 7523719..5db04bf 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -1670,6 +1670,8 @@ void __init xen_init_IRQ(void)
 >  
->  	spin_unlock_irqrestore(&pcistub_devices_lock, flags);
-> +	if (!found_psdev)
-> +		return;
+>  	evtchn_to_irq = kcalloc(NR_EVENT_CHANNELS, sizeof(*evtchn_to_irq),
+>  				    GFP_KERNEL);
+> +	if (!evtchn_to_irq)
+> +		BUG();
 
-If this happens, it's a bug (backend controller found the device, but
-the generic backend code didn't), so I would say minimally a WARN_ON()
-should be issued here.
+AKA
+	BUG_ON(!evtchn_to_irq);
 
-Jan
+but
 
->  
->  	/*hold this lock for avoiding breaking link between
->  	* pcistub and xen_pcibk when AER is in processing
-
-
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
 
