@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1I3VK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:10:26 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:60211 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413Ab1I3VKY (ORCPT
+	id S1756259Ab1I3VMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:12:06 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:53415 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab1I3VME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:10:24 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <paul@pwsan.com>,
-        <aneesh@ti.com>, <santosh.shilimkar@ti.com>,
-        <christian.gmeiner@gmail.com>
-Subject: Re: [PATCH v5 3/3] OMAP2+: voltage: add check for missing PMIC info in vp init
-Organization: Texas Instruments, Inc.
-References: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com>
-	<1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
-	<1317363153-10259-3-git-send-email-abhilash.kv@ti.com>
-	<1317363153-10259-4-git-send-email-abhilash.kv@ti.com>
-Date: Fri, 30 Sep 2011 14:10:19 -0700
-In-Reply-To: <1317363153-10259-4-git-send-email-abhilash.kv@ti.com> (Abhilash
-	K. V.'s message of "Fri, 30 Sep 2011 11:42:33 +0530")
-Message-ID: <87aa9lhh38.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
+	Fri, 30 Sep 2011 17:12:04 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=1h8qd3w5pbyJS47frJc7V6h9QwwiBhgsQMy9mbCO+wA= c=1 sm=1
+ a=4gQLNW1E5XQA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8
+ a=F0RxiqfCAF7Mx5kjwKIA:9 a=f5njMB-5SVL2pY0qa6wA:7 a=CjuIK1q_8ugA:10
+ a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH] ext4: Fix comparison endianness problem in MMP initialization
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20110930194900.GY12086@tux1.beaverton.ibm.com>
+Date: Fri, 30 Sep 2011 15:12:02 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Message-Id: <37339E8E-181A-4245-86BD-64EE47A54926@dilger.ca>
+References: <20110930194900.GY12086@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Abhilash K V <abhilash.kv@ti.com> writes:
+On 2011-09-30, at 1:49 PM, Darrick J. Wong wrote:
+> As part of startup, the MMP initialization code does this:
+> 
+> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
+> 
+> Next, mmp->mmp_seq is written out to disk, a delay happens, and then
+> the MMP block is read back in and the sequence value is tested:
+> 
+> if (seq != le32_to_cpu(mmp->mmp_seq)) {
+> 	/* fail the mount */
+> 
+> On a LE system such as x86, the *le32* functions do nothing and this
+> works.
+> Unfortunately, on a BE system such as ppc64, this comparison becomes:
+> 
+> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
+> 	/* fail the mount */
+> 
+> Except for a few palindromic sequence numbers, this test always causes
+> the mount to fail, which makes MMP filesystems generally unmountable
+> on ppc64.  The attached patch fixes this situation.
+> 
+> (This fix came up while testing the metadata checksumming patchset)
 
-> From: Abhilash K V <abhilash.kv@ti.com>
->
-> If PMIC info is not available in omap_vp_init(), abort.
->
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+Thanks also for the catch, you are completely right.  We've never run
+this code on a big-endian system in all the years we had it.
 
-Looks good.
-
-After minor fixup below, adding to the next round of voltage cleanups
-(branch: for_3.2/voltage-cleanup-2.)
-
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 > ---
->  arch/arm/mach-omap2/vp.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/vp.c b/arch/arm/mach-omap2/vp.c
-> index 66bd700..0ed3d13 100644
-> --- a/arch/arm/mach-omap2/vp.c
-> +++ b/arch/arm/mach-omap2/vp.c
-> @@ -41,6 +41,13 @@ void __init omap_vp_init(struct voltagedomain *voltdm)
->  	u32 val, sys_clk_rate, timeout, waittime;
->  	u32 vddmin, vddmax, vstepmin, vstepmax;
->  
-> +	if (!voltdm->pmic || !voltdm->pmic->uv_to_vsel) {
-> +		pr_err("%s: PMIC info requried to configure VP for "
-> +			"vdd_%s not populated.Hence cannot initialize VP\n",
+> 
+> fs/ext4/mmp.c |    3 ++-
+> 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
+> index 9bdef3f..a7a4986 100644
+> --- a/fs/ext4/mmp.c
+> +++ b/fs/ext4/mmp.c
+> @@ -295,7 +295,8 @@ skip:
+> 	/*
+> 	 * write a new random sequence number.
+> 	 */
+> -	mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
+> +	seq = mmp_new_seq();
+> +	mmp->mmp_seq = cpu_to_le32(seq);
+> 
+> 	retval = write_mmp_block(bh);
+> 	if (retval)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Added space after '.'
 
-Thanks,
+Cheers, Andreas
 
-Kevin
 
-> +			__func__, voltdm->name);
-> +		return;
-> +	}
-> +
->  	if (!voltdm->read || !voltdm->write) {
->  		pr_err("%s: No read/write API for accessing vdd_%s regs\n",
->  			__func__, voltdm->name);
+
+
 
