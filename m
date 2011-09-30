@@ -1,64 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab1I3R5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:57:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35361 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab1I3R5q (ORCPT
+	id S1757327Ab1I3R6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:58:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20886 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab1I3R6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:57:46 -0400
-Date: Fri, 30 Sep 2011 19:58:21 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        "Barnes, Jesse" <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 03/21] drm/i915: Remove extra 300ms delay during eDP mode
- setting
-Message-ID: <20110930175821.GN2859@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	"Barnes, Jesse" <jbarnes@virtuousgeek.org>
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-4-git-send-email-keithp@keithp.com>
- <20110930162728.GC2859@phenom.ffwll.local>
- <yun7h4p9ay5.fsf@aiko.keithp.com>
+	Fri, 30 Sep 2011 13:58:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=PIbiPZvtQ9IO8F1xXkHylxLqVsvpVGE5EUCJ6aUQ/Cnw8Asaf29xcfitWtOS//b/c
+	zH8R/xT+M5b42KwSuheZQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yun7h4p9ay5.fsf@aiko.keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMaF-rPBM8nJpJ14jSyc4ki=sy2q-uxrJU_7=KGvvUrDp3EUBA@mail.gmail.com>
+References: <4E82017C.3010304@redhat.com> <CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com>
+ <4E8215B6.1020108@redhat.com> <20110930001633.GA11436@myri.com>
+ <CAErSpo7Vw94PfhDO8kXtNCPm+m2oXL42R51X9bCh_YvkG=k3ZA@mail.gmail.com>
+ <CAMaF-rOBgHvZudOqrBu_LT+MQJ4sejpNHEL-JeCsP4p54ZnJeA@mail.gmail.com>
+ <CAErSpo4Nj_dQv=7M=2-4j8UJN8NqbiEpc2MdPNffZxbK2UmL7w@mail.gmail.com> <CAMaF-rPBM8nJpJ14jSyc4ki=sy2q-uxrJU_7=KGvvUrDp3EUBA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 30 Sep 2011 11:57:37 -0600
+Message-ID: <CAErSpo5=LOxrcSZZy2+9rTNcgJvzTXMoYBDPHNvz+e+j9P5xkg@mail.gmail.com>
+Subject: Re: Workaround for Intel MPS errata
+To: Jon Mason <mason@myri.com>
+Cc: Avi Kivity <avi@redhat.com>, Sven Schnelle <svens@stackframe.org>,
+        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 10:50:10AM -0700, Keith Packard wrote:
-> On Fri, 30 Sep 2011 18:27:28 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
-> 
-> > Can you elaborate a bit why this is no longer needed? Jesse seems to have
-> > introduced this spefically for edp panels in d209848d61794968. If this
-> > becomes rendundant due to your panel power sequencing fixes, maybe move it
-> > down the series?
-> 
-> The only reason for this delay is to avoid some potential noise on the
-> screen during mode setting, all of the power sequencing delays are
-> already correctly managed by the driver. As far as I can tell, we're
-> trading off the small potential for noise on the screen with an extra
-> 300ms delay at boot time.
-> 
-> In the eDP spec, there's a delay listed (T8) between the start of video
-> data and turning on the backlight. There are no values presented and
-> the instructions are simply that the source is supposed to wait until
-> the display is stable. I'm not sure how we'd ever know that the display
-> is stable.
+On Fri, Sep 30, 2011 at 11:38 AM, Jon Mason <mason@myri.com> wrote:
+>
+> On Fri, Sep 30, 2011 at 12:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > On Fri, Sep 30, 2011 at 9:35 AM, Jon Mason <mason@myri.com> wrote:
+> >>
+> >> On Fri, Sep 30, 2011 at 12:01 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >> > On Thu, Sep 29, 2011 at 6:16 PM, Jon Mason <mason@myri.com> wrote:
+> >> >> Hey Avi,
+> >> >> Can you try this patch?  It should resolve the issue you are seeing.
+> >> >>
+> >> >> Thanks,
+> >> >> Jon
+> >> >>
+> >> >>    PCI: Workaround for Intel MPS errata
+> >> >>
+> >> >>    Intel 5000 and 5100 series memory controllers have a known issue if read
+> >> >>    completion coalescing is enabled (the default setting) and the PCI-E
+> >> >>    Maximum Payload Size is set to 256B.  To work around this issue, disable
+> >> >>    read completion coalescing if the MPS is 256B.
+> >> >
+> >> > I'd much rather see this done as an early quirk so it doesn't clutter probe.c.
+> >> >
+> >> > I don't know how you decide whether
+> >> >    - no coalescing with MPS=256, or
+> >> >    - coalescing with MPS=128
+> >> > is better.  I suspect that having a quirk that doesn't change the
+> >> > setting, but merely limits MPS to 128 if the BIOS enabled coalescing,
+> >> > would be simplest and would stay in the best-tested chipset
+> >> > configuration.
+> >>
+> >> This is what I was debating yesterday.  Is it better to disable
+> >> coalescing and get better throughput (which could be a net negative if
+> >> the MPS isn't 256) or never allow it to be greater than 128?  There is
+> >> no way of knowing at quirk time if the disable is necessary or not,
+> >> only when setting the MPS is it known (which is why I did it this
+> >> way).  I could, as you suggest, simply read the bit and see if it is
+> >> enabled by the BIOS (which I'd bet it is every single time), and then
+> >> limit the MPS to 128 as a quirk.  This would be fairly simple to do.
+> >> However, the errata from Intel says Windows 2008 always disables the
+> >> coalescing and sets the MPS to 256B.  With this known, Linux's I/O
+> >> performance would be less than Windows on these systems. ...
+> >
+> > Presumably coalescing improves performance, too, and I don't have the
+> > evidence that says "no coalescing with MPS=256" performs better than
+> > "coalescing with MPS=128."
+> >
+> > But the fact that Windows 2008 disables coalescing is worth a lot (if
+> > this is in a public erratum, a URL would be good).  Given that, I'd
+>
+> The URLs were in the top of the patch, but perhaps they weren't obvious. ...
+> Search for "MPS", as they are several pages into the errata chapter.
 
-Ok, maybe add the above to paragraphs to the commit msg. Then
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+I saw the errata, but searching for "Windows" failed.  But now I see
+the "Microsoft Server 2008" reference in the 5100 errata.  The wording
+is interesting, though...  it says:
+
+    Microsoft Server 2008* forces the maximum payload size to 256 B in the
+    PEXDEVCTRL register; therefore, the workaround with coalescing disabled
+    must be used for Microsoft Server 2008*.
+
+I would read that as saying "Windows Server 2008 always sets MPS to
+256 but doesn't do anything with the coalescing setting.  Therefore,
+if you want to run Server 2008 on your system, make sure the BIOS
+leaves coalescing disabled."
+
+> > Maybe the quirk could be moved out of the generic code by making
+> > pcie_set_mps() a weak function, so x86 could supply a version that
+> > disables coalescing if MPS=256?
+>
+> Not sure what you mean here.  Are you saying to make the function
+> defined differently on each arch?
+
+You can define the generic pcie_set_mps() with the __weak attribute in
+drivers/pci/probe.c.  Then if you put a normal (non-weak)
+pcie_set_mps() definition in the arch code, it will be used instead of
+the weak definition.  If the arch doesn't supply a definition, the
+generic weak version will be used.
+
+Bjorn
