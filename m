@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab1I3OuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 10:50:04 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:39830 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab1I3OuB (ORCPT
+	id S1753697Ab1I3Out (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 10:50:49 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:23910 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1I3Our (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 10:50:01 -0400
-Subject: Re: [PATCH RFC 7/8] s390/jump-label: add
- arch_jump_label_transform_early()
-From: Jan Glauber <jang@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <b1d87557dc3001031ee8d7f69ee97b90cecba6aa.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-	 <b1d87557dc3001031ee8d7f69ee97b90cecba6aa.1317338254.git.jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Sep 2011 16:48:19 +0200
-Message-Id: <1317394099.11297.54.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.5 
-Content-Transfer-Encoding: 8bit
+	Fri, 30 Sep 2011 10:50:47 -0400
+Subject: [PATCH] cciss: auto engage SCSI mid layer at driver load time
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Fri, 30 Sep 2011 09:50:45 -0500
+Message-ID: <20110930145045.23092.25562.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> This allows jump-label entries to be modified early, in a pre-SMP
-> environment.
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Cc: Jan Glauber <jang@linux.vnet.ibm.com>
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Hi Jeremy,
+A long time ago, probably in 2002, one of the distros, or maybe
+more than one, loaded block drivers prior to loading the SCSI
+mid layer.  This meant that the cciss driver, being a block
+driver, could not engage the SCSI mid layer at init time without
+panicking, and relied on being poked by a userland program after
+the system was up (and the SCSI mid layer was therefore present)
+to engage the SCSI mid layer.
 
-Your patch looks fine, if you can fix the minor compiler warnings
-below. Excluding stop_machine() on pre-SMP also looks safer too me.
+This is no longer the case, and cciss can safely rely on the
+SCSI mid layer being present at init time and engage the SCSI
+mid layer straight away.  This means that users will see their
+tape drives and medium changers at driver load time without need
+for a script in /etc/rc.d that does this:
 
---Jan
+for x in /proc/driver/cciss/cciss*
+do
+	echo "engage scsi" > $x
+done
 
-  CC      arch/s390/kernel/jump_label.o
-arch/s390/kernel/jump_label.c: In function ‘__jump_label_transform’:
-arch/s390/kernel/jump_label.c:41:2: error: ‘rc’ undeclared (first use in this function)
-arch/s390/kernel/jump_label.c:41:2: note: each undeclared identifier is reported only once for each function it appears in
-arch/s390/kernel/jump_label.c:41:2: warning: passing argument 1 of ‘probe_kernel_write’ makes pointer from integer without a cast [enabled by default]
-include/linux/uaccess.h:108:21: note: expected ‘void *’ but argument is of type ‘jump_label_t’
-arch/s390/kernel/jump_label.c:28:19: warning: unused variable ‘args’ [-Wunused-variable]
-make[2]: *** [arch/s390/kernel/jump_label.o] Error 1
+However, if no tape drives or medium changers are detected, the
+SCSI mid layer will not be engaged.  If a tape drive or medium
+change is later hot-added to the system it will then be necessary
+to use the above script or similar for the device(s) to be
+acceesible.
 
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ Documentation/blockdev/cciss.txt |   14 ++++++--------
+ drivers/block/cciss.c            |    1 +
+ drivers/block/cciss_scsi.c       |    1 +
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/blockdev/cciss.txt b/Documentation/blockdev/cciss.txt
+index c00c6a5..bc6cef0 100644
+--- a/Documentation/blockdev/cciss.txt
++++ b/Documentation/blockdev/cciss.txt
+@@ -88,14 +88,12 @@ You must enable "SCSI tape drive support for Smart Array 5xxx" and
+ "SCSI support" in your kernel configuration to be able to use SCSI
+ tape drives with your Smart Array 5xxx controller.
+ 
+-Additionally, note that the driver will not engage the SCSI core at init 
+-time.  The driver must be directed to dynamically engage the SCSI core via 
+-the /proc filesystem entry which the "block" side of the driver creates as 
+-/proc/driver/cciss/cciss* at runtime.  This is because at driver init time, 
+-the SCSI core may not yet be initialized (because the driver is a block 
+-driver) and attempting to register it with the SCSI core in such a case 
+-would cause a hang.  This is best done via an initialization script 
+-(typically in /etc/init.d, but could vary depending on distribution). 
++Additionally, note that the driver will engage the SCSI core at init
++time if any tape drives or medium changers are detected.  The driver may
++also be directed to dynamically engage the SCSI core via the /proc filesystem
++entry which the "block" side of the driver creates as
++/proc/driver/cciss/cciss* at runtime.  This is best done via a script.
++
+ For example:
+ 
+ 	for x in /proc/driver/cciss/cciss[0-9]*
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 8f4ef65..c945024 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -5126,6 +5126,7 @@ reinit_after_soft_reset:
+ 	h->cciss_max_sectors = 8192;
+ 
+ 	rebuild_lun_table(h, 1, 0);
++	cciss_engage_scsi(h);
+ 	h->busy_initializing = 0;
+ 	return 1;
+ 
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index 951a4e3..e820b68 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -1720,5 +1720,6 @@ static int  cciss_eh_abort_handler(struct scsi_cmnd *scsicmd)
+ /* If no tape support, then these become defined out of existence */
+ 
+ #define cciss_scsi_setup(cntl_num)
++#define cciss_engage_scsi(h)
+ 
+ #endif /* CONFIG_CISS_SCSI_TAPE */
 
