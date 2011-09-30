@@ -1,78 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab1I3MSn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 08:18:43 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52815 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752835Ab1I3MSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 08:18:41 -0400
-Subject: Re: BUG in kernel: Wrong Handling of USB =?UTF-8?Q?HDD=E2=80=99s?=
- in scsiglue(slave_configure) and scsi/sd(sd_read_cache_type)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Amit Sahrawat <amit.sahrawat83@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <CADDb1s3CSvmqNGA48sHyOJ-pGpB1ix3WEVd0KV4b+s5yE3abLw@mail.gmail.com>
-References: <CADDb1s2Qhy1dNmjk+DhU=rf46A4X6kPdQ2rdpwK9zinY4Yv1mw@mail.gmail.com>
-	 <CADDb1s3KjMugBGwLmjoPv93hJVBCjkD81o8F0CZxJXXt+-Fk2A@mail.gmail.com>
-	 <1317245383.22022.23.camel@dabdike.hansenpartnership.com>
-	 <CADDb1s0naC9bKYDuvxMK1R+ey9KB+Sh8e-9KNJXH-EuTNueueQ@mail.gmail.com>
-	 <1317320825.3190.70.camel@dabdike.hansenpartnership.com>
-	 <1317321077.3190.71.camel@dabdike.hansenpartnership.com>
-	 <CADDb1s3CSvmqNGA48sHyOJ-pGpB1ix3WEVd0KV4b+s5yE3abLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Sep 2011 07:18:37 -0500
-Message-ID: <1317385117.2993.7.camel@dabdike.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1758562Ab1I3M35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:29:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754407Ab1I3M3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 08:29:55 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com>
+References: <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> 
+To: Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>
+Cc: dhowells@redhat.com, mark@pogo.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Date: Fri, 30 Sep 2011 13:28:54 +0100
+Message-ID: <6261.1317385734@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 12:26 +0530, Amit Sahrawat wrote:
-> Now, for the USB HDD which do have write cache - sginfo is showing
-> them to Write Cache Enabled as false.
-> Why do the result of hdparm identification and sginfo varies- (I know
-> they have different interface to work with and hdparm takes care of
-> that by using SG_IO interface from it's code)? hdparm showed me
-> correct results - that lead me to digging in the kernel code and
-> checking the performance for USB HDD with Write cache enabled/disabled
-> - which also showed that QUEUE ordering chosen for USB HDD is not
-> correct.
 
-Well, what all this means is the SATL in the USB device is implemented
-wrongly.  Since USB devices only preset SCSI interfaces, that's what we
-have to believe.
+You'll probably need to add the attached patch also.  Turns out there were
+some bits I'd missed.
 
-hdparm when used correctly sends an ATA inquiry command wrapped in an
-ATA_12 or ATA_16 SCSI command.  A large number of legacy SATLs are known
-to crash on these commands.
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CacheFiles: Add missing retrieval completions
 
-Are you sure the ATA command is reporting correctly?  A write back cache
-is a remarkably silly thing to enable for a USB device because they're
-highly likely to be surprise ejected which powers the device down.
+CacheFiles is missing some calls to fscache_retrieval_complete() in the error
+handling/collision paths of its reader functions.
 
-> I have a large number of USB HDD's - with different vendors, and for
-> all of them - it is showing Write Cache Enabled as false.
-> The code works only for the Pen Drives or the USB HDD which do not
-> have internal cache.
-> 
-> Also, for journalling filesystem being used on USB HDD - it does
-> becomes a cause of concern.
-> 
-> Please share your opinion, I guess we need a change for mode sensing
-> in the kernel code for USB HDD.
+This can be seen by the following assertion tripping in fscache_put_operation()
+whereby the operation being destroyed is still in the in-progress state and has
+not been cancelled or completed:
 
-Well that's a nastily complex problem.  It really needs to be
-whitelisted in the USB stack, but if every drive is doing it, that's
-quite a task.
+FS-Cache: Assertion failed
+3 == 5 is false
+------------[ cut here ]------------
+kernel BUG at fs/fscache/operation.c:408!
+invalid opcode: 0000 [#1] SMP
+CPU 2
+Modules linked in: xfs ioatdma dca loop joydev evdev
+psmouse dcdbas pcspkr serio_raw i5000_edac edac_core i5k_amb shpchp
+pci_hotplug sg sr_mod]
 
-The question becomes how do we detect in a SCSI fashion that the device
-has a write back cache if none of the standard SCSI mechanisms reports
-it?
+Pid: 8062, comm: httpd Not tainted 3.1.0-rc8 #1 Dell Inc. PowerEdge 1950/0DT097
+RIP: 0010:[<ffffffff81197b24>]  [<ffffffff81197b24>] fscache_put_operation+0x304/0x330
+RSP: 0018:ffff880062f739d8  EFLAGS: 00010296
+RAX: 0000000000000025 RBX: ffff8800c5122e84 RCX: ffffffff81ddf040
+RDX: 00000000ffffffff RSI: 0000000000000082 RDI: ffffffff81ddef30
+RBP: ffff880062f739f8 R08: 0000000000000005 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000003 R12: ffff8800c5122e40
+R13: ffff880037a2cd20 R14: ffff880087c7a058 R15: ffff880087c7a000
+FS:  00007f63dcf636e0(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f0c0a91f000 CR3: 0000000062ec2000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process httpd (pid: 8062, threadinfo ffff880062f72000, task ffff880087e58000)
+Stack:
+ ffff880062f73bf8 0000000000000000 ffff880062f73bf8 ffff880037a2cd20
+ ffff880062f73a68 ffffffff8119aa7e ffff88006540e000 ffff880062f73ad4
+ ffff88008e9a4308 ffff880037a2cd20 ffff880062f73a48 ffff8800c5122e40
+Call Trace:
+ [<ffffffff8119aa7e>] __fscache_read_or_alloc_pages+0x1fe/0x530
+ [<ffffffff81250780>] __nfs_readpages_from_fscache+0x70/0x1c0
+ [<ffffffff8123142a>] nfs_readpages+0xca/0x1e0
+ [<ffffffff815f3c06>] ? rpc_do_put_task+0x36/0x50
+ [<ffffffff8122755b>] ? alloc_nfs_open_context+0x4b/0x110
+ [<ffffffff815ecd1a>] ? rpc_call_sync+0x5a/0x70
+ [<ffffffff810e7e9a>] __do_page_cache_readahead+0x1ca/0x270
+ [<ffffffff810e7f61>] ra_submit+0x21/0x30
+ [<ffffffff810e818d>] ondemand_readahead+0x11d/0x250
+ [<ffffffff810e83b6>] page_cache_sync_readahead+0x36/0x60
+ [<ffffffff810dffa4>] generic_file_aio_read+0x454/0x770
+ [<ffffffff81224ce1>] nfs_file_read+0xe1/0x130
+ [<ffffffff81121bd9>] do_sync_read+0xd9/0x120
+ [<ffffffff8114088f>] ? mntput+0x1f/0x40
+ [<ffffffff811238cb>] ? fput+0x1cb/0x260
+ [<ffffffff81122938>] vfs_read+0xc8/0x180
+ [<ffffffff81122af5>] sys_read+0x55/0x90
 
-James
+Reported-by: Mark Moseley <moseleymark@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/cachefiles/rdwr.c |   14 ++++++++++----
+ fs/fscache/page.c    |    2 ++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
 
+diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
+index 637a27d..eb9ab4b 100644
+--- a/fs/cachefiles/rdwr.c
++++ b/fs/cachefiles/rdwr.c
+@@ -361,8 +361,10 @@ out:
+ 
+ read_error:
+ 	_debug("read error %d", ret);
+-	if (ret == -ENOMEM)
++	if (ret == -ENOMEM) {
++		fscache_retrieval_complete(op, 1);
+ 		goto out;
++	}
+ io_error:
+ 	cachefiles_io_error_obj(object, "Page read error on backing file");
+ 	fscache_retrieval_complete(op, 1);
+@@ -551,6 +553,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
++				fscache_retrieval_complete(op, 1);
+ 				continue;
+ 			}
+ 			goto nomem;
+@@ -627,6 +630,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 		if (ret < 0) {
+ 			if (ret == -EEXIST) {
+ 				page_cache_release(netpage);
++				fscache_retrieval_complete(op, 1);
+ 				continue;
+ 			}
+ 			goto nomem;
+@@ -645,9 +649,9 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
+ 
+ 		/* the netpage is unlocked and marked up to date here */
+ 		fscache_end_io(op, netpage, 0);
+-		fscache_retrieval_complete(op, 1);
+ 		page_cache_release(netpage);
+ 		netpage = NULL;
++		fscache_retrieval_complete(op, 1);
+ 		continue;
+ 	}
+ 
+@@ -682,15 +686,17 @@ out:
+ nomem:
+ 	_debug("nomem");
+ 	ret = -ENOMEM;
+-	goto out;
++	goto record_page_complete;
+ 
+ read_error:
+ 	_debug("read error %d", ret);
+ 	if (ret == -ENOMEM)
+-		goto out;
++		goto record_page_complete;
+ io_error:
+ 	cachefiles_io_error_obj(object, "Page read error on backing file");
+ 	ret = -ENOBUFS;
++record_page_complete:
++	fscache_retrieval_complete(op, 1);
+ 	goto out;
+ }
+ 
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index a30c157..00a5ed9 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -329,6 +329,8 @@ check_if_dead:
+ 		return -ENOBUFS;
+ 	}
+ 	if (unlikely(fscache_object_is_dead(object))) {
++		pr_err("%s() = -ENOBUFS [obj dead %d]", __func__, op->op.state);
++		fscache_cancel_op(&op->op);
+ 		fscache_stat(stat_object_dead);
+ 		return -ENOBUFS;
+ 	}
