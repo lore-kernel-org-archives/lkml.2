@@ -1,78 +1,907 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1I3AXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 20:23:14 -0400
-Received: from fnarfbargle.com ([93.93.131.224]:55536 "EHLO fnarfbargle.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754106Ab1I3AXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 20:23:13 -0400
-Message-ID: <4E850BE6.2050306@fnarfbargle.com>
-Date: Fri, 30 Sep 2011 08:23:02 +0800
-From: Brad Campbell <lists2009@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Alex Deucher <alexdeucher@gmail.com>
-CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Radeon regression fix
-References: <4E847ED4.5090703@fnarfbargle.com> <CADnq5_PUcDVL+RPZPDGiAxHjn=vL7dnNsiQYG2F5e6GWnoX7Kg@mail.gmail.com> <4E848CDE.1020707@fnarfbargle.com>
-In-Reply-To: <4E848CDE.1020707@fnarfbargle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754835Ab1I3A1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 20:27:41 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:41689 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1I3A1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 20:27:40 -0400
+Subject: [PATCH v8]: Improve performance of LZO/plain hibernation
+From: Bojan Smojver <bojan@rexursive.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Fri, 30 Sep 2011 10:27:36 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1317342456.1959.6.camel@shrek.rexursive.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/09/11 23:21, Brad Campbell wrote:
-> On 29/09/11 22:36, Alex Deucher wrote:
->> On Thu, Sep 29, 2011 at 10:21 AM, Brad Campbell<brad@fnarfbargle.com>
->> wrote:
->>> This patch fixes a regression introduced between 2.6.39& 3.1-rc1 whereby
->>> the displayport AUX channel stopped re-trying commands that elicited
->>> a DEFER
->>> response.
->>>
->>
->> It should still be retrying, just restructured slightly. The retry
->> logic just moved into radeon_dp_i2c_aux_ch(),
->> radeon_dp_aux_native_write(), and radeon_dp_aux_native_read(), e.g.,
->>
->> else if ((ack& AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
->> udelay(400);
->>
->> Perhaps the delay is causing a problem. Does removing the udelay(400);
->> help?
+Pekka was right - there is no measurable difference in performance,
+whether we bind threads to specific CPUs or not. So, I dropped that, it
+is not required and makes code simpler.
 
-Looking at it with a nights sleep, it's obvious the code path in 
-aux_native_write is ok. Is this a bit cleaner than the last patch?
+Other than that, just some code simplifications, variable name cleanups
+and buglet removals.
 
-diff --git a/drivers/gpu/drm/radeon/atombios_dp.c 
-b/drivers/gpu/drm/radeon/atombios_dp.c
-index 7ad43c6..aacc97d 100644
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -158,14 +158,17 @@ static int radeon_dp_aux_native_read(struct 
-radeon_connector *radeon_connector,
-         while (1) {
-                 ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
-                                             msg, msg_bytes, recv, 
-recv_bytes, delay, &ack);
--               if (ret == 0)
-+               if (ret == 0){
-+                       if ((ack & AUX_NATIVE_REPLY_MASK) == 
-AUX_NATIVE_REPLY_DEFER){
-+                               udelay(400);
-+                               continue;
-+                       }
-                         return -EPROTO;
-+               }
-                 if (ret < 0)
-                         return ret;
-                 if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
-                         return ret;
--               else if ((ack & AUX_NATIVE_REPLY_MASK) == 
-AUX_NATIVE_REPLY_DEFER)
--                       udelay(400);
-                 else
-                         return -EIO;
-         }
+Note that I changed the subject to reflect the fact that
+hibernation/thaw without compression also benefits from the patch, from
+the improved I/O.
+
+---------------------------------------
+Use threads for LZO compression/decompression on hibernate/thaw.
+Improve buffering on hibernate/thaw.
+v8
+
+In my testing, this improved write/read speed by a factor of 2 to 3.
+
+Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+---
+ kernel/power/swap.c |  628 ++++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 466 insertions(+), 162 deletions(-)
+
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 7c97c3a..d692842 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -27,6 +27,9 @@
+ #include <linux/slab.h>
+ #include <linux/lzo.h>
+ #include <linux/vmalloc.h>
++#include <linux/cpumask.h>
++#include <linux/atomic.h>
++#include <linux/kthread.h>
+ 
+ #include "power.h"
+ 
+@@ -43,8 +46,7 @@
+  *	allocated and populated one at a time, so we only need one memory
+  *	page to set up the entire structure.
+  *
+- *	During resume we also only need to use one swap_map_page structure
+- *	at a time.
++ *	During resume we pick up all swap_map_page structures into a list.
+  */
+ 
+ #define MAP_PAGE_ENTRIES	(PAGE_SIZE / sizeof(sector_t) - 1)
+@@ -54,6 +56,11 @@ struct swap_map_page {
+ 	sector_t next_swap;
+ };
+ 
++struct swap_map_page_list {
++	struct swap_map_page *map;
++	struct swap_map_page_list *next;
++};
++
+ /**
+  *	The swap_map_handle structure is used for handling swap in
+  *	a file-alike way
+@@ -61,9 +68,11 @@ struct swap_map_page {
+ 
+ struct swap_map_handle {
+ 	struct swap_map_page *cur;
++	struct swap_map_page_list *maps;
+ 	sector_t cur_swap;
+ 	sector_t first_sector;
+ 	unsigned int k;
++	unsigned long nr_free_pages, written;
+ };
+ 
+ struct swsusp_header {
+@@ -245,6 +254,7 @@ static int swsusp_swap_check(void)
+ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ {
+ 	void *src;
++	int ret;
+ 
+ 	if (!offset)
+ 		return -ENOSPC;
+@@ -254,9 +264,17 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 		if (src) {
+ 			copy_page(src, buf);
+ 		} else {
+-			WARN_ON_ONCE(1);
+-			bio_chain = NULL;	/* Go synchronous */
+-			src = buf;
++			ret = hib_wait_on_bio_chain(bio_chain); /* Free pages */
++			if (ret)
++				return ret;
++			src = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++			if (src) {
++				copy_page(src, buf);
++			} else {
++				WARN_ON_ONCE(1);
++				bio_chain = NULL;	/* Go synchronous */
++				src = buf;
++			}
+ 		}
+ 	} else {
+ 		src = buf;
+@@ -293,6 +311,8 @@ static int get_swap_writer(struct swap_map_handle *handle)
+ 		goto err_rel;
+ 	}
+ 	handle->k = 0;
++	handle->nr_free_pages = nr_free_pages();
++	handle->written = 0;
+ 	handle->first_sector = handle->cur_swap;
+ 	return 0;
+ err_rel:
+@@ -316,20 +336,23 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
+ 		return error;
+ 	handle->cur->entries[handle->k++] = offset;
+ 	if (handle->k >= MAP_PAGE_ENTRIES) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+-		if (error)
+-			goto out;
+ 		offset = alloc_swapdev_block(root_swap);
+ 		if (!offset)
+ 			return -ENOSPC;
+ 		handle->cur->next_swap = offset;
+-		error = write_page(handle->cur, handle->cur_swap, NULL);
++		error = write_page(handle->cur, handle->cur_swap, bio_chain);
+ 		if (error)
+ 			goto out;
+ 		clear_page(handle->cur);
+ 		handle->cur_swap = offset;
+ 		handle->k = 0;
+ 	}
++	if (++handle->written > (handle->nr_free_pages >> 1)) {
++		error = hib_wait_on_bio_chain(bio_chain);
++		if (error)
++			goto out;
++		handle->written = 0;
++	}
+  out:
+ 	return error;
+ }
+@@ -372,6 +395,13 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ 			             LZO_HEADER, PAGE_SIZE)
+ #define LZO_CMP_SIZE	(LZO_CMP_PAGES * PAGE_SIZE)
+ 
++/* Maximum number of threads for compression/decompression. */
++#define LZO_THREADS	3
++
++/* Maximum number of pages for read buffering. */
++#define LZO_READ_PAGES	(MAP_PAGE_ENTRIES * 4)
++
++
+ /**
+  *	save_image - save the suspend image data
+  */
+@@ -419,6 +449,50 @@ static int save_image(struct swap_map_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * Structure used for LZO data compression.
++ */
++struct cmp_data {
++	struct task_struct *thr;                  /* thread */
++	atomic_t ready;                           /* ready to start flag */
++	atomic_t stop;                            /* ready to stop flag */
++	int ret;                                  /* return code */
++	wait_queue_head_t go;                     /* start compression */
++	wait_queue_head_t done;                   /* compression done */
++	size_t unc_len;                           /* uncompressed length */
++	size_t cmp_len;                           /* compressed length */
++	unsigned char unc[LZO_UNC_SIZE];          /* uncompressed buffer */
++	unsigned char cmp[LZO_CMP_SIZE];          /* compressed buffer */
++	unsigned char wrk[LZO1X_1_MEM_COMPRESS];  /* compression workspace */
++};
++
++/**
++ * Compression function that runs in its own thread.
++ */
++static int lzo_compress_threadfn(void *data)
++{
++	struct cmp_data *d = data;
++
++	while (1) {
++		wait_event(d->go, atomic_read(&d->ready) ||
++		                  kthread_should_stop());
++		if (kthread_should_stop()) {
++			d->thr = NULL;
++			d->ret = -1;
++			atomic_set(&d->stop, 1);
++			wake_up(&d->done);
++			break;
++		}
++		atomic_set(&d->ready, 0);
++
++		d->ret = lzo1x_1_compress(d->unc, d->unc_len,
++			                  d->cmp + LZO_HEADER, &d->cmp_len,
++		                          d->wrk);
++		atomic_set(&d->stop, 1);
++		wake_up(&d->done);
++	}
++	return 0;
++}
+ 
+ /**
+  * save_image_lzo - Save the suspend image data compressed with LZO.
+@@ -437,42 +511,65 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	struct bio *bio;
+ 	struct timeval start;
+ 	struct timeval stop;
+-	size_t off, unc_len, cmp_len;
+-	unsigned char *unc, *cmp, *wrk, *page;
++	size_t off, thr, run_threads, nr_threads;
++	unsigned char *page = NULL;
++	struct cmp_data *data = NULL;
++
++	/*
++	 * We'll limit the number of threads for compression to limit memory
++	 * footprint.
++	 */
++	nr_threads = num_online_cpus() - 1;
++	if (nr_threads > LZO_THREADS)
++		nr_threads = LZO_THREADS;
++	else if (nr_threads < 1)
++		nr_threads = 1;
+ 
+ 	page = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
+ 	if (!page) {
+ 		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto out_clean;
+ 	}
+ 
+-	wrk = vmalloc(LZO1X_1_MEM_COMPRESS);
+-	if (!wrk) {
+-		printk(KERN_ERR "PM: Failed to allocate LZO workspace\n");
+-		free_page((unsigned long)page);
+-		return -ENOMEM;
++	data = vmalloc(sizeof(*data) * nr_threads);
++	if (!data) {
++		printk(KERN_ERR "PM: Failed to allocate LZO data\n");
++		ret = -ENOMEM;
++		goto out_clean;
+ 	}
+-
+-	unc = vmalloc(LZO_UNC_SIZE);
+-	if (!unc) {
+-		printk(KERN_ERR "PM: Failed to allocate LZO uncompressed\n");
+-		vfree(wrk);
+-		free_page((unsigned long)page);
+-		return -ENOMEM;
++	for (thr = 0; thr < nr_threads; thr++)
++		memset(&data[thr], 0, offsetof(struct cmp_data, go));
++
++	/*
++	 * Start the compression threads.
++	 */
++	for (thr = 0; thr < nr_threads; thr++) {
++		init_waitqueue_head(&data[thr].go);
++		init_waitqueue_head(&data[thr].done);
++
++		data[thr].thr = kthread_run(lzo_compress_threadfn,
++		                            &data[thr],
++		                            "image_compress/%zu", thr);
++		if (IS_ERR(data[thr].thr)) {
++			nr_threads = thr;
++			printk(KERN_ERR
++			       "PM: Cannot start compression threads\n");
++			ret = -ENOMEM;
++			goto out_clean;
++		}
+ 	}
+ 
+-	cmp = vmalloc(LZO_CMP_SIZE);
+-	if (!cmp) {
+-		printk(KERN_ERR "PM: Failed to allocate LZO compressed\n");
+-		vfree(unc);
+-		vfree(wrk);
+-		free_page((unsigned long)page);
+-		return -ENOMEM;
+-	}
++	/*
++	 * Adjust number of free pages after all allocations have been done.
++	 * We don't want to run out of pages when writing.
++	 */
++	handle->nr_free_pages = nr_free_pages();
+ 
+ 	printk(KERN_INFO
++		"PM: Using %zu thread(s) for compression.\n"
+ 		"PM: Compressing and saving image data (%u pages) ...     ",
+-		nr_to_write);
++		nr_threads, nr_to_write);
+ 	m = nr_to_write / 100;
+ 	if (!m)
+ 		m = 1;
+@@ -480,54 +577,75 @@ static int save_image_lzo(struct swap_map_handle *handle,
+ 	bio = NULL;
+ 	do_gettimeofday(&start);
+ 	for (;;) {
+-		for (off = 0; off < LZO_UNC_SIZE; off += PAGE_SIZE) {
+-			ret = snapshot_read_next(snapshot);
+-			if (ret < 0)
+-				goto out_finish;
+-
+-			if (!ret)
++		for (thr = 0; thr < nr_threads; thr++) {
++			for (off = 0; off < LZO_UNC_SIZE; off += PAGE_SIZE) {
++				ret = snapshot_read_next(snapshot);
++				if (ret < 0)
++					goto out_finish;
++
++				if (!ret)
++					break;
++
++				memcpy(data[thr].unc + off,
++				       data_of(*snapshot), PAGE_SIZE);
++
++				if (!(nr_pages % m))
++					printk(KERN_CONT "\b\b\b\b%3d%%",
++				               nr_pages / m);
++				nr_pages++;
++			}
++			if (!off)
+ 				break;
+ 
+-			memcpy(unc + off, data_of(*snapshot), PAGE_SIZE);
++			data[thr].unc_len = off;
+ 
+-			if (!(nr_pages % m))
+-				printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+-			nr_pages++;
++			atomic_set(&data[thr].ready, 1);
++			wake_up(&data[thr].go);
+ 		}
+ 
+-		if (!off)
++		if (!thr)
+ 			break;
+ 
+-		unc_len = off;
+-		ret = lzo1x_1_compress(unc, unc_len,
+-		                       cmp + LZO_HEADER, &cmp_len, wrk);
+-		if (ret < 0) {
+-			printk(KERN_ERR "PM: LZO compression failed\n");
+-			break;
+-		}
+-
+-		if (unlikely(!cmp_len ||
+-		             cmp_len > lzo1x_worst_compress(unc_len))) {
+-			printk(KERN_ERR "PM: Invalid LZO compressed length\n");
+-			ret = -1;
+-			break;
+-		}
++		for (run_threads = thr, thr = 0; thr < run_threads; thr++) {
++			wait_event(data[thr].done,
++			           atomic_read(&data[thr].stop));
++			atomic_set(&data[thr].stop, 0);
+ 
+-		*(size_t *)cmp = cmp_len;
++			ret = data[thr].ret;
+ 
+-		/*
+-		 * Given we are writing one page at a time to disk, we copy
+-		 * that much from the buffer, although the last bit will likely
+-		 * be smaller than full page. This is OK - we saved the length
+-		 * of the compressed data, so any garbage at the end will be
+-		 * discarded when we read it.
+-		 */
+-		for (off = 0; off < LZO_HEADER + cmp_len; off += PAGE_SIZE) {
+-			memcpy(page, cmp + off, PAGE_SIZE);
++			if (ret < 0) {
++				printk(KERN_ERR "PM: LZO compression failed\n");
++				goto out_finish;
++			}
+ 
+-			ret = swap_write_page(handle, page, &bio);
+-			if (ret)
++			if (unlikely(!data[thr].cmp_len ||
++			             data[thr].cmp_len >
++			             lzo1x_worst_compress(data[thr].unc_len))) {
++				printk(KERN_ERR
++				       "PM: Invalid LZO compressed length\n");
++				ret = -1;
+ 				goto out_finish;
++			}
++
++			*(size_t *)data[thr].cmp = data[thr].cmp_len;
++
++			/*
++			 * Given we are writing one page at a time to disk, we
++			 * copy that much from the buffer, although the last
++			 * bit will likely be smaller than full page. This is
++			 * OK - we saved the length of the compressed data, so
++			 * any garbage at the end will be discarded when we
++			 * read it.
++			 */
++			for (off = 0;
++			     off < LZO_HEADER + data[thr].cmp_len;
++			     off += PAGE_SIZE) {
++				memcpy(page, data[thr].cmp + off, PAGE_SIZE);
++
++				ret = swap_write_page(handle, page, &bio);
++				if (ret)
++					goto out_finish;
++			}
+ 		}
+ 	}
+ 
+@@ -541,11 +659,13 @@ out_finish:
+ 	else
+ 		printk(KERN_CONT "\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
+-
+-	vfree(cmp);
+-	vfree(unc);
+-	vfree(wrk);
+-	free_page((unsigned long)page);
++out_clean:
++	for (thr = 0; thr < nr_threads; thr++) {
++		if (data[thr].thr)
++			kthread_stop(data[thr].thr);
++	}
++	if (data) vfree(data);
++	if (page) free_page((unsigned long)page);
+ 
+ 	return ret;
+ }
+@@ -625,31 +745,65 @@ out_finish:
+ 
+ static void release_swap_reader(struct swap_map_handle *handle)
+ {
++	struct swap_map_page_list *tmp;
++
+ 	if (handle->cur)
+ 		free_page((unsigned long)handle->cur);
++	while (handle->maps) {
++		if (handle->maps->map)
++			free_page((unsigned long)handle->maps->map);
++		tmp = handle->maps;
++		handle->maps = handle->maps->next;
++		vfree(tmp);
++	}
+ 	handle->cur = NULL;
++	handle->maps = NULL;
+ }
+ 
+ static int get_swap_reader(struct swap_map_handle *handle,
+ 		unsigned int *flags_p)
+ {
+ 	int error;
++	struct swap_map_page_list *tmp, *last;
++	sector_t offset;
+ 
+ 	*flags_p = swsusp_header->flags;
+ 
+ 	if (!swsusp_header->image) /* how can this happen? */
+ 		return -EINVAL;
+ 
+-	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+-	if (!handle->cur)
+-		return -ENOMEM;
++	handle->cur = NULL;
++	last = handle->maps = NULL;
++	offset = swsusp_header->image;
++	while (offset) {
++		tmp = vmalloc(sizeof(*handle->maps));
++		if (!tmp) {
++			release_swap_reader(handle);
++			return -ENOMEM;
++		}
++		memset(tmp, 0, sizeof(*tmp));
++		if (!handle->maps)
++			handle->maps = tmp;
++		if (last)
++			last->next = tmp;
++		last = tmp;
++
++		tmp->map = (struct swap_map_page *)
++		           __get_free_page(__GFP_WAIT | __GFP_HIGH);
++		if (!tmp->map) {
++			release_swap_reader(handle);
++			return -ENOMEM;
++		}
+ 
+-	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
+-	if (error) {
+-		release_swap_reader(handle);
+-		return error;
++		error = hib_bio_read_page(offset, tmp->map, NULL);
++		if (error) {
++			release_swap_reader(handle);
++			return error;
++		}
++		offset = tmp->map->next_swap;
+ 	}
+ 	handle->k = 0;
++	handle->cur = handle->maps->map;
+ 	return 0;
+ }
+ 
+@@ -658,6 +812,7 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+ {
+ 	sector_t offset;
+ 	int error;
++	struct swap_map_page_list *tmp;
+ 
+ 	if (!handle->cur)
+ 		return -EINVAL;
+@@ -668,13 +823,15 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+ 	if (error)
+ 		return error;
+ 	if (++handle->k >= MAP_PAGE_ENTRIES) {
+-		error = hib_wait_on_bio_chain(bio_chain);
+ 		handle->k = 0;
+-		offset = handle->cur->next_swap;
+-		if (!offset)
++		free_page((unsigned long)handle->maps->map);
++		tmp = handle->maps;
++		handle->maps = handle->maps->next;
++		vfree(tmp);
++		if (!handle->maps)
+ 			release_swap_reader(handle);
+-		else if (!error)
+-			error = hib_bio_read_page(offset, handle->cur, NULL);
++		else
++			handle->cur = handle->maps->map;
+ 	}
+ 	return error;
+ }
+@@ -743,6 +900,50 @@ static int load_image(struct swap_map_handle *handle,
+ }
+ 
+ /**
++ * Structure used for LZO data decompression.
++ */
++struct dec_data {
++	struct task_struct *thr;                  /* thread */
++	atomic_t ready;                           /* ready to start flag */
++	atomic_t stop;                            /* ready to stop flag */
++	int ret;                                  /* return code */
++	wait_queue_head_t go;                     /* start decompression */
++	wait_queue_head_t done;                   /* decompression done */
++	size_t unc_len;                           /* uncompressed length */
++	size_t cmp_len;                           /* compressed length */
++	unsigned char unc[LZO_UNC_SIZE];          /* uncompressed buffer */
++	unsigned char cmp[LZO_CMP_SIZE];          /* compressed buffer */
++};
++
++/**
++ * Deompression function that runs in its own thread.
++ */
++static int lzo_decompress_threadfn(void *data)
++{
++	struct dec_data *d = data;
++
++	while (1) {
++		wait_event(d->go, atomic_read(&d->ready) ||
++		                  kthread_should_stop());
++		if (kthread_should_stop()) {
++			d->thr = NULL;
++			d->ret = -1;
++			atomic_set(&d->stop, 1);
++			wake_up(&d->done);
++			break;
++		}
++		atomic_set(&d->ready, 0);
++
++		d->unc_len = LZO_UNC_SIZE;
++		d->ret = lzo1x_decompress_safe(d->cmp + LZO_HEADER, d->cmp_len,
++		                               d->unc, &d->unc_len);
++		atomic_set(&d->stop, 1);
++		wake_up(&d->done);
++	}
++	return 0;
++}
++
++/**
+  * load_image_lzo - Load compressed image data and decompress them with LZO.
+  * @handle: Swap map handle to use for loading data.
+  * @snapshot: Image to copy uncompressed data into.
+@@ -754,49 +955,81 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ {
+ 	unsigned int m;
+ 	int error = 0;
++	int eof = 0;
+ 	struct bio *bio;
+ 	struct timeval start;
+ 	struct timeval stop;
+ 	unsigned nr_pages;
+-	size_t i, off, unc_len, cmp_len;
+-	unsigned char *unc, *cmp, *page[LZO_CMP_PAGES];
+-
+-	for (i = 0; i < LZO_CMP_PAGES; i++) {
+-		page[i] = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
+-		if (!page[i]) {
+-			printk(KERN_ERR "PM: Failed to allocate LZO page\n");
+-
+-			while (i)
+-				free_page((unsigned long)page[--i]);
+-
+-			return -ENOMEM;
+-		}
++	size_t i, off, thr, run_threads, nr_threads;
++	size_t ring = 0, pg = 0, ring_size = 0, have = 0, want, need, asked = 0;
++	unsigned char **page = NULL;
++	struct dec_data *data = NULL;
++
++	/*
++	 * We'll limit the number of threads for decompression to limit memory
++	 * footprint.
++	 */
++	nr_threads = num_online_cpus() - 1;
++	if (nr_threads > LZO_THREADS)
++		nr_threads = LZO_THREADS;
++	else if (nr_threads < 1)
++		nr_threads = 1;
++
++	page = vmalloc(sizeof(*page) * LZO_READ_PAGES);
++	if (!page) {
++		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
++		error = -ENOMEM;
++		goto out_clean;
+ 	}
+ 
+-	unc = vmalloc(LZO_UNC_SIZE);
+-	if (!unc) {
+-		printk(KERN_ERR "PM: Failed to allocate LZO uncompressed\n");
+-
+-		for (i = 0; i < LZO_CMP_PAGES; i++)
+-			free_page((unsigned long)page[i]);
+-
+-		return -ENOMEM;
++	data = vmalloc(sizeof(*data) * nr_threads);
++	if (!data) {
++		printk(KERN_ERR "PM: Failed to allocate LZO data\n");
++		error = -ENOMEM;
++		goto out_clean;
++	}
++	for (thr = 0; thr < nr_threads; thr++)
++		memset(&data[thr], 0, offsetof(struct dec_data, go));
++
++	/*
++	 * Start the decompression threads.
++	 */
++	for (thr = 0; thr < nr_threads; thr++) {
++		init_waitqueue_head(&data[thr].go);
++		init_waitqueue_head(&data[thr].done);
++
++		data[thr].thr = kthread_run(lzo_decompress_threadfn,
++		                            &data[thr],
++		                            "image_decompress/%zu", thr);
++		if (IS_ERR(data[thr].thr)) {
++			nr_threads = thr;
++			printk(KERN_ERR
++			       "PM: Cannot start decompression threads\n");
++			error = -ENOMEM;
++			goto out_clean;
++		}
+ 	}
+ 
+-	cmp = vmalloc(LZO_CMP_SIZE);
+-	if (!cmp) {
+-		printk(KERN_ERR "PM: Failed to allocate LZO compressed\n");
+-
+-		vfree(unc);
+-		for (i = 0; i < LZO_CMP_PAGES; i++)
+-			free_page((unsigned long)page[i]);
+-
+-		return -ENOMEM;
++	for (i = 0; i < LZO_READ_PAGES; i++) {
++		page[i] = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++		if (!page[i]) {
++			if (i < LZO_CMP_PAGES) {
++				ring_size = i;
++				printk(KERN_ERR
++				       "PM: Failed to allocate LZO pages\n");
++				error = -ENOMEM;
++				goto out_clean;
++			} else {
++				break;
++			}
++		}
+ 	}
++	want = ring_size = i;
+ 
+ 	printk(KERN_INFO
++		"PM: Using %zu thread(s) for decompression.\n"
+ 		"PM: Loading and decompressing image data (%u pages) ...     ",
+-		nr_to_read);
++		nr_threads, nr_to_read);
+ 	m = nr_to_read / 100;
+ 	if (!m)
+ 		m = 1;
+@@ -808,61 +1041,128 @@ static int load_image_lzo(struct swap_map_handle *handle,
+ 	if (error <= 0)
+ 		goto out_finish;
+ 
+-	for (;;) {
+-		error = swap_read_page(handle, page[0], NULL); /* sync */
+-		if (error)
+-			break;
+-
+-		cmp_len = *(size_t *)page[0];
+-		if (unlikely(!cmp_len ||
+-		             cmp_len > lzo1x_worst_compress(LZO_UNC_SIZE))) {
+-			printk(KERN_ERR "PM: Invalid LZO compressed length\n");
+-			error = -1;
+-			break;
++	for(;;) {
++		for (i = 0; !eof && i < want; i++) {
++			error = swap_read_page(handle, page[ring], &bio);
++			if (error) {
++				/*
++				 * On real read error, finish. On end of data,
++				 * set EOF flag and just exit the read loop.
++				 */
++				if (handle->cur &&
++				    handle->cur->entries[handle->k]) {
++					goto out_finish;
++				} else {
++					eof = 1;
++					break;
++				}
++			}
++			if (++ring >= ring_size)
++				ring = 0;
+ 		}
++		asked += i;
++		want -= i;
+ 
+-		for (off = PAGE_SIZE, i = 1;
+-		     off < LZO_HEADER + cmp_len; off += PAGE_SIZE, i++) {
+-			error = swap_read_page(handle, page[i], &bio);
++		/*
++		 * We are out of data, wait for some more.
++		 */
++		if (!have) {
++			if (!asked)
++				break;
++
++			error = hib_wait_on_bio_chain(&bio);
+ 			if (error)
+ 				goto out_finish;
++			have += asked;
++			asked = 0;
++			if (eof)
++				eof = 2;
+ 		}
+ 
+-		error = hib_wait_on_bio_chain(&bio); /* need all data now */
+-		if (error)
+-			goto out_finish;
++		for (thr = 0; have && thr < nr_threads; thr++) {
++			data[thr].cmp_len = *(size_t *)page[pg];
++			if (unlikely(!data[thr].cmp_len ||
++			             data[thr].cmp_len >
++			             lzo1x_worst_compress(LZO_UNC_SIZE))) {
++				printk(KERN_ERR
++				       "PM: Invalid LZO compressed length\n");
++				error = -1;
++				goto out_finish;
++			}
+ 
+-		for (off = 0, i = 0;
+-		     off < LZO_HEADER + cmp_len; off += PAGE_SIZE, i++) {
+-			memcpy(cmp + off, page[i], PAGE_SIZE);
+-		}
++			need = DIV_ROUND_UP(data[thr].cmp_len + LZO_HEADER,
++			                    PAGE_SIZE);
++			if (need > have) {
++				if (eof > 1) {
++					error = -1;
++					goto out_finish;
++				}
++				break;
++			}
+ 
+-		unc_len = LZO_UNC_SIZE;
+-		error = lzo1x_decompress_safe(cmp + LZO_HEADER, cmp_len,
+-		                              unc, &unc_len);
+-		if (error < 0) {
+-			printk(KERN_ERR "PM: LZO decompression failed\n");
+-			break;
++			for (off = 0;
++			     off < LZO_HEADER + data[thr].cmp_len;
++			     off += PAGE_SIZE) {
++				memcpy(data[thr].cmp + off,
++				       page[pg], PAGE_SIZE);
++				have--;
++				want++;
++				if (++pg >= ring_size)
++					pg = 0;
++			}
++
++			atomic_set(&data[thr].ready, 1);
++			wake_up(&data[thr].go);
+ 		}
+ 
+-		if (unlikely(!unc_len ||
+-		             unc_len > LZO_UNC_SIZE ||
+-		             unc_len & (PAGE_SIZE - 1))) {
+-			printk(KERN_ERR "PM: Invalid LZO uncompressed length\n");
+-			error = -1;
+-			break;
++		/*
++		 * Wait for more data while we are decompressing.
++		 */
++		if (have < LZO_CMP_PAGES && asked) {
++			error = hib_wait_on_bio_chain(&bio);
++			if (error)
++				goto out_finish;
++			have += asked;
++			asked = 0;
++			if (eof)
++				eof = 2;
+ 		}
+ 
+-		for (off = 0; off < unc_len; off += PAGE_SIZE) {
+-			memcpy(data_of(*snapshot), unc + off, PAGE_SIZE);
++		for (run_threads = thr, thr = 0; thr < run_threads; thr++) {
++			wait_event(data[thr].done,
++			           atomic_read(&data[thr].stop));
++			atomic_set(&data[thr].stop, 0);
+ 
+-			if (!(nr_pages % m))
+-				printk("\b\b\b\b%3d%%", nr_pages / m);
+-			nr_pages++;
++			error = data[thr].ret;
+ 
+-			error = snapshot_write_next(snapshot);
+-			if (error <= 0)
++			if (error < 0) {
++				printk(KERN_ERR
++				       "PM: LZO decompression failed\n");
+ 				goto out_finish;
++			}
++
++			if (unlikely(!data[thr].unc_len ||
++			             data[thr].unc_len > LZO_UNC_SIZE ||
++			             data[thr].unc_len & (PAGE_SIZE - 1))) {
++				printk(KERN_ERR
++				       "PM: Invalid LZO uncompressed length\n");
++				error = -1;
++				goto out_finish;
++			}
++
++			for (off = 0;
++			     off < data[thr].unc_len; off += PAGE_SIZE) {
++				memcpy(data_of(*snapshot),
++				       data[thr].unc + off, PAGE_SIZE);
++
++				if (!(nr_pages % m))
++					printk("\b\b\b\b%3d%%", nr_pages / m);
++				nr_pages++;
++
++				error = snapshot_write_next(snapshot);
++				if (error <= 0)
++					goto out_finish;
++			}
+ 		}
+ 	}
+ 
+@@ -876,11 +1176,15 @@ out_finish:
+ 	} else
+ 		printk("\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+-
+-	vfree(cmp);
+-	vfree(unc);
+-	for (i = 0; i < LZO_CMP_PAGES; i++)
++out_clean:
++	for (i = 0; i < ring_size; i++)
+ 		free_page((unsigned long)page[i]);
++	for (thr = 0; thr < nr_threads; thr++) {
++		if (data[thr].thr)
++			kthread_stop(data[thr].thr);
++	}
++	if (data) vfree(data);
++	if (page) vfree(page);
+ 
+ 	return error;
+ }
+---------------------------------------
+
+-- 
+Bojan
+
