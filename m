@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1I3PCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 11:02:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48986 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab1I3PCv (ORCPT
+	id S1754398Ab1I3PFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 11:05:22 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:43763 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab1I3PFV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 11:02:51 -0400
+	Fri, 30 Sep 2011 11:05:21 -0400
 MIME-Version: 1.0
-Date: Fri, 30 Sep 2011 23:02:49 +0800
-Message-ID: <CAD+1EGN=QRTk4gd+QKRyh3RxN_J64sz3+_zYtt0-4zoQbFpXNQ@mail.gmail.com>
-Subject: [RFC]fs/ramfs/inode.c
-From: harryxiyou <harryxiyou@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110930020754.GK12606@ponder.secretlab.ca>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+	<20110930020754.GK12606@ponder.secretlab.ca>
+Date: Fri, 30 Sep 2011 17:05:20 +0200
+Message-ID: <CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Stijn Devriendt <highguy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-When i read ramfs's inode file fs/ramfs/inode.c. I just see the following codes
-and get some confusions.
+On Fri, Sep 30, 2011 at 4:07 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
 
-[......]
-static void ramfs_kill_sb(struct super_block *sb)
-{
-           kfree(sb->s_fs_info);
-           kill_litter_super(sb);
-}
-[.....]
+> Comments below, some a bit nitpicky, but overall I think it looks
+> good.  I haven't dug into it nearly deeply enough though.  :-(
 
-If we can really free the sb->s_fs_info successfully everytime? Ok, you may say
-kfree returns no value. But how we can guarantee it can be freed
-right. And The same
-problem with the function kill_litter_super(sb). We  also have some
-other functions, which
-i have the same confusions. I have searched the relevant codes about
-kfree() with the tool
-ctags and cscope, but i get so many relevant codes. I can not
-distinguish which is the right
-one. I think if we can not let the os stop, we just printk the
-relevant error logs and make os
-run as usual.
+Hopefully we can patch the remaining bugs as we go along  :-)
 
+>> +/**
+>> + * Looks up a pin control device matching a certain device name or
+>> + * pure device pointer.
+>
+> May as well actually do kerneldoc formatting here on the comment
+> blocks.
 
-Thanks
-Harry Wei
+OK.
+
+>> +struct pinctrl_dev *get_pctldev_from_dev(struct device *dev,
+>> +                                      const char *devname)
+>
+> Nit: I'm not too fond of a single function doing both name and pointer
+> lookup at the same time.  Presumably the caller would have one or the
+> other and know what it needs to do.  I'd prefer to see one by-name
+> function and one by-reference.  I'm not going to make a big deal about
+> it though.
+
+The caller currently does not know what it has or
+what to do.
+
+This is basically an interator function that is called on
+a member tuple of device and device name to check
+which one you have and return a matching controller
+device for the key you do have.
+
+>> +     /* Register device with sysfs */
+>> +     pctldev->dev.parent = dev;
+>> +     pctldev->dev.bus = &pinctrl_bus;
+>
+> I don't think there is an actual need for a pinctrl bus type.  There
+> aren't any drivers that are going to be bound to these things which is
+> the primary functionality that a bus type provides.  Am I missing
+> something?
+
+That is not the reason it's there actually, what we have
+discussed on the mailing list is getting sysfs entries for the same
+reason gpiolib registers a class: handle pin control from userspace,
+we can already see that coming and I already have a use case
+for it. (Modem SIM connector control from userspace daemon.)
+
+So first it was registering a class, then Greg said classes are
+deprecated and we should use a bus instead. So it is
+registering a bus to get sysfs so we can get userspace
+controls.
+
+>> +out_err:
+>> +     put_device(&pctldev->dev);
+>> +     kfree(pctldev);
+>
+> Once a device is initialized, it cannot be kfree()'ed directly.  The
+> .release method needs to do that.
+
+OK. And I already had a proper .release() method doing
+exactly that, so deleting this.
+
+>> +/**
+>> + * pin_free() - release a single muxed in pin so something else can be muxed in
+>> + *   instead
+>
+> Nit: the summary line in kerneldoc should fit on one line.
+
+OK.
+
+Went over the code and fixed a few other sites too.
+
+>> +int __init
+>> +pinmux_register_mappings(struct pinmux_map const *maps, unsigned num_maps)
+>
+> Nit: keep line breaks in the parameter lists.  More grep friendly.
+
+OK fixed it.
+
+Yours,
+Linus Walleij
