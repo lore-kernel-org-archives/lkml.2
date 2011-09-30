@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab1I3Py0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 11:54:26 -0400
-Received: from mail.avalus.com ([89.16.176.221]:39281 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab1I3PyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 11:54:25 -0400
-Date: Fri, 30 Sep 2011 16:54:21 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-cc: Alexey Dobriyan <adobriyan@gmail.com>, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        Alex Bligh <alex@alex.org.uk>
-Subject: Re: [PATCH] Fix repeatable Oops on container destroy with conntrack
-Message-ID: <EBB118BCDCB0BE733EF43F1E@Ximines.local>
-In-Reply-To: <20110928210851.GA2761@1984>
-References: <2184C0CE5A5EDC94CDDA5053@Ximines.local>
- <20110912072524.GA2996@p183.telecom.by> <20110912093749.GE2194@1984>
- <E0902A9541FD5D118EA02B31@Ximines.local> <20110912183357.GC3641@1984>
- <87A32B21CA99D62CE1AB7A4B@Ximines.local>
- <7631498AC7E7C0EAD641AC7D@nimrod.local> <20110914013500.GB17051@1984>
- <A51A04647674405AF6C39A4F@nimrod.local> <20110928210851.GA2761@1984>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
+	id S1756529Ab1I3Pym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 11:54:42 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:59612 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab1I3Pyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 11:54:40 -0400
+Date: Fri, 30 Sep 2011 18:54:36 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options"
+Message-ID: <20110930155436.GD9049@localhost.pp.htv.fi>
+References: <20110930134245.GB21474@localhost.pp.htv.fi>
+ <20110930150519.GA7980@leaf>
+ <20110930152517.GE19053@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20110930152517.GE19053@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 30, 2011 at 05:25:23PM +0200, Frederic Weisbecker wrote:
+>...
+> All in one I think we chose a wrong way to fix the issue. It's annoying to
+> have all the configs that are only visible with CONFIG_EXPERT spread all
+> around in random config menu.
+> 
+> Anything that has "if CONFIG_EXPERT" should probably be moved under the CONFIG_EXPERT
+> menu so that it's visible and found right away.
 
+No, it wouldn't be correct to have tons of options from different 
+drivers smashed at one place, instead of keeping them at the subsystem 
+where they belong.
 
---On 28 September 2011 23:08:51 +0200 Pablo Neira Ayuso 
-<pablo@netfilter.org> wrote:
-
->> As you can probably tell, my interest here is to get something that
->> doesn't oops into stable kernels.
->
-> As said, I'm not sure that this can happen, given that the amount of
-> patches that we need to fix it fine, sorry.
-
-This is why I was suggesting the 2 line "don't oops" patch in the
-interim.
+cu
+Adrian
 
 -- 
-Alex Bligh
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
+
