@@ -1,196 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab1I3FFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 01:05:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44177 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab1I3FFD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 01:05:03 -0400
-Date: Thu, 29 Sep 2011 20:07:54 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stijn Devriendt <highguy@gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-Message-ID: <20110930020754.GK12606@ponder.secretlab.ca>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
+	id S1754893Ab1I3FPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 01:15:11 -0400
+Received: from fnarfbargle.com ([93.93.131.224]:36984 "EHLO fnarfbargle.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751094Ab1I3FPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 01:15:10 -0400
+Message-ID: <4E855050.8080403@fnarfbargle.com>
+Date: Fri, 30 Sep 2011 13:14:56 +0800
+From: Brad Campbell <lists2009@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: airlied@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Radeon regression fix
+References: <4E847ED4.5090703@fnarfbargle.com>	<CADnq5_PUcDVL+RPZPDGiAxHjn=vL7dnNsiQYG2F5e6GWnoX7Kg@mail.gmail.com>	<4E848CDE.1020707@fnarfbargle.com>	<4E850BE6.2050306@fnarfbargle.com> <CADnq5_NJuGLWB-1d+TGqTxW6ZOOQ4QeQj1e6dXOffL5egZuw1g@mail.gmail.com>
+In-Reply-To: <CADnq5_NJuGLWB-1d+TGqTxW6ZOOQ4QeQj1e6dXOffL5egZuw1g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 02:03:39PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This creates a subsystem for handling of pin control devices.
-> These are devices that control different aspects of package
-> pins.
+On 30/09/11 12:59, Alex Deucher wrote:
+> On Thu, Sep 29, 2011 at 8:23 PM, Brad Campbell
 
-Comments below, some a bit nitpicky, but overall I think it looks
-good.  I haven't dug into it nearly deeply enough though.  :-(
+>> Looking at it with a nights sleep, it's obvious the code path in
+>> aux_native_write is ok. Is this a bit cleaner than the last patch?
+>
+> Looks pretty good.  I was thinking of something more like this (sorry
+> for the lack of a patch, I'm away from my source trees at the moment):
+>
+> 	while (1) {
+> 		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
+> 					    msg, msg_bytes, recv, recv_bytes, delay,&ack);
+>
+> 		if (ret<  0)
+> 			return ret;
+> 		if ((ack&  AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+> 			return ret;
+> 		else if ((ack&  AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+> 			udelay(400);
+> 		else if (ret == 0)
+> 			return -EPROTO;
+> 		else
+> 			return -EIO;
+> 	}
 
-[...]
-> +/**
-> + * Looks up a pin control device matching a certain device name or
-> + * pure device pointer.
+Yep, that looks cleaner.
 
-May as well actually do kerneldoc formatting here on the comment
-blocks.
+My only thought was the pre-3.0 code had a limit to the number of 
+retries. Was that for a specific reason or is it ok to attempt to retry 
+indefinitely if we receive a DEFER ?
 
-> + */
-> +struct pinctrl_dev *get_pctldev_from_dev(struct device *dev,
-> +					 const char *devname)
-> +{
-> +	struct pinctrl_dev *pctldev = NULL;
-> +	bool found = false;
-> +
-> +	mutex_lock(&pinctrldev_list_mutex);
-> +	list_for_each_entry(pctldev, &pinctrldev_list, node) {
-> +		if (dev &&  &pctldev->dev == dev) {
-> +			/* Matched on device pointer */
-> +			found = true;
-> +			break;
-> +		}
-> +
-> +		if (devname &&
-> +		    !strcmp(dev_name(&pctldev->dev), devname)) {
-> +			/* Matched on device name */
-> +			found = true;
-> +			break;
-> +		}
-> +	}
-> +	mutex_unlock(&pinctrldev_list_mutex);
-> +
-> +	if (found)
-> +		return pctldev;
-> +
-> +	return NULL;
-> +}
+>
+> Thanks for tracking this down.
 
-Nit: I'm not too fond of a single function doing both name and pointer
-lookup at the same time.  Presumably the caller would have one or the
-other and know what it needs to do.  I'd prefer to see one by-name
-function and one by-reference.  I'm not going to make a big deal about
-it though.
-
-> +/**
-> + * pinctrl_register() - register a pin controller device
-> + * @pctldesc: descriptor for this pin controller
-> + * @dev: parent device for this pin controller
-> + * @driver_data: private pin controller data for this pin controller
-> + */
-> +struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
-> +				    struct device *dev, void *driver_data)
-> +{
-> +	static atomic_t pinmux_no = ATOMIC_INIT(0);
-> +	struct pinctrl_dev *pctldev;
-> +	int ret;
-> +
-> +	if (pctldesc == NULL)
-> +		return ERR_PTR(-EINVAL);
-> +	if (pctldesc->name == NULL)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	/* If we're implementing pinmuxing, check the ops for sanity */
-> +	if (pctldesc->pmxops) {
-> +		ret = pinmux_check_ops(pctldesc->pmxops);
-> +		if (ret) {
-> +			pr_err("%s pinmux ops lacks necessary functions\n",
-> +			       pctldesc->name);
-> +			return ERR_PTR(ret);
-> +		}
-> +	}
-> +
-> +	pctldev = kzalloc(sizeof(struct pinctrl_dev), GFP_KERNEL);
-> +	if (pctldev == NULL)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	/* Initialize pin control device struct */
-> +	pctldev->owner = pctldesc->owner;
-> +	pctldev->desc = pctldesc;
-> +	pctldev->driver_data = driver_data;
-> +	INIT_RADIX_TREE(&pctldev->pin_desc_tree, GFP_KERNEL);
-> +	spin_lock_init(&pctldev->pin_desc_tree_lock);
-> +	INIT_LIST_HEAD(&pctldev->gpio_ranges);
-> +	mutex_init(&pctldev->gpio_ranges_lock);
-> +
-> +	/* Register device with sysfs */
-> +	pctldev->dev.parent = dev;
-> +	pctldev->dev.bus = &pinctrl_bus;
-
-I don't think there is an actual need for a pinctrl bus type.  There
-aren't any drivers that are going to be bound to these things which is
-the primary functionality that a bus type provides.  Am I missing
-something?
-
-> +	pctldev->dev.type = &pinctrl_type;
-> +	dev_set_name(&pctldev->dev, "pinctrl.%d",
-> +		     atomic_inc_return(&pinmux_no) - 1);
-> +	ret = device_register(&pctldev->dev);
-> +	if (ret != 0) {
-> +		pr_err("error in device registration\n");
-> +		put_device(&pctldev->dev);
-> +		kfree(pctldev);
-> +		goto out_err;
-> +	}
-> +	dev_set_drvdata(&pctldev->dev, pctldev);
-> +
-> +	/* Register all the pins */
-> +	pr_debug("try to register %d pins on %s...\n",
-> +		 pctldesc->npins, pctldesc->name);
-> +	ret = pinctrl_register_pins(pctldev, pctldesc->pins, pctldesc->npins);
-> +	if (ret) {
-> +		pr_err("error during pin registration\n");
-> +		pinctrl_free_pindescs(pctldev, pctldesc->pins,
-> +				      pctldesc->npins);
-> +		goto out_err;
-> +	}
-> +
-> +	pinctrl_init_device_debugfs(pctldev);
-> +	mutex_lock(&pinctrldev_list_mutex);
-> +	list_add(&pctldev->node, &pinctrldev_list);
-> +	mutex_unlock(&pinctrldev_list_mutex);
-> +	pinmux_hog_maps(pctldev);
-> +	return pctldev;
-> +
-> +out_err:
-> +	put_device(&pctldev->dev);
-> +	kfree(pctldev);
-
-Once a device is initialized, it cannot be kfree()'ed directly.  The
-.release method needs to do that.
-
-> +/**
-> + * pin_free() - release a single muxed in pin so something else can be muxed in
-> + *	instead
-
-Nit: the summary line in kerneldoc should fit on one line.
-
-> +/**
-> + * pinmux_register_mappings() - register a set of pinmux mappings
-> + * @maps: the pinmux mappings table to register
-> + * @num_maps: the number of maps in the mapping table
-> + *
-> + * Only call this once during initialization of your machine, the function is
-> + * tagged as __init and won't be callable after init has completed. The map
-> + * passed into this function will be owned by the pinmux core and cannot be
-> + * free:d.
-> + */
-> +int __init
-> +pinmux_register_mappings(struct pinmux_map const *maps, unsigned num_maps)
-
-Nit: keep line breaks in the parameter lists.  More grep friendly.
-
-g.
+No worries. I learned quite a bit about some kernel internals and more 
+than a few quirks about apple hardware while muddling around.
