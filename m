@@ -1,262 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab1I3Ptk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 11:49:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46950 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab1I3Pti (ORCPT
+	id S1756331Ab1I3PuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 11:50:18 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:41228 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab1I3PuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 11:49:38 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
-        adrian.hunter@intel.com, linus.walleij@linaro.org,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
-        per.forlin@stericsson.com, johan.rudholm@stericsson.com,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH v5] mmc : general purpose partition support.
-Date: Sat,  1 Oct 2011 00:49:23 +0900
-Message-Id: <1317397763-7151-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 30 Sep 2011 11:50:16 -0400
+Date: Fri, 30 Sep 2011 18:50:12 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options"
+Message-ID: <20110930155012.GC9049@localhost.pp.htv.fi>
+References: <20110930134245.GB21474@localhost.pp.htv.fi>
+ <20110930150519.GA7980@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110930150519.GA7980@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It allows gerneral purpose partitions in MMC Device.
-And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
-After patching, we can see general purpose partitions like this.
-> cat /proc/partitions
-          179 0 847872 mmcblk0
-          179 192 4096 mmcblk0gp3
-          179 160 4096 mmcblk0gp2
-          179 128 4096 mmcblk0gp1
-          179 96  1052672 mmcblk0gp0
-          179 64  1024 mmcblk0boot1
-          179 32  1024 mmcblk0boot0
+On Fri, Sep 30, 2011 at 08:05:19AM -0700, Josh Triplett wrote:
+> On Fri, Sep 30, 2011 at 04:42:45PM +0300, Adrian Bunk wrote:
+>...
+> > Let me point at the obvious fact that both CONFIG_DEBUG_BUGVERBOSE and 
+> > CONFIG_DEBUG_RODATA do depend on DEBUG_KERNEL, and are contrary to the 
+> > claim of the author of this patch never enabled with 
+> > CONFIG_DEBUG_KERNEL=n. [1]
+> 
+> Not true:
+> 
+> ~/src/linux-2.6$ rm .config
+> ~/src/linux-2.6$ make allnoconfig
+>   HOSTCC  scripts/basic/fixdep
+>   HOSTCC  scripts/kconfig/conf.o
+>   HOSTCC  scripts/kconfig/zconf.tab.o
+>   HOSTLD  scripts/kconfig/conf
+> scripts/kconfig/conf --allnoconfig Kconfig
+> #
+> # configuration written to .config
+> #
+> ~/src/linux-2.6$ grep BUGVERBOSE .config
+> CONFIG_DEBUG_BUGVERBOSE=y
+> ~/src/linux-2.6$ grep DEBUG_KERNEL .config
+> # CONFIG_DEBUG_KERNEL is not set
+> 
+> DEBUG_BUGVERBOSE does not depend on DEBUG_KERNEL; it just only shows up
+> with DEBUG_KERNEL (and EXPERT) set.  The *description* has a conditional
+> on DEBUG_KERNEL and EXPERT:
+> 
+> config DEBUG_BUGVERBOSE
+>         bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
+>...
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
----
- drivers/mmc/card/block.c |   31 +++++++++++++++------------
- drivers/mmc/core/mmc.c   |   52 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/mmc/card.h |   32 +++++++++++++++++++++++++++-
- include/linux/mmc/mmc.h  |    3 --
- 4 files changed, 98 insertions(+), 20 deletions(-)
+Apologies, I was wrong on DEBUG_BUGVERBOSE
+(but for DEBUG_RODATA I was right).
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 1ff5486..56f7185 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -1377,26 +1377,29 @@ static int mmc_blk_alloc_part(struct mmc_card *card,
- 	return 0;
- }
- 
-+/* MMC Physical partition consist of two boot partitons and
-+ * four general purpose partitions.
-+ * if the register of respective partitions is set in ext_csd,
-+ * it allocate block device to be accessed.
-+ */
-+
- static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
- {
--	int ret = 0;
-+	int idx, ret = 0;
- 
- 	if (!mmc_card_mmc(card))
- 		return 0;
- 
--	if (card->ext_csd.boot_size) {
--		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT0,
--					 card->ext_csd.boot_size >> 9,
--					 true,
--					 "boot0");
--		if (ret)
--			return ret;
--		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT1,
--					 card->ext_csd.boot_size >> 9,
--					 true,
--					 "boot1");
--		if (ret)
--			return ret;
-+	 for (idx = 0; idx < card->nr_parts; idx++) {
-+		if (card->part[idx].size) {
-+			ret = mmc_blk_alloc_part(card, md,
-+				card->part[idx].cookie,
-+				card->part[idx].size >> 9,
-+				card->part[idx].force_ro,
-+				card->part[idx].name);
-+			if (ret)
-+				return ret;
-+		}
- 	}
- 
- 	return ret;
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 5700b1c..5db4cee 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -41,6 +41,11 @@ static const unsigned int tacc_mant[] = {
- 	35,	40,	45,	50,	55,	60,	70,	80,
- };
- 
-+/* partition configuration array */
-+static const unsigned int part_cfg[] = {
-+	0x1,	0x2,	0x4,	0x5,	0x6,	0x7,
-+};
-+
- #define UNSTUFF_BITS(resp,start,size)					\
- 	({								\
- 		const int __size = size;				\
-@@ -239,7 +244,8 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd)
-  */
- static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- {
--	int err = 0;
-+	int err = 0, idx, part_num;
-+	unsigned int part_size, gp_size_mult;
- 
- 	BUG_ON(!card);
- 
-@@ -340,7 +346,16 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- 		 * There are two boot regions of equal size, defined in
- 		 * multiples of 128K.
- 		 */
--		card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-+		if (ext_csd[EXT_CSD_BOOT_MULT])	{
-+			card->nr_parts = MMC_NUM_BOOT_PARTITION;
-+			for (idx = 0, part_num = 0;
-+				idx < MMC_NUM_BOOT_PARTITION; idx++,
-+				part_num++) {
-+				part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-+				mmc_part_add(card, part_size, part_cfg[idx],
-+					"boot%d", idx, part_num, true);
-+			}
-+		}
- 	}
- 
- 	card->ext_csd.raw_hc_erase_gap_size =
-@@ -392,6 +407,39 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- 			card->ext_csd.enhanced_area_offset = -EINVAL;
- 			card->ext_csd.enhanced_area_size = -EINVAL;
- 		}
-+
-+		/*
-+		 * General purpose partition feature support --
-+		 * If ext_csd have the size of general purpose partitions,
-+		 * set size, part_type, partition name in mmc_part.
-+		 */
-+
-+		if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
-+			u8 hc_erase_grp_sz =
-+				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-+			u8 hc_wp_grp_sz =
-+				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-+
-+			card->ext_csd.enhanced_area_en = 1;
-+
-+			card->nr_parts += MMC_NUM_GP_PARTITION;
-+			for (part_num = 0, gp_size_mult = 143;
-+				idx < card->nr_parts;
-+				idx++, part_num++, gp_size_mult += 3) {
-+				if (!ext_csd[gp_size_mult] &&
-+					!ext_csd[gp_size_mult + 1] &&
-+					!ext_csd[gp_size_mult + 2])
-+					continue;
-+				part_size = (ext_csd[gp_size_mult + 2] << 16) +
-+					(ext_csd[gp_size_mult + 1] << 8) +
-+					ext_csd[gp_size_mult];
-+				part_size *= (size_t)(hc_erase_grp_sz *
-+					hc_wp_grp_sz);
-+				part_size <<= 19;
-+				mmc_part_add(card, part_size, part_cfg[idx],
-+					"gp%d", idx, part_num, false);
-+			}
-+		}
- 		card->ext_csd.sec_trim_mult =
- 			ext_csd[EXT_CSD_SEC_TRIM_MULT];
- 		card->ext_csd.sec_erase_mult =
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index b460fc2..941f2d0 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -12,6 +12,7 @@
- 
- #include <linux/mmc/core.h>
- #include <linux/mod_devicetable.h>
-+#include <linux/genhd.h>
- 
- struct mmc_cid {
- 	unsigned int		manfid;
-@@ -63,7 +64,6 @@ struct mmc_ext_csd {
- 	bool			enhanced_area_en;	/* enable bit */
- 	unsigned long long	enhanced_area_offset;	/* Units: Byte */
- 	unsigned int		enhanced_area_size;	/* Units: KB */
--	unsigned int		boot_size;		/* in bytes */
- 	u8			raw_partition_support;	/* 160 */
- 	u8			raw_erased_mem_count;	/* 181 */
- 	u8			raw_ext_csd_structure;	/* 194 */
-@@ -157,6 +157,22 @@ struct sdio_func_tuple;
- 
- #define SDIO_MAX_FUNCS		7
- 
-+/* The number of MMC physical partitions
-+ * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
-+ */
-+#define MMC_NUM_BOOT_PARTITION	2
-+#define MMC_NUM_GP_PARTITION	4
-+
-+/*
-+ * MMC Physical partitions
-+ */
-+struct mmc_part {
-+	unsigned int	size;	/* partition size (in bytes) */
-+	unsigned int	cookie;	/* it used to part_type */
-+	char	name[DISK_NAME_LEN];
-+	bool	force_ro;	/* to make boot parts RO by default */
-+};
-+
- /*
-  * MMC device
-  */
-@@ -216,9 +232,23 @@ struct mmc_card {
- 	unsigned int		sd_bus_speed;	/* Bus Speed Mode set for the card */
- 
- 	struct dentry		*debugfs_root;
-+	struct mmc_part	part[MMC_NUM_BOOT_PARTITION + MMC_NUM_GP_PARTITION];	/* mmc physical partitions */
-+	unsigned int	nr_parts;
- };
- 
- /*
-+ * This function fill contents in mmc_part.
-+ */
-+static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
-+	unsigned int part_cfg, char *name, int idx, int part_num, bool ro)
-+{
-+	card->part[idx].size = size;
-+	card->part[idx].cookie = part_cfg;
-+	sprintf(card->part[idx].name, name, part_num);
-+	card->part[idx].force_ro = ro;
-+}
-+
-+/*
-  *  The world is not perfect and supplies us with broken mmc/sdio devices.
-  *  For at least some of these bugs we need a work-around.
-  */
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 5a794cb..08f1746 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -299,10 +299,7 @@ struct _mmc_csd {
-  */
- 
- #define EXT_CSD_WR_REL_PARAM_EN		(1<<2)
--
- #define EXT_CSD_PART_CONFIG_ACC_MASK	(0x7)
--#define EXT_CSD_PART_CONFIG_ACC_BOOT0	(0x1)
--#define EXT_CSD_PART_CONFIG_ACC_BOOT1	(0x2)
- 
- #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
- #define EXT_CSD_CMD_SET_SECURE		(1<<1)
+>...
+> Also see Ingo Molnar's mail with Message-Id
+> <20110605093445.GA19927@elte.hu>, which explicitly recommended this
+> approach.
+
+Ingo is an expert in a gazillion areas of the kernel and knows more 
+about these than mere mortals like me will ever know.
+
+Kconfig is (the?) one thing where he in not a good advisor.
+
+Looking at the patch Frederic points at [1]:
+
+ config DEBUG_BUGVERBOSE
+-	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
++	bool "Verbose BUG() reporting (adds 70K)" if EXPERT
+
+This part of the patch would have been the correct and complete 
+solution for DEBUG_BUGVERBOSE.
+
+The crazy select added in commit f505c553 is wrong.
+
+> - Josh Triplett
+
+cu
+Adrian
+
+[1] http://lkml.org/lkml/2011/6/6/641
+
 -- 
-1.7.4.4
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
 
