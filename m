@@ -1,157 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758124Ab1I3KcT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 06:32:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57886 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109Ab1I3KcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 06:32:13 -0400
-From: Johannes Thumshirn <morbidrsa@googlemail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk, fmhess@users.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Johannes Thumshirn <morbidrsa@googlemail.com>
-Subject: [PATCH] staging: comedi: Added log subjects to printk()s in pcmmio
-Date: Fri, 30 Sep 2011 12:31:33 +0200
-Message-Id: <1317378693-18474-1-git-send-email-morbidrsa@googlemail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1316926152-7258-1-git-send-email-morbidrsa@googlemail.com>
-References: <1316926152-7258-1-git-send-email-morbidrsa@googlemail.com>
+	id S1757992Ab1I3Kd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 06:33:26 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:43608 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755386Ab1I3KdZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 06:33:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1109300156140.12185@utopia.booyaka.com>
+References: <1317361216-28248-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109300107150.32653@utopia.booyaka.com>
+	<alpine.DEB.2.00.1109300156140.12185@utopia.booyaka.com>
+Date: Fri, 30 Sep 2011 16:03:23 +0530
+Message-ID: <CAP05o4+VPcMXn8hB6f2buyET1tR+KZu1tMm=xh5DKrrjsuomnw@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v12] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added log subject to printk()s in drivers/staging/comedi/drivers/pcmmio.c.
-When necessary append trailing '\n' and leading identifier to log message to
-unbreak the output.
+On Fri, Sep 30, 2011 at 1:32 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> Hi
+>
+> a few more comments
+>
+> On Fri, 30 Sep 2011, Paul Walmsley wrote:
+>
+>> On Fri, 30 Sep 2011, Keshava Munegowda wrote:
+>>
+>> > +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
+>> > +   .master         = &omap3xxx_l4_core_hwmod,
+>> > +   .slave          = &omap34xx_usb_host_hs_hwmod,
+>> > +   .clk            = "l4_ick",
+>> > +   .addr           = omap34xx_usb_host_hs_addrs,
+>> > +   .user           = OCP_USER_MPU | OCP_USER_SDMA,
+>> > +};
+>> > +
+>> > +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__ick = {
+>
+> This is missing master, slave, and addr fields.  But see the comment
+> below.
+>
+>> > +   .clk            = "usbhost_ick",
+>> > +   .user           = OCP_USER_MPU,
+>> > +   .flags          = OCPIF_SWSUP_IDLE,
+>>
+>> Does this really need OCPIF_SWSUP_IDLE?  If so, then there is a hardware
+>> bug, and some explanation is needed.
+>
+> Could you describe why there are two struct omap_hwmod_ocp_if records
+> here?  It seems to me that these should just be combined into one struct
+> omap_hwmod_ocp_if record?  Looking at the clock3xxx_data.c file, the
+> usbhost_ick struct clk has l4_ick as its parent, so l4_ick shouldn't need
+> to be mentioned explicitly?
 
-Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
----
- drivers/staging/comedi/drivers/pcmmio.c |   38 +++++++++++++++++-------------
- 1 files changed, 21 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcmmio.c b/drivers/staging/comedi/drivers/pcmmio.c
-index f2e88e5..eddac00 100644
---- a/drivers/staging/comedi/drivers/pcmmio.c
-+++ b/drivers/staging/comedi/drivers/pcmmio.c
-@@ -371,15 +371,15 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	iobase = it->options[0];
- 	irq[0] = it->options[1];
- 
--	printk("comedi%d: %s: io: %lx ", dev->minor, driver.driver_name,
--	       iobase);
-+	printk(KERN_INFO "comedi%d: %s: io: %lx attaching...\n", dev->minor,
-+			driver.driver_name, iobase);
- 
- 	dev->iobase = iobase;
- 
- 	if (!iobase || !request_region(iobase,
- 				       thisboard->total_iosize,
- 				       driver.driver_name)) {
--		printk("I/O port conflict\n");
-+		printk(KERN_ERR "comedi%d: I/O port conflict\n", dev->minor);
- 		return -EIO;
- 	}
- 
-@@ -394,7 +394,8 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
-  * convenient macro defined in comedidev.h.
-  */
- 	if (alloc_private(dev, sizeof(struct pcmmio_private)) < 0) {
--		printk("cannot allocate private data structure\n");
-+		printk(KERN_ERR "comedi%d: cannot allocate private data structure\n",
-+				dev->minor);
- 		return -ENOMEM;
- 	}
- 
-@@ -417,7 +418,8 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    kcalloc(n_subdevs, sizeof(struct pcmmio_subdev_private),
- 		    GFP_KERNEL);
- 	if (!devpriv->sprivs) {
--		printk("cannot allocate subdevice private data structures\n");
-+		printk(KERN_ERR "comedi%d: cannot allocate subdevice private data structures\n",
-+				dev->minor);
- 		return -ENOMEM;
- 	}
- 	/*
-@@ -427,7 +429,8 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	 * Allocate 1 AI + 1 AO + 2 DIO subdevs (24 lines per DIO)
- 	 */
- 	if (alloc_subdevices(dev, n_subdevs) < 0) {
--		printk("cannot allocate subdevice data structures\n");
-+		printk(KERN_ERR "comedi%d: cannot allocate subdevice data structures\n",
-+				dev->minor);
- 		return -ENOMEM;
- 	}
- 
-@@ -557,14 +560,15 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 */
- 
- 	if (irq[0]) {
--		printk("irq: %u ", irq[0]);
-+		printk(KERN_DEBUG "comedi%d: irq: %u\n", dev->minor, irq[0]);
- 		if (thisboard->dio_num_asics == 2 && irq[1])
--			printk("second ASIC irq: %u ", irq[1]);
-+			printk(KERN_DEBUG "comedi%d: second ASIC irq: %u\n",
-+					dev->minor, irq[1]);
- 	} else {
--		printk("(IRQ mode disabled) ");
-+		printk(KERN_INFO "comedi%d: (IRQ mode disabled)\n", dev->minor);
- 	}
- 
--	printk("attached\n");
-+	printk(KERN_INFO "comedi%d: attached\n", dev->minor);
- 
- 	return 1;
- }
-@@ -581,7 +585,7 @@ static int pcmmio_detach(struct comedi_device *dev)
- {
- 	int i;
- 
--	printk("comedi%d: %s: remove\n", dev->minor, driver.driver_name);
-+	printk(KERN_INFO "comedi%d: %s: remove\n", dev->minor, driver.driver_name);
- 	if (dev->iobase)
- 		release_region(dev->iobase, thisboard->total_iosize);
- 
-@@ -622,7 +626,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("write mask: %08x  data: %08x\n", data[0], data[1]);
-+	printk(KERN_DEBUG "write mask: %08x  data: %08x\n", data[0], data[1]);
- #endif
- 
- 	s->state = 0;
-@@ -644,9 +648,9 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- #ifdef DAMMIT_ITS_BROKEN
- 		/* DEBUG */
- 		printk
--		    ("byte %d wmb %02x db %02x offset %02d io %04x, data_in %02x ",
--		     byte_no, (unsigned)write_mask_byte, (unsigned)data_byte,
--		     offset, ioaddr, (unsigned)byte);
-+		    (KERN_DEBUG "byte %d wmb %02x db %02x offset %02d io %04x,"
-+		     " data_in %02x ", byte_no, (unsigned)write_mask_byte,
-+		     (unsigned)data_byte, offset, ioaddr, (unsigned)byte);
- #endif
- 
- 		if (write_mask_byte) {
-@@ -674,7 +678,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
- 
- #ifdef DAMMIT_ITS_BROKEN
- 	/* DEBUG */
--	printk("s->state %08x data_out %08x\n", s->state, data[1]);
-+	printk(KERN_DEBUG "s->state %08x data_out %08x\n", s->state, data[1]);
- #endif
- 
- 	return 2;
-@@ -886,7 +890,7 @@ static irqreturn_t interrupt_pcmmio(int irq, void *d)
- 				 * with commands..
- 				 */
- 				printk
--				    ("PCMMIO DEBUG: got edge detect interrupt %d asic %d which_chans: %06x\n",
-+				    (KERN_DEBUG "got edge detect interrupt %d asic %d which_chans: %06x\n",
- 				     irq, asic, triggered);
- 				for (s = dev->subdevices + 2;
- 				     s < dev->subdevices + dev->n_subdevices;
--- 
-1.7.5.4
+Thanks ! I will do this.
 
+
+
+..
+>
+>> > +static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
+>> > +   .clk            = "usbtll_ick",
+>> > +   .user           = OCP_USER_MPU,
+>> > +   .flags          = OCPIF_SWSUP_IDLE,
+>> > +};
+>>
+>> Does this really need OCPIF_SWSUP_IDLE?  If so, then there is a hardware
+>> bug, and some explanation is needed.
+>>
+>> > +
+>> > +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
+>> > +   .master         = &omap3xxx_l4_core_hwmod,
+>> > +   .slave          = &omap34xx_usb_tll_hs_hwmod,
+>> > +   .clk            = "l4_ick",
+>> > +   .addr           = omap34xx_usb_tll_hs_addrs,
+>> > +   .user           = OCP_USER_MPU | OCP_USER_SDMA,
+>> > +};
+>
+> Same problem here.  Seems like omap34xx_l4_cfg__usb_tll_hs and
+> omap34xx_f_cfg__usb_tll_hs should be combined into one record.
+
+Thanks ! I will do this.
