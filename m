@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab1I3GBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 02:01:23 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40575 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab1I3GBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 02:01:20 -0400
-Date: Thu, 29 Sep 2011 23:02:26 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20110929230226.5fed4095.akpm00@gmail.com>
-In-Reply-To: <20110930153255.6e3a0d6dc7758b7fb5561fc6@canb.auug.org.au>
-References: <20110930153255.6e3a0d6dc7758b7fb5561fc6@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756769Ab1I3GNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 02:13:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32865 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab1I3GNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 02:13:00 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <aneesh@ti.com>, <khilman@ti.com>,
+        <santosh.shilimkar@ti.com>, <christian.gmeiner@gmail.com>,
+        Abhilash K V <abhilash.kv@ti.com>, Sanjeev Premi <premi@ti.com>
+Subject: [PATCH v5 0/3] AM3517: Booting up
+Date: Fri, 30 Sep 2011 11:42:30 +0530
+Message-ID: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011 15:32:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+From: Abhilash K V <abhilash.kv@ti.com>
 
-> Hi Andrew,
-> 
-> After merging the akpm tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> In file included from arch/x86/include/asm/uaccess.h:575:0,
->                  from include/net/checksum.h:25,
->                  from include/linux/skbuff.h:28,
->                  from include/linux/icmpv6.h:82,
->                  from net/compat.c:19:
-> In function 'copy_from_user',
->     inlined from 'compat_sys_socketcall' at net/compat.c:793:20:
-> arch/x86/include/asm/uaccess_64.h:64:26: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
-> 
-> Caused by commit 15e19cbbbf2a ("x86: implement strict user copy checks
-> for x86_64") when built with gcc 4.6.0.  This does not fail when built
-> with 4.5.2.
+This patch-set gets the kernel booting up on a AM3517 EVM.
+The board is able to boot with ramdisk after this,but the MMC and Ethernet
+drivers are not up yet. Lots of warnings remain which will be addressed in
+subsequent patches.
 
-This:
+The patches are tested on master of git://github.com/tmlind/linux.git
+Kernel version is 3.1.0-rc8 and last commit on top of which these patches
+were added is:
+	1dd8838c74476fe13e51334ad2444e6c963cf5ff: Linux-omap rebuilt:
+	 Updated to -rc8, merged l3 fixes
 
-extern void copy_from_user_overflow(void)
-#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-	__compiletime_error("copy_from_user() buffer size is not provably correct")
-#else
-	__compiletime_warning("copy_from_user() buffer size is not provably correct")
-#endif
+Cc: Sanjeev Premi <premi@ti.com>
+---
+Changes in v5:
+ -[1/3] was reworked to use the new method to select hwmods between
+  different omap3 variants/revisions. 
+ -minor code reformatting in [3/3]
 
-presumably CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y, so it's doing what
-we asked it to do.
+Changes in v4:
+ -Rebased and tested against the latest 3.1.0-rc6.
+ -Added a patch [3/3] to check for missing PMIC info in vp init.
 
-> The problem here is that the length parameter to copy_from_user() is
-> obtained by indexing into an array of sizes.  Making the array const
-> does not help (obviously, since the index is not known at compile time
-> anyway).
-> 
-> Maybe I need a newer compiler.  For today I have gone back to my 4.5.2
-> compiler.
+Changes in v3:
+ Presence of SR feature is now used to decide if TWL4030 initialisation is to
+ be done or not.
 
-That patch is a PITA.  I've been waiting for some saviour to come along
-and fix all the warnings it emits before proceeding with it.  As I am
-apparently saviourless I shall hide that patch from the mm->linux-next
-drop, so only I get to suffer its effects.
+Changes in v2: Incorporated Kevin's comments to add SmartReflex as a FEATURE,
+  and use omap3_has_sr() to fall out of omap3_twl_init() for AM35x case.
+	
+
+Abhilash K V (3):
+  AM35x: Using OMAP3 generic hwmods
+  omap_twl: Prevent SR to enable for am3517/am3505 devices
+  OMAP2+: voltage: add check for missing PMIC info in vp init
+
+ arch/arm/mach-omap2/id.c                   |    2 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   17 ++++++++++++-----
+ arch/arm/mach-omap2/pm.c                   |    3 ++-
+ arch/arm/mach-omap2/vp.c                   |    7 +++++++
+ arch/arm/plat-omap/include/plat/cpu.h      |    2 ++
+ 5 files changed, 24 insertions(+), 7 deletions(-)
 
