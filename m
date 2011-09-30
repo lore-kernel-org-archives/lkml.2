@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab1I3BMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 21:12:45 -0400
-Received: from home.keithp.com ([63.227.221.253]:49867 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756332Ab1I3BKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 21:10:24 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 08/21] drm/i915: Turn force VDD back off when panel running in intel_dp_dpms
-Date: Thu, 29 Sep 2011 18:09:40 -0700
-Message-Id: <1317344993-24945-9-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <1317344993-24945-1-git-send-email-keithp@keithp.com>
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
+	id S1757517Ab1I3BMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 21:12:44 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:38856 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab1I3BMm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 21:12:42 -0400
+Date: Fri, 30 Sep 2011 11:12:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20110930111241.829ed0ada733516b71ab120d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Sep_2011_11_12_41_+1000_OcJY2M1M7F0fPSxu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VDD force bit is turned on before touching the panel, but if it
-was enabled, there was no call to turn it back off. Add a call.
+--Signature=_Fri__30_Sep_2011_11_12_41_+1000_OcJY2M1M7F0fPSxu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_dp.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hi all,
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index da725d8..b915fc3 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1080,7 +1080,8 @@ intel_dp_dpms(struct drm_encoder *encoder, int mode)
- 				ironlake_edp_panel_on(intel_dp);
- 			ironlake_edp_panel_vdd_off(intel_dp);
- 			intel_dp_complete_link_train(intel_dp);
--		}
-+		} else
-+			ironlake_edp_panel_vdd_off(intel_dp);
- 		if (is_edp(intel_dp))
- 			ironlake_edp_backlight_on(dev);
- 	}
--- 
-1.7.6.3
+After merging the final tree, today's linux-next build (avr32 allnoconfig)
+failed like this:
 
+arch/avr32/mach-at32ap/pio.c: In function 'pio_probe':
+arch/avr32/mach-at32ap/pio.c:401: error: 'THIS_MODULE' undeclared (first us=
+e in this function)
+
+Probably revealed by the module.h split up.  I guess it needs export.h
+included.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__30_Sep_2011_11_12_41_+1000_OcJY2M1M7F0fPSxu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOhReJAAoJEDMEi1NhKgbs7jsH/2vp0hXUod62kQIevU5LImBa
+acfnLCOt6rjkKvMWisSlUkRQ3JNLuzoot2tGDL2FDFCl1fbOPG7yGXydH99EAUqV
+Pfh+xBVGHIfzg1Lj2BJpGVxgBZ1pHTb7IStuI0PsUcfGnI/cMA4UOqn2Vt9jUjqc
+JhXtwUhq0LzME7wfMnsYHEuJ6JKV96lXNaUoRJ9bMtXfbIyLHGHrVjJF/9pBhWWQ
+5YMqhjVx7UuJrNXGiXv5NHjXaufKQe45gYBgo79YI1VPfsjb4syzPlNIUzybSFju
+lPreZa6oWkevDQSTc8485hdIDrSXCUmYIslI9ZnWHXwxlrqh4JwGd2M4kyiaKEg=
+=dGGG
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Sep_2011_11_12_41_+1000_OcJY2M1M7F0fPSxu--
