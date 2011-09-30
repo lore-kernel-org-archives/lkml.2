@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab1I3PgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 11:36:21 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38043 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755742Ab1I3PgT (ORCPT
+	id S1755956Ab1I3Pji (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 11:39:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40749 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab1I3Pjg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 11:36:19 -0400
-Subject: Re: [RFC][PATCH 4/5] signal: Add signal->ctrl_lock for job control
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Anirudh Badam <abadam@cs.princeton.edu>
-In-Reply-To: <1317396627.12973.7.camel@twins>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
-	 <1317395577-14091-5-git-send-email-matt@console-pimps.org>
-	 <1317396627.12973.7.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Sep 2011 16:36:16 +0100
-Message-ID: <1317396976.3375.23.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Sep 2011 11:39:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <fc03678ef8baaa29a8ab3c086ba6bb78.squirrel@webmail.sf-mail.de>
+References: <4E82017C.3010304@redhat.com>
+	<CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com>
+	<4E8215B6.1020108@redhat.com>
+	<20110930001633.GA11436@myri.com>
+	<fc03678ef8baaa29a8ab3c086ba6bb78.squirrel@webmail.sf-mail.de>
+Date: Fri, 30 Sep 2011 10:39:34 -0500
+Message-ID: <CAMaF-rM4Lm6zqLm7XWT570Xizcqet36WFbf5HNf09wKyHiLKag@mail.gmail.com>
+Subject: Re: Workaround for Intel MPS errata
+From: Jon Mason <mason@myri.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Avi Kivity <avi@redhat.com>, Sven Schnelle <svens@stackframe.org>,
+        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 17:30 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-09-30 at 16:12 +0100, Matt Fleming wrote:
-> > +       assert_spin_locked(&t->sighand->siglock);
-> > +       assert_spin_locked(&t->signal->ctrl_lock);
-> 
-> There's also lockdep_assert_held(), the difference is that
-> assert_spin_locked() will always generate code, and only checks that the
-> lock is held, not that we are the current owner.
-> 
-> lockdep_assert_held() will only generate code for lockdep kernels and
-> will in fact check that the specified lock is held by the current task.
+On Fri, Sep 30, 2011 at 2:03 AM, Rolf Eike Beer <eike-kernel@sf-tec.de> wrote:
+>> Hey Avi,
+>> Can you try this patch?  It should resolve the issue you are seeing.
+>>
+>> Thanks,
+>> Jon
+>>
+>>     PCI: Workaround for Intel MPS errata
+>>
+>>     Intel 5000 and 5100 series memory controllers have a known issue if
+>> read
+>>     completion coalescing is enabled (the default setting) and the PCI-E
+>>     Maximum Payload Size is set to 256B.  To work around this issue,
+>> disable
+>>     read completion coalescing if the MPS is 256B.
+>>
+>>     http://www.intel.com/content/dam/doc/specification-update/5000-chipset-memory-controller-hub-specification-update.pdf
+>>     http://www.intel.com/content/dam/doc/specification-update/5100-memory-controller-hub-chipset-specification-update.pdf
+>>
+>>     Reported-by: Avi Kivity <avi@redhat.com>
+>>     Signed-off-by: Jon Mason <mason@myri.com>
+>>
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index a919db2..13c733a 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -1361,6 +1361,80 @@ static int pcie_find_smpss(struct pci_dev *dev,
+>> void *data)
+>>       return 0;
+>>  }
+>>
+>> +static void pcie_errata_check(int mps)
+>> +{
+>
+> While this whole function is about Intel 5x00 devices the name of it is
+> very generic (and in a very generic file). Maybe this can be changed, e.g.
 
-Aha! Yes, that's what I want, not assert_spin_locked(). Thanks!
+I made it generic in naming because I'm betting there are other chips
+out there that don't play nice with others.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> "fixup:" renamed to "fixup_intel_5x00:". Also I wonder if that shouldn't
+> be a nop when CONFIG_PCI_QUIRKS is not set.
 
+It probably should be a no-op for non-x86 too, as I doubt many other
+arches use Intel memory controllers (maybe IA64).
+
+Thanks,
+Jon
+
+>
+> Eike
+>
