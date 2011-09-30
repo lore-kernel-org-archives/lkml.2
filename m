@@ -1,30 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab1I3Fba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 01:31:30 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:56296
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750853Ab1I3Fb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 01:31:29 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 0000/0024] Staging: hv: mousevsc cleanup
-Date: Thu, 29 Sep 2011 11:54:16 -0700
-Message-Id: <1317322456-9747-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755458Ab1I3FdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 01:33:02 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:33971 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1I3FdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 01:33:00 -0400
+Date: Fri, 30 Sep 2011 15:32:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20110930153255.6e3a0d6dc7758b7fb5561fc6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Sep_2011_15_32_55_+1000_bF/mBImnMkUa4T03"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mouse driver while being in the tree for several months now, has
-never been functional. This patch set cleans up this driver and makes
-the driver functional. Furthermore, this driver is now about 30% smaller.
+--Signature=_Fri__30_Sep_2011_15_32_55_+1000_bF/mBImnMkUa4T03
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-Regards,
+After merging the akpm tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-K. Y
+In file included from arch/x86/include/asm/uaccess.h:575:0,
+                 from include/net/checksum.h:25,
+                 from include/linux/skbuff.h:28,
+                 from include/linux/icmpv6.h:82,
+                 from net/compat.c:19:
+In function 'copy_from_user',
+    inlined from 'compat_sys_socketcall' at net/compat.c:793:20:
+arch/x86/include/asm/uaccess_64.h:64:26: error: call to 'copy_from_user_ove=
+rflow' declared with attribute error: copy_from_user() buffer size is not p=
+rovably correct
 
+Caused by commit 15e19cbbbf2a ("x86: implement strict user copy checks
+for x86_64") when built with gcc 4.6.0.  This does not fail when built
+with 4.5.2.
+
+The problem here is that the length parameter to copy_from_user() is
+obtained by indexing into an array of sizes.  Making the array const
+does not help (obviously, since the index is not known at compile time
+anyway).
+
+Maybe I need a newer compiler.  For today I have gone back to my 4.5.2
+compiler.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__30_Sep_2011_15_32_55_+1000_bF/mBImnMkUa4T03
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOhVSHAAoJEDMEi1NhKgbsoYEH/0NvL38n9t3BG4bRkl8WwYmg
+ItNnlwLCzrvxD4ULwytwBmPxKCKsybJiJSQVpf1Q4LWWCWV7JtTraLcSZJ8SQjSf
+BGK8SVNeN+a2GrNW9ao5J5yA9dbzyVuCZnFi4DdowErDJOJAnhyyQFo+BXadBVM/
+81j06oIuKUJz8JfxBfhLSgHOKjKk8U+fTsl7rJ4P8Nsk9bJltKJm9/nfzUMn3SB7
+gopRGuF5UW51CPs7kAR3EbvQ5bAezCagnTqo606ynwcp/sEN3r1ltA5FnM6ETQq0
+XlYYX59C2VNhzvBaAJr2FNEqsfua+pQ+xPOTEFnw9gq77DUDQkft9vORmvIox7k=
+=1/PB
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Sep_2011_15_32_55_+1000_bF/mBImnMkUa4T03--
