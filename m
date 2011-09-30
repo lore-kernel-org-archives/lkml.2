@@ -1,82 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab1I3Va5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:30:57 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:32999 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab1I3Vau convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:30:50 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: CIFS  kernel module bug
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=windows-1252
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20110930140409.51c1a94c@tlielax.poochiereds.net>
-Date: Fri, 30 Sep 2011 22:30:47 +0100
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        PWF Linux <pwf-linux@ucs.cam.ac.uk>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
-References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk> <20110930140409.51c1a94c@tlielax.poochiereds.net>
-To: Jeff Layton <jlayton@samba.org>, Steve French <sfrench@samba.org>
-X-Mailer: Apple Mail (2.1244.3)
+	id S1757013Ab1I3VkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:40:17 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:40884 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755536Ab1I3VkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 17:40:08 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+Subject: [RFC PATCH 1/2] RapidIO: Add DMA Engine support for RIO data transfers
+Date: Fri, 30 Sep 2011 17:38:34 -0400
+Message-Id: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Adds DMA Engine framework support into RapidIO subsystem.
+Uses DMA Engine DMA_SLAVE interface to generate data transfers to/from remote
+RapidIO target devices. Uses scatterlist to describe local data buffer and
+dma_chan.private member to pass target specific information. Supports flat
+data buffer only for a remote side.
 
-On 30 Sep 2011, at 19:04, Jeff Layton wrote:
-> On Fri, 30 Sep 2011 14:58:58 +0100 Anton Altaparmakov <aia21@cam.ac.uk> wrote:
-> 
->> Hi,
->> 
->> Looking at the current kernel (in Linus' repository on github) there is a silly logic bug in the cifs module in fs/cifs/cifsfs.c::cifs_llseek() there is this bit of code:
->> 
->> 	/*
->> 	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
->> 	 * the cached file length
->> 	 */
->> 	if (origin != SEEK_SET || origin != SEEK_CUR) {
->> 
->> The logical or should be a logical and, i.e. this should be:
->> 
->> 	if (origin != SEEK_SET && origin != SEEK_CUR) {
->> 
->> As the code is at present that line is ALWAYS true because origin is ALWAYS either != SEEK_SET or != SEEK_CUR as if it equals one it cannot equal the other and vice versa…
->> 
->> So at the moment it always does the revalidation instead of only for SEEK_END, SEEK_DATA, and SEEK_HOLE.
-> 
-> Haha, good catch. Care to roll up a patch to fix that?
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+---
+ drivers/dma/dmaengine.c   |    4 ++
+ drivers/rapidio/Kconfig   |    6 +++
+ drivers/rapidio/rio.c     |   79 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/dmaengine.h |    1 +
+ include/linux/rio.h       |   47 ++++++++++++++++++++++++++
+ include/linux/rio_drv.h   |    9 +++++
+ 6 files changed, 146 insertions(+), 0 deletions(-)
 
-
-Yes, I am happy to do that.
-
-Also a question for you: I am up to the neck in having to adapt the CIFS module as it doesn't work very well against the Novell Open Enterprise Server CIFS server (that is why I was looking at the CIFS code and noticed this logic bug in the first place).
-
-A bit of background: the home directories for our (i.e. University of Cambridge Computing Service) Linux distribution "MCS Linux" which runs on about a thousand workstations and a handfull of remote access servers used to be on Netware and were moved to OES Linux recently and the ncpfs kernel module really fell over in a heap when running against the OES NCP server so we had to switch to CIFS in a hurry and whilst it does not fall over in a heap like ncpfs does and we now have working reconnects when the home directory server is rebooted (home directories magically start working again after the reboot which is brilliant!) many applications do not work.
-
-I can only assume this is because the CIFS server is an abomination rather than that the CIFS modules is quite that badly broken…  Anyway, my question is: do you want patches that make the CIFS module work better with OES CIFS server or do you not care?
-
-For example lots of applications require working hard links so I had to port our Virtual Hard Link implementation from NCPfs to CIFS to get hard links working which fixed a lot of applications but then we started hitting real bugs.  A few examples:
-
-- llseek(SEEK_END) fails against the OES server with error -EBADF from the server because the SEEK_END causes file revalidation which ends up calling CIFSSMBQFileInfo() which then results in the -EBADF.  I wrote a patch to fall back to path based query via CIFSSMBQPathInfo() and if that fails via SMBQueryInformation() and now the llseek(SEEK_END) works thus applications like Seamonkey actually manage to launch rather than segfaulting.
-
-- mkdir() returns -EACCES when the target exists.  Again this is coming from the OES server.  I wrote a patch that calls cifs_get_inode_info() when CIFSSMBMkDir() returns -EACCES and unix extensions are not enabled on the superblock and if the result is success I rewrite the return code to -EEXIST which fixes the mkdir issue and that fixes loads of Gnome related applications.
-
-- The OES server behaves like NT4 in that it returns success from CIFSSMBSetPathInfo() but it actually ignores the call unless the file is open on the server.  But the OES server does not have CIFS_SES_NT4 in the session flags thus the work around in the CIFS module does not trigger and thus changing the access times or permissions does not work unless the file happens to be open which breaks applications like rsync.  I commented the CIFSSMBSetPathInfo() call completely in a patch so it falls back to the other code which makes it work for us.
-
-And finally the actual question: Are you interested in any of these patches or at least are you interested in fixing these issues in the standard CIFS module in which case I can send you my patches or at least give you detailed descriptions of what is failing and how?
-
-Best regards,
-
-	Anton
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index b48967b..11fdc2c 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -699,6 +699,10 @@ int dma_async_device_register(struct dma_device *device)
+ 		!device->device_prep_dma_cyclic);
+ 	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+ 		!device->device_control);
++	BUG_ON(dma_has_cap(DMA_RAPIDIO, device->cap_mask) &&
++		!device->device_prep_slave_sg);
++	BUG_ON(dma_has_cap(DMA_RAPIDIO, device->cap_mask) &&
++		!device->device_control);
+ 
+ 	BUG_ON(!device->device_alloc_chan_resources);
+ 	BUG_ON(!device->device_free_chan_resources);
+diff --git a/drivers/rapidio/Kconfig b/drivers/rapidio/Kconfig
+index bc87192..c4aa279 100644
+--- a/drivers/rapidio/Kconfig
++++ b/drivers/rapidio/Kconfig
+@@ -34,3 +34,9 @@ config RAPIDIO_DEBUG
+ 	  If you are unsure about this, say N here.
+ 
+ source "drivers/rapidio/switches/Kconfig"
++
++# This option to be turned on by a device selection
++config RAPIDIO_DMA_ENGINE
++	bool
++	select DMADEVICES
++	select DMA_ENGINE
+diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+index 86c9a09..e5905fc 100644
+--- a/drivers/rapidio/rio.c
++++ b/drivers/rapidio/rio.c
+@@ -1121,6 +1121,85 @@ int rio_std_route_clr_table(struct rio_mport *mport, u16 destid, u8 hopcount,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_RAPIDIO_DMA_ENGINE
++
++#include <linux/dmaengine.h>
++
++static bool rio_chan_filter(struct dma_chan *chan, void *arg)
++{
++	struct rio_dev *rdev = arg;
++
++	/* Check that DMA device belongs to the right MPORT */
++	return (rdev->net->hport ==
++		container_of(chan->device, struct rio_mport, dma));
++}
++
++/**
++ * rio_request_dma - request RapidIO capable DMA channel that supports
++ *   specified target RapidIO device.
++ * @rdev: RIO device control structure
++ *
++ * Returns pointer to allocated DMA channel or NULL if failed.
++ */
++struct dma_chan *rio_request_dma(struct rio_dev *rdev)
++{
++	dma_cap_mask_t mask;
++	struct dma_chan *dchan;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_RAPIDIO, mask);
++	dchan = dma_request_channel(mask, rio_chan_filter, rdev);
++
++	return dchan;
++}
++EXPORT_SYMBOL_GPL(rio_request_dma);
++
++/**
++ * rio_release_dma - release specified DMA channel
++ * @dchan: DMA channel to release
++ */
++void rio_release_dma(struct dma_chan *dchan)
++{
++	dma_release_channel(dchan);
++}
++EXPORT_SYMBOL_GPL(rio_release_dma);
++
++/**
++ * rio_dma_prep_slave_sg - RapidIO specific wrapper
++ *   for device_prep_slave_sg callback defined by DMAENGINE.
++ * @rdev: RIO device control structure
++ * @dchan: DMA channel to configure
++ * @data: RIO specific data descriptor
++ * @direction: DMA data transfer direction (TO or FROM the device)
++ * @flags: dmaengine defined flags
++ *
++ * Initializes RapidIO capable DMA channel for the specified data transfer.
++ * Uses DMA channel private extension to pass information related to remote
++ * target RIO device.
++ * Returns pointer to DMA transaction descriptor or NULL if failed.
++ */
++struct dma_async_tx_descriptor *rio_dma_prep_slave_sg(struct rio_dev *rdev,
++	struct dma_chan *dchan, struct rio_dma_data *data,
++	enum dma_data_direction direction, unsigned long flags)
++{
++	struct dma_async_tx_descriptor *txd = NULL;
++	struct rio_dma_ext rio_ext;
++
++	rio_ext.destid = rdev->destid;
++	rio_ext.rio_addr_u = data->rio_addr_u;
++	rio_ext.rio_addr = data->rio_addr;
++	rio_ext.wr_type = data->wr_type;
++	dchan->private = &rio_ext;
++
++	txd = dchan->device->device_prep_slave_sg(dchan, data->sg, data->sg_len,
++						  direction, flags);
++
++	return txd;
++}
++EXPORT_SYMBOL_GPL(rio_dma_prep_slave_sg);
++
++#endif /* CONFIG_RAPIDIO_DMA_ENGINE */
++
+ static void rio_fixup_device(struct rio_dev *dev)
+ {
+ }
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 8fbf40e..867b685 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -70,6 +70,7 @@ enum dma_transaction_type {
+ 	DMA_PRIVATE,
+ 	DMA_ASYNC_TX,
+ 	DMA_SLAVE,
++	DMA_RAPIDIO,
+ 	DMA_CYCLIC,
+ };
+ 
+diff --git a/include/linux/rio.h b/include/linux/rio.h
+index 4d50611..a6d1054c 100644
+--- a/include/linux/rio.h
++++ b/include/linux/rio.h
+@@ -20,6 +20,9 @@
+ #include <linux/errno.h>
+ #include <linux/device.h>
+ #include <linux/rio_regs.h>
++#ifdef CONFIG_RAPIDIO_DMA_ENGINE
++#include <linux/dmaengine.h>
++#endif
+ 
+ #define RIO_NO_HOPCOUNT		-1
+ #define RIO_INVALID_DESTID	0xffff
+@@ -254,6 +257,9 @@ struct rio_mport {
+ 	u32 phys_efptr;
+ 	unsigned char name[40];
+ 	void *priv;		/* Master port private data */
++#ifdef CONFIG_RAPIDIO_DMA_ENGINE
++	struct dma_device	dma;
++#endif
+ };
+ 
+ /**
+@@ -395,6 +401,47 @@ union rio_pw_msg {
+ 	u32 raw[RIO_PW_MSG_SIZE/sizeof(u32)];
+ };
+ 
++#ifdef CONFIG_RAPIDIO_DMA_ENGINE
++
++/**
++ * enum rio_write_type - RIO write transaction types used in DMA transfers
++ *
++ * Note: RapidIO specification defines write (NWRITE) and
++ * write-with-response (NWRITE_R) data transfer operations.
++ * Existing DMA controllers that service RapidIO may use one of these operations
++ * for entire data transfer or their combination with only the last data packet
++ * requires response.
++ */
++enum rio_write_type {
++	RDW_DEFAULT,		/* default method used by DMA driver */
++	RDW_ALL_NWRITE,		/* all packets use NWRITE */
++	RDW_ALL_NWRITE_R,	/* all packets use NWRITE_R */
++	RDW_LAST_NWRITE_R,	/* last packet uses NWRITE_R, all other - NWRITE */
++};
++
++struct rio_dma_ext {
++	u16 destid;
++	u64 rio_addr;	/* low 64-bits of 66-bit RapidIO address */
++	u8  rio_addr_u;  /* upper 2-bits of 66-bit RapidIO address */
++	enum rio_write_type wr_type; /* preferred RIO write operation type */
++};
++
++struct rio_dma_data {
++	/* Local data (as scatterlist) */
++	struct scatterlist	*sg;	/* I/O scatter list */
++	unsigned int		sg_len;	/* size of scatter list */
++	/* Remote device address (flat buffer) */
++	u64 rio_addr;	/* low 64-bits of 66-bit RapidIO address */
++	u8  rio_addr_u;  /* upper 2-bits of 66-bit RapidIO address */
++	enum rio_write_type wr_type; /* preferred RIO write operation type */
++};
++
++static inline struct rio_mport *dma_to_mport(struct dma_device *ddev)
++{
++	return container_of(ddev, struct rio_mport, dma);
++}
++#endif /* CONFIG_RAPIDIO_DMA_ENGINE */
++
+ /* Architecture and hardware-specific functions */
+ extern int rio_register_mport(struct rio_mport *);
+ extern int rio_open_inb_mbox(struct rio_mport *, void *, int, int);
+diff --git a/include/linux/rio_drv.h b/include/linux/rio_drv.h
+index 229b3ca..d140996 100644
+--- a/include/linux/rio_drv.h
++++ b/include/linux/rio_drv.h
+@@ -378,6 +378,15 @@ void rio_unregister_driver(struct rio_driver *);
+ struct rio_dev *rio_dev_get(struct rio_dev *);
+ void rio_dev_put(struct rio_dev *);
+ 
++#ifdef CONFIG_RAPIDIO_DMA_ENGINE
++extern struct dma_chan *rio_request_dma(struct rio_dev *rdev);
++extern void rio_release_dma(struct dma_chan *dchan);
++extern struct dma_async_tx_descriptor *rio_dma_prep_slave_sg(
++		struct rio_dev *rdev, struct dma_chan *dchan,
++		struct rio_dma_data *data, enum dma_data_direction direction,
++		unsigned long flags);
++#endif
++
+ /**
+  * rio_name - Get the unique RIO device identifier
+  * @rdev: RIO device
 -- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
+1.7.6
 
