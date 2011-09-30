@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab1I3IC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 04:02:26 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:47932 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757488Ab1I3ICS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 04:02:18 -0400
-X-IronPort-AV: E=Sophos;i="4.68,465,1312156800"; 
-   d="scan'208";a="8142927"
-Subject: Re: [Xen-devel] [PATCH 7/9] xen/xenbus: Check before dereferencing
- it.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Dan Carpenter <error27@gmail.com>
-Date: Fri, 30 Sep 2011 09:01:21 +0100
-In-Reply-To: <1317325971-21603-8-git-send-email-konrad.wilk@oracle.com>
-References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
-	 <1317325971-21603-8-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317369681.26672.218.camel@zakaz.uk.xensource.com>
+	id S1757595Ab1I3IEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 04:04:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754796Ab1I3IEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 04:04:47 -0400
+Date: Fri, 30 Sep 2011 10:04:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen before
+ deferring
+Message-ID: <20110930080445.GC32134@tiehlicka.suse.cz>
+References: <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
+ <20110928104445.GB15062@tiehlicka.suse.cz>
+ <20110929115105.GE21113@tiehlicka.suse.cz>
+ <20110929120517.GA10587@redhat.com>
+ <20110929130204.GG21113@tiehlicka.suse.cz>
+ <20110929163724.GA23773@redhat.com>
+ <20110929180021.GA27999@tiehlicka.suse.cz>
+ <20110930015148.GD10425@mtj.dyndns.org>
+ <20110930074125.GB32134@tiehlicka.suse.cz>
+ <20110930074641.GK10425@mtj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930074641.GK10425@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 20:52 +0100, Konrad Rzeszutek Wilk wrote:
-> . we do the check whether 'xdev' is NULL - but after we have
-> dereferenced it.
+On Fri 30-09-11 00:46:41, Tejun Heo wrote:
+> Hello,
 > 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/xenbus/xenbus_probe_backend.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> On Fri, Sep 30, 2011 at 09:41:25AM +0200, Michal Hocko wrote:
+> > > With pending freezer changes, allowing TIF_MEMDIE tasks to exit
+> > > freezer by modifying freezing() shouldn't be difficult, which should
+> > > be race-free and much simpler than diddling with thaw_task().  
+> > 
+> > Will the rework help with the initial problem of unkillable OOM selected
+> > frozen tasks or it will just help with other races that might be present
+> > with the patch? In other words will this work deprecate the 2 patches
+> > sent earlier in this thread?
 > 
-> diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
-> index 60adf91..331589a 100644
-> --- a/drivers/xen/xenbus/xenbus_probe_backend.c
-> +++ b/drivers/xen/xenbus/xenbus_probe_backend.c
-> @@ -103,10 +103,11 @@ static int xenbus_uevent_backend(struct device *dev,
->  		return -ENODEV;
->  
->  	xdev = to_xenbus_device(dev);
+> I think it shouldn't be difficult to allow OOM-killing frozen tasks.
+> That should be good enough, right?
 
-to_xenbus_device is just container_of. The only way it would return NULL
-is if dev == offsetof(struct xenbus_device, dev), which isn't terribly
-likely. A more likely error would be dev == NULL and we just checked
-above.
+Yes, if you could just force_sig(SIGKILL, p) frozen task then it would
+be ideal because we wouldn't have to call thaw_process from OOM path.
 
-> -	bus = container_of(xdev->dev.bus, struct xen_bus_type, bus);
->  	if (xdev == NULL)
->  		return -ENODEV;
->  
-> +	bus = container_of(xdev->dev.bus, struct xen_bus_type, bus);
-> +
->  	if (add_uevent_var(env, "MODALIAS=xen-backend:%s", xdev->devicetype))
->  		return -ENOMEM;
->  
+> 
+> > > How urgent is this?  Can we wait for the next merge window?
+> > 
+> > Yes, I think we can wait some more.
+> 
+> I'm still processing rather large backlog.  I'll ping you back once I
+> sort out the pending freezer changes.
 
+You were on the CC quite early but it was quite late when I noticed that
+I have accidentally used your kernel.org address. Just for reference the
+original discussion started here: https://lkml.org/lkml/2011/8/23/45 and
+this thread started here:
+http://www.spinics.net/lists/linux-mm/msg24693.html
 
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
