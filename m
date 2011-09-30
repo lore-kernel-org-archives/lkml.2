@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1I3UsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 16:48:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40449 "EHLO ogre.sisk.pl"
+	id S1755280Ab1I3U4P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 16:56:15 -0400
+Received: from home.keithp.com ([63.227.221.253]:52396 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab1I3UsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 16:48:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zan Lynx <zlynx@acm.org>
-Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
-Date: Fri, 30 Sep 2011 22:50:32 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1317329529.3151.10.camel@knife> <201109302222.22528.rjw@sisk.pl> <1317414897.2629.5.camel@knife>
-In-Reply-To: <1317414897.2629.5.camel@knife>
+	id S1751524Ab1I3U4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 16:56:14 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 18/21] drm/i915: Disable eDP VDD in a delayed work proc instead of synchronously
+In-Reply-To: <20110930184700.GV2859@phenom.ffwll.local>
+References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-19-git-send-email-keithp@keithp.com> <20110930184700.GV2859@phenom.ffwll.local>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 30 Sep 2011 13:56:09 -0700
+Message-ID: <yun4nzt7nrq.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109302250.32653.rjw@sisk.pl>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 30, 2011, Zan Lynx wrote:
-> On Fri, 2011-09-30 at 22:22 +0200, Rafael J. Wysocki wrote:
-> > On Friday, September 30, 2011, Zan Lynx wrote:
-> > > On Thu, 2011-09-29 at 14:51 -0600, Zan Lynx wrote:
-> > > > After being annoyed that the latest Fedora 2.6.40 (aka 3.0 something)
-> > > > kernels would not suspend/resume on my laptop I followed a Ubuntu forum
-> > > > suggestion to use acpi=nonvs. This worked, or at least it is working
-> > > > today with Fedora 15's 2.6.40.4-5.fc15.x86_64.
-> > > > 
-> > > > The system is also booting via UEFI if that makes any difference.
-> > > > 
-> > > > I understand that there is a no-NVS blacklist in the kernel. Should the
-> > > > Samsung Series 9 be added to this list? Or could it be a different
-> > > > suspend/resume problem entirely?
-> > > 
-> > > Please ignore this about nonvs. nonvs has nothing to do with the
-> > > suspend/resume problem on this laptop.
-> > > 
-> > > Instead it seems to involve reboots, which is crazy. From a cold
-> > > power-on start, suspend resume will always fail. But if the laptop is
-> > > rebooted first, suspend and resume appear to work. What the heck? I have
-> > > no clue how to debug this.
-> > > 
-> > > So now it appears that everything I ever tried to fix this only seemed
-> > > to work because I rebooted after changing GRUB or module options.
-> > 
-> > What graphics is there in the system?
-> 
-> It is the Intel i915 driver. It is an Intel i5-2537M system with the
-> integrated video on the CPU.
-> 
-> lspci shows it as:
-> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation Core
-> Processor Family Integrated Graphics Controller (rev 09) (prog-if 00
-> [VGA controller])
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Well, that should work.  I'm afraid I can't help you with this issue.
+On Fri, 30 Sep 2011 20:47:00 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
 
-Thanks,
-Rafael
+> A cancel_work might be good here, not point in waking up the cpu for no
+> reason. And can you add "panel off timer: " to the deboug output?
+
+No, that's not correct, this is run before turning the panel back on and
+must check that enough time has elapsed since it was turned off, which
+may have happened in the work proc.
+
+However, you are right in saying that I could call the cancel work
+function when the panel is forced off synchronously. I'll add that.
+
+> Like Chris already mentioned, s/struct_mutex/mode_config.mutex/ Maybe also
+> move the intel_dp->want_panel_vdd check in here - we need it only here to
+> avoid a race with vdd_on. I've almost overlooked it and already started to
+> write the complaint about the race ;-)
+
+With the right mutex held, there won't be a race, we just need to check the
+value somewhere. Do you still see a race condition that needs to be avoided?
+
+> > @@ -1111,10 +1175,10 @@ intel_dp_dpms(struct drm_encoder *encoder, int =
+mode)
+> >  			intel_dp_start_link_train(intel_dp);
+> >  			if (is_edp(intel_dp))
+> >  				ironlake_edp_panel_on(intel_dp);
+> > -			ironlake_edp_panel_vdd_off(intel_dp);
+> > +			ironlake_edp_panel_vdd_off(intel_dp, true);
+> >  			intel_dp_complete_link_train(intel_dp);
+> >  		} else
+> > -			ironlake_edp_panel_vdd_off(intel_dp);
+> > +			ironlake_edp_panel_vdd_off(intel_dp, false);
+>=20
+> Any reason why one vdd_off is sync while the other isn't?
+
+After the panel is turned on, I want to synchronously turn off the VDD
+AUX bits, as that's what the driver did before. That's 'free' because
+the panel is on. In the other (failure) path, I don't want to impose a
+delay if the application wants to try the mode set again.
+
+
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOhizqQp8BWwlsTdMRAuFcAKDDtjsC8s3FwRzjwk/mlkb9RBR50wCgnJQ3
+KT79r5C1V6wu2GzMWG6ViZY=
+=uFy5
+-----END PGP SIGNATURE-----
+--=-=-=--
