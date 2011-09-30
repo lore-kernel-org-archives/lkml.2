@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1I3PKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 11:10:49 -0400
-Received: from slow3-v.mail.gandi.net ([217.70.178.89]:34833 "EHLO
-	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab1I3PKs (ORCPT
+	id S1754619Ab1I3PNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 11:13:04 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60211 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175Ab1I3PND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 11:10:48 -0400
-X-WhiteListed: mail was accepted with no delay
-X-WhiteListed: mail was accepted with no delay
-X-Originating-IP: 217.70.178.145
-X-Originating-IP: 50.43.15.19
-Date: Fri, 30 Sep 2011 08:05:19 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Adrian Bunk <bunk@stusta.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options"
-Message-ID: <20110930150519.GA7980@leaf>
-References: <20110930134245.GB21474@localhost.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110930134245.GB21474@localhost.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Sep 2011 11:13:03 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [RFC][PATCH 0/5] Signal scalability series
+Date: Fri, 30 Sep 2011 16:12:52 +0100
+Message-Id: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 04:42:45PM +0300, Adrian Bunk wrote:
-> I was just wondering why I was asked about all the debug options when I 
-> tried 3.1-rc8, and that was due to commit f505c553 (debug: Make 
-> CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options),
-> the full commit is below.
-> 
-> It is wrong, and the author does not seem to understand how Kconfig works.
-> 
-> The commit message is:
-> 
->     Several debugging options currently default to y, such as
->     CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users
->     might want to turn those options off to save space; however,
->     turning them off requires turning on CONFIG_DEBUG_KERNEL to
->     unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
->     unhide debugging options, and CONFIG_EXPERT exists specifically
->     to unhide options potentially needed by experts and/or embedded
->     users, make CONFIG_EXPERT automatically imply
->     CONFIG_DEBUG_KERNEL.
-> 
-> 
-> Let me point at the obvious fact that both CONFIG_DEBUG_BUGVERBOSE and 
-> CONFIG_DEBUG_RODATA do depend on DEBUG_KERNEL, and are contrary to the 
-> claim of the author of this patch never enabled with 
-> CONFIG_DEBUG_KERNEL=n. [1]
+From: Matt Fleming <matt.fleming@intel.com>
 
-Not true:
+Here's another attempt at improving signal scalability in the
+kernel. It's not as drastic as my first attempt and consequently the
+speedups aren't as impressive. However, it's a good first step and
+hopefully by keeping it relatively simple it'll make it easier to
+review.
 
-~/src/linux-2.6$ rm .config
-~/src/linux-2.6$ make allnoconfig
-  HOSTCC  scripts/basic/fixdep
-  HOSTCC  scripts/kconfig/conf.o
-  HOSTCC  scripts/kconfig/zconf.tab.o
-  HOSTLD  scripts/kconfig/conf
-scripts/kconfig/conf --allnoconfig Kconfig
-#
-# configuration written to .config
-#
-~/src/linux-2.6$ grep BUGVERBOSE .config
-CONFIG_DEBUG_BUGVERBOSE=y
-~/src/linux-2.6$ grep DEBUG_KERNEL .config
-# CONFIG_DEBUG_KERNEL is not set
+Basically it's the same idea as last time - introduce more locks to
+reduce contention on the per-process siglock, sighand->siglock. This
+lock becomes highly contended in applications with multiple threads,
+and I know the -rt guys have had scenarios where the per-process lock
+has caused performance problems.
 
-DEBUG_BUGVERBOSE does not depend on DEBUG_KERNEL; it just only shows up
-with DEBUG_KERNEL (and EXPERT) set.  The *description* has a conditional
-on DEBUG_KERNEL and EXPERT:
+With this series I saw a ~%120 improvement in the number of
+signals/per second that can be handled in the Will It Scale signal1
+benchmark on a dual-socket machine.
 
-config DEBUG_BUGVERBOSE
-        bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
+There are two remaining scalability problems,
 
-That doesn't mean the same thing as "depends on DEBUG_KERNEL".
+  1. lock_task_sighand() still grabs sighand->siglock
+  2. signal->ctrl_lock must be taken in recalc_sigpending()
 
-Also see Ingo Molnar's mail with Message-Id
-<20110605093445.GA19927@elte.hu>, which explicitly recommended this
-approach.
+fixing these problems will be left to future patches.
 
-- Josh Triplett
+And just like last time, these patches break ia64 because it
+implements rt_sigprocmask() in assembly. I'll work on the ia64 stuff
+while these patches are being reviewed.
+
+Matt Fleming (5):
+  signal: Document signal locking rules
+  signal: Add rwlock to protect sighand->action
+  signal: Reduce sighand->siglock hold time in get_signal_to_deliver()
+  signal: Add signal->ctrl_lock for job control
+  signal: Split siglock into shared_siglock and per-thread siglock
+
+ arch/ia64/kernel/signal.c           |    4 +-
+ drivers/block/nbd.c                 |    2 +-
+ drivers/usb/gadget/f_mass_storage.c |    2 +-
+ drivers/usb/gadget/file_storage.c   |    2 +-
+ fs/autofs4/waitq.c                  |    5 +-
+ fs/exec.c                           |   17 +-
+ fs/jffs2/background.c               |    2 +-
+ fs/ncpfs/sock.c                     |    2 +
+ fs/proc/array.c                     |    2 +
+ fs/signalfd.c                       |   11 +-
+ include/linux/init_task.h           |    4 +
+ include/linux/sched.h               |   23 +-
+ kernel/exit.c                       |   29 +-
+ kernel/fork.c                       |    4 +
+ kernel/freezer.c                    |   10 +-
+ kernel/kmod.c                       |    8 +-
+ kernel/posix-timers.c               |    5 +-
+ kernel/ptrace.c                     |   68 ++--
+ kernel/signal.c                     |  737 +++++++++++++++++++++++++++--------
+ net/9p/client.c                     |    6 +-
+ net/sunrpc/svc.c                    |    3 -
+ security/selinux/hooks.c            |   11 +-
+ 22 files changed, 677 insertions(+), 280 deletions(-)
+
+-- 
+1.7.4.4
+
