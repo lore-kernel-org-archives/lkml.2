@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab1I3JIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:08:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57334 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab1I3JIJ (ORCPT
+	id S1757644Ab1I3JKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:10:23 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:32886 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755293Ab1I3JKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:08:09 -0400
-Date: Fri, 30 Sep 2011 11:05:36 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Josh Wu <josh.wu@atmel.com>
-cc: linux-media@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.ferre@atmel.com, s.nawrocki@samsung.com
-Subject: Re: [PATCH v3 2/2] at91: add Atmel ISI and ov2640 support on
- sam9m10/sam9g45 board.
-In-Reply-To: <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
-Message-ID: <Pine.LNX.4.64.1109300857580.1888@axis700.grange>
-References: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
- <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:NkF6Edd5n8knBdVHy5WtWV/aIrioSOkaqZR7n9Eul2f
- ynd8Z3LoYEJWfOW2ixSgYyKM54eIN20klhRTiv6mOs1jgwHDwk
- AA9Zu3VD2vqBMiucpnnRv5rfh1+JTK84S6LfnROuqoF0pmiFHw
- z4YvM6JhK4RzmWImDOcXf6ktukiF88Dd47o176nuAPwcQekZ81
- MO/2LhEQ+DiFehSCnsc+242uqG3G/Qpb31PWKO3iJrtNh1qljn
- C8Y+VpPFGLBENb/YVNOKhgf/2kRKXLrDqT4kY3mz7CCAxfHip0
- fx/+KF5kiqif4RQhkAogLJQb/ENKbipt1QwDmK2U8+CdLgYxCF
- YtpgZq7efo+9XUTUDFfKzyvhzO5VVZTAX3+pkxgtNWZNjn5W5O
- 2NZmj5EwPtfqw==
+	Fri, 30 Sep 2011 05:10:18 -0400
+Date: Fri, 30 Sep 2011 10:07:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: Re: [PATCH -next] x86 mrst: fix build error when X86_MRST is not
+ enabled
+Message-ID: <20110930100704.6ea882c8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110929161040.41f23573.akpm00@gmail.com>
+References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
+	<4E84D684.107@xenotime.net>
+	<20110929235708.1bbd1166@lxorguk.ukuu.org.uk>
+	<20110929161040.41f23573.akpm00@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Sep 2011, Josh Wu wrote:
-
-> This patch
-> 1. add ISI_MCK parent setting code when add ISI device.
-> 2. add ov2640 support on board file.
-> 3. define isi_mck clock in sam9g45 chip file.
+> > This breaks Medfield so NAK
+> > 
+> > The correct behaviour should be 
+> > 
+> > INTEL_MID defined -> mrst_cpu_chip has meaning
+> > INTEL_MID not defined -> mrst_identify_chip is 0
+> > 
+> > your change makes it 0 for Medfield which means it will crash on boot.
 > 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> Randy's patch is an attempt to fix Mathias's "x86: rtc: don't register
+> a platform RTC device for Intel MID platforms".
 
-Looking a bit more at this, I think, the arch maintainer might want to 
-take a closer look at this:
+NAK this.
 
-1. Wouldn't it be a good idea to also bind the isi_clk via a clock 
-connection ID and not via the clock's name?
+> I'm tempted to do a mass droppage, but then some of the patches might
+> get forever lost.
 
-2. pck1 is not really dedicated to ISI on sam9g45. It can also be used, 
-e.g., as a generic clock output and ISI_PCK can be supplied by an external 
-oscillator. Such set up seems perfectly valid to me and your patch would 
-just unconditionally grab PCK1 and configure it to some frequency... I 
-think, this shall be improved.
+Randy's patch breaks Medfield, simply because he's seeing an incomplete
+set of merges. The stuff the x86 maintainers were sent already deals with
+this. It's all simply a case of waiting for the trees to get back into
+sync, at which point platform/x86/mrst will get built for INTEL_MID
+general case.
 
-3.
+> Could we please get some x86 maintainers on deck??
 
-> +static int __init isi_set_clk_parent(void)
-> +{
-> +	struct clk *pck1;
-> +	struct clk *plla;
-> +	int ret;
-> +
-> +	/* ISI_MCK is supplied by PCK1 - set parent for it. */
-> +	pck1 = clk_get(NULL, "pck1");
-> +	if (IS_ERR(pck1)) {
-> +		printk(KERN_ERR "Failed to get PCK1\n");
-> +		ret = PTR_ERR(pck1);
-> +		goto err;
-> +	}
-> +
-> +	plla = clk_get(NULL, "plla");
-> +	if (IS_ERR(plla)) {
-> +		printk(KERN_ERR "Failed to get PLLA\n");
-> +		ret = PTR_ERR(plla);
-> +		goto err_pck1;
-> +	}
-> +	ret = clk_set_parent(pck1, plla);
-> +	clk_put(plla);
+Well currently x86@kernel.org is undeliverable so that won't help you.
 
-I think, here you also need a
-
-	clk_put(pck1);
-
-> +	if (ret != 0) {
-> +		printk(KERN_ERR "Failed to set PCK1 parent\n");
-> +		goto err_pck1;
-> +	}
-> +	return ret;
-> +
-> +err_pck1:
-> +	clk_put(pck1);
-> +err:
-> +	return ret;
-> +}
-
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Alan
