@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab1I3QMq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:12:46 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39803 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab1I3QMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:12:44 -0400
-Date: Fri, 30 Sep 2011 09:12:23 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Cc: linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] crc32c: Implement CRC32c with slicing-by-8 algorithm
-Message-ID: <20110930161223.GW11984@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se>
+	id S1756839Ab1I3QRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:17:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41590 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab1I3QRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 12:17:02 -0400
+Date: Fri, 30 Sep 2011 18:17:32 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 01/21] drm/i915: Enable digital port hotplug
+ on PCH systems
+Message-ID: <20110930161732.GA2859@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+ <1317344993-24945-1-git-send-email-keithp@keithp.com>
+ <1317344993-24945-2-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1317344993-24945-2-git-send-email-keithp@keithp.com>
+X-Operating-System: Linux phenom 3.1.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[putting mailing lists on cc]
-
-On Fri, Sep 30, 2011 at 08:01:36AM +0200, Joakim Tjernlund wrote:
+On Thu, Sep 29, 2011 at 06:09:33PM -0700, Keith Packard wrote:
+> We were relying on the BIOS to set these bits, which doesn't always
+> happen.
 > 
-> (Just happen to see this patch in the archives)
-> 
-> - This is basically an copy of Bobs crc32 work and duplicates code, this
->   code needs to move into /lib/crc32.c and use the existing framework.
+> Signed-off-by: Keith Packard <keithp@keithp.com>
 
-Which framework are you talking about?  lib/crc32.c appears to be a simple
-module that exports a utility function.  Do you mean that you want to merge the
-crc32{,c}defs.h and gen_crc32{,c}table.c code?  Do you want a build script that
-starts with only a crc${ALG}_defs.h file and stamps out gencrc${ALG}_table.c
-and crc${ALG}.c boilerplate code and then builds it?
+Ok, I'll try to increase our review-bandwidth for modesetting stuff by
+jumping into this maze myself. For the moment I'll shortly explain what
+I've actually checked so you know how much weight/little to attach to my
+r-b's.
 
-I really don't know; from my perspective there was a slow implementation in
-crypto/crc32c.c and I wanted to speed it up.  crc32c seems to be in crypto/ and
-not lib/ so that the implementation can be replaced with a hardware accelerated
-version at runtime (crc32c-intel).
-
-For crc32 which has no such hw replacement (as far as I know), moving it into
-crypto/ would incur the overhead of going through the cryptoapi for not much
-benefit.  On the other hand it wouldn't be hard to put the crc32 code into
-crypto/.
-> 
-> - Slice by 8 is just half the speed on my ppc32 compared to slice by 4 so
->   it can't be enabled for all archs. Best to start with all 64 bit archs
-
-<shrug> I suppose I could make CRC32C_BITS configurable.  What is the hardware
-profile of your ppc32 processor?  How much L1D/L2 cache?  slice-by-8 does have
-a big cache footprint.  On the other hand it's faster than the slice-by-4
-(crc32) and Sarwate (crc32c) code in the kernel, even on old slow 32-bit x86
-processors (PII, PIII, P4).
-
-> - Last time I tested Bobs slice by 8 on ppc32 it didn't work.
-
-... is crc32c broken *now*?  It seems fine on x86/amd64/ppc64.
-
---D
+Checked with docs, noticed that the public one's lack register addresses
+for PCH regs ...
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
