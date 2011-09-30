@@ -1,97 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab1I3JXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:23:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49127 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab1I3JXl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:23:41 -0400
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 30 Sep 2011 11:23:02 +0200
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
-	 <20110930034815.GF10425@mtj.dyndns.org>
-	 <1317355529.4588.45.camel@gandalf.stny.rr.com>
-	 <20110930041424.GH10425@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317374582.19415.12.camel@twins>
-Mime-Version: 1.0
+	id S1755487Ab1I3JZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:25:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59836 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753567Ab1I3JZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:25:30 -0400
+Date: Fri, 30 Sep 2011 11:25:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/10] mm: memcg: per-priority per-zone hierarchy scan
+ generations
+Message-ID: <20110930092200.GD32134@tiehlicka.suse.cz>
+References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
+ <1317330064-28893-5-git-send-email-jweiner@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317330064-28893-5-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[linux-foundation.org seems to be down, so I have changed Andrew's
+address]
 
+On Thu 29-09-11 23:00:58, Johannes Weiner wrote:
+> Memory cgroup limit reclaim currently picks one memory cgroup out of
+> the target hierarchy, remembers it as the last scanned child, and
+> reclaims all zones in it with decreasing priority levels.
+> 
+> The new hierarchy reclaim code will pick memory cgroups from the same
+> hierarchy concurrently from different zones and priority levels, it
+> becomes necessary that hierarchy roots not only remember the last
+> scanned child, but do so for each zone and priority level.
+> 
+> Until now, we reclaimed memcgs like this:
+> 
+>     mem = mem_cgroup_iter(root)
+>     for each priority level:
+>       for each zone in zonelist:
+>         reclaim(mem, zone)
+> 
+> But subsequent patches will move the memcg iteration inside the loop
+> over the zones:
+> 
+>     for each priority level:
+>       for each zone in zonelist:
+>         mem = mem_cgroup_iter(root)
+>         reclaim(mem, zone)
+> 
+> And to keep with the original scan order - memcg -> priority -> zone -
+> the last scanned memcg has to be remembered per zone and per priority
+> level.
+> 
+> Furthermore, global reclaim will be switched to the hierarchy walk as
+> well.  Different from limit reclaim, which can just recheck the limit
+> after some reclaim progress, its target is to scan all memcgs for the
+> desired zone pages, proportional to the memcg size, and so reliably
+> detecting a full hierarchy round-trip will become crucial.
+> 
+> Currently, the code relies on one reclaimer encountering the same
+> memcg twice, but that is error-prone with concurrent reclaimers.
+> Instead, use a generation counter that is increased every time the
+> child with the highest ID has been visited, so that reclaimers can
+> stop when the generation changes.
 
-
-> static void flush_gcwq(struct global_cwq *gcwq)
-> {
->         struct work_struct *work, *nw;
->         struct worker *worker, *n;
->         LIST_HEAD(non_affine_works);
-> 
->         spin_lock_irq(&gcwq->lock);
->         list_for_each_entry_safe(work, nw, &gcwq->worklist, entry) {
->                 struct workqueue_struct *wq = get_work_cwq(work)->wq;
-> 
->                 if (wq->flags & WQ_NON_AFFINE)
->                         list_move(&work->entry, &non_affine_works);
->         }
-> 
->         while (!list_empty(&gcwq->worklist)) {
->                 int nr_works = 0;
-> 
->                 list_for_each_entry(work, &gcwq->worklist, entry) {
->                         send_mayday(work);
->                         nr_works++;
->                 }
-> 
->                 list_for_each_entry(worker, &gcwq->idle_list, entry) {
->                         if (!nr_works--)
->                                 break;
->                         wake_up_process(worker->task);
->                 }
-> 
->                 spin_unlock_irq(&gcwq->lock);
-> 
->                 if (need_to_create_worker(gcwq)) {
->                         worker = create_worker(gcwq, true);
->                         if (worker)
->                                 start_worker(worker);
->                 }
-> 
->                 wait_event_timeout(gcwq->idle_wait,
->                                 gcwq->nr_idle == gcwq->nr_workers, HZ/10);
-> 
->                 spin_lock_irq(&gcwq->lock);
->         }
-
-We could probably replace that loop with one of the flush/barrier
-thingies, but I got lost and wanted to post something. Using a proper
-flush would also get rid of that icky waitqueue.
+Both naming and the patch description is much nicer. Thanks!
 
 > 
->         WARN_ON(gcwq->nr_workers != gcwq->nr_idle);
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c |   65 +++++++++++++++++++++++++++++++++++++++---------------
+>  1 files changed, 47 insertions(+), 18 deletions(-)
 > 
->         list_for_each_entry_safe(worker, n, &gcwq->idle_list, entry)
->                 destroy_worker(worker);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0ba59f6..38d195d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -121,6 +121,13 @@ struct mem_cgroup_stat_cpu {
+>  	unsigned long targets[MEM_CGROUP_NTARGETS];
+>  };
+>  
+> +struct mem_cgroup_reclaim_iter {
+> +	/* css_id of the last scanned hierarchy member */
+> +	int position;
+> +	/* scan generation, increased every round-trip */
+> +	unsigned int generation;
+> +};
+> +
+>  /*
+>   * per-zone information in memory controller.
+>   */
+> @@ -131,6 +138,8 @@ struct mem_cgroup_per_zone {
+>  	struct list_head	lists[NR_LRU_LISTS];
+>  	unsigned long		count[NR_LRU_LISTS];
+>  
+> +	struct mem_cgroup_reclaim_iter reclaim_iter[DEF_PRIORITY + 1];
+> +
+>  	struct zone_reclaim_stat reclaim_stat;
+>  	struct rb_node		tree_node;	/* RB tree node */
+>  	unsigned long long	usage_in_excess;/* Set to the value by which */
+> @@ -231,11 +240,6 @@ struct mem_cgroup {
+>  	 * per zone LRU lists.
+>  	 */
+>  	struct mem_cgroup_lru_info info;
+> -	/*
+> -	 * While reclaiming in a hierarchy, we cache the last child we
+> -	 * reclaimed from.
+> -	 */
+> -	int last_scanned_child;
+>  	int last_scanned_node;
+>  #if MAX_NUMNODES > 1
+>  	nodemask_t	scan_nodes;
+> @@ -781,9 +785,16 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+>  	return memcg;
+>  }
+>  
+> -static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> -					  struct mem_cgroup *prev,
+> -					  bool reclaim)
+> +struct mem_cgroup_reclaim_cookie {
+> +	struct zone *zone;
+> +	int priority;
+> +	unsigned int generation;
+> +};
+> +
+> +static struct mem_cgroup *
+> +mem_cgroup_iter(struct mem_cgroup *root,
+> +		struct mem_cgroup *prev,
+> +		struct mem_cgroup_reclaim_cookie *reclaim)
+>  {
+>  	struct mem_cgroup *mem = NULL;
+>  	int id = 0;
+> @@ -804,10 +815,20 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>  	}
+>  
+>  	while (!mem) {
+> +		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+>  		struct cgroup_subsys_state *css;
+>  
+> -		if (reclaim)
+> -			id = root->last_scanned_child;
+> +		if (reclaim) {
+> +			int nid = zone_to_nid(reclaim->zone);
+> +			int zid = zone_idx(reclaim->zone);
+> +			struct mem_cgroup_per_zone *mz;
+> +
+> +			mz = mem_cgroup_zoneinfo(root, nid, zid);
+> +			iter = &mz->reclaim_iter[reclaim->priority];
+> +			if (prev && reclaim->generation != iter->generation)
+> +				return NULL;
+> +			id = iter->position;
+> +		}
+>  
+>  		rcu_read_lock();
+>  		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+> @@ -818,8 +839,13 @@ static struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>  			id = 0;
+>  		rcu_read_unlock();
+>  
+> -		if (reclaim)
+> -			root->last_scanned_child = id;
+> +		if (reclaim) {
+> +			iter->position = id;
+> +			if (!css)
+> +				iter->generation++;
+> +			else if (!prev && mem)
+> +				reclaim->generation = iter->generation;
+> +		}
+>  
+>  		if (prev && !css)
+>  			return NULL;
+> @@ -842,14 +868,14 @@ static void mem_cgroup_iter_break(struct mem_cgroup *root,
+>   * be used for reference counting.
+>   */
+>  #define for_each_mem_cgroup_tree(iter, root)		\
+> -	for (iter = mem_cgroup_iter(root, NULL, false);	\
+> +	for (iter = mem_cgroup_iter(root, NULL, NULL);	\
+>  	     iter != NULL;				\
+> -	     iter = mem_cgroup_iter(root, iter, false))
+> +	     iter = mem_cgroup_iter(root, iter, NULL))
+>  
+>  #define for_each_mem_cgroup(iter)			\
+> -	for (iter = mem_cgroup_iter(NULL, NULL, false);	\
+> +	for (iter = mem_cgroup_iter(NULL, NULL, NULL);	\
+>  	     iter != NULL;				\
+> -	     iter = mem_cgroup_iter(NULL, iter, false))
+> +	     iter = mem_cgroup_iter(NULL, iter, NULL))
+>  
+>  static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+>  {
+> @@ -1619,6 +1645,10 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
+>  	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
+>  	unsigned long excess;
+>  	unsigned long nr_scanned;
+> +	struct mem_cgroup_reclaim_cookie reclaim = {
+> +		.zone = zone,
+> +		.priority = 0,
+> +	};
+>  
+>  	excess = res_counter_soft_limit_excess(&root_memcg->res) >> PAGE_SHIFT;
+>  
+> @@ -1627,7 +1657,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_memcg,
+>  		noswap = true;
+>  
+>  	while (1) {
+> -		victim = mem_cgroup_iter(root_memcg, victim, true);
+> +		victim = mem_cgroup_iter(root_memcg, victim, &reclaim);
+>  		if (!victim) {
+>  			loop++;
+>  			/*
+> @@ -4878,7 +4908,6 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+>  		res_counter_init(&memcg->res, NULL);
+>  		res_counter_init(&memcg->memsw, NULL);
+>  	}
+> -	memcg->last_scanned_child = 0;
+>  	memcg->last_scanned_node = MAX_NUMNODES;
+>  	INIT_LIST_HEAD(&memcg->oom_notify);
+>  
+> -- 
+> 1.7.6.2
 > 
->         WARN_ON(gcwq->nr_workers || gcwq->nr_idle);
-> 
->         spin_unlock_irq(&gcwq->lock);
-> 
->         gcwq = get_gcwq(get_cpu());
->         spin_lock_irq(&gcwq->lock);
->         list_for_each_entry_safe(work, nw, &non_affine_works, entry) {
->                 list_del_init(&work->entry);
->                 ___queue_work(get_work_cwq(work)->wq, gcwq, work);
->         }
->         spin_unlock_irq(&gcwq->lock);
->         put_cpu();
-> }
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
