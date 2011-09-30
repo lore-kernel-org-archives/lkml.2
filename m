@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190Ab1I3SR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:17:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38908 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757272Ab1I3SR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:17:56 -0400
-Date: Fri, 30 Sep 2011 20:16:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	id S1758101Ab1I3STR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:19:17 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:53081 "EHLO
+	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755909Ab1I3STQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 14:19:16 -0400
+Date: Fri, 30 Sep 2011 14:19:14 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] irq fixes
-Message-ID: <20110930181622.GA19077@elte.hu>
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
+Message-ID: <20110930181914.GA17817@mgebm.net>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+ <20110929164319.GA3509@mgebm.net>
+ <CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
+ <4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
 Content-Disposition: inline
+In-Reply-To: <4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest irq-urgent-for-linus git tree from:
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-urgent-for-linus
+On Thu, 29 Sep 2011, Eric B Munson wrote:
 
- Thanks,
+> On Thu, 29 Sep 2011 13:25:00 -0700, Michel Lespinasse wrote:
+> >On Thu, Sep 29, 2011 at 9:43 AM, Eric B Munson <emunson@mgebm.net>
+> >wrote:
+> >>I have been trying to test these patches since yesterday
+> >>afternoon. =A0When my
+> >>machine is idle, they behave fine. =A0I started looking at
+> >>performance to make
+> >>sure they were a big regression by testing kernel builds with
+> >>the scanner
+> >>disabled, and then enabled (set to 120 seconds). =A0The scanner
+> >>disabled builds
+> >>work fine, but with the scanner enabled the second time I build
+> >>my kernel hangs
+> >>my machine every time. =A0Unfortunately, I do not have any more
+> >>information than
+> >>that for you at the moment. =A0My next step is to try the same
+> >>tests in qemu to
+> >>see if I can get more state information when the kernel hangs.
+> >
+> >Could you please send me your .config file ? Also, did you apply the
+> >patches on top of straight v3.0 and what is your machine like ?
+> >
+> >Thanks,
+>=20
+>=20
+> My .config will come separately to you.  I applied the patches to
+> Linus' master branch as of yesterday.  My machine is a single Xeon
+> 5690 with 12G of ram (do you need more details than that?)
+>=20
+> Thanks,
+> Eric
 
-	Ingo
+I am able to recreate on a second desktop I have here (same model CPU but a
+different MB so I am fairly sure it isn't dying hardware).  It looks to me =
+like
+a CPU softlocks and it stalls the process active there, so most recently th=
+at
+was XOrg.  The machine lets me login via ssh for a few minutes, but things =
+like
+ps and cat or /proc files will start to work and give some output but hang.
+I cannot call reboot, nor can I sync the fs and reboot via SysRq.  My next =
+step
+is to setup a netconsole to see if anything comes out in the syslog that I
+cannot see.
 
------------------->
-Rob Herring (2):
-      irq: Add declaration of irq_domain_simple_ops to irqdomain.h
-      irq: Fix check for already initialized irq_domain in irq_domain_add
+Eric
 
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- include/linux/irqdomain.h |    1 +
- kernel/irq/irqdomain.c    |    6 +++++-
- 2 files changed, 6 insertions(+), 1 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index e807ad6..3ad553e 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -80,6 +80,7 @@ extern void irq_domain_del(struct irq_domain *domain);
- #endif /* CONFIG_IRQ_DOMAIN */
- 
- #if defined(CONFIG_IRQ_DOMAIN) && defined(CONFIG_OF_IRQ)
-+extern struct irq_domain_ops irq_domain_simple_ops;
- extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
- extern void irq_domain_generate_simple(const struct of_device_id *match,
- 					u64 phys_base, unsigned int irq_start);
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index d5828da..b57a377 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -29,7 +29,11 @@ void irq_domain_add(struct irq_domain *domain)
- 	 */
- 	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
- 		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
--		if (d || d->domain) {
-+		if (!d) {
-+			WARN(1, "error: assigning domain to non existant irq_desc");
-+			return;
-+		}
-+		if (d->domain) {
- 			/* things are broken; just report, don't clean up */
- 			WARN(1, "error: irq_desc already assigned to a domain");
- 			return;
+iQEcBAEBAgAGBQJOhggiAAoJEH65iIruGRnNtXwIANGCN1XK5vZHErXG/SPJzn1Z
+HyJ5IoRPfErNdpWHm+VCuhu/qM8rPs4d1kulSNCn7BcXJyduT/S1NEUTu2pv875s
+J465JH9b38LM7t2ohx242Kyn00XCG0CEd65F6lgE0VrPTFy9gleuNKe0yhIn1G+6
+zigGo5sYDhTfhlXDiQHPwYjJqkQkPmMlu2hMfyX2agfHVnLuQbdQG5A42LUAVvoq
+TlgA1uDBsx4GGKAncHDoOg+2/X05AF0YzLVQGKOGFFW0pTutMDUATh7d9Lo+Cksx
+gDmRHiKXhADQSZxXZVCgDk7xi2MNEdKoA6ez4GApEGg8gD4+QXv/UT++Uw3kbZA=
+=QiKM
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
