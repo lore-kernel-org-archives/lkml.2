@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab1I3SOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:14:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35885 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757940Ab1I3SOu (ORCPT
+	id S1758095Ab1I3SQT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:16:19 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:53612 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909Ab1I3SQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:14:50 -0400
-Date: Fri, 30 Sep 2011 20:09:59 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        "Barnes, Jesse" <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 03/21] drm/i915: Remove extra 300ms delay during eDP mode
- setting
-Message-ID: <20110930180959.GP2859@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	"Barnes, Jesse" <jbarnes@virtuousgeek.org>
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-4-git-send-email-keithp@keithp.com>
- <20110930162728.GC2859@phenom.ffwll.local>
- <yun7h4p9ay5.fsf@aiko.keithp.com>
- <20110930175821.GN2859@phenom.ffwll.local>
+	Fri, 30 Sep 2011 14:16:17 -0400
+Date: Fri, 30 Sep 2011 12:16:17 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+cc: Benoit Cousson <b-cousson@ti.com>, parthab@india.ti.com,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, tony@atomide.com, khilman@ti.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <CAP05o4JA_pBJUq4qQ6ase41nvznbfLRuvwh02fOhHKWNqie_NA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1109301215430.12185@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+ <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com> <alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com> <CAP05o4+uwuFL8XNFG-wmUW8voYQ4kywyU9Qn-Mng7kv=TzZm9w@mail.gmail.com> <alpine.DEB.2.00.1109260844360.13188@utopia.booyaka.com>
+ <CAP05o4KbVkXgnPc7JonrvURmCpQRgjMK2K_dmjQSKzQufQhjkA@mail.gmail.com> <alpine.DEB.2.00.1109300227530.12185@utopia.booyaka.com> <CAP05o4JA_pBJUq4qQ6ase41nvznbfLRuvwh02fOhHKWNqie_NA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110930175821.GN2859@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="155748971-953785820-1317406577=:12185"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 07:58:21PM +0200, Daniel Vetter wrote:
-> On Fri, Sep 30, 2011 at 10:50:10AM -0700, Keith Packard wrote:
-> > On Fri, 30 Sep 2011 18:27:28 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > 
-> > > Can you elaborate a bit why this is no longer needed? Jesse seems to have
-> > > introduced this spefically for edp panels in d209848d61794968. If this
-> > > becomes rendundant due to your panel power sequencing fixes, maybe move it
-> > > down the series?
-> > 
-> > The only reason for this delay is to avoid some potential noise on the
-> > screen during mode setting, all of the power sequencing delays are
-> > already correctly managed by the driver. As far as I can tell, we're
-> > trading off the small potential for noise on the screen with an extra
-> > 300ms delay at boot time.
-> > 
-> > In the eDP spec, there's a delay listed (T8) between the start of video
-> > data and turning on the backlight. There are no values presented and
-> > the instructions are simply that the source is supposed to wait until
-> > the display is stable. I'm not sure how we'd ever know that the display
-> > is stable.
-> 
-> Ok, maybe add the above to paragraphs to the commit msg. Then
-> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On further strolling through bspec to review later patches I've noticed
-that PCH_PP_ON_DELAYS and PCH_PP_OFF_DELAYS seem to have values for
-power on->backlight on and backlight off->panel off delays. Maybe we
-should use these?
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+--155748971-953785820-1317406577=:12185
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+
+On Fri, 30 Sep 2011, Munegowda, Keshava wrote:
+
+> On Fri, Sep 30, 2011 at 2:02 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> > On Wed, 28 Sep 2011, Munegowda, Keshava wrote:
+> >
+> >> Thanks paul,
+> >>
+> >> But In USB Host case, there is a challenge!
+> >>
+> >> I need both usbhost_48m_fck and usbhost_120m_fck to be turned on when
+> >> I invoke pm_runtime_get_sync ; so there are couple of options to do th=
+is
+> >>
+> >> 1. use clk_get with hard coded =A0usbhost_120m_fck name in =A0usbhs dr=
+iver
+> >> =A0 =A0 =A0 =A0enable this clock after invoking pm_runtime_get_sync
+> >>
+> >> 2. add an additional flag in hwmod ; so that pm_runtime_get_sync will =
+enable
+> >> =A0 =A0 =A0 =A0 =A0 =A0main clock as well as optional clocks
+> >>
+> >> please comment on these two approaches..
+> >
+> > Looks like you picked approach #1 which is fine with me.
+> >
+> > Here's what I don't understand about how this clock is used, though.
+> > According to the 34xx TRM vZR Section 24.2.3.1.2 "High-Speed USB Host
+> > Subsystem Clocks", this is only used to "clock EHCI controller internal
+> > logic". =A0So if EHCI is not being used, it would seem to me that this =
+clock
+> > shouldn't be enabled? =A0But patch #5 seems to enable and disable it
+> > unconditionally. =A0Am I missing something here?
+>=20
+> OK. are you suggesting that this clock should be enabled/disabled; only
+> if atleast one port is selected for ehci?
+
+Seems to make sense to me?  If the clock really isn't needed for OHCI,=20
+then it shouldn't be enabled when only OHCI is in use?
+
+
+- Paul
+--155748971-953785820-1317406577=:12185--
