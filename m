@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab1I3Hej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:34:39 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:44723 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab1I3Heh (ORCPT
+	id S1756979Ab1I3He7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:34:59 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:57132 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756873Ab1I3He5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 03:34:37 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-8c-4e85701aba6e
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>, joerg.roedel@amd.com,
-        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        younglak1004.kim@samsung.com, "'Kukjin Kim'" <kgene.kim@samsung.com>
-Subject: [PATCH v2 0/5] iommu/exynos: Add IOMMU and Enhance System MMU driver
- for Exynos4
-Date: Fri, 30 Sep 2011 16:30:33 +0900
-Message-id: <016b01cc7f42$d72420e0$856c62a0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acx/QtbEYaiyoRTxSla6v1tdfTQXZw==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 30 Sep 2011 03:34:57 -0400
+Date: Fri, 30 Sep 2011 10:34:50 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 3/5 v12] arm: omap: usb: register hwmods of usbhs
+Message-ID: <20110930073449.GA13825@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
+ <alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-This is the second try of submitting patches about IOMMU/System MMU
-driver for Exynos4 SoCs with the fixes of the following problems
-pointed by Russell King.:
+--T4sUOijqQbZv57TR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- - Missing unlocking a spinlock in exynos_iommu_attach_dev().
- - atomic_t -> int in sysmmu_drvdata.activations
- - sysmmu_platdata -> sysmmu_drvdata
- - Change in error messages in irq handler 
- - Removed casting in format of error message
- - omap_iommu_ops -> exynos_iommu_ops in the last patch.
+Hi,
 
-First 2 patches enhance System MMU platform device definition:
- - Removed System MMU for MDMA0 in LCD block because it is not used.
-  Use MDMA2 in TOP block. 
- - Removed System MMU ID. Instead a System MMU is bound to a device that
-  the System MMU is dedicated during machin initialization. If a device
-  driver wants to handle System MMU, it must bind its device with System
-  MMU with sysmmu_set_owner().
- - clkdev
- - System MMU device driver is removed from arch/arm/plat-s5p to move it
-  to driver/iommu directory.
+On Fri, Sep 30, 2011 at 01:15:55AM -0600, Paul Walmsley wrote:
+> > The hwmod structure of usb_host_hs  and usb_tll are
+> > retrieved and registered with omap device
+> >=20
+> > Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> > Reviewed-by: Partha Basak <parthab@india.ti.com>
+> > ---
+> >  arch/arm/mach-omap2/usb-host.c |  100 ++++++++++++++------------------=
+--------
+> >  1 files changed, 34 insertions(+), 66 deletions(-)
+> >=20
+> > diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-h=
+ost.c
+> > index 89ae298..771dc78 100644
+> > --- a/arch/arm/mach-omap2/usb-host.c
+> > +++ b/arch/arm/mach-omap2/usb-host.c
+> > @@ -28,51 +28,28 @@
+>=20
+> > +	oh[0] =3D omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
+> > +	if (!oh[0]) {
+> > +		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
+> > +		return;
+> >  	}
+> > =20
+> > -	if (platform_device_register(&usbhs_device) < 0)
+> > -		printk(KERN_ERR "USBHS platform_device_register failed\n");
+> > +	oh[1] =3D omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
+> > +	if (!oh[1]) {
+> > +		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
+> > +		return;
+> > +	}
+> > =20
+> > -init_end:
+> > -	return;
+> > +	od =3D omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 2,
+> > +				(void *)&usbhs_data, sizeof(usbhs_data),
+> > +				omap_uhhtll_latency,
+> > +				ARRAY_SIZE(omap_uhhtll_latency), false);
+>=20
+> Usually there's something wrong with omap_devices that contain=20
+> multiple hwmods.  Is there some reason why there isn't a separate driver=
+=20
+> for the TLL?  Judging by a brief look at drivers/mfd/omap_usb_host.c, the=
+=20
+> TLL handling looks logically distinct?
 
-Last 3 patches implements IOMMU API:
- - Implements IOMMU API and System MMU driver that is moved from
-  arch/arm/plat-s5p.
- - Implements fault handling that is suggested by Ohad.
- - Used bus_set_iommu instead of register_iommu that is suggested by Joerg.
+Yes, I have the same feeling. To my understanding, USB Host Subsystem on
+OMAP is composed of the Transceiver-less link (TLL) and USB Host (UHH).
+Aparently, they could be handled by separate drivers.
 
+--=20
+balbi
 
-[PATCH v2 1/5] ARM: EXYNOS4: Change System MMU device definition
+--T4sUOijqQbZv57TR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-arch/arm/mach-exynos4/Kconfig               |    2 -
-arch/arm/mach-exynos4/clock.c               |   43 +-
-arch/arm/mach-exynos4/dev-sysmmu.c          |  270 ++------
-arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
-arch/arm/mach-exynos4/include/mach/map.h    |    1 -
-arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
-arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
-arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
-arch/arm/plat-s5p/Kconfig                   |    8 -
-arch/arm/plat-s5p/Makefile                  |    1 -
-arch/arm/plat-s5p/include/plat/sysmmu.h     |   95 ---
-arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
-drivers/iommu/Kconfig                       |   14 +
-drivers/iommu/Makefile                      |    1 +
-drivers/iommu/exynos_iommu.c                |  919 +++++++++++++++++++++++++++
-15 files changed, 1120 insertions(+), 684 deletions(-)
+iQEcBAEBAgAGBQJOhXEZAAoJEAv8Txj19kN14JYIAKH2zh/FfT8VLgYfiEj5+Cq7
+9UavmVR3MJBpN06W196nz2BkrwUi2wWszW1hWuMoW3RKM1wRJ7PhK6ZVzTC3r0ak
+exhD6CMx5RRtb98A7oTRVZmflcbcI0n2W15eV7Oahne0kBC8s7ElsWFiD7NrYJaq
+n1eibBzdEXzJtlVag977x5CnvpyqQnG18ZZKQM7+vh6S8MCf5LXP4Cv5TZdP9cxW
+I2JRwB5hj6oNwv5Uvk3nlPPTdUUiinJK/5QaJ4bSt0BkNwzZ5gR+7zOFBdkAIFT6
+C6XBajgMgfrmBXdY6ZgnoWj6g6eC7CIkjbQiVFAr8VnotjSGRt+9GNmCPQPuAAk=
+=6//R
+-----END PGP SIGNATURE-----
 
-
+--T4sUOijqQbZv57TR--
