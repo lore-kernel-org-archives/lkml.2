@@ -1,290 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1I3HMi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:12:38 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:57575 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1I3HMg (ORCPT
+	id S1752933Ab1I3HO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:14:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65411 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab1I3HO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 03:12:36 -0400
-Date: Fri, 30 Sep 2011 01:12:35 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 2/5 v12] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-In-Reply-To: <1317361216-28248-1-git-send-email-keshava_mgowda@ti.com>
-Message-ID: <alpine.DEB.2.00.1109300107150.32653@utopia.booyaka.com>
-References: <1317361216-28248-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 30 Sep 2011 03:14:57 -0400
+Date: Fri, 30 Sep 2011 00:14:34 -0700
+From: Kent Overstreet <kent.overstreet@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: NeilBrown <neilb@suse.de>, Andreas Dilger <adilger@dilger.ca>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [GIT] Bcache version 12
+Message-ID: <20110930071434.GA26565@moria>
+References: <20110910064531.GA32536@moria>
+ <20110911081854.2958fdc8@notabene.brown>
+ <20110911192259.GA3743@moria>
+ <FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
+ <20110912014407.GA5171@moria>
+ <CAA9_cmeqevWoK=9WMD9c+csc8SbaYq0aK9j1qWr_0FEa6jWZEw@mail.gmail.com>
+ <CAC7rs0t_J+foaLZSuuw5BhpUAYfr-KY1iegFOxEBPCpbrkk1Dg@mail.gmail.com>
+ <20110919171606.3640c102@notabene.brown>
+ <20110921025408.GA5521@moria>
+ <CAA9_cmfOdv4ozkz7bd2QsbL5_VtAraMZMXoo0AAV0eCgNQr62Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmfOdv4ozkz7bd2QsbL5_VtAraMZMXoo0AAV0eCgNQr62Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-a few comments
-
-On Fri, 30 Sep 2011, Keshava Munegowda wrote:
-
-> Following 2 hwmod structures are added
->     1. usb_host_hs
->          The hwmod of usbhs with uhh, ehci and ohci base addresses
->          functional clock and ehci, ohci irqs
+On Thu, Sep 29, 2011 at 04:38:52PM -0700, Dan Williams wrote:
+> On Tue, Sep 20, 2011 at 7:54 PM, Kent Overstreet
+> > There is (for now) a 1:1 mapping of backing devices to block devices.
 > 
->     2. usb_tll_hs
->           hwmod of usbhs with the TLL base address and irq.
+> Is that "(for now)" where you see md not being able to model this in the future?
+
+No, the for now was about bcache. I'm planning on adding volume
+managament/thin provisioning to bcache, but that may end up being only a
+stepping stone to a full fs (i.e. never 
+
+
+> > Cache devices have a basically identical superblock as backing devices
+> > though, and some of the registration code is shared, but cache devices
+> > don't correspond to any block devices.
 > 
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-> Reviewed-by: Partha Basak <parthab@india.ti.com>
-> ---
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  195 ++++++++++++++++++++++++++++
->  1 files changed, 195 insertions(+), 0 deletions(-)
+> Just like a raid0 is a virtual creation from two block devices?  Or
+> some other meaning of "don't correspond"?
+
+No.
+
+Remember, you can hang multiple backing devices off a cache.
+
+Each backing device shows up as as a new block device - i.e. if you're
+caching /dev/sdb, you now use it as /dev/bcache0.
+
+But the SSD doesn't belong to any of those /dev/bcacheN devices.
+
+> > A cache set is a set of cache devices - i.e. SSDs. The primary
+> > motivitation for cache sets (as distinct from just caches) is to have
+> > the ability to mirror only dirty data, and not clean data.
+> >
+> > i.e. if you're doing writeback caching of a raid6, your ssd is now a
+> > single point of failure. You could use raid1 SSDs, but most of the data
+> > in the cache is clean, so you don't need to mirror that... just the
+> > dirty data.
 > 
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-> index 59fdb9f..bc17493 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-> @@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
->  static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
->  static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
->  static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
-> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
-> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
->  
->  /* L3 -> L4_CORE interface */
->  static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
-> @@ -3196,6 +3198,194 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
->  	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
->  };
->  
-> +/*
-> + * 'usb_host_hs' class
-> + * high-speed multi-port usb host controller
-> + */
-> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
-> +	.master		= &omap34xx_usb_host_hs_hwmod,
-> +	.slave		= &omap3xxx_l3_main_hwmod,
-> +	.clk		= "core_l3_ick",
-> +	.user		= OCP_USER_MPU,
-> +};
-> +
-> +static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
-> +	.rev_offs	= 0x0000,
-> +	.sysc_offs	= 0x0010,
-> +	.syss_offs	= 0x0014,
-> +	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+> ...but you only incur that "mirror clean data" penalty once, and then
+> it's just a normal raid1 mirroring writes, right?
 
-This register has other bitfields.  Please include them.
+No idea what you mean...
 
-> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-> +			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
-> +	.sysc_fields	= &omap_hwmod_sysc_type1,
-> +};
-> +
-> +static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
-> +	.name = "usb_host_hs",
-> +	.sysc = &omap34xx_usb_host_hs_sysc,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
-> +	&omap34xx_usb_host_hs__l3_main_2,
-> +};
-> +
-> +static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
-> +	{
-> +		.name		= "uhh",
-> +		.pa_start	= 0x48064000,
-> +		.pa_end		= 0x480643ff,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{
-> +		.name		= "ohci",
-> +		.pa_start	= 0x48064400,
-> +		.pa_end		= 0x480647ff,
-> +	},
-> +	{
-> +		.name		= "ehci",
-> +		.pa_start	= 0x48064800,
-> +		.pa_end		= 0x48064cff,
-> +	},
-> +	{}
-> +};
-> +
-> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
-> +	.master		= &omap3xxx_l4_core_hwmod,
-> +	.slave		= &omap34xx_usb_host_hs_hwmod,
-> +	.clk		= "l4_ick",
-> +	.addr		= omap34xx_usb_host_hs_addrs,
-> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__ick = {
-> +	.clk		= "usbhost_ick",
-> +	.user		= OCP_USER_MPU,
-> +	.flags		= OCPIF_SWSUP_IDLE,
+> See, if these things were just md devices multiple cache device would
+> already be "done", or at least on its way by just stacking md devices.
+>  Where "done" is probably an oversimplification.
 
-Does this really need OCPIF_SWSUP_IDLE?  If so, then there is a hardware 
-bug, and some explanation is needed.
+No, it really wouldn't save us anything. If all we wanted to do was
+mirror everything, there'd be no point in implementing multiple cache
+device support, and you'd just use bcache on top of md. We're
+implementing something completely new!
 
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
-> +	&omap34xx_l4_cfg__usb_host_hs,
-> +	&omap34xx_usb_host_hs__ick,
-> +};
-> +
-> +static struct omap_hwmod_opt_clk omap34xx_usb_host_hs_opt_clks[] = {
-> +	  { .role = "usbhost_fck2", .clk = "usbhost_120m_fck", },
+You read what I said about only mirroring dirty data... right?
 
-The role here doesn't need "usbhost" in its name -- ideally it would be 
-something like "120m_fck" or "ehci_logic_fck".
-
-> +};
-> +
-> +static struct omap_hwmod_irq_info omap34xx_usb_host_hs_irqs[] = {
-> +	{ .name = "ohci-irq", .irq = 76 },
-> +	{ .name = "ehci-irq", .irq = 77 },
-> +	{ .irq = -1 }
-> +};
-> +
-> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
-> +	.name		= "usb_host_hs",
-> +	.class		= &omap34xx_usb_host_hs_hwmod_class,
-> +	.clkdm_name	= "l3_init_clkdm",
-> +	.mpu_irqs	= omap34xx_usb_host_hs_irqs,
-> +	.main_clk	= "usbhost_48m_fck",
-> +	.prcm = {
-> +		.omap2 = {
-> +			.module_offs = OMAP3430ES2_USBHOST_MOD,
-> +			.prcm_reg_id = 1,
-> +			.module_bit = OMAP3430ES2_EN_USBHOST1_SHIFT,
-> +			.idlest_reg_id = 1,
-> +			.idlest_idle_bit = OMAP3430ES2_ST_USBHOST_IDLE_SHIFT,
-> +			.idlest_stdby_bit = OMAP3430ES2_ST_USBHOST_STDBY_SHIFT,
-> +		},
-> +	},
-> +	.opt_clks	= omap34xx_usb_host_hs_opt_clks,
-> +	.opt_clks_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_opt_clks),
-> +	.slaves		= omap34xx_usb_host_hs_slaves,
-> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
-> +	.masters	= omap34xx_usb_host_hs_masters,
-> +	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_masters),
-> +/*
-> + * The usbhs controller prevents the enter omap to low power mode
-> + * if other than FORCE IDLE and FORCE STANDBY are used.
-> + */
-> +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
-> +};
-> +
-> +/*
-> + * 'usb_tll_hs' class
-> + * usb_tll_hs module is the adapter on the usb_host_hs ports
-> + */
-> +static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
-> +	.rev_offs	= 0x0000,
-> +	.sysc_offs	= 0x0010,
-> +	.syss_offs	= 0x0014,
-> +	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
-> +			   SYSC_HAS_SOFTRESET | SYSC_HAS_ENAWAKEUP |
-> +			   SYSC_HAS_CLOCKACTIVITY),
-> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-> +	.sysc_fields	= &omap_hwmod_sysc_type1,
-> +};
-> +
-> +static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
-> +	.name = "usb_tll_hs",
-> +	.sysc = &omap34xx_usb_tll_hs_sysc,
-> +};
-> +
-> +static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
-> +	{ .name = "tll-irq", .irq = 78 },
-> +	{ .irq = -1 }
-> +};
-> +
-> +static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
-> +	{
-> +		.name		= "tll",
-> +		.pa_start	= 0x48062000,
-> +		.pa_end		= 0x48062fff,
-> +		.flags		= ADDR_TYPE_RT
-> +	},
-> +	{}
-> +};
-> +
-> +static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
-> +	.clk		= "usbtll_ick",
-> +	.user		= OCP_USER_MPU,
-> +	.flags		= OCPIF_SWSUP_IDLE,
-> +};
-
-Does this really need OCPIF_SWSUP_IDLE?  If so, then there is a hardware 
-bug, and some explanation is needed.
-
-> +
-> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
-> +	.master		= &omap3xxx_l4_core_hwmod,
-> +	.slave		= &omap34xx_usb_tll_hs_hwmod,
-> +	.clk		= "l4_ick",
-> +	.addr		= omap34xx_usb_tll_hs_addrs,
-> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-> +};
-> +
-> +static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
-> +	&omap34xx_l4_cfg__usb_tll_hs,
-> +	&omap34xx_f_cfg__usb_tll_hs,
-> +};
-> +
-> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
-> +	.name		= "usb_tll_hs",
-> +	.class		= &omap34xx_usb_tll_hs_hwmod_class,
-> +	.clkdm_name	= "l3_init_clkdm",
-> +	.mpu_irqs	= omap34xx_usb_tll_hs_irqs,
-> +	.main_clk	= "usbtll_fck",
-> +	.prcm = {
-> +		.omap2 = {
-> +			.module_offs = CORE_MOD,
-> +			.prcm_reg_id = 3,
-> +			.module_bit = OMAP3430ES2_EN_USBTLL_SHIFT,
-> +			.idlest_reg_id = 3,
-> +			.idlest_idle_bit = OMAP3430ES2_ST_USBTLL_SHIFT,
-> +		},
-> +	},
-> +	.slaves		= omap34xx_usb_tll_hs_slaves,
-> +	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
-> +/*
-> + * The usbhs controller prevents the enter omap to low power mode
-> + * if other than FORCE IDLE for TLL mode too.
-> + */
-> +	.flags		= HWMOD_SWSUP_SIDLE,
-> +	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
-> +};
-> +
->  static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  	&omap3xxx_l3_main_hwmod,
->  	&omap3xxx_l4_core_hwmod,
-> @@ -3225,6 +3415,11 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  	&omap3xxx_uart2_hwmod,
->  	&omap3xxx_uart3_hwmod,
->  	&omap3xxx_uart4_hwmod,
-> +
-> +	/* usb host class */
-> +	&omap34xx_usb_host_hs_hwmod,
-> +	&omap34xx_usb_tll_hs_hwmod,
-> +
->  	/* dss class */
->  	&omap3430es1_dss_core_hwmod,
->  	&omap3xxx_dss_core_hwmod,
-> -- 
-> 1.6.0.4
+> >> In any case it certainly could be modelled in md - and if the modelling were
+> >> not elegant (e.g. even device numbers for backing devices, odd device numbers
+> >> for cache devices) we could "fix" md to make it more elegant.
+> >
+> > But we've no reason to create block devices for caches or have a 1:1
+> > mapping - that'd be a serious step backwards in functionality.
 > 
+> I don't follow that...  there's nothing that prevents having multiple
+> superblocks per cache array.
 
+Multiple... superblocks? Do you mean partitioning up the cache, or do
+you mean creating multiple block devices for a cache? Either way it's a
+silly hack.
 
-- Paul
+> A couple reasons I'm probing the md angle.
+> 
+> 1/ Since the backing devices are md devices it would be nice if all
+> the user space assembly logic that has seeped into udev and dracut
+> could be re-used for assembling bcache devices.  As it stands it seems
+> bcache relies on in-kernel auto-assembly, which md has discouraged
+> with the v1 superblock. 
+
+md was doing in kernel probing, which bcache does not do. What bcache is
+doing is centralizing all the code that touches the on disk
+superblock/metadata. You want to change something in the superblock -
+you just have to tell the kernel to do it for you. Otherwise not only
+would there be duplication of code, it'd be impossible to do safely
+without races or the userspace code screwing something up; only the
+kernel knows and controls the state of everything.
+
+Or do you expect the ext4 superblock to be managed in normal operation
+by userspace tools?
+
+> We even have nascent GUI support in
+> gnome-disk-utility it would be nice to harness some of that enabling
+> momentum for this.
+
+I've got nothing against standardizing the userspace interfaces to make
+life easier for things like gnome-disk-utility. Tell me what you want
+and if it's sane I'll see about implementing it.
+
+> 2/ md supports multiple superblock formats and if you Google "ssd
+> caching" you'll see that there may be other superblock formats that
+> the Linux block-caching driver could be asked to support down the
+> road.  And wouldn't it be nice if bcache had at least the option to
+> support the on-disk format of whatever dm-cache is doing?
+
+That's pure fantasy. That's like expecting the ext4 code to mount a ntfs
+filesystem!
+
+There's a lot more to bcache's metadata than a superblock, there's a
+journal and a full b-tree. A cache is going to need an index of some
+kind.
+
+> > The way I see it md is more or less conflating two different things -
+> > things that consume block devices
+> 
+> ...did the interwebs chomp the last part of that thought?
+
+Yeah, was supposed to be "things that consume block devices and things
+that provide them".
+
+> Side question, what are the "Change Id:" lines referring to in the git
+> commit messages?
+
+Gerrit wants them, and I don't see the point of stripping them out for
+the public tree.
