@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab1I3SCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:02:35 -0400
-Received: from home.keithp.com ([63.227.221.253]:41810 "EHLO keithp.com"
+	id S1757515Ab1I3SCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:02:55 -0400
+Received: from websrv.saout.de ([78.46.99.52]:60298 "EHLO websrv.saout.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755626Ab1I3SCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:02:34 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 07/21] drm/i915: Check for eDP inside intel_edp_panel_vdd_on/off
-In-Reply-To: <20110930171355.GG2859@phenom.ffwll.local>
-References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-8-git-send-email-keithp@keithp.com> <20110930171355.GG2859@phenom.ffwll.local>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 30 Sep 2011 11:02:30 -0700
-Message-ID: <yunvcs97vt5.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1757723Ab1I3SCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 14:02:52 -0400
+Subject: Re: [dm-devel] Block regression since 3.1-rc3
+From: Christophe Saout <christophe@saout.de>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <1317397918.27140.15.camel@localhost>
+References: <1317397918.27140.15.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Sep 2011 20:02:11 +0200
+Message-ID: <1317405732.20365.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hello again,
 
-On Fri, 30 Sep 2011 19:13:55 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+> Today I was trying to boot a new 3.1 RC kernel on one of our server
+> machines and ran into a weird block-related crash.
+> 
+> Whenever I was trying to access some filesystem on the external RAID, I
+> would soon run into the crash seen below, followed by a total lockup a
+> bit later.
+> 
+> The external RAID is accessed via multipath and simple logical volumes
+> on top. [...]
+>
+> The bug seems to be introduced between rc2 and rc3. Up to rc2 everything
+> is fine, and rc3 and also the latest kernel shows this bug. From the git
+> log I can see that the block/ directory has seen some larger update, but
+> this is just a wild guess.
 
-> Why not also move the id_edp check into edp_panel_on|off like for the vdd
-> functions? This way it looks a bit inconsistent ...
+Actually, I just found out that reverting
 
-Yeah, I can do that. May mean a few redundant checks, but they're cheap.
+commit 4853abaae7e4a2af938115ce9071ef8684fb7af4
+Author: Jeff Moyer <jmoyer@redhat.com>
+Date:   Mon Aug 15 21:37:25 2011 +0200
 
-=2D-=20
-keith.packard@intel.com
+    block: fix flush machinery for stacking drivers with differring flush flags
 
---=-=-=
-Content-Type: application/pgp-signature
+makes the problem disappear.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Let me know if I can help with further information.
 
-iD8DBQFOhgQ3Qp8BWwlsTdMRAhK7AKCrZ2qRmBiGwPe7dwD+f9sUvgtVGgCgwCab
-hm4Yv12zNdGnVFwjAH1VBiI=
-=AzkG
------END PGP SIGNATURE-----
---=-=-=--
+Cheers,
+	Christophe
+
+
