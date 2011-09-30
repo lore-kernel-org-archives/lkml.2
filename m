@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab1I3VMG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:12:06 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:53415 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab1I3VME (ORCPT
+	id S1756285Ab1I3VQd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:16:33 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:31381 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab1I3VQb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:12:04 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=1h8qd3w5pbyJS47frJc7V6h9QwwiBhgsQMy9mbCO+wA= c=1 sm=1
- a=4gQLNW1E5XQA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8
- a=F0RxiqfCAF7Mx5kjwKIA:9 a=f5njMB-5SVL2pY0qa6wA:7 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] ext4: Fix comparison endianness problem in MMP initialization
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20110930194900.GY12086@tux1.beaverton.ibm.com>
-Date: Fri, 30 Sep 2011 15:12:02 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <37339E8E-181A-4245-86BD-64EE47A54926@dilger.ca>
-References: <20110930194900.GY12086@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
+	Fri, 30 Sep 2011 17:16:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=HFj2e/IeHcft8mS8vgW0c4St+wJQ3LaqvC2LWcAWBGZjoQt9lU8rBGnafAUZq4ieR
+	3VjxQobl6/quWSMtI3nQA==
+MIME-Version: 1.0
+In-Reply-To: <20110930181914.GA17817@mgebm.net>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+	<20110929164319.GA3509@mgebm.net>
+	<CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
+	<4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
+	<20110930181914.GA17817@mgebm.net>
+Date: Fri, 30 Sep 2011 14:16:25 -0700
+Message-ID: <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
+Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
+From: Michel Lespinasse <walken@google.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-30, at 1:49 PM, Darrick J. Wong wrote:
-> As part of startup, the MMP initialization code does this:
-> 
-> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-> 
-> Next, mmp->mmp_seq is written out to disk, a delay happens, and then
-> the MMP block is read back in and the sequence value is tested:
-> 
-> if (seq != le32_to_cpu(mmp->mmp_seq)) {
-> 	/* fail the mount */
-> 
-> On a LE system such as x86, the *le32* functions do nothing and this
-> works.
-> Unfortunately, on a BE system such as ppc64, this comparison becomes:
-> 
-> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
-> 	/* fail the mount */
-> 
-> Except for a few palindromic sequence numbers, this test always causes
-> the mount to fail, which makes MMP filesystems generally unmountable
-> on ppc64.  The attached patch fixes this situation.
-> 
-> (This fix came up while testing the metadata checksumming patchset)
+On Fri, Sep 30, 2011 at 11:19 AM, Eric B Munson <emunson@mgebm.net> wrote:
+> I am able to recreate on a second desktop I have here (same model CPU but a
+> different MB so I am fairly sure it isn't dying hardware).  It looks to me like
+> a CPU softlocks and it stalls the process active there, so most recently that
+> was XOrg.  The machine lets me login via ssh for a few minutes, but things like
+> ps and cat or /proc files will start to work and give some output but hang.
+> I cannot call reboot, nor can I sync the fs and reboot via SysRq.  My next step
+> is to setup a netconsole to see if anything comes out in the syslog that I
+> cannot see.
 
-Thanks also for the catch, you are completely right.  We've never run
-this code on a big-endian system in all the years we had it.
+I haven't had time to try & reproduce locally yet (apologies - things
+have been coming up at me).
 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> 
-> fs/ext4/mmp.c |    3 ++-
-> 1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-> index 9bdef3f..a7a4986 100644
-> --- a/fs/ext4/mmp.c
-> +++ b/fs/ext4/mmp.c
-> @@ -295,7 +295,8 @@ skip:
-> 	/*
-> 	 * write a new random sequence number.
-> 	 */
-> -	mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-> +	seq = mmp_new_seq();
-> +	mmp->mmp_seq = cpu_to_le32(seq);
-> 
-> 	retval = write_mmp_block(bh);
-> 	if (retval)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But a prime suspect would be a bad interaction with
+CONFIG_MEMORY_HOTPLUG, as Kamezama remarked in his reply to patch 4. I
+think this could be the most likely cause of what you're observing.
 
-
-Cheers, Andreas
-
-
-
-
-
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
