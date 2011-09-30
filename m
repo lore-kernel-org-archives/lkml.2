@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab1I3Ol0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 10:41:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44923 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab1I3OlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 10:41:24 -0400
-Date: Fri, 30 Sep 2011 16:41:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: filemap: pass __GFP_WRITE from
- grab_cache_page_write_begin()
-Message-ID: <20110930144122.GD869@tiehlicka.suse.cz>
-References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
- <1317367044-475-5-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317367044-475-5-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753230Ab1I3OuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 10:50:04 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:39830 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab1I3OuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 10:50:01 -0400
+Subject: Re: [PATCH RFC 7/8] s390/jump-label: add
+ arch_jump_label_transform_early()
+From: Jan Glauber <jang@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <b1d87557dc3001031ee8d7f69ee97b90cecba6aa.1317338254.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
+	 <b1d87557dc3001031ee8d7f69ee97b90cecba6aa.1317338254.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Sep 2011 16:48:19 +0200
+Message-Id: <1317394099.11297.54.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.5 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-09-11 09:17:23, Johannes Weiner wrote:
-> Tell the page allocator that pages allocated through
-> grab_cache_page_write_begin() are expected to become dirty soon.
+On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/filemap.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
+> This allows jump-label entries to be modified early, in a pre-SMP
+> environment.
 > 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 645a080..cf0352d 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2349,8 +2349,11 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
->  					pgoff_t index, unsigned flags)
->  {
->  	int status;
-> +	gfp_t gfp_mask;
->  	struct page *page;
->  	gfp_t gfp_notmask = 0;
-> +
-> +	gfp_mask = mapping_gfp_mask(mapping) | __GFP_WRITE;
->  	if (flags & AOP_FLAG_NOFS)
->  		gfp_notmask = __GFP_FS;
->  repeat:
-> @@ -2358,7 +2361,7 @@ repeat:
->  	if (page)
->  		goto found;
->  
-> -	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
-> +	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
->  	if (!page)
->  		return NULL;
->  	status = add_to_page_cache_lru(page, mapping, index,
-> -- 
-> 1.7.6.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Cc: Jan Glauber <jang@linux.vnet.ibm.com>
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Hi Jeremy,
+
+Your patch looks fine, if you can fix the minor compiler warnings
+below. Excluding stop_machine() on pre-SMP also looks safer too me.
+
+--Jan
+
+  CC      arch/s390/kernel/jump_label.o
+arch/s390/kernel/jump_label.c: In function ‘__jump_label_transform’:
+arch/s390/kernel/jump_label.c:41:2: error: ‘rc’ undeclared (first use in this function)
+arch/s390/kernel/jump_label.c:41:2: note: each undeclared identifier is reported only once for each function it appears in
+arch/s390/kernel/jump_label.c:41:2: warning: passing argument 1 of ‘probe_kernel_write’ makes pointer from integer without a cast [enabled by default]
+include/linux/uaccess.h:108:21: note: expected ‘void *’ but argument is of type ‘jump_label_t’
+arch/s390/kernel/jump_label.c:28:19: warning: unused variable ‘args’ [-Wunused-variable]
+make[2]: *** [arch/s390/kernel/jump_label.o] Error 1
+
+
