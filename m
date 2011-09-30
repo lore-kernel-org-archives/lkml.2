@@ -1,116 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793Ab1I3Jcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:32:39 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:55470 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754590Ab1I3Jch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:32:37 -0400
-Date: Fri, 30 Sep 2011 12:32:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-Cc: balbi@ti.com, Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com
-Subject: Re: [PATCH 3/5 v12] arm: omap: usb: register hwmods of usbhs
-Message-ID: <20110930093231.GD3458@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1317361318-28295-1-git-send-email-keshava_mgowda@ti.com>
- <alpine.DEB.2.00.1109300113200.32653@utopia.booyaka.com>
- <20110930073449.GA13825@legolas.emea.dhcp.ti.com>
- <CAP05o4L1iR++BhYmYYEc-uV6pGfjBeSPPcFqhRizdBeV7Ko26g@mail.gmail.com>
- <20110930091957.GC3458@legolas.emea.dhcp.ti.com>
- <CAP05o4+Ww=R-hOVMbW5St2ZvwrK5cmPtM5_5Gj2pV8W1tdiQ-Q@mail.gmail.com>
+	id S1757865Ab1I3JdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756308Ab1I3JdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:33:15 -0400
+Date: Fri, 30 Sep 2011 11:32:31 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 00/10] memcg naturalization -rc4
+Message-ID: <20110930093231.GE30857@redhat.com>
+References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
+ <20110930170510.4695b8f0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="brEuL7wsLY8+TuWz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAP05o4+Ww=R-hOVMbW5St2ZvwrK5cmPtM5_5Gj2pV8W1tdiQ-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110930170510.4695b8f0.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 30, 2011 at 05:05:10PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 29 Sep 2011 23:00:54 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> 
+> > Hi,
+> > 
+> > this is the fourth revision of the memory cgroup naturalization
+> > series.
+> > 
+> > The changes from v3 have mostly been documentation, changelog, and
+> > naming fixes based on review feedback:
+> > 
+> >     o drop conversion of no longer existing zone-wide unevictable
+> >       page rescue scanner
+> >     o fix return value of mem_cgroup_hierarchical_reclaim() in
+> >       limit-shrinking mode (Michal)
+> >     o rename @remember to @reclaim in mem_cgroup_iter()
+> >     o convert vm_swappiness to global_reclaim() in the
+> >       correct patch (Michal)
+> >     o rename
+> >       struct mem_cgroup_iter_state -> struct mem_cgroup_reclaim_iter
+> >       and
+> >       struct mem_cgroup_iter -> struct mem_cgroup_reclaim_cookie
+> >       (Michal)
+> >     o added/amended comments and changelogs based on feedback (Michal, Kame)
+> > 
+> > Thanks for the review and feedback, guys, it's much appreciated!
+> > 
+> 
+> Thank you for your work. Now, I'm ok this series to be tested in -mm.
+> Ack. to all.
 
---brEuL7wsLY8+TuWz
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks!
 
-Hi,
+> Do you have any plan, concerns ?
 
-On Fri, Sep 30, 2011 at 02:56:40PM +0530, Munegowda, Keshava wrote:
-> >> >> Usually there's something wrong with omap_devices that contain
-> >> >> multiple hwmods. =A0Is there some reason why there isn't a separate=
- driver
-> >> >> for the TLL? =A0Judging by a brief look at drivers/mfd/omap_usb_hos=
-t.c, the
-> >> >> TLL handling looks logically distinct?
-> >> >
-> >> > Yes, I have the same feeling. To my understanding, USB Host Subsyste=
-m on
-> >> > OMAP is composed of the Transceiver-less link (TLL) and USB Host (UH=
-H).
-> >> > Aparently, they could be handled by separate drivers.
-> >> >
-> >> > --
-> >> > balbi
-> >>
-> >> yes, it can be as two separate drivers for uhh and tll; =A0But i don't
-> >> think driver can be used effectively.
-> >> Now ehci and ohci gets the clocks , config reg and port settings
-> >> through usb host which is sufficient.
-> >> If you make them as two different drivers; then ehci and ohci has to
-> >> interact with both the drivers separately.
-> >> which will be an unnecessary complications. I feel not divided this
-> >> driver into two
-> >
-> > Come again, EHCI/OHCI need clocks from UHH and TLL ?? If that's the
-> > case, then there's really no easy way to handle this as a device can
-> > have only one parent.
->=20
-> yes,  if you are using ehci phy mode ( port modes of UHH_HOSTCONFIG regis=
-ter)
-> then uhh functional ( omap3: interface clocks too) is sufficient;
-> if you are using ehci in tll mode , then you need tll functional clock to=
-o.
+I would really like to get them into 3.2.  While it's quite intrusive,
+I stress-tested various scenarios for quite some time - tests that
+revealed more bugs in the existing memcg code than in my changes - so
+I don't expect too big surprises.  AFAICS, Google uses these patches
+internally already and their bug reports early on also helped iron out
+the most obvious problems.
 
-But those clocks are fed into UHH and TLL respectively, not EHCI/OHCI,
-right ? IOW, EHCI/OHCI only need those clocks to be stable in order for
-it to work.
+What I am concerned about is the scalability on setups with thousands
+of tiny memcgs that go into global reclaim, as this would try to scan
+pages from all existing memcgs.  There is a mitigating factor in that
+concurrent reclaimers divide the memcgs to scan among themselves (the
+shared mem_cgroup_reclaim_iter), and with hundreds or thousands of
+memcgs, I expect several threads to go into reclaim upon global memory
+pressure at the same time in the common case.  I don't have the means
+to test this and I also don't know if such setups exist or are within
+the realm of sanity that we would like to support, anyway.  If this
+shows up, I think the fix would be as easy as bailing out early from
+the hierarchy walk, but I would like to cross that bridge when we come
+to it.
 
-I'm trying to think of a way to decouple that but nothing comes to mind
-right now... Ideally, calling pm_runtime_get_sync() on EHCI/OHCI would
-make all clocks enabled and the only way I see for that to happen is to
-make TLL parent of UHH which is parent of EHCI/OHCI, but I'm not sure
-that makes a lot of sense.
+Other than that, I see no reason to hold it off.  Traditional reclaim
+without memcgs except root_mem_cgroup - what most people care about -
+is mostly unaffected.  There is a real interest in the series, and
+maintaining it out-of-tree is a major pain and quite error prone.
 
-Paul, do you have any tip which we could use ? What we need is to be
-able to call pm_runtime_get_sync() or ehci-omap.c and that should enable
-UHH clocks and if (port->mode =3D=3D TLL) enable TLL clocks.
+What do you think?
 
-We still want to split UHH and TLL into separate drivers.
+Thanks,
 
---=20
-balbi
-
---brEuL7wsLY8+TuWz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOhYyvAAoJEAv8Txj19kN1YrMH/AzjIn4YhHsCiT52UyLm5JoA
-Qtk/wc4rPQ3kdsK+kCe3PcyVsDTXWloINmQvxUx4df4VRwoCVmdMD6VOFoC+eXsu
-HJd/yBSHXXr/zwLOE+S0xmzCU96xSyVG8agQOSwrlzf/JpGBg3MkuJa2npJKqSRe
-oMvhzuAEaO0ExMP5fcvadwAfTd6CfxLbqkkRzM0FrGUSoiEihKHcPOJe08UxPHu5
-/vNYweLJfFpe5//4BRk/C2bMIm+cPmPT+X3+D3K7RHjjWr2r3NXHSOrFEWfu1fqk
-9+AJm9Zc2+tHwO9PdDCrVb+T9zrByCN0d4WBOj1Fa7oGpC5XtNUKwDSHP2XuadI=
-=Z543
------END PGP SIGNATURE-----
-
---brEuL7wsLY8+TuWz--
+	Hannes
