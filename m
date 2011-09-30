@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670Ab1I3Mu6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 08:50:58 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:42735 "EHLO
+	id S1758649Ab1I3Mu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:50:56 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:42742 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758589Ab1I3Ms3 (ORCPT
+	with ESMTP id S1758590Ab1I3Ms3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Sep 2011 08:48:29 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 03/11] drbd: rcu_read_[un]lock() for all idr accesses that do not sleep
-Date: Fri, 30 Sep 2011 14:48:18 +0200
-Message-Id: <1317386906-19260-4-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 04/11] drbd: Converted drbd_cfg_mutex into drbd_cfg_rwsem
+Date: Fri, 30 Sep 2011 14:48:19 +0200
+Message-Id: <1317386906-19260-5-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317386906-19260-1-git-send-email-philipp.reisner@linbit.com>
 References: <1317386906-19260-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,407 +23,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c     |   12 +++++++---
- drivers/block/drbd/drbd_nl.c       |   41 +++++++++++++++++++++++++----------
- drivers/block/drbd/drbd_receiver.c |    2 +
- drivers/block/drbd/drbd_state.c    |   34 +++++++++++++++++++++++++++--
- drivers/block/drbd/drbd_worker.c   |    4 +++
- 5 files changed, 74 insertions(+), 19 deletions(-)
+ drivers/block/drbd/drbd_int.h  |    4 +++-
+ drivers/block/drbd/drbd_main.c |   10 +++++-----
+ drivers/block/drbd/drbd_nl.c   |   27 ++++++++++++++++-----------
+ 3 files changed, 24 insertions(+), 17 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index c49dc08..7896a64 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -171,7 +171,9 @@ drbd_insert_fault(struct drbd_conf *mdev, unsigned int type) {
+ extern struct ratelimit_state drbd_ratelimit_state;
+ extern struct idr minors;
+ extern struct list_head drbd_tconns;
+-extern struct mutex drbd_cfg_mutex;
++extern struct rw_semaphore drbd_cfg_rwsem;
++/* drbd_cfg_rwsem protects: drbd_tconns list,
++   note: non sleeping iterations over the idrs are protoected by RCU */
+ 
+ /* on the wire */
+ enum drbd_packet {
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 03b3ffe..c4c0bc5 100644
+index c4c0bc5..d48efb4 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -453,8 +453,10 @@ void tl_clear(struct drbd_tconn *tconn)
+@@ -120,7 +120,7 @@ module_param_string(usermode_helper, usermode_helper, sizeof(usermode_helper), 0
+  */
+ struct idr minors;
+ struct list_head drbd_tconns;  /* list of struct drbd_tconn */
+-DEFINE_MUTEX(drbd_cfg_mutex);
++DECLARE_RWSEM(drbd_cfg_rwsem);
+ 
+ struct kmem_cache *drbd_request_cache;
+ struct kmem_cache *drbd_ee_cache;	/* peer requests */
+@@ -2321,14 +2321,14 @@ struct drbd_tconn *conn_by_name(const char *name)
+ 	if (!name || !name[0])
+ 		return NULL;
+ 
+-	mutex_lock(&drbd_cfg_mutex);
++	down_read(&drbd_cfg_rwsem);
+ 	list_for_each_entry(tconn, &drbd_tconns, all_tconn) {
+ 		if (!strcmp(tconn->name, name))
+ 			goto found;
  	}
- 
- 	/* ensure bit indicating barrier is required is clear */
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		clear_bit(CREATE_BARRIER, &mdev->flags);
-+	rcu_read_unlock();
- 
- 	spin_unlock_irq(&tconn->req_lock);
- }
-@@ -634,13 +636,15 @@ char *drbd_task_to_thread_name(struct drbd_tconn *tconn, struct task_struct *tas
- 
- int conn_lowest_minor(struct drbd_tconn *tconn)
- {
--	int vnr = 0;
- 	struct drbd_conf *mdev;
-+	int vnr = 0, m;
- 
-+	rcu_read_lock();
- 	mdev = idr_get_next(&tconn->volumes, &vnr);
--	if (!mdev)
--		return -1;
--	return mdev_to_minor(mdev);
-+	m = mdev ? mdev_to_minor(mdev) : -1;
-+	rcu_read_unlock();
-+
-+	return m;
+ 	tconn = NULL;
+ found:
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_read(&drbd_cfg_rwsem);
+ 	return tconn;
  }
  
- #ifdef CONFIG_SMP
+@@ -2395,9 +2395,9 @@ struct drbd_tconn *drbd_new_tconn(const char *name)
+ 		DRBD_ON_NO_DATA_DEF, /* on_no_data */
+ 	};
+ 
+-	mutex_lock(&drbd_cfg_mutex);
++	down_write(&drbd_cfg_rwsem);
+ 	list_add_tail(&tconn->all_tconn, &drbd_tconns);
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_write(&drbd_cfg_rwsem);
+ 
+ 	return tconn;
+ 
 diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index be2ca81..fc918d0 100644
+index fc918d0..5667536 100644
 --- a/drivers/block/drbd/drbd_nl.c
 +++ b/drivers/block/drbd/drbd_nl.c
-@@ -407,12 +407,14 @@ static enum drbd_fencing_p highest_fencing_policy(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
+@@ -1959,7 +1959,7 @@ int drbd_adm_connect(struct sk_buff *skb, struct genl_info *info)
+ 	new_my_addr = (struct sockaddr *)&new_conf->my_addr;
+ 	new_peer_addr = (struct sockaddr *)&new_conf->peer_addr;
  
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		if (get_ldev_if_state(mdev, D_CONSISTENT)) {
- 			fp = max_t(enum drbd_fencing_p, fp, mdev->ldev->dc.fencing);
- 			put_ldev(mdev);
- 		}
- 	}
-+	rcu_read_unlock();
- 
- 	return fp;
- }
-@@ -1664,29 +1666,41 @@ out:
- static bool conn_resync_running(struct drbd_tconn *tconn)
- {
- 	struct drbd_conf *mdev;
-+	bool rv = false;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		if (mdev->state.conn == C_SYNC_SOURCE ||
- 		    mdev->state.conn == C_SYNC_TARGET ||
- 		    mdev->state.conn == C_PAUSED_SYNC_S ||
--		    mdev->state.conn == C_PAUSED_SYNC_T)
--			return true;
-+		    mdev->state.conn == C_PAUSED_SYNC_T) {
-+			rv = true;
-+			break;
-+		}
- 	}
--	return false;
-+	rcu_read_unlock();
-+
-+	return rv;
- }
- 
- static bool conn_ov_running(struct drbd_tconn *tconn)
- {
- 	struct drbd_conf *mdev;
-+	bool rv = false;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		if (mdev->state.conn == C_VERIFY_S ||
--		    mdev->state.conn == C_VERIFY_T)
--			return true;
-+		    mdev->state.conn == C_VERIFY_T) {
-+			rv = true;
-+			break;
-+		}
- 	}
--	return false;
-+	rcu_read_unlock();
-+
-+	return rv;
- }
- 
- int drbd_adm_net_opts(struct sk_buff *skb, struct genl_info *info)
-@@ -1912,26 +1926,28 @@ int drbd_adm_connect(struct sk_buff *skb, struct genl_info *info)
- 		goto fail;
- 	}
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, i) {
- 		if (get_ldev(mdev)) {
- 			enum drbd_fencing_p fp = mdev->ldev->dc.fencing;
- 			put_ldev(mdev);
- 			if (new_conf->wire_protocol == DRBD_PROT_A && fp == FP_STONITH) {
- 				retcode = ERR_STONITH_AND_PROT_A;
--				goto fail;
-+				goto fail_rcu_unlock;
- 			}
- 		}
- 		if (mdev->state.role == R_PRIMARY && new_conf->want_lose) {
- 			retcode = ERR_DISCARD;
--			goto fail;
-+			goto fail_rcu_unlock;
- 		}
- 		if (!mdev->bitmap) {
- 			if(drbd_bm_init(mdev)) {
- 				retcode = ERR_NOMEM;
--				goto fail;
-+				goto fail_rcu_unlock;
- 			}
- 		}
- 	}
-+	rcu_read_unlock();
- 
- 	if (new_conf->on_congestion != OC_BLOCK && new_conf->wire_protocol != DRBD_PROT_A) {
- 		retcode = ERR_CONG_NOT_PROTO_A;
-@@ -2045,15 +2061,19 @@ int drbd_adm_connect(struct sk_buff *skb, struct genl_info *info)
- 	retcode = _conn_request_state(tconn, NS(conn, C_UNCONNECTED), CS_VERBOSE);
- 	spin_unlock_irq(&tconn->req_lock);
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, i) {
- 		mdev->send_cnt = 0;
- 		mdev->recv_cnt = 0;
- 		kobject_uevent(&disk_to_dev(mdev->vdisk)->kobj, KOBJ_CHANGE);
- 	}
-+	rcu_read_unlock();
- 	conn_reconfig_done(tconn);
- 	drbd_adm_finish(info, retcode);
- 	return 0;
- 
-+fail_rcu_unlock:
-+	rcu_read_unlock();
- fail:
- 	kfree(int_dig_in);
- 	kfree(int_dig_vv);
-@@ -2616,8 +2636,6 @@ int drbd_adm_get_status_all(struct sk_buff *skb, struct netlink_callback *cb)
+-	/* No need to take drbd_cfg_mutex here.  All reconfiguration is
++	/* No need to take drbd_cfg_rwsem here.  All reconfiguration is
+ 	 * strictly serialized on genl_lock(). We are protected against
+ 	 * concurrent reconfiguration/addition/deletion */
+ 	list_for_each_entry(oconn, &drbd_tconns, all_tconn) {
+@@ -2635,7 +2635,7 @@ int drbd_adm_get_status_all(struct sk_buff *skb, struct netlink_callback *cb)
+ 	 */
  
  	/* synchronize with drbd_new_tconn/drbd_free_tconn */
- 	mutex_lock(&drbd_cfg_mutex);
--	/* synchronize with drbd_delete_device */
--	rcu_read_lock();
+-	mutex_lock(&drbd_cfg_mutex);
++	down_read(&drbd_cfg_rwsem);
  next_tconn:
  	/* revalidate iterator position */
  	list_for_each_entry(tmp, &drbd_tconns, all_tconn) {
-@@ -2680,7 +2698,6 @@ next_tconn:
+@@ -2698,7 +2698,7 @@ next_tconn:
          }
  
  out:
--	rcu_read_unlock();
- 	mutex_unlock(&drbd_cfg_mutex);
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_read(&drbd_cfg_rwsem);
  	/* where to start the next iteration */
          cb->args[0] = (long)pos;
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 0c45eba..92ecb22 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4828,11 +4828,13 @@ static int tconn_finish_peer_reqs(struct drbd_tconn *tconn)
- 		set_bit(SIGNAL_ASENDER, &tconn->flags);
+         cb->args[1] = (pos == tconn) ? volume + 1 : 0;
+@@ -2949,9 +2949,9 @@ int drbd_adm_delete_minor(struct sk_buff *skb, struct genl_info *info)
+ 	if (retcode != NO_ERROR)
+ 		goto out;
  
- 		spin_lock_irq(&tconn->req_lock);
-+		rcu_read_lock();
- 		idr_for_each_entry(&tconn->volumes, mdev, i) {
- 			not_empty = !list_empty(&mdev->done_ee);
- 			if (not_empty)
- 				break;
- 		}
-+		rcu_read_unlock();
- 		spin_unlock_irq(&tconn->req_lock);
- 	} while (not_empty);
- 
-diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 694bd3f..0aed33b 100644
---- a/drivers/block/drbd/drbd_state.c
-+++ b/drivers/block/drbd/drbd_state.c
-@@ -56,15 +56,21 @@ static inline bool is_susp(union drbd_state s)
- bool conn_all_vols_unconf(struct drbd_tconn *tconn)
- {
- 	struct drbd_conf *mdev;
-+	bool rv = true;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		if (mdev->state.disk != D_DISKLESS ||
- 		    mdev->state.conn != C_STANDALONE ||
--		    mdev->state.role != R_SECONDARY)
--			return false;
-+		    mdev->state.role != R_SECONDARY) {
-+			rv = false;
-+			break;
-+		}
+-	mutex_lock(&drbd_cfg_mutex);
++	down_write(&drbd_cfg_rwsem);
+ 	retcode = adm_delete_minor(adm_ctx.mdev);
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_write(&drbd_cfg_rwsem);
+ 	/* if this was the last volume of this connection,
+ 	 * this will terminate all threads */
+ 	if (retcode == NO_ERROR)
+@@ -2979,7 +2979,7 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 		goto out;
  	}
--	return true;
-+	rcu_read_unlock();
+ 
+-	mutex_lock(&drbd_cfg_mutex);
++	down_read(&drbd_cfg_rwsem);
+ 	/* demote */
+ 	idr_for_each_entry(&adm_ctx.tconn->volumes, mdev, i) {
+ 		retcode = drbd_set_role(mdev, R_SECONDARY, 0);
+@@ -3006,14 +3006,17 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 			goto out_unlock;
+ 		}
+ 	}
++	up_read(&drbd_cfg_rwsem);
+ 
+ 	/* delete volumes */
++	down_write(&drbd_cfg_rwsem);
+ 	idr_for_each_entry(&adm_ctx.tconn->volumes, mdev, i) {
+ 		retcode = adm_delete_minor(mdev);
+ 		if (retcode != NO_ERROR) {
+ 			/* "can not happen" */
+ 			drbd_msg_put_info("failed to delete volume");
+-			goto out_unlock;
++			up_write(&drbd_cfg_rwsem);
++			goto out;
+ 		}
+ 	}
+ 
+@@ -3028,10 +3031,12 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 		/* "can not happen" */
+ 		retcode = ERR_CONN_IN_USE;
+ 		drbd_msg_put_info("failed to delete connection");
+-		goto out_unlock;
+ 	}
 +
-+	return rv;
- }
++	up_write(&drbd_cfg_rwsem);
++	goto out;
+ out_unlock:
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_read(&drbd_cfg_rwsem);
+ out:
+ 	drbd_adm_finish(info, retcode);
+ 	return 0;
+@@ -3047,14 +3052,14 @@ int drbd_adm_delete_connection(struct sk_buff *skb, struct genl_info *info)
+ 	if (retcode != NO_ERROR)
+ 		goto out;
  
- enum drbd_role conn_highest_role(struct drbd_tconn *tconn)
-@@ -73,8 +79,10 @@ enum drbd_role conn_highest_role(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		role = max_t(enum drbd_role, role, mdev->state.role);
-+	rcu_read_unlock();
- 
- 	return role;
- }
-@@ -85,8 +93,10 @@ enum drbd_role conn_highest_peer(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		peer = max_t(enum drbd_role, peer, mdev->state.peer);
-+	rcu_read_unlock();
- 
- 	return peer;
- }
-@@ -97,8 +107,10 @@ enum drbd_disk_state conn_highest_disk(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		ds = max_t(enum drbd_disk_state, ds, mdev->state.disk);
-+	rcu_read_unlock();
- 
- 	return ds;
- }
-@@ -109,8 +121,10 @@ enum drbd_disk_state conn_lowest_disk(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		ds = min_t(enum drbd_disk_state, ds, mdev->state.disk);
-+	rcu_read_unlock();
- 
- 	return ds;
- }
-@@ -121,8 +135,10 @@ enum drbd_disk_state conn_highest_pdsk(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		ds = max_t(enum drbd_disk_state, ds, mdev->state.pdsk);
-+	rcu_read_unlock();
- 
- 	return ds;
- }
-@@ -133,8 +149,10 @@ enum drbd_disk_state conn_lowest_conn(struct drbd_tconn *tconn)
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 		conn = min_t(enum drbd_conns, conn, mdev->state.conn);
-+	rcu_read_unlock();
- 
- 	return conn;
- }
-@@ -1388,12 +1406,14 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
- 		/* case1: The outdate peer handler is successful: */
- 		if (ns_max.pdsk <= D_OUTDATED) {
- 			tl_clear(tconn);
-+			rcu_read_lock();
- 			idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 				if (test_bit(NEW_CUR_UUID, &mdev->flags)) {
- 					drbd_uuid_new_current(mdev);
- 					clear_bit(NEW_CUR_UUID, &mdev->flags);
- 				}
- 			}
-+			rcu_read_unlock();
- 			conn_request_state(tconn,
- 					   (union drbd_state) { { .susp_fen = 1 } },
- 					   (union drbd_state) { { .susp_fen = 0 } },
-@@ -1401,8 +1421,10 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
- 		}
- 		/* case2: The connection was established again: */
- 		if (ns_min.conn >= C_CONNECTED) {
-+			rcu_read_lock();
- 			idr_for_each_entry(&tconn->volumes, mdev, vnr)
- 				clear_bit(NEW_CUR_UUID, &mdev->flags);
-+			rcu_read_unlock();
- 			spin_lock_irq(&tconn->req_lock);
- 			_tl_restart(tconn, RESEND);
- 			_conn_request_state(tconn,
-@@ -1427,6 +1449,7 @@ void conn_old_common_state(struct drbd_tconn *tconn, union drbd_state *pcs, enum
- 	struct drbd_conf *mdev;
- 	int vnr, first_vol = 1;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		os = mdev->state;
- 
-@@ -1451,6 +1474,7 @@ void conn_old_common_state(struct drbd_tconn *tconn, union drbd_state *pcs, enum
- 		if (cs.pdsk != os.pdsk)
- 			flags &= ~CS_DC_PDSK;
+-	mutex_lock(&drbd_cfg_mutex);
++	down_write(&drbd_cfg_rwsem);
+ 	if (conn_lowest_minor(adm_ctx.tconn) < 0) {
+ 		drbd_free_tconn(adm_ctx.tconn);
+ 		retcode = NO_ERROR;
+ 	} else {
+ 		retcode = ERR_CONN_IN_USE;
  	}
-+	rcu_read_unlock();
+-	mutex_unlock(&drbd_cfg_mutex);
++	up_write(&drbd_cfg_rwsem);
  
- 	*pf |= CS_DC_MASK;
- 	*pf &= flags;
-@@ -1466,6 +1490,7 @@ conn_is_valid_transition(struct drbd_tconn *tconn, union drbd_state mask, union
- 	struct drbd_conf *mdev;
- 	int vnr;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		os = drbd_read_state(mdev);
- 		ns = sanitize_state(mdev, apply_mask_val(os, mask, val), NULL);
-@@ -1491,6 +1516,7 @@ conn_is_valid_transition(struct drbd_tconn *tconn, union drbd_state mask, union
- 		if (rv < SS_SUCCESS)
- 			break;
- 	}
-+	rcu_read_unlock();
- 
- 	if (rv < SS_SUCCESS && flags & CS_VERBOSE)
- 		print_st_err(mdev, os, ns, rv);
-@@ -1516,6 +1542,7 @@ conn_set_state(struct drbd_tconn *tconn, union drbd_state mask, union drbd_state
- 	if (mask.conn == C_MASK)
- 		tconn->cstate = val.conn;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		os = drbd_read_state(mdev);
- 		ns = apply_mask_val(os, mask, val);
-@@ -1541,6 +1568,7 @@ conn_set_state(struct drbd_tconn *tconn, union drbd_state mask, union drbd_state
- 		ns_min.disk = min_t(enum drbd_disk_state, ns.disk, ns_min.disk);
- 		ns_min.pdsk = min_t(enum drbd_disk_state, ns.pdsk, ns_min.pdsk);
- 	}
-+	rcu_read_unlock();
- 
- 	ns_min.susp = ns_max.susp = tconn->susp;
- 	ns_min.susp_nod = ns_max.susp_nod = tconn->susp_nod;
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 62536bc..536eb05 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -1350,6 +1350,7 @@ static int _drbd_pause_after(struct drbd_conf *mdev)
- 	struct drbd_conf *odev;
- 	int i, rv = 0;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&minors, odev, i) {
- 		if (odev->state.conn == C_STANDALONE && odev->state.disk == D_DISKLESS)
- 			continue;
-@@ -1357,6 +1358,7 @@ static int _drbd_pause_after(struct drbd_conf *mdev)
- 			rv |= (__drbd_set_state(_NS(odev, aftr_isp, 1), CS_HARD, NULL)
- 			       != SS_NOTHING_TO_DO);
- 	}
-+	rcu_read_unlock();
- 
- 	return rv;
- }
-@@ -1372,6 +1374,7 @@ static int _drbd_resume_next(struct drbd_conf *mdev)
- 	struct drbd_conf *odev;
- 	int i, rv = 0;
- 
-+	rcu_read_lock();
- 	idr_for_each_entry(&minors, odev, i) {
- 		if (odev->state.conn == C_STANDALONE && odev->state.disk == D_DISKLESS)
- 			continue;
-@@ -1382,6 +1385,7 @@ static int _drbd_resume_next(struct drbd_conf *mdev)
- 				       != SS_NOTHING_TO_DO) ;
- 		}
- 	}
-+	rcu_read_unlock();
- 	return rv;
- }
- 
+ out:
+ 	drbd_adm_finish(info, retcode);
 -- 
 1.7.4.1
 
