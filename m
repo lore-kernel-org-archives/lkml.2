@@ -1,190 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1I3FCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 01:02:16 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25712 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab1I3FCP convert rfc822-to-8bit (ORCPT
+	id S1755043Ab1I3FFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 01:05:06 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62780 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab1I3FFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 01:02:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=HI2jiTDvQ/H3/n5rqhd4VZPXMPVwNvG3kRy60miuKJi4EmeLRC4cyKIeZCX4h6eHs
-	OqUl9wzQKBbVIJbTRsL7w==
+	Fri, 30 Sep 2011 01:05:02 -0400
+Date: Thu, 29 Sep 2011 20:12:39 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
+Message-ID: <20110930021239.GL12606@ponder.secretlab.ca>
+References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20110930001633.GA11436@myri.com>
-References: <4E82017C.3010304@redhat.com> <CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com>
- <4E8215B6.1020108@redhat.com> <20110930001633.GA11436@myri.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 29 Sep 2011 23:01:47 -0600
-Message-ID: <CAErSpo7Vw94PfhDO8kXtNCPm+m2oXL42R51X9bCh_YvkG=k3ZA@mail.gmail.com>
-Subject: Re: Workaround for Intel MPS errata
-To: Jon Mason <mason@myri.com>
-Cc: Avi Kivity <avi@redhat.com>, Sven Schnelle <svens@stackframe.org>,
-        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 6:16 PM, Jon Mason <mason@myri.com> wrote:
-> Hey Avi,
-> Can you try this patch?  It should resolve the issue you are seeing.
->
-> Thanks,
-> Jon
->
->    PCI: Workaround for Intel MPS errata
->
->    Intel 5000 and 5100 series memory controllers have a known issue if read
->    completion coalescing is enabled (the default setting) and the PCI-E
->    Maximum Payload Size is set to 256B.  To work around this issue, disable
->    read completion coalescing if the MPS is 256B.
+On Fri, Sep 16, 2011 at 02:14:09PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This adds a driver for the U300 pinmux portions of the system
+> controller "SYSCON". It also serves as an example of how to use
+> the pinmux subsystem. This driver also houses the platform data
+> for the only supported platform.
 
-I'd much rather see this done as an early quirk so it doesn't clutter probe.c.
+Hi Linus, comments below.
 
-I don't know how you decide whether
-    - no coalescing with MPS=256, or
-    - coalescing with MPS=128
-is better.  I suspect that having a quirk that doesn't change the
-setting, but merely limits MPS to 128 if the BIOS enabled coalescing,
-would be simplest and would stay in the best-tested chipset
-configuration.
+> diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
+> index 32a7b0f..449fd6a 100644
+> --- a/arch/arm/mach-u300/Kconfig
+> +++ b/arch/arm/mach-u300/Kconfig
+> @@ -6,6 +6,8 @@ comment "ST-Ericsson Mobile Platform Products"
+>  
+>  config MACH_U300
+>  	bool "U300"
+> +	select PINCTRL
+> +	select PINMUX_U300
 
-If you do end up changing the coalescing setting, I think you should
-check the current setting, then log something in dmesg if you change
-it.  If the quirk limits the max MPS, I think dmesg should reflect
-that, too.
+Shouldn't PINMUX_U300 select PINCTRL?
 
-I think you're missing a pci_dev_put().
+> +#include "pinmux-u300.h"
 
-Even if we work out these issues and Avi reports that it fixes his
-hang, I'm still concerned about MPS configuration being enabled by
-default in 3.1.  It feels like we happened to trip over a few issues
-and fix them, but I'm worried that with wider testing, we'll find
-more.
+There is only one file that uses this header data.  Just put it into
+the .c file.
 
-I'd feel more comfortable if everything were disabled in 3.1 (it'd be
-OK to have a command-line flag to enable it), then turned on by
-default early in the 3.2 merge window.
-
-Bjorn
-
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index a919db2..13c733a 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1361,6 +1361,80 @@ static int pcie_find_smpss(struct pci_dev *dev, void *data)
->        return 0;
->  }
->
-> +static void pcie_errata_check(int mps)
+> +static int __init u300_pmx_probe(struct platform_device *pdev)
 > +{
-> +       struct pci_dev *dev = NULL;
-> +       static bool done = false;
+> +	int ret;
+> +	struct u300_pmx *upmx;
+> +	struct resource *res;
 > +
-> +       if (done)
-> +               return;
+> +	/* Create state holders etc for this driver */
+> +	upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
+
+devm_kzalloc()
+
+> +	if (!upmx)
+> +		return -ENOMEM;
 > +
-> +       /* Intel 5000 and 5100 Memory controllers have an errata with read
-> +        * completion coalescing (which is enabled by default) and MPS of 256B.
-> +        */
-> +       /* 5000X Chipset Memory Controller Hub */
-> +       dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x25C0, NULL);
-> +       if (dev)
-> +               goto fixup;
+> +	upmx->dev = &pdev->dev;
 > +
-> +       /* 5000Z Chipset Memory Controller Hub */
-> +       dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x25D0, NULL);
-> +       if (dev)
-> +               goto fixup;
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!res) {
+> +		ret = -ENOENT;
+> +		goto out_no_resource;
+> +	}
+> +	upmx->phybase = res->start;
+> +	upmx->physize = resource_size(res);
 > +
-> +       /* 5000V Chipset Memory Controller Hub */
-> +       dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x25D4, NULL);
-> +       if (dev)
-> +               goto fixup;
+> +	if (request_mem_region(upmx->phybase, upmx->physize,
+> +			       DRIVER_NAME) == NULL) {
+> +		ret = -EBUSY;
+> +		goto out_no_memregion;
+> +	}
 > +
-> +       /* 5000P Chipset Memory Controller Hub */
-> +       dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x25D8, NULL);
-> +       if (dev)
-> +               goto fixup;
+> +	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
+> +	if (!upmx->virtbase) {
+> +		ret = -ENOMEM;
+> +		goto out_no_remap;
+> +	}
 > +
-> +       /* 5100 Chipset Memory Controller Hub */
-> +       dev = pci_get_device(PCI_VENDOR_ID_INTEL, 0x65C0, NULL);
-> +       if (dev)
-> +               goto fixup;
+> +	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
+> +	if (IS_ERR(upmx->pctl)) {
+> +		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
+> +		ret = PTR_ERR(upmx->pctl);
+> +		goto out_no_pmx;
+> +	}
 > +
-> +       /* No Intel 5000 or 5100 Memory controller in the system, no need to
-> +        * check again
-> +        */
-> +       if (!dev) {
-> +               done = true;
-> +               return;
-> +       }
+> +	/* We will handle a range of GPIO pins */
+> +	pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_range);
 > +
-> +fixup:
-> +       /* Disable read completion coalescing to allow an MPS of 256 */
-> +       if (mps == 256) {
-> +               int err;
-> +               u16 rcc;
+> +	platform_set_drvdata(pdev, upmx);
 > +
-> +               /* Intel errata specifies bits to change but does not say what
-> +                * they are.  Keeping them magical until such time as the
-> +                * registers and values can be explained.
-> +                */
-> +               err = pci_read_config_word(dev, 0x48, &rcc);
-> +               if (err) {
-> +                       dev_err(&dev->dev, "Error attempting to read the read "
-> +                               "completion coalescing register.\n");
-> +                       return;
-> +               }
+> +	u300_pmx_dumpregs(upmx);
 > +
-> +               rcc &= ~(1 << 10);
+> +	dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
 > +
-> +               err = pci_write_config_word(dev, 0x48, rcc);
-> +               if (err) {
-> +                       dev_err(&dev->dev, "Error attempting to read the read "
-> +                               "completion coalescing register.\n");
-> +                       return;
-> +               }
+> +	return 0;
 > +
-> +               done = true;
-> +       }
+> +out_no_pmx:
+> +	iounmap(upmx->virtbase);
+> +out_no_remap:
+> +	platform_set_drvdata(pdev, NULL);
+> +out_no_memregion:
+> +	release_mem_region(upmx->phybase, upmx->physize);
+> +out_no_resource:
+> +	kfree(upmx);
+> +	return ret;
 > +}
 > +
->  static void pcie_write_mps(struct pci_dev *dev, int mps)
->  {
->        int rc;
-> @@ -1384,6 +1458,8 @@ static void pcie_write_mps(struct pci_dev *dev, int mps)
->                        mps = min(mps, pcie_get_mps(dev->bus->self));
->        }
->
-> +       pcie_errata_check(mps);
+> +static int __exit u300_pmx_remove(struct platform_device *pdev)
+
+__devexit
+
+> +{
+> +	struct u300_pmx *upmx = platform_get_drvdata(pdev);
 > +
->        rc = pcie_set_mps(dev, mps);
->        if (rc)
->                dev_err(&dev->dev, "Failed attempting to set the MPS\n");
-> @@ -1445,7 +1521,7 @@ static int pcie_bus_configure_set(struct pci_dev *dev, void *data)
->        return 0;
->  }
->
-> -/* pcie_bus_configure_mps requires that pci_walk_bus work in a top-down,
-> +/* pcie_bus_configure_settings requires that pci_walk_bus work in a top-down,
->  * parents then children fashion.  If this changes, then this code will not
->  * work as designed.
->  */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> +	pinctrl_remove_gpio_range(upmx->pctl, &u300_gpio_range);
+> +	pinctrl_unregister(upmx->pctl);
+> +	iounmap(upmx->virtbase);
+> +	release_mem_region(upmx->phybase, upmx->physize);
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(upmx);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver u300_pmx_driver = {
+> +	.driver = {
+> +		.name = DRIVER_NAME,
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.remove = __exit_p(u300_pmx_remove),
+
+__devexit_p
+
