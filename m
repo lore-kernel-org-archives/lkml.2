@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab1I3KIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 06:08:44 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.123]:63121 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab1I3KIn (ORCPT
+	id S1755415Ab1I3KUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 06:20:51 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51126 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab1I3KUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 06:08:43 -0400
-X-Authority-Analysis: v=2.0 cv=O6u7TWBW c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=Qu4DggT1IRAA:10 a=MMKwxLcYKssA:10 a=8nJEP1OIZ-IA:10 a=BlNDdlervjj4pFyOp5IA:9 a=wPNLvfGTeEIA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 50.89.247.146
-Message-ID: <4E859529.2020504@cfl.rr.com>
-Date: Fri, 30 Sep 2011 06:08:41 -0400
-From: Mark Hounschell <dmarkh@cfl.rr.com>
-Reply-To: dmarkh@cfl.rr.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Fri, 30 Sep 2011 06:20:50 -0400
+Date: Fri, 30 Sep 2011 12:20:34 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] RAS update
+Message-ID: <20110930102034.GB22622@aftab>
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: markh@compro.net, "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with AMD chipsets. Was "Re: problems doing direct dma
- from a pci device to pci-e device"
-References: <4E84CA01.2060907@compro.net> <4E84D55A.5050406@compro.net> <4E858200.8070302@ladisch.de>
-In-Reply-To: <4E858200.8070302@ladisch.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2011 04:46 AM, Clemens Ladisch wrote:
-> Mark Hounschell wrote:
->> We have no problem with this same configuration using a MB with an
->> nvidia chipset. I suspect it might have something to do with the the MB
->> that usines the AMD chipset having an IOMMU, but I really don't know for
->> sure. I've also read something in the AMD chipset docs about some type
->> of restrictions on peer to peer transfers but again I really have no
->> idea if this is related to why I'm having this problem.
->
-> According to the published RS780 docs, "P2P traffic could be only memory
-> writes" (RPR 2.7).  In any case, check the P2P bits (MISC is described
-> in BDG 2.4).
->
->
+Hi Ingo,
 
-I wonder what they expect you to get out of "P2P traffic _could_ be only 
-memory writes" Does that mean it _can_ be configured as "P2P traffic is 
-enabled for only writes"? In any case I can do neither reads or writes.
+please pull from the branch below to receive one fix which
+causes a very nasty warning on _all_ CPUs when fiddling with
+MCE poller interval. Since it is not that important, I'm fine
+with it going in during the merge window. Top commit here is
+9aaef96f61d93062556d34e15731f7d5869dd82e.
 
-As for the MISC bits described in the BDG, it appears that by default all 
-the P2PDIS bits will be set to 0. Are there tools that would enable me to 
-look at these bits and even change them if they are set. Would these bits 
-normally be set/reset by the BIOS or the OS?
+Thanks.
 
-I previously asked about this problem on the AMD developers forum but got 
-no response.
+The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
 
-Thanks
-Mark
+  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
+
+are available in the git repository at:
+  git://amd64.org/linux/bp.git ras
+
+Hidetoshi Seto (1):
+      x86, mce: Do not call del_timer_sync() in IRQ context
+
+ arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
