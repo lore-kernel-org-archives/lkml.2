@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756361Ab1I3ClZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 22:41:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57216 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab1I3ClX (ORCPT
+	id S1756287Ab1I3Cok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 22:44:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52660 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab1I3Coi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 22:41:23 -0400
-Message-ID: <4E852C4D.4010307@gmail.com>
-Date: Thu, 29 Sep 2011 20:41:17 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Thu, 29 Sep 2011 22:44:38 -0400
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        Stephane Eranian <eranian@google.com>, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-References: <20110929230613.GA20083@ghostprotocols.net> <4E850056.1090101@gmail.com> <20110930004018.GA9369@ghostprotocols.net> <4E85142C.101@gmail.com> <20110930022134.GB9369@ghostprotocols.net>
-In-Reply-To: <20110930022134.GB9369@ghostprotocols.net>
+In-Reply-To: <20110928154200.GA2477@ram-ThinkPad-T61>
+References: <CAErSpo70k6UnhvvOMgQQxJ6BHZOwym=-jaPMvOukAaCr-B0+cQ@mail.gmail.com>
+ <4E5EFFBD.4050201@logix.net.nz> <CAErSpo6bofeiAxeRo_RjXQSnwmcWrdymn0MK8H4_CwqwoeD1jg@mail.gmail.com>
+ <4E634814.4050508@logix.net.nz> <20110909113409.GE2416@ram-ThinkPad-T61>
+ <4E6C05B7.9000904@logix.net.nz> <20110913110646.GB2425@ram-ThinkPad-T61>
+ <4E6F400A.6090909@logix.net.nz> <20110922074858.GG5085@ram-ThinkPad-T61>
+ <4E7B04F8.3090500@logix.net.nz> <20110928154200.GA2477@ram-ThinkPad-T61>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Sep 2011 19:44:17 -0700
+X-Google-Sender-Auth: ucEYbmWB7SRB_iX4Nv4gMZtUMK4
+Message-ID: <CA+55aFxAHTWu=ZVoMdfGwJ4xNgGeyk2CWrD+kJVH-qb4N=vhwA@mail.gmail.com>
+Subject: Re: [PATCH] Resource: wrong resource window calculation
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, weiyang@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com,
+        Michal Ludvig <mludvig@logix.net.nz>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2011 08:21 PM, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 29, 2011 at 06:58:20PM -0600, David Ahern escreveu:
->> On 09/29/2011 06:40 PM, Arnaldo Carvalho de Melo wrote:
->>> This comes from time to time:
->>>
->>> http://us.generation-nt.com/answer/bug-perf-event-sampling-buffer-format-cannot-handle-multi-event-sampling-help-202985832.html
->>>
->>> The whole point of sample_type is to ask for just what is needed for
->>> some specific event so that we reduce the per sample footprint.
->>>
->>> So we allow for multiple types of events to be on the same stream, but
->>> not for them to have just what each need, its a limitation, one that we
->>> can solve. I see no reason not to solve it :-)
->>>
->>> The evsel/evlist classes were designed to abstract away such details,
->>> i.e. perf_evlist__mmap should notice different sample_types and sort
->>> this out transparently.
->>>
->>> And then perf_evlist__mmap_read(evlist, idx), evlist->nr_mmaps should be
->>> enough to process the events :-)
->>>
->>> - Arnaldo
->>
->> An ABI change fixes the root cause of the current problem -- put an id
->> in perf_event_header. The id maps to the evsel which has the
->> sample_type. Right now you have to parse the sample to get the id to get
->> the evsel.
-> 
-> This id is not always needed, so it shouldn't go to perf_event_header.
-> Peter, can you comment here? ;-)
+On Wed, Sep 28, 2011 at 8:42 AM, Ram Pai <linuxram@us.ibm.com> wrote:
+>
+>        Do you plan to take this patch for 3.1? It fixes a regression w.r.t 3.0
+>        https://bugzilla.kernel.org/show_bug.cgi?id=42002 captures the bug report.
 
-I'm talking about a new 'id' that would always be needed *for samples*
--- it identifies the evsel it is associated with. The evsel has the
-sample type. The sample_type is then used to parse it. Seems like a
-simpler solution then having mmap's per sample type and then writing
-separate files.
+It looks fine, but that bugzilla thing is currently useless. Do you
+have some other place with the symptoms, discussion etc?  I didn't
+find the original report on lkml..
 
-David
+      Linus
