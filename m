@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab1I3N75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 09:59:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51995 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab1I3N74 convert rfc822-to-8bit (ORCPT
+	id S1758610Ab1I3OFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 10:05:49 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56877 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754466Ab1I3OFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 09:59:56 -0400
-Subject: [PATCH -rt] softirq: Fix unplug deadlock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: rostedt <rostedt@goodmis.org>, Clark Williams <williams@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Sep 2011 15:59:16 +0200
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317391156.12973.3.camel@twins>
-Mime-Version: 1.0
+	Fri, 30 Sep 2011 10:05:48 -0400
+X-Sasl-enc: +g8FRVZoL+EKYi82nz3JNvLjqaUj6QgJeZ21OZPpKwfH 1317391547
+Date: Fri, 30 Sep 2011 06:57:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
+Subject: Re: [PATCH 00/24] MacBook Air patch sequence (v2)
+Message-ID: <20110930135705.GC18646@kroah.com>
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+ <1317344993-24945-1-git-send-email-keithp@keithp.com>
+ <20110930033356.GA11621@kroah.com>
+ <yunsjne8kzu.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yunsjne8kzu.fsf@aiko.keithp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [RT] softirq: Fix unplug deadlock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Sep 30 15:52:14 CEST 2011
+On Fri, Sep 30, 2011 at 01:58:29AM -0700, Keith Packard wrote:
+> On Thu, 29 Sep 2011 20:33:56 -0700, Greg KH <greg@kroah.com> wrote:
+> 
+> > Are these really all -stable material?
+> 
+> I think just the sequence that actually makes the machine work; the
+> scarier patches are those which reduce the mode setting time from 5-10s
+> down to .7s.
+> 
+> Is this stretching the bounds of what is acceptable for -stable? Would
+> it look better as a single patch, instead of 14 separate ones?
 
-If ksoftirqd gets woken during hot-unplug, __thread_do_softirq() will
-call pin_current_cpu() which will block on the held cpu_hotplug.lock.
-Moving the offline check in __thread_do_softirq() before the
-pin_current_cpu() call doesn't work, since the wakeup can happen
-before we mark the cpu offline.
+No, actually this makes it easier for -stable as each individual patch
+fixes a problem, so in re-reading them, I have no objection for them to
+go into -stable.
 
-So here we have the ksoftirq thread stuck until hotplug finishes, but
-then the ksoftirq CPU_DOWN notifier issues kthread_stop() which will
-wait for the ksoftirq thread to go away -- while holding the hotplug
-lock.
+Would these also work on 3.0?
 
-Sort this by delaying the kthread_stop() until CPU_POST_DEAD, which is
-outside of the cpu_hotplug.lock, but still serialized by the
-cpu_add_remove_lock.
+> > I'm all for enabling new hardware like this, and overall, the patches
+> > aren't that bad, just want to verify this.
+> 
+> Let me know what you think; they'll be queued for 3.2 once they've
+> gotten review and (I hope) more testing. It's Jesse's fault there are
+> so many little patches; he asked me to split things up into separate
+> functional changes. It's either that, or I'm just looking to increase
+> the number of patches I have in the kernel.
+> 
+> > And, I do have to tell you, "curses, now I have no excuse to not buy
+> > that laptop!"
+> 
+> I'd rather have a 'regular' PC; getting Debian installed on this machine
+> was no picnic.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/softirq.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Due to UEFI stuff?  Or something else?
 
-Index: linux-rt/kernel/softirq.c
-===================================================================
---- linux-rt.orig/kernel/softirq.c
-+++ linux-rt/kernel/softirq.c
-@@ -1104,9 +1104,8 @@ static int __cpuinit cpu_callback(struct
- 	int hotcpu = (unsigned long)hcpu;
- 	struct task_struct *p;
- 
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		p = kthread_create_on_node(run_ksoftirqd,
- 					   hcpu,
- 					   cpu_to_node(hotcpu),
-@@ -1119,19 +1118,16 @@ static int __cpuinit cpu_callback(struct
-   		per_cpu(ksoftirqd, hotcpu) = p;
-  		break;
- 	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
- 		wake_up_process(per_cpu(ksoftirqd, hotcpu));
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
- 		if (!per_cpu(ksoftirqd, hotcpu))
- 			break;
- 		/* Unbind so it can run.  Fall thru. */
- 		kthread_bind(per_cpu(ksoftirqd, hotcpu),
- 			     cpumask_any(cpu_online_mask));
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN: {
-+	case CPU_POST_DEAD: {
- 		static const struct sched_param param = {
- 			.sched_priority = MAX_RT_PRIO-1
- 		};
+> But, I haven't seen anything else in this form factor that includes a
+> display port connector.
 
+I agree, it is a very nice hardware form factor that no other
+manufacturer can seem to duplicate for the same (well, any) price these
+days.
+
+greg k-h
