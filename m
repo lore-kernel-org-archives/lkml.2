@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1I3Aw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 20:52:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64989 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1I3Aw5 (ORCPT
+	id S1755641Ab1I3A6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 20:58:12 -0400
+Received: from peace.netnation.com ([204.174.223.2]:37888 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab1I3A6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 20:52:57 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=eMQ7hR_6lG4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=tHz9FfFoAAAA:8 a=hJUw3UrrG-n1DAumEp0A:9 a=PUjeQqilurYA:10 a=6O0IECtVFhoA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH RFC 0/8] jump-label: allow early jump_label_enable()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Thu, 29 Sep 2011 20:52:53 -0400
-In-Reply-To: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317338254.git.jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317343975.4588.36.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Thu, 29 Sep 2011 20:58:09 -0400
+Date: Thu, 29 Sep 2011 17:58:07 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS client growing system CPU
+Message-ID: <20110930005807.GE7959@hostway.ca>
+References: <20101208212505.GA18192@hostway.ca> <1291845189.3067.31.camel@heimdal.trondhjem.org> <20110927003931.GB12106@hostway.ca> <1317123773.24383.1.camel@lade.trondhjem.org> <20110927164937.GA2690@hostway.ca> <1317143055.10143.2.camel@lade.trondhjem.org> <20110928195835.GA15368@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110928195835.GA15368@hostway.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-29 at 16:26 -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Wed, Sep 28, 2011 at 12:58:35PM -0700, Simon Kirby wrote:
+
+> On Tue, Sep 27, 2011 at 01:04:15PM -0400, Trond Myklebust wrote:
 > 
+> > On Tue, 2011-09-27 at 09:49 -0700, Simon Kirby wrote: 
+> > > On Tue, Sep 27, 2011 at 07:42:53AM -0400, Trond Myklebust wrote:
+> > > 
+> > > > On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
+> > > > > Hello!
+> > > > > 
+> > > > > Following up on "System CPU increasing on idle 2.6.36", this issue is
+> > > > > still happening even on 3.1-rc7. So, since it has been 9 months since I
+> > > > > reported this, I figured I'd bisect this issue. The first bisection ended
+> > > > > in an IPMI regression that looked like the problem, so I had to start
+> > > > > again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
+> > > > > which made it into 2.6.34-rc4.
+> > > > > 
+> > > > > With this commit, system CPU keeps rising as the log crunch box runs
+> > > > > (reads log files via NFS and spews out HTML files into NFS-mounted report
+> > > > > directories). When it finishes the daily run, the system time stays
+> > > > > non-zero and continues to be higher and higher after each run, until the
+> > > > > box never completes a run within a day due to all of the wasted cycles.
+> > > > 
+> > > > So reverting that commit fixes the problem on 3.1-rc7?
+> > > > 
+> > > > As far as I can see, doing so should be safe thanks to commit
+> > > > 5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
+> > > > in two steps) which fixes the original problem at the VFS level.
+> > > 
+> > > Hmm, I went to git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2, but
+> > > for some reason git left the nfs_mark_request_dirty(req); line in
+> > > nfs_writepage_setup(), even though the original commit had that. Is that
+> > > OK or should I remove that as well?
+> > > 
+> > > Once that is sorted, I'll build it and let it run for a day and let you
+> > > know. Thanks!
+> > 
+> > It shouldn't make any difference whether you leave it or remove it. The
+> > resulting second call to __set_page_dirty_nobuffers() will always be a
+> > no-op since the page will already be marked as dirty.
+> 
+> Ok, confirmed, git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2 on
+> 3.1-rc7 fixes the problem for me. Does this make sense, then, or do we
+> need further investigation and/or testing?
 
-> One big question which arises is whether the _early() function is
-> necessary at all.  All the stop_machine/mutex/etc stuff that
-> arch_jump_label_transform() ends up doing is redundant pre-SMP, but it
-> shouldn't hurt.  Maybe we can just drop the _early function?  It works
-> on x86, at least, because jump_label_enable() works, which uses the full
-> form.  And dropping it would reduce this to a very much smaller series.
+Just to clear up what I said before, it seems that on plain 3.1-rc8, I am
+actually able to clear the endless CPU use in nfs_writepages by just
+running "sync". I am not sure when this changed, but I'm pretty sure that
+some versions between 2.6.34 and 3.1-rc used to not be affected by just
+"sync" unless it was paired with drop_caches. Maybe this makes the
+problem more obvious...
 
-It does slow down the boot process, which is not a good thing when
-everyone is pushing for the fastest restarts.
-
-What we should probably do is have a global read_mostly variable called,
-smp_activated or something, then things that can be called before and
-after can read this variable to determine if it can skip certain
-protections.
-
-While we're at it, perhaps we could add a memory_initialized for things
-like tracers that want to trace early but need to wait till it can
-allocate buffers. If we had this flag, it could instead do an early
-memory init to create the buffers.
-
--- Steve
-
-
+Simon-
