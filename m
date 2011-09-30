@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1I3Myx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 08:54:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59608 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab1I3Myw (ORCPT
+	id S1756217Ab1I3M4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:56:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55106 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750940Ab1I3M4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 08:54:52 -0400
-Date: Fri, 30 Sep 2011 14:54:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.osdl.org>,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 09/11] cgroups: Add a task counter subsystem
-Message-ID: <20110930125441.GB19053@somewhere>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
- <1315869091-18933-10-git-send-email-fweisbec@gmail.com>
- <20110918202710.GE28057@shutemov.name>
+	Fri, 30 Sep 2011 08:56:11 -0400
+Date: Fri, 30 Sep 2011 13:56:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        Peter Hsiang <peter.hsiang@maxim-ic.com>,
+        Jesse Marroquin <jesse.marroquin@maxim-ic.com>
+Subject: Re: [PATCH 1/2] ASoC: Add BUG() assertion if max98088_get_channel
+ returns -EINVAL
+Message-ID: <20110930125609.GK5366@opensource.wolfsonmicro.com>
+References: <1317218471.8008.3.camel@phoenix>
+ <4E83AA77.9040700@gmail.com>
+ <20110929103413.GK3697@opensource.wolfsonmicro.com>
+ <4E84FBA6.40600@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110918202710.GE28057@shutemov.name>
+In-Reply-To: <4E84FBA6.40600@gmail.com>
+X-Cookie: Blow it out your ear.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 18, 2011 at 11:27:10PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Sep 13, 2011 at 01:11:29AM +0200, Frederic Weisbecker wrote:
-> > +static struct cftype files[] = {
-> > +	{
-> > +		.name		= "limit",
-> > +		.read_u64	= task_counter_read_u64,
-> > +		.write_u64	= task_counter_write_u64,
-> > +		.private	= RES_LIMIT,
-> > +	},
-> > +
-> > +	{
-> > +		.name		= "usage",
-> > +		.read_u64	= task_counter_read_u64,
-> 
-> It would be nice to implement .register_event/.unregister_event as well.
+On Fri, Sep 30, 2011 at 09:13:42AM +1000, Ryan Mallon wrote:
 
-It adds several complications. I prefer to wait for someone requesting
-that feature before doing it.
+> How about something like this (untested) patch?
+
+Looks plausible.
