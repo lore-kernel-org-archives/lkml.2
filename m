@@ -1,121 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab1I3R6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:58:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:20886 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab1I3R6F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:58:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=PIbiPZvtQ9IO8F1xXkHylxLqVsvpVGE5EUCJ6aUQ/Cnw8Asaf29xcfitWtOS//b/c
-	zH8R/xT+M5b42KwSuheZQ==
+	id S1757363Ab1I3R6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:58:31 -0400
+Received: from home.keithp.com ([63.227.221.253]:47554 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755690Ab1I3R6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 13:58:30 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 04/21] drm/i915: Only use VBT panel mode on eDP if no EDID is found
+In-Reply-To: <20110930163235.GD2859@phenom.ffwll.local>
+References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-5-git-send-email-keithp@keithp.com> <20110930163235.GD2859@phenom.ffwll.local>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 30 Sep 2011 10:58:26 -0700
+Message-ID: <yun4nzt9akd.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMaF-rPBM8nJpJ14jSyc4ki=sy2q-uxrJU_7=KGvvUrDp3EUBA@mail.gmail.com>
-References: <4E82017C.3010304@redhat.com> <CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com>
- <4E8215B6.1020108@redhat.com> <20110930001633.GA11436@myri.com>
- <CAErSpo7Vw94PfhDO8kXtNCPm+m2oXL42R51X9bCh_YvkG=k3ZA@mail.gmail.com>
- <CAMaF-rOBgHvZudOqrBu_LT+MQJ4sejpNHEL-JeCsP4p54ZnJeA@mail.gmail.com>
- <CAErSpo4Nj_dQv=7M=2-4j8UJN8NqbiEpc2MdPNffZxbK2UmL7w@mail.gmail.com> <CAMaF-rPBM8nJpJ14jSyc4ki=sy2q-uxrJU_7=KGvvUrDp3EUBA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 30 Sep 2011 11:57:37 -0600
-Message-ID: <CAErSpo5=LOxrcSZZy2+9rTNcgJvzTXMoYBDPHNvz+e+j9P5xkg@mail.gmail.com>
-Subject: Re: Workaround for Intel MPS errata
-To: Jon Mason <mason@myri.com>
-Cc: Avi Kivity <avi@redhat.com>, Sven Schnelle <svens@stackframe.org>,
-        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 11:38 AM, Jon Mason <mason@myri.com> wrote:
->
-> On Fri, Sep 30, 2011 at 12:17 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Fri, Sep 30, 2011 at 9:35 AM, Jon Mason <mason@myri.com> wrote:
-> >>
-> >> On Fri, Sep 30, 2011 at 12:01 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >> > On Thu, Sep 29, 2011 at 6:16 PM, Jon Mason <mason@myri.com> wrote:
-> >> >> Hey Avi,
-> >> >> Can you try this patch?  It should resolve the issue you are seeing.
-> >> >>
-> >> >> Thanks,
-> >> >> Jon
-> >> >>
-> >> >>    PCI: Workaround for Intel MPS errata
-> >> >>
-> >> >>    Intel 5000 and 5100 series memory controllers have a known issue if read
-> >> >>    completion coalescing is enabled (the default setting) and the PCI-E
-> >> >>    Maximum Payload Size is set to 256B.  To work around this issue, disable
-> >> >>    read completion coalescing if the MPS is 256B.
-> >> >
-> >> > I'd much rather see this done as an early quirk so it doesn't clutter probe.c.
-> >> >
-> >> > I don't know how you decide whether
-> >> >    - no coalescing with MPS=256, or
-> >> >    - coalescing with MPS=128
-> >> > is better.  I suspect that having a quirk that doesn't change the
-> >> > setting, but merely limits MPS to 128 if the BIOS enabled coalescing,
-> >> > would be simplest and would stay in the best-tested chipset
-> >> > configuration.
-> >>
-> >> This is what I was debating yesterday.  Is it better to disable
-> >> coalescing and get better throughput (which could be a net negative if
-> >> the MPS isn't 256) or never allow it to be greater than 128?  There is
-> >> no way of knowing at quirk time if the disable is necessary or not,
-> >> only when setting the MPS is it known (which is why I did it this
-> >> way).  I could, as you suggest, simply read the bit and see if it is
-> >> enabled by the BIOS (which I'd bet it is every single time), and then
-> >> limit the MPS to 128 as a quirk.  This would be fairly simple to do.
-> >> However, the errata from Intel says Windows 2008 always disables the
-> >> coalescing and sets the MPS to 256B.  With this known, Linux's I/O
-> >> performance would be less than Windows on these systems. ...
-> >
-> > Presumably coalescing improves performance, too, and I don't have the
-> > evidence that says "no coalescing with MPS=256" performs better than
-> > "coalescing with MPS=128."
-> >
-> > But the fact that Windows 2008 disables coalescing is worth a lot (if
-> > this is in a public erratum, a URL would be good).  Given that, I'd
->
-> The URLs were in the top of the patch, but perhaps they weren't obvious. ...
-> Search for "MPS", as they are several pages into the errata chapter.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I saw the errata, but searching for "Windows" failed.  But now I see
-the "Microsoft Server 2008" reference in the 5100 errata.  The wording
-is interesting, though...  it says:
+On Fri, 30 Sep 2011 18:32:35 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
 
-    Microsoft Server 2008* forces the maximum payload size to 256 B in the
-    PEXDEVCTRL register; therefore, the workaround with coalescing disabled
-    must be used for Microsoft Server 2008*.
+> Ok, this is way over my head, just checked whether the patch does what it
+> claims to - nice exercise in reading dp modeset code ;-)
 
-I would read that as saying "Windows Server 2008 always sets MPS to
-256 but doesn't do anything with the coalescing setting.  Therefore,
-if you want to run Server 2008 on your system, make sure the BIOS
-leaves coalescing disabled."
+Yeah, it's purely heuristic -- the VBT contains a mode which was
+originally for the LVDS. It's unclear whether it should ever be applied
+to an eDP panel, but absent other information, it seems like we should
+at least consider it.
 
-> > Maybe the quirk could be moved out of the generic code by making
-> > pcie_set_mps() a weak function, so x86 could supply a version that
-> > disables coalescing if MPS=256?
->
-> Not sure what you mean here.  Are you saying to make the function
-> defined differently on each arch?
+Many LVDS panels don't bother to include an EDID rom, or the vendor
+didn't bother to hook up the DDC wire; presumably it's cheaper for them
+to stick more data in the VBIOS than add hardware.  However, there are
+some LVDS panels with EDID roms which contain *incorrect* mode data for
+the panel (amazing, I know), and so the driver prefers to use the VBT
+data when both are present.
 
-You can define the generic pcie_set_mps() with the __weak attribute in
-drivers/pci/probe.c.  Then if you put a normal (non-weak)
-pcie_set_mps() definition in the arch code, it will be used instead of
-the weak definition.  If the arch doesn't supply a definition, the
-generic weak version will be used.
+eDP, on the other hand, doesn't require any additional wiring (at least)
+to connect up the DDC channel, and eDP panels are required to provide
+EDID data. So far, in my (very small) sample set, I've got one machine
+which provides accurate VBT *and* EDID data (an HP 2540p) and one
+machine which provides inaccurate VBT data but accurate EDID data (a
+MacBook air). So, I just decided to prefer the EDID data.
 
-Bjorn
+One option would be to extract the current mode from the hardware when
+the driver starts and use that if present. But, that might mean that
+you'd get different modes depending on whether the machine booted with
+the lid closed or open, which seems like a bad plan.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOhgNCQp8BWwlsTdMRAgpnAKDXF/UMpXRwLgDslnMmlO7//slNFACg3TFq
+ihZSnNvvpZAjd2Sc5KlkJ6g=
+=GM5A
+-----END PGP SIGNATURE-----
+--=-=-=--
