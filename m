@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab1I3VBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:01:54 -0400
-Received: from home.keithp.com ([63.227.221.253]:36828 "EHLO keithp.com"
+	id S1755823Ab1I3VDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:03:38 -0400
+Received: from shutemov.name ([188.40.19.243]:59924 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab1I3VBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:01:53 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Zan Lynx <zlynx@acm.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Samsung Series 9 seems to require acpi=nonvs to resume properly
-In-Reply-To: <1317414897.2629.5.camel@knife>
-References: <1317329529.3151.10.camel@knife> <1317413360.2629.2.camel@knife> <201109302222.22528.rjw@sisk.pl> <1317414897.2629.5.camel@knife>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 30 Sep 2011 14:01:49 -0700
-Message-ID: <yuny5x568xu.fsf@aiko.keithp.com>
+	id S1751736Ab1I3VDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 17:03:37 -0400
+Date: Sat, 1 Oct 2011 00:03:36 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.osdl.org>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 09/11] cgroups: Add a task counter subsystem
+Message-ID: <20110930210336.GA15366@shutemov.name>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+ <1315869091-18933-10-git-send-email-fweisbec@gmail.com>
+ <20110918202710.GE28057@shutemov.name>
+ <20110930125441.GB19053@somewhere>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930125441.GB19053@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 30, 2011 at 02:54:46PM +0200, Frederic Weisbecker wrote:
+> On Sun, Sep 18, 2011 at 11:27:10PM +0300, Kirill A. Shutemov wrote:
+> > On Tue, Sep 13, 2011 at 01:11:29AM +0200, Frederic Weisbecker wrote:
+> > > +static struct cftype files[] = {
+> > > +	{
+> > > +		.name		= "limit",
+> > > +		.read_u64	= task_counter_read_u64,
+> > > +		.write_u64	= task_counter_write_u64,
+> > > +		.private	= RES_LIMIT,
+> > > +	},
+> > > +
+> > > +	{
+> > > +		.name		= "usage",
+> > > +		.read_u64	= task_counter_read_u64,
+> > 
+> > It would be nice to implement .register_event/.unregister_event as well.
+> 
+> It adds several complications. I prefer to wait for someone requesting
+> that feature before doing it.
 
-On Fri, 30 Sep 2011 14:34:46 -0600, Zan Lynx <zlynx@acm.org> wrote:
+It may be a good replacement for release_agent. Or not?
 
-> It is the Intel i915 driver. It is an Intel i5-2537M system with the
-> integrated video on the CPU.
-
-You might compare the output of intel_reg_dumper in the
-working/not-working case before the i915 driver loads.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOhi4+Qp8BWwlsTdMRAgLaAJ958weTjNFMwY0fxqz4XlYJOYsJSQCfT7Hj
-x7+7xNn+fzZ1jNM2lNsawEU=
-=xQXt
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+ Kirill A. Shutemov
