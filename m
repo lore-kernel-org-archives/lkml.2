@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab1I3TIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 15:08:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38102 "EHLO mx1.redhat.com"
+	id S1758766Ab1I3TIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 15:08:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52956 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758724Ab1I3TH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 15:07:26 -0400
+	id S1758704Ab1I3THT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 15:07:19 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Robert Richter <robert.richter@amd.com>,
         Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
 Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
         avi@redhat.com, jeremy@goop.org, Don Zickus <dzickus@redhat.com>
-Subject: [V7][PATCH 5/6] x86, nmi: track NMI usage stats
-Date: Fri, 30 Sep 2011 15:06:23 -0400
-Message-Id: <1317409584-23662-6-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
-References: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
+Subject: [V7][PATCH 0/6] x86, nmi: new NMI handling routines
+Date: Fri, 30 Sep 2011 15:06:18 -0400
+Message-Id: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the NMI handler are broken into lists, increment the appropriate
-stats for each list.  This allows us to see what is going on when they
-get printed out in the next patch.
+I had the pleasure of hosting Robert Richter at Red Hat in August.  One of
+the issues he wanted to talk with me about was having the NMI handling 
+routines execute all the NMI handlers for each NMI mainly for his AMD IBS
+work.  But he also brought up another good point that because of the way NMIs
+work, it is possible to lose them if multiple NMIs happen at the same time.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/nmi.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+As a result, we sat around and discussed how we could go about executing
+all the nmi handlers for each NMI to ensure that we would not lose any events.
 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index fa725a4..36b16fa 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -53,6 +53,15 @@ static struct nmi_desc nmi_desc[NMI_MAX] =
- 
- };
- 
-+struct nmi_stats {
-+	unsigned int normal;
-+	unsigned int unknown;
-+	unsigned int external;
-+	unsigned int swallow;
-+};
-+
-+static DEFINE_PER_CPU(struct nmi_stats, nmi_stats);
-+
- static int ignore_nmis;
- 
- int unknown_nmi_panic;
-@@ -262,8 +271,13 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 	 * if it caused the NMI)
- 	 */
- 	handled = nmi_handle(NMI_UNKNOWN, regs, false);
--	if (handled) 
-+	if (handled) {
-+		__this_cpu_add(nmi_stats.unknown, handled);
- 		return;
-+	}
-+
-+	__this_cpu_add(nmi_stats.unknown, 1);
-+
- #ifdef CONFIG_MCA
- 	/*
- 	 * Might actually be able to figure out what the guilty party
-@@ -314,6 +328,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	__this_cpu_write(last_nmi_rip, regs->ip);
- 
- 	handled = nmi_handle(NMI_LOCAL, regs, b2b);
-+	__this_cpu_add(nmi_stats.normal, handled);
- 	if (handled) {
- 		/*
- 		 * There are cases when a NMI handler handles multiple
-@@ -344,6 +359,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 		 */
- 		reassert_nmi();
- #endif
-+		__this_cpu_add(nmi_stats.external, 1);
- 		raw_spin_unlock(&nmi_reason_lock);
- 		return;
- 	}
-@@ -380,7 +396,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	 * for now.
- 	 */
- 	if (b2b && __this_cpu_read(swallow_nmi))
--		;
-+		__this_cpu_add(nmi_stats.swallow, 1);
- 	else
- 		unknown_nmi_error(reason, regs);
- }
+We decided the best way to do this would be to have the NMI handlers break
+away from the notifier routines and create our own.  This would allow us to
+execute all the handlers without hacking up the notifier stuff and easily
+track the number of events processed at a higher level to deal with the new
+problemm of extra NMIs.
+
+I spent some time hacking and came up with this patch.  I tested it on my
+core2quad machine trying to enable all the NMI handler I could, mainly
+perf and kgdb (and oprofile too when perf was disabled).  Everything seems
+to work correctly.  If people are ok with this approach, I'll try and test
+this on more machines.
+
+More details about the patch are in the individual changelogs.
+
+I rebased this on top of tglx/perf/core [cba9bd22], I hope that is the right
+branch?
+
+V7:
+  - removed the b2b optimization in the nmi_handle call
+  - small code cleanups in patch 3/4
+
+Don Zickus (6):
+  x86, nmi: split out nmi from traps.c
+  x86, nmi: create new NMI handler routines
+  x86, nmi: wire up NMI handlers to new routines
+  x86, nmi:  add in logic to handle multiple events and unknown NMIs
+  x86, nmi: track NMI usage stats
+  x86, nmi: print out NMI stats in /proc/interrupts
+
+ arch/x86/include/asm/nmi.h              |   39 ++--
+ arch/x86/include/asm/reboot.h           |    2 +-
+ arch/x86/kernel/Makefile                |    2 +-
+ arch/x86/kernel/apic/hw_nmi.c           |   27 +--
+ arch/x86/kernel/apic/x2apic_uv_x.c      |   20 +-
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |   20 +-
+ arch/x86/kernel/cpu/mcheck/mce.c        |    3 -
+ arch/x86/kernel/cpu/perf_event.c        |   69 +-----
+ arch/x86/kernel/crash.c                 |    5 +-
+ arch/x86/kernel/irq.c                   |    2 +
+ arch/x86/kernel/kgdb.c                  |   60 +++-
+ arch/x86/kernel/nmi.c                   |  464 +++++++++++++++++++++++++++++++
+ arch/x86/kernel/process_32.c            |    2 +
+ arch/x86/kernel/process_64.c            |    2 +
+ arch/x86/kernel/reboot.c                |   23 +-
+ arch/x86/kernel/traps.c                 |  155 ----------
+ arch/x86/oprofile/nmi_int.c             |   40 +--
+ arch/x86/oprofile/nmi_timer_int.c       |   28 +--
+ drivers/acpi/apei/ghes.c                |   22 +-
+ drivers/char/ipmi/ipmi_watchdog.c       |   32 +--
+ drivers/watchdog/hpwdt.c                |   23 +--
+ 21 files changed, 607 insertions(+), 433 deletions(-)
+ create mode 100644 arch/x86/kernel/nmi.c
+
 -- 
 1.7.6
 
