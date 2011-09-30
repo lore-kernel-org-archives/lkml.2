@@ -1,94 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab1I3ToT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 15:44:19 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:60892 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab1I3ToS (ORCPT
+	id S932432Ab1I3ToY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 15:44:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44186 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab1I3ToW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 15:44:18 -0400
-Date: Fri, 30 Sep 2011 12:44:17 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] ext4: ext4_dx_add_entry should dirty directory
-	metadata with the directory inode
-Message-ID: <20110930194417.GV12086@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110811211513.GL20655@tux1.beaverton.ibm.com> <ED0259FB-A818-4CAA-A72A-9164CE3769D9@dilger.ca>
+	Fri, 30 Sep 2011 15:44:22 -0400
+Date: Fri, 30 Sep 2011 21:44:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86 fix
+In-Reply-To: <20110930182256.GA21246@elte.hu>
+Message-ID: <alpine.LFD.2.02.1109302143520.2711@ionos>
+References: <20110930182256.GA21246@elte.hu>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ED0259FB-A818-4CAA-A72A-9164CE3769D9@dilger.ca>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 03:41:59PM -0600, Andreas Dilger wrote:
-> On 2011-08-11, at 3:15 PM, Darrick J. Wong wrote:
-> > ext4_dx_add_entry manipulates bh2 and frames[0].bh, which are two buffer_heads
-> > that point to directory blocks assigned to the directory inode.  However, the
-> > function calls ext4_handle_dirty_metadata with the inode of the file that's
-> > being added to the directory, not the directory inode itself.  Therefore,
-> > correct the code to dirty the directory buffers with the directory inode, not
-> > the file inode.
-> 
-> Interesting.  For journaled filesystems this is purely cosmetic, since
-> "handle" is valid and "inode" is unused in that case.  For non-journal
-> filesystems it actually affects the correctness, since this buffer may
-> not be sync'd to disk even when the directory is marked "dirsync".
-> 
-> You can add my:
-> Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+On Fri, 30 Sep 2011, Ingo Molnar wrote:
 
-Hm.... any thoughts, Ted?  Will this be picked up for 3.1/3.2?
+> 
+> Linus,
+> 
+> Please pull the latest x86-urgent-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-urgent-for-linus
 
---D
-> 
-> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> > ---
-> > 
-> > fs/ext4/namei.c |    4 ++--
-> > 1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-> > index b754b77..79ddc43 100644
-> > --- a/fs/ext4/namei.c
-> > +++ b/fs/ext4/namei.c
-> > @@ -1589,7 +1589,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
-> > 			dxtrace(dx_show_index("node", frames[1].entries));
-> > 			dxtrace(dx_show_index("node",
-> > 			       ((struct dx_node *) bh2->b_data)->entries));
-> > -			err = ext4_handle_dirty_metadata(handle, inode, bh2);
-> > +			err = ext4_handle_dirty_metadata(handle, dir, bh2);
-> > 			if (err)
-> > 				goto journal_error;
-> > 			brelse (bh2);
-> > @@ -1615,7 +1615,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
-> > 			if (err)
-> > 				goto journal_error;
-> > 		}
-> > -		err = ext4_handle_dirty_metadata(handle, inode, frames[0].bh);
-> > +		err = ext4_handle_dirty_metadata(handle, dir, frames[0].bh);
-> > 		if (err) {
-> > 			ext4_std_error(inode->i_sb, err);
-> > 			goto cleanup;
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> Cheers, Andreas
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+     git://tesla.tglx.de/git/linux-2.6-tip x86-urgent-for-linus
+
