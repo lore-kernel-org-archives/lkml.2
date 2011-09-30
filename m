@@ -1,173 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab1I3M35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 08:29:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754407Ab1I3M3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 08:29:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com>
-References: <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> 
-To: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>
-Cc: dhowells@redhat.com, mark@pogo.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Fri, 30 Sep 2011 13:28:54 +0100
-Message-ID: <6261.1317385734@redhat.com>
+	id S1758574Ab1I3Mc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 08:32:26 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:53318 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab1I3McY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 08:32:24 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 30 Sep 2011 14:32:11 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
+Message-ID: <20110930143211.5ab39c02@stein>
+In-Reply-To: <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+	<1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sep 29 Neil Horman wrote:
+> (v4)
+> Fixed up some spelling mistakes, and added a scissors line with a good
+> commitlog, so that git-am drops all the version logging
+> 
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: linux-pci@vger.kernel.org
 
-You'll probably need to add the attached patch also.  Turns out there were
-some bits I'd missed.
+It drops these last 5 lines then too, doesn't it?
 
-David
----
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] CacheFiles: Add missing retrieval completions
+> --- a/Documentation/ABI/testing/sysfs-bus-pci
+> +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> @@ -66,6 +66,24 @@ Description:
+>  		re-discover previously removed devices.
+>  		Depends on CONFIG_HOTPLUG.
+>  
+> +What:		/sys/bus/pci/devices/.../msi_irqs/
+> +Date:		September, 2011
+> +Contact:	Neil Horman <nhorman@tuxdriver.com>
+> +Description:
+> +		The /sys/devices/.../msi_irqs directory contains a variable set
+> +		sub-directories, with each sub-directory being named after a
+> +		corresponding msi irq vector allocated to that device.
 
-CacheFiles is missing some calls to fscache_retrieval_complete() in the error
-handling/collision paths of its reader functions.
-
-This can be seen by the following assertion tripping in fscache_put_operation()
-whereby the operation being destroyed is still in the in-progress state and has
-not been cancelled or completed:
-
-FS-Cache: Assertion failed
-3 == 5 is false
-------------[ cut here ]------------
-kernel BUG at fs/fscache/operation.c:408!
-invalid opcode: 0000 [#1] SMP
-CPU 2
-Modules linked in: xfs ioatdma dca loop joydev evdev
-psmouse dcdbas pcspkr serio_raw i5000_edac edac_core i5k_amb shpchp
-pci_hotplug sg sr_mod]
-
-Pid: 8062, comm: httpd Not tainted 3.1.0-rc8 #1 Dell Inc. PowerEdge 1950/0DT097
-RIP: 0010:[<ffffffff81197b24>]  [<ffffffff81197b24>] fscache_put_operation+0x304/0x330
-RSP: 0018:ffff880062f739d8  EFLAGS: 00010296
-RAX: 0000000000000025 RBX: ffff8800c5122e84 RCX: ffffffff81ddf040
-RDX: 00000000ffffffff RSI: 0000000000000082 RDI: ffffffff81ddef30
-RBP: ffff880062f739f8 R08: 0000000000000005 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000003 R12: ffff8800c5122e40
-R13: ffff880037a2cd20 R14: ffff880087c7a058 R15: ffff880087c7a000
-FS:  00007f63dcf636e0(0000) GS:ffff88022fc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f0c0a91f000 CR3: 0000000062ec2000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process httpd (pid: 8062, threadinfo ffff880062f72000, task ffff880087e58000)
-Stack:
- ffff880062f73bf8 0000000000000000 ffff880062f73bf8 ffff880037a2cd20
- ffff880062f73a68 ffffffff8119aa7e ffff88006540e000 ffff880062f73ad4
- ffff88008e9a4308 ffff880037a2cd20 ffff880062f73a48 ffff8800c5122e40
-Call Trace:
- [<ffffffff8119aa7e>] __fscache_read_or_alloc_pages+0x1fe/0x530
- [<ffffffff81250780>] __nfs_readpages_from_fscache+0x70/0x1c0
- [<ffffffff8123142a>] nfs_readpages+0xca/0x1e0
- [<ffffffff815f3c06>] ? rpc_do_put_task+0x36/0x50
- [<ffffffff8122755b>] ? alloc_nfs_open_context+0x4b/0x110
- [<ffffffff815ecd1a>] ? rpc_call_sync+0x5a/0x70
- [<ffffffff810e7e9a>] __do_page_cache_readahead+0x1ca/0x270
- [<ffffffff810e7f61>] ra_submit+0x21/0x30
- [<ffffffff810e818d>] ondemand_readahead+0x11d/0x250
- [<ffffffff810e83b6>] page_cache_sync_readahead+0x36/0x60
- [<ffffffff810dffa4>] generic_file_aio_read+0x454/0x770
- [<ffffffff81224ce1>] nfs_file_read+0xe1/0x130
- [<ffffffff81121bd9>] do_sync_read+0xd9/0x120
- [<ffffffff8114088f>] ? mntput+0x1f/0x40
- [<ffffffff811238cb>] ? fput+0x1cb/0x260
- [<ffffffff81122938>] vfs_read+0xc8/0x180
- [<ffffffff81122af5>] sys_read+0x55/0x90
-
-Reported-by: Mark Moseley <moseleymark@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/cachefiles/rdwr.c |   14 ++++++++++----
- fs/fscache/page.c    |    2 ++
- 2 files changed, 12 insertions(+), 4 deletions(-)
-
-
-diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
-index 637a27d..eb9ab4b 100644
---- a/fs/cachefiles/rdwr.c
-+++ b/fs/cachefiles/rdwr.c
-@@ -361,8 +361,10 @@ out:
- 
- read_error:
- 	_debug("read error %d", ret);
--	if (ret == -ENOMEM)
-+	if (ret == -ENOMEM) {
-+		fscache_retrieval_complete(op, 1);
- 		goto out;
-+	}
- io_error:
- 	cachefiles_io_error_obj(object, "Page read error on backing file");
- 	fscache_retrieval_complete(op, 1);
-@@ -551,6 +553,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 		if (ret < 0) {
- 			if (ret == -EEXIST) {
- 				page_cache_release(netpage);
-+				fscache_retrieval_complete(op, 1);
- 				continue;
- 			}
- 			goto nomem;
-@@ -627,6 +630,7 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 		if (ret < 0) {
- 			if (ret == -EEXIST) {
- 				page_cache_release(netpage);
-+				fscache_retrieval_complete(op, 1);
- 				continue;
- 			}
- 			goto nomem;
-@@ -645,9 +649,9 @@ static int cachefiles_read_backing_file(struct cachefiles_object *object,
- 
- 		/* the netpage is unlocked and marked up to date here */
- 		fscache_end_io(op, netpage, 0);
--		fscache_retrieval_complete(op, 1);
- 		page_cache_release(netpage);
- 		netpage = NULL;
-+		fscache_retrieval_complete(op, 1);
- 		continue;
- 	}
- 
-@@ -682,15 +686,17 @@ out:
- nomem:
- 	_debug("nomem");
- 	ret = -ENOMEM;
--	goto out;
-+	goto record_page_complete;
- 
- read_error:
- 	_debug("read error %d", ret);
- 	if (ret == -ENOMEM)
--		goto out;
-+		goto record_page_complete;
- io_error:
- 	cachefiles_io_error_obj(object, "Page read error on backing file");
- 	ret = -ENOBUFS;
-+record_page_complete:
-+	fscache_retrieval_complete(op, 1);
- 	goto out;
- }
- 
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index a30c157..00a5ed9 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -329,6 +329,8 @@ check_if_dead:
- 		return -ENOBUFS;
- 	}
- 	if (unlikely(fscache_object_is_dead(object))) {
-+		pr_err("%s() = -ENOBUFS [obj dead %d]", __func__, op->op.state);
-+		fscache_cancel_op(&op->op);
- 		fscache_stat(stat_object_dead);
- 		return -ENOBUFS;
- 	}
+"contains a variable set _of_ sub-directories"?
+-- 
+Stefan Richter
+-=====-==-== =--= ====-
+http://arcgraph.de/sr/
