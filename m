@@ -1,47 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab1I3JGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:06:11 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:32876 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752001Ab1I3JGI (ORCPT
+	id S1757553Ab1I3JIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:08:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57334 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab1I3JIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:06:08 -0400
-Date: Fri, 30 Sep 2011 10:04:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] x86 mrst: fix build error when X86_MRST is not
- enabled
-Message-ID: <20110930100404.1a83ce65@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E84FC4D.3080506@xenotime.net>
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>
-	<4E84D684.107@xenotime.net>
-	<20110929235708.1bbd1166@lxorguk.ukuu.org.uk>
-	<4E84FC4D.3080506@xenotime.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Sep 2011 05:08:09 -0400
+Date: Fri, 30 Sep 2011 11:05:36 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Josh Wu <josh.wu@atmel.com>
+cc: linux-media@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, s.nawrocki@samsung.com
+Subject: Re: [PATCH v3 2/2] at91: add Atmel ISI and ov2640 support on
+ sam9m10/sam9g45 board.
+In-Reply-To: <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
+Message-ID: <Pine.LNX.4.64.1109300857580.1888@axis700.grange>
+References: <1316664661-11383-1-git-send-email-josh.wu@atmel.com>
+ <1316664661-11383-2-git-send-email-josh.wu@atmel.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:NkF6Edd5n8knBdVHy5WtWV/aIrioSOkaqZR7n9Eul2f
+ ynd8Z3LoYEJWfOW2ixSgYyKM54eIN20klhRTiv6mOs1jgwHDwk
+ AA9Zu3VD2vqBMiucpnnRv5rfh1+JTK84S6LfnROuqoF0pmiFHw
+ z4YvM6JhK4RzmWImDOcXf6ktukiF88Dd47o176nuAPwcQekZ81
+ MO/2LhEQ+DiFehSCnsc+242uqG3G/Qpb31PWKO3iJrtNh1qljn
+ C8Y+VpPFGLBENb/YVNOKhgf/2kRKXLrDqT4kY3mz7CCAxfHip0
+ fx/+KF5kiqif4RQhkAogLJQb/ENKbipt1QwDmK2U8+CdLgYxCF
+ YtpgZq7efo+9XUTUDFfKzyvhzO5VVZTAX3+pkxgtNWZNjn5W5O
+ 2NZmj5EwPtfqw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> arch/x86/platform/mrst/mrst.c -- where __mrst_cpu_chip lives --
+On Thu, 22 Sep 2011, Josh Wu wrote:
 
-In your tree yes
-
-> is only built when CONFIG_X86_MRST is enabled.  You make it sound like
-> __mrst_cpu_chip needs to live any time that CONFIG_X86_INTEL_MID
-> is enabled, which sounds reasonable to me.
+> This patch
+> 1. add ISI_MCK parent setting code when add ISI device.
+> 2. add ov2640 support on board file.
+> 3. define isi_mck clock in sam9g45 chip file.
 > 
-> caveat:  given the current linux-next merge trees (as you mentioned).
-> 
-> Does anyone care?  If so, please help fix this muck.
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 
-It's already sorted, you are just seeing an out of order arrival of
-patches to trees. I guess once kernel.org is back it'll all sort
+Looking a bit more at this, I think, the arch maintainer might want to 
+take a closer look at this:
 
+1. Wouldn't it be a good idea to also bind the isi_clk via a clock 
+connection ID and not via the clock's name?
+
+2. pck1 is not really dedicated to ISI on sam9g45. It can also be used, 
+e.g., as a generic clock output and ISI_PCK can be supplied by an external 
+oscillator. Such set up seems perfectly valid to me and your patch would 
+just unconditionally grab PCK1 and configure it to some frequency... I 
+think, this shall be improved.
+
+3.
+
+> +static int __init isi_set_clk_parent(void)
+> +{
+> +	struct clk *pck1;
+> +	struct clk *plla;
+> +	int ret;
+> +
+> +	/* ISI_MCK is supplied by PCK1 - set parent for it. */
+> +	pck1 = clk_get(NULL, "pck1");
+> +	if (IS_ERR(pck1)) {
+> +		printk(KERN_ERR "Failed to get PCK1\n");
+> +		ret = PTR_ERR(pck1);
+> +		goto err;
+> +	}
+> +
+> +	plla = clk_get(NULL, "plla");
+> +	if (IS_ERR(plla)) {
+> +		printk(KERN_ERR "Failed to get PLLA\n");
+> +		ret = PTR_ERR(plla);
+> +		goto err_pck1;
+> +	}
+> +	ret = clk_set_parent(pck1, plla);
+> +	clk_put(plla);
+
+I think, here you also need a
+
+	clk_put(pck1);
+
+> +	if (ret != 0) {
+> +		printk(KERN_ERR "Failed to set PCK1 parent\n");
+> +		goto err_pck1;
+> +	}
+> +	return ret;
+> +
+> +err_pck1:
+> +	clk_put(pck1);
+> +err:
+> +	return ret;
+> +}
+
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
