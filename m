@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab1I3VQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:16:33 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31381 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab1I3VQb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:16:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=HFj2e/IeHcft8mS8vgW0c4St+wJQ3LaqvC2LWcAWBGZjoQt9lU8rBGnafAUZq4ieR
-	3VjxQobl6/quWSMtI3nQA==
+	id S1756353Ab1I3VVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:21:05 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:52942 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755777Ab1I3VVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 17:21:02 -0400
+X-ASG-Debug-ID: 1317417660-01de285e7bea5d0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E8632BB.20700@fusionio.com>
+Date: Fri, 30 Sep 2011 15:20:59 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20110930181914.GA17817@mgebm.net>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
-	<20110929164319.GA3509@mgebm.net>
-	<CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
-	<4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
-	<20110930181914.GA17817@mgebm.net>
-Date: Fri, 30 Sep 2011 14:16:25 -0700
-Message-ID: <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
-Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
-From: Michel Lespinasse <walken@google.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org> <4E69D519.8070802@fusionio.com> <20110930133323.GA2730@infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+In-Reply-To: <20110930133323.GA2730@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1317417660
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.76034
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 11:19 AM, Eric B Munson <emunson@mgebm.net> wrote:
-> I am able to recreate on a second desktop I have here (same model CPU but a
-> different MB so I am fairly sure it isn't dying hardware).  It looks to me like
-> a CPU softlocks and it stalls the process active there, so most recently that
-> was XOrg.  The machine lets me login via ssh for a few minutes, but things like
-> ps and cat or /proc files will start to work and give some output but hang.
-> I cannot call reboot, nor can I sync the fs and reboot via SysRq.  My next step
-> is to setup a netconsole to see if anything comes out in the syslog that I
-> cannot see.
+On 2011-09-30 07:33, Christoph Hellwig wrote:
+> On Fri, Sep 09, 2011 at 10:58:01AM +0200, Jens Axboe wrote:
+>>>  - handling of REQ_FUA / REQ_FLUSH requests is completely broken.
+>>>    There is a weird barrier flag to mtip_hw_submit_io which set the
+>>>    hwardware FUA bit if the FLUSH bit is set on a request.
+>>>    Please take a look at how this should be handled, the
+>>>    Documentation/block/writeback_cache_control.txt file is the canonical
+>>>    resource.  Implementing your driver at the make_request layer
+>>>    unfortunately means you will have to do all the hard work yourself.
+>>
+>> I noticed both of these flush/fua problems too and have fixed them up.
+> 
+> I sitll can't find anything doing that in your tree while all kinds of
+> other patches are in.  In fact I can't find a place that sends
+> ATA_CMD_FLUSH/ATA_CMD_FLUSH_EXT commands, not the required queue
+> draining for it.
+> 
+> And this stuff really makes me nervous - we get a driver for a new,
+> expensive high end device and there seems absolutely no concern for
+> data integrity, or testing of it.
 
-I haven't had time to try & reproduce locally yet (apologies - things
-have been coming up at me).
+I'm away from home, so changes have been coming in through the laptop.
+But don't worry about the driver, it's sort-of in a staging position at
+the moment. Before Micron has resolved the issues around queueing etc,
+it's not going to be merged into mainline.
 
-But a prime suspect would be a bad interaction with
-CONFIG_MEMORY_HOTPLUG, as Kamezama remarked in his reply to patch 4. I
-think this could be the most likely cause of what you're observing.
+> Or does the device not even have a volatile cache at all, and we could
+> just remove the FUA code?  In this case it should be clearly documented
+> in the driver.
+
+See reply from Micron folks, there's no write back cache currently.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Jens Axboe
+
