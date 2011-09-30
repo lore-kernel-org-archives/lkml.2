@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab1I3Jfc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:35:32 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:46782 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757634Ab1I3Jfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:35:30 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E858F5A.5000901@cam.ac.uk>
-Date: Fri, 30 Sep 2011 10:43:54 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
+	id S1757977Ab1I3Jge (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:36:34 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:32887 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754075Ab1I3Jgd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:36:33 -0400
 MIME-Version: 1.0
-To: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: IIO (+ more general?) Error condition handling (e.g. wire fell out
- errors)
-X-Enigmail-Version: 1.3
+In-Reply-To: <alpine.DEB.2.00.1109300227530.12185@utopia.booyaka.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-2-git-send-email-keshava_mgowda@ti.com>
+	<1316691479-1849-3-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com>
+	<CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com>
+	<alpine.DEB.2.00.1109240101120.22872@utopia.booyaka.com>
+	<CAP05o4+uwuFL8XNFG-wmUW8voYQ4kywyU9Qn-Mng7kv=TzZm9w@mail.gmail.com>
+	<alpine.DEB.2.00.1109260844360.13188@utopia.booyaka.com>
+	<CAP05o4KbVkXgnPc7JonrvURmCpQRgjMK2K_dmjQSKzQufQhjkA@mail.gmail.com>
+	<alpine.DEB.2.00.1109300227530.12185@utopia.booyaka.com>
+Date: Fri, 30 Sep 2011 15:06:31 +0530
+Message-ID: <CAP05o4JA_pBJUq4qQ6ase41nvznbfLRuvwh02fOhHKWNqie_NA@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, parthab@india.ti.com,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, tony@atomide.com, khilman@ti.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure how general this is, hence sent to LKML and IIO.
+On Fri, Sep 30, 2011 at 2:02 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> On Wed, 28 Sep 2011, Munegowda, Keshava wrote:
+>
+>> Thanks paul,
+>>
+>> But In USB Host case, there is a challenge!
+>>
+>> I need both usbhost_48m_fck and usbhost_120m_fck to be turned on when
+>> I invoke pm_runtime_get_sync ; so there are couple of options to do this
+>>
+>> 1. use clk_get with hard coded  usbhost_120m_fck name in  usbhs driver
+>>        enable this clock after invoking pm_runtime_get_sync
+>>
+>> 2. add an additional flag in hwmod ; so that pm_runtime_get_sync will enable
+>>            main clock as well as optional clocks
+>>
+>> please comment on these two approaches..
+>
+> Looks like you picked approach #1 which is fine with me.
+>
+> Here's what I don't understand about how this clock is used, though.
+> According to the 34xx TRM vZR Section 24.2.3.1.2 "High-Speed USB Host
+> Subsystem Clocks", this is only used to "clock EHCI controller internal
+> logic".  So if EHCI is not being used, it would seem to me that this clock
+> shouldn't be enabled?  But patch #5 seems to enable and disable it
+> unconditionally.  Am I missing something here?
 
-Some of the devices we have can produce interrupts indicating
-that everything has gone horribly wrong. Sometimes this is
-also embedded in the main data stream.
-
-The best examples are all the 'wonderful' ways the ad2s1210 resolver
-can go wrong.  None of these would be expected to be part of normal
-operating conditions.
-
-So, the question is - do we want these to go through our main
-events stream?  They are weird and wonderful and often don't
-align well with our existing event codes.  Loss of data error
-for example (a wire came out).  Others could possibly be made
-to fit but that would loose some of the semantics.  Loss of
-tracking could be a rate of change threshold event, but it
-really is meant to tell you the data could be garbage.
-
-So three options come to mind:
-
-1) Have a magic set of event codes for device class specific
-fault events and push through our main event path.  For reference of
-non IIO types - that is an anon file descriptor obtained by an
-ioctl on the devices chrdev.  Events are a simple timestamp / eventcode
-pair.
-
-2)  Add another anon file that you get via an ioctl as a separate
-event reporting channel. We then define a big list of error codes
-without aiming for any real structure.  Drivers would then need to
-document what they can throw out (preferably under sysfs?)
-
-3) Consider these out of band (from the out of band event data)
-and look at other options for reporting them.
-
-Is there anything general out there for reporting hardware failures
-that would be appropriate?  Sometime these conditions are the sort
-of thing that should cause a siren to go off.
-They might be sensor failure.... or they might mean you have
-a runaway train heading for a station... 
-
-(p.s. I hope no one is using the current driver for trains, though
-that might explain British trains...)
-
-Thanks,
-
-Jonathan
+OK. are you suggesting that this clock should be enabled/disabled; only
+if atleast one port is selected for ehci?
