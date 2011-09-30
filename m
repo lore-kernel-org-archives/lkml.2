@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab1I3XKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 19:10:09 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:1702 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab1I3XKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 19:10:03 -0400
-From: David Daney <david.daney@cavium.com>
-To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net
-Cc: David Daney <david.daney@cavium.com>
-Subject: [RFD PATCH] netdev/phy/of: Augment device tree bindings for PHYs to specify IEEE802.3-2005 Section 45 addressing.
-Date: Fri, 30 Sep 2011 16:09:42 -0700
-Message-Id: <1317424182-29252-1-git-send-email-david.daney@cavium.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 30 Sep 2011 23:10:00.0350 (UTC) FILETIME=[140C3BE0:01CC7FC6]
+	id S1758805Ab1I3XOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 19:14:51 -0400
+Received: from home.keithp.com ([63.227.221.253]:35246 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752721Ab1I3XOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 19:14:44 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 06/21] drm/i915: Unlock PCH_PP_CONTROL always
+In-Reply-To: <20110930170946.GF2859@phenom.ffwll.local>
+References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-7-git-send-email-keithp@keithp.com> <20110930170946.GF2859@phenom.ffwll.local>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 30 Sep 2011 16:14:40 -0700
+Message-ID: <yunty7t62sf.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many 10 gigabit Ethernet PHY devices are interfaced to the MDIO bus
-using a protocol called IEEE802.3-2005 Section 45.  Where as PHYS for
-1G, 100M and 10M usually use IEEE802.3-2005 Section 22.  These two
-protocols can be present on the same MDIO bus.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-If we look at the Linux PHY probing code in drivers/of/of_mdio.c and
-drivers/net/phy/phy_device.c, we have the situation where we need to
-read the PHY registers to get the PHY ID out so that we can use this
-to bind to a compatible driver.  However we can only read these
-registers if we know the proper MDIO bus protocol to use.
+On Fri, 30 Sep 2011 19:09:46 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
 
-My idea is as follows:
+> grep shows that we also write to PCH_PP_CONTROL in intel_lvds.c in the
+> dpms functions - any reasons these two writes are left out?
 
-o Add an optional property "mdio-clause-45" to the PHY's device tree
-  node to indicate that clause 45 addressing is used.
+Upon a bit of review:
 
-o When calling get_phy_id() we will set MII_ADDR_C45 in the address
-  if we know that clause 45 addressing is required for the PHY.
-  get_phy_id() will then use the proper bus protocol and register
-  numbers to read PHY ID based on MII_ADDR_C45.
+  The bspec makes it clear that this write protect key only needs to
+  be written for eDP on DPA -- it's a work-around for a bug where panel
+  power sequencing wouldn't work right.
 
-o of_mdiobus_register() will signal MII_ADDR_C45 for PHYs tagged with
-  "mdio-clause-45"
+  The LVDS code does disable write protect in the _init function, which
+  seems global enough, but misses the resume case. We shouldn't ever
+  need to set this field though; it write protects registers only
+  when the panel is running. We could presumably remove the
+  write protect disable entirely in the LVDS code.
 
-o Existing PHYs without "mdio-clause-45" are unaffected.
+So, I think the patch as written is correct.
 
-o If no specific driver for the probed PHY ID is present, we can still
-  communicate with the PHY and perhaps use a generic 10G phy driver.
-  If the MDIO bus protocol were just to depend on the "compatible"
-  property, then we could not use generic drivers for unknown PHY IDs
+=2D-=20
+keith.packard@intel.com
 
-Comments/other ideas welcome.
+--=-=-=
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- Documentation/devicetree/bindings/net/phy.txt |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-index bb8c742..69fd948 100644
---- a/Documentation/devicetree/bindings/net/phy.txt
-+++ b/Documentation/devicetree/bindings/net/phy.txt
-@@ -14,6 +14,11 @@ Required properties:
-  - linux,phandle :  phandle for this node; likely referenced by an
-    ethernet controller node.
- 
-+Optional properties:
-+
-+ - mdio-clause-45 : Optional.  If present, IEEE802.3-2005 Section 45
-+   protocol is used for register access (usually for 10G PHYs).
-+
- Example:
- 
- ethernet-phy@0 {
--- 
-1.7.2.3
-
+iD8DBQFOhk1hQp8BWwlsTdMRAo+XAJ9Rr7HxRaCkdshHbI0irxyiTSZ1GwCdGvED
+YPiHdl4nkRRgn/0Ue4hQy5g=
+=FdjR
+-----END PGP SIGNATURE-----
+--=-=-=--
