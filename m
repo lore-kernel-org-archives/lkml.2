@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab1I3RU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:20:57 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:32962 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab1I3RU4 convert rfc822-to-8bit (ORCPT
+	id S932134Ab1I3RZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:25:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51976 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab1I3RZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:20:56 -0400
+	Fri, 30 Sep 2011 13:25:13 -0400
+Date: Fri, 30 Sep 2011 19:25:47 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 09/21] drm/i915: Delay DP i2c initialization
+ until panel power timings are computed
+Message-ID: <20110930172547.GI2859@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+ <1317344993-24945-1-git-send-email-keithp@keithp.com>
+ <1317344993-24945-10-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
-References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
-	<20110930020754.GK12606@ponder.secretlab.ca>
-	<CACRpkdYyyqB6=5M8reqgwpMxXJz5ttXWyOav6K58dQ0CrxwCNA@mail.gmail.com>
-	<CACxGe6v19pZ0i-+ksYZbG2ZvGT30UkXEHTzpZMBTB4RNUV5bnA@mail.gmail.com>
-Date: Fri, 30 Sep 2011 19:20:56 +0200
-Message-ID: <CACRpkdZxxLdJQEkG--5Uf8DX+-00yOecb_NMpf0QSpP8u5hR4w@mail.gmail.com>
-Subject: Re: [PATCH] drivers: create a pin control subsystem v8
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Stijn Devriendt <highguy@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317344993-24945-10-git-send-email-keithp@keithp.com>
+X-Operating-System: Linux phenom 3.1.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 7:07 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On Thu, Sep 29, 2011 at 06:09:41PM -0700, Keith Packard wrote:
+> On eDP, DDC requires panel power, but turning that on uses the panel
+> power sequencing timing values fetch from the DPCD data.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+Can't really check more than what the patch does what it claims to do, so
+a weak:
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-> [Me]
->> That is not the reason it's there actually, what we have
->> discussed on the mailing list is getting sysfs entries for the same
->> reason gpiolib registers a class: handle pin control from userspace,
->>(...)
->
-> Sure, but you don't need the bus yet.  It can be added when it is
-> actually needed.  I'm not convinced that the sysfs approach is
-> actually the right interface here (I'm certainly not a fan of the gpio
-> sysfs i/f), and I'd rather not be putting in unneeded stuff until the
-> userspace i/f is hammered out.
-
-OK I buy that, I will post a v9 without bus...
-
-Thanks!
-Linus Walleij
+And a small question from the clueless: With your patch
+intel_dp_i2c_auch_ch checks whether panel or vdd is on, but I don't see
+where we turn that on and the drm dp i2c core seems to do a few
+transactions on setup time. Should we splatter a vdd_on/off around the
+i2c_init or is the panel guaranteed to have power at init time?
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
