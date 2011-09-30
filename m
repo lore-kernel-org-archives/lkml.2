@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab1I3IzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 04:55:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64959 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab1I3IzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 04:55:14 -0400
-Date: Fri, 30 Sep 2011 01:55:10 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-Message-ID: <20110930085510.GA23868@mtj.dyndns.org>
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
- <20110930034815.GF10425@mtj.dyndns.org>
- <1317355529.4588.45.camel@gandalf.stny.rr.com>
- <20110930041424.GH10425@mtj.dyndns.org>
- <1317371699.19415.6.camel@twins>
+	id S1758210Ab1I3I5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 04:57:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754038Ab1I3I5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 04:57:04 -0400
+Date: Fri, 30 Sep 2011 10:55:39 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across zones
+Message-ID: <20110930085539.GD30857@redhat.com>
+References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
+ <1317367044-475-4-git-send-email-jweiner@redhat.com>
+ <CAOJsxLFWfH5zDG8ui=yQyOcZY_nXhK6r+ziapLg9Zhmb3ibuWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1317371699.19415.6.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLFWfH5zDG8ui=yQyOcZY_nXhK6r+ziapLg9Zhmb3ibuWQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
-
-On Fri, Sep 30, 2011 at 10:34:59AM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-09-29 at 21:14 -0700, Tejun Heo wrote:
-> > It's rather complicated due to the way workqueues have been used.  You
-> > can't tell whether a work really needs to be pinned to one cpu for
-> > correctness until actual cpu hotplug time as wq users are expected to
-> > flush such work items from hotplug notifiers, so wq workers should be
-> > pinned on the respective cpus while the cpus are up but also need to
-> > step aside once unplug notifiers are finished. 
+On Fri, Sep 30, 2011 at 10:35:25AM +0300, Pekka Enberg wrote:
+> Hi Johannes!
 > 
-> That really is crack, and I've always said so.
+> On Fri, Sep 30, 2011 at 10:17 AM, Johannes Weiner <jweiner@redhat.com> wrote:
+> > But there is a flaw in that we have a zoned page allocator which does
+> > not care about the global state but rather the state of individual
+> > memory zones.  And right now there is nothing that prevents one zone
+> > from filling up with dirty pages while other zones are spared, which
+> > frequently leads to situations where kswapd, in order to restore the
+> > watermark of free pages, does indeed have to write pages from that
+> > zone's LRU list.  This can interfere so badly with IO from the flusher
+> > threads that major filesystems (btrfs, xfs, ext4) mostly ignore write
+> > requests from reclaim already, taking away the VM's only possibility
+> > to keep such a zone balanced, aside from hoping the flushers will soon
+> > clean pages from that zone.
 > 
-> How about we fix that utter workqueue unplug nightmare..
+> The obvious question is: how did you test this? Can you share the results?
 
-The patch is corrupt (=20/=3D's).  Can you please re-send?
+Meh, sorry about that, they were in the series introduction the last
+time and I forgot to copy them over.
 
-Thanks.
+I did single-threaded, linear writing to an USB stick as the effect is
+most pronounced with slow backing devices.
 
--- 
-tejun
+[ The write deferring on ext4 because of delalloc is so extreme that I
+  could trigger it even with simple linear writers on a mediocre
+  rotating disk, though.  I can not access the logfiles right now, but
+  the nr_vmscan_writes went practically away here as well and runtime
+  was unaffected with the patched kernel. ]
+
+			Test results
+
+15M DMA + 3246M DMA32 + 504M Normal = 3765M memory
+40% dirty ratio, 10% background ratio
+16G USB thumb drive
+10 runs of dd if=/dev/zero of=disk/zeroes bs=32k count=$((10 << 15))
+
+		seconds			nr_vmscan_write
+		        (stddev)	       min|     median|        max
+xfs
+vanilla:	 549.747( 3.492)	     0.000|      0.000|      0.000
+patched:	 550.996( 3.802)	     0.000|      0.000|      0.000
+
+fuse-ntfs
+vanilla:	1183.094(53.178)	 54349.000|  59341.000|  65163.000
+patched:	 558.049(17.914)	     0.000|      0.000|     43.000
+
+btrfs
+vanilla:	 573.679(14.015)	156657.000| 460178.000| 606926.000
+patched:	 563.365(11.368)	     0.000|      0.000|   1362.000
+
+ext4
+vanilla:	 561.197(15.782)	     0.000|2725438.000|4143837.000
+patched:	 568.806(17.496)	     0.000|      0.000|      0.000
