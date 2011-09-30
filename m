@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab1I3NuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 09:50:06 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:57734 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757119Ab1I3NuE (ORCPT
+	id S1758004Ab1I3Nu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 09:50:27 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5516 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757954Ab1I3NuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 09:50:04 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Sep 2011 09:50:04 EDT
-Date: Fri, 30 Sep 2011 16:42:45 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Please revert "debug: Make CONFIG_EXPERT select CONFIG_DEBUG_KERNEL
- to unhide debug options"
-Message-ID: <20110930134245.GB21474@localhost.pp.htv.fi>
+	Fri, 30 Sep 2011 09:50:22 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LSC8XU-01-E3O-02
+X-M-MSG: 
+Date: Fri, 30 Sep 2011 15:46:43 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Russell King'" <rmk+kernel@arm.linux.org.uk>,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        "younglak1004.kim@samsung.com" <younglak1004.kim@samsung.com>
+Subject: Re: [PATCH v2 5/5] iommu/exynos: Use bus_set_iommu instead of
+ register_iommu
+Message-ID: <20110930134643.GS2138@amd.com>
+References: <017001cc7f43$04a2db60$0de89220$%kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <017001cc7f43$04a2db60$0de89220$%kim@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was just wondering why I was asked about all the debug options when I 
-tried 3.1-rc8, and that was due to commit f505c553 (debug: Make 
-CONFIG_EXPERT select CONFIG_DEBUG_KERNEL to unhide debug options),
-the full commit is below.
+On Fri, Sep 30, 2011 at 03:31:49AM -0400, Kukjin Kim wrote:
+> From: KyongHo Cho <pullip.cho@samsung.com>
+> 
+> This replaces register_iommu() with bus_set_iommu() according to the
+> suggestion of Joerg Roedel.
 
-It is wrong, and the author does not seem to understand how Kconfig works.
+This should be part of patch 3 already when the bus_set_iommu() change
+is merged. Otherwise it breaks bisectability too.
 
-The commit message is:
+	Joerg
 
-    Several debugging options currently default to y, such as
-    CONFIG_DEBUG_BUGVERBOSE and CONFIG_DEBUG_RODATA.  Embedded users
-    might want to turn those options off to save space; however,
-    turning them off requires turning on CONFIG_DEBUG_KERNEL to
-    unhide them.  Since CONFIG_DEBUG_KERNEL exists specifically to
-    unhide debugging options, and CONFIG_EXPERT exists specifically
-    to unhide options potentially needed by experts and/or embedded
-    users, make CONFIG_EXPERT automatically imply
-    CONFIG_DEBUG_KERNEL.
+> 
+> Cc: Joerg Roedel <joerg.roedel@amd.com>
+> Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+> ---
+>  drivers/iommu/exynos_iommu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/iommu/exynos_iommu.c b/drivers/iommu/exynos_iommu.c
+> index d355a2e..e36f7b2 100644
+> --- a/drivers/iommu/exynos_iommu.c
+> +++ b/drivers/iommu/exynos_iommu.c
+> @@ -912,7 +912,7 @@ static int __init exynos_iommu_init(void)
+>  	if (!l2table_cachep)
+>  		return -ENOMEM;
+>  
+> -	register_iommu(&exynos_iommu_ops);
+> +	bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.1
+> 
+> 
 
+-- 
+AMD Operating System Research Center
 
-Let me point at the obvious fact that both CONFIG_DEBUG_BUGVERBOSE and 
-CONFIG_DEBUG_RODATA do depend on DEBUG_KERNEL, and are contrary to the 
-claim of the author of this patch never enabled with 
-CONFIG_DEBUG_KERNEL=n. [1]
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-Linus, please revert this commit.
-
-Thanks
-Adrian
-
-[1] Select abuse would be an exception, but that doesn't seem to be
-    the case for these options.
