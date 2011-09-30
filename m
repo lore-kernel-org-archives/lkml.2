@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572Ab1I3VXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:23:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38461 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab1I3VXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:23:08 -0400
-Date: Fri, 30 Sep 2011 14:23:04 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <htejun@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC] stop_machine: make stop_machine safe and efficient
- to call early
-Message-Id: <20110930142304.c455799e.akpm00@gmail.com>
-In-Reply-To: <1317400496.4588.54.camel@gandalf.stny.rr.com>
-References: <4E85EE1F.7050508@goop.org>
-	<1317400496.4588.54.camel@gandalf.stny.rr.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756796Ab1I3VaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:30:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37937 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab1I3VaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 17:30:05 -0400
+Message-ID: <4E8634D3.2080504@zytor.com>
+Date: Fri, 30 Sep 2011 14:29:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        James.Bottomley@HansenPartnership.com
+Subject: Re: [RFCv2][PATCH 1/4] break units out of string_get_size()
+References: <20110930203219.60D507CB@kernel>
+In-Reply-To: <20110930203219.60D507CB@kernel>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011 12:34:54 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Fri, 2011-09-30 at 09:28 -0700, Jeremy Fitzhardinge wrote:
-> > Make stop_machine() safe to call early in boot, before SMP has been
-> > set up, by simply calling the callback function directly if there's
-> > only one CPU online.
-> > 
-> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: H. Peter Anvin <hpa@linux.intel.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-> > index ba5070c..2df15ca 100644
-> > --- a/kernel/stop_machine.c
-> > +++ b/kernel/stop_machine.c
-> > @@ -485,6 +485,9 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
-> >  					    .num_threads = num_online_cpus(),
-> >  					    .active_cpus = cpus };
-> >  
-> > +	if (smdata.num_threads == 1)
-> > +		return (*fn)(data);
+On 09/30/2011 01:32 PM, Dave Hansen wrote:
+> I would like to use these (well one of them) arrays in
+> another function.  Might as well break both versions
+> out for consistency.
 > 
-> Doesn't interrupts need to be disabled here too? As stop machine
-> functions also guarantee that they will not be interrupted by
-> interrupts.
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
 > 
+>  linux-2.6.git-dave/lib/string_helpers.c |   25 +++++++++++++------------
+>  1 file changed, 13 insertions(+), 12 deletions(-)
+> 
+> diff -puN lib/string_helpers.c~string_get_size-pow2 lib/string_helpers.c
+>  
+> +const char *units_10[] = { "B", "kB", "MB", "GB", "TB", "PB",
+> +			   "EB", "ZB", "YB", NULL};
+> +const char *units_2[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB",
+> +			 "EiB", "ZiB", "YiB", NULL };
 
-If we wish to truly emulate the stop_machine_cpu_stop() callback
-environment then we should run hard_irq_disable() as well?
+These names are way too generic to be public symbols.
+
+Another thing worth thinking about is whether or not the -B suffix
+should be part of these arrays.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
