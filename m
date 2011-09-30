@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab1I3Hl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 03:41:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55063 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757135Ab1I3Hl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 03:41:28 -0400
-Date: Fri, 30 Sep 2011 09:41:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen before
- deferring
-Message-ID: <20110930074125.GB32134@tiehlicka.suse.cz>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
- <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
- <20110928104445.GB15062@tiehlicka.suse.cz>
- <20110929115105.GE21113@tiehlicka.suse.cz>
- <20110929120517.GA10587@redhat.com>
- <20110929130204.GG21113@tiehlicka.suse.cz>
- <20110929163724.GA23773@redhat.com>
- <20110929180021.GA27999@tiehlicka.suse.cz>
- <20110930015148.GD10425@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757131Ab1I3Hpa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 03:45:30 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38523 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756876Ab1I3Hp3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:4:1>);
+	Fri, 30 Sep 2011 03:45:29 -0400
+Message-Id: <4E858FB60200007800058A99@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 30 Sep 2011 08:45:26 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Dan Carpenter" <error27@gmail.com>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/9] xen/pciback: Return proper error
+	 code from sscanf.
+References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
+ <1317325971-21603-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1317325971-21603-3-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110930015148.GD10425@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-09-11 18:51:48, Tejun Heo wrote:
-> Hello,
+>>> On 29.09.11 at 21:52, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> . instead of just hardcoding it to be -EINVAL.
 > 
-> On Thu, Sep 29, 2011 at 08:00:21PM +0200, Michal Hocko wrote:
-> > > I meant, oom_kill can do this before thaw thaw_process(), afaics
-> > > this should fix the particular race you described (but not others).
-> > 
-> > This is what the follow up fix from David is doing. Check frozen in
-> > select_bad_process if the task is TIF_MEMDIE and thaw the process.
-> > 
-> > And it seems that the David's follow up fix is sufficient so let's leave
-> > refrigerator alone.
-> > Or am I still missing something?
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/xen-pciback/pci_stub.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> With pending freezer changes, allowing TIF_MEMDIE tasks to exit
-> freezer by modifying freezing() shouldn't be difficult, which should
-> be race-free and much simpler than diddling with thaw_task().  
+> diff --git a/drivers/xen/xen-pciback/pci_stub.c 
+> b/drivers/xen/xen-pciback/pci_stub.c
+> index 32d6891..d985b65 100644
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -868,7 +868,7 @@ static inline int str_to_slot(const char *buf, int 
+> *domain, int *bus,
+>  	if (err == 4)
+>  		return 0;
+>  	else if (err < 0)
+> -		return -EINVAL;
+> +		return err;
+>  
+>  	/* try again without domain */
+>  	*domain = 0;
 
-Will the rework help with the initial problem of unkillable OOM selected
-frozen tasks or it will just help with other races that might be present
-with the patch? In other words will this work deprecate the 2 patches
-sent earlier in this thread?
+This should then also be done for the final return from the function:
 
-> How urgent is this?  Can we wait for the next merge window?
+	return err < 0 ? err : -EINVAL;
 
-Yes, I think we can wait some more.
+But: Where did you read that {v,}sscanf() would return -E... values in
+hypothetical error cases? The C standard says it would return EOF
+when reaching the end of the input string before doing the first
+conversion; lib/vsprintf.c doesn't do so, and also doesn't say it might
+return -E... codes. Bottom line is that I think the code is more correct
+the way it is without this change.
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Jan
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
