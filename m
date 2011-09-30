@@ -1,199 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab1I3WeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 18:34:12 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:59196 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758452Ab1I3WeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 18:34:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	LQJPEtsTohxzncGNDJJ8hD4VEl9nseVwBjxTNw/yVgGsSp1bR+4uzHhZn33tL8Sw
-	vKCvFZ1LHkIlhXKZIh4MySjuyHKh+23moTWxkC7Xie1END3w5j9B87CvusfQA7Gj
-	nzjovVuRSGzynF90D0o54fH0QpO36QoBPyNO7QbjiFg=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.7
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Sep 2011 15:33:59 -0700
-Message-ID: <7vbou1oe20.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758661Ab1I3Wks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 18:40:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49584 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab1I3Wkk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 18:40:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 4B372332-EBB4-11E0-8F93-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+In-Reply-To: <CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
+References: <20110928220225.GA27128@kroah.com>
+	<20110928220135.776796691@clark.kroah.org>
+	<CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
+Date: Fri, 30 Sep 2011 17:40:38 -0500
+Message-ID: <CAMaF-rMrwZHzoZyfXCDem_68m3=mSpq=LAQC006aZ471wWQN9w@mail.gmail.com>
+Subject: Re: [099/244] PCI: Set PCI-E Max Payload Size on fabric
+From: Jon Mason <mason@myri.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git 1.7.7 is available.
+On Fri, Sep 30, 2011 at 5:33 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Sep 28, 2011 at 4:01 PM, Greg KH <gregkh@suse.de> wrote:
+>> 3.0-stable review patch.  If anyone has any objections, please let us know.
+>
+> I object to this :)  I think the following patches should be omitted
+> from -stable:
+>
+> [099/244] PCI: Set PCI-E Max Payload Size on fabric
+> [100/244] PCI: export pcie_bus_configure_settings symbol
+> [101/244] PCI: Remove MRRS modification from MPS setting code
+> [212/244] pci: Dont crash when reading mpss from root complex
+>
+> I've heard rumors that these patches are required to make 3.0 boot on
+> some machines, but I don't really believe it, and I haven't seen the
+> problem reports myself.
 
-The release tarballs are found at:
+Would it be acceptable to disable MPS modification by default (as you
+have been suggesting for 3.1) and have the machines who are having the
+boot issues pass a boot parm to enable the MPS modification?
 
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-bbf85bd767ca6b7e9caa1489bb4ba7ec64e0ab35  git-1.7.7.tar.gz
-33183db94fd25e001bd8a9fd6696b992f61e28d8  git-htmldocs-1.7.7.tar.gz
-75d3cceb46f7a46eeb825033dff76af5eb5ea3d9  git-manpages-1.7.7.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.7
-tag and the master branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-
-The release tag and the tarballs can be verified with my GPG key if
-anybody is so inclined. To get my public key:
-
-  $ git fetch git://repo.or.cz/alt-git.git refs/tags/junio-gpg-pub
-  $ git rev-parse FETCH_HEAD
-  680865b90b18efbc9402ea979adf0302c6dfe72e
-  $ git cat-file blob FETCH_HEAD | gpg --import
-  
-and then make sure that you got my key by checking the output from
-"gpg --fingerprint", which should contain these lines:
-
-  pub   1024D/F3119B9A 2004-01-28
-        Key fingerprint = 3565 2A26 2040 E066 C9A7  4A7D C0C6 D9A4 F311 9B9A
-  uid                  Junio C Hamano <gitster@pobox.com>
-
-
-Git v1.7.7 Release Notes
-========================
-
-Updates since v1.7.6
---------------------
-
- * The scripting part of the codebase is getting prepared for i18n/l10n.
-
- * Interix, Cygwin and Minix ports got updated.
-
- * Various updates to git-p4 (in contrib/), fast-import, and git-svn.
-
- * Gitweb learned to read from /etc/gitweb-common.conf when it exists,
-   before reading from gitweb_config.perl or from /etc/gitweb.conf
-   (this last one is read only when per-repository gitweb_config.perl
-   does not exist).
-
- * Various codepaths that invoked zlib deflate/inflate assumed that these
-   functions can compress or uncompress more than 4GB data in one call on
-   platforms with 64-bit long, which has been corrected.
-
- * Git now recognizes loose objects written by other implementations that
-   use a non-standard window size for zlib deflation (e.g. Agit running on
-   Android with 4kb window). We used to reject anything that was not
-   deflated with 32kb window.
-
- * Interaction between the use of pager and coloring of the output has
-   been improved, especially when a command that is not built-in was
-   involved.
-
- * "git am" learned to pass the "--exclude=<path>" option through to underlying
-   "git apply".
-
- * You can now feed many empty lines before feeding an mbox file to
-   "git am".
-
- * "git archive" can be told to pass the output to gzip compression and
-   produce "archive.tar.gz".
-
- * "git bisect" can be used in a bare repository (provided that the test
-   you perform per each iteration does not need a working tree, of
-   course).
-
- * The length of abbreviated object names in "git branch -v" output
-   now honors the core.abbrev configuration variable.
-
- * "git check-attr" can take relative paths from the command line.
-
- * "git check-attr" learned an "--all" option to list the attributes for a
-   given path.
-
- * "git checkout" (both the code to update the files upon checking out a
-   different branch and the code to checkout a specific set of files) learned
-   to stream the data from object store when possible, without having to
-   read the entire contents of a file into memory first. An earlier round
-   of this code that is not in any released version had a large leak but
-   now it has been plugged.
-
- * "git clone" can now take a "--config key=value" option to set the
-   repository configuration options that affect the initial checkout.
-
- * "git commit <paths>..." now lets you feed relative pathspecs that
-   refer to outside your current subdirectory.
-
- * "git diff --stat" learned a --stat-count option to limit the output of
-   a diffstat report.
-
- * "git diff" learned a "--histogram" option to use a different diff
-   generation machinery stolen from jgit, which might give better
-   performance.
-
- * "git diff" had a weird worst case behaviour that can be triggered
-   when comparing files with potentially many places that could match.
-
- * "git fetch", "git push" and friends no longer show connection
-   errors for addresses that couldn't be connected to when at least one
-   address succeeds (this is arguably a regression but a deliberate
-   one).
-
- * "git grep" learned "--break" and "--heading" options, to let users mimic
-   the output format of "ack".
-
- * "git grep" learned a "-W" option that shows wider context using the same
-   logic used by "git diff" to determine the hunk header.
-
- * Invoking the low-level "git http-fetch" without "-a" option (which
-   git itself never did---normal users should not have to worry about
-   this) is now deprecated.
-
- * The "--decorate" option to "git log" and its family learned to
-   highlight grafted and replaced commits.
-
- * "git rebase master topci" no longer spews usage hints after giving
-   the "fatal: no such branch: topci" error message.
-
- * The recursive merge strategy implementation got a fairly large
-   fix for many corner cases that may rarely happen in real world
-   projects (it has been verified that none of the 16000+ merges in
-   the Linux kernel history back to v2.6.12 is affected with the
-   corner case bugs this update fixes).
-
- * "git stash" learned an "--include-untracked option".
-
- * "git submodule update" used to stop at the first error updating a
-   submodule; it now goes on to update other submodules that can be
-   updated, and reports the ones with errors at the end.
-
- * "git push" can be told with the "--recurse-submodules=check" option to
-   refuse pushing of the supermodule, if any of its submodules'
-   commits hasn't been pushed out to their remotes.
-
- * "git upload-pack" and "git receive-pack" learned to pretend that only a
-   subset of the refs exist in a repository. This may help a site to
-   put many tiny repositories into one repository (this would not be
-   useful for larger repositories as repacking would be problematic).
-
- * "git verify-pack" has been rewritten to use the "index-pack" machinery
-   that is more efficient in reading objects in packfiles.
-
- * test scripts for gitweb tried to run even when CGI-related perl modules
-   are not installed; they now exit early when the latter are unavailable.
-
-Also contains various documentation updates and minor miscellaneous
-changes.
-
-
-Fixes since v1.7.6
-------------------
-
-Unless otherwise noted, all fixes in the 1.7.6.X maintenance track are
-included in this release.
-
- * "git branch -m" and "git checkout -b" incorrectly allowed the tip
-   of the branch that is currently checked out updated.
+> Also, these patches introduce an open regression (Avi's e1000e
+> problem).  Jon has mooted a patch that we hope will fix the
+> regression, but I'm still not confident that this is all safe for 3.1,
+> much less 3.0-stable.
+>
+>> ------------------
+>>
+>> From: Jon Mason <mason@myri.com>
+>>
+>> commit b03e7495a862b028294f59fc87286d6d78ee7fa1 upstream.
+>>
+>> On a given PCI-E fabric, each device, bridge, and root port can have a
+>> different PCI-E maximum payload size.  There is a sizable performance
+>> boost for having the largest possible maximum payload size on each PCI-E
+>> device.  However, if improperly configured, fatal bus errors can occur.
+>> Thus, it is important to ensure that PCI-E payloads sends by a device
+>> are never larger than the MPS setting of all devices on the way to the
+>> destination.
+>>
+>> This can be achieved two ways:
+>>
+>> - A conservative approach is to use the smallest common denominator of
+>>  the entire tree below a root complex for every device on that fabric.
+>>
+>> This means for example that having a 128 bytes MPS USB controller on one
+>> leg of a switch will dramatically reduce performances of a video card or
+>> 10GE adapter on another leg of that same switch.
+>>
+>> It also means that any hierarchy supporting hotplug slots (including
+>> expresscard or thunderbolt I suppose, dbl check that) will have to be
+>> entirely clamped to 128 bytes since we cannot predict what will be
+>> plugged into those slots, and we cannot change the MPS on a "live"
+>> system.
+>>
+>> - A more optimal way is possible, if it falls within a couple of
+>>  constraints:
+>> * The top-level host bridge will never generate packets larger than the
+>>  smallest TLP (or if it can be controlled independently from its MPS at
+>>  least)
+>> * The device will never generate packets larger than MPS (which can be
+>>  configured via MRRS)
+>> * No support of direct PCI-E <-> PCI-E transfers between devices without
+>>  some additional code to specifically deal with that case
+>>
+>> Then we can use an approach that basically ignores downstream requests
+>> and focuses exclusively on upstream requests. In that case, all we need
+>> to care about is that a device MPS is no larger than its parent MPS,
+>> which allows us to keep all switches/bridges to the max MPS supported by
+>> their parent and eventually the PHB.
+>>
+>> In this case, your USB controller would no longer "starve" your 10GE
+>> Ethernet and your hotplug slots won't affect your global MPS.
+>> Additionally, the hotplugged devices themselves can be configured to a
+>> larger MPS up to the value configured in the hotplug bridge.
+>>
+>> To choose between the two available options, two PCI kernel boot args
+>> have been added to the PCI calls.  "pcie_bus_safe" will provide the
+>> former behavior, while "pcie_bus_perf" will perform the latter behavior.
+>> By default, the latter behavior is used.
+>>
+>> NOTE: due to the location of the enablement, each arch will need to add
+>> calls to this function.  This patch only enables x86.
+>>
+>> This patch includes a number of changes recommended by Benjamin
+>> Herrenschmidt.
+>>
+>> Tested-by: Jordan_Hargrave@dell.com
+>> Signed-off-by: Jon Mason <mason@myri.com>
+>> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>>
+>> ---
+>>  arch/x86/pci/acpi.c              |    9 ++
+>>  drivers/pci/hotplug/pcihp_slot.c |   45 ------------
+>>  drivers/pci/pci.c                |   67 ++++++++++++++++++
+>>  drivers/pci/probe.c              |  145 +++++++++++++++++++++++++++++++++++++++
+>>  include/linux/pci.h              |   15 +++-
+>>  5 files changed, 236 insertions(+), 45 deletions(-)
+>>
+>> --- a/arch/x86/pci/acpi.c
+>> +++ b/arch/x86/pci/acpi.c
+>> @@ -361,6 +361,15 @@ struct pci_bus * __devinit pci_acpi_scan
+>>                }
+>>        }
+>>
+>> +       /* After the PCI-E bus has been walked and all devices discovered,
+>> +        * configure any settings of the fabric that might be necessary.
+>> +        */
+>> +       if (bus) {
+>> +               struct pci_bus *child;
+>> +               list_for_each_entry(child, &bus->children, node)
+>> +                       pcie_bus_configure_settings(child, child->self->pcie_mpss);
+>> +       }
+>> +
+>>        if (!bus)
+>>                kfree(sd);
+>>
+>> --- a/drivers/pci/hotplug/pcihp_slot.c
+>> +++ b/drivers/pci/hotplug/pcihp_slot.c
+>> @@ -158,47 +158,6 @@ static void program_hpp_type2(struct pci
+>>         */
+>>  }
+>>
+>> -/* Program PCIE MaxPayload setting on device: ensure parent maxpayload <= device */
+>> -static int pci_set_payload(struct pci_dev *dev)
+>> -{
+>> -       int pos, ppos;
+>> -       u16 pctl, psz;
+>> -       u16 dctl, dsz, dcap, dmax;
+>> -       struct pci_dev *parent;
+>> -
+>> -       parent = dev->bus->self;
+>> -       pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
+>> -       if (!pos)
+>> -               return 0;
+>> -
+>> -       /* Read Device MaxPayload capability and setting */
+>> -       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &dctl);
+>> -       pci_read_config_word(dev, pos + PCI_EXP_DEVCAP, &dcap);
+>> -       dsz = (dctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5;
+>> -       dmax = (dcap & PCI_EXP_DEVCAP_PAYLOAD);
+>> -
+>> -       /* Read Parent MaxPayload setting */
+>> -       ppos = pci_find_capability(parent, PCI_CAP_ID_EXP);
+>> -       if (!ppos)
+>> -               return 0;
+>> -       pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
+>> -       psz = (pctl &  PCI_EXP_DEVCTL_PAYLOAD) >> 5;
+>> -
+>> -       /* If parent payload > device max payload -> error
+>> -        * If parent payload > device payload -> set speed
+>> -        * If parent payload <= device payload -> do nothing
+>> -        */
+>> -       if (psz > dmax)
+>> -               return -1;
+>> -       else if (psz > dsz) {
+>> -               dev_info(&dev->dev, "Setting MaxPayload to %d\n", 128 << psz);
+>> -               pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
+>> -                                     (dctl & ~PCI_EXP_DEVCTL_PAYLOAD) +
+>> -                                     (psz << 5));
+>> -       }
+>> -       return 0;
+>> -}
+>> -
+>>  void pci_configure_slot(struct pci_dev *dev)
+>>  {
+>>        struct pci_dev *cdev;
+>> @@ -210,9 +169,7 @@ void pci_configure_slot(struct pci_dev *
+>>                        (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
+>>                return;
+>>
+>> -       ret = pci_set_payload(dev);
+>> -       if (ret)
+>> -               dev_warn(&dev->dev, "could not set device max payload\n");
+>> +       pcie_bus_configure_settings(dev->bus, dev->bus->self->pcie_mpss);
+>>
+>>        memset(&hpp, 0, sizeof(hpp));
+>>        ret = pci_get_hp_params(dev, &hpp);
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -77,6 +77,8 @@ unsigned long pci_cardbus_mem_size = DEF
+>>  unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+>>  unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
+>>
+>> +enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
+>> +
+>>  /*
+>>  * The default CLS is used if arch didn't set CLS explicitly and not
+>>  * all pci devices agree on the same value.  Arch can override either
+>> @@ -3223,6 +3225,67 @@ out:
+>>  EXPORT_SYMBOL(pcie_set_readrq);
+>>
+>>  /**
+>> + * pcie_get_mps - get PCI Express maximum payload size
+>> + * @dev: PCI device to query
+>> + *
+>> + * Returns maximum payload size in bytes
+>> + *    or appropriate error value.
+>> + */
+>> +int pcie_get_mps(struct pci_dev *dev)
+>> +{
+>> +       int ret, cap;
+>> +       u16 ctl;
+>> +
+>> +       cap = pci_pcie_cap(dev);
+>> +       if (!cap)
+>> +               return -EINVAL;
+>> +
+>> +       ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
+>> +       if (!ret)
+>> +               ret = 128 << ((ctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +/**
+>> + * pcie_set_mps - set PCI Express maximum payload size
+>> + * @dev: PCI device to query
+>> + * @rq: maximum payload size in bytes
+>> + *    valid values are 128, 256, 512, 1024, 2048, 4096
+>> + *
+>> + * If possible sets maximum payload size
+>> + */
+>> +int pcie_set_mps(struct pci_dev *dev, int mps)
+>> +{
+>> +       int cap, err = -EINVAL;
+>> +       u16 ctl, v;
+>> +
+>> +       if (mps < 128 || mps > 4096 || !is_power_of_2(mps))
+>> +               goto out;
+>> +
+>> +       v = ffs(mps) - 8;
+>> +       if (v > dev->pcie_mpss)
+>> +               goto out;
+>> +       v <<= 5;
+>> +
+>> +       cap = pci_pcie_cap(dev);
+>> +       if (!cap)
+>> +               goto out;
+>> +
+>> +       err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
+>> +       if (err)
+>> +               goto out;
+>> +
+>> +       if ((ctl & PCI_EXP_DEVCTL_PAYLOAD) != v) {
+>> +               ctl &= ~PCI_EXP_DEVCTL_PAYLOAD;
+>> +               ctl |= v;
+>> +               err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
+>> +       }
+>> +out:
+>> +       return err;
+>> +}
+>> +
+>> +/**
+>>  * pci_select_bars - Make BAR mask from the type of resource
+>>  * @dev: the PCI device for which BAR mask is made
+>>  * @flags: resource type mask to be selected
+>> @@ -3505,6 +3568,10 @@ static int __init pci_setup(char *str)
+>>                                pci_hotplug_io_size = memparse(str + 9, &str);
+>>                        } else if (!strncmp(str, "hpmemsize=", 10)) {
+>>                                pci_hotplug_mem_size = memparse(str + 10, &str);
+>> +                       } else if (!strncmp(str, "pcie_bus_safe", 13)) {
+>> +                               pcie_bus_config = PCIE_BUS_SAFE;
+>> +                       } else if (!strncmp(str, "pcie_bus_perf", 13)) {
+>> +                               pcie_bus_config = PCIE_BUS_PERFORMANCE;
+>>                        } else {
+>>                                printk(KERN_ERR "PCI: Unknown option `%s'\n",
+>>                                                str);
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -860,6 +860,8 @@ void set_pcie_port_type(struct pci_dev *
+>>        pdev->pcie_cap = pos;
+>>        pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+>>        pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
+>> +       pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
+>> +       pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
+>>  }
+>>
+>>  void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+>> @@ -1327,6 +1329,149 @@ int pci_scan_slot(struct pci_bus *bus, i
+>>        return nr;
+>>  }
+>>
+>> +static int pcie_find_smpss(struct pci_dev *dev, void *data)
+>> +{
+>> +       u8 *smpss = data;
+>> +
+>> +       if (!pci_is_pcie(dev))
+>> +               return 0;
+>> +
+>> +       /* For PCIE hotplug enabled slots not connected directly to a
+>> +        * PCI-E root port, there can be problems when hotplugging
+>> +        * devices.  This is due to the possibility of hotplugging a
+>> +        * device into the fabric with a smaller MPS that the devices
+>> +        * currently running have configured.  Modifying the MPS on the
+>> +        * running devices could cause a fatal bus error due to an
+>> +        * incoming frame being larger than the newly configured MPS.
+>> +        * To work around this, the MPS for the entire fabric must be
+>> +        * set to the minimum size.  Any devices hotplugged into this
+>> +        * fabric will have the minimum MPS set.  If the PCI hotplug
+>> +        * slot is directly connected to the root port and there are not
+>> +        * other devices on the fabric (which seems to be the most
+>> +        * common case), then this is not an issue and MPS discovery
+>> +        * will occur as normal.
+>> +        */
+>> +       if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+>> +           dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
+>> +               *smpss = 0;
+>> +
+>> +       if (*smpss > dev->pcie_mpss)
+>> +               *smpss = dev->pcie_mpss;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static void pcie_write_mps(struct pci_dev *dev, int mps)
+>> +{
+>> +       int rc, dev_mpss;
+>> +
+>> +       dev_mpss = 128 << dev->pcie_mpss;
+>> +
+>> +       if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
+>> +               if (dev->bus->self) {
+>> +                       dev_dbg(&dev->bus->dev, "Bus MPSS %d\n",
+>> +                               128 << dev->bus->self->pcie_mpss);
+>> +
+>> +                       /* For "MPS Force Max", the assumption is made that
+>> +                        * downstream communication will never be larger than
+>> +                        * the MRRS.  So, the MPS only needs to be configured
+>> +                        * for the upstream communication.  This being the case,
+>> +                        * walk from the top down and set the MPS of the child
+>> +                        * to that of the parent bus.
+>> +                        */
+>> +                       mps = 128 << dev->bus->self->pcie_mpss;
+>> +                       if (mps > dev_mpss)
+>> +                               dev_warn(&dev->dev, "MPS configured higher than"
+>> +                                        " maximum supported by the device.  If"
+>> +                                        " a bus issue occurs, try running with"
+>> +                                        " pci=pcie_bus_safe.\n");
+>> +               }
+>> +
+>> +               dev->pcie_mpss = ffs(mps) - 8;
+>> +       }
+>> +
+>> +       rc = pcie_set_mps(dev, mps);
+>> +       if (rc)
+>> +               dev_err(&dev->dev, "Failed attempting to set the MPS\n");
+>> +}
+>> +
+>> +static void pcie_write_mrrs(struct pci_dev *dev, int mps)
+>> +{
+>> +       int rc, mrrs;
+>> +
+>> +       if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
+>> +               int dev_mpss = 128 << dev->pcie_mpss;
+>> +
+>> +               /* For Max performance, the MRRS must be set to the largest
+>> +                * supported value.  However, it cannot be configured larger
+>> +                * than the MPS the device or the bus can support.  This assumes
+>> +                * that the largest MRRS available on the device cannot be
+>> +                * smaller than the device MPSS.
+>> +                */
+>> +               mrrs = mps < dev_mpss ? mps : dev_mpss;
+>> +       } else
+>> +               /* In the "safe" case, configure the MRRS for fairness on the
+>> +                * bus by making all devices have the same size
+>> +                */
+>> +               mrrs = mps;
+>> +
+>> +
+>> +       /* MRRS is a R/W register.  Invalid values can be written, but a
+>> +        * subsiquent read will verify if the value is acceptable or not.
+>> +        * If the MRRS value provided is not acceptable (e.g., too large),
+>> +        * shrink the value until it is acceptable to the HW.
+>> +        */
+>> +       while (mrrs != pcie_get_readrq(dev) && mrrs >= 128) {
+>> +               rc = pcie_set_readrq(dev, mrrs);
+>> +               if (rc)
+>> +                       dev_err(&dev->dev, "Failed attempting to set the MRRS\n");
+>> +
+>> +               mrrs /= 2;
+>> +       }
+>> +}
+>> +
+>> +static int pcie_bus_configure_set(struct pci_dev *dev, void *data)
+>> +{
+>> +       int mps = 128 << *(u8 *)data;
+>> +
+>> +       if (!pci_is_pcie(dev))
+>> +               return 0;
+>> +
+>> +       dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
+>> +                pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
+>> +
+>> +       pcie_write_mps(dev, mps);
+>> +       pcie_write_mrrs(dev, mps);
+>> +
+>> +       dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
+>> +                pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +/* pcie_bus_configure_mps requires that pci_walk_bus work in a top-down,
+>> + * parents then children fashion.  If this changes, then this code will not
+>> + * work as designed.
+>> + */
+>> +void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
+>> +{
+>> +       u8 smpss = mpss;
+>> +
+>> +       if (!bus->self)
+>> +               return;
+>> +
+>> +       if (!pci_is_pcie(bus->self))
+>> +               return;
+>> +
+>> +       if (pcie_bus_config == PCIE_BUS_SAFE) {
+>> +               pcie_find_smpss(bus->self, &smpss);
+>> +               pci_walk_bus(bus, pcie_find_smpss, &smpss);
+>> +       }
+>> +
+>> +       pcie_bus_configure_set(bus->self, &smpss);
+>> +       pci_walk_bus(bus, pcie_bus_configure_set, &smpss);
+>> +}
+>> +
+>>  unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+>>  {
+>>        unsigned int devfn, pass, max = bus->secondary;
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -251,7 +251,8 @@ struct pci_dev {
+>>        u8              revision;       /* PCI revision, low byte of class word */
+>>        u8              hdr_type;       /* PCI header type (`multi' flag masked out) */
+>>        u8              pcie_cap;       /* PCI-E capability offset */
+>> -       u8              pcie_type;      /* PCI-E device/port type */
+>> +       u8              pcie_type:4;    /* PCI-E device/port type */
+>> +       u8              pcie_mpss:3;    /* PCI-E Max Payload Size Supported */
+>>        u8              rom_base_reg;   /* which config register controls the ROM */
+>>        u8              pin;            /* which interrupt pin this device uses */
+>>
+>> @@ -617,6 +618,16 @@ struct pci_driver {
+>>  /* these external functions are only available when PCI support is enabled */
+>>  #ifdef CONFIG_PCI
+>>
+>> +extern void pcie_bus_configure_settings(struct pci_bus *bus, u8 smpss);
+>> +
+>> +enum pcie_bus_config_types {
+>> +       PCIE_BUS_PERFORMANCE,
+>> +       PCIE_BUS_SAFE,
+>> +       PCIE_BUS_PEER2PEER,
+>> +};
+>> +
+>> +extern enum pcie_bus_config_types pcie_bus_config;
+>> +
+>>  extern struct bus_type pci_bus_type;
+>>
+>>  /* Do NOT directly access these two variables, unless you are arch specific pci
+>> @@ -796,6 +807,8 @@ int pcix_get_mmrbc(struct pci_dev *dev);
+>>  int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc);
+>>  int pcie_get_readrq(struct pci_dev *dev);
+>>  int pcie_set_readrq(struct pci_dev *dev, int rq);
+>> +int pcie_get_mps(struct pci_dev *dev);
+>> +int pcie_set_mps(struct pci_dev *dev, int mps);
+>>  int __pci_reset_function(struct pci_dev *dev);
+>>  int pci_reset_function(struct pci_dev *dev);
+>>  void pci_update_resource(struct pci_dev *dev, int resno);
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
