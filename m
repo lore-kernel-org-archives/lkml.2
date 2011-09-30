@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab1I3A6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 20:58:12 -0400
-Received: from peace.netnation.com ([204.174.223.2]:37888 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab1I3A6J (ORCPT
+	id S1755825Ab1I3A62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 20:58:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46017 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab1I3A61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 20:58:09 -0400
-Date: Thu, 29 Sep 2011 17:58:07 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS client growing system CPU
-Message-ID: <20110930005807.GE7959@hostway.ca>
-References: <20101208212505.GA18192@hostway.ca> <1291845189.3067.31.camel@heimdal.trondhjem.org> <20110927003931.GB12106@hostway.ca> <1317123773.24383.1.camel@lade.trondhjem.org> <20110927164937.GA2690@hostway.ca> <1317143055.10143.2.camel@lade.trondhjem.org> <20110928195835.GA15368@hostway.ca>
+	Thu, 29 Sep 2011 20:58:27 -0400
+Message-ID: <4E85142C.101@gmail.com>
+Date: Thu, 29 Sep 2011 18:58:20 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110928195835.GA15368@hostway.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        Stephane Eranian <eranian@google.com>, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+References: <20110929230613.GA20083@ghostprotocols.net> <4E850056.1090101@gmail.com> <20110930004018.GA9369@ghostprotocols.net>
+In-Reply-To: <20110930004018.GA9369@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 12:58:35PM -0700, Simon Kirby wrote:
 
-> On Tue, Sep 27, 2011 at 01:04:15PM -0400, Trond Myklebust wrote:
+
+On 09/29/2011 06:40 PM, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Sep 29, 2011 at 05:33:42PM -0600, David Ahern escreveu:
+>> On 09/29/2011 05:06 PM, Arnaldo Carvalho de Melo wrote:
+>>>> >From what I can see sample_type has to be the same for all samples:
+>>>> https://lkml.org/lkml/2011/8/15/6
 > 
-> > On Tue, 2011-09-27 at 09:49 -0700, Simon Kirby wrote: 
-> > > On Tue, Sep 27, 2011 at 07:42:53AM -0400, Trond Myklebust wrote:
-> > > 
-> > > > On Mon, 2011-09-26 at 17:39 -0700, Simon Kirby wrote: 
-> > > > > Hello!
-> > > > > 
-> > > > > Following up on "System CPU increasing on idle 2.6.36", this issue is
-> > > > > still happening even on 3.1-rc7. So, since it has been 9 months since I
-> > > > > reported this, I figured I'd bisect this issue. The first bisection ended
-> > > > > in an IPMI regression that looked like the problem, so I had to start
-> > > > > again. Eventually, I got commit b80c3cb628f0ebc241b02e38dd028969fb8026a2
-> > > > > which made it into 2.6.34-rc4.
-> > > > > 
-> > > > > With this commit, system CPU keeps rising as the log crunch box runs
-> > > > > (reads log files via NFS and spews out HTML files into NFS-mounted report
-> > > > > directories). When it finishes the daily run, the system time stays
-> > > > > non-zero and continues to be higher and higher after each run, until the
-> > > > > box never completes a run within a day due to all of the wasted cycles.
-> > > > 
-> > > > So reverting that commit fixes the problem on 3.1-rc7?
-> > > > 
-> > > > As far as I can see, doing so should be safe thanks to commit
-> > > > 5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags
-> > > > in two steps) which fixes the original problem at the VFS level.
-> > > 
-> > > Hmm, I went to git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2, but
-> > > for some reason git left the nfs_mark_request_dirty(req); line in
-> > > nfs_writepage_setup(), even though the original commit had that. Is that
-> > > OK or should I remove that as well?
-> > > 
-> > > Once that is sorted, I'll build it and let it run for a day and let you
-> > > know. Thanks!
-> > 
-> > It shouldn't make any difference whether you leave it or remove it. The
-> > resulting second call to __set_page_dirty_nobuffers() will always be a
-> > no-op since the page will already be marked as dirty.
+>>> We could add a PERF_SAMPLE_ID2 that if present would be guaranteed
+>>> to be the last, or we can, as PeterZ prefers/suggests, to use one
+>>> mmap per sample id, then we know that if we're getting it on that
+>>> mmap, it has that sample_type.
 > 
-> Ok, confirmed, git revert b80c3cb628f0ebc241b02e38dd028969fb8026a2 on
-> 3.1-rc7 fixes the problem for me. Does this make sense, then, or do we
-> need further investigation and/or testing?
+>>> For record that means we need to dump each per-sample_id mmap onto a
+>>> separate file, i.e. use a directory, etc.
+>  
+>> That seems like a major re-write of perf. Why not keep the existing
+>> restriction and have users who want different sample_types run
+>> multiple perf commands?
+>  
+>> What's to be gained by refactoring the code to support multiple
+>> sample_types in a single command invocation?
+> 
+> This comes from time to time:
+> 
+> http://us.generation-nt.com/answer/bug-perf-event-sampling-buffer-format-cannot-handle-multi-event-sampling-help-202985832.html
+> 
+> The whole point of sample_type is to ask for just what is needed for
+> some specific event so that we reduce the per sample footprint.
+> 
+> So we allow for multiple types of events to be on the same stream, but
+> not for them to have just what each need, its a limitation, one that we
+> can solve. I see no reason not to solve it :-)
+> 
+> The evsel/evlist classes were designed to abstract away such details,
+> i.e. perf_evlist__mmap should notice different sample_types and sort
+> this out transparently.
+> 
+> And then perf_evlist__mmap_read(evlist, idx), evlist->nr_mmaps should be
+> enough to process the events :-)
+> 
+> - Arnaldo
 
-Just to clear up what I said before, it seems that on plain 3.1-rc8, I am
-actually able to clear the endless CPU use in nfs_writepages by just
-running "sync". I am not sure when this changed, but I'm pretty sure that
-some versions between 2.6.34 and 3.1-rc used to not be affected by just
-"sync" unless it was paired with drop_caches. Maybe this makes the
-problem more obvious...
+An ABI change fixes the root cause of the current problem -- put an id
+in perf_event_header. The id maps to the evsel which has the
+sample_type. Right now you have to parse the sample to get the id to get
+the evsel.
 
-Simon-
+With that change I have a patch that (mostly?) covers the rest of perf
+userspace to handle sample_type per evsel.
+
+David
