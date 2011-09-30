@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1I3RAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:00:10 -0400
-Received: from claw.goop.org ([74.207.240.146]:45667 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752927Ab1I3RAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:00:09 -0400
-Message-ID: <4E85F596.4050704@goop.org>
-Date: Fri, 30 Sep 2011 10:00:06 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754701Ab1I3RCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:02:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41407 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab1I3RCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 13:02:07 -0400
+Date: Fri, 30 Sep 2011 19:02:42 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 05/21] drm/i915: Check eDP power when doing
+ aux channel communications
+Message-ID: <20110930170242.GE2859@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+ <1317344993-24945-1-git-send-email-keithp@keithp.com>
+ <1317344993-24945-6-git-send-email-keithp@keithp.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] stop_machine: make stop_machine safe and efficient
- to call early
-References: <4E85EE1F.7050508@goop.org> <1317400496.4588.54.camel@gandalf.stny.rr.com>
-In-Reply-To: <1317400496.4588.54.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317344993-24945-6-git-send-email-keithp@keithp.com>
+X-Operating-System: Linux phenom 3.1.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2011 09:34 AM, Steven Rostedt wrote:
-> Doesn't interrupts need to be disabled here too? As stop machine
-> functions also guarantee that they will not be interrupted by
-> interrupts. -- Steve
+On Thu, Sep 29, 2011 at 06:09:37PM -0700, Keith Packard wrote:
+> Verify that the eDP VDD is on, either with the panel being on or with
+> the VDD force-on bit being set.
+> 
+> This demonstrates that in many instances, VDD is not on when needed,
+> which leads to failed EDID communications.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/intel_dp.c |   22 ++++++++++++++++++++++
+>  1 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 8ab2a88..3b29a6f 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -279,6 +279,24 @@ intel_hrawclk(struct drm_device *dev)
+>  	}
+>  }
+>  
+> +static void
+> +intel_dp_check_edp(struct intel_dp *intel_dp)
+> +{
+> +	struct drm_device *dev = intel_dp->base.base.dev;
+> +	struct drm_i915_private *dev_priv = dev->dev_private;
+> +	u32 pp_status, pp_control;
+> +	if (!is_edp(intel_dp))
+> +		return;
+> +	pp_status = I915_READ(PCH_PP_STATUS);
+> +	pp_control = I915_READ(PCH_PP_CONTROL);
+> +	if ((pp_status & PP_ON) == 0 && (pp_control & EDP_FORCE_VDD) == 0) {
+> +		WARN(1, "eDP powered off while attempting aux channel communication.\n");
+> +		DRM_DEBUG_KMS("Status 0x%08x Control 0x%08x\n",
+> +			      pp_status,
+> +			      I915_READ(PCH_PP_CONTROL));
 
-Good point.
+Use pp_control instead of re-reading?
 
-    J
+> +	}
+> +}
+> +
+>  static int
+>  intel_dp_aux_ch(struct intel_dp *intel_dp,
+>  		uint8_t *send, int send_bytes,
+> @@ -295,6 +313,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
+>  	uint32_t aux_clock_divider;
+>  	int try, precharge;
+>  
+> +	intel_dp_check_edp(intel_dp);
+>  	/* The clock divider is based off the hrawclk,
+>  	 * and would like to run at 2MHz. So, take the
+>  	 * hrawclk value and divide by 2 and use that
 
-Make stop_machine() safe to call early in boot, before SMP has been
-set up, by simply calling the callback function directly if there's
-only one CPU online.
+dp_aux_ch does the low-level io for the below, so either this one or the
+below three hunks look a bit redundant.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+> @@ -408,6 +427,7 @@ intel_dp_aux_native_write(struct intel_dp *intel_dp,
+>  	int msg_bytes;
+>  	uint8_t	ack;
+>  
+> +	intel_dp_check_edp(intel_dp);
+>  	if (send_bytes > 16)
+>  		return -1;
+>  	msg[0] = AUX_NATIVE_WRITE << 4;
+> @@ -450,6 +470,7 @@ intel_dp_aux_native_read(struct intel_dp *intel_dp,
+>  	uint8_t ack;
+>  	int ret;
+>  
+> +	intel_dp_check_edp(intel_dp);
+>  	msg[0] = AUX_NATIVE_READ << 4;
+>  	msg[1] = address >> 8;
+>  	msg[2] = address & 0xff;
+> @@ -493,6 +514,7 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *adapter, int mode,
+>  	int reply_bytes;
+>  	int ret;
+>  
+> +	intel_dp_check_edp(intel_dp);
+>  	/* Set up the command byte */
+>  	if (mode & MODE_I2C_READ)
+>  		msg[0] = AUX_I2C_READ << 4;
+> -- 
+> 1.7.6.3
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index ba5070c..a45b36d 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -485,6 +485,17 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
- 					    .num_threads = num_online_cpus(),
- 					    .active_cpus = cpus };
- 
-+	if (smdata.num_threads == 1) {
-+		unsigned long flags;
-+		int ret;
-+
-+		local_save_flags(flags);
-+		ret = (*fn)(data);
-+		local_irq_restore(flags);
-+
-+		return ret;
-+	}
-+
- 	/* Set the initial state and stop all online cpus. */
- 	set_state(&smdata, STOPMACHINE_PREPARE);
- 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
-
-
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
