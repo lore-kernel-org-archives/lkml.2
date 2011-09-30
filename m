@@ -1,201 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab1I3N4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 09:56:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab1I3N4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 09:56:40 -0400
-Date: Fri, 30 Sep 2011 15:56:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/5] mm: writeback: cleanups in preparation for per-zone
- dirty limits
-Message-ID: <20110930135638.GB869@tiehlicka.suse.cz>
-References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
- <1317367044-475-3-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317367044-475-3-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758579Ab1I3N7C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 09:59:02 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:58491 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab1I3N7A convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 09:59:00 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Subject: CIFS  kernel module bug
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+Date: Fri, 30 Sep 2011 14:58:58 +0100
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+To: Steve French <sfrench@samba.org>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-09-11 09:17:21, Johannes Weiner wrote:
-> The next patch will introduce per-zone dirty limiting functions in
-> addition to the traditional global dirty limiting.
-> 
-> Rename determine_dirtyable_memory() to global_dirtyable_memory()
-> before adding the zone-specific version, and fix up its documentation.
-> 
-> Also, move the functions to determine the dirtyable memory and the
-> function to calculate the dirty limit based on that together so that
-> their relationship is more apparent and that they can be commented on
-> as a group.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Mel Gorman <mel@suse.de>
+Hi,
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Looking at the current kernel (in Linus' repository on github) there is a silly logic bug in the cifs module in fs/cifs/cifsfs.c::cifs_llseek() there is this bit of code:
 
-> ---
->  mm/page-writeback.c |   92 +++++++++++++++++++++++++-------------------------
->  1 files changed, 46 insertions(+), 46 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index c8acf8a..78604a6 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -186,12 +186,12 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
->  }
->  
->  /**
-> - * determine_dirtyable_memory - amount of memory that may be used
-> + * global_dirtyable_memory - number of globally dirtyable pages
->   *
-> - * Returns the numebr of pages that can currently be freed and used
-> - * by the kernel for direct mappings.
-> + * Returns the global number of pages potentially available for dirty
-> + * page cache.  This is the base value for the global dirty limits.
->   */
-> -static unsigned long determine_dirtyable_memory(void)
-> +static unsigned long global_dirtyable_memory(void)
->  {
->  	unsigned long x;
->  
-> @@ -205,6 +205,47 @@ static unsigned long determine_dirtyable_memory(void)
->  }
->  
->  /*
-> + * global_dirty_limits - background-writeback and dirty-throttling thresholds
-> + *
-> + * Calculate the dirty thresholds based on sysctl parameters
-> + * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-> + * - vm.dirty_ratio             or  vm.dirty_bytes
-> + * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-> + * real-time tasks.
-> + */
-> +void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> +{
-> +	unsigned long background;
-> +	unsigned long dirty;
-> +	unsigned long uninitialized_var(available_memory);
-> +	struct task_struct *tsk;
-> +
-> +	if (!vm_dirty_bytes || !dirty_background_bytes)
-> +		available_memory = global_dirtyable_memory();
-> +
-> +	if (vm_dirty_bytes)
-> +		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> +	else
-> +		dirty = (vm_dirty_ratio * available_memory) / 100;
-> +
-> +	if (dirty_background_bytes)
-> +		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> +	else
-> +		background = (dirty_background_ratio * available_memory) / 100;
-> +
-> +	if (background >= dirty)
-> +		background = dirty / 2;
-> +	tsk = current;
-> +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> +		background += background / 4;
-> +		dirty += dirty / 4;
-> +	}
-> +	*pbackground = background;
-> +	*pdirty = dirty;
-> +	trace_global_dirty_state(background, dirty);
-> +}
-> +
-> +/*
->   * couple the period to the dirty_ratio:
->   *
->   *   period/2 ~ roundup_pow_of_two(dirty limit)
-> @@ -216,7 +257,7 @@ static int calc_period_shift(void)
->  	if (vm_dirty_bytes)
->  		dirty_total = vm_dirty_bytes / PAGE_SIZE;
->  	else
-> -		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
-> +		dirty_total = (vm_dirty_ratio * global_dirtyable_memory()) /
->  				100;
->  	return 2 + ilog2(dirty_total - 1);
->  }
-> @@ -416,47 +457,6 @@ static unsigned long hard_dirty_limit(unsigned long thresh)
->  	return max(thresh, global_dirty_limit);
->  }
->  
-> -/*
-> - * global_dirty_limits - background-writeback and dirty-throttling thresholds
-> - *
-> - * Calculate the dirty thresholds based on sysctl parameters
-> - * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-> - * - vm.dirty_ratio             or  vm.dirty_bytes
-> - * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-> - * real-time tasks.
-> - */
-> -void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> -{
-> -	unsigned long background;
-> -	unsigned long dirty;
-> -	unsigned long uninitialized_var(available_memory);
-> -	struct task_struct *tsk;
-> -
-> -	if (!vm_dirty_bytes || !dirty_background_bytes)
-> -		available_memory = determine_dirtyable_memory();
-> -
-> -	if (vm_dirty_bytes)
-> -		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> -	else
-> -		dirty = (vm_dirty_ratio * available_memory) / 100;
-> -
-> -	if (dirty_background_bytes)
-> -		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> -	else
-> -		background = (dirty_background_ratio * available_memory) / 100;
-> -
-> -	if (background >= dirty)
-> -		background = dirty / 2;
-> -	tsk = current;
-> -	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> -		background += background / 4;
-> -		dirty += dirty / 4;
-> -	}
-> -	*pbackground = background;
-> -	*pdirty = dirty;
-> -	trace_global_dirty_state(background, dirty);
-> -}
-> -
->  /**
->   * bdi_dirty_limit - @bdi's share of dirty throttling threshold
->   * @bdi: the backing_dev_info to query
-> -- 
-> 1.7.6.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+	/*
+	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
+	 * the cached file length
+	 */
+	if (origin != SEEK_SET || origin != SEEK_CUR) {
 
+The logical or should be a logical and, i.e. this should be:
+
+	if (origin != SEEK_SET && origin != SEEK_CUR) {
+
+As the code is at present that line is ALWAYS true because origin is ALWAYS either != SEEK_SET or != SEEK_CUR as if it equals one it cannot equal the other and vice versa…
+
+So at the moment it always does the revalidation instead of only for SEEK_END, SEEK_DATA, and SEEK_HOLE.
+
+Best regards,
+
+	Anton
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
