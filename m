@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab1I3RuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 13:50:16 -0400
-Received: from home.keithp.com ([63.227.221.253]:47584 "EHLO keithp.com"
+	id S1756819Ab1I3Rwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 13:52:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52481 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab1I3RuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 13:50:14 -0400
-X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "Cc"
-From: Keith Packard <keithp@keithp.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 03/21] drm/i915: Remove extra 300ms delay during eDP mode setting
-In-Reply-To: <20110930162728.GC2859@phenom.ffwll.local>
-References: <20110923085243.6e4b7b4c@jbarnes-x220> <1317344993-24945-1-git-send-email-keithp@keithp.com> <1317344993-24945-4-git-send-email-keithp@keithp.com> <20110930162728.GC2859@phenom.ffwll.local>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>
-Date: Fri, 30 Sep 2011 10:50:10 -0700
-Message-ID: <yun7h4p9ay5.fsf@aiko.keithp.com>
+	id S1753119Ab1I3Rww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 13:52:52 -0400
+Date: Fri, 30 Sep 2011 10:49:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
+ uevent
+Message-ID: <20110930174917.GA17827@suse.de>
+References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
+ <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+ <20110930132914.GA877@legolas.emea.dhcp.ti.com>
+ <20110930170914.GA15341@suse.de>
+ <20110930174000.GB4163@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930174000.GB4163@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 30, 2011 at 08:40:02PM +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Sep 30, 2011 at 10:09:14AM -0700, Greg KH wrote:
+> > On Fri, Sep 30, 2011 at 04:29:16PM +0300, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Mon, Aug 15, 2011 at 04:51:22PM +0200, Sebastian Andrzej Siewior wrote:
+> > > > If id_entry is available then it is used. However if we remove first the
+> > > > driver followed by the device, then the id_entry is pointing to driver's
+> > > > memory which is long gone.
+> > > > Since id->name and plat->name are equal there is no point in
+> > > > distinguishing them.
+> > > > 
+> > > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > > > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > > > Cc: linux-kernel@vger.kernel.org
+> > > > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> > > > ---
+> > > >  drivers/base/platform.c |    2 +-
+> > > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > > > index 0cad9c7..cd71575 100644
+> > > > --- a/drivers/base/platform.c
+> > > > +++ b/drivers/base/platform.c
+> > > > @@ -614,7 +614,7 @@ static int platform_uevent(struct device *dev, struct kobj_uevent_env *env)
+> > > >  		return rc;
+> > > >  
+> > > >  	add_uevent_var(env, "MODALIAS=%s%s", PLATFORM_MODULE_PREFIX,
+> > > > -		(pdev->id_entry) ? pdev->id_entry->name : pdev->name);
+> > > > +			pdev->name);
+> > > >  	return 0;
+> > > >  }
+> > > >  
+> > > 
+> > > Just a gentle reminder on this patch. Greg, has this one been queued to
+> > > your drivers-core tree ? Should it go on -rc or now it's already too
+> > > late and going on merge window ?
+> > 
+> > It's been in my drivers-core tree for a while, and I didn't think it was
+> > needed for 3.1, as it didn't solve an existing bug, did it?
+> > 
+> > It's queued for 3.2, does it need to get into 3.1-stable?  If so, I can
+> > do that.
+> 
+> I don't think it's needed. Just make sure drivers-core is merged before
+> your USB tree :-)
 
-On Fri, 30 Sep 2011 18:27:28 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+Ok, will do, I forgot about that restriction, thanks for reminding me.
 
-> Can you elaborate a bit why this is no longer needed? Jesse seems to have
-> introduced this spefically for edp panels in d209848d61794968. If this
-> becomes rendundant due to your panel power sequencing fixes, maybe move it
-> down the series?
-
-The only reason for this delay is to avoid some potential noise on the
-screen during mode setting, all of the power sequencing delays are
-already correctly managed by the driver. As far as I can tell, we're
-trading off the small potential for noise on the screen with an extra
-300ms delay at boot time.
-
-In the eDP spec, there's a delay listed (T8) between the start of video
-data and turning on the backlight. There are no values presented and
-the instructions are simply that the source is supposed to wait until
-the display is stable. I'm not sure how we'd ever know that the display
-is stable.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOhgFSQp8BWwlsTdMRApAaAKChyKoHWE5gMA6dh9smAw68lxSv8ACfU2/I
-QOOqAUEfP44HLPlLchedVaQ=
-=ZqzK
------END PGP SIGNATURE-----
---=-=-=--
+greg k-h
