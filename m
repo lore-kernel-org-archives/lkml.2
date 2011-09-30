@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1I3Qo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 12:44:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39967 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab1I3Qo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 12:44:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH 3/3] PM / QoS: Add function dev_pm_qos_read_value() (v2)
-Date: Fri, 30 Sep 2011 18:46:41 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Ming Lei <tom.leiming@gmail.com>
-References: <201108310017.03103.rjw@sisk.pl> <201109292233.52378.rjw@sisk.pl> <CAORVsuV4ccJvJg-zCrhVXJKmHkEYLLQh032=BMh7qH27bTK5uQ@mail.gmail.com>
-In-Reply-To: <CAORVsuV4ccJvJg-zCrhVXJKmHkEYLLQh032=BMh7qH27bTK5uQ@mail.gmail.com>
+	id S1753691Ab1I3QyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 12:54:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48065 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1I3QyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 12:54:14 -0400
+Date: Fri, 30 Sep 2011 12:54:03 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
+Message-ID: <20110930165403.GB31760@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+ <20110930143211.5ab39c02@stein>
+ <20110930153321.GA31760@hmsreliant.think-freely.org>
+ <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109301846.41364.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 30, 2011, Jean Pihet wrote:
-> Hi Rafael,
-> 
-> On Thu, Sep 29, 2011 at 10:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
+On Fri, Sep 30, 2011 at 10:33:36AM -0600, Bjorn Helgaas wrote:
+> On Fri, Sep 30, 2011 at 9:33 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
 > >
-> > On Thursday, September 29, 2011, Jean Pihet wrote:
-> >> Hi Rafael,
-> >>
-> >> I have a few minor remarks, inlined below.
+> > On Fri, Sep 30, 2011 at 02:32:11PM +0200, Stefan Richter wrote:
+> > > On Sep 29 Neil Horman wrote:
+> > > > (v4)
+> > > > Fixed up some spelling mistakes, and added a scissors line with a good
+> > > > commitlog, so that git-am drops all the version logging
+> > > >
+> > > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> > > > CC: Greg Kroah-Hartman <gregkh@suse.de>
+> > > > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > > > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > > > CC: linux-pci@vger.kernel.org
+> > >
+> > > It drops these last 5 lines then too, doesn't it?
+> > >
+> > I would have thought so, but I tested a git-format-patch / git-am operation here
+> > on a temporary branch, and it worked properly.
 > >
-> > In the meantime it turned out that the patch caused a build failure
-> > for CONFIG_PM_SLEEP unset (your original patches won't really work
-> > in this case too), so I posted a patch to fix it.  However, since
-> > you had remarks anyway, I've simply folded the fix into the next
-> > version of the $subject patch, which is appended.
-> OK to me.
+> > > > --- a/Documentation/ABI/testing/sysfs-bus-pci
+> > > > +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> > > > @@ -66,6 +66,24 @@ Description:
+> > > >             re-discover previously removed devices.
+> > > >             Depends on CONFIG_HOTPLUG.
+> > > >
+> > > > +What:              /sys/bus/pci/devices/.../msi_irqs/
+> > > > +Date:              September, 2011
+> > > > +Contact:   Neil Horman <nhorman@tuxdriver.com>
+> > > > +Description:
+> > > > +           The /sys/devices/.../msi_irqs directory contains a variable set
+> > > > +           sub-directories, with each sub-directory being named after a
+> > > > +           corresponding msi irq vector allocated to that device.
+> > >
+> > > "contains a variable set _of_ sub-directories"?
+> > Gah, bad ispell foo on my part.  Bjorn, can you add that in, or shall I repost?
 > 
-> I have 2 remarks though:
-> - some drivers are using the power_state field in the suspend/resume
-> operation, IIUC without conflict. Can you confirm?
+> I'll try to remember to add that in.
+> 
+Thank you, apologies for my poor writing skills :)
+Neil
 
-Yes, I can.  There are no conflicts.
-
-> - the power_state field is scheduled for removal, cf.
-> Documentation/feature-removal-schedule.txt. That does not look
-> correct.
-
-It still is schediled for removal, but we can't remove it right now
-anyway because of the users mentioned above.  I'll replace this field
-with a one-bit flag when we're ready to drop it (some time in future).
-
-Thanks,
-Rafael
+> Bjorn
+> 
