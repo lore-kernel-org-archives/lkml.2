@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab1I3XGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 19:06:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65240 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab1I3XGj (ORCPT
+	id S1758801Ab1I3XKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 19:10:09 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:1702 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab1I3XKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 19:06:39 -0400
-Date: Fri, 30 Sep 2011 16:06:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] stop_machine: make stop_machine safe and efficient
- to call early
-Message-ID: <20110930230635.GA2658@mtj.dyndns.org>
-References: <4E85EE1F.7050508@goop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E85EE1F.7050508@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Sep 2011 19:10:03 -0400
+From: David Daney <david.daney@cavium.com>
+To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Cc: David Daney <david.daney@cavium.com>
+Subject: [RFD PATCH] netdev/phy/of: Augment device tree bindings for PHYs to specify IEEE802.3-2005 Section 45 addressing.
+Date: Fri, 30 Sep 2011 16:09:42 -0700
+Message-Id: <1317424182-29252-1-git-send-email-david.daney@cavium.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 30 Sep 2011 23:10:00.0350 (UTC) FILETIME=[140C3BE0:01CC7FC6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jeremy.
+Many 10 gigabit Ethernet PHY devices are interfaced to the MDIO bus
+using a protocol called IEEE802.3-2005 Section 45.  Where as PHYS for
+1G, 100M and 10M usually use IEEE802.3-2005 Section 22.  These two
+protocols can be present on the same MDIO bus.
 
-On Fri, Sep 30, 2011 at 09:28:15AM -0700, Jeremy Fitzhardinge wrote:
-> Make stop_machine() safe to call early in boot, before SMP has been
-> set up, by simply calling the callback function directly if there's
-> only one CPU online.
-...
-> @@ -485,6 +485,9 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
->  					    .num_threads = num_online_cpus(),
->  					    .active_cpus = cpus };
->  
-> +	if (smdata.num_threads == 1)
-> +		return (*fn)(data);
-> +
+If we look at the Linux PHY probing code in drivers/of/of_mdio.c and
+drivers/net/phy/phy_device.c, we have the situation where we need to
+read the PHY registers to get the PHY ID out so that we can use this
+to bind to a compatible driver.  However we can only read these
+registers if we know the proper MDIO bus protocol to use.
 
-As others have pointed out, you'll need to call both local and hardirq
-disables.  Also, I think the description and the code are a bit
-misleading.  How aobut setting cpu_stop_initialized in cpu_stop_init()
-and testing it from __stop_machine() instead?  I think it would be
-better to keep the behavior as uniform as possible once things are up
-and running.
+My idea is as follows:
 
-Thank you.
+o Add an optional property "mdio-clause-45" to the PHY's device tree
+  node to indicate that clause 45 addressing is used.
 
+o When calling get_phy_id() we will set MII_ADDR_C45 in the address
+  if we know that clause 45 addressing is required for the PHY.
+  get_phy_id() will then use the proper bus protocol and register
+  numbers to read PHY ID based on MII_ADDR_C45.
+
+o of_mdiobus_register() will signal MII_ADDR_C45 for PHYs tagged with
+  "mdio-clause-45"
+
+o Existing PHYs without "mdio-clause-45" are unaffected.
+
+o If no specific driver for the probed PHY ID is present, we can still
+  communicate with the PHY and perhaps use a generic 10G phy driver.
+  If the MDIO bus protocol were just to depend on the "compatible"
+  property, then we could not use generic drivers for unknown PHY IDs
+
+Comments/other ideas welcome.
+
+Thanks,
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ Documentation/devicetree/bindings/net/phy.txt |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+index bb8c742..69fd948 100644
+--- a/Documentation/devicetree/bindings/net/phy.txt
++++ b/Documentation/devicetree/bindings/net/phy.txt
+@@ -14,6 +14,11 @@ Required properties:
+  - linux,phandle :  phandle for this node; likely referenced by an
+    ethernet controller node.
+ 
++Optional properties:
++
++ - mdio-clause-45 : Optional.  If present, IEEE802.3-2005 Section 45
++   protocol is used for register access (usually for 10G PHYs).
++
+ Example:
+ 
+ ethernet-phy@0 {
 -- 
-tejun
+1.7.2.3
+
