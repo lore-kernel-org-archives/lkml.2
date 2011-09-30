@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1I3Tsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 15:48:54 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45451 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab1I3Tsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 15:48:53 -0400
-Date: Fri, 30 Sep 2011 12:49:00 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: [PATCH] ext4: Fix comparison endianness problem in MMP
-	initialization
-Message-ID: <20110930194900.GY12086@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
+	id S932457Ab1I3Ttx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 15:49:53 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:41569 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab1I3Ttv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 15:49:51 -0400
+Message-ID: <4E861D4A.9030009@micron.com>
+Date: Fri, 30 Sep 2011 13:49:30 -0600
+From: Asai Thambi S P <asamymuthupa@micron.com>
+Reply-To: <asamymuthupa@micron.com>
+Organization: Micron
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <20110909085433.GA9593@infradead.org> <4E69D519.8070802@fusionio.com>
+In-Reply-To: <4E69D519.8070802@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.30.125]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
+X-TM-AS-Result: No--12.130500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of startup, the MMP initialization code does this:
+On 9/9/2011 2:58 AM, Jens Axboe wrote:
+> On 2011-09-09 10:54, Christoph Hellwig wrote:
+>> On Mon, Aug 22, 2011 at 02:28:11PM -0700, Sam Bradshaw (sbradshaw) wrote:
+>>> New patch for mtip32xx driver based on feedback from
+>>> Jens Axboe, Christoph Hellwig, and Alan Cox.
+>>
+>> A few comments that need addressing:
+>>
+>>  - the ioctl handler always returns 0 for the BLKFLSBUF ioctl, without
+>>    doing anything.  Given that the ioctl is supposed to flush all kinds
+>>    of higher level cached data this is a serious data integrity issue.
+>>    It must simply do the default -ENOTTY return for it and let the block
+>>    layer do the right thing.
+>>  - handling of REQ_FUA / REQ_FLUSH requests is completely broken.
+>>    There is a weird barrier flag to mtip_hw_submit_io which set the
+>>    hwardware FUA bit if the FLUSH bit is set on a request.
+>>    Please take a look at how this should be handled, the
+>>    Documentation/block/writeback_cache_control.txt file is the canonical
+>>    resource.  Implementing your driver at the make_request layer
+>>    unfortunately means you will have to do all the hard work yourself.
+>>  - also the call to blk_queue_flush(queue, 0); from ->make_request for
+>>    a non-data request is completely wrong.
+> 
+> I noticed both of these flush/fua problems too and have fixed them up.
+> 
+>>  - the 64-bit case in fill_command_sg will blow up on big endian
+>>    systems, please use your current 32-bit case unconditionally
+>>  - mtip_block_getgeo should just use sector_div instead of the ifdef
+>>    mess.
+>>  - please check the driver using sparse, and most importantly the
+>>    optional endianess checking pass of it.  Currently the driver
+>>    uses plain unsigned int and similar types for little endian
+>>    hardware structures.  Take a look at Documentation/sparse.txt
+>>    on how to use it.
+>>  - the mtip_check_surprise_removal check should be unconditional, not
+>>    under #ifdef CONFIG_HOTPLUG
+> 
+> In general, the dependency on HOTPLUG_PCI_PCIE is odd as well.
 
-mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
+For the device to support surprise removal and surprise insertion
+(SRSI), need pciehp module loaded.
 
-Next, mmp->mmp_seq is written out to disk, a delay happens, and then the MMP
-block is read back in and the sequence value is tested:
 
-if (seq != le32_to_cpu(mmp->mmp_seq)) {
-	/* fail the mount */
-
-On a LE system such as x86, the *le32* functions do nothing and this works.
-Unfortunately, on a BE system such as ppc64, this comparison becomes:
-
-if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
-	/* fail the mount */
-
-Except for a few palindromic sequence numbers, this test always causes the
-mount to fail, which makes MMP filesystems generally unmountable on ppc64.  The
-attached patch fixes this situation.
-
-(This fix came up while testing the metadata checksumming patchset)
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
-
- fs/ext4/mmp.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index 9bdef3f..a7a4986 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -295,7 +295,8 @@ skip:
- 	/*
- 	 * write a new random sequence number.
- 	 */
--	mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-+	seq = mmp_new_seq();
-+	mmp->mmp_seq = cpu_to_le32(seq);
- 
- 	retval = write_mmp_block(bh);
- 	if (retval)
+-- 
+Regards,
+Asai Thambi
