@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab1I3DsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 23:48:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56009 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278Ab1I3DsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 23:48:19 -0400
-Date: Thu, 29 Sep 2011 20:48:15 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-Message-ID: <20110930034815.GF10425@mtj.dyndns.org>
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+	id S1757441Ab1I3Dvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 23:51:52 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:7545
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755936Ab1I3Dvv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 23:51:51 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz9371K542M1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LSBHE8-01-GSR-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Dave Airlie <airlied@redhat.com>
+Date: Thu, 29 Sep 2011 22:51:43 -0500
+Subject: RE: [134/244] drm/radeon/kms: fix typo in r100_blit_copy
+Thread-Topic: [134/244] drm/radeon/kms: fix typo in r100_blit_copy
+Thread-Index: Acx+2kFcSFgYWijGTYWe7raoAD0ywgASfgqA
+Message-ID: <82951087A1ED9648A152812B736362500A8F29457F@sausexmbp02.amd.com>
+References: <20110928220225.GA27128@kroah.com>
+ <20110928220139.453112165@clark.kroah.org>
+ <82951087A1ED9648A152812B736362500A8F294274@sausexmbp02.amd.com>
+ <20110929185522.GA8183@suse.de>
+In-Reply-To: <20110929185522.GA8183@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317158254.26514.55.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Steven.
-
-Sorry about the delay, coming back from a rather long vacation.
-
-On Tue, Sep 27, 2011 at 05:17:34PM -0400, Steven Rostedt wrote:
-> I looked at the task that it tried to migrate, and it happened to be the
-> kworker thread! Then I went into kernel/workqueue.c and found this
-> nonsense:
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Thursday, September 29, 2011 2:55 PM
+> To: Deucher, Alexander
+> Cc: linux-kernel@vger.kernel.org; stable@kernel.org; stable-
+> review@kernel.org; torvalds@linux-foundation.org; akpm@linux-
+> foundation.org; alan@lxorguk.ukuu.org.uk; Dave Airlie
+> Subject: Re: [134/244] drm/radeon/kms: fix typo in r100_blit_copy
 > 
-> 	if (bind && !on_unbound_cpu)
-> 		kthread_bind(worker->task, gcwq->cpu);
-> 	else {
-> 		worker->task->flags |= PF_THREAD_BOUND;
-> 		if (on_unbound_cpu)
-> 			worker->flags |= WORKER_UNBOUND;
-> 	}
+> On Wed, Sep 28, 2011 at 09:31:47PM -0500, Deucher, Alexander wrote:
+> > Please don't apply this to stable.  The patch ended up being in error.
 > 
-> Nothing but the scheduler and kthread_bind() has the right to set the
-> PF_THREAD_BOUND flag. Especially when the thread IS NOT BOUNDED!!!!!!
+> Was it also reverted upstream?
+
+Yes.
+
+Alex
+
 > 
-> I don't go around and stick my hand down your pants to play with your
-> flags! Don't stick your hand in ours and play with our flags!
+> I'll go drop it now, thanks.
 > 
-> WTF is the workqueue code setting the PF_THREAD_BOUND flag manually?
-> Talk about fragile coupling! You just made this flag meaningless. Don't
-> do that.
+> greg k-h
 
-IIRC, this was because there was no way to set PF_THREAD_BOUND once a
-kthread starts to run and workers can stay active across CPU bring
-down/up cycle.  Per-cpu kthreads need PF_THREAD_BOUND to prevent cpu
-affinity manipulation by third party for correctness.
 
-> Sorry but I just wasted two whole days because of this nonsense and I'm
-> not particularly happy about it.
-
-Sorry that it wasted your time and made you unhappy but wouldn't
-grepping for its usage a logical thing if you wanted to add to what it
-meant?  PF_THREAD_BOUND meaning the task's affinity or cpuset can't be
-manipulated by third party seems like a valid interpretation.
-
-Simply removing it would allow breaking workqueue from userland by
-manipulating affinity.  How about testing PF_WQ_WORKER in
-set_cpus_allowed_ptr() (and maybe cpuset, I'm not sure)?
-
-Thanks.
-
--- 
-tejun
