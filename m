@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1I3Ali (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 20:41:38 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40953 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1I3Alh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 20:41:37 -0400
-Date: Thu, 29 Sep 2011 20:41:33 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Andrew Morton <akpm00@gmail.com>
-cc: Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Kosina <jkosina@suse.cz>, hongjiu.lu@intel.com,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] binfmt_elf: Fix PIE execution with randomization
- disabled
-In-Reply-To: <20110929141929.43df799d.akpm00@gmail.com>
-Message-ID: <alpine.LFD.2.02.1109291958210.9106@xanadu.home>
-References: <20110929195359.GJ16720@zod.bos.redhat.com> <20110929141929.43df799d.akpm00@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755363Ab1I3Apz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 20:45:55 -0400
+Received: from mout.perfora.net ([74.208.4.194]:59332 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab1I3Apy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 20:45:54 -0400
+Date: Thu, 29 Sep 2011 20:45:28 -0400
+From: Stephen Wilson <wilsons@start.ca>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Stephen Wilson <wilsons@start.ca>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Q: proc: disable mem_write after exec
+Message-ID: <20110930004528.GA9594@wicker.gateway.2wire.net>
+References: <20110929141706.GA17119@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110929141706.GA17119@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:fksj0Rwyz6G/N5c+eBvpVK9WnqftYxTHEG7yPcFLC29
+ PDft4En/ArLp5XFheBl9kmPWDcdOVzMX0kX6HUgz/clG6xOb0m
+ FhUW6S3SX/OYIvvNtp2blsXGx/KJDjW9GW3cbdDtFgljmLVACo
+ eYWlOGtokap7TjQ48grzrGyofgbwnw1Tteq8sYhI0pxc7K5xZ2
+ zu5sHjrJeb0Amoo37nBxyuAqFbl0xUDNOueJK9vbUj5lFSNXg3
+ KJAG23HgL0phpsK8ICHlJfmq9rAE5++6JMm2yE+zPsjv5/GAF9
+ pdEe/wUTTsUVfZs/FfyAwkXC7tBpYuIVfICeEdlWQ3WITCwSxD
+ +aLNoygT8wiAjtb472K4USXdPv61xkgaIYFsVaZxi/q3+J8cYF
+ I3AVukZk0236Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011, Andrew Morton wrote:
+On Thu, Sep 29, 2011 at 04:17:06PM +0200, Oleg Nesterov wrote:
+> The last question, I promise ;)
 
-> On Thu, 29 Sep 2011 15:53:59 -0400
-> Josh Boyer <jwboyer@redhat.com> wrote:
+No worries :)
+
+> 	@@ -850,6 +850,10 @@ static ssize_t mem_write(struct file * file, const char __user *buf,
+> 		if (check_mem_permission(task))
+> 			goto out;
+> 	 
+> 	+	copied = -EIO;
+> 	+	if (file->private_data != (void *)((long)current->self_exec_id))
+> 	+		goto out;
+> 	+
+> 		copied = -ENOMEM;
+> 		page = (char *)__get_free_page(GFP_TEMPORARY);
+> 		if (!page)
 > 
-> > We've had a bug report[1] of some PIE programs getting a SIGKILL upon exec
-> > if you disable address randomization with:
-> > 
-> > 	echo 0 > /proc/sys/kernel/randomize_va_space
-> > 
-> > I tracked this down to get_unmapped_area_prot returning -ENOMEM because
-> > the address being passed in is larger than TASK_SIZE - len for the bss
-> > section of the test executable.  That filters back to set_brk returning
-> > an error to load_elf_binary and the SIGKILL being sent around line 872
-> > of binfmt_elf.c.
-> > 
-> > H.J. submitted an upstream bug report [2] as well, but got no feedback
-> > and we can't view it with kernel.org being down anyway.  He came up with
-> > the patch below as well, which is what I'm sending on for comments.  The
-> > changelog is my addition, so if that is wrong yell at me.
-> > 
-> > I wanted to get some more eyes on this, because the current code sets
-> > load_bias to 0 unconditionally on CONFIG_X86 or CONFIG_ARM.  I have no
-> > idea why that is.  The original execshield patches had an #ifdef on
-> > __i386__ but the patch that was commited to add PIE support has the
-> > CONFIG_X86 setting.
-> > 
 > 
-> It appears that Nicolas understood what's going on in there when he
-> wrote e4eab08d6050ad0 ("ARM: 6342/1: fix ASLR of PIE executables"). 
-> Alas, that patch's changelog is rather useless.
+> Could you explain this? Why this is wrong from the security pov? We are
+> the tracer, this was checked by check_mem_permission(). We can modify
+> this memory even without /proc/pid/mem.
+
+As far as I understand this is really just a paranoia thing, not a
+security issue in any deep sense. If the fd is leaked across an exec()
+then the target process memory could be written to by accident. So the
+intent here was to protect against buggy userspace more than anything
+else. 
+
+
+> And in any case, why do we check current's self_exec_id? I'd understand
+> if mem_open/mem_read/mem_writed used task->self_exec_id, see the trivial
+> patch below. With this patch this check means: this task has changed its
+> ->mm after /proc/pid/mem was opened, abort. And perhaps this was the
+> actual intent. May be makes sense.
+
+Perhaps, but my feeling is that the tracer should be prepared to deal
+with that.  From the user perspective I think of /proc/pid/mem as being
+associated with a pid, not an mm, and I can't see the benefit of going
+thru a close()/open() cycle to deal with an event that can be detected
+using ptrace.
+
+
+> But the real question is, why (from the security pov) we can't simply kill
+> these self_exec_id checks?
 > 
-> Help?
+> Not to mention, it would be nice to remove self_exec_id/parent_exec_id too.
+> Ignoring mem_open(), afaics the _only_ reason we need these id's is that
+> linux allows clone(CLONE_PARENT | SIGKILL).
 
-Well, in order to obtain randomization, the addr argument to elf_map() 
-must be zero to eventually let arch_get_unmapped_area() do its job of 
-selecting a random address.
-
-Since only X86 supported ASLR at the time, I simply did the same for ARM 
-i.e. let load_bias be set to 0 so elf_map() would get a zero address.
-
-> Also, please: review and test?
-> 
-> >  #if defined(CONFIG_X86) || defined(CONFIG_ARM)
-> > -			load_bias = 0;
-> > +			if (vaddr)
-> > +				load_bias = 0;
-> > +			else
-> > +				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE);
-> >  #else
-> >  			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
-> >  #endif
-
-Simply looking at this patch, I don't see how the second argument to 
-elf_map() called as follows could ever be zero anymore, effectively 
-breaking ASLR.
-
-                error = elf_map(bprm->file, load_bias + vaddr, elf_ppnt,
-                                elf_prot, elf_flags, 0);
+So I think this is just a case of weighing the costs and benefits.
+Personally, I think having /proc/pid/mem implicitly CLOEXEC is the
+"right" thing to do.  But I wouldn't argue if the checks were dropped in
+an effort to simplify code.
 
 
-Nicolas
+
+Thanks,
+
+
+-- 
+steve
+
