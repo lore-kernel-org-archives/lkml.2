@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1I3Ccx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 22:32:53 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:61586 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab1I3Ccw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 22:32:52 -0400
-Subject: [PATCH 2/2] ASoC: Remove unused "control_data" field of struct
- aic3x_priv
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vladimir Barinov <vova.barinov@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-In-Reply-To: <1317349870.4193.1.camel@phoenix>
-References: <1317349870.4193.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Sep 2011 10:32:37 +0800
-Message-ID: <1317349957.4193.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756026Ab1I3Cfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 22:35:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7217 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751739Ab1I3Cfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Sep 2011 22:35:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,464,1312182000"; 
+   d="scan'208";a="57199333"
+From: Lu Guanqun <guanqun.lu@intel.com>
+To: gregkh@suse.de, sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alan@linux.intel.com, vinod.koul@intel.com, fengguang.wu@intel.com,
+        devel@driverdev.osuosl.org, paul.gortmaker@windriver.com,
+        Lu Guanqun <guanqun.lu@intel.com>
+Subject: [PATCH] intel_sst: fix compile error
+Date: Fri, 30 Sep 2011 10:35:35 +0800
+Message-Id: <1317350135-15055-1-git-send-email-guanqun.lu@intel.com>
+X-Mailer: git-send-email 1.7.6.2
+In-Reply-To: <20110930112337.02e0ba383ffd12b6d5d24f39@canb.auug.org.au>
+References: <20110930112337.02e0ba383ffd12b6d5d24f39@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The control_data field is used to initialize the codec's control_data field,
-but since this is also done by the snd-soc-cache core, the redundant
-assignment can be removed and the field can be dropped.
+include module.h to fix the following compile errors:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+drivers/staging/intel_sst/intelmid.c:52: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:52: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:52: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:52: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:53: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:53: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:53: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:53: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:54: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:54: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:54: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:54: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:55: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:55: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:55: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/staging/intel_sst/intelmid.c:55: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:56: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:56: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:56: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/staging/intel_sst/intelmid.c:56: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:57: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:57: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:57: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/staging/intel_sst/intelmid.c:57: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:58: error: expected declaration specifiers or '...' before string constant
+drivers/staging/intel_sst/intelmid.c:58: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:58: warning: type defaults to 'int' in declaration of 'MODULE_SUPPORTED_DEVICE'
+drivers/staging/intel_sst/intelmid.c:58: warning: function declaration isn't a prototype
+drivers/staging/intel_sst/intelmid.c:64: error: expected ')' before 'int'
+drivers/staging/intel_sst/intelmid.c:65: error: expected ')' before string constant
+drivers/staging/intel_sst/intelmid.c:66: error: expected ')' before numeric constant
+drivers/staging/intel_sst/intelmid.c:67: error: expected ')' before string constant
+drivers/staging/intel_sst/intelmid.c:461: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:461: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+drivers/staging/intel_sst/intelmid.c:461: warning: parameter names (without types) in function declaration
+drivers/staging/intel_sst/intelmid.c:475: warning: data definition has no type or storage class
+drivers/staging/intel_sst/intelmid.c:475: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
+drivers/staging/intel_sst/intelmid.c:475: warning: parameter names (without types) in function declaration
+drivers/staging/intel_sst/intelmid.c: In function 'snd_intelmad_probe':
+drivers/staging/intel_sst/intelmid.c:859: error: 'THIS_MODULE' undeclared (first use in this function)
+drivers/staging/intel_sst/intelmid.c:859: error: (Each undeclared identifier is reported only once
+drivers/staging/intel_sst/intelmid.c:859: error: for each function it appears in.)
+drivers/staging/intel_sst/intelmid.c: At top level:
+drivers/staging/intel_sst/intelmid.c:989: error: 'THIS_MODULE' undeclared here (not in a function)
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Lu Guanqun <guanqun.lu@intel.com>
 ---
- sound/soc/codecs/tlv320aic3x.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/staging/intel_sst/intelmid.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
-index 0963c4c..4c5eab5 100644
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -76,7 +76,6 @@ struct aic3x_priv {
- 	struct aic3x_disable_nb disable_nb[AIC3X_NUM_SUPPLIES];
- 	enum snd_soc_control_type control_type;
- 	struct aic3x_setup_data *setup;
--	void *control_data;
- 	unsigned int sysclk;
- 	struct list_head list;
- 	int master;
-@@ -1383,7 +1382,6 @@ static int aic3x_probe(struct snd_soc_codec *codec)
- 	int ret, i;
+diff --git a/drivers/staging/intel_sst/intelmid.c b/drivers/staging/intel_sst/intelmid.c
+index 25656ad..492b660 100644
+--- a/drivers/staging/intel_sst/intelmid.c
++++ b/drivers/staging/intel_sst/intelmid.c
+@@ -27,6 +27,7 @@
  
- 	INIT_LIST_HEAD(&aic3x->list);
--	codec->control_data = aic3x->control_data;
- 	aic3x->codec = codec;
- 	codec->dapm.idle_bias_off = 1;
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
-@@ -1520,7 +1518,6 @@ static int aic3x_i2c_probe(struct i2c_client *i2c,
- 		return -ENOMEM;
- 	}
- 
--	aic3x->control_data = i2c;
- 	aic3x->control_type = SND_SOC_I2C;
- 
- 	i2c_set_clientdata(i2c, aic3x);
++#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
 -- 
-1.7.4.1
-
-
+1.7.6.2
 
