@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab1I3SCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 14:02:48 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43432 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755626Ab1I3SCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 14:02:47 -0400
-Subject: [RFC][PATCH 1/4] break up string_get_size()
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
-        James.Bottomley@HansenPartnership.com, hpa@zytor.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 30 Sep 2011 11:02:41 -0700
-Message-Id: <20110930180241.D69D5E9C@kernel>
+	id S1757714Ab1I3SES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 14:04:18 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:59229 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755464Ab1I3SEQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 14:04:16 -0400
+Date: Fri, 30 Sep 2011 14:04:09 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>,
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>
+Subject: Re: CIFS  kernel module bug
+Message-ID: <20110930140409.51c1a94c@tlielax.poochiereds.net>
+In-Reply-To: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 30 Sep 2011 14:58:58 +0100
+Anton Altaparmakov <aia21@cam.ac.uk> wrote:
 
-I started to break up string_get_size() in to some pieces
-so that I could pick and choose which bits I wanted.  I
-ended up not re-using this function.  But, I think this
-still stands by itself since it makes the code much more
-self-explanatory.
+> Hi,
+> 
+> Looking at the current kernel (in Linus' repository on github) there is a silly logic bug in the cifs module in fs/cifs/cifsfs.c::cifs_llseek() there is this bit of code:
+> 
+> 	/*
+> 	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
+> 	 * the cached file length
+> 	 */
+> 	if (origin != SEEK_SET || origin != SEEK_CUR) {
+> 
+> The logical or should be a logical and, i.e. this should be:
+> 
+> 	if (origin != SEEK_SET && origin != SEEK_CUR) {
+> 
+> As the code is at present that line is ALWAYS true because origin is ALWAYS either != SEEK_SET or != SEEK_CUR as if it equals one it cannot equal the other and vice versa…
+> 
+> So at the moment it always does the revalidation instead of only for SEEK_END, SEEK_DATA, and SEEK_HOLE.
+> 
+> Best regards,
+> 
+> 	Anton
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
 
- linux-2.6.git-dave/lib/string_helpers.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+Haha, good catch. Care to roll up a patch to fix that?
 
-diff -puN lib/string_helpers.c~break-up-string_get_size lib/string_helpers.c
---- linux-2.6.git/lib/string_helpers.c~break-up-string_get_size	2011-09-30 10:58:32.909418688 -0700
-+++ linux-2.6.git-dave/lib/string_helpers.c	2011-09-30 10:58:32.953418603 -0700
-@@ -8,6 +8,18 @@
- #include <linux/module.h>
- #include <linux/string_helpers.h>
- 
-+static int calc_sf_digit_room(u64 size)
-+{
-+	u64 sf_cap;
-+	int digits;
-+
-+	sf_cap = size;
-+	for (digits = 0; sf_cap*10 < 1000; digits++)
-+		sf_cap *= 10;
-+
-+	return digits;
-+}
-+
- /**
-  * string_get_size - get the size in the specified units
-  * @size:	The size to be converted
-@@ -36,7 +48,7 @@ int string_get_size(u64 size, const enum
- 		[STRING_UNITS_2] = 1024,
- 	};
- 	int i, j;
--	u64 remainder = 0, sf_cap;
-+	u64 remainder = 0;
- 	char tmp[8];
- 
- 	tmp[0] = '\0';
-@@ -47,10 +59,7 @@ int string_get_size(u64 size, const enum
- 			i++;
- 		}
- 
--		sf_cap = size;
--		for (j = 0; sf_cap*10 < 1000; j++)
--			sf_cap *= 10;
--
-+		j = calc_sf_digit_room(size);
- 		if (j) {
- 			remainder *= 1000;
- 			do_div(remainder, divisor[units]);
-_
+-- 
+Jeff Layton <jlayton@samba.org>
