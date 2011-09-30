@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1I3VG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 17:06:29 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53741 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab1I3VG1 (ORCPT
+	id S1756119Ab1I3VK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 17:10:26 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:60211 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751413Ab1I3VKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 17:06:27 -0400
-Date: Fri, 30 Sep 2011 14:06:25 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <htejun@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC] stop_machine: make stop_machine safe and efficient
- to call early
-Message-Id: <20110930140625.c7faad28.akpm00@gmail.com>
-In-Reply-To: <4E85F596.4050704@goop.org>
-References: <4E85EE1F.7050508@goop.org>
-	<1317400496.4588.54.camel@gandalf.stny.rr.com>
-	<4E85F596.4050704@goop.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Sep 2011 17:10:24 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Abhilash K V <abhilash.kv@ti.com>
+Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <paul@pwsan.com>,
+        <aneesh@ti.com>, <santosh.shilimkar@ti.com>,
+        <christian.gmeiner@gmail.com>
+Subject: Re: [PATCH v5 3/3] OMAP2+: voltage: add check for missing PMIC info in vp init
+Organization: Texas Instruments, Inc.
+References: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com>
+	<1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
+	<1317363153-10259-3-git-send-email-abhilash.kv@ti.com>
+	<1317363153-10259-4-git-send-email-abhilash.kv@ti.com>
+Date: Fri, 30 Sep 2011 14:10:19 -0700
+In-Reply-To: <1317363153-10259-4-git-send-email-abhilash.kv@ti.com> (Abhilash
+	K. V.'s message of "Fri, 30 Sep 2011 11:42:33 +0530")
+Message-ID: <87aa9lhh38.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011 10:00:06 -0700
-Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+Abhilash K V <abhilash.kv@ti.com> writes:
 
-> On 09/30/2011 09:34 AM, Steven Rostedt wrote:
-> > Doesn't interrupts need to be disabled here too? As stop machine
-> > functions also guarantee that they will not be interrupted by
-> > interrupts. -- Steve
-> 
-> Good point.
-> 
->     J
-> 
-> Make stop_machine() safe to call early in boot, before SMP has been
-> set up, by simply calling the callback function directly if there's
-> only one CPU online.
-
-Being a trusting soul, I shall assume that you presently have or soon
-will have some code which requires this change?
-
+> From: Abhilash K V <abhilash.kv@ti.com>
 >
-> ...
+> If PMIC info is not available in omap_vp_init(), abort.
 >
-> --- a/kernel/stop_machine.c
-> +++ b/kernel/stop_machine.c
-> @@ -485,6 +485,17 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
->  					    .num_threads = num_online_cpus(),
->  					    .active_cpus = cpus };
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+
+Looks good.
+
+After minor fixup below, adding to the next round of voltage cleanups
+(branch: for_3.2/voltage-cleanup-2.)
+
+> ---
+>  arch/arm/mach-omap2/vp.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/vp.c b/arch/arm/mach-omap2/vp.c
+> index 66bd700..0ed3d13 100644
+> --- a/arch/arm/mach-omap2/vp.c
+> +++ b/arch/arm/mach-omap2/vp.c
+> @@ -41,6 +41,13 @@ void __init omap_vp_init(struct voltagedomain *voltdm)
+>  	u32 val, sys_clk_rate, timeout, waittime;
+>  	u32 vddmin, vddmax, vstepmin, vstepmax;
 >  
-> +	if (smdata.num_threads == 1) {
-> +		unsigned long flags;
-> +		int ret;
-> +
-> +		local_save_flags(flags);
-> +		ret = (*fn)(data);
-> +		local_irq_restore(flags);
-> +
-> +		return ret;
+> +	if (!voltdm->pmic || !voltdm->pmic->uv_to_vsel) {
+> +		pr_err("%s: PMIC info requried to configure VP for "
+> +			"vdd_%s not populated.Hence cannot initialize VP\n",
+
+Added space after '.'
+
+Thanks,
+
+Kevin
+
+> +			__func__, voltdm->name);
+> +		return;
 > +	}
-
-It is quite unobvious to readers why this code exists.  Therefore, we
-should tell them.
-
-Also, bug.  local_save_flags() is used to read the irq flags - it does
-not actually disable interrupts.  We want local_irq_save() here.  None
-of these interfaces are documented and their naming system is crappy. 
-Cause, effect.
-
-
---- a/kernel/stop_machine.c~stop_machine-make-stop_machine-safe-and-efficient-to-call-early-fix
-+++ a/kernel/stop_machine.c
-@@ -486,10 +486,14 @@ int __stop_machine(int (*fn)(void *), vo
- 					    .active_cpus = cpus };
- 
- 	if (smdata.num_threads == 1) {
-+		/*
-+		 * Handle the case where stop_machine() is called early in boot
-+		 * before SMP startup.
-+		 */
- 		unsigned long flags;
- 		int ret;
- 
--		local_save_flags(flags);
-+		local_irq_save(flags);
- 		ret = (*fn)(data);
- 		local_irq_restore(flags);
- 
-_
-
+> +
+>  	if (!voltdm->read || !voltdm->write) {
+>  		pr_err("%s: No read/write API for accessing vdd_%s regs\n",
+>  			__func__, voltdm->name);
 
