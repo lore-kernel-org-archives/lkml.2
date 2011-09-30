@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab1I3IJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 04:09:25 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51906 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab1I3IJS (ORCPT
+	id S1758150Ab1I3ILG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 04:11:06 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:26459 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757566Ab1I3IKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 04:09:18 -0400
-Date: Fri, 30 Sep 2011 01:09:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org
-Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
- workqueue rescue threads
-Message-ID: <20110930080914.GM10425@mtj.dyndns.org>
-References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
- <20110902002917.GD2752@htj.dyndns.org>
- <20110915161430.GE1548@tusker>
- <CAOtvUMf0Dx04Piw8bx2oD+F9ttiBP_xCpin7fTvoQqs_dn=ZRQ@mail.gmail.com>
- <20110924030718.GA29319@htj.dyndns.org>
- <CAOtvUMeGddgQK==K09uCVHOn8gbW2PaUaCiWhhOCNx8pvy8QiQ@mail.gmail.com>
+	Fri, 30 Sep 2011 04:10:53 -0400
+X-IronPort-AV: E=Sophos;i="4.68,465,1312156800"; 
+   d="scan'208";a="8143203"
+Subject: Re: [Xen-devel] [PATCH 8/9] xen/enlighten: Fix compile warnings.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Dan Carpenter <error27@gmail.com>
+Date: Fri, 30 Sep 2011 09:10:51 +0100
+In-Reply-To: <1317325971-21603-9-git-send-email-konrad.wilk@oracle.com>
+References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
+	 <1317325971-21603-9-git-send-email-konrad.wilk@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1317370252.26672.224.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOtvUMeGddgQK==K09uCVHOn8gbW2PaUaCiWhhOCNx8pvy8QiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 2011-09-29 at 20:52 +0100, Konrad Rzeszutek Wilk wrote:
+> linux/arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
+> linux/arch/x86/xen/enlighten.c:226: warning: ‘cx’ may be used uninitialized in this function
+> linux/arch/x86/xen/enlighten.c:240: note: ‘cx’ was declared here
 
-On Sun, Sep 25, 2011 at 09:02:25AM +0300, Gilad Ben-Yossef wrote:
-> Thank you for taking the time to answer my query :-)
+Before 61f4237d5b005767a76f4f3694e68e6f78f392d9 we used to initialise cx
+to zero before calling xen_cpuid.
+
+947ccf9c3c30307b774af3666ee74fcd9f47f646 didn't put it back for some
+reason.
+
+Regardless I'm not sure how cx can be unused while {a,b,d}x apparently
+are not. All four are passed to xen_cpuid(&ax, &bx, &cx, &dx) and even
+if gcc were being clever and looking into xen_cpuid all four are in the
+output constraints of the real cpuid asm call.
+
+Oh, I see, ax and cx are also in the input side of the asm and ax is
+initialised but cx is not and that is the use not the one later in
+xen_init_cpuid_mask.
+
+I think that even if cpuid leaf ax=1 happens not to use the subleaf
+index in cx we'd be better to initialise cx=0 than use uninitialized_var
+here.
+
+Ian.
+
 > 
-> I agree there is no real problem with having an additional task
-> bound to an "isolated" CPU so long that it does not run and of
-> course that if a task on an isolated CPU initiated activity that
-> resulted in requiring the services of a rescuer workqueue thread it
-> most certainly needs to run there and that is fine.
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> I guess my question is - apart form running on the isolated CPU,
-> does the fact that the rescuer thread is bound there can cause
-> activity on that CPU originating from a foreign CPU, such as for
-> example running an IPI handler in order to migrate it there?
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 2d69617..9473861 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -237,7 +237,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+>  
+>  static void __init xen_init_cpuid_mask(void)
+>  {
+> -	unsigned int ax, bx, cx, dx;
+> +	unsigned int ax, bx, uninitialized_var(cx), dx;
+>  	unsigned int xsave_mask;
+>  
+>  	cpuid_leaf1_edx_mask =
 
-Hmmm... indeed.  This can cause an unnecessary wakeup / migration on
-an isolated CPU when another CPU asks for the rescuer, so yeah it
-makes sense to change the behavior.  BTW, why didn't the original
-patch simply use set_cpus_allowed_ptr(cpu_all_mask)?
 
-Thanks.
-
--- 
-tejun
