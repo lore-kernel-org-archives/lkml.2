@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab1I3JuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 05:50:14 -0400
-Received: from lo.gmane.org ([80.91.229.12]:47407 "EHLO lo.gmane.org"
+	id S1757513Ab1I3J6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 05:58:38 -0400
+Received: from lucidpixels.com ([72.73.18.11]:56996 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563Ab1I3JuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 05:50:13 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Francis Moro <francis.moro@gmail.com>
-Subject: Re: Linux 3.1-rc8
-Date: Fri, 30 Sep 2011 09:47:12 +0000 (UTC)
-Message-ID: <loom.20110930T114431-313@post.gmane.org>
-References: <CA+55aFwFN33fnvkHRD2FfMiucvyOhcFzdzmAm0MV6Z6OLRffEQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 82.235.205.153 (Mozilla/5.0 (X11; Linux x86_64; rv:2.0.1) Gecko/20110518 Firefox/4.0.1)
+	id S1754724Ab1I3J6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 05:58:37 -0400
+Date: Fri, 30 Sep 2011 05:58:36 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Harald Dunkel <harri@afaics.de>
+cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_sched_state detected stall on CPU 6
+In-Reply-To: <4E857E10.3030103@afaics.de>
+Message-ID: <alpine.DEB.2.02.1109300557510.8036@p34.internal.lan>
+References: <4E857E10.3030103@afaics.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds <at> linux-foundation.org> writes:
 
-> 
-> Another week, another -rc at
-> 
->   git://github.com/torvalds/linux
-> 
+On Fri, 30 Sep 2011, Harald Dunkel wrote:
 
-Just a quick note that I'm still getting this message after resuming:
+> Hi folks,
+>
 
-[40264.796504] Uhhuh. NMI received for unknown reason 2d on CPU 0.
-[40264.796506] Do you have a strange power saving mode enabled?
-[40264.796507] Dazed and confused, but trying to continue
+This is a known bug, upgrade to 3.1-rc8 and your problem should go away, I 
+had the same problem with 3.0.4 (amd64)
 
-It's been there since 2.6.39 IIRC.
+kern.log:Sep 11 18:11:43 p34 kernel: [26902.879347] INFO: rcu_sched_state 
+detected stall on CPU 20 (t=60000 jiffies)
 
-Thanks
+Justin.
 
