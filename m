@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab1I3I5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 04:57:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab1I3I5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 04:57:04 -0400
-Date: Fri, 30 Sep 2011 10:55:39 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across zones
-Message-ID: <20110930085539.GD30857@redhat.com>
-References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
- <1317367044-475-4-git-send-email-jweiner@redhat.com>
- <CAOJsxLFWfH5zDG8ui=yQyOcZY_nXhK6r+ziapLg9Zhmb3ibuWQ@mail.gmail.com>
+	id S1758222Ab1I3I5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 04:57:21 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41071 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab1I3I5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 04:57:18 -0400
+Date: Fri, 30 Sep 2011 01:57:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Ripduman Sohan <Ripduman.Sohan@cl.cam.ac.uk>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
+Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
+ workqueue rescue threads
+Message-ID: <20110930085714.GB23868@mtj.dyndns.org>
+References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+ <20110902002917.GD2752@htj.dyndns.org>
+ <20110915161430.GE1548@tusker>
+ <CAOtvUMf0Dx04Piw8bx2oD+F9ttiBP_xCpin7fTvoQqs_dn=ZRQ@mail.gmail.com>
+ <20110924030718.GA29319@htj.dyndns.org>
+ <CAOtvUMeGddgQK==K09uCVHOn8gbW2PaUaCiWhhOCNx8pvy8QiQ@mail.gmail.com>
+ <20110930080914.GM10425@mtj.dyndns.org>
+ <20110930085421.GA11756@tusker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOJsxLFWfH5zDG8ui=yQyOcZY_nXhK6r+ziapLg9Zhmb3ibuWQ@mail.gmail.com>
+In-Reply-To: <20110930085421.GA11756@tusker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 10:35:25AM +0300, Pekka Enberg wrote:
-> Hi Johannes!
+On Fri, Sep 30, 2011 at 09:54:21AM +0100, Ripduman Sohan wrote:
+> Tejun Heo <tj@kernel.org> wrote:
 > 
-> On Fri, Sep 30, 2011 at 10:17 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> > But there is a flaw in that we have a zoned page allocator which does
-> > not care about the global state but rather the state of individual
-> > memory zones.  And right now there is nothing that prevents one zone
-> > from filling up with dirty pages while other zones are spared, which
-> > frequently leads to situations where kswapd, in order to restore the
-> > watermark of free pages, does indeed have to write pages from that
-> > zone's LRU list.  This can interfere so badly with IO from the flusher
-> > threads that major filesystems (btrfs, xfs, ext4) mostly ignore write
-> > requests from reclaim already, taking away the VM's only possibility
-> > to keep such a zone balanced, aside from hoping the flushers will soon
-> > clean pages from that zone.
+> > Hmmm... indeed.  This can cause an unnecessary wakeup / migration on
+> > an isolated CPU when another CPU asks for the rescuer, so yeah it
+> > makes sense to change the behavior.  BTW, why didn't the original
+> > patch simply use set_cpus_allowed_ptr(cpu_all_mask)?
+> > 
 > 
-> The obvious question is: how did you test this? Can you share the results?
+> Because while at present all (bound) rescuer threads have an
+> associated workqueue on each CPU, I didn't want to assume this
+> arrangement would _always_ be the case.  It was my thinking that for
+> bound threads, iterating over the CPUs to only set those that have
+> an associated workqueue for the rescuer would insulate agsinst any
+> future case where rescuer threads may be bound to a subset of CPUs.
 
-Meh, sorry about that, they were in the series introduction the last
-time and I forgot to copy them over.
+On which CPU a rescuer is doesn't matter at all.  Using cpu_all_mask
+is good enough.
 
-I did single-threaded, linear writing to an USB stick as the effect is
-most pronounced with slow backing devices.
+Thank you.
 
-[ The write deferring on ext4 because of delalloc is so extreme that I
-  could trigger it even with simple linear writers on a mediocre
-  rotating disk, though.  I can not access the logfiles right now, but
-  the nr_vmscan_writes went practically away here as well and runtime
-  was unaffected with the patched kernel. ]
-
-			Test results
-
-15M DMA + 3246M DMA32 + 504M Normal = 3765M memory
-40% dirty ratio, 10% background ratio
-16G USB thumb drive
-10 runs of dd if=/dev/zero of=disk/zeroes bs=32k count=$((10 << 15))
-
-		seconds			nr_vmscan_write
-		        (stddev)	       min|     median|        max
-xfs
-vanilla:	 549.747( 3.492)	     0.000|      0.000|      0.000
-patched:	 550.996( 3.802)	     0.000|      0.000|      0.000
-
-fuse-ntfs
-vanilla:	1183.094(53.178)	 54349.000|  59341.000|  65163.000
-patched:	 558.049(17.914)	     0.000|      0.000|     43.000
-
-btrfs
-vanilla:	 573.679(14.015)	156657.000| 460178.000| 606926.000
-patched:	 563.365(11.368)	     0.000|      0.000|   1362.000
-
-ext4
-vanilla:	 561.197(15.782)	     0.000|2725438.000|4143837.000
-patched:	 568.806(17.496)	     0.000|      0.000|      0.000
+-- 
+tejun
