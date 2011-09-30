@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab1I3FFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 01:05:06 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:62780 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab1I3FFC (ORCPT
+	id S1755173Ab1I3FFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 01:05:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44177 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab1I3FFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 01:05:02 -0400
-Date: Thu, 29 Sep 2011 20:12:39 -0600
+	Fri, 30 Sep 2011 01:05:03 -0400
+Date: Thu, 29 Sep 2011 20:07:54 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -17,135 +17,180 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Linaro Dev <linaro-dev@lists.linaro.org>,
         Sascha Hauer <s.hauer@pengutronix.de>,
         David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 2/2 v7] pinmux: add a driver for the U300 pinmux
-Message-ID: <20110930021239.GL12606@ponder.secretlab.ca>
-References: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stijn Devriendt <highguy@gmail.com>
+Subject: Re: [PATCH] drivers: create a pin control subsystem v8
+Message-ID: <20110930020754.GK12606@ponder.secretlab.ca>
+References: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1316175249-10780-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1317211419-18472-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 16, 2011 at 02:14:09PM +0200, Linus Walleij wrote:
+On Wed, Sep 28, 2011 at 02:03:39PM +0200, Linus Walleij wrote:
 > From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> This adds a driver for the U300 pinmux portions of the system
-> controller "SYSCON". It also serves as an example of how to use
-> the pinmux subsystem. This driver also houses the platform data
-> for the only supported platform.
+> This creates a subsystem for handling of pin control devices.
+> These are devices that control different aspects of package
+> pins.
 
-Hi Linus, comments below.
+Comments below, some a bit nitpicky, but overall I think it looks
+good.  I haven't dug into it nearly deeply enough though.  :-(
 
-> diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
-> index 32a7b0f..449fd6a 100644
-> --- a/arch/arm/mach-u300/Kconfig
-> +++ b/arch/arm/mach-u300/Kconfig
-> @@ -6,6 +6,8 @@ comment "ST-Ericsson Mobile Platform Products"
->  
->  config MACH_U300
->  	bool "U300"
-> +	select PINCTRL
-> +	select PINMUX_U300
+[...]
+> +/**
+> + * Looks up a pin control device matching a certain device name or
+> + * pure device pointer.
 
-Shouldn't PINMUX_U300 select PINCTRL?
+May as well actually do kerneldoc formatting here on the comment
+blocks.
 
-> +#include "pinmux-u300.h"
-
-There is only one file that uses this header data.  Just put it into
-the .c file.
-
-> +static int __init u300_pmx_probe(struct platform_device *pdev)
+> + */
+> +struct pinctrl_dev *get_pctldev_from_dev(struct device *dev,
+> +					 const char *devname)
 > +{
+> +	struct pinctrl_dev *pctldev = NULL;
+> +	bool found = false;
+> +
+> +	mutex_lock(&pinctrldev_list_mutex);
+> +	list_for_each_entry(pctldev, &pinctrldev_list, node) {
+> +		if (dev &&  &pctldev->dev == dev) {
+> +			/* Matched on device pointer */
+> +			found = true;
+> +			break;
+> +		}
+> +
+> +		if (devname &&
+> +		    !strcmp(dev_name(&pctldev->dev), devname)) {
+> +			/* Matched on device name */
+> +			found = true;
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&pinctrldev_list_mutex);
+> +
+> +	if (found)
+> +		return pctldev;
+> +
+> +	return NULL;
+> +}
+
+Nit: I'm not too fond of a single function doing both name and pointer
+lookup at the same time.  Presumably the caller would have one or the
+other and know what it needs to do.  I'd prefer to see one by-name
+function and one by-reference.  I'm not going to make a big deal about
+it though.
+
+> +/**
+> + * pinctrl_register() - register a pin controller device
+> + * @pctldesc: descriptor for this pin controller
+> + * @dev: parent device for this pin controller
+> + * @driver_data: private pin controller data for this pin controller
+> + */
+> +struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+> +				    struct device *dev, void *driver_data)
+> +{
+> +	static atomic_t pinmux_no = ATOMIC_INIT(0);
+> +	struct pinctrl_dev *pctldev;
 > +	int ret;
-> +	struct u300_pmx *upmx;
-> +	struct resource *res;
 > +
-> +	/* Create state holders etc for this driver */
-> +	upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
-
-devm_kzalloc()
-
-> +	if (!upmx)
-> +		return -ENOMEM;
+> +	if (pctldesc == NULL)
+> +		return ERR_PTR(-EINVAL);
+> +	if (pctldesc->name == NULL)
+> +		return ERR_PTR(-EINVAL);
 > +
-> +	upmx->dev = &pdev->dev;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		ret = -ENOENT;
-> +		goto out_no_resource;
-> +	}
-> +	upmx->phybase = res->start;
-> +	upmx->physize = resource_size(res);
-> +
-> +	if (request_mem_region(upmx->phybase, upmx->physize,
-> +			       DRIVER_NAME) == NULL) {
-> +		ret = -EBUSY;
-> +		goto out_no_memregion;
+> +	/* If we're implementing pinmuxing, check the ops for sanity */
+> +	if (pctldesc->pmxops) {
+> +		ret = pinmux_check_ops(pctldesc->pmxops);
+> +		if (ret) {
+> +			pr_err("%s pinmux ops lacks necessary functions\n",
+> +			       pctldesc->name);
+> +			return ERR_PTR(ret);
+> +		}
 > +	}
 > +
-> +	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
-> +	if (!upmx->virtbase) {
-> +		ret = -ENOMEM;
-> +		goto out_no_remap;
+> +	pctldev = kzalloc(sizeof(struct pinctrl_dev), GFP_KERNEL);
+> +	if (pctldev == NULL)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	/* Initialize pin control device struct */
+> +	pctldev->owner = pctldesc->owner;
+> +	pctldev->desc = pctldesc;
+> +	pctldev->driver_data = driver_data;
+> +	INIT_RADIX_TREE(&pctldev->pin_desc_tree, GFP_KERNEL);
+> +	spin_lock_init(&pctldev->pin_desc_tree_lock);
+> +	INIT_LIST_HEAD(&pctldev->gpio_ranges);
+> +	mutex_init(&pctldev->gpio_ranges_lock);
+> +
+> +	/* Register device with sysfs */
+> +	pctldev->dev.parent = dev;
+> +	pctldev->dev.bus = &pinctrl_bus;
+
+I don't think there is an actual need for a pinctrl bus type.  There
+aren't any drivers that are going to be bound to these things which is
+the primary functionality that a bus type provides.  Am I missing
+something?
+
+> +	pctldev->dev.type = &pinctrl_type;
+> +	dev_set_name(&pctldev->dev, "pinctrl.%d",
+> +		     atomic_inc_return(&pinmux_no) - 1);
+> +	ret = device_register(&pctldev->dev);
+> +	if (ret != 0) {
+> +		pr_err("error in device registration\n");
+> +		put_device(&pctldev->dev);
+> +		kfree(pctldev);
+> +		goto out_err;
+> +	}
+> +	dev_set_drvdata(&pctldev->dev, pctldev);
+> +
+> +	/* Register all the pins */
+> +	pr_debug("try to register %d pins on %s...\n",
+> +		 pctldesc->npins, pctldesc->name);
+> +	ret = pinctrl_register_pins(pctldev, pctldesc->pins, pctldesc->npins);
+> +	if (ret) {
+> +		pr_err("error during pin registration\n");
+> +		pinctrl_free_pindescs(pctldev, pctldesc->pins,
+> +				      pctldesc->npins);
+> +		goto out_err;
 > +	}
 > +
-> +	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
-> +	if (IS_ERR(upmx->pctl)) {
-> +		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
-> +		ret = PTR_ERR(upmx->pctl);
-> +		goto out_no_pmx;
-> +	}
+> +	pinctrl_init_device_debugfs(pctldev);
+> +	mutex_lock(&pinctrldev_list_mutex);
+> +	list_add(&pctldev->node, &pinctrldev_list);
+> +	mutex_unlock(&pinctrldev_list_mutex);
+> +	pinmux_hog_maps(pctldev);
+> +	return pctldev;
 > +
-> +	/* We will handle a range of GPIO pins */
-> +	pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_range);
-> +
-> +	platform_set_drvdata(pdev, upmx);
-> +
-> +	u300_pmx_dumpregs(upmx);
-> +
-> +	dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
-> +
-> +	return 0;
-> +
-> +out_no_pmx:
-> +	iounmap(upmx->virtbase);
-> +out_no_remap:
-> +	platform_set_drvdata(pdev, NULL);
-> +out_no_memregion:
-> +	release_mem_region(upmx->phybase, upmx->physize);
-> +out_no_resource:
-> +	kfree(upmx);
-> +	return ret;
-> +}
-> +
-> +static int __exit u300_pmx_remove(struct platform_device *pdev)
+> +out_err:
+> +	put_device(&pctldev->dev);
+> +	kfree(pctldev);
 
-__devexit
+Once a device is initialized, it cannot be kfree()'ed directly.  The
+.release method needs to do that.
 
-> +{
-> +	struct u300_pmx *upmx = platform_get_drvdata(pdev);
-> +
-> +	pinctrl_remove_gpio_range(upmx->pctl, &u300_gpio_range);
-> +	pinctrl_unregister(upmx->pctl);
-> +	iounmap(upmx->virtbase);
-> +	release_mem_region(upmx->phybase, upmx->physize);
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(upmx);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver u300_pmx_driver = {
-> +	.driver = {
-> +		.name = DRIVER_NAME,
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.remove = __exit_p(u300_pmx_remove),
+> +/**
+> + * pin_free() - release a single muxed in pin so something else can be muxed in
+> + *	instead
 
-__devexit_p
+Nit: the summary line in kerneldoc should fit on one line.
 
+> +/**
+> + * pinmux_register_mappings() - register a set of pinmux mappings
+> + * @maps: the pinmux mappings table to register
+> + * @num_maps: the number of maps in the mapping table
+> + *
+> + * Only call this once during initialization of your machine, the function is
+> + * tagged as __init and won't be callable after init has completed. The map
+> + * passed into this function will be owned by the pinmux core and cannot be
+> + * free:d.
+> + */
+> +int __init
+> +pinmux_register_mappings(struct pinmux_map const *maps, unsigned num_maps)
+
+Nit: keep line breaks in the parameter lists.  More grep friendly.
+
+g.
