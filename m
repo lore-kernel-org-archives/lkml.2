@@ -1,164 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab1I3X1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 19:27:13 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:53226 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754102Ab1I3X1I (ORCPT
+	id S1754258Ab1I3X1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 19:27:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49960 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758814Ab1I3X1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 19:27:08 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <paul@pwsan.com>,
-        <aneesh@ti.com>, <santosh.shilimkar@ti.com>,
-        <christian.gmeiner@gmail.com>, Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: Re: [PATCH v5 2/3] omap_twl: Prevent SR to enable for am3517/am3505 devices
-Organization: Texas Instruments, Inc.
-References: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com>
-	<1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
-	<1317363153-10259-3-git-send-email-abhilash.kv@ti.com>
-	<87r52xhhkb.fsf@ti.com>
-Date: Fri, 30 Sep 2011 16:27:03 -0700
-In-Reply-To: <87r52xhhkb.fsf@ti.com> (Kevin Hilman's message of "Fri, 30 Sep
-	2011 14:00:04 -0700")
-Message-ID: <874nztfw6w.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 30 Sep 2011 19:27:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CANz0V+474_SvriQmUWx9VJwAk-iggu-h+A1WH-zGPBJgLzJDAg@mail.gmail.com>
+References: <1317397619-7091-1-git-send-email-linkinjeon@gmail.com>
+	<CANz0V+474_SvriQmUWx9VJwAk-iggu-h+A1WH-zGPBJgLzJDAg@mail.gmail.com>
+Date: Sat, 1 Oct 2011 08:27:19 +0900
+Message-ID: <CAKYAXd8cH5r8meTbTiEWNQAv5pmEwaL=T4=ZQOd+Bd99zLUusQ@mail.gmail.com>
+Subject: Re: [PATCH v4] mmc : general purpose partition support.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, adrian.hunter@intel.com,
+        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
+        sebras@gmail.com, Ulf.Hansson@stericsson.com,
+        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
+        johan.rudholm@stericsson.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8UNRtxx015687
 
-Abhilash,
-
-Kevin Hilman <khilman@ti.com> writes:
-
-> Abhilash K V <abhilash.kv@ti.com> writes:
+2011/10/1 Andrei E. Warkentin <andrey.warkentin@gmail.com>:
+> Hi Namjae,
 >
->> From: Abhilash K V <abhilash.kv@ti.com>
+> Why don't you update card->nr_parts inside mmc_part_add? You're making
+> this too complicated. There
+> is also no need for the part_cfg array.
+>
+> 2011/9/30 Namjae Jeon <linkinjeon@gmail.com>:
+>> It allows gerneral purpose partitions in MMC Device.
+>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+>> After patching, we can see general purpose partitions like this.
+>>> cat /proc/partitions
+>>          179 0 847872 mmcblk0
+>>          179 192 4096 mmcblk0gp3
+>>          179 160 4096 mmcblk0gp2
+>>          179 128 4096 mmcblk0gp1
+>>          179 96  1052672 mmcblk0gp0
+>>          179 64  1024 mmcblk0boot1
+>>          179 32  1024 mmcblk0boot0
 >>
->> In case of AM3517 & AM3505, SmartReflex is not applicable so
->> we must not enable it. So omap3_twl_init() is now not called
->> when the processor does not support SR.
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> ---
 >
-> This still isn't right.
+>>
+>> +/* partition configuration array */
+>> +static const unsigned int part_cfg[] = {
+>> +       0x1,    0x2,    0x4,    0x5,    0x6,    7,
+>> +};
+>> +
 >
-> The reason to skip the TWL PMIC init is not because SR is not available
-> (TWL PMICs are quite usable without SR).  The reason to skip TWL PMIC
-> init is because the PMIC is not present.
+> No need. Plus this is obscure.
 >
-> Instead, we need to fix up the TWL/PMIC init so that TWL-specifics are
-> only registered if a TWL driver is registered.
+>> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+>> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+>> +                       card->nr_parts = MMC_NUM_BOOT_PARTITION;
+>> +                       for (idx = 0, part_num = 0;
+>> +                               idx < MMC_NUM_BOOT_PARTITION; idx++,
+>> +                               part_num++) {
+>> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+>> +                               mmc_part_add(card, part_size, part_cfg[idx],
+>> +                                       "boot%d", idx, part_num, true);
+>> +                       }
+>> +               }
+>>        }
 >
-
-Below is a test patch that is a first pass at implementing what I
-suggested above.  I tested this (along with your patch 3/3) on a
-3430/n900 after removing the omap_pmic_init() call frome the board file.
-
-Can you let me know if this solves the problem you're seeing on
-platforms that don't have TWL PMICs?
-
-After digging into this more, I'm increasingly aware that the way we're
-managing the init of PMIC stuff is a mess.  Guess I need another round
-of voltage layer cleanups to fix that up.  
-
-
-Kevin
-
->From 1cd49077829a262155b96f8fdcdcdd6c54d83ed5 Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@ti.com>
-Date: Fri, 30 Sep 2011 11:24:04 -0700
-Subject: [PATCH] ARM: OMAP2+: PM: only register TWL with voltage layer when
- device is present
-
-Current code registers voltage layer details for TWL PMIC even when a TWL
-has not been registered.  Fix this to only register the TWL with voltage
-layer when the TWL PMIC is initialized by board-level code.
-
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- arch/arm/mach-omap2/pm.c         |    6 ++----
- arch/arm/mach-omap2/twl-common.c |   11 +++++++++++
- arch/arm/mach-omap2/twl-common.h |    3 +++
- 3 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
-index d34fc52..602fc66 100644
---- a/arch/arm/mach-omap2/pm.c
-+++ b/arch/arm/mach-omap2/pm.c
-@@ -23,6 +23,7 @@
- #include "powerdomain.h"
- #include "clockdomain.h"
- #include "pm.h"
-+#include "twl-common.h"
- 
- static struct omap_device_pm_latency *pm_lats;
- 
-@@ -251,11 +252,8 @@ postcore_initcall(omap2_common_pm_init);
- 
- static int __init omap2_common_pm_late_init(void)
- {
--	/* Init the OMAP TWL parameters */
--	omap3_twl_init();
--	omap4_twl_init();
--
- 	/* Init the voltage layer */
-+	omap_pmic_late_init();
- 	omap_voltage_late_init();
- 
- 	/* Initialize the voltages */
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index daa056e..47133fa 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -30,6 +30,7 @@
- #include <plat/usb.h>
- 
- #include "twl-common.h"
-+#include "pm.h"
- 
- static struct i2c_board_info __initdata pmic_i2c_board_info = {
- 	.addr		= 0x48,
-@@ -48,6 +49,16 @@ void __init omap_pmic_init(int bus, u32 clkrate,
- 	omap_register_i2c_bus(bus, clkrate, &pmic_i2c_board_info, 1);
- }
- 
-+void __init omap_pmic_late_init(void)
-+{
-+	/* Init the OMAP TWL parameters (if PMIC has been registerd) */
-+	if (!pmic_i2c_board_info.irq)
-+		return;
-+
-+	omap3_twl_init();
-+	omap4_twl_init();
-+}
-+
- #if defined(CONFIG_ARCH_OMAP3)
- static struct twl4030_usb_data omap3_usb_pdata = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
-diff --git a/arch/arm/mach-omap2/twl-common.h b/arch/arm/mach-omap2/twl-common.h
-index 5e83a5b..275dde8 100644
---- a/arch/arm/mach-omap2/twl-common.h
-+++ b/arch/arm/mach-omap2/twl-common.h
-@@ -1,6 +1,8 @@
- #ifndef __OMAP_PMIC_COMMON__
- #define __OMAP_PMIC_COMMON__
- 
-+#include <plat/irqs.h>
-+
- #define TWL_COMMON_PDATA_USB		(1 << 0)
- #define TWL_COMMON_PDATA_BCI		(1 << 1)
- #define TWL_COMMON_PDATA_MADC		(1 << 2)
-@@ -30,6 +32,7 @@ struct twl4030_platform_data;
- 
- void omap_pmic_init(int bus, u32 clkrate, const char *pmic_type, int pmic_irq,
- 		    struct twl4030_platform_data *pmic_data);
-+void omap_pmic_late_init(void);
- 
- static inline void omap2_pmic_init(const char *pmic_type,
- 				   struct twl4030_platform_data *pmic_data)
--- 
-1.7.6
-
+> There is no need for part_num (you have idx for that). And there is no
+> need for passing the actual array
+> index either - that's why you have mmc_part_add: it will do
+> card->parts[card->nr_parts++] = new_part.
+>
+>               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+>                       for (idx = 0, part_num = 0;
+>                               idx < MMC_NUM_BOOT_PARTITION; idx++) {
+>                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+>                               mmc_part_add(card, part_size,
+> EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
+>                                       "boot%d", idx, true);
+>                       }
+>               }
+>
+>
+>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
+>> +                       u8 hc_erase_grp_sz =
+>> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+>> +                       u8 hc_wp_grp_sz =
+>> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+>> +
+>> +                       card->ext_csd.enhanced_area_en = 1;
+>> +
+>> +                       card->nr_parts += MMC_NUM_GP_PARTITION;
+>> +                       for (part_num = 0, gp_size_mult = 143;
+>> +                               idx < card->nr_parts;
+>> +                               idx++, part_num++, gp_size_mult += 3) {
+>> +                               if (!ext_csd[gp_size_mult] &&
+>> +                                       !ext_csd[gp_size_mult + 1] &&
+>> +                                       !ext_csd[gp_size_mult + 2])
+>> +                                       continue;
+>> +                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
+>> +                                       (ext_csd[gp_size_mult + 1] << 8) +
+>> +                                       ext_csd[gp_size_mult];
+>> +                               part_size *= (size_t)(hc_erase_grp_sz *
+>> +                                       hc_wp_grp_sz);
+>> +                               part_size <<= 19;
+>> +                               mmc_part_add(card, part_size, part_cfg[idx],
+>> +                                       "gp%d", idx, part_num, false);
+>> +                       }
+>> +               }
+>
+> Same story: get rid of part_num, don't touch card->nr_parts, and get
+> rid of part_cfg array access.
+>
+>                       card->ext_csd.enhanced_area_en = 1;
+>                       for (idx = 0, gp_size_mult = 143;
+>                               idx < MMC_NUM_GP_PARTITION;
+>                               idx++, gp_size_mult += 3) {
+>                               if (!ext_csd[gp_size_mult] &&
+>                                       !ext_csd[gp_size_mult + 1] &&
+>                                       !ext_csd[gp_size_mult + 2])
+>                                       continue;
+>                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
+>                                       (ext_csd[gp_size_mult + 1] << 8) +
+>                                       ext_csd[gp_size_mult];
+>                               part_size *= (size_t)(hc_erase_grp_sz *
+>                                       hc_wp_grp_sz);
+>                               part_size <<= 19;
+>                               mmc_part_add(card, part_size, idx +
+> EXT_CSD_PART_CONFIG_ACC_GP0,
+>                                       "gp%d", idx, false);
+>                       }
+>               }
+>
+>
+>>  /*
+>> + * This function fill contents in mmc_part.
+>> + */
+>> +static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
+>> +       unsigned int part_cfg, char *name, int idx, int part_num, bool ro)
+>> +{
+>> +       card->part[idx].size = size;
+>> +       card->part[idx].cookie = part_cfg;
+>> +       sprintf(card->part[idx].name, name, part_num);
+>> +       card->part[idx].force_ro = ro;
+>> +}
+>
+> static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
+>       unsigned int part_cfg, char *name, int idx, bool ro)
+> {
+>       card->part[card->nr_parts].size = size;
+>       card->part[card->nr_parts].cookie = part_cfg;
+>       sprintf(card->part[card->nr_parts].name, name, idx);
+>       card->part[card->nr_parts].force_ro = ro;
+>       card->nr_parts++;
+> }
+>
+>>  #define EXT_CSD_PART_CONFIG_ACC_MASK   (0x7)
+>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
+>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
+>>
+>
+> I'd also keep the MMC_NUM_BOOT_PARTITION and MMC_NUM_GP_PARTITION defs
+> at the same location.
+Why should this def move to mmc.h ?
+this area where there are ext csd fields.
+>
+> /* The number of MMC physical partitions
+>  * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
+>  */
+> #define MMC_NUM_BOOT_PARTITION 2
+> #define MMC_NUM_GP_PARTITION   4
+>
+> #define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
+> #define EXT_CSD_PART_CONFIG_ACC_GP0       (0x4)
+>
+> A
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
