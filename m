@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1I3Bvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Sep 2011 21:51:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44655 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab1I3Bvx (ORCPT
+	id S1755648Ab1I3BwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Sep 2011 21:52:18 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:43037 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab1I3BwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Sep 2011 21:51:53 -0400
-Date: Thu, 29 Sep 2011 18:51:48 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] oom: thaw threads if oom killed thread is frozen before
- deferring
-Message-ID: <20110930015148.GD10425@mtj.dyndns.org>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <65d9dff7ff78fad1f146e71d32f9f92741281b46.1317110948.git.mhocko@suse.cz>
- <alpine.DEB.2.00.1109271133590.17876@chino.kir.corp.google.com>
- <20110928104445.GB15062@tiehlicka.suse.cz>
- <20110929115105.GE21113@tiehlicka.suse.cz>
- <20110929120517.GA10587@redhat.com>
- <20110929130204.GG21113@tiehlicka.suse.cz>
- <20110929163724.GA23773@redhat.com>
- <20110929180021.GA27999@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110929180021.GA27999@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 Sep 2011 21:52:16 -0400
+Date: Fri, 30 Sep 2011 11:52:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: build failure after merge of the final tree (akpm tree
+ related)
+Message-Id: <20110930115213.eb2dbb2074b23c5a990f0f8a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Sep_2011_11_52_13_+1000_rtD3nACw6rw9G6.e"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Fri__30_Sep_2011_11_52_13_+1000_rtD3nACw6rw9G6.e
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 29, 2011 at 08:00:21PM +0200, Michal Hocko wrote:
-> > I meant, oom_kill can do this before thaw thaw_process(), afaics
-> > this should fix the particular race you described (but not others).
-> 
-> This is what the follow up fix from David is doing. Check frozen in
-> select_bad_process if the task is TIF_MEMDIE and thaw the process.
-> 
-> And it seems that the David's follow up fix is sufficient so let's leave
-> refrigerator alone.
-> Or am I still missing something?
+Hi all,
 
-With pending freezer changes, allowing TIF_MEMDIE tasks to exit
-freezer by modifying freezing() shouldn't be difficult, which should
-be race-free and much simpler than diddling with thaw_task().  How
-urgent is this?  Can we wait for the next merge window?
+After merging the final tree, the next-20110929 build (um defconfig)
+failed like this:
 
-Thanks.
+In file included from arch/um/os-Linux/sys-i386/registers.c:13:
+arch/um/include/shared/user.h:26: error: expected declaration specifiers or=
+ '...' before numeric constant
+arch/um/include/shared/user.h:26: error: expected declaration specifiers or=
+ '...' before numeric constant
+arch/um/include/shared/user.h:26: warning: return type defaults to 'int'
+arch/um/include/shared/user.h:26: warning: function declaration isn't a pro=
+totype
+arch/um/include/shared/user.h: In function '__printf':
+arch/um/include/shared/user.h:29: error: expected declaration specifiers or=
+ '...' before numeric constant
+arch/um/include/shared/user.h:29: error: expected declaration specifiers or=
+ '...' before numeric constant
+arch/um/include/shared/user.h:29: error: expected '=3D', ',', ';', 'asm' or=
+ '__attribute__' before 'int'
 
--- 
-tejun
+And it went downhill from here ...
+
+Caused by commit 820b1a71d7a7 ("treewide: use __printf not __attribute__
+((format(printf,...)))").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__30_Sep_2011_11_52_13_+1000_rtD3nACw6rw9G6.e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOhSDNAAoJEDMEi1NhKgbsHlAH/3+ETA7wTtKwfEg06+fZlQIx
+dqa9ANBFia2/LJtArQ5IjaAmvsjQGXG6QeC4qlkIAASMlUGf3HFoFum+j1c2ybFt
+1HTGgzE5+S1qEfMUfEC2fuAe6oSsRvqODjIFROTp4OMN9wTEYw/JgS+301IeFEcg
+HWQKMj9z+IlUCtFYUpXybXt827wcEjUyg9NAUTu3hTRRZPdzPIWjkMgIvI1vlKLC
+ChIQU9r1aLZzpI6aVR2MQaOk4BFpLjKvb/mZjN6QJpA4nxgnmd/IkzatLa3yyGCY
+hugEK1EiUwDi+OJh/Vy5fVu9VSl3MsxLQGTeR5CxLbBJEcxgjwfhlcw1gbX3vhE=
+=uPhd
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Sep_2011_11_52_13_+1000_rtD3nACw6rw9G6.e--
