@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab1JAUHz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:07:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62160 "EHLO
+	id S1755750Ab1JAUIC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:08:02 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51772 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab1JAUFN (ORCPT
+	with ESMTP id S1755729Ab1JAUFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Oct 2011 16:05:13 -0400
 From: Arnd Bergmann <arnd@arndb.de>
@@ -14,55 +14,98 @@ Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Jason Chagas <jason.chagas@marvell.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 08/26] ARM: pxa: move z2 to generic cpu_suspend
-Date: Sat,  1 Oct 2011 22:03:40 +0200
-Message-Id: <1317499438-14058-9-git-send-email-arnd@arndb.de>
+Subject: [PATCH 17/26] ARM: pxa: pxa95x is incompatible with earlier pxa
+Date: Sat,  1 Oct 2011 22:03:49 +0200
+Message-Id: <1317499438-14058-18-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317499438-14058-1-git-send-email-arnd@arndb.de>
 References: <1317499438-14058-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:PSoexy2x0ED08LEV4JRXsZuGqmz1iejG4JrmuadTtBd
- fspjKOk2CGEwZ9Zmr8lH1Y/7K8hLdrXqoUU0prnH+aAQOSdIuB
- abZxkgAPSkCTuPOporQVfpLAot+F0ymInur8UqmvA9Szdv6sMd
- iY3eYbRngC42QrediQMEIO0L25zEXKUhFGXHaFWcw2LMpvz6tM
- XpUSFMax2N+rzSjic5H0TlGspdb53d2m3Kb2cuocE4wfym9K9A
- YJdV7wSF3gz3CqJoVq/94Lky/ILVD4iXct4z1IAtMPFfKOaW1o
- RWpcD+yuBbalmZaKfCIOAL9vcHvu8XBySW/msYXz3/+WkQfcIW
- DEN+7DCfuzVX7il7nMMPd995bVu2+5CsJbCbdNViYtb9ZX16d9
- UjKQn7D6lOuog==
+X-Provags-ID: V02:K0:TilcBFSy7cLdintIMjs4MlTR4OZDTMR4TLkE6c42ght
+ icie32DvHpB719MeDFS/hQ8cud6K1TKL10PSrSAkdYVVnJR0H1
+ diJ1afBeGIh+GblV79+jDEo30ohXZk3ttwkh/Ip96XmqArlRGf
+ Hp6WiiJTSUhNbKmAlnhzBgZaPzXIoa0lVYGu4vUnGxTxd4ey7/
+ GasegMZjL5auhtZe75NQdw8cakWHLZTS6A2uejlb2a2N0iRL9T
+ KC5RXMsPczRH+4SoVmfQI9YIBkc0/qIZrv+LThquZ4T91wntSX
+ 9CwEMebPIOlxemcdRCgT851AIDL/8IgLsTgLKhEFCjCQ+gzVF0
+ ULXCmKBGOlOxm3ym8HyUfsoChgscKPF0rl0Cjq2yU4oJLeUghO
+ aSYdbu8p0E/8Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu_suspend code on pxa has recently changed, and the
-z2 board did not get updated yet. This makes it do the
-same as the other boards.
+We cannot support ARMv5 and ARMv7 based boards in a single kernel,
+so introduce a new option in mach-pxa to select between the two.
+
+The PJ4 (ARMv7) based boards are now only visible when
+CONFIG_ARCH_PXA_V7 is set, the other boards are only visible
+when it's not set.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-pxa/z2.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/arm/mach-pxa/Kconfig |   31 ++++++++++++++++++++++---------
+ 1 files changed, 22 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
-index 6c9275a..109447b 100644
---- a/arch/arm/mach-pxa/z2.c
-+++ b/arch/arm/mach-pxa/z2.c
-@@ -31,6 +31,7 @@
- #include <linux/regulator/machine.h>
- #include <linux/i2c/pxa-i2c.h>
+diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
+index cd19309..bb310d0 100644
+--- a/arch/arm/mach-pxa/Kconfig
++++ b/arch/arm/mach-pxa/Kconfig
+@@ -2,6 +2,27 @@ if ARCH_PXA
  
-+#include <asm/suspend.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
+ menu "Intel PXA2xx/PXA3xx Implementations"
  
-@@ -686,7 +687,7 @@ static void z2_power_off(void)
- 	 */
- 	PSPR = 0x0;
- 	local_irq_disable();
--	pxa27x_cpu_suspend(PWRMODE_DEEPSLEEP, PLAT_PHYS_OFFSET - PAGE_OFFSET);
-+	cpu_suspend(PWRMODE_DEEPSLEEP, pxa27x_finish_suspend);
- }
- #else
- #define z2_power_off   NULL
++config ARCH_PXA_V7
++	bool "ARMv7 (PXA95x) based systems"
++
++if ARCH_PXA_V7
++comment "Marvell Dev Platforms (sorted by hardware release time)"
++config MACH_TAVOREVB3
++	bool "PXA95x Development Platform (aka TavorEVB III)"
++	select CPU_PXA955
++
++config MACH_SAARB
++	bool "PXA955 Handheld Platform (aka SAARB)"
++	select CPU_PXA955
++endif
++
++config PXA_V7_MACH_AUTO
++	def_bool y
++	depends on ARCH_PXA_V7
++	depends on !MACH_SAARB
++	select MACH_TAVOREVB3
++
++if !ARCH_PXA_V7
+ comment "Intel/Marvell Dev Platforms (sorted by hardware release time)"
+ 
+ config ARCH_LUBBOCK
+@@ -41,19 +62,11 @@ config MACH_TAVOREVB
+ 	select PXA3xx
+ 	select CPU_PXA930
+ 
+-config MACH_TAVOREVB3
+-	bool "PXA95x Development Platform (aka TavorEVB III)"
+-	select CPU_PXA950
+-
+ config MACH_SAAR
+ 	bool "PXA930 Handheld Platform (aka SAAR)"
+ 	select PXA3xx
+ 	select CPU_PXA930
+ 
+-config MACH_SAARB
+-	bool "PXA955 Handheld Platform (aka SAARB)"
+-	select CPU_PXA955
+-
+ comment "Third Party Dev Platforms (sorted by vendor name)"
+ 
+ config ARCH_PXA_IDP
+@@ -598,7 +611,7 @@ config MACH_ZIPIT2
+ 	bool "Zipit Z2 Handheld"
+ 	select PXA27x
+ 	select HAVE_PWM
+-
++endif
+ endmenu
+ 
+ config PXA25x
 -- 
 1.7.5.4
 
