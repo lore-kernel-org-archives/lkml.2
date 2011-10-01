@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1JAHKQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 03:10:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34036 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab1JAHKL (ORCPT
+	id S1754188Ab1JAHQM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 03:16:12 -0400
+Received: from 21.255.60.213.static.mundo-r.com ([213.60.255.21]:53678 "EHLO
+	mail.galiciaaberta.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1JAHQE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 03:10:11 -0400
-Date: Sat, 1 Oct 2011 16:10:01 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Chris Mason <chris.mason@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/5] mm: exclude reserved pages from dirtyable memory
-Message-ID: <20111001071001.GB6601@barrios-desktop>
-References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
- <1317367044-475-2-git-send-email-jweiner@redhat.com>
+	Sat, 1 Oct 2011 03:16:04 -0400
+Message-ID: <20111001065654.163968e20ddrcjok@mail.galiciaaberta.com>
+Date: Sat, 01 Oct 2011 06:56:54 +0200
+From: FEDEX OFFICE <fedex@galiciaaberta.com>
+Reply-to: fedexdelivery1952@msn.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1317367044-475-2-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) 4.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 09:17:20AM +0200, Johannes Weiner wrote:
-> The amount of dirtyable pages should not include the full number of
-> free pages: there is a number of reserved pages that the page
-> allocator and kswapd always try to keep free.
-> 
-> The closer (reclaimable pages - dirty pages) is to the number of
-> reserved pages, the more likely it becomes for reclaim to run into
-> dirty pages:
-> 
->        +----------+ ---
->        |   anon   |  |
->        +----------+  |
->        |          |  |
->        |          |  -- dirty limit new    -- flusher new
->        |   file   |  |                     |
->        |          |  |                     |
->        |          |  -- dirty limit old    -- flusher old
->        |          |                        |
->        +----------+                       --- reclaim
->        | reserved |
->        +----------+
->        |  kernel  |
->        +----------+
-> 
-> This patch introduces a per-zone dirty reserve that takes both the
-> lowmem reserve as well as the high watermark of the zone into account,
-> and a global sum of those per-zone values that is subtracted from the
-> global amount of dirtyable pages.  The lowmem reserve is unavailable
-> to page cache allocations and kswapd tries to keep the high watermark
-> free.  We don't want to end up in a situation where reclaim has to
-> clean pages in order to balance zones.
-> 
-> Not treating reserved pages as dirtyable on a global level is only a
-> conceptual fix.  In reality, dirty pages are not distributed equally
-> across zones and reclaim runs into dirty pages on a regular basis.
-> 
-> But it is important to get this right before tackling the problem on a
-> per-zone level, where the distance between reclaim and the dirty pages
-> is mostly much smaller in absolute numbers.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
--- 
-Kinds regards,
-Minchan Kim
+
+Attn: Beneficiary,
+
+This is to inform you that your package worth the sum of $800,000.00 (Eight
+Hundred Thousand United State Dollars) in a certified bank draft is in our
+office ready for delivery,We are sending you this email because your package
+has been registered on a Special Order.You are advise to contact our Delivery
+Department for immediate dispatch of your package to your designated address.
+
+
+Regards
+Mr.Umar Tony {Head Dispatch Officer}
+FedEx Express ®Courier Company West-Africa
+E-mail:fedexdelivery1952@msn.com
+Telephone Number:+234-70-65749930
+
+---------------------------------------------------------------------------------
+www.galiciaaberta.com
+Información mantida pola Secretaría Xeral de Emigración da Xunta de Galicia
