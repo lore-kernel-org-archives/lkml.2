@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1JAJfj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 05:35:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39114 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1JAJfc (ORCPT
+	id S1755286Ab1JAJfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 05:35:54 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48245 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755143Ab1JAJft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 05:35:32 -0400
-Date: Sat, 1 Oct 2011 11:35:58 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 06/21] drm/i915: Unlock PCH_PP_CONTROL always
-Message-ID: <20111001093558.GA2807@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20110923085243.6e4b7b4c@jbarnes-x220>
- <1317344993-24945-1-git-send-email-keithp@keithp.com>
- <1317344993-24945-7-git-send-email-keithp@keithp.com>
- <20110930170946.GF2859@phenom.ffwll.local>
- <yunty7t62sf.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yunty7t62sf.fsf@aiko.keithp.com>
-X-Operating-System: Linux phenom 3.1.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 1 Oct 2011 05:35:49 -0400
+Subject: Re: [RFC][PATCH 0/5] Signal scalability series
+From: Matt Fleming <matt@console-pimps.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Mosberger-Tang <davidm@egauge.net>
+In-Reply-To: <m21uuxirxi.fsf@firstfloor.org>
+References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
+	 <m21uuxirxi.fsf@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 01 Oct 2011 10:35:38 +0100
+Message-ID: <1317461738.3375.46.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 04:14:40PM -0700, Keith Packard wrote:
-> On Fri, 30 Sep 2011 19:09:46 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+On Fri, 2011-09-30 at 15:30 -0700, Andi Kleen wrote:
+> Matt Fleming <matt@console-pimps.org> writes:
+> >
+> > And just like last time, these patches break ia64 because it
+> > implements rt_sigprocmask() in assembly. I'll work on the ia64 stuff
+> > while these patches are being reviewed.
 > 
-> > grep shows that we also write to PCH_PP_CONTROL in intel_lvds.c in the
-> > dpms functions - any reasons these two writes are left out?
+> Since we don't want to tie everyone changing signals in the future to
+> learning IA64 assembler, maybe the best approach would be simply to
+> change that function to just use the syscall. It can't be that
+> performance critical and everyone else has it as a syscall too.
 > 
-> Upon a bit of review:
-> 
->   The bspec makes it clear that this write protect key only needs to
->   be written for eDP on DPA -- it's a work-around for a bug where panel
->   power sequencing wouldn't work right.
-> 
->   The LVDS code does disable write protect in the _init function, which
->   seems global enough, but misses the resume case. We shouldn't ever
->   need to set this field though; it write protects registers only
->   when the panel is running. We could presumably remove the
->   write protect disable entirely in the LVDS code.
-> 
-> So, I think the patch as written is correct.
+> I think that would be the best solution for long term maintainability.
 
-Convinced.
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+You and me both. Unfortunately, the ia64 guys had a different opinion,
+http://www.spinics.net/lists/linux-ia64/msg08363.html
+
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Matt Fleming, Intel Open Source Technology Center
+
