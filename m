@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab1JAKPx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 06:15:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47522 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab1JAKPk (ORCPT
+	id S1755830Ab1JAKP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 06:15:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59640 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab1JAKPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 06:15:40 -0400
+	Sat, 1 Oct 2011 06:15:43 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, alan@linux.intel.com,
         Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 2/8] staging: et131x: Introduce et1310_in_phy_coma() call
-Date: Sat,  1 Oct 2011 11:14:11 +0100
-Message-Id: <1317464057-18231-2-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH 4/8] staging: et131x: Add pci suspend & resume functions
+Date: Sat,  1 Oct 2011 11:14:13 +0100
+Message-Id: <1317464057-18231-4-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1317464057-18231-1-git-send-email-mark.einon@gmail.com>
 References: <1317464057-18231-1-git-send-email-mark.einon@gmail.com>
@@ -22,156 +22,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In several places in the code, the pm_csr register is read and the PHY_SW_COMA bit checked.
-
-Move this check into its own small function to make the code more readable.
+Added basic suspend & resume functionality.
+Tested on an et1310 device, and putting Fedora15 host in and out of
+hibernation successfully.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et1310_mac.c     |    4 ++--
- drivers/staging/et131x/et1310_pm.c      |   15 +++++++++++++++
- drivers/staging/et131x/et131x.h         |    1 +
- drivers/staging/et131x/et131x_initpci.c |   28 +++++++++-------------------
- drivers/staging/et131x/et131x_isr.c     |    2 +-
- 5 files changed, 28 insertions(+), 22 deletions(-)
+ drivers/staging/et131x/README           |    1 -
+ drivers/staging/et131x/et131x.h         |    2 +
+ drivers/staging/et131x/et131x_initpci.c |   45 +++++++++++++++++++++++++++++-
+ 3 files changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/et131x/et1310_mac.c b/drivers/staging/et131x/et1310_mac.c
-index 08d7691..157462f 100644
---- a/drivers/staging/et131x/et1310_mac.c
-+++ b/drivers/staging/et131x/et1310_mac.c
-@@ -612,7 +612,7 @@ void et1310_setup_device_for_multicast(struct et131x_adapter *adapter)
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+index d24ef84..42c388d 100644
+--- a/drivers/staging/et131x/README
++++ b/drivers/staging/et131x/README
+@@ -10,7 +10,6 @@ driver as they did not build properly at the time.
  
- 	/* Write out the new hash to the device */
- 	pm_csr = readl(&adapter->regs->global.pm_csr);
--	if ((pm_csr & ET_PM_PHY_SW_COMA) == 0) {
-+	if (!et1310_in_phy_coma(adapter)) {
- 		writel(hash1, &rxmac->multi_hash1);
- 		writel(hash2, &rxmac->multi_hash2);
- 		writel(hash3, &rxmac->multi_hash3);
-@@ -653,7 +653,7 @@ void et1310_setup_device_for_unicast(struct et131x_adapter *adapter)
- 		   adapter->addr[5];
+ TODO:
+ 	- add_timer call in et131x_netdev.c is correct?
+-	- Add power saving functionality (suspend, sleep, resume)
+ 	- Implement a few more kernel Parameter (set mac )
  
- 	pm_csr = readl(&adapter->regs->global.pm_csr);
--	if ((pm_csr & ET_PM_PHY_SW_COMA) == 0) {
-+	if (!et1310_in_phy_coma(adapter)) {
- 		writel(uni_pf1, &rxmac->uni_pf_addr1);
- 		writel(uni_pf2, &rxmac->uni_pf_addr2);
- 		writel(uni_pf3, &rxmac->uni_pf_addr3);
-diff --git a/drivers/staging/et131x/et1310_pm.c b/drivers/staging/et131x/et1310_pm.c
-index b20d5d6..55f2d36 100644
---- a/drivers/staging/et131x/et1310_pm.c
-+++ b/drivers/staging/et131x/et1310_pm.c
-@@ -87,6 +87,21 @@
- #include "et131x.h"
- 
- /**
-+ * et1310_in_phy_coma - check if the device is in phy coma
-+ * @adapter: pointer to our adapter structure
-+ *
-+ * Returns 0 if the device is not in phy coma, 1 if it is in phy coma
-+ */
-+int et1310_in_phy_coma(struct et131x_adapter *adapter)
-+{
-+	u32 pmcsr;
-+
-+	pmcsr = readl(&adapter->regs->global.pm_csr);
-+
-+	return ET_PM_PHY_SW_COMA & pmcsr ? 1 : 0;
-+}
-+
-+/**
-  * et1310_enable_phy_coma - called when network cable is unplugged
-  * @adapter: pointer to our adapter structure
-  *
+ Please send patches to:
 diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
-index c047e6e..d967c5a1 100644
+index d967c5a1..15486d1 100644
 --- a/drivers/staging/et131x/et131x.h
 +++ b/drivers/staging/et131x/et131x.h
-@@ -87,6 +87,7 @@ void et131x_enable_txrx(struct net_device *netdev);
+@@ -82,6 +82,8 @@ void et1310_setup_device_for_multicast(struct et131x_adapter *adapter);
+ void et1310_setup_device_for_unicast(struct et131x_adapter *adapter);
+ 
+ /* et131x_netdev.c */
++int et131x_open(struct net_device *netdev);
++int et131x_close(struct net_device *netdev);
+ struct net_device *et131x_device_alloc(void);
+ void et131x_enable_txrx(struct net_device *netdev);
  void et131x_disable_txrx(struct net_device *netdev);
- 
- /* et1310_pm.c */
-+int et1310_in_phy_coma(struct et131x_adapter *adapter);
- void et1310_enable_phy_coma(struct et131x_adapter *adapter);
- void et1310_disable_phy_coma(struct et131x_adapter *adapter);
- 
 diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index e9daa73..667ab80 100644
+index 10283a3..e166fde 100644
 --- a/drivers/staging/et131x/et131x_initpci.c
 +++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -239,15 +239,11 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
- void et131x_error_timer_handler(unsigned long data)
- {
- 	struct et131x_adapter *adapter = (struct et131x_adapter *) data;
--	u32 pm_csr;
+@@ -869,6 +869,45 @@ static void __devexit et131x_pci_remove(struct pci_dev *pdev)
+ 	pci_disable_device(pdev);
+ }
  
--	pm_csr = readl(&adapter->regs->global.pm_csr);
--
--	if ((pm_csr & ET_PM_PHY_SW_COMA) == 0)
-+	if (!et1310_in_phy_coma(adapter))
- 		et1310_update_macstat_host_counters(adapter);
- 	else
--		dev_err(&adapter->pdev->dev,
--		    "No interrupts, in PHY coma, pm_csr = 0x%x\n", pm_csr);
-+		dev_err(&adapter->pdev->dev, "No interrupts, in PHY coma\n");
++static int et131x_pci_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	struct net_device *netdev = pci_get_drvdata(pdev);
++
++	if (!netif_running(netdev))
++		return 0;
++
++	et131x_close(netdev);
++	netif_device_detach(netdev);
++
++	pci_save_state(pdev);
++	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++
++	return 0;
++}
++
++static int et131x_pci_resume(struct pci_dev *pdev)
++{
++	struct net_device *netdev = pci_get_drvdata(pdev);
++	int err = 0;
++
++	if (!netif_running(netdev))
++		return 0;
++
++	pci_set_power_state(pdev, PCI_D0);
++	pci_restore_state(pdev);
++
++	err = et131x_open(netdev);
++	if (err) {
++		dev_err(&pdev->dev, "Can't resume interface!\n");
++		goto out;
++	}
++
++	netif_device_attach(netdev);
++
++out:
++	return err;
++}
++
+ static struct pci_device_id et131x_pci_table[] __devinitdata = {
+ 	{ET131X_PCI_VENDOR_ID, ET131X_PCI_DEVICE_ID_GIG, PCI_ANY_ID,
+ 	 PCI_ANY_ID, 0, 0, 0UL},
+@@ -884,8 +923,10 @@ static struct pci_driver et131x_driver = {
+ 	.id_table	= et131x_pci_table,
+ 	.probe		= et131x_pci_setup,
+ 	.remove		= __devexit_p(et131x_pci_remove),
+-	.suspend	= NULL,		/* et131x_pci_suspend */
+-	.resume		= NULL,		/* et131x_pci_resume */
++#ifdef CONFIG_PM
++	.suspend	= et131x_pci_suspend,
++	.resume		= et131x_pci_resume,
++#endif
+ };
  
- 	if (!(adapter->bmsr & BMSR_LSTATUS) &&
- 	    adapter->boot_coma < 11) {
-@@ -256,7 +252,7 @@ void et131x_error_timer_handler(unsigned long data)
- 
- 	if (adapter->boot_coma == 10) {
- 		if (!(adapter->bmsr & BMSR_LSTATUS)) {
--			if ((pm_csr & ET_PM_PHY_SW_COMA) == 0) {
-+			if (!et1310_in_phy_coma(adapter)) {
- 				/* NOTE - This was originally a 'sync with
- 				 *  interrupt'. How to do that under Linux?
- 				 */
-@@ -443,9 +439,6 @@ static void et131x_adjust_link(struct net_device *netdev)
- {
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 	struct  phy_device *phydev = adapter->phydev;
--	struct address_map __iomem *iomem = adapter->regs;
--
--	u32 pm_csr;
- 
- 	if (netif_carrier_ok(netdev)) {
- 		adapter->boot_coma = 20;
-@@ -488,16 +481,13 @@ static void et131x_adjust_link(struct net_device *netdev)
- 	}
- 
- 	if (phydev->link != adapter->link) {
--		/* If we are in coma mode, we need to disable it. */
--		pm_csr = readl(&iomem->global.pm_csr);
--		if (pm_csr & ET_PM_PHY_SW_COMA) {
--			/*
--			 * Check to see if we are in coma mode and if
--			 * so, disable it because we will not be able
--			 * to read PHY values until we are out.
--			 */
-+		/*
-+		 * Check to see if we are in coma mode and if
-+		 * so, disable it because we will not be able
-+		 * to read PHY values until we are out.
-+		 */
-+		if (et1310_in_phy_coma(adapter))
- 			et1310_disable_phy_coma(adapter);
--		}
- 
- 		if (phydev->link) {
- 			adapter->boot_coma = 20;
-diff --git a/drivers/staging/et131x/et131x_isr.c b/drivers/staging/et131x/et131x_isr.c
-index 0747935..fb108d2 100644
---- a/drivers/staging/et131x/et131x_isr.c
-+++ b/drivers/staging/et131x/et131x_isr.c
-@@ -304,7 +304,7 @@ void et131x_isr_handler(struct work_struct *work)
- 				 * bp xon/xoff)
- 				 */
- 				pm_csr = readl(&iomem->global.pm_csr);
--				if ((pm_csr & ET_PM_PHY_SW_COMA) == 0)
-+				if (!et1310_in_phy_coma(adapter))
- 					writel(3, &iomem->txmac.bp_ctrl);
- 			}
- 		}
+ /**
 -- 
 1.7.6.4
 
