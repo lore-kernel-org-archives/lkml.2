@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab1JATZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:25:16 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58151 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756726Ab1JATZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:25:09 -0400
-X-Sasl-enc: Clu8stS1TNZW/VnMpGCSKFZlyRPPQvsUPO2rmj/fY2yl 1317497107
-Date: Sat, 1 Oct 2011 12:24:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Andy <akwatts@ymail.com>, schwab@linux-m68k.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for
- intrusion
-Message-ID: <20111001192438.GA22938@kroah.com>
-References: <4E8655CD.90107@zytor.com>
- <20110930235924.GA25176@kroah.com>
- <20111001141751.GA8937@zeus>
- <20111001142848.GA27058@kroah.com>
- <20111001165659.GB18690@1wt.eu>
- <20111001171916.GA11989@zeus>
- <20111001175456.GC18690@1wt.eu>
- <20111001184044.GA13608@zeus>
- <20111001190612.GA14779@1wt.eu>
-MIME-Version: 1.0
+	id S1756745Ab1JAT1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:27:25 -0400
+Received: from 1wt.eu ([62.212.114.60]:33340 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756488Ab1JAT1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 15:27:18 -0400
+Date: Sat, 1 Oct 2011 21:27:06 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Shea Levy <shea@shealevy.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-kernel@vger.kernel.org
+Subject: Re: When to re-post or give up on a message
+Message-ID: <20111001192706.GF18690@1wt.eu>
+References: <4E8753F2.4080706@shealevy.com> <20111001205040.3b56bceb@stein>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111001190612.GA14779@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111001205040.3b56bceb@stein>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 09:06:12PM +0200, Willy Tarreau wrote:
-> On Sat, Oct 01, 2011 at 01:40:44PM -0500, Andy wrote:
-> > On Sat, Oct 01, 2011 at 07:54:56PM +0200, Willy Tarreau wrote:
-> > >   $ git config tar.umask 022
-> > 
-> > Andreas/Willy:
-> > 
-> > It was indeed umask which was skewing the results. Thanks.
-> > 
-> > Now, I'll wait for Willy's hashes since I can't drill down on
-> > Linus' 2.6 tree beyond 2.6.x.
+On Sat, Oct 01, 2011 at 08:50:40PM +0200, Stefan Richter wrote:
+> On Oct 01 Shea Levy wrote:
+> > If a new thread is posted to the list without any response, how long 
+> > should the poster wait before losing any expectation of a response? 
+> > Under what circumstances should the poster then re-post, and when should 
+> > he just give up on that thread? Sorry to have to ask this on the list, 
+> > but I can't find it on the faq anywhere.
 > 
-> OK I'm attaching two files, one computed with the initial 002 perms and
-> a second one with the new 022 perms. I don't precisely know when the perms
-> changed, hence the two files. I noticed that 2.6.25 was still 002, and that
-> 2.6.32 was 022. In between I don't know. Note that I'm missing some tags
-> (at least 2.6.35.12 and a few 2.6.33.x and 2.6.34.x).
+> It depends on what it is about --- e.g. an urgent patch vs. an obscure bug.
 > 
-> The file is formated to be easily used with "md5sum -c" that dirty way
-> (once hashes are split/joined at the location where the umask changed) :
+> But much more important than /when/ to repost is /how/ to repost.  If you
+> did not get a response, then maybe
+>   - the subject,
+>   - the Cc list (subsystem mailinglists, people), or
+>   - the description of your issue
+> was lacking.  If you possibly can, find out more about the issue and where
+> to send to before you repost.
 > 
->   cd /path/to/mirror/2.6
->   cp linux-*.tar.gz /tmp
->   cd /tmp
->   gunzip linux-*.tar.gz
->   md5sum -c expected-hashes.md5
-> 
-> It would be nice if someone with an access to a mirror could check the
-> perms of *every* tarball so that we can establish the definitive list
-> of signatures. I'm pretty sure the umask history is not linear. For
-> instance, I'm pretty sure I did not change the umask in my config when
-> releasing 2.6.27.x kernels and it seems like Greg did not do this either
-> so we have 2.6.27 022 and 2.6.27.x 002. Something like this might do it
-> (untested) :
-> 
->   for i in linux-*.tar.gz; do
->     set -- $(tar tvf $i|head -1)
->     [ "$1" == "drwxrwxr-x" ] && echo "$i 002" || echo "$i 022"
->   done
-> 
-> Hoping this helps a bit.
+> It is better to repost (though not too frequently) than to give up.  But
+> it is *much better* to repost with better researched and explained
+> information (and, if applicable, with better Cc list) than to repost the
+> same message.
 
-Very nice, thanks so much for providing an independant verification of
-the tarballs, it is much appreciated.
+And just for the record, here are a few additional hints (which don't
+particularly apply to Shea's message, I found it and it was correct) :
 
-And yes, the umask problem did trip us up when we did the initial
-verification as well, fun to see that you all figured out and solved the
-problem faster than I did :)
+  - don't write the subject in uppercase, that's used by spammers only
+  - use a correct "From" field, not one looking like a spam or a young geek
+    who wants to impress friends. This means you have first and last names.
+  - put the most important information at the beginning of the subject, because
+    a number of us check the list in a terminal lying in a corner. On my 80x25
+    xterm, here's how your mail appears :
 
-thanks again,
+    10666     Sep 29 shea@shealevy.c (  25) Hang with "runaway loop modprobe net-pf-
 
-greg k-h
+    With the version-relevant parts on the left, it tends to attract the
+    reader's eye more efficiently, especially for people who have made
+    changes in this version :
+
+    10666     Sep 29 shea@shealevy.c (  25) 3.0.4 regression: runaway loop modprobe net-pf-1
+
+  - ensure your mail describes a problem and asks for clear questions. Do not
+    just send an information expecting someone to comment on it.
+
+Sometimes it's wise to wait 3-4 days if this is not urgent because someone
+will feel concerned by your subject. If the problem is urgent for you,
+indicate it in the message, but not in the subject as those are often
+considered offensive. You will notice that many people read a lot of
+mails without replying because they have nothing to say. If you're
+clearly asking for some help, some readers may forward your message
+to relevant people.
+
+It's common to let bug reporters search a bit when they appear capable
+of digging by themselves, because it's the only way to scale. That's
+why it's important to clearly say when you've reached your limits and
+are seeking for help. For instance, concerning your report, some readers
+will wonder whether it's a 3.0-3.0.4 regression or a more general
+2.6.39-3.0 regression, and they will naturally wait for you to report
+this precision. Since you appear capable of trying different kernels,
+this is something you should check yourself and report by responding
+to your message.
+
+Regards,
+Willy
+
