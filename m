@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab1JAU3R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:29:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60283 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1JAU3G convert rfc822-to-8bit (ORCPT
+	id S1756927Ab1JAUaF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:30:05 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:47655 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab1JAU36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:29:06 -0400
+	Sat, 1 Oct 2011 16:29:58 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Greg KH <greg@kroah.com>, Andy <akwatts@ymail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for intrusion
+References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com>
+	<20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com>
+	<20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus>
+	<20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus>
+	<20111001190612.GA14779@1wt.eu> <20111001192438.GA22938@kroah.com>
+	<20111001200700.GG18690@1wt.eu>
+X-Yow: By MEER biz doo SCHOIN..
+Date: Sat, 01 Oct 2011 22:29:54 +0200
+In-Reply-To: <20111001200700.GG18690@1wt.eu> (Willy Tarreau's message of "Sat,
+	1 Oct 2011 22:07:00 +0200")
+Message-ID: <m2aa9ktpz1.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1317447669.6337.24.camel@marge.simson.net>
-References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-	<CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
-	<1317447669.6337.24.camel@marge.simson.net>
-Date: Sat, 1 Oct 2011 22:29:04 +0200
-Message-ID: <CAOVSwNEQzhzoKwnW5dZn8YsL5G+80_yvodmeJKBs2dSAxn7MsQ@mail.gmail.com>
-Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
-From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 1, 2011 at 7:41 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Fri, 2011-09-30 at 21:12 +0200, Tadeus (Eus) Prastowo wrote:
->> > Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
->> > task get the privilege of SCHED_FIFO task for running as long as it
->> > wishes even when the task giving the inheritance does not have such
->> > privilege?
->
-> Existence of a critical section > slice would be the real problem, no?
+Willy Tarreau <w@1wt.eu> writes:
 
-No, it's not a problem because if a real-time system designer puts a
-real-time task under SCHED_RR, he will calculate the length of the
-critical section by taking into account the slice.
+> I discovered that 002/022 are not the only differences. Adrian used
+> to set 2.6.16.x at umask 000, and Linus changed the user in the
+> tarballs several times (torvalds, then git, then root). I'm also
+> seeing a certain greg/users for 2.6.11.x :-)
 
-For the case of one SCHED_RR task sharing a critical section with one
-SCHED_NORMAL task, the worst-case blocking time of the SCHED_RR task
-is found by multiplying the critical section execution time taking
-into account the slice by two.
+Obviously tarballs before 2.6.12 weren't created with git-archive and
+will contain unpredictable timestamps.
 
->        -Mike
+Andreas.
 
 -- 
-Eus
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
