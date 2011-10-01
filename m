@@ -1,130 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab1JAHfq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 03:35:46 -0400
-Received: from 1wt.eu ([62.212.114.60]:33292 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab1JAHfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 03:35:40 -0400
-Date: Sat, 1 Oct 2011 09:35:33 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Greg KH <greg@kroah.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for intrusion
-Message-ID: <20111001073533.GA18690@1wt.eu>
-References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com>
-Mime-Version: 1.0
+	id S1754344Ab1JAHkb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 03:40:31 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:34790 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1JAHk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 03:40:26 -0400
+Date: Sat, 1 Oct 2011 09:38:56 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL, v2] scheduler fixes
+Message-ID: <20111001073856.GA18912@elte.hu>
+References: <20110930183651.GA22879@elte.hu>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110930235924.GA25176@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20110930183651.GA22879@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Linus,
 
-On Fri, Sep 30, 2011 at 04:59:24PM -0700, Greg KH wrote:
-> The compromise of kernel.org and related machines has made it clear that
-> some developers, at least, have had their systems penetrated.  As we
-> seek to secure our infrastructure, it is imperative that nobody falls
-> victim to the belief that it cannot happen to them.  We all need to
-> check our systems for intrusions.  Here are some helpful hints as
-> proposed by a number of developers on how to check to see if your Linux
-> machine might be infected with something:
+Please pull the latest sched-urgent-for-linus git tree from:
 
-I would like to add here a few controls I ran on firewall and system logs,
-that are easy to perform and which report few false positives :
+   git://tesla.tglx.de/git/linux-2.6-tip.git sched-urgent-for-linus
 
-  - check that communications between your local machines are expected ;
-    for instance if you have an SSH bouncing machine, it probably receives
-    tens of thousands of SSH connection attempts from outside every day,
-    but it should never ever attempt to connect to another machine unless
-    it's you who are doing it. So checking the firewall logs for SSH
-    connections on port 22 from local machines should only report your
-    activity (and nothing should happen when you sleep).
+[ Note, the diffstat is different from the v1 version, a new fix was 
+  added.]
 
-  - no SSH log should report failed connection attempts between your
-    local machines (you do have your keys and remember your password).
-    And if it happens from time to time (eg: user mismatch between
-    machines), it should look normal to you. You should never observe
-    a connection attempt for a user you're not familiar with (eg: admin).
+ Thanks,
 
-     $ grep sshd /var/log/messages
-     $ grep sshd /var/log/messages | grep 'Invalid user'
+	Ingo
 
-  - outgoing connections from your laptop, desktop or anything should
-    never happen when you're not there, unless there is a well known
-    reason (package updates, browser left open and refreshing ads). All
-    unexpected activity should be analysed (eg: connections to port 80
-    not coming from a browser should only match one distro mirror).
-    This is particularly true for cheap appliances which become more
-    and more common and are rarely secured. A NAS or media server, a
-    switch, a WiFi router, etc... has no reason to ever connect anywhere
-    without you being aware of it (eg: download a firmware update).
+------------------>
+Peter Zijlstra (1):
+      posix-cpu-timers: Cure SMP wobbles
 
-  - check for suspicious DNS requests from machines that are normally
-    not accessed. A number of services perform DNS requests when
-    connected to, in order to log a resolved address. If the machine
-    was penetrated and the logs wiped, the DNS requests will probably
-    still lie in the firewall logs. While there's nothing suspect from
-    a machine that does tens of thousands DNS requests a day, one that
-    does 10 might be suspect.
+Shawn Bohrer (1):
+      sched/rt: Migrate equal priority tasks to available CPUs
 
-  - check for outgoing SMTP connections. Most machines probably never
-    send any mail outside or route them through a specific relay. If
-    one machine suddenly tries to send mails directly to the outside,
-    it might be someone trying to steal some data (eg: mail ssh keys).
+Simon Kirby (1):
+      sched: Fix up wchan borkage
 
-  - check for long holes in logs various service logs. The idea is that
-    if a system was penetrated and the guy notices he left a number of
-    traces, he will probably have wiped some logs. A simple way to check
-    for this is to count the number of events per hour and observe huge
-    variations. Eg:
 
-       $ cut -c1-9 < /var/log/syslog |uniq -c
-       8490 Oct  1 00
-       7712 Oct  1 01
-       8316 Oct  1 02
-       6743 Oct  1 03
-       7428 Oct  1 04
-       7041 Oct  1 05
-       7762 Oct  1 06
-       6562 Oct  1 07
-       7137 Oct  1 08
-        160 Oct  1 09
+ include/linux/sched.h     |    1 -
+ kernel/posix-cpu-timers.c |    5 +++--
+ kernel/sched.c            |   26 +-------------------------
+ kernel/sched_rt.c         |    4 ++--
+ 4 files changed, 6 insertions(+), 30 deletions(-)
 
-    Activity looks normal here. Something like this however would be
-    extremely suspect :
-
-       8490 Oct  1 00
-        712 Oct  1 01
-       6743 Oct  1 03
-
-  - check that you never observe in logs a local address that you
-    don't know. For instance, if your reverse proxy is on a DMZ which
-    is provided by the same physical switch as your LAN and your switch
-    becomes ill and loses all its VLAN configuration, it them becomes
-    easy to add an alias to the reverse-proxy to connect directly to
-    LAN machines and bypass a firewall (and its logs).
-
-  - it's always a good exercise to check for setuids on all your machines.
-    You'll generally discover a number of things you did not even suspect
-    existed and will likely want to remove them. For instance, my file
-    server had dbus-daemon-launch-helper setuid root. I removed this crap
-    as dbus has nothing to do on such a machine. Similarly I don't need
-    fdmount to mount floppies. I might not use floppies often, and if I do,
-    I know how to use sudo.
-
-       $ find / -user root -perm -4000 -ls
-
-  - last considerations to keep in mind is that machines which receive
-    incoming connections from outside should never be able to go out, and
-    should be isolated in their own LAN. It's not hard to do at all, and
-    it massively limits the ability to bounce between systems and to steal
-    information. It also makes firewall logs much more meaningful, provided
-    they are stored on a support with limited access, of course :-)
-
-Regards,
-Willy
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4ac2c05..41d0237 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1956,7 +1956,6 @@ static inline void disable_sched_clock_irqtime(void) {}
+ 
+ extern unsigned long long
+ task_sched_runtime(struct task_struct *task);
+-extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
+ 
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 58f405b..c8008dd 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -250,7 +250,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ 	do {
+ 		times->utime = cputime_add(times->utime, t->utime);
+ 		times->stime = cputime_add(times->stime, t->stime);
+-		times->sum_exec_runtime += t->se.sum_exec_runtime;
++		times->sum_exec_runtime += task_sched_runtime(t);
+ 	} while_each_thread(tsk, t);
+ out:
+ 	rcu_read_unlock();
+@@ -312,7 +312,8 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+ 		cpu->cpu = cputime.utime;
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		cpu->sched = thread_group_sched_runtime(p);
++		thread_group_cputime(p, &cputime);
++		cpu->sched = cputime.sum_exec_runtime;
+ 		break;
+ 	}
+ 	return 0;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ec5f472..b50b0f0 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3725,30 +3725,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ }
+ 
+ /*
+- * Return sum_exec_runtime for the thread group.
+- * In case the task is currently running, return the sum plus current's
+- * pending runtime that have not been accounted yet.
+- *
+- * Note that the thread group might have other running tasks as well,
+- * so the return value not includes other pending runtime that other
+- * running tasks might have.
+- */
+-unsigned long long thread_group_sched_runtime(struct task_struct *p)
+-{
+-	struct task_cputime totals;
+-	unsigned long flags;
+-	struct rq *rq;
+-	u64 ns;
+-
+-	rq = task_rq_lock(p, &flags);
+-	thread_group_cputime(p, &totals);
+-	ns = totals.sum_exec_runtime + do_task_delta_exec(p, rq);
+-	task_rq_unlock(rq, p, &flags);
+-
+-	return ns;
+-}
+-
+-/*
+  * Account user cpu time to a process.
+  * @p: the process that the cpu time gets accounted to
+  * @cputime: the cpu time spent in user space since the last update
+@@ -4372,7 +4348,7 @@ static inline void sched_submit_work(struct task_struct *tsk)
+ 		blk_schedule_flush_plug(tsk);
+ }
+ 
+-asmlinkage void schedule(void)
++asmlinkage void __sched schedule(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 97540f0..af11778 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1050,7 +1050,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag, int flags)
+ 	 */
+ 	if (curr && unlikely(rt_task(curr)) &&
+ 	    (curr->rt.nr_cpus_allowed < 2 ||
+-	     curr->prio < p->prio) &&
++	     curr->prio <= p->prio) &&
+ 	    (p->rt.nr_cpus_allowed > 1)) {
+ 		int target = find_lowest_rq(p);
+ 
+@@ -1581,7 +1581,7 @@ static void task_woken_rt(struct rq *rq, struct task_struct *p)
+ 	    p->rt.nr_cpus_allowed > 1 &&
+ 	    rt_task(rq->curr) &&
+ 	    (rq->curr->rt.nr_cpus_allowed < 2 ||
+-	     rq->curr->prio < p->prio))
++	     rq->curr->prio <= p->prio))
+ 		push_rt_tasks(rq);
+ }
+ 
