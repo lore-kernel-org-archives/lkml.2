@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab1JAPDJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 11:03:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52749 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab1JAPDF (ORCPT
+	id S1756552Ab1JAPHN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 11:07:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63802 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab1JAPHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 11:03:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] mtd: Add DiskOnChip G3 support
-Date: Sat, 01 Oct 2011 17:02:10 +0200
-Message-ID: <2027446.JdsYbAItg0@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <87y5x4hpkz.fsf@free.fr>
-References: <1316633266-21312-1-git-send-email-robert.jarzmik@free.fr> <201109281445.47715.arnd@arndb.de> <87y5x4hpkz.fsf@free.fr>
+	Sat, 1 Oct 2011 11:07:08 -0400
+Date: Sat, 1 Oct 2011 17:07:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.osdl.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 06/11] cgroups: Add res counter common ancestor searching
+Message-ID: <20111001150701.GC3391@somewhere>
+References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
+ <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
+ <20110918195932.GD28057@shutemov.name>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:53Yez2IyZim0gamDuPt/xwLMMLX5waVh5f1B6CqTtz3
- 00uR38FXsJeIu/jKOI9Bh210w7482AHJefvRxi1RbdqaR1YibD
- lRmmOtCjj7TQENFIaUgGGA7RSO16Kq4zZjnQZTTN+wthRftyOE
- QpL2V25HDjVQaQ5eeibWcK1LG0l3YIMQ1F8V9wzm1BXBHwSl20
- FXb7z/bJx4NWMZIJcredBAxhlSKFRRWqSxRYyDDw0eSgYc0mqS
- skN+A0g+/f7HLrBkmtL7MAXrrrEIaiUzmupuTTpf7sDADhMq1r
- 0S4bhFMxDyX2d7ur49weycXIE33pVeEXvuop9EPcWJtMeA9BXQ
- jKcgmDW3jzyOdN+NHlu4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110918195932.GD28057@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 01 October 2011 14:19:08 Robert Jarzmik wrote:
-> Arnd Bergmann <arnd@arndb.de> writes:
+On Sun, Sep 18, 2011 at 10:59:32PM +0300, Kirill A. Shutemov wrote:
+> On Tue, Sep 13, 2011 at 01:11:26AM +0200, Frederic Weisbecker wrote:
+> > Add a new API to find the common ancestor between two resource
+> > counters. This includes the passed resource counter themselves.
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Acked-by: Paul Menage <paul@paulmenage.org>
+> > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Aditya Kali <adityakali@google.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Kay Sievers <kay.sievers@vrfy.org>
+> > Cc: Tim Hockin <thockin@hockin.org>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > ---
+> >  include/linux/res_counter.h |    3 +++
+> >  kernel/res_counter.c        |   22 ++++++++++++++++++++++
+> >  2 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> > index de4ba29..558f39b 100644
+> > --- a/include/linux/res_counter.h
+> > +++ b/include/linux/res_counter.h
+> > @@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
+> >  	res_counter_uncharge_until(counter, NULL, val);
+> >  }
+> >  
+> > +struct res_counter *res_counter_common_ancestor(struct res_counter *l,
+> > +						struct res_counter *r);
+> > +
+> >  /**
+> >   * res_counter_margin - calculate chargeable space of a counter
+> >   * @cnt: the counter
+> > diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> > index 0cc9c7e..22f07cc 100644
+> > --- a/kernel/res_counter.c
+> > +++ b/kernel/res_counter.c
+> > @@ -91,6 +91,28 @@ void res_counter_uncharge_until(struct res_counter *counter,
+> >  	local_irq_restore(flags);
+> >  }
+> >  
+> > +/*
+> > + * Walk through r1 and r2 parents and try to find the closest common one
+> > + * between both. If none is found, it returns NULL.
+> > + */
+> > +struct res_counter *
+> > +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> > +{
+> > +	struct res_counter *iter;
+> > +
+> > +	while (r1) {
+> > +		iter = r2;
+> > +		while (iter) {
+> > +			if (iter == r1)
+> > +				return iter;
+> > +			iter = iter->parent;
+> > +		}
+> > +
+> > +		r1 = r1->parent;
+> > +	}
+> > +
+> > +	return NULL;
+> > +}
 > 
-> > I generally recommend removing debug messages like this entirely from
-> > production code. If you need them on production systems, that is an indication
-> > that the code quality is not good enough.
-> Perhaps.
-> But when you create a driver without any specification, and you release it to
-> the communauty, there will be unmet behaviours. So, when someone will ask me
-> "why in my board XXX my docg3 can't read data ?" how can I improve the driver
-> without any traces ?
+> Your implementation is O(n*m).
+> 
+> What about:
+> 
+> struct res_counter *
+> res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> {
+> 	struct res_counter *iter;
+> 	int r1_depth = 0, r2_depth = 0;
+> 
+> 	for (iter = r1; iter; iter = iter->parent)
+> 		r1_depth++;
+> 	for (iter = r2; iter; iter = iter->parent)
+> 		r2_depth++;
+> 
+> 	while (r1_depth > r2_depth) {
+> 		r1 = r1->parent;
+> 		r1_depth--;
+> 	}
+> 	while (r2_depth > r1_depth) {
+> 		r2 = r2->parent;
+> 		r2_depth--;
+> 	}
+> 
+> 	while (r1 != r2) {
+> 		r1 = r1->parent;
+> 		r2 = r2->parent;
+> 	}
+> 
+> 	return r1;
+> }
 
-In my experience, the kind of debugging data you need for analysing a problem
-on someone else's system is not just a trace of the commands you send to
-a device but more complicated to get, so you are dependent on a clueful
-bug reporter anyway.
+While applying this (works well btw) I realize you rewrote the patch.
 
-If you have successfully debugged a remote problem just by looking at a dump,
-then you should certainly leave the code in there.
+Can you give me your "Signed-off-by:" so that I correctly set the
+authorship and the tags that come along?
 
-> > Or you could turn the entire tracing into trace events and do the parsing
-> > in user space, which seems appropriate if you frequently need to trace
-> > these.
-> This looks much much better. I'll have a peek into that, as only (io_address,
-> read/write, width, value) could be dumped, and userland application could
-> translate it into sequence/nop/flashcontrol ... etc ...
-
-Right, that was the idea.
-
-	Arnd
+Thanks.
