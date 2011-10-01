@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab1JATYj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:24:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63249 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756771Ab1JATXW (ORCPT
+	id S1756812Ab1JATZQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:25:16 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58151 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756726Ab1JATZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:23:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 11/11] ARM: common/vic: use proper __iomem annotations
-Date: Sat,  1 Oct 2011 21:22:00 +0200
-Message-Id: <1317496920-7764-12-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
-References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:k0kSWzv+sMSrX5jLmVsArb2QEl+GL+Vk8rn9zuOKguF
- YykEZBycRW69M8i8CqyWl2xA/fKIvvKEElwp0lsVl5Vl+1kz+7
- sKEP02RYAMrSeEmaT4X3wWfbAU7G0gocoAP6/N1VKjKwHy66xg
- g5YzwluzmOD82680H+/qr6+BgJ3YoKiXHnUV7jHoTyW3VPlso4
- 1fKnvuHB3hpqbthjG/rU53y/jPA1pf3gLFPHKoaUwY9j4924WH
- nbWJVHtf+jMfmKCXiq7xYJ5yUKDROpUX0z07gDFUR5pIeCajox
- fRTmRlmoHfuxBB5ePRJn7iEH7FQXiU8RTfOUEXS8x0WpL29n7U
- 82XsOGoYBmufZrCf3Cdhtpef+xS2N8rACSjMicZxj5XB6Dcsy6
- yNYWUBvu3jnAQ==
+	Sat, 1 Oct 2011 15:25:09 -0400
+X-Sasl-enc: Clu8stS1TNZW/VnMpGCSKFZlyRPPQvsUPO2rmj/fY2yl 1317497107
+Date: Sat, 1 Oct 2011 12:24:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Andy <akwatts@ymail.com>, schwab@linux-m68k.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for
+ intrusion
+Message-ID: <20111001192438.GA22938@kroah.com>
+References: <4E8655CD.90107@zytor.com>
+ <20110930235924.GA25176@kroah.com>
+ <20111001141751.GA8937@zeus>
+ <20111001142848.GA27058@kroah.com>
+ <20111001165659.GB18690@1wt.eu>
+ <20111001171916.GA11989@zeus>
+ <20111001175456.GC18690@1wt.eu>
+ <20111001184044.GA13608@zeus>
+ <20111001190612.GA14779@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111001190612.GA14779@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In vic_init, we pass addr into readl, so it needs to be a
-pointer, not a u32 address.
+On Sat, Oct 01, 2011 at 09:06:12PM +0200, Willy Tarreau wrote:
+> On Sat, Oct 01, 2011 at 01:40:44PM -0500, Andy wrote:
+> > On Sat, Oct 01, 2011 at 07:54:56PM +0200, Willy Tarreau wrote:
+> > >   $ git config tar.umask 022
+> > 
+> > Andreas/Willy:
+> > 
+> > It was indeed umask which was skewing the results. Thanks.
+> > 
+> > Now, I'll wait for Willy's hashes since I can't drill down on
+> > Linus' 2.6 tree beyond 2.6.x.
+> 
+> OK I'm attaching two files, one computed with the initial 002 perms and
+> a second one with the new 022 perms. I don't precisely know when the perms
+> changed, hence the two files. I noticed that 2.6.25 was still 002, and that
+> 2.6.32 was 022. In between I don't know. Note that I'm missing some tags
+> (at least 2.6.35.12 and a few 2.6.33.x and 2.6.34.x).
+> 
+> The file is formated to be easily used with "md5sum -c" that dirty way
+> (once hashes are split/joined at the location where the umask changed) :
+> 
+>   cd /path/to/mirror/2.6
+>   cp linux-*.tar.gz /tmp
+>   cd /tmp
+>   gunzip linux-*.tar.gz
+>   md5sum -c expected-hashes.md5
+> 
+> It would be nice if someone with an access to a mirror could check the
+> perms of *every* tarball so that we can establish the definitive list
+> of signatures. I'm pretty sure the umask history is not linear. For
+> instance, I'm pretty sure I did not change the umask in my config when
+> releasing 2.6.27.x kernels and it seems like Greg did not do this either
+> so we have 2.6.27 022 and 2.6.27.x 002. Something like this might do it
+> (untested) :
+> 
+>   for i in linux-*.tar.gz; do
+>     set -- $(tar tvf $i|head -1)
+>     [ "$1" == "drwxrwxr-x" ] && echo "$i 002" || echo "$i 022"
+>   done
+> 
+> Hoping this helps a bit.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/common/vic.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Very nice, thanks so much for providing an independant verification of
+the tarballs, it is much appreciated.
 
-diff --git a/arch/arm/common/vic.c b/arch/arm/common/vic.c
-index 7aa4262..adccf6d 100644
---- a/arch/arm/common/vic.c
-+++ b/arch/arm/common/vic.c
-@@ -347,7 +347,8 @@ void __init vic_init(void __iomem *base, unsigned int irq_start,
- 
- 	/* Identify which VIC cell this one is, by reading the ID */
- 	for (i = 0; i < 4; i++) {
--		u32 addr = ((u32)base & PAGE_MASK) + 0xfe0 + (i * 4);
-+		void __iomem *addr;
-+		addr = (void __iomem *)((u32)base & PAGE_MASK) + 0xfe0 + (i * 4);
- 		cellid |= (readl(addr) & 0xff) << (8 * i);
- 	}
- 	vendor = (cellid >> 12) & 0xff;
--- 
-1.7.5.4
+And yes, the umask problem did trip us up when we did the initial
+verification as well, fun to see that you all figured out and solved the
+problem faster than I did :)
 
+thanks again,
+
+greg k-h
