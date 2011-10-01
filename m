@@ -1,136 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab1JAPHN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 11:07:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63802 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab1JAPHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 11:07:08 -0400
-Date: Sat, 1 Oct 2011 17:07:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+	id S1756586Ab1JAPHl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 11:07:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59225 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753157Ab1JAPHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 11:07:35 -0400
+Date: Sat, 1 Oct 2011 17:07:30 +0200
+From: Lars =?iso-8859-1?Q?M=FCller?= <lmuelle@suse.de>
+To: Anton Altaparmakov <aia21@cam.ac.uk>, Jeremy Allison <jra@samba.org>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
         LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.osdl.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 06/11] cgroups: Add res counter common ancestor searching
-Message-ID: <20111001150701.GC3391@somewhere>
-References: <1315869091-18933-1-git-send-email-fweisbec@gmail.com>
- <1315869091-18933-7-git-send-email-fweisbec@gmail.com>
- <20110918195932.GD28057@shutemov.name>
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
+        Jeff Layton <jlayton@samba.org>
+Subject: Re: CIFS  kernel module bug
+Message-ID: <20111001150730.GJ5170@giles.fritz.box>
+References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+ <20110930140409.51c1a94c@tlielax.poochiereds.net>
+ <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
+ <20110930234711.GD14147@samba2>
+ <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk>
+ <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUvfsPTz/SzOZDdw"
 Content-Disposition: inline
-In-Reply-To: <20110918195932.GD28057@shutemov.name>
+In-Reply-To: <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk>
+X-Operating-System: SUSE Linux 2.6.37.6-0.7-default x86_64
+X-PGP-Key-Fingerprint: FEEE 231E 36E5 AD5F 1F80  BF7E E0D0 622B 414A 57C3
+X-PGP-Key-ID: 0x414A57C3
+X-Pflichtfeld: X-Pflichtfeld: SUSE LINUX =?iso-8859-1?Q?P?=
+ =?iso-8859-1?Q?roducts_GmbH=2C_GF=3A_Jeff_Hawn=2C_Jennifer_Guild=2C_Felix?=
+ =?iso-8859-1?Q?_Imend=F6rffer=2C_HRB_16746_=28AG_N=FCrnberg=29?=
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 18, 2011 at 10:59:32PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Sep 13, 2011 at 01:11:26AM +0200, Frederic Weisbecker wrote:
-> > Add a new API to find the common ancestor between two resource
-> > counters. This includes the passed resource counter themselves.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Acked-by: Paul Menage <paul@paulmenage.org>
-> > Cc: Li Zefan <lizf@cn.fujitsu.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Aditya Kali <adityakali@google.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Kay Sievers <kay.sievers@vrfy.org>
-> > Cc: Tim Hockin <thockin@hockin.org>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > ---
-> >  include/linux/res_counter.h |    3 +++
-> >  kernel/res_counter.c        |   22 ++++++++++++++++++++++
-> >  2 files changed, 25 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-> > index de4ba29..558f39b 100644
-> > --- a/include/linux/res_counter.h
-> > +++ b/include/linux/res_counter.h
-> > @@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
-> >  	res_counter_uncharge_until(counter, NULL, val);
-> >  }
-> >  
-> > +struct res_counter *res_counter_common_ancestor(struct res_counter *l,
-> > +						struct res_counter *r);
-> > +
-> >  /**
-> >   * res_counter_margin - calculate chargeable space of a counter
-> >   * @cnt: the counter
-> > diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> > index 0cc9c7e..22f07cc 100644
-> > --- a/kernel/res_counter.c
-> > +++ b/kernel/res_counter.c
-> > @@ -91,6 +91,28 @@ void res_counter_uncharge_until(struct res_counter *counter,
-> >  	local_irq_restore(flags);
-> >  }
-> >  
-> > +/*
-> > + * Walk through r1 and r2 parents and try to find the closest common one
-> > + * between both. If none is found, it returns NULL.
-> > + */
-> > +struct res_counter *
-> > +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
-> > +{
-> > +	struct res_counter *iter;
-> > +
-> > +	while (r1) {
-> > +		iter = r2;
-> > +		while (iter) {
-> > +			if (iter == r1)
-> > +				return iter;
-> > +			iter = iter->parent;
-> > +		}
-> > +
-> > +		r1 = r1->parent;
-> > +	}
-> > +
-> > +	return NULL;
-> > +}
-> 
-> Your implementation is O(n*m).
-> 
-> What about:
-> 
-> struct res_counter *
-> res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
-> {
-> 	struct res_counter *iter;
-> 	int r1_depth = 0, r2_depth = 0;
-> 
-> 	for (iter = r1; iter; iter = iter->parent)
-> 		r1_depth++;
-> 	for (iter = r2; iter; iter = iter->parent)
-> 		r2_depth++;
-> 
-> 	while (r1_depth > r2_depth) {
-> 		r1 = r1->parent;
-> 		r1_depth--;
-> 	}
-> 	while (r2_depth > r1_depth) {
-> 		r2 = r2->parent;
-> 		r2_depth--;
-> 	}
-> 
-> 	while (r1 != r2) {
-> 		r1 = r1->parent;
-> 		r2 = r2->parent;
-> 	}
-> 
-> 	return r1;
-> }
 
-While applying this (works well btw) I realize you rewrote the patch.
+--fUvfsPTz/SzOZDdw
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can you give me your "Signed-off-by:" so that I correctly set the
-authorship and the tags that come along?
+On Sat, Oct 01, 2011 at 09:48:12AM +0100, Anton Altaparmakov wrote:
+>=20
+> On 1 Oct 2011, at 01:34, J.P. King wrote:
+> > Anton will be asleep, so I'll attempt to answer this one.
+> >=20
+> >> What server code is the OES CIFS server running ? I thought Novell CIFS
+> >> services were all Samba based.
+> >=20
+> > We have been told by the people upstairs who run the server that it isn=
+'t.
+>=20
+> It is not Samba based.  Like Apple, Novell have written their own since S=
+amba decided to go GPLv3=E2=80=A6
 
-Thanks.
+(Potential) FUD alert. ;)
+
+This Novell CIFS server existed before Novell bought SUSE.  And the
+decission to go with it instead of Samba had nothing to do with the move
+of Samba from GPL v2 to v3.
+
+Lars
+--=20
+Lars M=C3=BCller [=CB=88la=CB=90(r)z =CB=88m=CA=8Fl=C9=90]
+Samba Team
+SUSE Linux, Maxfeldstra=C3=9Fe 5, 90409 N=C3=BCrnberg, Germany
+
+--fUvfsPTz/SzOZDdw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iD8DBQFOhyyy4NBiK0FKV8MRAvzbAJwLsh6foKhEobFCSnp5tqOFeLEn3ACghdM8
+UYCWNvh08eMSW2Hihkg2xYM=
+=Fi0T
+-----END PGP SIGNATURE-----
+
+--fUvfsPTz/SzOZDdw--
