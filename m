@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab1JASpq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 14:45:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:42173 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab1JASpj (ORCPT
+	id S1755411Ab1JASqK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 14:46:10 -0400
+Received: from nm8-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.95]:47563 "HELO
+	nm8-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752588Ab1JASqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 14:45:39 -0400
-X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=eaZrqAE3U5cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=ktNasmvQAAAA:8 a=7foTBo4djsokKBqomqEA:9 a=PUjeQqilurYA:10 a=WjqgFE--SJEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
+	Sat, 1 Oct 2011 14:46:06 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Oct 2011 14:46:06 EDT
+X-Yahoo-Newman-Id: 221984.79869.bm@smtp217.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: u3iIGXwVM1lN4Wr_UvQ7vjK98o6kdJGqannNG0X7ZzfFRZ4
+ rz5ZED84ejU03Uk4T_kFe20RpeRmlXHLR5Y6FoCeIhIZjR2MpyG7uuI59zbE
+ stjFctE2.5WV6uW287KSSfjPB0GX8vFMpZcoM.NxMQw9QIGSpC1lq8mvu3UH
+ wFqCV.lFgSIJhIzRGVCP5N3spN0OxeP7Aqkc9qa4afqpLD2U.0xo7eED7rRK
+ a9t0oGsiEmKw8mZPOkbRijeBWLq.jgbA0eKcpsFVBWY8oTk38p7DFLBRLrK7
+ hTDunCtYUhIeoTYKw5KBPS3.oufJbeGxea3mxNZlgJMcVqwA4W6Es5TICCx8
+ ES6Zly5IPr42Q467gjOYkwfI3K5zPnGTRCsT0D_hBUcx9sA7v46zNsRbKr9k
+ L6JiwkaX2ydn_ZRTmUfovd2oponmPgmlMXVH8UODH4vOz.gUsD24-
+X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
+Date: Sat, 1 Oct 2011 13:40:44 -0500
+From: Andy <akwatts@ymail.com>
+To: Willy Tarreau <w@1wt.eu>, schwab@linux-m68k.org
+Cc: Greg KH <greg@kroah.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: kernel.org status: hints on how to check your machine for
  intrusion
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: w@1wt.eu, greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Sat, 01 Oct 2011 14:45:38 -0400
-References: <20110930235924.GA25176@kroah.com>
-	 <20111001073533.GA18690@1wt.eu> <20111001180641.GD6309@home.goodmis.org>
-	 <20111001.141343.2293070262147973147.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317494738.4588.78.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+Message-ID: <20111001184044.GA13608@zeus>
+References: <4E8655CD.90107@zytor.com>
+ <20110930235924.GA25176@kroah.com>
+ <20111001141751.GA8937@zeus>
+ <20111001142848.GA27058@kroah.com>
+ <20111001165659.GB18690@1wt.eu>
+ <20111001171916.GA11989@zeus>
+ <20111001175456.GC18690@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111001175456.GC18690@1wt.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-01 at 14:40 -0400, Steven Rostedt wrote:
-> OK, I decided to attach the perl script anyway. It is very crude, and
-> really needs to be cleaned up for generic use.
-> 
+On Sat, Oct 01, 2011 at 07:54:56PM +0200, Willy Tarreau wrote:
+>   $ git config tar.umask 022
 
-I've just been pointed to:
+Andreas/Willy:
 
-http://www.fail2ban.org/wiki/index.php/Main_Page
+It was indeed umask which was skewing the results. Thanks.
 
-This looks like something similar.
+Now, I'll wait for Willy's hashes since I can't drill down on
+Linus' 2.6 tree beyond 2.6.x.
 
-You see, the reason I posted this tool is because I was sure people will
-point me to better ones that do the same thing (and more!)   ;)
-
--- Steve
-
-
+~ Andy
