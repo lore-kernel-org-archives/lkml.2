@@ -1,126 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab1JAGoN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 02:44:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46234 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab1JAGoI (ORCPT
+	id S1752865Ab1JAGyp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 02:54:45 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51801 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1JAGyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 02:44:08 -0400
-Subject: Re: big picture UDP/IP performance question re 2.6.18 -> 2.6.32
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: starlight@binnacle.cx
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <6.2.5.6.2.20111001012019.05c05b80@flumedata.com>
-References: <6.2.5.6.2.20111001012019.05c05b80@flumedata.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 01 Oct 2011 08:44:02 +0200
-Message-ID: <1317451442.3802.18.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sat, 1 Oct 2011 02:54:39 -0400
+From: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+To: linux-kernel@vger.kernel.org
+Cc: jkosina@suse.cz, Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+Subject: [PATCH] HID: Add support MacbookAir 4,1 keyboard
+Date: Sat,  1 Oct 2011 15:54:53 +0900
+Message-Id: <1317452093-25555-1-git-send-email-iwamatsu@nigauri.org>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 01 octobre 2011 à 01:30 -0400, starlight@binnacle.cx a écrit :
-> Hello,
-> 
-> I'm hoping someone can provide a brief big-picture
-> perspective on the dramatic UDP/IP multicast
-> receive performance reduction from 2.6.18 to
-> 2.6.32 that I just benchmarked.
-> 
-> Have helped out in the past, mainly by identifying
-> a bug in hugepage handling and providing a solid
-> testcase that helped in quickly identifying and
-> correcting the problem.
-> 
-> Have a very-high-volume UDP multicast receiver
-> application.  Just finished benchmarking latest RH
-> variant of 2.6.18 against latest RH 2.6.32 and
-> vanilla 2.6.32.27 on the same 12 core Opteron
-> 6174 processor system, one CPU.
-> 
-> Application reads on 250 sockets with large socket
-> buffer maximums.  Zero data loss.  Four Intel
-> 'e1000e' 82571 gigabit NICs, or two Intel 'igb'
-> 82571 gigabit NICs or two Intel 82599 10 gigabit
-> NICs.  Results similar on all.
-> 
-> With 2.6.18, system CPU is reported in
-> /proc/<pid>/stat as 25% of total.  With 2.6.32,
-> system consumption is 45% with the same exact data
-> playback test.  Jiffy count for user CPU is same
-> for both kernels, but .32 system CPU is double
-> .18 system CPU.
-> 
-> Overall maximum performance capacity is reduced in
-> proportion to the increased system overhead.
-> 
-> ------
-> 
-> My question is why is the performance significantly
-> worse in the more recent kernels?  Apparently
-> network performance is worse for TCP by about the
-> same amount--double the system overhead for the
-> same amount of work.
-> 
-> http://www.phoronix.com/scan.php?page=article&item=linux_2612_2637&num=6
-> 
-> Is there any chance that network performance will
-> improve in future kernels?  Or is the situation
-> a permanent trade-off for security, reliability
-> or scalability reasons?
-> 
+Added USB device IDs and keyboard map for MacBookAir 4,1 keyboard.
 
-CC netdev
+Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+---
+ drivers/hid/hid-apple.c |   31 +++++++++++++++++++++++++++++++
+ drivers/hid/hid-core.c  |    3 +++
+ drivers/hid/hid-ids.h   |    3 +++
+ 3 files changed, 37 insertions(+), 0 deletions(-)
 
-Since you have 2.6.32, you could use perf tool and provide us a
-performance report.
-
-In my experience, I have the exact opposite : performance greatly
-improved in recent kernels. Unless you compile your kernel to include
-new features that might reduce performance (namespaces, cgroup, ...)
-
-It can vary a lot depending on many parameters, like cpu affinities,
-device parameters (coalescing, interrupt mitigation...).
-
-You cant expect switching from 2.6.18 to 2.6.32 and have exactly same
-system behavior.
-
-If your app is performance sensitive, you'll have to make some analysis
-to find out what needs to be tuned.
-
-One known problem of old kernels and UDP is that they was no memory
-accouting, so an application could easily consume all kernel memory and
-crash the machine.
-
-So in 2.6.25, Hideo Aoki added memory limiting to UDP, slowing down a
-lot of UDP operations because of added socket locking, both on transmit
-and receive path.
-
-If your application is multithreaded and use a single socket, you can
-hit lock contention since 2.6.25.
-
-Step by step, we tried to remove part of the scalability problems
-introduced in 2.6.25
-
-In 2.6.35, we speedup receive path a bit (avoiding backlog processing)
-
-In 2.6.39, transmit path became lockless again, thanks to Herbert Xu.
-
-I advise you to try a recent kernel if you need UDP performance, 2.6.32
-is quite old
-
-Multicast is quite a stress for process scheduler, so we experimented a
-way to group all wakeups at the end of softirq handler.
-
-Work is in progress in this area : Peter Zijlstra named this "delayed
-wakeup". A further idea would be to be able to delegate the wakeups to
-another cpu, since I suspect you have one CPU busy in softirq
-processing, and other cpus are ile.
-
-
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index 12db5e1..2bab9ab 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -82,6 +82,28 @@ static const struct apple_key_translation macbookair_fn_keys[] = {
+ 	{ }
+ };
+ 
++static const struct apple_key_translation macbookair4_fn_keys[] = {
++	{ KEY_BACKSPACE, KEY_DELETE },
++	{ KEY_ENTER,	KEY_INSERT },
++	{ KEY_F1,	KEY_BRIGHTNESSDOWN, APPLE_FLAG_FKEY },
++	{ KEY_F2,	KEY_BRIGHTNESSUP,   APPLE_FLAG_FKEY },
++	{ KEY_F3,	KEY_SCALE,          APPLE_FLAG_FKEY },
++	{ KEY_F4,	KEY_DASHBOARD,      APPLE_FLAG_FKEY },
++	{ KEY_F5,	KEY_KBDILLUMDOWN,   APPLE_FLAG_FKEY },
++	{ KEY_F6,	KEY_KBDILLUMUP,     APPLE_FLAG_FKEY },
++	{ KEY_F7,	KEY_PREVIOUSSONG,   APPLE_FLAG_FKEY },
++	{ KEY_F8,	KEY_PLAYPAUSE,      APPLE_FLAG_FKEY },
++	{ KEY_F9,	KEY_NEXTSONG,       APPLE_FLAG_FKEY },
++	{ KEY_F10,	KEY_MUTE,           APPLE_FLAG_FKEY },
++	{ KEY_F11,	KEY_VOLUMEDOWN,     APPLE_FLAG_FKEY },
++	{ KEY_F12,	KEY_VOLUMEUP,       APPLE_FLAG_FKEY },
++	{ KEY_UP,	KEY_PAGEUP },
++	{ KEY_DOWN,	KEY_PAGEDOWN },
++	{ KEY_LEFT,	KEY_HOME },
++	{ KEY_RIGHT,	KEY_END },
++	{ }
++};
++
+ static const struct apple_key_translation apple_fn_keys[] = {
+ 	{ KEY_BACKSPACE, KEY_DELETE },
+ 	{ KEY_ENTER,	KEY_INSERT },
+@@ -186,6 +208,9 @@ static int hidinput_apple_event(struct hid_device *hid, struct input_dev *input,
+ 		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
+ 				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
+ 			table = macbookair_fn_keys;
++		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI &&
++				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS)
++			table = macbookair4_fn_keys;
+ 		else if (hid->product < 0x21d || hid->product >= 0x300)
+ 			table = powerbook_fn_keys;
+ 		else
+@@ -502,6 +527,12 @@ static const struct hid_device_id apple_devices[] = {
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 7129ba6..4163c88 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1365,6 +1365,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_JIS) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 37286e9..db257cb 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -109,6 +109,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI	0x0245
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5_ISO	0x0246
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5_JIS	0x0247
++#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI	0x0249
++#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO	0x024a
++#define USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS	0x024b
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI	0x024c
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ISO	0x024d
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_JIS	0x024e
+-- 
+1.7.6.3
 
