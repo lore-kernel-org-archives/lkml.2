@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1JAWjg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 18:39:36 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47574 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1JAWj3 (ORCPT
+	id S1752817Ab1JAWmL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 18:42:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62755 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1JAWl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 18:39:29 -0400
-Date: Sat, 1 Oct 2011 23:39:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>
-Subject: Re: [PATCH v2] mach-ep93xx: break out GPIO driver specifics
-Message-ID: <20111001223914.GP11710@n2100.arm.linux.org.uk>
-References: <1316508132-20020-1-git-send-email-linus.walleij@stericsson.com> <20110920174012.GE7781@ponder.secretlab.ca> <CACRpkdazjpKZRfpoYgZ=kC+auEj9q-KMHa6qsWsD+5Hpji+96w@mail.gmail.com>
+	Sat, 1 Oct 2011 18:41:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdazjpKZRfpoYgZ=kC+auEj9q-KMHa6qsWsD+5Hpji+96w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
+References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
+	<CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
+Date: Sun, 2 Oct 2011 00:41:59 +0200
+Message-ID: <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
+Subject: Re: taskstats root only breaking iotop
+From: Guillaume Chazarain <guichaz@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 10:32:13PM +0200, Linus Walleij wrote:
-> On Tue, Sep 20, 2011 at 7:40 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > Which tree will this go through?  I don't think it should go via the
-> > gpio tree since it is mostly within arch/arm.
-> 
-> It'd dependent on Russells cleanups so it'll go through Russells
-> tree and his gpio cleanup branch there.
+On Sat, Oct 1, 2011 at 11:59 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> I think the question should be: why is it *ever* a good idea to let
+> *anybody* read how many bytes anybody has read.
 
-It's dependent on other stuff elsewhere too:
+I use iotop to get the throughput of a cp or tar because I don't
+always think of piping to 'pv'. People also use it as a progress
+indicator for their less verbose applications (total bytes
+read/written instead of rate).
 
-error: patch failed: drivers/gpio/gpio-ep93xx.c:24
-error: drivers/gpio/gpio-ep93xx.c: patch does not apply
+I see on forums people use it to find which process is hammering their
+disk, though in this case the time spent on I/Os is more useful than
+the throughput and this is not broken by these changes assuming they
+have root.
 
-According to your patch, line 24 onwards is:
+> If you want that kind of detail, do "strace". Don't do that abortion
+> that is taskstats.
 
- #include <linux/module.h>
- 
- #include <mach/hardware.h>
+strace is not always appropriate: it's invasive as it slows down the
+traced process and it's not aggregating anything.
 
-whereas I have this around line 24:
+> Right now, TASKSTATS is a total and utter disaster.
 
- #include <linux/basic_mmio_gpio.h>
- 
- #include <mach/hardware.h>
+I'm not attached to taskstats, I'd be happy to migrate to what comes next.
 
-So I've applied this with GNU patch instead, accepting the one line of
-fuzz:
+> and it's a crazy idea to
+> begin with.
 
-Hunk #1 succeeded at 23 with fuzz 1 (offset -1 lines).
+But it's not clear to me if you dislike just the taskstats
+implementation or the general idea of precise per task I/O stats.
 
-As a result, I expect sfr will report a trivial merge conflict here.
+Thanks for taking the time to explain your reasoning, I'm not trying
+to resurrect taskstats, just checking if I should expect a brighter
+future for iotop.
+
+-- 
+Guillaume
