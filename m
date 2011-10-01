@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab1JAUKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:10:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59887 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab1JAUE7 (ORCPT
+	id S1755948Ab1JAUXE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:23:04 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52804 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab1JAUW4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:04:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 06/26] ARM: pxa: add missing header inclusions
-Date: Sat,  1 Oct 2011 22:03:38 +0200
-Message-Id: <1317499438-14058-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317499438-14058-1-git-send-email-arnd@arndb.de>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:WaWUTYkSVrBWWUFo6GvWxZ2MfEO9GtMfm94V878UKYR
- 5PUbx9+7ak2jHEkCDLyRbg5wP7+TXRiQw6c4bVp5k6SjaBTVjF
- +MUON/xNsZVQN2WZbK2QVdIRYh27vMeDe2z5p2aGO5VZHMnUlY
- 8ViCY8CeBU1/sKPK9YkYe2cE4OJQdqx+sF/kHJQi+hZtkOTqO8
- 5mDEwtlfyAzh6Selthlqz1EyzA0Zu/UXjoG8h3ijRjfqVDBtDa
- mBCbsrxqM0P4RNFdQ7t6tri1Y7Z9xnjx80Z/86OzS4Gf9htYF8
- mfFFX9/60/T1xuPcqCnRqAjcHPGvEAsU7e/85f2zVvP9MaZfw5
- GageliTDW7RQ0OQWDk4FBiQe2Q7+YX7ZOiTY2Naaq+xLoPte0x
- +fMecsamMpNKw==
+	Sat, 1 Oct 2011 16:22:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
+References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+ <20110930140409.51c1a94c@tlielax.poochiereds.net> <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
+ <20110930234711.GD14147@samba2> <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk>
+ <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk> <20111001150730.GJ5170@giles.fritz.box>
+ <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
+From: Jim McDonough <jmcd@samba.org>
+Date: Sat, 1 Oct 2011 16:22:34 -0400
+X-Google-Sender-Auth: yobjfdGogeantwi6dEgEr8MZiKc
+Message-ID: <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
+Subject: Re: CIFS kernel module bug
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: =?ISO-8859-1?Q?Lars_M=FCller?= <lmuelle@suse.de>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
+        Jeremy Allison <jra@samba.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These resulted in build breakage in some configurations:
+On Sat, Oct 1, 2011 at 3:53 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+> Hi Lars,
+>
+> On 1 Oct 2011, at 16:07, Lars Müller wrote:
+>> On Sat, Oct 01, 2011 at 09:48:12AM +0100, Anton Altaparmakov wrote:
+>>>
+>>> On 1 Oct 2011, at 01:34, J.P. King wrote:
+>>>> Anton will be asleep, so I'll attempt to answer this one.
+>>>>
+>>>>> What server code is the OES CIFS server running ? I thought Novell CIFS
+>>>>> services were all Samba based.
+>>>>
+>>>> We have been told by the people upstairs who run the server that it isn't.
+>>>
+>>> It is not Samba based.  Like Apple, Novell have written their own since Samba decided to go GPLv3…
+>>
+>> (Potential) FUD alert. ;)
+>
+> It wasn't deliberate!  It was just a guess as until recently I also though that OES just used Samba so when I two weeks ago found out that it didn't I just assumed that Novell must have written it recently and then drew the parallel to Apple and just assumed that it was an analogous case…
 
-arch/arm/mach-pxa/irq.c:132:39: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'icip_handle_irq'
+I believe both are available on OES, samba and the CIFS server that
+has its origins in Netware.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/mach-pxa/irq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+>
+>> This Novell CIFS server existed before Novell bought SUSE.  And the
+>> decission to go with it instead of Samba had nothing to do with the move
+>> of Samba from GPL v2 to v3.
+>
+> I stand corrected.  Thanks for the clarification!  From your signature I guess you would know a lot better than most.  (-:
+>
+> Best regards,
+>
+>        Anton
+>
+>> Lars
+>> --
+>> Lars Müller [ˈlaː(r)z ˈmʏlɐ]
+>> Samba Team
+>> SUSE Linux, Maxfeldstraße 5, 90409 Nürnberg, Germany
+>
+> --
+> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+> Linux NTFS maintainer, http://www.linux-ntfs.org/
+>
+>
 
-diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
-index b09e848..848e96d 100644
---- a/arch/arm/mach-pxa/irq.c
-+++ b/arch/arm/mach-pxa/irq.c
-@@ -16,6 +16,7 @@
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/syscore_ops.h>
-+#include <linux/ftrace.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- 
+
+
 -- 
-1.7.5.4
-
+Jim McDonough
+Samba Team
+SUSE labs
+jmcd at samba dot org
+jmcd at themcdonoughs dot org
