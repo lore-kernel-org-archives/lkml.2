@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab1JATX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:23:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50633 "EHLO
+	id S1756795Ab1JATXm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:23:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55328 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab1JATXA (ORCPT
+	with ESMTP id S1756707Ab1JATXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:23:00 -0400
+	Sat, 1 Oct 2011 15:23:02 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 10/11] ARM: OC_ETM should not select ARM_AMBA
-Date: Sat,  1 Oct 2011 21:21:59 +0200
-Message-Id: <1317496920-7764-11-git-send-email-arnd@arndb.de>
+Subject: [PATCH 01/11] ARM: export rtc_lock for nvram driver
+Date: Sat,  1 Oct 2011 21:21:50 +0200
+Message-Id: <1317496920-7764-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
 References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:TJ517U9iUhpS6oN7lOqOGwrRog3KILQ1K1Cy90oWQVm
- 6FVC3EcqNDAu8IJmNqyY5h4sBdTNGeQBfp6PHC4FEMAydQCbRq
- EaEVFJ0LZcHeZZMP75QXjXpV1DvxqA7p61LfAuxhlHG12CQLB+
- u42/tFwZKvKsP34ItskUqi17eIsFc1Dp0Utuq9Ms9Gl1StG2kF
- LY9g+AcMA3VoEmRvpMSch8X7S8e17jYBKiDMZmbzgVqcYvNQ0j
- qzlST8bXJp4frXPVWx9a+/ta/Ecg9IpiFuF7TYjZiKquszYPHg
- oVq4rL5nyLCX0mM0Jc7YQwYd5u66lqbC7R91NEYnBa9aJZ7oOe
- RdATfX9dhIgpcGT3dvcKuxH/hTSDB05SzsjECFvKhxekEvECJz
- MPpJwmEcXTFXQ==
+X-Provags-ID: V02:K0:K5KuNQtx+V3WSd7gdMtbfz4Et7u5HEMdS6IlKGimuhW
+ Pq3tQOyScmVivnEeExNFPFgXLdtSlVNmvqQSzr7LEyhbfstEdZ
+ 4qcUy2ZquQx+Ri6lcqzlBKK4pN0xSRl1kdzkjS3NkfxVHgdFP2
+ vTZ4KFwfDcF5DjEbKTLByEja9/HdgzjefVRvGCEglobw2PWqjW
+ +enGhVD3nE5Ew0fmbTV9yRSfL50DF8K52tbe4T99qHbyILLG7e
+ IKV174HQLStOM8xyrEul4B1AuAGlP7e0DISCKb3zPuZPWEPfsh
+ e06SvQqkN4i+GeekufHrxHmj+wNrDuS3QKOc7dNsa9y9drmQi6
+ M/OGYaaKfs4qI4Mrc442lqLF7ODSUyYg4Jy+Ynqtc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_ARM_AMBA symbol is selected by the platforms that support
-AMBA, and the other platforms (e.g. orion) might not be able to
-build that code at all when they do not support the clk API.
-
-Instead, make sure that OC_ETM is only built on platforms that
-do support the amba subsystem already.
+The rtc_lock is used by both the nvram and rtc drivers, so
+we need to export it if at least one of the two is built,
+not just for the rtc driver.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/Kconfig.debug |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/kernel/time.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 81cbe40..0c7a4f5 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -94,7 +94,7 @@ config DEBUG_ICEDCC
+diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+index cb634c3..5a54b95 100644
+--- a/arch/arm/kernel/time.c
++++ b/arch/arm/kernel/time.c
+@@ -39,13 +39,11 @@
+  */
+ static struct sys_timer *system_timer;
  
- config OC_ETM
- 	bool "On-chip ETM and ETB"
--	select ARM_AMBA
-+	depends on ARM_AMBA
- 	help
- 	  Enables the on-chip embedded trace macrocell and embedded trace
- 	  buffer driver that will allow you to collect traces of the
+-#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE)
++#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
++    defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+ /* this needs a better home */
+ DEFINE_SPINLOCK(rtc_lock);
+-
+-#ifdef CONFIG_RTC_DRV_CMOS_MODULE
+ EXPORT_SYMBOL(rtc_lock);
+-#endif
+ #endif	/* pc-style 'CMOS' RTC support */
+ 
+ /* change this if you have some constant time drift */
 -- 
 1.7.5.4
 
