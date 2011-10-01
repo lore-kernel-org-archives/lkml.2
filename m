@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab1JAUXE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:23:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52804 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab1JAUW4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:22:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
-References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
- <20110930140409.51c1a94c@tlielax.poochiereds.net> <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
- <20110930234711.GD14147@samba2> <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk>
- <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk> <20111001150730.GJ5170@giles.fritz.box>
- <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
-From: Jim McDonough <jmcd@samba.org>
-Date: Sat, 1 Oct 2011 16:22:34 -0400
-X-Google-Sender-Auth: yobjfdGogeantwi6dEgEr8MZiKc
-Message-ID: <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
-Subject: Re: CIFS kernel module bug
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: =?ISO-8859-1?Q?Lars_M=FCller?= <lmuelle@suse.de>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+	id S1756499Ab1JAU1q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:27:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41887 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834Ab1JAU1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 16:27:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: PME via interrupt or SCI mechanism?
+Date: Sat, 1 Oct 2011 22:29:55 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
-        Jeremy Allison <jra@samba.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Matthew Garrett <mjg59@srcf.ucam.org>
+References: <20110912171003.GA7939@xanatos> <201109302221.06714.rjw@sisk.pl> <20111001003010.GA26349@xanatos>
+In-Reply-To: <20111001003010.GA26349@xanatos>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110012229.55473.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 1, 2011 at 3:53 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
-> Hi Lars,
->
-> On 1 Oct 2011, at 16:07, Lars Müller wrote:
->> On Sat, Oct 01, 2011 at 09:48:12AM +0100, Anton Altaparmakov wrote:
->>>
->>> On 1 Oct 2011, at 01:34, J.P. King wrote:
->>>> Anton will be asleep, so I'll attempt to answer this one.
->>>>
->>>>> What server code is the OES CIFS server running ? I thought Novell CIFS
->>>>> services were all Samba based.
->>>>
->>>> We have been told by the people upstairs who run the server that it isn't.
->>>
->>> It is not Samba based.  Like Apple, Novell have written their own since Samba decided to go GPLv3…
->>
->> (Potential) FUD alert. ;)
->
-> It wasn't deliberate!  It was just a guess as until recently I also though that OES just used Samba so when I two weeks ago found out that it didn't I just assumed that Novell must have written it recently and then drew the parallel to Apple and just assumed that it was an analogous case…
+On Saturday, October 01, 2011, Sarah Sharp wrote:
+> On Fri, Sep 30, 2011 at 10:21:06PM +0200, Rafael J. Wysocki wrote:
+> > OK, please test the appended patch.  The difference is that it should only
+> > continuously poll devices that don't get notifications.  You'll still see
+> > the debug messages from your previous patches, but this one should be a bit
+> > less wasteful than the previous one in general.
+> 
+> This patch seems to work.  The GPE fires and the xHCI host controller
+> comes out of D3 after a stream of:
+> 
+> Sep 30 17:07:32 talon kernel: [  197.745312] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
+> Sep 30 17:07:32 talon kernel: [  197.745321] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
+> Sep 30 17:07:32 talon kernel: [  197.745326] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
+> Sep 30 17:07:32 talon kernel: [  197.745331] e1000e 0000:00:19.0: pci_acpi_wake_dev
+> 
+> It does seem to take less time to come out of D3 than the previous patch
+> though.
+> 
+> I occasionally do not see the host controller come out of D3 when I plug
+> in a new device, but the interrupt count for GPE 0D doesn't increment
+> when that happens, so it's probably just a BIOS or hardware bug.
 
-I believe both are available on OES, samba and the CIFS server that
-has its origins in Netware.
+I think the controller doesn't signal PME in those cases.
 
->
->> This Novell CIFS server existed before Novell bought SUSE.  And the
->> decission to go with it instead of Samba had nothing to do with the move
->> of Samba from GPL v2 to v3.
->
-> I stand corrected.  Thanks for the clarification!  From your signature I guess you would know a lot better than most.  (-:
->
-> Best regards,
->
->        Anton
->
->> Lars
->> --
->> Lars Müller [ˈlaː(r)z ˈmʏlɐ]
->> Samba Team
->> SUSE Linux, Maxfeldstraße 5, 90409 Nürnberg, Germany
->
-> --
-> Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-> Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-> Linux NTFS maintainer, http://www.linux-ntfs.org/
->
->
+> Did mention this was bleeding edge hardware?
 
+No, you didn't, but that doesn't matter a lot.  Bugs of this kind are found in
+systems being sold in the market too and we need to work around them anyway. :-(
 
+Thanks for testing the patch, I'll resent it with a changelog shortly.
 
--- 
-Jim McDonough
-Samba Team
-SUSE labs
-jmcd at samba dot org
-jmcd at themcdonoughs dot org
+Rafael
