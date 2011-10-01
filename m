@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab1JAHus (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 03:50:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45317 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009Ab1JAHul (ORCPT
+	id S1754505Ab1JAHxs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 03:53:48 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:44460 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1JAHxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 03:50:41 -0400
-Message-ID: <4E86C64C.8020408@gmail.com>
-Date: Sat, 01 Oct 2011 09:50:36 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Sat, 1 Oct 2011 03:53:42 -0400
+Date: Sat, 1 Oct 2011 09:52:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fix
+Message-ID: <20111001075211.GA22625@elte.hu>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Shea Levy <shea@shealevy.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mike Waychison <mikew@google.com>, Matthew Garrett <mjg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 10/10] x86, efi: EFI boot stub support
-References: <1316607036-9235-1-git-send-email-matt@console-pimps.org>  <1317372688-15150-1-git-send-email-matt@console-pimps.org>  <4E85ED25.6060208@shealevy.com> <1317413508.3375.40.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1317413508.3375.40.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
+Linus,
 
-On 09/30/2011 10:11 PM, Matt Fleming wrote:
-> On Fri, 2011-09-30 at 12:24 -0400, Shea Levy wrote:
->> Hi Matt,
->>
->> I would like to test this patch series (My EFI systems are MBP 5,5, Asus 
->> p8p67 pro, and the VirtualBox EFI setup). Will you want to hear the 
->> results? If so, is there a specific procedure or set of things to test 
->> that you'll want to know about? Also, other than patch 10 should I use 
->> the v3 version of the patches sent to this list, or is there a better 
->> place to pull the patches from?
-> Hi Shea,
->
-> I'd definitely like to hear the results if you could try it out on your
-> machines! There's no specific procedure to try, just try to break it ;-)
->
-> You can find the patches at the top of the 'x86/efi-stub' branch at,
->
-> 	https://github.com/mfleming/linux-2.6.git
->
-Cute, I think you reintroduced the same bug in v4 with load_options_size ;)
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Shouldn't it be /= 2 ?
+   git://tesla.tglx.de/git/linux-2.6-tip.git perf-urgent-for-linus
 
-Conditionally-signed-off-by-if-fixed-in-v5: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+ Thanks,
 
-Still would love to see ASCII support though :(
+	Ingo
 
-~Maarten
+------------------>
+Jiri Olsa (1):
+      perf tools: Fix raw sample reading
+
+
+ tools/perf/util/evsel.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index c5748c5..e389815 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -449,6 +449,8 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
++		const u64 *pdata;
++
+ 		u.val64 = *array;
+ 		if (WARN_ONCE(swapped,
+ 			      "Endianness of raw data not corrected!\n")) {
+@@ -462,11 +464,12 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			return -EFAULT;
+ 
+ 		data->raw_size = u.val32[0];
++		pdata = (void *) array + sizeof(u32);
+ 
+-		if (sample_overlap(event, &u.val32[1], data->raw_size))
++		if (sample_overlap(event, pdata, data->raw_size))
+ 			return -EFAULT;
+ 
+-		data->raw_data = &u.val32[1];
++		data->raw_data = (void *) pdata;
+ 	}
+ 
+ 	return 0;
