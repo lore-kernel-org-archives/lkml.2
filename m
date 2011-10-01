@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab1JATdy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:33:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58660 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752736Ab1JATds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:33:48 -0400
-Message-ID: <1317497626.22613.1.camel@Joe-Laptop>
-Subject: Re: [RFCv3][PATCH 1/4] replace string_get_size() arrays
-From: Joe Perches <joe@perches.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        James.Bottomley@HansenPartnership.com, hpa@zytor.com
-Date: Sat, 01 Oct 2011 12:33:46 -0700
-In-Reply-To: <20111001000856.DD623081@kernel>
-References: <20111001000856.DD623081@kernel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
+	id S1756815Ab1JATiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:38:46 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:41750 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab1JATil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 15:38:41 -0400
+Date: Sat, 1 Oct 2011 21:36:50 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com, alan@linux.intel.com
+Subject: Re: [PATCH 4/8] staging: et131x: Add pci suspend & resume functions
+Message-ID: <20111001193650.GA14434@electric-eye.fr.zoreil.com>
+References: <1317464057-18231-1-git-send-email-mark.einon@gmail.com> <1317464057-18231-4-git-send-email-mark.einon@gmail.com> <20111001110357.GA10696@electric-eye.fr.zoreil.com> <CANK3SE3eHbBwzE5ZQJVoQEzw1QEE0bTp8Uf=CRpQEvNMiztPtg@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANK3SE3eHbBwzE5ZQJVoQEzw1QEE0bTp8Uf=CRpQEvNMiztPtg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 17:08 -0700, Dave Hansen wrote:
-> Instead of explicitly storing the entire string for each
-> possible units, just store the thing that varies: the
-> first character.
+Mark Einon <mark.einon@gmail.com> :
+> On 1 October 2011 12:03, Francois Romieu <romieu@fr.zoreil.com> wrote:
+[...]
+> >> + ? ? err = et131x_open(netdev);
+> >> + ? ? if (err) {
+> >> + ? ? ? ? ? ? dev_err(&pdev->dev, "Can't resume interface!\n");
+> >> + ? ? ? ? ? ? goto out;
+> >> + ? ? }
+> >
+> > You can/should split et131x_{open/close} to remove this failure point.
+> 
+> Hi, thanks for the comments francois,
+> I'm not quite sure what you mean here. Can you expand on your comment please?
 
-trivia
+Something like:
 
-> diff -puN lib/string_helpers.c~string_get_size-pow2 lib/string_helpers.c
-> --- linux-2.6.git/lib/string_helpers.c~string_get_size-pow2	2011-09-30 16:50:31.628981352 -0700
-> +++ linux-2.6.git-dave/lib/string_helpers.c	2011-09-30 17:04:02.211607364 -0700
-> @@ -8,6 +8,23 @@
->  #include <linux/module.h>
->  #include <linux/string_helpers.h>
->  
-> +static const char byte_units[] = "_KMGTPEZY";
+int et131x_open(struct net_device *netdev)
+{
+	add_timer(...)
 
-u64 could be up to ~1.8**19 decimal
-zetta and yotta are not possible or necessary.
-u128 maybe someday, but then other changes
-would be necessary too.
+	err = request_irq(...)
+	if (err < 0)
+		goto release_timer;
 
-> +static char *__units_str(enum string_size_units unit, char *buf, int index)
-> +{
-> +	int place = 0;
-> +
-> +	/* index=0 is plain 'B' with no other unit */
-> +	if (index) {
-> +		buf[place++] = byte_units[index];
+	et131x_start(...)
 
-index is unbounded (doesn't matter currently, it will for u128)
+out:
+	return err;
 
-> @@ -23,26 +40,19 @@
->  int string_get_size(u64 size, const enum string_size_units units,
->  		    char *buf, int len)
-[]
->  	const unsigned int divisor[] = {
->  		[STRING_UNITS_10] = 1000,
->  		[STRING_UNITS_2] = 1024,
->  	};
+release_timer:
+	blah;
+	goto out;
+}
 
-static const or it might be better to use
-	unsigned int divisor = (string_size_units == STRING_UNITS_2) ? 1024 : 1000;
-as that would make the code clearer in a
-couple of uses of divisor[] later.
+Same thing with et131x_close / et131x_stop. You only use et131x_{start/stop}
+for suspend/resume : one error path is gone away.
 
-> @@ -61,7 +71,7 @@ int string_get_size(u64 size, const enum
->  	}
->  
->  	snprintf(buf, len, "%lld%s %s", (unsigned long long)size,
-
-%llu
-
-
+-- 
+Ueimor
