@@ -1,63 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab1JALje (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 07:39:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61148 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752197Ab1JALj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 07:39:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,472,1312182000"; 
-   d="scan'208";a="57692852"
-From: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [PATCH v2] mtd: r852: make r852_pm_ops static
-Thread-Topic: [PATCH v2] mtd: r852: make r852_pm_ops static
-Thread-Index: AQHMe/HZCu4k9imlK0edcW29qXJZ45VnVcQA
-Date: Sat, 1 Oct 2011 11:39:24 +0000
-Message-ID: <1317469354.19426.88.camel@sauron>
-References: <1317003183.6468.1.camel@phoenix>
-In-Reply-To: <1317003183.6468.1.camel@phoenix>
-Reply-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.15.41]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <F125DC298D8EA842863F038459C895BA@intel.com>
-MIME-Version: 1.0
+	id S1756448Ab1JALrz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 07:47:55 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38286 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab1JALrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 07:47:47 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
+        adrian.hunter@intel.com, linus.walleij@linaro.org,
+        james_p_freyensee@linux.intel.com, sebras@gmail.com,
+        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
+        per.forlin@stericsson.com, johan.rudholm@stericsson.com,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH v6] mmc : general purpose partition support.
+Date: Sat,  1 Oct 2011 20:47:31 +0900
+Message-Id: <1317469651-1914-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p91Bdgp5006155
 
-On Mon, 2011-09-26 at 10:13 +0800, Axel Lin wrote:
-> It is not used outside this driver so no need to make the symbol global.
-> Also make r852_suspend and r852_resume static.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> v2: Also make r852_suspend and r852_resume static
+It allows gerneral purpose partitions in MMC Device.
+And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+After patching, we can see general purpose partitions like this.
+> cat /proc/partitions
+          179 0 847872 mmcblk0
+          179 192 4096 mmcblk0gp3
+          179 160 4096 mmcblk0gp2
+          179 128 4096 mmcblk0gp1
+          179 96  1052672 mmcblk0gp0
+          179 64  1024 mmcblk0boot1
+          179 32  1024 mmcblk0boot0
 
-Pushed to l2-mtd-2.6.git, thanks!
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ drivers/mmc/card/block.c |   31 +++++++++++++++++--------------
+ drivers/mmc/core/mmc.c   |   45 +++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/mmc/card.h |   33 ++++++++++++++++++++++++++++++++-
+ include/linux/mmc/mmc.h  |    2 +-
+ 4 files changed, 93 insertions(+), 18 deletions(-)
 
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 1ff5486..56f7185 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -1377,26 +1377,29 @@ static int mmc_blk_alloc_part(struct mmc_card *card,
+ 	return 0;
+ }
+ 
++/* MMC Physical partition consist of two boot partitons and
++ * four general purpose partitions.
++ * if the register of respective partitions is set in ext_csd,
++ * it allocate block device to be accessed.
++ */
++
+ static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
+ {
+-	int ret = 0;
++	int idx, ret = 0;
+ 
+ 	if (!mmc_card_mmc(card))
+ 		return 0;
+ 
+-	if (card->ext_csd.boot_size) {
+-		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT0,
+-					 card->ext_csd.boot_size >> 9,
+-					 true,
+-					 "boot0");
+-		if (ret)
+-			return ret;
+-		ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT1,
+-					 card->ext_csd.boot_size >> 9,
+-					 true,
+-					 "boot1");
+-		if (ret)
+-			return ret;
++	 for (idx = 0; idx < card->nr_parts; idx++) {
++		if (card->part[idx].size) {
++			ret = mmc_blk_alloc_part(card, md,
++				card->part[idx].cookie,
++				card->part[idx].size >> 9,
++				card->part[idx].force_ro,
++				card->part[idx].name);
++			if (ret)
++				return ret;
++		}
+ 	}
+ 
+ 	return ret;
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 5700b1c..818778f 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -239,7 +239,8 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd)
+  */
+ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ {
+-	int err = 0;
++	int err = 0, idx;
++	unsigned int part_size, gp_size_mult;
+ 
+ 	BUG_ON(!card);
+ 
+@@ -340,7 +341,15 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 		 * There are two boot regions of equal size, defined in
+ 		 * multiples of 128K.
+ 		 */
+-		card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
++		if (ext_csd[EXT_CSD_BOOT_MULT])	{
++				for (idx = 0; idx < MMC_NUM_BOOT_PARTITION;
++					idx++) {
++				part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
++				mmc_part_add(card, part_size,
++					EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
++					"boot%d", idx, true);
++			}
++		}
+ 	}
+ 
+ 	card->ext_csd.raw_hc_erase_gap_size =
+@@ -392,6 +401,38 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 			card->ext_csd.enhanced_area_offset = -EINVAL;
+ 			card->ext_csd.enhanced_area_size = -EINVAL;
+ 		}
++
++		/*
++		 * General purpose partition feature support --
++		 * If ext_csd have the size of general purpose partitions,
++		 * set size, part_type, partition name in mmc_part.
++		 */
++
++		if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
++			u8 hc_erase_grp_sz =
++				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
++			u8 hc_wp_grp_sz =
++				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
++
++			card->ext_csd.enhanced_area_en = 1;
++
++			for (idx = 0, gp_size_mult = 143;
++				idx < MMC_NUM_GP_PARTITION;
++				idx++, gp_size_mult += 3) {
++				if (!ext_csd[gp_size_mult] &&
++					!ext_csd[gp_size_mult + 1] &&
++					!ext_csd[gp_size_mult + 2])
++					continue;
++				part_size = (ext_csd[gp_size_mult + 2] << 16) +
++					(ext_csd[gp_size_mult + 1] << 8) +
++					ext_csd[gp_size_mult];
++				part_size *= (size_t)(hc_erase_grp_sz *
++					hc_wp_grp_sz);
++				mmc_part_add(card, part_size <<= 19,
++					EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
++					"gp%d", idx, false);
++			}
++		}
+ 		card->ext_csd.sec_trim_mult =
+ 			ext_csd[EXT_CSD_SEC_TRIM_MULT];
+ 		card->ext_csd.sec_erase_mult =
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index b460fc2..550c2ed 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/mmc/core.h>
+ #include <linux/mod_devicetable.h>
++#include <linux/genhd.h>
+ 
+ struct mmc_cid {
+ 	unsigned int		manfid;
+@@ -63,7 +64,6 @@ struct mmc_ext_csd {
+ 	bool			enhanced_area_en;	/* enable bit */
+ 	unsigned long long	enhanced_area_offset;	/* Units: Byte */
+ 	unsigned int		enhanced_area_size;	/* Units: KB */
+-	unsigned int		boot_size;		/* in bytes */
+ 	u8			raw_partition_support;	/* 160 */
+ 	u8			raw_erased_mem_count;	/* 181 */
+ 	u8			raw_ext_csd_structure;	/* 194 */
+@@ -157,6 +157,22 @@ struct sdio_func_tuple;
+ 
+ #define SDIO_MAX_FUNCS		7
+ 
++/* The number of MMC physical partitions
++ * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
++ */
++#define MMC_NUM_BOOT_PARTITION	2
++#define MMC_NUM_GP_PARTITION	4
++
++/*
++ * MMC Physical partitions
++ */
++struct mmc_part {
++	unsigned int	size;	/* partition size (in bytes) */
++	unsigned int	cookie;	/* it used to part_type */
++	char	name[DISK_NAME_LEN];
++	bool	force_ro;	/* to make boot parts RO by default */
++};
++
+ /*
+  * MMC device
+  */
+@@ -216,9 +232,24 @@ struct mmc_card {
+ 	unsigned int		sd_bus_speed;	/* Bus Speed Mode set for the card */
+ 
+ 	struct dentry		*debugfs_root;
++	struct mmc_part	part[MMC_NUM_BOOT_PARTITION + MMC_NUM_GP_PARTITION];	/* mmc physical partitions */
++	unsigned int	nr_parts;
+ };
+ 
+ /*
++ * This function fill contents in mmc_part.
++ */
++static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
++	unsigned int part_cfg, char *name, int idx, bool ro)
++{
++	card->part[card->nr_parts].size = size;
++	card->part[card->nr_parts].cookie = part_cfg;
++	sprintf(card->part[card->nr_parts].name, name, idx);
++	card->part[card->nr_parts].force_ro = ro;
++	card->nr_parts++;
++}
++
++/*
+  *  The world is not perfect and supplies us with broken mmc/sdio devices.
+  *  For at least some of these bugs we need a work-around.
+  */
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 5a794cb..29b7cb6 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -302,7 +302,7 @@ struct _mmc_csd {
+ 
+ #define EXT_CSD_PART_CONFIG_ACC_MASK	(0x7)
+ #define EXT_CSD_PART_CONFIG_ACC_BOOT0	(0x1)
+-#define EXT_CSD_PART_CONFIG_ACC_BOOT1	(0x2)
++#define EXT_CSD_PART_CONFIG_ACC_GP0	(0x4)
+ 
+ #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
+ #define EXT_CSD_CMD_SET_SECURE		(1<<1)
 -- 
-Best Regards,
-Artem Bityutskiy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
+1.7.4.4
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
