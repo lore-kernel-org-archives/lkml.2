@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1JAEzA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 00:55:00 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38881 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751233Ab1JAEyz (ORCPT
+	id S1753136Ab1JAFlU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 01:41:20 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39712 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751227Ab1JAFlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 00:54:55 -0400
-X-Sasl-enc: U6m5hkojOe9FH6J67YvArApPgn5tbxnCUXaF68MqpKW4 1317444894
-Date: Fri, 30 Sep 2011 21:54:48 -0700
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
+	Sat, 1 Oct 2011 01:41:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+vMm9MzZCvEkCtGnrZl7awaoPqH9/SqAHdpsOiXy
+	tjJG9xF4XMtQ8D
+Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
+From: Mike Galbraith <efault@gmx.de>
+To: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: kernel.org status: hints on how to check your machine for
- intrusion
-Message-ID: <20111001045448.GA24395@kroah.com>
-References: <4E8655CD.90107@zytor.com>
- <20110930235924.GA25176@kroah.com>
- <20110930.211520.1376313955703692517.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110930.211520.1376313955703692517.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
+References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
+	 <CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 01 Oct 2011 07:41:09 +0200
+Message-ID: <1317447669.6337.24.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 09:15:20PM -0400, David Miller wrote:
-> From: Greg KH <greg@kroah.com>
-> Date: Fri, 30 Sep 2011 16:59:24 -0700
+On Fri, 2011-09-30 at 21:12 +0200, Tadeus (Eus) Prastowo wrote:
+> Anyone familiar with the Linux scheduler, please?
 > 
-> > 1. Install the chkrootkit package from your distro repository and see if it
-> >    reports anything.  If your distro doesn't have the chkroot package,
-> >    download it from:
-> > 	http://www.chkrootkit.org/
-> > 
-> >    Another tool is the ossec-rootcheck tool which can be found at:
-> > 	http://www.ossec.net/main/rootcheck
-> > 
-> >    And another one is the rkhunter program:
-> >    	http://www.rootkit.nl/projects/rootkit_hunter.html
-> >    [Note, this tool has the tendancy to give false-positives on some
-> >    Debian boxes, please read /usr/share/doc/rkhunter/README.Debian.gz if
-> >    you run this on a Debian machine]
-> 
-> I quickly found that it gives false positives on Fedora15 too.
-> 
-> It thinks one is infected with Suckit.
-> 
-> It's check is essentially "strings /sbin/init | egrep HOME" which
-> triggers with:
-> 
-> 	XDG_CONFIG_HOME
-> 	XDG_DATA_HOME
-> 	HOME=%s
-> 
-> I'm sure chkrootkit might be useful as a guide, but the seeming
-> pervasiveness of it's false positives make it much less useful than it
-> could be.
+> On Wed, Sep 28, 2011 at 1:06 AM, Tadeus (Eus) Prastowo
+> <0x657573@googlemail.com> wrote:
+> > Hi!
+> >
+> > When a SCHED_RR task with RT priority X blocks on a
+> > priority-inheriting mutex held by a SCHED_NORMAL task with nice value
+> > Y, RT-Mutex code will change the SCHED_NORMAL task priority to that of
+> > the SCHED_RR task and based on the new priority, will change the
+> > scheduling class too. But, each task retains its own scheduling
+> > policy.
+> >
+> > This means that the task inheriting the SCHED_RR priority will be
+> > scheduled using SCHED_FIFO policy because task_tick_rt does not
+> > enforce the SCHED_RR time slice when the task policy is not SCHED_RR.
+> >
+> > Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
+> > task get the privilege of SCHED_FIFO task for running as long as it
+> > wishes even when the task giving the inheritance does not have such
+> > privilege?
 
-That's sad, but the combination of the three tools should give some
-sense of what is going on if things are really valid or not, hopefully.
+Existence of a critical section > slice would be the real problem, no?
 
-It was tough to write this in a way that would be applicable to the
-large variety of systems we all use, so little differences like this
-will happen.  Hopefully people take this as a guideline of things to do
-to try to ensure the safety of a system.
+	-Mike
 
-thanks,
-
-greg k-h
