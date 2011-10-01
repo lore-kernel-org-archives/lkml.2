@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab1JCGtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 02:49:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9065 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab1JCGs4 (ORCPT
+	id S1752197Ab1JCGtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 02:49:22 -0400
+Received: from dns2.ufh.ac.za ([196.21.104.231]:43461 "EHLO al-mailx.ufh.ac.za"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab1JCGtT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 02:48:56 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-d6-4e895ad60442
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: alsa-devel@alsa-project.org, "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        linux-kernel@vger.kernel.org, "'Liam Girdwood'" <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
- <1317587284-2776-6-git-send-email-arnd@arndb.de>
- <20111002204729.GC5811@opensource.wolfsonmicro.com>
- <3289863.m6ULFZUV3p@wuerfel>
-In-reply-to: <3289863.m6ULFZUV3p@wuerfel>
-Subject: RE: [alsa-devel] [PATCH 5/6] ASoC: samsung: fix Kconfig dependencies
-Date: Mon, 03 Oct 2011 15:48:54 +0900
-Message-id: <004e01cc8198$848347f0$8d89d7d0$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyBSHlS6nbfC4PURjyN4s7L5omUwgAS0swQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 3 Oct 2011 02:49:19 -0400
+X-Greylist: delayed 116268 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Oct 2011 02:49:18 EDT
+From: "Meintjes-VanderWalt, Lirieka" <LMeintjes-VanderWalt@ufh.ac.za>
+Date: Sun, 2 Oct 2011 00:10:26 +0200
+Subject: Business proposal!!
+Thread-Topic: Business proposal!!
+Thread-Index: AQHMgIbszD4/BEcQdUeG47XAuo7yzA==
+Message-ID: <8EF85336AC56FD488C57B0DE511AB4C682936D37D7@AL-ICT-EXMB.ufh-domain.local>
+Accept-Language: en-US, en-ZA
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-ZA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-MXID: p91M5fvj019940
+X-Spam-Score: 0.853
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Mon, Oct 03, 2011 at 6:15:03AM , Arnd Bergmann wrote:
-> It's a bug that I only observed on exynos4, and it could be that
-> this patch didn't actually solve it in the end. I'll drop it for
-> now and do a better report when the problem comes back.
 
-Could you please explain problem which observed on exynos4?
-If possible, I want to check it too.
+Reply to:vhong_p11@yahoo.com.hk
+I have a business transaction which I need your assistance, your share will be 50%; please if you are interested do reply via email:vhong_p11@yahoo.com.hk
+Mr.Vincent Hong.
 
-Thanks
 
-Sangbeom.
+
+
+
+The University of Fort Hare subscribes to an e-mail disclaimer. Please click on the following URL to read further:
+
+http://www.ufh.ac.za/disclaimer/
+
+
+
 
