@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1JAV74 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 17:59:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62650 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1JAV7v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 17:59:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
-References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 1 Oct 2011 14:59:30 -0700
-X-Google-Sender-Auth: TRTL_Bs_aE-LHzsYX6Ynf0Xaa4M
-Message-ID: <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
-Subject: Re: taskstats root only breaking iotop
-To: Guillaume Chazarain <guichaz@gmail.com>
+	id S1752103Ab1JAWFf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 18:05:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42006 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751524Ab1JAWF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 18:05:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <greg@kroah.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Date: Sun, 2 Oct 2011 00:07:45 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <4E8655CD.90107@zytor.com> <20111001140519.GA26662@kroah.com>
+In-Reply-To: <20111001140519.GA26662@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110020007.45756.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 1, 2011 at 2:54 PM, Guillaume Chazarain <guichaz@gmail.com> wrote:
->
-> With taskstats being root only, what's the benefit of making the stats
-> imprecise (not that it matters to iotop)?
+On Saturday, October 01, 2011, Greg KH wrote:
+> On Fri, Sep 30, 2011 at 04:50:37PM -0700, H. Peter Anvin wrote:
+> > 2. Create a new PGP/GPG key, and also generate a key revocation
+> >    certificate (but don't import it anywhere -- save it for the
+> >    future) for your new key.  In the near future we are considering
+> >    setting up an escrow service for key revocation certificates.
+> > 
+> >    I recommend using a 4096-bit RSA key.  Given how fast computers are
+> >    these days, there is no reason to use a shorter key.  DSA keys
+> >    should be considered obsolete; substantial weaknesses have been
+> >    found in DSA.
+> > 
+> >    $ gpg --gen-key
+> >    $ gpg -u <key ID> -o <key ID>.revoke --gen-revoke
+> 
+> I would recommend a physical access device for your new gpg key that you
+> create.  I've heard good things about this USB device:
+> 	http://www.crypto-stick.org/
+> and am trying to have a bunch of them at the Kernel Summit this year to
+> hand out to people if they want one.
 
-I think the question should be: why is it *ever* a good idea to let
-*anybody* read how many bytes anybody has read.
+This thingie is only capable of operating keys up to 3072-bits it seems.
 
-If you want that kind of detail, do "strace". Don't do that abortion
-that is taskstats.
-
-> - byte level stats only if ptrace_may_access() though iotop can
-> certainly live with 1k rounded values
-
-Again, do a real trace.
-
-Right now, TASKSTATS is a total and utter disaster. I want to make it
-*less* used, not more. And I sure as hell don't want to make it even
-*more* of a burden on the kernel by having to do the whole ptrace
-check on each and every task.
-
-Seriously. TASKSTATS is crap. It should die. I was *this* close to
-deciding to just rip it out entirely. The whole thing is badly
-designed, it's known-broken wrt namespaces, and it's a crazy idea to
-begin with.
-
-Castrating it a bit and limiting it to root-only made it just
-palatable enough that I felt it didn't need to be removed entirely.
-
-But if it gets annoying enough and people try to extend it to be even
-more complicated, my response to that will just be "No. HELL NO!".
-
-Especially since I haven't heard a peep about the fact that it was
-totally broken wrt namespaces despite reporting it to the people who
-were ostensibly in charge of it..
-
-No new complications. People should work at fixing the mess that it
-is, rather than trying to make it even messier.
-
-                   Linus
+Thanks,
+Rafael
