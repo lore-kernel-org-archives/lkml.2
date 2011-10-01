@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab1JAUiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:38:17 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:34160 "EHLO
-	homiemail-a80.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754872Ab1JAUiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:38:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
-	:from:mime-version:to:cc:subject:references:in-reply-to
-	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
-	 b=DofKIGO1vmWrbrtJrIGc3BLp09N/je47MCGr7QMZJwvj7oSYr08EBnWUWslQL
-	7AR0P4JCmmJbN/3ha/IqNCTId+bW0pZFdnukbW8dDmnKs1lKUhVTwyQTWTBPx25l
-	VGdzTXpSv+RhJx9sIPR/H2Geq2pMWxNOivksaOX62H/Tv8=
-Message-ID: <4E877A22.6070605@shealevy.com>
-Date: Sat, 01 Oct 2011 16:37:54 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110928 Thunderbird/3.1.9
+	id S1757215Ab1JAUq1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:46:27 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:46719 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976Ab1JAUqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 16:46:20 -0400
+From: Andres Freund <andres@anarazel.de>
+To: Andi Kleen <andi@firstfloor.org>, robertmhaas@gmail.com
+Subject: Re: Improve lseek scalability v3
+Date: Sat, 1 Oct 2011 22:46:13 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc8-andres-00005-gb7b65ee; KDE/4.6.5; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Alban Crequy" <alban.crequy@collabora.co.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Davide Libenzi" <davidel@xmailserver.org>, netdev@vger.kernel.org
-Subject: Re: Hang with "runaway loop modprobe net-pf-1" on Linux 3.0.4
-References: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
-In-Reply-To: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201110012246.13801.andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2011 08:38 AM, shea@shealevy.com wrote:
-> Hello,
->
-> My initrd mounts /proc and /sys, puts a tmpfs at /dev, then loads ext4. On
-> 2.6.39 (and earlier), this works fine and the initrd init continues
-> happily. On 3.0.4, however, the kernel spits out
->
->> request_module: runaway loop modprobe net-pf-1
-> a few times then hangs. If I drop into a shell before loading ext4 and run
-> modprobe unix, the same problem occurs. The modprobe used is dynamically
-> linked with glibc (which is included in the initrd), and it is the same
-> modprobe on the working and non-working systems. From my searches, it
-> appears that CONFIG_UNIX=y instead of =m would probably solve this
-> problem, but I'd rather keep it as a module if it's possible to get it
-> working. What's going wrong here? Why does it work on 2.6.39 but not
-> 3.0.4?
->
-> Regards,
-> Shea Levy
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Hi,
 
-CC'ing af_unix.c maintainers. Also, I had the same problem with 3.0.
+On Friday, September 16, 2011 01:06:46 AM Andi Kleen wrote:
+> v3: No changes, except rebase. All reviews passed. Just reposting
+> for merging.
+Is anything/anyone still objecting to this patchset?
+
+I just retested it ontop of v3.1-rc8 minus the btrfs parts (which don't apply 
+cleanly anymore because a modified version of 1/7 was merged) and it works 
+fine for some hours of fs heavy db using benchmarking/development.
+
+Following is a seemingly trivial forward-port of 7/7. But since I have 
+about no clue in fs development and even less about brfts - which I never used -
+take it with a grain of salt.
+It seems a bit ugly to have the mutex_unlock at three places btw. A 2nd patch
+fixes that, no idea whether its worth the churn.
+Both are compile tested only.
+
+Even at this (2 x E5520 (4 cores)) machine there seems to be a benefit of 
+about 1.5%. Not enough cores to get into the actually problematic performance 
+areas as presented by Robert though.
+The variance between runs is a bit too high to call it reliable though.
+
+Thanks,
+
+Andres
+
+
+PS: I have no clue what to do with the s-o-b and changelog when forward 
+porting a patch... So I just copied the original message - which seems wrong.
+
