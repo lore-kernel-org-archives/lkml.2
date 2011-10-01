@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1JARsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 13:48:46 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33908 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab1JARsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 13:48:40 -0400
-Message-ID: <4E87524B.3050301@parallels.com>
-Date: Sat, 1 Oct 2011 21:47:55 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752616Ab1JARyZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 13:54:25 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:54925 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1JARyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 13:54:18 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Andy <akwatts@ymail.com>
+Cc: Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for intrusion
+References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com>
+	<20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com>
+	<20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus>
+X-Yow: .. If I cover this entire WALL with MAZOLA, who I have to give my
+ AGENT ten per cent??
+Date: Sat, 01 Oct 2011 19:54:14 +0200
+In-Reply-To: <20111001171916.GA11989@zeus> (Andy's message of "Sat, 1 Oct 2011
+	12:19:16 -0500")
+Message-ID: <m2hb3stx6h.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>
-Subject: Re: [RFD 1/9] Change cpustat fields to an array.
-References: <1316816432-9237-1-git-send-email-glommer@parallels.com>   <1316816432-9237-2-git-send-email-glommer@parallels.com>  <1317157252.21836.3.camel@twins> <4E836546.7010004@parallels.com> <1317236957.24040.62.camel@twins>
-In-Reply-To: <1317236957.24040.62.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [83.149.8.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 11:09 PM, Peter Zijlstra wrote:
-> On Wed, 2011-09-28 at 15:19 -0300, Glauber Costa wrote:
->> On 09/27/2011 06:00 PM, Peter Zijlstra wrote:
->>> On Fri, 2011-09-23 at 19:20 -0300, Glauber Costa wrote:
->>>>    /* Must have preemption disabled for this to be meaningful. */
->>>> -#define kstat_this_cpu __get_cpu_var(kstat)
->>>> +#define kstat_this_cpu this_cpu_ptr(task_group_kstat(current))
->>>
->>> This just lost you a debug check, the former would whinge when called
->>> without preemption, the new one wont. Its part of the this_cpu feature
->>> set to make debugging impossible.
->>>
->>>> +#else
->>>> +#define kstat_cpu(cpu) per_cpu(kstat, cpu)
->>>> +#define kstat_this_cpu (&__get_cpu_var(kstat))
->>>> +#endif
->>>>
->>>>    extern unsigned long long nr_context_switches(void);
->>>>
->>>> @@ -52,8 +62,8 @@ struct irq_desc;
->>>>    static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
->>>>                                               struct irq_desc *desc)
->>>>    {
->>>> -       __this_cpu_inc(kstat.irqs[irq]);
->>>> -       __this_cpu_inc(kstat.irqs_sum);
->>>> +       kstat_this_cpu->irqs[irq]++;
->>>> +       kstat_this_cpu->irqs_sum++;
->>>
->>> It might be worth looking at the asm output of that, I think you made it
->>> worse, but I'm not quite sure how smart gcc is, it might just figure out
->>> what you meant.
->>
->> I'd say leave it alone.
->> The biggest difference is that we don't have access to task_group(), or
->> any of the fields in struct task_group. Because of that, we end up
->> having to export a function to do the job of dealing with it.
->>
->> Users inside sched.c won't have this problem. Outside of it, we'll add a
->> call to some paths. True, mostly handle_irq paths, but I don't think
->> that's what's going to kill us.
->>
->> Now if we really really want to save it, we'd have to move struct
->> task_group and its friends to a more visible location like a header...
+Andy <akwatts@ymail.com> writes:
+
+> I must be doing something wrong. I only have the 2.6 git repo (so my tags
+> don't drill down to 2.6.x.y just 2.6.x) but my experiement isn't giving
+> the results I expected.
 >
-> I'm not quite getting how task_group is relevant here.
->
-> The above will do something like:
->
-> 	mov gs:$per-cpu-offset-of-kstat, reg
-> 	inc reg + idx*8
->
-> whereas __this_cpu_inc() could end up like:
->
-> 	inc gs:$per-cpu-offset-of-kstat + idx*8
->
-> or whatnot. Now clearly gcc could be smart and optimize the temporary
-> reg thing away in the earlier case, or it might not, I really don't know
-> how smart that thing is.
-Btw, asm output with CGROUP_SCHED disabled seem to be no worse than
-what is in now.
+> [Cloned repo]
+> $ git archive --format=tar --prefix linux-2.6.39/ v2.6.39 | md5sum
+> 482f8bd941def0548a95f34e2d290dfd  -
+
+Try setting tar.umask to 022 (default is 002).
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
