@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab1JAUc1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:32:27 -0400
-Received: from 1wt.eu ([62.212.114.60]:33349 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756791Ab1JAUcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:32:23 -0400
-Date: Sat, 1 Oct 2011 22:32:18 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Greg KH <greg@kroah.com>, Andy <akwatts@ymail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for intrusion
-Message-ID: <20111001203218.GD14779@1wt.eu>
-References: <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111001190612.GA14779@1wt.eu> <20111001192438.GA22938@kroah.com> <20111001200700.GG18690@1wt.eu> <m2aa9ktpz1.fsf@igel.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2aa9ktpz1.fsf@igel.home>
-User-Agent: Mutt/1.4.2.3i
+	id S1757237Ab1JAUiR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:38:17 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:34160 "EHLO
+	homiemail-a80.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754872Ab1JAUiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 16:38:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=DofKIGO1vmWrbrtJrIGc3BLp09N/je47MCGr7QMZJwvj7oSYr08EBnWUWslQL
+	7AR0P4JCmmJbN/3ha/IqNCTId+bW0pZFdnukbW8dDmnKs1lKUhVTwyQTWTBPx25l
+	VGdzTXpSv+RhJx9sIPR/H2Geq2pMWxNOivksaOX62H/Tv8=
+Message-ID: <4E877A22.6070605@shealevy.com>
+Date: Sat, 01 Oct 2011 16:37:54 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110928 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Alban Crequy" <alban.crequy@collabora.co.uk>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Davide Libenzi" <davidel@xmailserver.org>, netdev@vger.kernel.org
+Subject: Re: Hang with "runaway loop modprobe net-pf-1" on Linux 3.0.4
+References: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
+In-Reply-To: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 10:29:54PM +0200, Andreas Schwab wrote:
-> Willy Tarreau <w@1wt.eu> writes:
-> 
-> > I discovered that 002/022 are not the only differences. Adrian used
-> > to set 2.6.16.x at umask 000, and Linus changed the user in the
-> > tarballs several times (torvalds, then git, then root). I'm also
-> > seeing a certain greg/users for 2.6.11.x :-)
-> 
-> Obviously tarballs before 2.6.12 weren't created with git-archive and
-> will contain unpredictable timestamps.
+On 09/29/2011 08:38 AM, shea@shealevy.com wrote:
+> Hello,
+>
+> My initrd mounts /proc and /sys, puts a tmpfs at /dev, then loads ext4. On
+> 2.6.39 (and earlier), this works fine and the initrd init continues
+> happily. On 3.0.4, however, the kernel spits out
+>
+>> request_module: runaway loop modprobe net-pf-1
+> a few times then hangs. If I drop into a shell before loading ext4 and run
+> modprobe unix, the same problem occurs. The modprobe used is dynamically
+> linked with glibc (which is included in the initrd), and it is the same
+> modprobe on the working and non-working systems. From my searches, it
+> appears that CONFIG_UNIX=y instead of =m would probably solve this
+> problem, but I'd rather keep it as a module if it's possible to get it
+> working. What's going wrong here? Why does it work on 2.6.39 but not
+> 3.0.4?
+>
+> Regards,
+> Shea Levy
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I did not remember when the git-tar command was introduced, but your
-comment makes a lot of sense ! We're not much interested in 2.6.11
-anyway I think.
-
-Regards,
-Willy
-
+CC'ing af_unix.c maintainers. Also, I had the same problem with 3.0.
