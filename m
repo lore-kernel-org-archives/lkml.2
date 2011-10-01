@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab1JATLy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:11:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55360 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab1JATLt (ORCPT
+	id S1756699Ab1JATXA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:23:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61112 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab1JATWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:11:49 -0400
-Subject: Re: big picture UDP/IP performance question re 2.6.18 -> 2.6.32
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: starlight@binnacle.cx
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <6.2.5.6.2.20111001141002.05af4b20@binnacle.cx>
-References: <6.2.5.6.2.20111001141002.05af4b20@binnacle.cx>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 01 Oct 2011 21:11:43 +0200
-Message-ID: <1317496303.3802.25.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sat, 1 Oct 2011 15:22:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 02/11] ARM: SMP depends on MMU
+Date: Sat,  1 Oct 2011 21:21:51 +0200
+Message-Id: <1317496920-7764-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:p711gFbgtFq5BKmrRFip0fmbogseZ0brdTBK1yd4U0e
+ vLm88YPQqSDsMbIbCzcR7b/LDJNAkYE70W+lARLryHOm8bopCl
+ NGRa+s7Bz+U5yG1LsFxAfnoneK+ZLC4CorXbNN0nErWk7sIfYF
+ 1q0irEBeYetFuECYfwp4W8RrGWp/vKCdJxhmHpkfalRbho4cA5
+ sb6JvIGSfQbyXkJlrWS5Z8edA/SODG4CVABc21mO1o04PHxPT2
+ JlSVbhZc8dQJUKT9qjTLhtfywstA6++VzgWop2Ru5QjhTXu7Cd
+ I1dq5CmLyhtbtCzuwXEpBkfWeuviY7IDvaXxQhh3dNgTd4RYHY
+ 96HSsvWY/Fq7h/nnP0DWnZ9UFvl+6H0gy54rJhRH0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 01 octobre 2011 à 14:16 -0400, starlight@binnacle.cx a écrit :
-> At 08:44 AM 10/1/2011 +0200, Eric Dumazet wrote:
-> >In my experience, I have the exact opposite :
-> >performance greatly improved in recent
-> >kernels. Unless you compile your kernel to include
-> >new features that might reduce performance
-> >(namespaces, cgroup, ...)
-> 
-> RH has both of the above turned on in the
-> 2.6.32-71.29.1.el6.x86_64 kernel tested.
-> 
-> If these are big negatives to network
-> performance, could you list what should
-> specifically turned off to maximize
-> results?  Also a recommendation for
-> the best recent kernel for another
-> benchmark would be helpful.
-> 
-> Probably can't convince anyone to deploy a
-> kernel without commercial support, but if
-> an alternate compile fixes performance it
-> might be possible to convince RH to support
-> the alternative build.
-> 
+The SMP implementation on ARM heavily depends on MMU-only code.
+As long as nobody is interested in fixing this, let's disable the
+SMP option when building for nommu.
 
-2.6.32 has a perf tool, that can really help to spot in a few minutes
-hot spots. That would definitely help to further diagnose what could be
-the problem in your workload.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-A single patch can have huge performance impact, sometime not noticed.
-
-For example, in 2.6.36, AF_UNIX support for pid namespaces dropped
-performance a lot [commit 7361c36c5224 (af_unix: Allow credentials to
-work across user and pid namespaces)], because of a single atomic
-operation, but done on each send() and receive() on a central location.
-
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 5ebc5d9..4e1eee0c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1349,6 +1349,7 @@ config SMP
+ 		 MACH_REALVIEW_PB11MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
+ 		 ARCH_EXYNOS4 || ARCH_TEGRA || ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || \
+ 		 ARCH_MSM_SCORPIONMP || ARCH_SHMOBILE
++	depends on MMU
+ 	select USE_GENERIC_SMP_HELPERS
+ 	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
+ 	help
+-- 
+1.7.5.4
 
