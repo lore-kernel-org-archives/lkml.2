@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab1JAAJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Sep 2011 20:09:37 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58358 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758279Ab1JAAJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Sep 2011 20:09:12 -0400
-Subject: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com,
-        James.Bottomley@HansenPartnership.com, hpa@zytor.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 30 Sep 2011 17:09:00 -0700
-References: <20111001000856.DD623081@kernel>
-In-Reply-To: <20111001000856.DD623081@kernel>
-Message-Id: <20111001000900.BD9248B8@kernel>
-x-cbid: 11100100-3270-0000-0000-000000898E53
+	id S1755718Ab1JAAaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Sep 2011 20:30:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17913 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab1JAAaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Sep 2011 20:30:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="57895519"
+Date: Fri, 30 Sep 2011 17:30:10 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: PME via interrupt or SCI mechanism?
+Message-ID: <20111001003010.GA26349@xanatos>
+References: <20110912171003.GA7939@xanatos>
+ <20110929225700.GA6207@xanatos>
+ <201109301840.20402.rjw@sisk.pl>
+ <201109302221.06714.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109302221.06714.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 30, 2011 at 10:21:06PM +0200, Rafael J. Wysocki wrote:
+> OK, please test the appended patch.  The difference is that it should only
+> continuously poll devices that don't get notifications.  You'll still see
+> the debug messages from your previous patches, but this one should be a bit
+> less wasteful than the previous one in general.
 
-The output of /proc/$pid/numa_maps is in terms of number of pages
-like anon=22 or dirty=54.  Here's some output:
+This patch seems to work.  The GPE fires and the xHCI host controller
+comes out of D3 after a stream of:
 
-7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
-7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
-7fff8d425000 default stack anon=50 dirty=50 N0=50
+Sep 30 17:07:32 talon kernel: [  197.745312] ehci_hcd 0000:00:1d.0: pci_acpi_wake_dev
+Sep 30 17:07:32 talon kernel: [  197.745321] ehci_hcd 0000:00:1a.0: pci_acpi_wake_dev
+Sep 30 17:07:32 talon kernel: [  197.745326] snd_hda_intel 0000:00:1b.0: pci_acpi_wake_dev
+Sep 30 17:07:32 talon kernel: [  197.745331] e1000e 0000:00:19.0: pci_acpi_wake_dev
 
-Looks like we have a stack and a couple of anonymous hugetlbfs
-areas page which both use the same amount of memory.  They don't.
+It does seem to take less time to come out of D3 than the previous patch
+though.
 
-The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
-anon_hugepage uses 2MB pages and takes up ~100MB of space while
-the stack uses normal 4k pages.  You can go over to smaps to
-figure out what the page size _really_ is with KernelPageSize
-or MMUPageSize.  But, I think this is a pretty nasty and
-counterintuitive interface as it stands.
+I occasionally do not see the host controller come out of D3 when I plug
+in a new device, but the interrupt count for GPE 0D doesn't increment
+when that happens, so it's probably just a BIOS or hardware bug.  Did
+mention this was bleeding edge hardware?
 
-The following patch adds a pagesize= field.  Note that this only
-shows the kernel's notion of page size.  For transparent
-hugepages, it still shows the base page size.  Here's some real
-output.  Note the anon_hugepage in there.
-
-# cat /proc/`pidof memknobs`/numa_maps
-00400000 default file=/root/memknobs pagesize=4KiB dirty=3 active=2 N0=3
-00602000 default file=/root/memknobs pagesize=4KiB anon=1 dirty=1 N0=1
-00603000 default file=/root/memknobs pagesize=4KiB anon=1 dirty=1 N0=1
-00604000 default heap pagesize=4KiB anon=6 dirty=6 N0=6
-7f6766216000 default file=/lib/libc-2.9.so pagesize=4KiB mapped=98 mapmax=25 active=97 N0=98
-7f676637e000 default file=/lib/libc-2.9.so
-7f676657e000 default file=/lib/libc-2.9.so pagesize=4KiB anon=4 dirty=4 N0=4
-7f6766582000 default file=/lib/libc-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
-7f6766583000 default pagesize=4KiB anon=3 dirty=3 N0=3
-7f6766588000 default file=/lib/ld-2.9.so pagesize=4KiB mapped=25 mapmax=24 N0=25
-7f676679d000 default pagesize=4KiB anon=2 dirty=2 N0=2
-7f67667a3000 default pagesize=4KiB anon=4 dirty=4 N0=4
-7f67667a7000 default file=/lib/ld-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
-7f67667a8000 default file=/lib/ld-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
-7f6766800000 default file=/anon_hugepage\040(deleted) pagesize=2MiB anon=10 dirty=10 N0=10
-7fff5b948000 default stack pagesize=4KiB anon=2 dirty=2 N0=2
-7fff5b96d000 default
-
-Signed-off-by: Dave Haneen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/fs/proc/task_mmu.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff -puN fs/proc/task_mmu.c~show-page-size fs/proc/task_mmu.c
---- linux-2.6.git/fs/proc/task_mmu.c~show-page-size	2011-09-30 16:41:06.125953955 -0700
-+++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-09-30 16:41:06.133953941 -0700
-@@ -1044,6 +1044,11 @@ static int show_numa_map(struct seq_file
- 	if (!md->pages)
- 		goto out;
- 
-+	/* Only interesting for hugetlbfs pages.
-+	 * Transparent hugepages are still pagesize=4k */
-+	seq_puts(m, " pagesize=");
-+	seq_print_pow2(m, vma_kernel_pagesize(vma));
-+
- 	if (md->anon)
- 		seq_printf(m, " anon=%lu", md->anon);
- 
-_
-
+Sarah Sharp
