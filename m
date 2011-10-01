@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab1JALrz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 07:47:55 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38286 "EHLO
+	id S1753691Ab1JALyS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 07:54:18 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:55355 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab1JALrr (ORCPT
+	with ESMTP id S1751390Ab1JALyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 07:47:47 -0400
+	Sat, 1 Oct 2011 07:54:14 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: cjb@laptop.org, linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
         Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
         per.forlin@stericsson.com, johan.rudholm@stericsson.com,
         Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH v6] mmc : general purpose partition support.
-Date: Sat,  1 Oct 2011 20:47:31 +0900
-Message-Id: <1317469651-1914-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v7] mmc : general purpose partition support.
+Date: Sat,  1 Oct 2011 20:54:00 +0900
+Message-Id: <1317470040-2000-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -111,8 +111,8 @@ index 5700b1c..818778f 100644
  		 */
 -		card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
 +		if (ext_csd[EXT_CSD_BOOT_MULT])	{
-+				for (idx = 0; idx < MMC_NUM_BOOT_PARTITION;
-+					idx++) {
++			for (idx = 0; idx < MMC_NUM_BOOT_PARTITION;
++				idx++) {
 +				part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
 +				mmc_part_add(card, part_size,
 +					EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
