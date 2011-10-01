@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1JATXh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:23:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60308 "EHLO
+	id S1756790Ab1JATX5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:23:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51544 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab1JATXA (ORCPT
+	with ESMTP id S1756700Ab1JATXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:23:00 -0400
+	Sat, 1 Oct 2011 15:23:01 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 00/11] Generic ARM fixes for randconfig
-Date: Sat,  1 Oct 2011 21:21:49 +0200
-Message-Id: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+Subject: [PATCH 09/11] ARM: pci: always export pcibios_bus_to_resource
+Date: Sat,  1 Oct 2011 21:21:58 +0200
+Message-Id: <1317496920-7764-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
-X-Provags-ID: V02:K0:PJFia5hBfZ6RuWQ6sbSKVFyVQvabX2nyUNfO1pI3AaQ
- Sxq8ZW3ijteRDbqdELP0vzEEo/0y0+vllCnr4wmXVbous4o1tI
- wW4ngefR3v6qyhRuspJORipLgOaCYk7Std7ZzTg3/i3jiDWR21
- XXF/ugwrzcsZ1dx9EWhe5OUaqJQ4XcvgBA5ViROzesPJ+lpIVY
- nsvkf95CQVQj34U/VurMVfNh4inj+qxaBfIlzwSpHpEnIIXr2v
- 7H5NyI54IjDv2wzI0cMWKKOfGGX8MZF8mNvs1Gox6je7SCYoyQ
- aw5AlGf0YaXkat9Q5r4JQ8+amdqNhjcVmHzM3EiXjBMdWRGf/R
- bRFzt3DurF+n9Ce/cNJbrMtc6TdGP8NSgu5Wzujo0
+In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:rchvz3DfTdQcnlOZM3cbQ449Z/7hYf2MKDFagdo+vV9
+ RM2KJT81FufnQhqJ2DpEkRwuL9xxVElmJ3r0el5RyMWjXA63V/
+ 2WA1I/7GoyNnxbWv5/WqhiHNCw7AUnKyjnxWcSVbRoU0NU0inV
+ m/k22UelUnERJsyiOO/BeWD2i2RC7BroGqcfFuJJsAxhSDaO4H
+ sRPM+L3Fh8GU86tWr1eFR2jEfZnov7B3k3Lns6GjdVvjn75Dww
+ 7fdDpIwZW28qcMSdIObBwd94Gl1iJP+EWGsdxvjhBrJMrlk8h0
+ 4M5QpXGfh8WLNUyrnkFEkBYB4amalHs/32jDQ98QL2dehLt2MG
+ 7soSTywkZ5JvG+vG6TtrsmJBIaALFEQioU9jAap0JGkjlroVQ1
+ V+DfP3sS7/SXA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Some PCI drivers call pcibios_bus_to_resource directly,
+but it is only exported when CONFIG_HOTPLUG is set,
+because it was initially mean for pccard support.
 
-This is a set of patches that I've been sitting on for a while
-without ever getting them ready for inclusion. Out of the total
-~150 patches I have to make 'make randconfig' work for a
-number of ARM platforms, these are the ones that mostly for
-common code within the ARM architecture.
+Moving the export out of the #ifdef lets us avoid these
+build errors:
 
-I've now started going through the whole set and split them up
-by topic so I can reduce the number of patches that are required.
+ERROR: "pcibios_bus_to_resource" [drivers/video/vt8623fb.ko] undefined!
+ERROR: "pcibios_bus_to_resource" [drivers/video/arkfb.ko] undefined!
+ERROR: "pcibios_bus_to_resource" [drivers/video/s3fb.ko] undefined!
 
-Please pull these into your tree, or alternatively cherry-pick the
-ones that you are happy with if you disagree with some of them.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/kernel/bios32.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-This branch is available from
-
- git pull git://git.linaro.org/people/arnd/arm-soc.git randconfig/arm
-
-For reference, I have another branch "for-next+randconfig" that
-contains my entire set of patches merged with the arm-soc for-next
-branch, and the individual branches are available at
-git://git.linaro.org/people/arnd/linux.git
-
-Arnd Bergmann (11):
-  ARM: export rtc_lock for nvram driver
-  ARM: SMP depends on MMU
-  ARM: always use ARM_UNWIND for thumb2 kernels
-  ARM: allow building alignment.c without PROC_FS
-  ARM: vfp: use -mfloat-abi=soft to build vfp
-  ARM: pm: let platforms select cpu_suspend support
-  ARM: limit CONFIG_HAVE_IDE to platforms that do
-  ARM: add io{read,write}{16,32}be functions
-  ARM: pci: always export pcibios_bus_to_resource
-  ARM: OC_ETM should not select ARM_AMBA
-  ARM: common/vic: use proper __iomem annotations
-
- arch/arm/Kconfig              |   12 +++++++++++-
- arch/arm/Kconfig.debug        |    2 +-
- arch/arm/common/vic.c         |    3 ++-
- arch/arm/include/asm/io.h     |    6 ++++++
- arch/arm/kernel/Makefile      |    2 +-
- arch/arm/kernel/bios32.c      |    9 ++++-----
- arch/arm/kernel/time.c        |    6 ++----
- arch/arm/mach-exynos4/Kconfig |    1 +
- arch/arm/mach-omap2/Kconfig   |    2 ++
- arch/arm/mm/alignment.c       |   20 ++++++++++----------
- arch/arm/mm/proc-v7.S         |    2 +-
- arch/arm/plat-omap/Kconfig    |    1 +
- arch/arm/vfp/Makefile         |    2 +-
- lib/Kconfig.debug             |    4 ++--
- 14 files changed, 45 insertions(+), 27 deletions(-)
-
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index d6df359..c0d9203 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -412,6 +412,9 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ 	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+ 		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+ }
++#ifdef CONFIG_HOTPLUG
++EXPORT_SYMBOL(pcibios_fixup_bus);
++#endif
+ 
+ /*
+  * Convert from Linux-centric to bus-centric addresses for bridge devices.
+@@ -431,6 +434,7 @@ pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
+ 	region->start = res->start - offset;
+ 	region->end   = res->end - offset;
+ }
++EXPORT_SYMBOL(pcibios_resource_to_bus);
+ 
+ void __devinit
+ pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+@@ -447,12 +451,7 @@ pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
+ 	res->start = region->start + offset;
+ 	res->end   = region->end + offset;
+ }
+-
+-#ifdef CONFIG_HOTPLUG
+-EXPORT_SYMBOL(pcibios_fixup_bus);
+-EXPORT_SYMBOL(pcibios_resource_to_bus);
+ EXPORT_SYMBOL(pcibios_bus_to_resource);
+-#endif
+ 
+ /*
+  * Swizzle the device pin each time we cross a bridge.
 -- 
 1.7.5.4
 
