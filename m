@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab1JART2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 13:19:28 -0400
-Received: from nm4.bullet.mail.sp2.yahoo.com ([98.139.91.74]:26836 "HELO
-	nm4.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751486Ab1JARTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 13:19:23 -0400
-X-Yahoo-Newman-Id: 210724.88231.bm@smtp214.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: g2FM6P0VM1m718uR4hxw.z4yP7nCb1B.kx9f2Q6GGQNcW6Q
- saI40Ib_I7ogi6lYnU59QsyTIPaMjKruRw4uz4Bee_UbzbJPMqu4W.1w5v20
- LPtaSuxlitgUWqCT7HqPz9SCrTYducUDU0ftcgrQRLs23M6vyT72IQGn5rxi
- .So8Ti2NINP78j1e40Q6VnKf1SQBd8iWNJ8u84jJvaslTPSYBqykmLdrYDh4
- c0mCexY20X6CGvfRhnTgPX9yyvZ7i4SjjN8nchbDbhCKVYQKsiZ804r71JiU
- EYa_bvuf0kseX2aVknrQHR5LYQcWQrvLFwMKwK8xd.AOayuie7QduWa9V17g
- KHoGecdfrqcHEiltchsjN6H4tYY776xWA6I2VXm2oRAJgX2zreJdKOn0vo_1
- gkPwzFSkRXa1Ymakxz5RbHErudGqEFs5.bSDXZ8JIFLeOOMS5UC1J
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Sat, 1 Oct 2011 12:19:16 -0500
-From: Andy <akwatts@ymail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for
- intrusion
-Message-ID: <20111001171916.GA11989@zeus>
-References: <4E8655CD.90107@zytor.com>
- <20110930235924.GA25176@kroah.com>
- <20111001141751.GA8937@zeus>
- <20111001142848.GA27058@kroah.com>
- <20111001165659.GB18690@1wt.eu>
-MIME-Version: 1.0
+	id S1751752Ab1JARkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 13:40:13 -0400
+Received: from lo.gmane.org ([80.91.229.12]:48978 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab1JARkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 13:40:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Dick <dick@mrns.nl>
+Subject: Re: efilinux release 0.8
+Date: Sat, 1 Oct 2011 17:36:29 +0000 (UTC)
+Message-ID: <loom.20111001T192449-587@post.gmane.org>
+References: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111001165659.GB18690@1wt.eu>
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 80.56.144.252 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.237 Safari/535.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 06:56:59PM +0200, Willy Tarreau wrote:
-> Result: it's correct. With a bit of scripting, it's easy to match
-> tags signatures with tarballs'.
+Matt Fleming <matt <at> console-pimps.org> writes:
+> If anyone has the time and inclination I'd really appreciate it if they
+> could have a play with it on their machines and report any bugs.
 
-I must be doing something wrong. I only have the 2.6 git repo (so my tags
-don't drill down to 2.6.x.y just 2.6.x) but my experiement isn't giving
-the results I expected.
+Latitude E6510 (Intel 45 Express chipset, UEFI can start efilinux.efi (I get the 
+usage output) but when I load a kernel it get stuck after a message about the 
+kernel is being loaded.
 
-[Cloned repo]
-$ git archive --format=tar --prefix linux-2.6.39/ v2.6.39 | md5sum
-482f8bd941def0548a95f34e2d290dfd  -
+I'm using the (old) shell (EdkShellBinPkg) from tianocore(.sf.net) to start 
+efilinux.efi because the Dell BIOS setup utility can't add parameters to an EFI 
+executable.
 
-[Downloaded from kernel.org]
-$ bzcat linux-2.6.39.tar.bz2 | md5sum
-833d224ee42ddc1e7c2d256368b5d7b3  -
-
-~ Andy
