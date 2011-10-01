@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab1JATXm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 15:23:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55328 "EHLO
+	id S1756753Ab1JATXh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 15:23:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60308 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756707Ab1JATXC (ORCPT
+	with ESMTP id S1756696Ab1JATXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 15:23:02 -0400
+	Sat, 1 Oct 2011 15:23:00 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 01/11] ARM: export rtc_lock for nvram driver
-Date: Sat,  1 Oct 2011 21:21:50 +0200
-Message-Id: <1317496920-7764-2-git-send-email-arnd@arndb.de>
+Subject: [PATCH 00/11] Generic ARM fixes for randconfig
+Date: Sat,  1 Oct 2011 21:21:49 +0200
+Message-Id: <1317496920-7764-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
-References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:K5KuNQtx+V3WSd7gdMtbfz4Et7u5HEMdS6IlKGimuhW
- Pq3tQOyScmVivnEeExNFPFgXLdtSlVNmvqQSzr7LEyhbfstEdZ
- 4qcUy2ZquQx+Ri6lcqzlBKK4pN0xSRl1kdzkjS3NkfxVHgdFP2
- vTZ4KFwfDcF5DjEbKTLByEja9/HdgzjefVRvGCEglobw2PWqjW
- +enGhVD3nE5Ew0fmbTV9yRSfL50DF8K52tbe4T99qHbyILLG7e
- IKV174HQLStOM8xyrEul4B1AuAGlP7e0DISCKb3zPuZPWEPfsh
- e06SvQqkN4i+GeekufHrxHmj+wNrDuS3QKOc7dNsa9y9drmQi6
- M/OGYaaKfs4qI4Mrc442lqLF7ODSUyYg4Jy+Ynqtc
+X-Provags-ID: V02:K0:PJFia5hBfZ6RuWQ6sbSKVFyVQvabX2nyUNfO1pI3AaQ
+ Sxq8ZW3ijteRDbqdELP0vzEEo/0y0+vllCnr4wmXVbous4o1tI
+ wW4ngefR3v6qyhRuspJORipLgOaCYk7Std7ZzTg3/i3jiDWR21
+ XXF/ugwrzcsZ1dx9EWhe5OUaqJQ4XcvgBA5ViROzesPJ+lpIVY
+ nsvkf95CQVQj34U/VurMVfNh4inj+qxaBfIlzwSpHpEnIIXr2v
+ 7H5NyI54IjDv2wzI0cMWKKOfGGX8MZF8mNvs1Gox6je7SCYoyQ
+ aw5AlGf0YaXkat9Q5r4JQ8+amdqNhjcVmHzM3EiXjBMdWRGf/R
+ bRFzt3DurF+n9Ce/cNJbrMtc6TdGP8NSgu5Wzujo0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rtc_lock is used by both the nvram and rtc drivers, so
-we need to export it if at least one of the two is built,
-not just for the rtc driver.
+Hi Russell,
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/kernel/time.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+This is a set of patches that I've been sitting on for a while
+without ever getting them ready for inclusion. Out of the total
+~150 patches I have to make 'make randconfig' work for a
+number of ARM platforms, these are the ones that mostly for
+common code within the ARM architecture.
 
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index cb634c3..5a54b95 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -39,13 +39,11 @@
-  */
- static struct sys_timer *system_timer;
- 
--#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE)
-+#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
-+    defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
- /* this needs a better home */
- DEFINE_SPINLOCK(rtc_lock);
--
--#ifdef CONFIG_RTC_DRV_CMOS_MODULE
- EXPORT_SYMBOL(rtc_lock);
--#endif
- #endif	/* pc-style 'CMOS' RTC support */
- 
- /* change this if you have some constant time drift */
+I've now started going through the whole set and split them up
+by topic so I can reduce the number of patches that are required.
+
+Please pull these into your tree, or alternatively cherry-pick the
+ones that you are happy with if you disagree with some of them.
+
+This branch is available from
+
+ git pull git://git.linaro.org/people/arnd/arm-soc.git randconfig/arm
+
+For reference, I have another branch "for-next+randconfig" that
+contains my entire set of patches merged with the arm-soc for-next
+branch, and the individual branches are available at
+git://git.linaro.org/people/arnd/linux.git
+
+Arnd Bergmann (11):
+  ARM: export rtc_lock for nvram driver
+  ARM: SMP depends on MMU
+  ARM: always use ARM_UNWIND for thumb2 kernels
+  ARM: allow building alignment.c without PROC_FS
+  ARM: vfp: use -mfloat-abi=soft to build vfp
+  ARM: pm: let platforms select cpu_suspend support
+  ARM: limit CONFIG_HAVE_IDE to platforms that do
+  ARM: add io{read,write}{16,32}be functions
+  ARM: pci: always export pcibios_bus_to_resource
+  ARM: OC_ETM should not select ARM_AMBA
+  ARM: common/vic: use proper __iomem annotations
+
+ arch/arm/Kconfig              |   12 +++++++++++-
+ arch/arm/Kconfig.debug        |    2 +-
+ arch/arm/common/vic.c         |    3 ++-
+ arch/arm/include/asm/io.h     |    6 ++++++
+ arch/arm/kernel/Makefile      |    2 +-
+ arch/arm/kernel/bios32.c      |    9 ++++-----
+ arch/arm/kernel/time.c        |    6 ++----
+ arch/arm/mach-exynos4/Kconfig |    1 +
+ arch/arm/mach-omap2/Kconfig   |    2 ++
+ arch/arm/mm/alignment.c       |   20 ++++++++++----------
+ arch/arm/mm/proc-v7.S         |    2 +-
+ arch/arm/plat-omap/Kconfig    |    1 +
+ arch/arm/vfp/Makefile         |    2 +-
+ lib/Kconfig.debug             |    4 ++--
+ 14 files changed, 45 insertions(+), 27 deletions(-)
+
 -- 
 1.7.5.4
 
