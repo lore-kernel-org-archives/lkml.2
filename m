@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab1JAUIK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 16:08:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60643 "EHLO
+	id S1757120Ab1JAUI6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 16:08:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50820 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab1JAUFM (ORCPT
+	with ESMTP id S1755464Ab1JAUFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 16:05:12 -0400
+	Sat, 1 Oct 2011 16:05:08 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Eric Miao <eric.y.miao@gmail.com>
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Jason Chagas <jason.chagas@marvell.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 21/26] ARM: pxa: select POWER_SUPPLY on raumfeld
-Date: Sat,  1 Oct 2011 22:03:53 +0200
-Message-Id: <1317499438-14058-22-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Samuel Ortiz <samuel@sortiz.org>
+Subject: [PATCH 15/26] irda/ficp: only works on some pxa models
+Date: Sat,  1 Oct 2011 22:03:47 +0200
+Message-Id: <1317499438-14058-16-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317499438-14058-1-git-send-email-arnd@arndb.de>
 References: <1317499438-14058-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:4gMOMJLuiBCowH7CeKCvLiE4j4naxLn5tM9pX2YD7zD
- 8bpbESc8lo45gQS+HW8LQjJ6zrZehkK3cCR+DgC/fg2visPagp
- NeU/uoaAqiNhQd328/iekEf0ETWdqjJXeX6gRitaJFSh2cGSQU
- lXhof9eSHs7o7VkMcIH0w4b620TFSrgk6Ht+7toHKFfI7iS4nV
- 7PtEB90+g1TiZSX9PwhdmckkvsFpjvDeBCgO4krQwWvhR0lu02
- 8IiO9LkX3X3pnVSF3lSdbYpZFLs7EyyyXOWF1SLD/27caKeihy
- yr7BCTiGtLWvGhMZAXjg/DnXzZBgIDBCnQbOCsiHRu1c1yWUQL
- eZzzvqEvWluIEuLC7+wzKNEuYuqDCN/QsVTbA6dnxtUqm8k4gx
- fjFX/4CZyVcmw==
+X-Provags-ID: V02:K0:d7OIvY6qYmMfjZpRQMN1t/KS/HO6M972eicZJjOKEtR
+ kHtiy9kEol/V4ojdMLZJDw2260SOikTiSBiL+xuYDVHAsdVHHQ
+ s0B+Kemkp7R52vtrnEHsdgqW4dijks4Z7W2SxlLz3a8uWqtEbm
+ mMZVUqBi8OPNfdbBogP4687d007id4tnxAF6vkETnuodSewXIz
+ OiNbffsb5FM96rQKdXzKRu//FDyz0APtZjFI4kcrplybHYS1zi
+ RKBw1nEgImWMyp+u1Pdkfuf8895qSs7oFddEU7DWZ7s5dU63XW
+ tsaMjtaWuyXN9Xz6LPC+WxCr/zpqP4msB4M736DWxrhveXYbf3
+ QyGB0Hl/R6PYG/nuA8/01Nz5SA6ysZGWwdHzInpCLUyEFfSFHq
+ uKmz9Pxr7rzdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The raumfeld platform code calls power_supply_set_battery_charged
-which is part of the power supply layer, so that always has
-to be enabled.
+This driver can only be built for pxa25x and pxa27x at the moment,
+so encode that in Kconfig.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Samuel Ortiz <samuel@sortiz.org>
 ---
- arch/arm/mach-pxa/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/net/irda/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
-index cd94f2f..491c522 100644
---- a/arch/arm/mach-pxa/Kconfig
-+++ b/arch/arm/mach-pxa/Kconfig
-@@ -453,15 +453,18 @@ config MACH_RAUMFELD_RC
- 	bool "Raumfeld Controller"
- 	select PXA3xx
- 	select CPU_PXA300
-+	select POWER_SUPPLY
- 	select HAVE_PWM
+diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
+index 25bb2a0..8cffd38 100644
+--- a/drivers/net/irda/Kconfig
++++ b/drivers/net/irda/Kconfig
+@@ -373,7 +373,7 @@ config VIA_FIR
  
- config MACH_RAUMFELD_CONNECTOR
- 	bool "Raumfeld Connector"
-+	select POWER_SUPPLY
- 	select PXA3xx
- 	select CPU_PXA300
- 
- config MACH_RAUMFELD_SPEAKER
- 	bool "Raumfeld Speaker"
-+	select POWER_SUPPLY
- 	select PXA3xx
- 	select CPU_PXA300
- 
+ config PXA_FICP
+ 	tristate "Intel PXA2xx Internal FICP"
+-	depends on ARCH_PXA && IRDA
++	depends on ARCH_PXA && IRDA && (PXA25x || PXA27x)
+ 	help
+ 	  Say Y or M here if you want to build support for the PXA2xx
+ 	  built-in IRDA interface which can support both SIR and FIR.
 -- 
 1.7.5.4
 
