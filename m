@@ -1,63 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1JAMT0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 08:19:26 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53512 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab1JAMTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 08:19:19 -0400
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] mtd: Add DiskOnChip G3 support
-References: <1316633266-21312-1-git-send-email-robert.jarzmik@free.fr>
-	<201109271539.21533.arnd@arndb.de> <878vp96fhl.fsf@free.fr>
-	<201109281445.47715.arnd@arndb.de>
-X-URL: http://belgarath.falguerolles.org/
-Date: Sat, 01 Oct 2011 14:19:08 +0200
-In-Reply-To: <201109281445.47715.arnd@arndb.de> (Arnd Bergmann's message of
-	"Wed, 28 Sep 2011 14:45:47 +0200")
-Message-ID: <87y5x4hpkz.fsf@free.fr>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1754284Ab1JAMY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 08:24:56 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:43172 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab1JAMYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 08:24:51 -0400
+Date: Sat, 1 Oct 2011 14:24:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20111001122442.GA3391@somewhere>
+References: <20110927180142.GD2335@linux.vnet.ibm.com>
+ <20110928123116.GP18553@somewhere>
+ <20110928184025.GF2383@linux.vnet.ibm.com>
+ <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+ <20110929123040.GB3537@somewhere>
+ <20110929171205.GA2362@linux.vnet.ibm.com>
+ <20110930131105.GC19053@somewhere>
+ <20110930152946.GA2397@linux.vnet.ibm.com>
+ <20110930192438.GA7505@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930192438.GA7505@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> writes:
+On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
+> And here is a first cut, probably totally broken, but a start.
+> 
+> With this change, I am wondering about tick_nohz_stop_sched_tick()'s
+> invocation of rcu_idle_enter() -- this now needs to be called regardless
+> of whether or not tick_nohz_stop_sched_tick() actually stops the tick.
+> Except that if tick_nohz_stop_sched_tick() is invoked with inidle==0,
+> it looks like we should -not- call rcu_idle_enter().
 
-> I generally recommend removing debug messages like this entirely from
-> production code. If you need them on production systems, that is an indication
-> that the code quality is not good enough.
-Perhaps.
-But when you create a driver without any specification, and you release it to
-the communauty, there will be unmet behaviours. So, when someone will ask me
-"why in my board XXX my docg3 can't read data ?" how can I improve the driver
-without any traces ?
+Because of the new check in rcu_check_callbacks()? Yeah.
 
-> Enabling the debug output like
-> this also creates a lot of almost identical strings, which you don't need
-> if you turn it into an extern function that does
->
-> 	static const char docseq[] = {
-> 		[DOC_SEQ_RESET]		 = "reset",
-> 		[DOC_SEQ_PAGE_SIZE_532]	 = "page_size_532",
-> 	};
-> 	dev_dbg(dev, "doc_flashSequence: %02x %s\n", docseq[seq]);
-> with exactly the same output.
-That doesn't look very good, as the sequence numbers are sparse numbers, and we
-can finish with an array with values (0, 3, 8, 0xff) filled, and all the
-remaining are null pointers (as these sequence numbers don't exist).
+If you think it's fine to call rcu_enter_nohz() unconditionally
+everytime we enter the idle loop then yeah. I just don't know
+the overhead it adds, as it adds an unconditional tiny piece of
+code before we can finally save the power.
+
+Either entering idle involves extended quiescent state as in this
+patch, or you separate both and then rcu_enter_nohz() is only
+called when the tick is stopped.
+
+If you choose to merge both, you indeed need to call rcu_idle_enter()
+and rcu_idle_exit() whether the tick is stopped or not.
+
+> I eventually just left the rcu_idle_enter() calls in their current
+> places due to paranoia about messing up and ending up with unbalanced
+> rcu_idle_enter() and rcu_idle_exit() calls.  Any thoughts on how to
+> make this work better?
+
+Yeah something like this (untested):
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..ad3ecad 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -273,9 +273,12 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	 * updated. Thus, it must not be called in the event we are called from
+ 	 * irq_exit() with the prior state different than idle.
+ 	 */
+-	if (!inidle && !ts->inidle)
++	if (inidle)
++		rcu_idle_enter();
++	else if (!ts->inidle)
+ 		goto end;
+ 
++
+ 	/*
+ 	 * Set ts->inidle unconditionally. Even if the system did not
+ 	 * switch to NOHZ mode the cpu frequency governers rely on the
+@@ -409,7 +412,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+-			rcu_enter_nohz();
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -505,6 +507,9 @@ void tick_nohz_restart_sched_tick(void)
+ 	ktime_t now;
+ 
+ 	local_irq_disable();
++
++	rcu_idle_exit();
++
+ 	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
+ 		now = ktime_get();
+ 
+@@ -519,8 +524,6 @@ void tick_nohz_restart_sched_tick(void)
+ 
+ 	ts->inidle = 0;
+ 
+-	rcu_exit_nohz();
+-
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
 
 
-> Or you could turn the entire tracing into trace events and do the parsing
-> in user space, which seems appropriate if you frequently need to trace
-> these.
-This looks much much better. I'll have a peek into that, as only (io_address,
-read/write, width, value) could be dumped, and userland application could
-translate it into sequence/nop/flashcontrol ... etc ...
 
--- 
-Robert
+
+More things about your patch below:
+
+> --- a/kernel/rcutiny.c
+> +++ b/kernel/rcutiny.c
+> @@ -54,31 +54,47 @@ static void __call_rcu(struct rcu_head *head,
+>  
+>  #include "rcutiny_plugin.h"
+>  
+> -#ifdef CONFIG_NO_HZ
+> -
+>  static long rcu_dynticks_nesting = 1;
+>  
+>  /*
+> - * Enter dynticks-idle mode, which is an extended quiescent state
+> - * if we have fully entered that mode (i.e., if the new value of
+> - * dynticks_nesting is zero).
+> + * Enter idle, which is an extended quiescent state if we have fully
+> + * entered that mode (i.e., if the new value of dynticks_nesting is zero).
+>   */
+> -void rcu_enter_nohz(void)
+> +void rcu_idle_enter(void)
+>  {
+>  	if (--rcu_dynticks_nesting == 0)
+>  		rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+>  }
+>  
+>  /*
+> - * Exit dynticks-idle mode, so that we are no longer in an extended
+> - * quiescent state.
+> + * Exit idle, so that we are no longer in an extended quiescent state.
+>   */
+> -void rcu_exit_nohz(void)
+> +void rcu_idle_exit(void)
+>  {
+>  	rcu_dynticks_nesting++;
+>  }
+>  
+> -#endif /* #ifdef CONFIG_NO_HZ */
+> +#ifdef CONFIG_PROVE_RCU
+> +
+> +/*
+> + * Test whether the current CPU is idle.
+> + */
+
+Is idle from an RCU point of view yeah.
+
+> +int rcu_is_cpu_idle(void)
+> +{
+> +	return !rcu_dynticks_nesting;
+> +}
+> +
+> +#endif /* #ifdef CONFIG_PROVE_RCU */
+> +
+> +/*
+> + * Test whether the current CPU was interrupted from idle.  Nested
+> + * interrupts don't count, we must be running at the first interrupt
+> + * level.
+> + */
+> +int rcu_is_cpu_rrupt_from_idle(void)
+> +{
+> +	return rcu_dynticks_nesting <= 0;
+> +}
+>  
+>  /*
+>   * Helper function for rcu_sched_qs() and rcu_bh_qs().
+> @@ -131,10 +147,7 @@ void rcu_bh_qs(int cpu)
+>   */
+>  void rcu_check_callbacks(int cpu, int user)
+>  {
+> -	if (user ||
+> -	    (idle_cpu(cpu) &&
+> -	     !in_softirq() &&
+> -	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
+> +	if (user || rcu_is_cpu_rrupt_from_idle())
+>  		rcu_sched_qs(cpu);
+
+It wasn't obvious to me in the first shot. This might need a comment
+that tells rcu_check_callbacks() is called from an interrupt
+and thus need to handle that first level in the check.
+
+Other than that, looks good overall.
