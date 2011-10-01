@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab1JANwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 09:52:13 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:43790 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1JANwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 09:52:04 -0400
-In-Reply-To: <20110930161223.GW11984@tux1.beaverton.ibm.com>
-References: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se> <20110930161223.GW11984@tux1.beaverton.ibm.com>
-Subject: Re: [PATCH v3] crc32c: Implement CRC32c with slicing-by-8 algorithm
-X-KeepSent: 34B3D797:8C95417C-C125791C:00497BA8;
- type=4; name=$KeepSent
-To: djwong@us.ibm.com
-Cc: linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF34B3D797.8C95417C-ONC125791C.00497BA8-C125791C.004C2C5A@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Sat, 1 Oct 2011 15:52:00 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 10/01/2011 15:52:01
+	id S1755296Ab1JAOBo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 10:01:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63807 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab1JAOBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 10:01:36 -0400
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Date: Sat, 1 Oct 2011 22:01:35 +0800
+Message-ID: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+Subject: [BUG] copy file result with zero
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/09/30 18:12:23:
->
-> [putting mailing lists on cc]
->
-> On Fri, Sep 30, 2011 at 08:01:36AM +0200, Joakim Tjernlund wrote:
-> >
-> > (Just happen to see this patch in the archives)
-> >
-> > - This is basically an copy of Bobs crc32 work and duplicates code, this
-> >   code needs to move into /lib/crc32.c and use the existing framework.
->
-> Which framework are you talking about?  lib/crc32.c appears to be a simple
-> module that exports a utility function.  Do you mean that you want to merge the
-> crc32{,c}defs.h and gen_crc32{,c}table.c code?  Do you want a build script that
-> starts with only a crc${ALG}_defs.h file and stamps out gencrc${ALG}_table.c
-> and crc${ALG}.c boilerplate code and then builds it?
+Hi,
 
-I meant adding a crc32c_le in crc32.c and extend gen_table to generate the crc32c table.
+Weird problem, when I build app from source,
+make; make install
+run the command, but got "cannot execute binary file"
 
->
-> I really don't know; from my perspective there was a slow implementation in
-> crypto/crc32c.c and I wanted to speed it up.  crc32c seems to be in crypto/ and
-> not lib/ so that the implementation can be replaced with a hardware accelerated
-> version at runtime (crc32c-intel).
+hexdump shows the installed binary is full of zero
 
-It was a mistake to place it there IMHO.
+Is it related to ext4 fiemap problem described below?
+http://lwn.net/Articles/429349/
 
->
-> For crc32 which has no such hw replacement (as far as I know), moving it into
-> crypto/ would incur the overhead of going through the cryptoapi for not much
-> benefit.  On the other hand it wouldn't be hard to put the crc32 code into
-> crypto/.
+I finally managed to find the way to reproduce this:
+just cp a elf binary A  to file B, then cp B to file C,  then you will get:
+A == B != C
 
-No, CRC is not a crypto. It is used by other subsystems like file systems that
-has nothing to do with crypto. Compare with the internet checksum, I think you
-will have a hard time moving it to crypto.
+ie.
+cp /bin/ls ls1
+cp ls1 ls2
 
-> >
-> > - Slice by 8 is just half the speed on my ppc32 compared to slice by 4 so
-> >   it can't be enabled for all archs. Best to start with all 64 bit archs
->
-> <shrug> I suppose I could make CRC32C_BITS configurable.  What is the hardware
-> profile of your ppc32 processor?  How much L1D/L2 cache?  slice-by-8 does have
-> a big cache footprint.  On the other hand it's faster than the slice-by-4
-> (crc32) and Sarwate (crc32c) code in the kernel, even on old slow 32-bit x86
-> processors (PII, PIII, P4).
+ls2 will be filled with zero
 
-It is a low end embedded 333 MHz CPU with only L1 cache. How much faster
-is slice by 8 than slice by 4 on these old x86 machines?
-
-Bobs last version tested for 64/32 bits arch and selected slice by 8/slice by 4 based
-on that.
-
->
-> > - Last time I tested Bobs slice by 8 on ppc32 it didn't work.
->
-> ... is crc32c broken *now*?  It seems fine on x86/amd64/ppc64.
-
-Don't know, I haven't tested it. Don't have much time ATM and I don't
-want to test something I don't agree with.
-
- Jocke
-
+Below is a strace log of install, kernel version is 3.1.0-rc6+
+geteuid()                               = 0
+umask(0)                                = 022
+stat("/tmp/vpnc", 0x7fff85363710)       = -1 ENOENT (No such file or directory)
+stat("vpnc", {st_mode=S_IFREG|0755, st_size=368662, ...}) = 0
+lstat("/tmp/vpnc", 0x7fff85363250)      = -1 ENOENT (No such file or directory)
+open("vpnc", O_RDONLY)                  = 3
+fstat(3, {st_mode=S_IFREG|0755, st_size=368662, ...}) = 0
+open("/tmp/vpnc", O_WRONLY|O_CREAT|O_EXCL, 0755) = 4
+fstat(4, {st_mode=S_IFREG|0755, st_size=0, ...}) = 0
+uname({sys="Linux", node="darkstar", ...}) = 0
+ioctl(3, FS_IOC_FIEMAP, 0x7fff85361f60) = 0
+ftruncate(4, 368662)                    = 0
+fsetxattr(4, "system.posix_acl_access",
+"\x02\x00\x00\x00\x01\x00\x06\x00\xff\xff\xff\xff\x04\x00\x00\x00\xff\xff\xff\xff
+\x00\x00\x00\xff\xff\xff\xff", 28, 0) = 0
+close(4)                                = 0
+close(3)                                = 0
+chmod("/tmp/vpnc", 0755)                = 0
+close(0)                                = 0
+close(1)                                = 0
+close(2)                                = 0
+exit_group(0)                           = ?
+-- 
+Regards
+Dave
