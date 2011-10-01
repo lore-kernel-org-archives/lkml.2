@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1JAFlU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 01:41:20 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:39712 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751227Ab1JAFlM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 01:41:12 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+vMm9MzZCvEkCtGnrZl7awaoPqH9/SqAHdpsOiXy
-	tjJG9xF4XMtQ8D
-Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
-From: Mike Galbraith <efault@gmx.de>
-To: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
-References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-	 <CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 01 Oct 2011 07:41:09 +0200
-Message-ID: <1317447669.6337.24.camel@marge.simson.net>
+	id S1753442Ab1JAFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 01:55:56 -0400
+Received: from mx.binnacle.cx ([74.95.187.105]:55178 "EHLO mx.binnacle.cx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab1JAFzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 01:55:49 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Oct 2011 01:55:48 EDT
+Message-Id: <6.2.5.6.2.20111001012019.05c05b80@flumedata.com>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Sat, 01 Oct 2011 01:30:47 -0400
+To: linux-kernel@vger.kernel.org
+From: starlight@binnacle.cx
+Subject: big picture UDP/IP performance question re 2.6.18 ->
+  2.6.32
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-30 at 21:12 +0200, Tadeus (Eus) Prastowo wrote:
-> Anyone familiar with the Linux scheduler, please?
-> 
-> On Wed, Sep 28, 2011 at 1:06 AM, Tadeus (Eus) Prastowo
-> <0x657573@googlemail.com> wrote:
-> > Hi!
-> >
-> > When a SCHED_RR task with RT priority X blocks on a
-> > priority-inheriting mutex held by a SCHED_NORMAL task with nice value
-> > Y, RT-Mutex code will change the SCHED_NORMAL task priority to that of
-> > the SCHED_RR task and based on the new priority, will change the
-> > scheduling class too. But, each task retains its own scheduling
-> > policy.
-> >
-> > This means that the task inheriting the SCHED_RR priority will be
-> > scheduled using SCHED_FIFO policy because task_tick_rt does not
-> > enforce the SCHED_RR time slice when the task policy is not SCHED_RR.
-> >
-> > Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
-> > task get the privilege of SCHED_FIFO task for running as long as it
-> > wishes even when the task giving the inheritance does not have such
-> > privilege?
+Hello,
 
-Existence of a critical section > slice would be the real problem, no?
+I'm hoping someone can provide a brief big-picture
+perspective on the dramatic UDP/IP multicast
+receive performance reduction from 2.6.18 to
+2.6.32 that I just benchmarked.
 
-	-Mike
+Have helped out in the past, mainly by identifying
+a bug in hugepage handling and providing a solid
+testcase that helped in quickly identifying and
+correcting the problem.
+
+Have a very-high-volume UDP multicast receiver
+application.  Just finished benchmarking latest RH
+variant of 2.6.18 against latest RH 2.6.32 and
+vanilla 2.6.32.27 on the same 12 core Opteron
+6174 processor system, one CPU.
+
+Application reads on 250 sockets with large socket
+buffer maximums.  Zero data loss.  Four Intel
+'e1000e' 82571 gigabit NICs, or two Intel 'igb'
+82571 gigabit NICs or two Intel 82599 10 gigabit
+NICs.  Results similar on all.
+
+With 2.6.18, system CPU is reported in
+/proc/<pid>/stat as 25% of total.  With 2.6.32,
+system consumption is 45% with the same exact data
+playback test.  Jiffy count for user CPU is same
+for both kernels, but .32 system CPU is double
+.18 system CPU.
+
+Overall maximum performance capacity is reduced in
+proportion to the increased system overhead.
+
+------
+
+My question is why is the performance significantly
+worse in the more recent kernels?  Apparently
+network performance is worse for TCP by about the
+same amount--double the system overhead for the
+same amount of work.
+
+http://www.phoronix.com/scan.php?page=article&item=linux_2612_2637&num=6
+
+Is there any chance that network performance will
+improve in future kernels?  Or is the situation
+a permanent trade-off for security, reliability
+or scalability reasons?
+
+Thank you very much.
 
