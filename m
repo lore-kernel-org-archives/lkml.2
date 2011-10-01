@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab1JAOjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 10:39:09 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47971 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab1JAOjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 10:39:03 -0400
-Date: Sat, 1 Oct 2011 10:39:00 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [BUG] copy file result with zero
-Message-ID: <20111001143900.GH28234@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Dave Young <hidave.darkstar@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+	id S1756539Ab1JAPDJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 11:03:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52749 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab1JAPDF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 11:03:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: dedekind1@gmail.com, dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4] mtd: Add DiskOnChip G3 support
+Date: Sat, 01 Oct 2011 17:02:10 +0200
+Message-ID: <2027446.JdsYbAItg0@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <87y5x4hpkz.fsf@free.fr>
+References: <1316633266-21312-1-git-send-email-robert.jarzmik@free.fr> <201109281445.47715.arnd@arndb.de> <87y5x4hpkz.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:53Yez2IyZim0gamDuPt/xwLMMLX5waVh5f1B6CqTtz3
+ 00uR38FXsJeIu/jKOI9Bh210w7482AHJefvRxi1RbdqaR1YibD
+ lRmmOtCjj7TQENFIaUgGGA7RSO16Kq4zZjnQZTTN+wthRftyOE
+ QpL2V25HDjVQaQ5eeibWcK1LG0l3YIMQ1F8V9wzm1BXBHwSl20
+ FXb7z/bJx4NWMZIJcredBAxhlSKFRRWqSxRYyDDw0eSgYc0mqS
+ skN+A0g+/f7HLrBkmtL7MAXrrrEIaiUzmupuTTpf7sDADhMq1r
+ 0S4bhFMxDyX2d7ur49weycXIE33pVeEXvuop9EPcWJtMeA9BXQ
+ jKcgmDW3jzyOdN+NHlu4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
-> Hi,
+On Saturday 01 October 2011 14:19:08 Robert Jarzmik wrote:
+> Arnd Bergmann <arnd@arndb.de> writes:
 > 
-> Weird problem, when I build app from source,
-> make; make install
-> run the command, but got "cannot execute binary file"
-> 
-> hexdump shows the installed binary is full of zero
-> 
-> Is it related to ext4 fiemap problem described below?
-> http://lwn.net/Articles/429349/
+> > I generally recommend removing debug messages like this entirely from
+> > production code. If you need them on production systems, that is an indication
+> > that the code quality is not good enough.
+> Perhaps.
+> But when you create a driver without any specification, and you release it to
+> the communauty, there will be unmet behaviours. So, when someone will ask me
+> "why in my board XXX my docg3 can't read data ?" how can I improve the driver
+> without any traces ?
 
-There is general agreement that /bin/cp should not have been relying
-on FIEMAP, and I believe the more recent versions of /bin/cp have
-removed that code by default pending implementation of
-SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
-FIEMAP implementation that landed in 2.6.39, and you're using
-3.1.0-rc6.
+In my experience, the kind of debugging data you need for analysing a problem
+on someone else's system is not just a trace of the commands you send to
+a device but more complicated to get, so you are dependent on a clueful
+bug reporter anyway.
 
-> I finally managed to find the way to reproduce this:
-> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
-> A == B != C
-> 
-> ie.
-> cp /bin/ls ls1
-> cp ls1 ls2
-> 
-> ls2 will be filled with zero
+If you have successfully debugged a remote problem just by looking at a dump,
+then you should certainly leave the code in there.
 
-If you add a "sync" between the two copies, does that work around the
-problem?  I bet it will...
+> > Or you could turn the entire tracing into trace events and do the parsing
+> > in user space, which seems appropriate if you frequently need to trace
+> > these.
+> This looks much much better. I'll have a peek into that, as only (io_address,
+> read/write, width, value) could be dumped, and userland application could
+> translate it into sequence/nop/flashcontrol ... etc ...
 
-My suggestion is to upgrade to a newer version of coreutils that
-doesn't try to use FIEMAP.
+Right, that was the idea.
 
-					- Ted
+	Arnd
