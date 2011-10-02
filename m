@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1JBSye (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 14:54:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46722 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab1JBSy3 convert rfc822-to-8bit (ORCPT
+	id S1753994Ab1JBSz5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 14:55:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56265 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab1JBSzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 14:54:29 -0400
+	Sun, 2 Oct 2011 14:55:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/30] ARM: omap2/n8x0: work around modular omap mmc
+Date: Sun, 02 Oct 2011 20:54:58 +0200
+Message-ID: <1412062.DNcqS3fczZ@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111002155331.GA12323@n2100.arm.linux.org.uk>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-12-git-send-email-arnd@arndb.de> <20111002155331.GA12323@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20111001195835.GA2925@longonot.mountain>
-References: <1317464057-18231-1-git-send-email-mark.einon@gmail.com>
- <1317464057-18231-7-git-send-email-mark.einon@gmail.com> <20111001195835.GA2925@longonot.mountain>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Sun, 2 Oct 2011 19:54:09 +0100
-Message-ID: <CANK3SE3g0Abt-Lr6AE2e0vsVQVx-Y2d_SZyLi+Uo0N0q+=HHdQ@mail.gmail.com>
-Subject: Re: [PATCH 7/8] staging: et131x: Updating copyright statements and
- module authors
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, o.hartmann@telovital.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Nuk/pFBkJbrM7Mt/y+JpkuB8q+bTgZyGOQWt4C1JYTQ
+ FLUemhw5Byc4dhiOMiAPRAa9JxxRKu80SaXQSxhaMVOiJXDCgy
+ iAiY3dXPYuq+EGLkL5x2ilxSZl0OIeOG7d44Xfo3pccSJzf4bH
+ GiGJkU/Ksh1aZD26PEImuQQoG7oxIf+4727gFkBKS3K/I+FQJ0
+ xpLGzJTlFfmq1odJ0fBokFmKRl80LlR3fJDCs9V7Hpj3JZpZ1H
+ CEEjBB1B62NHYNPD6calFiCmCoqR8R+xBlZGdsw9NT2mT8JyP1
+ Dig+C2319Rb9t4P7P4jFqO/jRgBl8PMpAXneRYLMdPgHb2GKBI
+ hcQazYe22iHKYCEqKLio=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 October 2011 20:58, Dan Carpenter <dan.carpenter@oracle.com>
-wrote:> On Sat, Oct 01, 2011 at 11:14:16AM +0100, Mark Einon wrote:>>
-@@ -945,5 +947,6 @@ module_exit(et131x_cleanup_module);>>>>  /*
-Modinfo parameters (filled out using defines from et131x_version.h)
-*/>>  MODULE_AUTHOR(DRIVER_AUTHOR);>>
-+MODULE_AUTHOR(DRIVER_AUTHOR2);>>  MODULE_DESCRIPTION(DRIVER_INFO);>>
-MODULE_LICENSE(DRIVER_LICENSE);>> Both DRIVER_AUTHOR and
-DRIVER_AUTHOR2 are silly macros.  Put the name> in directly.  That way
-you won't need the comment explaining where to> find the definitions.
-Also normally people use gt lt brackets for> emails:>>
-MODULE_AUTHOR("Victor Soriano <vjsoriano@agere.com>");>
-MODULE_AUTHOR("Mark Einon <mark.einon@gmail.com>");>> Go ahead and fix
-this in a later patch if you want.  All the macros> there should
-probably be replaced.
-Hi Dan, thanks for the feedback.Removing et131x_version.h file and
-simplifying the macros is alreadyon my todo list.
->> Btw, the problems with kernel.org have complicated things here, so> I can't tell if you have already fixed this, but the driver doesn't> compile any more.  The Kconfig file says it "depends on NETDEV_1000"> but NETDEV_1000 isn't around any more since f860b0522f65d3> "drivers/net: Kconfig and Makefile cleanup" was merged.>
-No, I've not experienced this issue yet. I'm using Greg's
-staging-2.6tree, last updated at 7cbf3c7cd59 which doesn't have the
-commit youmention.I'll look out for it when everything gets moving
-again.
-Cheers,
-Mark
+On Sunday 02 October 2011 16:53:31 Russell King - ARM Linux wrote:
+> On Sun, Oct 02, 2011 at 04:45:41PM +0200, Arnd Bergmann wrote:
+> > -#if defined(CONFIG_MENELAUS) &&                                              \
+> > -     (defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE))
+> > +#if defined(CONFIG_MENELAUS) && defined(CONFIG_MMC_OMAP)
+> > +/* || defined(CONFIG_MMC_OMAP_MODULE)) */
+> > +/* FIXME: cannot call omap_mmc_notify_cover_event for ONFIG_MMC_OMAP_MODULE */
+> 
+> #ifdef CONFIG_MMC_OMAP_MODULE
+> #warning FIXME: cannot call omap_mmc_notify_cover_event for CONFIG_MMC_OMAP_MODULE
+> #endif
+> #if defined(CONFIG_MENELAUS) && defined(CONFIG_MMC_OMAP)
+> 
+> So that it can be seen at build time?
+> 
+> Also note the 'ONFIG' typo...
+
+Ok, good idea. I've updated the patch in the git tree accordingly.
+
+Depending on what Tony wants, I might send out the entire series
+again once there are no more new comments.
+
+	Arnd
