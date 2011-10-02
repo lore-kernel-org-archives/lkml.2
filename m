@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1JBWqf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 18:46:35 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:55457 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab1JBWq2 (ORCPT
+	id S1754768Ab1JBWuf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 18:50:35 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:32948 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1JBWu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 18:46:28 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-In-Reply-To: Your message of "Sun, 02 Oct 2011 11:36:05 PDT."
-             <4E88AF15.7000503@xenotime.net>
-From: Valdis.Kletnieks@vt.edu
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>
-            <4E88AF15.7000503@xenotime.net>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317595562_211592P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 02 Oct 2011 18:46:02 -0400
-Message-ID: <241679.1317595562@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4E88E9BF.008B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sun, 2 Oct 2011 18:50:28 -0400
+Date: Mon, 3 Oct 2011 00:50:22 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20111002225019.GA1835@somewhere>
+References: <20110927180142.GD2335@linux.vnet.ibm.com>
+ <20110928123116.GP18553@somewhere>
+ <20110928184025.GF2383@linux.vnet.ibm.com>
+ <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+ <20110929123040.GB3537@somewhere>
+ <20110929171205.GA2362@linux.vnet.ibm.com>
+ <20110930131105.GC19053@somewhere>
+ <20110930152946.GA2397@linux.vnet.ibm.com>
+ <20110930192438.GA7505@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930192438.GA7505@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317595562_211592P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
+> @@ -328,11 +326,11 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+>  		return 1;
+>  	}
+>  
+> -	/* If preemptible RCU, no point in sending reschedule IPI. */
+> -	if (rdp->preemptible)
+> -		return 0;
+> -
+> -	/* The CPU is online, so send it a reschedule IPI. */
+> +	/*
+> +	 * The CPU is online, so send it a reschedule IPI.  This forces
+> +	 * it through the scheduler, and (inefficiently) also handles cases
+> +	 * where idle loops fail to inform RCU about the CPU being idle.
+> +	 */
 
-On Sun, 02 Oct 2011 11:36:05 PDT, Randy Dunlap said:
+If the idle loop forgets to call rcu_idle_enter() before going to
+sleep, I don't know if it's a good idea to try to cure that situation
+by forcing a quiescent state remotely. It may make the thing worse
+because we actually won't notice the lack of call to rcu_idle_enter()
+that the rcu stall detector would otherwise report to us.
 
-> They (we) should start building a web of trust with local key signings.
-> I'm already working on that in Portland, Oregon.
+Also I don't think that works. If the task doesn't have
+TIF_RESCHED, it won't go through the scheduler on irq exit.
+smp_send_reschedule() doesn't set the flag. And also scheduler_ipi()
+returns right away if no wake up is pending.
 
-Don't forget to include people who may not be attending KS, but are able to
-contribute signatures.  If you're in this part of southwest Virginia, I can
-probably get a PGP key signed by 3 different people who have totally disjoint
-paths to the main part of the well-connected set.
+So, other than resuming the idle loop to sleep again, nothing may happen.
+
+Or am I missing something?
 
 
---==_Exmh_1317595562_211592P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOiOmqcC3lWbTT17ARAgDuAKCtx+Wonf1gVjztPsVsAgSkVFWj4ACdE84u
-yoUwLAB34nKGemhWm/tRKc4=
-=mfwr
------END PGP SIGNATURE-----
-
---==_Exmh_1317595562_211592P--
-
+>  	if (rdp->cpu != smp_processor_id())
+>  		smp_send_reschedule(rdp->cpu);
+>  	else
