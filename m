@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab1JBIDp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 04:03:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48676 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab1JBIDa (ORCPT
+	id S1751864Ab1JBIn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 04:43:29 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59334 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1JBInU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 04:03:30 -0400
-Subject: Re: big picture UDP/IP performance question re 2.6.18 -> 2.6.32
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: starlight@binnacle.cx
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <1317540066.3802.32.camel@edumazet-laptop>
-References: <6.2.5.6.2.20111001215241.03a7ed48@binnacle.cx>
-	 <1317540066.3802.32.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Oct 2011 10:03:23 +0200
-Message-ID: <1317542603.3802.48.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sun, 2 Oct 2011 04:43:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA140AD1-B715-46BF-81B3-EA2069CBC131@dilger.ca>
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+	<20111001143900.GH28234@thunk.org>
+	<CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com>
+	<A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
+	<CA140AD1-B715-46BF-81B3-EA2069CBC131@dilger.ca>
+Date: Sun, 2 Oct 2011 16:43:19 +0800
+Message-ID: <CABqxG0eMarBn_8xHCOZPq3pae4K01C51Rmxdox7uZr0gWOHGGw@mail.gmail.com>
+Subject: Re: [BUG] copy file result with zero
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andreas Dilger <aedilger@gmail.com>
+Cc: Jeff liu <jeff.liu@oracle.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4 development <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 02 octobre 2011 à 09:21 +0200, Eric Dumazet a écrit :
+On Sun, Oct 2, 2011 at 4:02 PM, Andreas Dilger <aedilger@gmail.com> wrote:
+> On 2011-10-01, at 11:41 PM, Jeff liu wrote:
+>>> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>>>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
+>>>>> Weird problem, when I build app from source,
+>>>>> make; make install
+>>>>> run the command, but got "cannot execute binary file"
+>>>>>
+>>>>> hexdump shows the installed binary is full of zero
+>>>>>
+>>>>> Is it related to ext4 fiemap problem described below?
+>>>>> http://lwn.net/Articles/429349/
+>>>>
+>>>> There is general agreement that /bin/cp should not have been relying
+>>>> on FIEMAP, and I believe the more recent versions of /bin/cp have
+>>>> removed that code by default pending implementation of
+>>>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
+>>>> FIEMAP implementation that landed in 2.6.39, and you're using
+>>>> 3.1.0-rc6.
+>>
+>> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
+>
+> Are there any distros that are shipping with a version of cp that depends on FIEMAP?  That would dramatically increase the severity of this problem, since orders of magnitude more users will hit the problem.
 
-> You might try to disable any fancy power saving mode in your machine.
-> Maybe on your machine, cost to enter/exit deep sleep state is too high.
-> 
-> I see nothing obvious in the profile but userland processing, futex
-> calls. 
+I'm not sure if it depends on FIEMAP, I think it should be not so old.
 
-Just to clarify a bit :
+>
+> Dave, what distro were you seeing this problem on, and had you installed/upgraded your coreutils and/or kernel yourself?
 
-Sometimes, optimizing one part of the kernel can have a negative impact
-on some workloads because we end up doing more sleep/wakeup of
-consumers : Several threads might try to acquire a lock at the same
-time, while previously they got no contention.
+Slackware 13.37, coreutils 8.11
+kernel is always built from linus's git by myself
 
-In 2.6.35, commit c377411f2494a (net: sk_add_backlog() take rmem_alloc
-into account) changed backlog limit, avoid taking socket lock on flood,
-allowing to receive 200.000 pps on a test machine instead of 100pps.
-But the receiver was doing a plain
+>
+>>> Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
+>>>
+>>>>
+>>>>> I finally managed to find the way to reproduce this:
+>>>>> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
+>>>>> A == B != C
+>>>>>
+>>>>> ie.
+>>>>> cp /bin/ls ls1
+>>>>> cp ls1 ls2
+>>>>>
+>>>>> ls2 will be filled with zero
+>>>>
+>>>> If you add a "sync" between the two copies, does that work around the
+>>>> problem?  I bet it will...
+>>>
+>>> Yes, it works
+>>>
+>>>>
+>>>> My suggestion is to upgrade to a newer version of coreutils that
+>>>> doesn't try to use FIEMAP.
+>>>
+>>> Thanks, will try
+>>>
+>>>>
+>>>>                                       - Ted
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Regards
+>>> Dave
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+> Cheers, Andreas
+>
+>
+>
+>
+>
+>
 
-while (1)
-	recv(...);
-
-And maximum throughput was reached because task never called
-scheduler...
 
 
-
+-- 
+Regards
+Dave
