@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab1JBFfv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 01:35:51 -0400
-Received: from 1wt.eu ([62.212.114.60]:33361 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab1JBFfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 01:35:46 -0400
-Date: Sun, 2 Oct 2011 07:35:40 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy <akwatts@ymail.com>, schwab@linux-m68k.org, Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for intrusion
-Message-ID: <20111002053540.GI18690@1wt.eu>
-References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com> <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111001224313.GH18690@1wt.eu> <4E87AC04.2070405@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E87AC04.2070405@zytor.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1751260Ab1JBFsG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 01:48:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63166 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1JBFr6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 01:47:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1317470040-2000-1-git-send-email-linkinjeon@gmail.com>
+References: <1317470040-2000-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 2 Oct 2011 01:47:57 -0400
+Message-ID: <CANz0V+7Bwpa-S0qdW+pN_zu7PJFXQPOONq5WFhMTexddTb=hGg@mail.gmail.com>
+Subject: Re: [PATCH v7] mmc : general purpose partition support.
+From: "Andrei E. Warkentin" <andrey.warkentin@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, adrian.hunter@intel.com,
+        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
+        sebras@gmail.com, Ulf.Hansson@stericsson.com,
+        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
+        johan.rudholm@stericsson.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Hi Namjae,
 
-On Sat, Oct 01, 2011 at 05:10:44PM -0700, H. Peter Anvin wrote:
-> On 10/01/2011 03:43 PM, Willy Tarreau wrote:
-> > 
-> >   <version> <umask> <user> <group> <tag md5> <tar md5> <tar.gz md5> <status>
-> > 
-> > Since I can attest that I exclusively extracted the tarballs from the
-> > tar.gz and dumped their md5 at the same time, I'm pretty sure that the
-> > tar.gz's md5 is OK if the tar's md5 is OK. This will help speed up sig
-> > checks on mirrors.
-> > 
-> 
-> By the way, it's usually better to use sha256 or something else more
-> modern than MD5.
+2011/10/1 Namjae Jeon <linkinjeon@gmail.com>:
+> It allows gerneral purpose partitions in MMC Device.
+> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+> After patching, we can see general purpose partitions like this.
+>> cat /proc/partitions
+>          179 0 847872 mmcblk0
+>          179 192 4096 mmcblk0gp3
+>          179 160 4096 mmcblk0gp2
+>          179 128 4096 mmcblk0gp1
+>          179 96  1052672 mmcblk0gp0
+>          179 64  1024 mmcblk0boot1
+>          179 32  1024 mmcblk0boot0
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
 
-I know but I wanted to use something fast enough on this small
-machine. sha256sum is 3.5 times slower than md5sum. Also, we're
-not necessarily looking for an issue by which someone would have
-spent his time trying to make an md5 collision here ; re-signing
-a modified tarball with gpg as root would have been a lower hanging
-fruit.
+Looks good.
 
-That said, once we know the tarballs are fine, it will not be that
-hard to rebuild the sha256 of the compressed tarballs and match them
-against existing images.
+Acked-by: Andrei Warkentin <andrey.warkentin@gmail.com>
 
-> > All the times I got a different MD5 between the tarball and the git
-> > tag was because of a different user name in the tarball. It seems
-> > that old git versions used to use "git/git" instead of "root/root"
-> > now.
-> 
-> Yes, that change was introduced in git-1.5.0-rc1.
-
-I noticed your comment on this in another mail, thanks for the details.
-
-> > This is hardcoded so it's not easy to change it, and I suspect
-> > that the tar format might have changed a bit, so if we want to check
-> > those MD5s, either we check on old mirrors that are 100% safe, or we
-> > have to reinstall an old version of git.
-> 
-> ... or extract the tarball and diff the contents versus the git tree.
-
-Indeed.
-
-Regards,
-Willy
-
+Thanks,
+A
