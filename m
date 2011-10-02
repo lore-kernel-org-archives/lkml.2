@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1JBSYg (ORCPT <rfc822;w@1wt.eu>);
+	id S1753822Ab1JBSYo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 14:24:44 -0400
+Received: from bitmer.com ([213.157.87.50]:51702 "EHLO bitmer.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753887Ab1JBSYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Oct 2011 14:24:36 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47285 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753772Ab1JBSYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 14:24:31 -0400
-X-Sasl-enc: mhyD1uVI7KbhLyuX6Z6hjJjRZQusT8rfdtw2OTY39uxM 1317579871
-Date: Sun, 2 Oct 2011 15:24:28 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111002182428.GC16368@khazad-dum.debian.net>
-References: <4E8655CD.90107@zytor.com>
- <201110021354.57995.rjw@sisk.pl>
- <4E88A537.4010008@zytor.com>
- <201110022014.27549.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201110022014.27549.rjw@sisk.pl>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Sun, 2 Oct 2011 21:24:26 +0300
+From: Jarkko Nikula <jarkko.nikula@bitmer.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 21/30] sound/soc/omap: limit to omap2plus
+Message-Id: <20111002212426.40a1665618c818fc1f4e001d@bitmer.com>
+In-Reply-To: <4511363.OPCpQMvKWi@wuerfel>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+	<1317566760-25681-22-git-send-email-arnd@arndb.de>
+	<20111002204035.2e5b98943ed5137fd689b9be@bitmer.com>
+	<4511363.OPCpQMvKWi@wuerfel>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 02 Oct 2011, Rafael J. Wysocki wrote:
-> Well, then I propose that people create two new key pairs instead of
-> just one and take both of them to the KS for signing.  Afterwards, one
-> of them will be used for development and the other one's private key
-> will be kept in a safe place (without any online access), so it can be
-> used readily if the first pair is lost or compromised somehow.
+On Sun, 02 Oct 2011 20:03:38 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
+
+> On Sunday 02 October 2011 20:40:35 Jarkko Nikula wrote:
+> > Strange. I'm able to build them fine with omap1_defconfig and with two
+> > supported OMAP1 ASoC machine drivers we have:
+> > 
+> > CONFIG_SND_OMAP_SOC_AMS_DELTA=y
+> > CONFIG_SND_OMAP_SOC_OSK5912=y
+> > 
+> > What's the error you are seeing? I guess there might be some missing
+> > dependency that doesn't get visible with omap1_defconfig.
+> > 
+> > I would like to get that fixed instead of disabling OMAP1 ASoC support
+> > as the ams-delta in kernel is alive device thanks to active developer
+> > Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>.
 > 
-> Perhaps the second pair should have a longer life time.
+> I no longer have the original bug, maybe it was a false positive.
+> I'll drop this patch and have another look if the problem comes back.
+> 
+> Thanks for taking a closer look!
+> 
+Now when I remember we had one build error. Hopefully it was the same
+than you observed?
 
-Maybe subkeys would be enough/better?
+commit e574044acbad7421879270a80acd337459c94cc8
+Author: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Date:   Thu Aug 18 15:02:47 2011 +0300
 
-http://wiki.debian.org/subkeys
+    ASoC: omap: Fix build errors in ams-delta
+    
+    Fix "error: too few arguments to function 'ams_delta_set_bias_level'"
+    build errors in ams-delta.c that were introduced after commit d4c6005 ("ASoC
+    Add context parameter to card DAPM callbacks") by adding dapm context
+    to ams_delta_set_bias_level calls.
+
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Jarkko
