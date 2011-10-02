@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab1JBJsU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 05:48:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5818 "EHLO mx1.redhat.com"
+	id S1752211Ab1JBKIG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 06:08:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751994Ab1JBJsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 05:48:15 -0400
-Date: Sun, 2 Oct 2011 11:49:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11] virtio: Support for hibernation (S4)
-Message-ID: <20111002094920.GF29706@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
+	id S1752204Ab1JBKH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 06:07:57 -0400
+Message-ID: <4E8837D4.5040607@redhat.com>
+Date: Sun, 02 Oct 2011 12:07:16 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1317309123.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Don Zickus <dzickus@redhat.com>
+CC: Robert Richter <robert.richter@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "jeremy@goop.org" <jeremy@goop.org>
+Subject: Re: [V6][PATCH 4/6] x86, nmi:  add in logic to handle multiple events
+ and unknown NMIs
+References: <1316805435-14832-1-git-send-email-dzickus@redhat.com> <1316805435-14832-5-git-send-email-dzickus@redhat.com> <20110928103140.GD6063@erda.amd.com> <20110928123720.GL5795@redhat.com>
+In-Reply-To: <20110928123720.GL5795@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 08:55:56PM +0530, Amit Shah wrote:
-> Hello,
-> 
-> These patches add support for S4 to virtio (pci) and all drivers.  The
-> patches are based on the virtio-console patch series in Rusty's queue.
-> 
-> For each driver, all vqs are removed before hibernation, and then
-> re-created after restore.
-> 
-> All the drivers in testing work fine:
-> 
-> * virtio-blk is used for the only disk in the VM, IO works fine before
->   and after.
-> 
-> * virtio-console: port IO keeps working fine before and after.
->   * If a port is waiting for data from the host (blocking read(2)
->     call), this works fine in both the cases: host-side connection is
->     available or unavailable after resume.  In case the host-side
->     connection isn't available, the blocking call is terminated.  If
->     it is available, the call continues to remain in blocked state
->     till further data arrives.
-> 
-> * virtio-net: ping remains active across S4.  One packet is lost.
->   (Current qemu.git has a regression in slirp code causing qemu
->   segfault, commit 1ab74cea060 is the offender).
-> 
-> * virtio-balloon: Works fine before and after.  Forgets the ballooned
->   value across S4.  If it's desirable to maintain the ballooned value,
->   a new config option can be created to do this.
-> 
-> All in all, this looks pretty good.
-> 
-> Please review and apply.
+On 09/28/2011 03:37 PM, Don Zickus wrote:
+> On Wed, Sep 28, 2011 at 12:31:40PM +0200, Robert Richter wrote:
+> >  On 23.09.11 15:17:13, Don Zickus wrote:
+> >  >  @@ -89,6 +89,15 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs)
+> >  >
+> >  >   		handled += a->handler(type, regs);
+> >  >
+> >  >  +		/*
+> >  >  + 		 * Optimization: only loop once if this is not a
+> >  >  + 		 * back-to-back NMI.  The idea is nothing is dropped
+> >  >  + 		 * on the first NMI, only on the second of a back-to-back
+> >  >  + 		 * NMI.  No need to waste cycles going through all the
+> >  >  + 		 * handlers.
+> >  >  + 		 */
+> >  >  +		if (!b2b&&  handled)
+> >  >  +			break;
+> >
+> >  I don't think we can leave this in. As said, there are cases that 2
+> >  nmis trigger but the handler is called only once. Only the first would
+> >  be handled then, and the second get lost cause there is no 2nd nmi
+> >  call.
+>
+> Right.  Avi, Jeremy what was your objection that needed this optimization
+> in the first place?
+>
 
-So a general comment is that we need to make sure
-VQs are not used by guest or host while
-they are deleted.
+First, iterating over all NMI sources is going to be slow, and a lot 
+more so in a guest.  This reduces the performance of perf.
 
-For example remove path in exiting virtio net does:
-        vdev->config->reset(vdev);
-        unregister_netdev(vi->dev);
-        cancel_delayed_work_sync(&vi->refill);
+Second, I wanted to use NMIs as a way of waking up a vcpu sleeping with 
+interrupts disabled (in the context of Jeremy's paravirt spinlock 
+patches).  Looks like we'll have to use paravirtualization for that.
 
-        /* Free unused buffers in both send and recv, if any. */
-        free_unused_bufs(vi);
+-- 
+error compiling committee.c: too many arguments to function
 
-        vdev->config->del_vqs(vi->vdev);
-
-
-unregister_netdev is done before del_vqs
-which makes sure guest leaves the device alone, including
-napi and tx. PM will need something like this too if it
-removes the VQs, otherwise any use of 'vq->' might cause a crash.
-
-As a side note: above code is not 100% robust in theory as guest could
-try using VQs after reset, and we never documented that it's ok to
-access such VQs, but in practice it's safe with existing hosts, accesses
-are simnply discarded.  Maybe we should just document this assumption in
-the spec?
-
-Another theoretical concern with existing code is that interrupt
-handler for the device might be in progress while we do
-unregister_netdev, since these are not ordered wrt
-io write that does the reset.
-Probably reset in virtio pci should also flush all interrupt handlers?
-
-Any thoughts?
-
-> Amit Shah (11):
->   virtio: pci: switch to new PM API
->   virtio-pci: add PM notification handlers for restore, freeze, thaw,
->     poweroff
->   virtio: console: Move out vq and vq buf removal into separate
->     functions
->   virtio: console: Add freeze and restore handlers to support S4
->   virtio: blk: Move out vq initialization to separate function
->   virtio: blk: Add freeze, restore handlers to support S4
->   virtio: net: Move out vq initialization into separate function
->   virtio: net: Move out vq and vq buf removal into separate function
->   virtio: net: Add freeze, restore handlers to support S4
->   virtio: balloon: Move out vq initialization into separate function
->   virtio: balloon: Add freeze, restore handlers to support S4
-> 
->  drivers/block/virtio_blk.c      |   36 ++++++++++--
->  drivers/char/virtio_console.c   |  124 ++++++++++++++++++++++++++++++---------
->  drivers/net/virtio_net.c        |   98 ++++++++++++++++++++++---------
->  drivers/virtio/virtio_balloon.c |   65 +++++++++++++++------
->  drivers/virtio/virtio_pci.c     |   57 +++++++++++++++++-
->  include/linux/virtio.h          |    4 +
->  6 files changed, 301 insertions(+), 83 deletions(-)
-> 
-> -- 
-> 1.7.6.2
