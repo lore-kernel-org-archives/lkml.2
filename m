@@ -1,130 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1JBDUb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 23:20:31 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35305 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1JBDU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 23:20:26 -0400
-Subject: [PATCH] ASoC: samsung: Add __devexit_p at necessary places
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jaswinder Singh <jassi.brar@samsung.com>, Ben Dooks <ben@simtec.co.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Oct 2011 11:20:13 +0800
-Message-ID: <1317525613.2990.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752224Ab1JBDX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 23:23:59 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37622 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab1JBDXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 23:23:53 -0400
+Date: Sat, 1 Oct 2011 20:23:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20111002032316.GA29617@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110928184025.GF2383@linux.vnet.ibm.com>
+ <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+ <20110929123040.GB3537@somewhere>
+ <20110929171205.GA2362@linux.vnet.ibm.com>
+ <20110930131105.GC19053@somewhere>
+ <20110930152946.GA2397@linux.vnet.ibm.com>
+ <20110930192438.GA7505@linux.vnet.ibm.com>
+ <20111001122442.GA3391@somewhere>
+ <20111001170714.GA17789@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111001170714.GA17789@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11100203-6078-0000-0000-0000015B2646
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the comments in include/linux/init.h:
+On Sat, Oct 01, 2011 at 10:07:14AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 01, 2011 at 02:24:45PM +0200, Frederic Weisbecker wrote:
+> > On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
+> > > And here is a first cut, probably totally broken, but a start.
+> > > 
+> > > With this change, I am wondering about tick_nohz_stop_sched_tick()'s
+> > > invocation of rcu_idle_enter() -- this now needs to be called regardless
+> > > of whether or not tick_nohz_stop_sched_tick() actually stops the tick.
+> > > Except that if tick_nohz_stop_sched_tick() is invoked with inidle==0,
+> > > it looks like we should -not- call rcu_idle_enter().
+> > 
+> > Because of the new check in rcu_check_callbacks()? Yeah.
+> > 
+> > If you think it's fine to call rcu_enter_nohz() unconditionally
+> > everytime we enter the idle loop then yeah. I just don't know
+> > the overhead it adds, as it adds an unconditional tiny piece of
+> > code before we can finally save the power.
+> > 
+> > Either entering idle involves extended quiescent state as in this
+> > patch, or you separate both and then rcu_enter_nohz() is only
+> > called when the tick is stopped.
+> > 
+> > If you choose to merge both, you indeed need to call rcu_idle_enter()
+> > and rcu_idle_exit() whether the tick is stopped or not.
+> > 
+> > > I eventually just left the rcu_idle_enter() calls in their current
+> > > places due to paranoia about messing up and ending up with unbalanced
+> > > rcu_idle_enter() and rcu_idle_exit() calls.  Any thoughts on how to
+> > > make this work better?
+> > 
+> > Yeah something like this (untested):
+> > 
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index d5097c4..ad3ecad 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -273,9 +273,12 @@ void tick_nohz_stop_sched_tick(int inidle)
+> >  	 * updated. Thus, it must not be called in the event we are called from
+> >  	 * irq_exit() with the prior state different than idle.
+> >  	 */
+> > -	if (!inidle && !ts->inidle)
+> > +	if (inidle)
+> > +		rcu_idle_enter();
+> > +	else if (!ts->inidle)
+> >  		goto end;
+> > 
+> > +
+> >  	/*
+> >  	 * Set ts->inidle unconditionally. Even if the system did not
+> >  	 * switch to NOHZ mode the cpu frequency governers rely on the
+> > @@ -409,7 +412,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+> >  			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+> >  			ts->tick_stopped = 1;
+> >  			ts->idle_jiffies = last_jiffies;
+> > -			rcu_enter_nohz();
+> >  		}
+> > 
+> >  		ts->idle_sleeps++;
+> > @@ -505,6 +507,9 @@ void tick_nohz_restart_sched_tick(void)
+> >  	ktime_t now;
+> > 
+> >  	local_irq_disable();
+> > +
+> > +	rcu_idle_exit();
+> > +
+> >  	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
+> >  		now = ktime_get();
+> > 
+> > @@ -519,8 +524,6 @@ void tick_nohz_restart_sched_tick(void)
+> > 
+> >  	ts->inidle = 0;
+> > 
+> > -	rcu_exit_nohz();
+> > -
+> >  	/* Update jiffies first */
+> >  	select_nohz_load_balancer(0);
+> >  	tick_do_update_jiffies64(now);
+> > 
+> > 
+> > 
+> > 
+> > More things about your patch below:
+> > 
+> > > --- a/kernel/rcutiny.c
+> > > +++ b/kernel/rcutiny.c
+> > > @@ -54,31 +54,47 @@ static void __call_rcu(struct rcu_head *head,
+> > >  
+> > >  #include "rcutiny_plugin.h"
+> > >  
+> > > -#ifdef CONFIG_NO_HZ
+> > > -
+> > >  static long rcu_dynticks_nesting = 1;
+> > >  
+> > >  /*
+> > > - * Enter dynticks-idle mode, which is an extended quiescent state
+> > > - * if we have fully entered that mode (i.e., if the new value of
+> > > - * dynticks_nesting is zero).
+> > > + * Enter idle, which is an extended quiescent state if we have fully
+> > > + * entered that mode (i.e., if the new value of dynticks_nesting is zero).
+> > >   */
+> > > -void rcu_enter_nohz(void)
+> > > +void rcu_idle_enter(void)
+> > >  {
+> > >  	if (--rcu_dynticks_nesting == 0)
+> > >  		rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+> > >  }
+> > >  
+> > >  /*
+> > > - * Exit dynticks-idle mode, so that we are no longer in an extended
+> > > - * quiescent state.
+> > > + * Exit idle, so that we are no longer in an extended quiescent state.
+> > >   */
+> > > -void rcu_exit_nohz(void)
+> > > +void rcu_idle_exit(void)
+> > >  {
+> > >  	rcu_dynticks_nesting++;
+> > >  }
+> > >  
+> > > -#endif /* #ifdef CONFIG_NO_HZ */
+> > > +#ifdef CONFIG_PROVE_RCU
+> > > +
+> > > +/*
+> > > + * Test whether the current CPU is idle.
+> > > + */
+> > 
+> > Is idle from an RCU point of view yeah.
+> 
+> Good point -- I now say "Test whether RCU thinks that the current CPU is idle."
+> 
+> > > +int rcu_is_cpu_idle(void)
+> > > +{
+> > > +	return !rcu_dynticks_nesting;
+> > > +}
+> > > +
+> > > +#endif /* #ifdef CONFIG_PROVE_RCU */
+> > > +
+> > > +/*
+> > > + * Test whether the current CPU was interrupted from idle.  Nested
+> > > + * interrupts don't count, we must be running at the first interrupt
+> > > + * level.
+> > > + */
+> > > +int rcu_is_cpu_rrupt_from_idle(void)
+> > > +{
+> > > +	return rcu_dynticks_nesting <= 0;
+> > > +}
+> > >  
+> > >  /*
+> > >   * Helper function for rcu_sched_qs() and rcu_bh_qs().
+> > > @@ -131,10 +147,7 @@ void rcu_bh_qs(int cpu)
+> > >   */
+> > >  void rcu_check_callbacks(int cpu, int user)
+> > >  {
+> > > -	if (user ||
+> > > -	    (idle_cpu(cpu) &&
+> > > -	     !in_softirq() &&
+> > > -	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
+> > > +	if (user || rcu_is_cpu_rrupt_from_idle())
+> > >  		rcu_sched_qs(cpu);
+> > 
+> > It wasn't obvious to me in the first shot. This might need a comment
+> > that tells rcu_check_callbacks() is called from an interrupt
+> > and thus need to handle that first level in the check.
+> 
+> OK, I added "This function must be called from hardirq context".
+> 
+> > Other than that, looks good overall.
+> 
+> Keeping fingers firmly crossed for the testing...
 
-"Pointers to __devexit functions must use __devexit_p(function_name), the
-wrapper will insert either the function_name or NULL, depending on the confi
-options."
+And it appears sane in testing thus far.  I have consolidated to one
+patch and pushed to https://github.com/paulmckrcu/linux branch rcu/dev.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Jaswinder Singh <jassi.brar@samsung.com>
-Cc: Ben Dooks <ben@simtec.co.uk>
-Cc: Seungwhan Youn <sw.youn@samsung.com>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>
----
- sound/soc/samsung/ac97.c        |    2 +-
- sound/soc/samsung/i2s.c         |    2 +-
- sound/soc/samsung/pcm.c         |    2 +-
- sound/soc/samsung/s3c2412-i2s.c |    2 +-
- sound/soc/samsung/s3c24xx-i2s.c |    2 +-
- sound/soc/samsung/spdif.c       |    2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+Testing continues.
 
-diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
-index bc4e234..16521e3 100644
---- a/sound/soc/samsung/ac97.c
-+++ b/sound/soc/samsung/ac97.c
-@@ -502,7 +502,7 @@ static __devexit int s3c_ac97_remove(struct platform_device *pdev)
- 
- static struct platform_driver s3c_ac97_driver = {
- 	.probe  = s3c_ac97_probe,
--	.remove = s3c_ac97_remove,
-+	.remove = __devexit_p(s3c_ac97_remove),
- 	.driver = {
- 		.name = "samsung-ac97",
- 		.owner = THIS_MODULE,
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index 79d4bce..bff42bf 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -1137,7 +1137,7 @@ static __devexit int samsung_i2s_remove(struct platform_device *pdev)
- 
- static struct platform_driver samsung_i2s_driver = {
- 	.probe  = samsung_i2s_probe,
--	.remove = samsung_i2s_remove,
-+	.remove = __devexit_p(samsung_i2s_remove),
- 	.driver = {
- 		.name = "samsung-i2s",
- 		.owner = THIS_MODULE,
-diff --git a/sound/soc/samsung/pcm.c b/sound/soc/samsung/pcm.c
-index 4c191f0..05a47cf 100644
---- a/sound/soc/samsung/pcm.c
-+++ b/sound/soc/samsung/pcm.c
-@@ -625,7 +625,7 @@ static __devexit int s3c_pcm_dev_remove(struct platform_device *pdev)
- 
- static struct platform_driver s3c_pcm_driver = {
- 	.probe  = s3c_pcm_dev_probe,
--	.remove = s3c_pcm_dev_remove,
-+	.remove = __devexit_p(s3c_pcm_dev_remove),
- 	.driver = {
- 		.name = "samsung-pcm",
- 		.owner = THIS_MODULE,
-diff --git a/sound/soc/samsung/s3c2412-i2s.c b/sound/soc/samsung/s3c2412-i2s.c
-index f01d4c4..7bbec25 100644
---- a/sound/soc/samsung/s3c2412-i2s.c
-+++ b/sound/soc/samsung/s3c2412-i2s.c
-@@ -177,7 +177,7 @@ static __devexit int s3c2412_iis_dev_remove(struct platform_device *pdev)
- 
- static struct platform_driver s3c2412_iis_driver = {
- 	.probe  = s3c2412_iis_dev_probe,
--	.remove = s3c2412_iis_dev_remove,
-+	.remove = __devexit_p(s3c2412_iis_dev_remove),
- 	.driver = {
- 		.name = "s3c2412-iis",
- 		.owner = THIS_MODULE,
-diff --git a/sound/soc/samsung/s3c24xx-i2s.c b/sound/soc/samsung/s3c24xx-i2s.c
-index c5a30d0..558c64b 100644
---- a/sound/soc/samsung/s3c24xx-i2s.c
-+++ b/sound/soc/samsung/s3c24xx-i2s.c
-@@ -482,7 +482,7 @@ static __devexit int s3c24xx_iis_dev_remove(struct platform_device *pdev)
- 
- static struct platform_driver s3c24xx_iis_driver = {
- 	.probe  = s3c24xx_iis_dev_probe,
--	.remove = s3c24xx_iis_dev_remove,
-+	.remove = __devexit_p(s3c24xx_iis_dev_remove),
- 	.driver = {
- 		.name = "s3c24xx-iis",
- 		.owner = THIS_MODULE,
-diff --git a/sound/soc/samsung/spdif.c b/sound/soc/samsung/spdif.c
-index 7ca5bdc..965b2bd 100644
---- a/sound/soc/samsung/spdif.c
-+++ b/sound/soc/samsung/spdif.c
-@@ -476,7 +476,7 @@ static __devexit int spdif_remove(struct platform_device *pdev)
- 
- static struct platform_driver samsung_spdif_driver = {
- 	.probe	= spdif_probe,
--	.remove	= spdif_remove,
-+	.remove	= __devexit_p(spdif_remove),
- 	.driver	= {
- 		.name	= "samsung-spdif",
- 		.owner	= THIS_MODULE,
--- 
-1.7.4.1
-
-
+							Thanx, Paul
 
