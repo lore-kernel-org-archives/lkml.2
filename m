@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1JBOs6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 10:48:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61097 "EHLO
+	id S1753362Ab1JBOst (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 10:48:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53124 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab1JBOrC (ORCPT
+	with ESMTP id S1752741Ab1JBOq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 10:47:02 -0400
+	Sun, 2 Oct 2011 10:46:58 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 23/30] ARM: omap2: select twl4030 support on boards that need it
-Date: Sun,  2 Oct 2011 16:45:53 +0200
-Message-Id: <1317566760-25681-24-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 03/30] video/omap: fix build dependencies
+Date: Sun,  2 Oct 2011 16:45:33 +0200
+Message-Id: <1317566760-25681-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317566760-25681-1-git-send-email-arnd@arndb.de>
 References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:9oza2L+tWgk7JG5J64oc8RtrmOw9U6lPAxRlRh4Hd0q
- 8FyHqZHA4QKvbaHCk0/7PJ15fH2YC4agIrwjDbJf5l5n2AZNQf
- cVjPVD7lRt73+IE8cVwt1Lsv6T9vxv8jeh0/pMeC2LVm7/OL/c
- DvV4w1KOWCK7cbcbcJWjfpDLKJ8kLkWoPARWz+4gNfJmseMz7H
- 2rGP5KaWAJLtio6meVea6QsKz9alPLFOyoMtIcxlsc36davEjJ
- Y7drvts6Y7H9ZI2fT1ID9cTfIOIG8p1f7m0S1DzpGnYg3AXIe7
- UOmem0ZYjFrj11qHVGoYMZLVcckuIrt6KCitzIgzh0MI61mxsX
- ccdir/Onv1aFqEjJRogsr2jW8hBpIv8YDXbwakt3x0JhgMEPzb
- IUHWGVIKhLPrQ==
+X-Provags-ID: V02:K0:Il1vYsTYtsGxAPG6OF7gJKNFKebOiSl6fjGHF1XQsy1
+ Aces/X9R06nyEiI3DOIWKvQxHsPS40bc2Rug7zaCEd05J6yfC+
+ MHLbmCsN/i0jot2gwVDWC+wwT5OPremjcvW8A/hENsSOrm7TYS
+ IYCxfrH0jEQIaq7rJACTWALlAxs1jPQPA9VVI/bLnm66qUDLK8
+ VwYJdBlRT54v5ReNVlOiQkgmZeHWxszkyQTPueGf+10dLEgQZh
+ BJDlC+WIcA2JDe7H8tAXwL/7Z1la0YdPyImDnrF2zIYaaEjOTo
+ rp0EPxW9J9B3oxoL1c+UdFJjh5amVIqViraq9FENKuJs6GGiRH
+ umk4Hb03EOIdqaVyjCxwrfuVricQSqMAsTA5PL0YR3aCH1jnVP
+ 3/CzyggIw3/GA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These three boards unconditionally use the twl4030 driver
-from the board-zoom-display.c file. Make sure that the driver
-is always there.
-We also need to select the I2C core so we are able to build
-that driver.
+Four of the LCD panel drivers depend on the backlight class,
+so add the dependency in Kconfig.
+Selecting the BACKLIGHT_CLASS_DEVICE symbol does not generally
+work since it has other dependencies.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
 ---
- arch/arm/mach-omap2/Kconfig |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/video/omap2/displays/Kconfig |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 57b66d5..4deeade 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -253,6 +253,8 @@ config MACH_OMAP_ZOOM2
- 	select SERIAL_CORE_CONSOLE
- 	select SERIAL_8250_CONSOLE
- 	select REGULATOR_FIXED_VOLTAGE
-+	select TWL4030_CORE
-+	select I2C
+diff --git a/drivers/video/omap2/displays/Kconfig b/drivers/video/omap2/displays/Kconfig
+index 609a280..8e4278c 100644
+--- a/drivers/video/omap2/displays/Kconfig
++++ b/drivers/video/omap2/displays/Kconfig
+@@ -19,13 +19,15 @@ config PANEL_LGPHILIPS_LB035Q02
+ config PANEL_SHARP_LS037V7DW01
+         tristate "Sharp LS037V7DW01 LCD Panel"
+         depends on OMAP2_DSS_DPI
+-        select BACKLIGHT_CLASS_DEVICE
++        depends on BACKLIGHT_CLASS_DEVICE
+         help
+           LCD Panel used in TI's SDP3430 and EVM boards
  
- config MACH_OMAP_ZOOM3
- 	bool "OMAP3630 Zoom3 board"
-@@ -263,6 +265,8 @@ config MACH_OMAP_ZOOM3
- 	select SERIAL_CORE_CONSOLE
- 	select SERIAL_8250_CONSOLE
- 	select REGULATOR_FIXED_VOLTAGE
-+	select TWL4030_CORE
-+	select I2C
+ config PANEL_NEC_NL8048HL11_01B
+ 	tristate "NEC NL8048HL11-01B Panel"
+ 	depends on OMAP2_DSS_DPI
++	depends on SPI
++	depends on BACKLIGHT_CLASS_DEVICE
+ 	help
+ 		This NEC NL8048HL11-01B panel is TFT LCD
+ 		used in the Zoom2/3/3630 sdp boards.
+@@ -33,6 +35,7 @@ config PANEL_NEC_NL8048HL11_01B
+ config PANEL_TAAL
+         tristate "Taal DSI Panel"
+         depends on OMAP2_DSS_DSI
++        depends on BACKLIGHT_CLASS_DEVICE
+         help
+           Taal DSI command mode panel from TPO.
  
- config MACH_CM_T35
- 	bool "CompuLab CM-T35/CM-T3730 modules"
-@@ -304,6 +308,8 @@ config MACH_OMAP_3630SDP
- 	depends on ARCH_OMAP3
- 	default y
- 	select OMAP_PACKAGE_CBP
-+	select TWL4030_CORE
-+	select I2C
- 
- config MACH_TI8168EVM
- 	bool "TI8168 Evaluation Module"
+@@ -45,7 +48,7 @@ config PANEL_TPO_TD043MTEA1
+ config PANEL_ACX565AKM
+ 	tristate "ACX565AKM Panel"
+ 	depends on OMAP2_DSS_SDI && SPI
+-	select BACKLIGHT_CLASS_DEVICE
++	depends on BACKLIGHT_CLASS_DEVICE
+ 	help
+ 	  This is the LCD panel used on Nokia N900
+ endmenu
 -- 
 1.7.5.4
 
