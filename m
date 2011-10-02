@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1JBLwo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 07:52:44 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42629 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1JBLwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 07:52:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Date: Sun, 2 Oct 2011 13:54:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com>
-In-Reply-To: <4E87B885.50005@zytor.com>
+	id S1752462Ab1JBLyu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 07:54:50 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43262
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752196Ab1JBLyo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 07:54:44 -0400
+Date: Sun, 2 Oct 2011 07:54:38 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Andreas Dilger <aedilger@gmail.com>
+Cc: Jeff liu <jeff.liu@oracle.com>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Dave Young <hidave.darkstar@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [BUG] copy file result with zero
+Message-ID: <20111002115438.GA24073@infradead.org>
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+ <20111001143900.GH28234@thunk.org>
+ <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com>
+ <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
+ <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110021354.57995.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 02, 2011, H. Peter Anvin wrote:
-> On 10/01/2011 06:04 PM, Rafael J. Wysocki wrote:
-> > 
-> > OK, I'm taking this as "5 years is fine by us". :-)
-> > 
-> > And the recommended procedure for rotating keys seems to be (1) generate
-> > a new key and (2) make as many people as you can sign it before the old
-> > one expires, right?
-> > 
-> 
-> (3) revoke the old key with a status code of "no longer in use", or just
-> let it expire.
-> 
-> >> Some people have decided to opt for an unlimited key, but that
-> >> *requires* that you have a way to revoke the old key, which is why we
-> >> are considering a key revocation escrow service.
-> > 
-> > That service will be necessary anyway in case some keys are lost or
-> > compromised.
-> > 
-> > I wonder what the procedure of restoring kernel.org access in case one
-> > has lost keys is supposed to be?
-> 
-> Get a new key and get it re-signed.
+On Sun, Oct 02, 2011 at 12:59:22AM -0700, Andreas Dilger wrote:
+> My understanding is that cp uses the blocks count to determine whether the file is sparse or not.  In the case of delayed allocation (where blocks are not yet allocated, if they are not reflected in the i_blocks count) it might mistakenly think that the file is sparse.
 
-Hmm.  That doesn't seem very practical if someone doesn't live close
-to any other core kernel developers.
+Ext4 fortunatley is smart enough to add the delalloc blocks to st_blocks
+for state, just like all other filesystems implementing delayed
+allocations.
 
-What number of signatures on the key will be regarded as sufficient?
-
-> We can work out specific details at KS.
-
-Well, the KS is going to be busy time this year I suppose. :-)
-
-What about people who haven't been invited to the KS?
-
-Rafael
