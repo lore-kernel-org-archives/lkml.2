@@ -1,117 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab1JBTe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 15:34:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43286 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab1JBTeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 15:34:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task freezing failures
-Date: Sun, 2 Oct 2011 21:36:41 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <4E88B5E0.6080503@linux.vnet.ibm.com>
-In-Reply-To: <4E88B5E0.6080503@linux.vnet.ibm.com>
+	id S1754422Ab1JBTpH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 15:45:07 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:55507 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab1JBTpB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 15:45:01 -0400
+Message-ID: <4E88BF33.10407@linux.vnet.ibm.com>
+Date: Mon, 03 Oct 2011 01:14:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, linux-pm@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] CPU hotplug, freezer: Fix bugs in CPU hotplug call path
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110022136.41726.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When using the CPU hotplug infrastructure to offline/online CPUs,
+the cpu_up() and cpu_down() functions are used, which internally
+call _cpu_up() and _cpu_down() with the second argument *always*
+set to 0. The second argument is "tasks_frozen", which should be
+correctly set to 1 when tasks have been frozen, even when the freezing
+of tasks may be due to an event unrelated to CPU hotplug, such as
+a suspend operation in progress, in which case the freezer subsystem
+freezes all the freezable tasks.
 
-Thanks for the fix.
+Not giving the correct value for the 'tasks_frozen' argument can potentially
+lead to a lot of issues since this will send a wrong notification via the
+notifier mechanism leading to the execution of inappropriate code
+by the callbacks registered for the notifiers. That is, instead of
+CPU_ONLINE_FROZEN and CPU_OFFLINE_FROZEN notifications, it results in
+CPU_ONLINE and CPU_OFFLINE notifications to be sent all the time,
+irrespective of the actual state of the system (i.e., whether tasks
+are frozen or not).
 
-On Sunday, October 02, 2011, Srivatsa S. Bhat wrote:
-> This patch addresses the warnings found in the logs in the
-> task freezing failure bug reported in https://lkml.org/lkml/2011/9/5/28
-> 
-> The warnings appear because of the reason explained below:
-> 
-> There are microcode callbacks registered for CPU hotplug events such
-> as a CPU getting offlined or onlined. When a CPU is offlined
-> with tasks being frozen (as in the case of disabling the non-boot CPUs
-> while preparing for a system suspend operation), the CPU_DEAD_FROZEN
-> notification is sent, for which the microcode callback does not
-> do anything. In particular, it does not free or invalidate the CPU
-> microcode which it had got from userspace earlier. Hence when that CPU
-> comes back online with tasks being frozen (as in the case of re-enabling
-> the non-boot CPUs during a resume operation after suspend), the microcode
-> callback applies the microcode (which it already possesses) to that CPU.
-> 
-> However, during a pure CPU hotplug operation, tasks are not frozen and
-> hence the CPU_DEAD notification is sent. Upon this event notification,
-> the microcode callback frees the copy of microcode it has and
-> invalidates it. And during a CPU online, it tries to apply the microcode
-> to the CPU, but since it doesn't have the copy of the microcode, it depends
-> on a userspace utility to get the microcode. This is perfectly fine when
-> doing plain CPU hotplug operations alone.
-> 
-> Things go wrong when a CPU hotplug stress test is carried out along with
-> a suspend/resume operation running simultaneously. Upon getting a CPU_DEAD
-> notification (for example, when a CPU offline occurs with tasks not frozen),
-> the microcode callback frees up the microcode and invalidates it. Later
-> when that CPU gets onlined with tasks being frozen, the microcode callback
-> (for the CPU_ONLINE_FROZEN event) tries to apply the microcode to the CPU;
-> doesn't find it and hence depends on the (currently frozen) userspace to
-> get the microcode again. This leads to the numerous "WARNING"s at
-> drivers/base/firmware_class.c which eventually leads to task freezing failures
-> in the suspend code path, as has been reported.
-> 
-> So, this patch addresses this issue by ensuring that microcode is not freed
-> from kernel memory, nor invalidated when a CPU goes offline. Thus once the
-> kernel gets the microcode during boot-up, it will never have to depend on
-> userspace ever again to get microcode, since it never releases the copy it
-> already has. So every run of the microcode callback for CPU online event will
-> now succeed irrespective of whether userspace is frozen or not. As a result,
-> this fixes the task freezing failure encountered while running CPU hotplug
-> stress test along with suspend/resume operations simultaneously.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
+This patch adds a check in cpu_up() and cpu_down() to see whether
+the tasks have been frozen (by any event) so that they can call
+_cpu_up() and _cpu_down() respectively by supplying the correct
+value as the second argument based on the state of the system.
+This in turn means that the correct notifications are sent, thus
+ensuring that all the registered callbacks do the right thing.
 
-Thanks for the fix.  I'd like to push it for 3.2 and possibly -stable.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Does anyone have any objections?
+ include/linux/freezer.h |    4 ++++
+ kernel/cpu.c            |    9 +++++++--
+ kernel/power/process.c  |   24 +++++++++++++++++++++++-
+ 3 files changed, 34 insertions(+), 3 deletions(-)
 
-Rafael
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 1effc8b..3a37d8b 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -51,6 +51,10 @@ extern void refrigerator(void);
+ extern int freeze_processes(void);
+ extern void thaw_processes(void);
+ 
++extern void set_tasks_frozen_flag(void);
++extern void clear_tasks_frozen_flag(void);
++extern int tasks_are_frozen(void);
++
+ static inline int try_to_freeze(void)
+ {
+ 	if (freezing(current)) {
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..e4530ea 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
++#include <linux/freezer.h>
+ 
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -272,6 +273,7 @@ out_release:
+ int __ref cpu_down(unsigned int cpu)
+ {
+ 	int err;
++	int tasks_frozen;
+ 
+ 	cpu_maps_update_begin();
+ 
+@@ -280,7 +282,8 @@ int __ref cpu_down(unsigned int cpu)
+ 		goto out;
+ 	}
+ 
+-	err = _cpu_down(cpu, 0);
++	tasks_frozen = tasks_are_frozen();
++	err = _cpu_down(cpu, tasks_frozen);
+ 
+ out:
+ 	cpu_maps_update_done();
+@@ -328,6 +331,7 @@ out_notify:
+ int __cpuinit cpu_up(unsigned int cpu)
+ {
+ 	int err = 0;
++	int tasks_frozen;
+ 
+ #ifdef	CONFIG_MEMORY_HOTPLUG
+ 	int nid;
+@@ -373,7 +377,8 @@ int __cpuinit cpu_up(unsigned int cpu)
+ 		goto out;
+ 	}
+ 
+-	err = _cpu_up(cpu, 0);
++	tasks_frozen = tasks_are_frozen();
++	err = _cpu_up(cpu, tasks_frozen);
+ 
+ out:
+ 	cpu_maps_update_done();
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 0cf3a27..7642314 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -17,11 +17,30 @@
+ #include <linux/delay.h>
+ #include <linux/workqueue.h>
+ 
+-/* 
++/*
+  * Timeout for stopping processes
+  */
+ #define TIMEOUT	(20 * HZ)
+ 
++static atomic_t tasks_frozen = ATOMIC_INIT(0);
++
++void set_tasks_frozen_flag(void)
++{
++	atomic_set(&tasks_frozen, 1);
++}
++
++void clear_tasks_frozen_flag(void)
++{
++	atomic_set(&tasks_frozen, 0);
++}
++
++int tasks_are_frozen(void)
++{
++	int ret;
++	ret = atomic_read(&tasks_frozen);
++	return ret;
++}
++
+ static inline int freezable(struct task_struct * p)
+ {
+ 	if ((p == current) ||
+@@ -153,6 +172,8 @@ int freeze_processes(void)
+ 		goto Exit;
+ 	printk("done.");
+ 
++	set_tasks_frozen_flag();
++
+ 	oom_killer_disable();
+  Exit:
+ 	BUG_ON(in_atomic());
+@@ -191,5 +212,6 @@ void thaw_processes(void)
+ 	thaw_tasks(false);
+ 	schedule();
+ 	printk("done.\n");
++	clear_tasks_frozen_flag();
+ }
+ 
 
-
->  arch/x86/kernel/microcode_core.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-> index f924280..cd7ef2f 100644
-> --- a/arch/x86/kernel/microcode_core.c
-> +++ b/arch/x86/kernel/microcode_core.c
-> @@ -483,7 +483,15 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
->  		sysfs_remove_group(&sys_dev->kobj, &mc_attr_group);
->  		pr_debug("CPU%d removed\n", cpu);
->  		break;
-> -	case CPU_DEAD:
-> +
-> +	/*
-> +	 * Do not invalidate the microcode if a CPU goes offline,
-> +	 * because it would be impossible to get the microcode again
-> +	 * from userspace when the CPU comes back up, if the userspace
-> +	 * happens to be frozen at that moment by the freezer subsystem,
-> +	 * for example, due to a suspend operation in progress.
-> +	 */
-> +
->  	case CPU_UP_CANCELED_FROZEN:
->  		/* The CPU refused to come up during a system resume */
->  		microcode_fini_cpu(cpu);
-> 
-> 
-> 
-> 
 
