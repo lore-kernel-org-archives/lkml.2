@@ -1,67 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab1JBK4L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 06:56:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53687 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab1JBKz6 (ORCPT
+	id S1752408Ab1JBLqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 07:46:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42159 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab1JBLqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 06:55:58 -0400
-Date: Sun, 2 Oct 2011 14:54:57 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Guillaume Chazarain <guichaz@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: taskstats root only breaking iotop
-Message-ID: <20111002105457.GA5598@albatros>
-References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
- <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
- <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
- <CA+55aFyci1PB9Y_BSqWnQKSSfcCrbJud+q1Z8Cdquo7hXJZaMw@mail.gmail.com>
- <CAA879TMgMm4u6kDFahXqCHAFyvDc_hTt+Q93tdSdHKnAcUaMTw@mail.gmail.com>
+	Sun, 2 Oct 2011 07:46:04 -0400
+Date: Sun, 2 Oct 2011 13:45:58 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20111002114555.GG3391@somewhere>
+References: <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+ <20110929123040.GB3537@somewhere>
+ <20110929171205.GA2362@linux.vnet.ibm.com>
+ <20110930131105.GC19053@somewhere>
+ <20110930152946.GA2397@linux.vnet.ibm.com>
+ <20110930192438.GA7505@linux.vnet.ibm.com>
+ <20111001122442.GA3391@somewhere>
+ <20111001170714.GA17789@linux.vnet.ibm.com>
+ <20111002032316.GA29617@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA879TMgMm4u6kDFahXqCHAFyvDc_hTt+Q93tdSdHKnAcUaMTw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111002032316.GA29617@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ed kernel-hardening)
-
-On Sun, Oct 02, 2011 at 12:22 +0200, Guillaume Chazarain wrote:
-> On Sun, Oct 2, 2011 at 2:20 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > So I don't see why you ask for it. What could possibly be a valid use-case?
+On Sat, Oct 01, 2011 at 08:23:16PM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 01, 2011 at 10:07:14AM -0700, Paul E. McKenney wrote:
+> > On Sat, Oct 01, 2011 at 02:24:45PM +0200, Frederic Weisbecker wrote:
+> > > On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
+> > > > And here is a first cut, probably totally broken, but a start.
+> > > > 
+> > > > With this change, I am wondering about tick_nohz_stop_sched_tick()'s
+> > > > invocation of rcu_idle_enter() -- this now needs to be called regardless
+> > > > of whether or not tick_nohz_stop_sched_tick() actually stops the tick.
+> > > > Except that if tick_nohz_stop_sched_tick() is invoked with inidle==0,
+> > > > it looks like we should -not- call rcu_idle_enter().
+> > > 
+> > > Because of the new check in rcu_check_callbacks()? Yeah.
+> > > 
+> > > If you think it's fine to call rcu_enter_nohz() unconditionally
+> > > everytime we enter the idle loop then yeah. I just don't know
+> > > the overhead it adds, as it adds an unconditional tiny piece of
+> > > code before we can finally save the power.
+> > > 
+> > > Either entering idle involves extended quiescent state as in this
+> > > patch, or you separate both and then rcu_enter_nohz() is only
+> > > called when the tick is stopped.
+> > > 
+> > > If you choose to merge both, you indeed need to call rcu_idle_enter()
+> > > and rcu_idle_exit() whether the tick is stopped or not.
+> > > 
+> > > > I eventually just left the rcu_idle_enter() calls in their current
+> > > > places due to paranoia about messing up and ending up with unbalanced
+> > > > rcu_idle_enter() and rcu_idle_exit() calls.  Any thoughts on how to
+> > > > make this work better?
+> > > 
+> > > Yeah something like this (untested):
+> > > 
+> > > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > > index d5097c4..ad3ecad 100644
+> > > --- a/kernel/time/tick-sched.c
+> > > +++ b/kernel/time/tick-sched.c
+> > > @@ -273,9 +273,12 @@ void tick_nohz_stop_sched_tick(int inidle)
+> > >  	 * updated. Thus, it must not be called in the event we are called from
+> > >  	 * irq_exit() with the prior state different than idle.
+> > >  	 */
+> > > -	if (!inidle && !ts->inidle)
+> > > +	if (inidle)
+> > > +		rcu_idle_enter();
+> > > +	else if (!ts->inidle)
+> > >  		goto end;
+> > > 
+> > > +
+> > >  	/*
+> > >  	 * Set ts->inidle unconditionally. Even if the system did not
+> > >  	 * switch to NOHZ mode the cpu frequency governers rely on the
+> > > @@ -409,7 +412,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+> > >  			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+> > >  			ts->tick_stopped = 1;
+> > >  			ts->idle_jiffies = last_jiffies;
+> > > -			rcu_enter_nohz();
+> > >  		}
+> > > 
+> > >  		ts->idle_sleeps++;
+> > > @@ -505,6 +507,9 @@ void tick_nohz_restart_sched_tick(void)
+> > >  	ktime_t now;
+> > > 
+> > >  	local_irq_disable();
+> > > +
+> > > +	rcu_idle_exit();
+> > > +
+> > >  	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
+> > >  		now = ktime_get();
+> > > 
+> > > @@ -519,8 +524,6 @@ void tick_nohz_restart_sched_tick(void)
+> > > 
+> > >  	ts->inidle = 0;
+> > > 
+> > > -	rcu_exit_nohz();
+> > > -
+> > >  	/* Update jiffies first */
+> > >  	select_nohz_load_balancer(0);
+> > >  	tick_do_update_jiffies64(now);
+> > > 
+> > > 
+> > > 
+> > > 
+> > > More things about your patch below:
+> > > 
+> > > > --- a/kernel/rcutiny.c
+> > > > +++ b/kernel/rcutiny.c
+> > > > @@ -54,31 +54,47 @@ static void __call_rcu(struct rcu_head *head,
+> > > >  
+> > > >  #include "rcutiny_plugin.h"
+> > > >  
+> > > > -#ifdef CONFIG_NO_HZ
+> > > > -
+> > > >  static long rcu_dynticks_nesting = 1;
+> > > >  
+> > > >  /*
+> > > > - * Enter dynticks-idle mode, which is an extended quiescent state
+> > > > - * if we have fully entered that mode (i.e., if the new value of
+> > > > - * dynticks_nesting is zero).
+> > > > + * Enter idle, which is an extended quiescent state if we have fully
+> > > > + * entered that mode (i.e., if the new value of dynticks_nesting is zero).
+> > > >   */
+> > > > -void rcu_enter_nohz(void)
+> > > > +void rcu_idle_enter(void)
+> > > >  {
+> > > >  	if (--rcu_dynticks_nesting == 0)
+> > > >  		rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+> > > >  }
+> > > >  
+> > > >  /*
+> > > > - * Exit dynticks-idle mode, so that we are no longer in an extended
+> > > > - * quiescent state.
+> > > > + * Exit idle, so that we are no longer in an extended quiescent state.
+> > > >   */
+> > > > -void rcu_exit_nohz(void)
+> > > > +void rcu_idle_exit(void)
+> > > >  {
+> > > >  	rcu_dynticks_nesting++;
+> > > >  }
+> > > >  
+> > > > -#endif /* #ifdef CONFIG_NO_HZ */
+> > > > +#ifdef CONFIG_PROVE_RCU
+> > > > +
+> > > > +/*
+> > > > + * Test whether the current CPU is idle.
+> > > > + */
+> > > 
+> > > Is idle from an RCU point of view yeah.
+> > 
+> > Good point -- I now say "Test whether RCU thinks that the current CPU is idle."
+> > 
+> > > > +int rcu_is_cpu_idle(void)
+> > > > +{
+> > > > +	return !rcu_dynticks_nesting;
+> > > > +}
+> > > > +
+> > > > +#endif /* #ifdef CONFIG_PROVE_RCU */
+> > > > +
+> > > > +/*
+> > > > + * Test whether the current CPU was interrupted from idle.  Nested
+> > > > + * interrupts don't count, we must be running at the first interrupt
+> > > > + * level.
+> > > > + */
+> > > > +int rcu_is_cpu_rrupt_from_idle(void)
+> > > > +{
+> > > > +	return rcu_dynticks_nesting <= 0;
+> > > > +}
+> > > >  
+> > > >  /*
+> > > >   * Helper function for rcu_sched_qs() and rcu_bh_qs().
+> > > > @@ -131,10 +147,7 @@ void rcu_bh_qs(int cpu)
+> > > >   */
+> > > >  void rcu_check_callbacks(int cpu, int user)
+> > > >  {
+> > > > -	if (user ||
+> > > > -	    (idle_cpu(cpu) &&
+> > > > -	     !in_softirq() &&
+> > > > -	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
+> > > > +	if (user || rcu_is_cpu_rrupt_from_idle())
+> > > >  		rcu_sched_qs(cpu);
+> > > 
+> > > It wasn't obvious to me in the first shot. This might need a comment
+> > > that tells rcu_check_callbacks() is called from an interrupt
+> > > and thus need to handle that first level in the check.
+> > 
+> > OK, I added "This function must be called from hardirq context".
+> > 
+> > > Other than that, looks good overall.
+> > 
+> > Keeping fingers firmly crossed for the testing...
 > 
-> Right, kbyte granularity is enough.
+> And it appears sane in testing thus far.  I have consolidated to one
+> patch and pushed to https://github.com/paulmckrcu/linux branch rcu/dev.
+> 
+> Testing continues.
 
-It is not enough.  In some border cases an attacker may still learn
-private information given the counters with _arbitrary_ granularity:
+Great. I'll start the rebase then.
 
-http://www.openwall.com/lists/oss-security/2011/06/29/9
-
-
-> And that's consistent with
-> /proc/vmstat, which nobody is complaining about.
-
-<jumping with a raised hand>Me, me, it was me!</jumping with a raised hand>
-
-Seriously, most of procfs files were created with relaxed permissions in
-old days when nobody thought about such infoleaks.  Now it is much
-harder to close all of them without breaking existing users.
-
-http://www.openwall.com/lists/kernel-hardening/2011/07/28/1
-http://www.openwall.com/lists/kernel-hardening/2011/09/27/3
-http://www.openwall.com/lists/kernel-hardening/2011/09/19/24
-http://www.openwall.com/lists/kernel-hardening/2011/09/21/2
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Thanks.
