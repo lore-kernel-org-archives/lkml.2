@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab1JBUEu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 16:04:50 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45491 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794Ab1JBUEn (ORCPT
+	id S1754515Ab1JBUQm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 16:16:42 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:35351 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1JBUQh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 16:04:43 -0400
-Message-ID: <4E88C3D4.2020300@linux.vnet.ibm.com>
-Date: Mon, 03 Oct 2011 01:34:36 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-References: <4E88B5E0.6080503@linux.vnet.ibm.com> <20111002195023.GC31799@mtj.dyndns.org>
-In-Reply-To: <20111002195023.GC31799@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Oct 2011 16:16:37 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: CIFS kernel module bug
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Content-Type: text/plain; charset=windows-1252
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
+Date: Sun, 2 Oct 2011 21:16:33 +0100
+Cc: =?iso-8859-1?Q?Lars_M=FCller?= <lmuelle@suse.de>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
+        Jeremy Allison <jra@samba.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <65C75335-2A74-4B00-989A-212BAC06A646@cam.ac.uk>
+References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk> <20110930140409.51c1a94c@tlielax.poochiereds.net> <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk> <20110930234711.GD14147@samba2> <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk> <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk> <20111001150730.GJ5170@giles.fritz.box> <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk> <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
+To: Jim McDonough <jmcd@samba.org>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 10/03/2011 01:20 AM, Tejun Heo wrote:
-> Hello,
+On 1 Oct 2011, at 21:22, Jim McDonough wrote:
+> On Sat, Oct 1, 2011 at 3:53 PM, Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+>> On 1 Oct 2011, at 16:07, Lars Müller wrote:
+>>> On Sat, Oct 01, 2011 at 09:48:12AM +0100, Anton Altaparmakov wrote:
+>>>> 
+>>>> On 1 Oct 2011, at 01:34, J.P. King wrote:
+>>>>> Anton will be asleep, so I'll attempt to answer this one.
+>>>>> 
+>>>>>> What server code is the OES CIFS server running ? I thought Novell CIFS
+>>>>>> services were all Samba based.
+>>>>> 
+>>>>> We have been told by the people upstairs who run the server that it isn't.
+>>>> 
+>>>> It is not Samba based.  Like Apple, Novell have written their own since Samba decided to go GPLv3…
+>>> 
+>>> (Potential) FUD alert. ;)
+>> 
+>> It wasn't deliberate!  It was just a guess as until recently I also though that OES just used Samba so when I two weeks ago found out that it didn't I just assumed that Novell must have written it recently and then drew the parallel to Apple and just assumed that it was an analogous case…
 > 
-> On Mon, Oct 03, 2011 at 12:35:04AM +0530, Srivatsa S. Bhat wrote:
->> So, this patch addresses this issue by ensuring that microcode is not freed
->> from kernel memory, nor invalidated when a CPU goes offline. Thus once the
->> kernel gets the microcode during boot-up, it will never have to depend on
->> userspace ever again to get microcode, since it never releases the copy it
->> already has. So every run of the microcode callback for CPU online event will
->> now succeed irrespective of whether userspace is frozen or not. As a result,
->> this fixes the task freezing failure encountered while running CPU hotplug
->> stress test along with suspend/resume operations simultaneously.
-> 
-> I'm not familiar with how microcode is supposed to be managed but is
-> it impossible for the newly hotplugged CPU (an actual hot unplug /
-> plug) may not like the microcode loaded for the previous CPU?  Isn't
-> that why CPU_DEAD was invalidating the microcode?
-> 
+> I believe both are available on OES, samba and the CIFS server that
+> has its origins in Netware.
 
-Actually, looking at the code, I found that a copy of the microcode
-is maintained by the kernel for every CPU. 
-The relevant lines are:
+That is correct but apparently Salford Software (who handle our Netware & OES site license here in the UK including providing support) have told the guys running the file server that the samba server on OES is not scalable, has loads of bugs, and they must stay away from it at all costs and that they would not provide any support if our filestore runs that instead of the Novell CIFSd.
 
-arch/x86/include/asm/microcode.h:
+You can understand why the filestore is thus running the Novell CIFSd rather than Samba…
 
-struct ucode_cpu_info {
-        struct cpu_signature    cpu_sig;
-        int                     valid;
-        void                    *mc;
-};
-extern struct ucode_cpu_info ucode_cpu_info[];
+PS. Whether this is FUD or not I cannot comment on.  I am just passing on what I was told!
 
+Best regards,
 
-arch/x86/kernel/microcode_core.h:
-
-struct ucode_cpu_info           ucode_cpu_info[NR_CPUS];
-
-
-So when a CPU goes offline and comes back online, I don't see why the kernel
-should not reuse the microcode that it already has. Anyhow the microcode will
-not change. The same microcode would be requested from userspace again if the
-kernel has freed its copy.
-
-So what I feel is, earlier, the kernel used to invalidate the microcode for the CPU_DEAD
-notification may be just to free the kernel's copy of the microcode as a memory
-optimization (thinking that the microcode is not needed any more in kernel memory,
-atleast for now).
-
-This is my understanding. Please enlighten me if I am wrong.
-
+	Anton
 -- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
