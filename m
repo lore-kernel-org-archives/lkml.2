@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1JBOsl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 10:48:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60055 "EHLO
+	id S1753381Ab1JBOs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 10:48:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61097 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1JBOq6 (ORCPT
+	with ESMTP id S1752757Ab1JBOrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 10:46:58 -0400
+	Sun, 2 Oct 2011 10:47:02 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 16/30] usb/musb: HDRC depends on TWL4030_CORE for OMAP3/4
-Date: Sun,  2 Oct 2011 16:45:46 +0200
-Message-Id: <1317566760-25681-17-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 23/30] ARM: omap2: select twl4030 support on boards that need it
+Date: Sun,  2 Oct 2011 16:45:53 +0200
+Message-Id: <1317566760-25681-24-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317566760-25681-1-git-send-email-arnd@arndb.de>
 References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:1x7mgt/y4ZC51jNm2uON3H/rs0WUpOHkIbwRcK4Foo/
- YllCBmB0lsA55zOz+R5e/7hzcVCZBFMcxscr4DE/+ZK5ooc7qn
- UuufVN4WjNeKJqEaBpDMJM4kzK7w2ALUnS4oQSat+2BMpsQk6b
- QYspVnrZKHHJ+t9rrWW5kSjk1eo01soIx2AR4H1mtXjuPMYZO1
- oSZ9TFa/4IMDhU0n85Xh6D4Ip1YikGo2BsFge6C4WRWAi3yZ6R
- ejslKb2midfDqqvkzGUDY1/9wpfQg5Op++M15ptZ3iKdGIXDag
- CShsrCQwzxf0haRHMYfPE4ZTvhC+mBbkaYa7RF+Ln42+OqMG8q
- ApWd6s3rqNnRAwXvvJaCU18+YRaDvkwAusOXbB7jdrfJ8AHREv
- DfjhSBBCxbm6g==
+X-Provags-ID: V02:K0:9oza2L+tWgk7JG5J64oc8RtrmOw9U6lPAxRlRh4Hd0q
+ 8FyHqZHA4QKvbaHCk0/7PJ15fH2YC4agIrwjDbJf5l5n2AZNQf
+ cVjPVD7lRt73+IE8cVwt1Lsv6T9vxv8jeh0/pMeC2LVm7/OL/c
+ DvV4w1KOWCK7cbcbcJWjfpDLKJ8kLkWoPARWz+4gNfJmseMz7H
+ 2rGP5KaWAJLtio6meVea6QsKz9alPLFOyoMtIcxlsc36davEjJ
+ Y7drvts6Y7H9ZI2fT1ID9cTfIOIG8p1f7m0S1DzpGnYg3AXIe7
+ UOmem0ZYjFrj11qHVGoYMZLVcckuIrt6KCitzIgzh0MI61mxsX
+ ccdir/Onv1aFqEjJRogsr2jW8hBpIv8YDXbwakt3x0JhgMEPzb
+ IUHWGVIKhLPrQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The musb_hdrc driver tries to select TWL4030_USB or TWL6030_USB
-on some platforms, but those symbols in turn depend on TWL4030_CORE.
-Trying not to spread the 'select' further, this makes the driver
-depend on the TWL4030_CORE for the platforms that do other selects.
+These three boards unconditionally use the twl4030 driver
+from the board-zoom-display.c file. Make sure that the driver
+is always there.
+We also need to select the I2C core so we are able to build
+that driver.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Felipe Balbi <balbi@ti.com>
 ---
- drivers/usb/musb/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/Kconfig |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index d596fb2..b6732ee 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -7,6 +7,7 @@
- config USB_MUSB_HDRC
- 	depends on USB && USB_GADGET
- 	depends on (ARM || (BF54x && !BF544) || (BF52x && !BF522 && !BF523))
-+	depends on TWL4030_CORE || !(MACH_OMAP_3430SDP || MACH_OMAP_4430SDP || MACH_OMAP4_PANDA)
- 	select NOP_USB_XCEIV if (ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN)
- 	select TWL4030_USB if MACH_OMAP_3430SDP
- 	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 57b66d5..4deeade 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -253,6 +253,8 @@ config MACH_OMAP_ZOOM2
+ 	select SERIAL_CORE_CONSOLE
+ 	select SERIAL_8250_CONSOLE
+ 	select REGULATOR_FIXED_VOLTAGE
++	select TWL4030_CORE
++	select I2C
+ 
+ config MACH_OMAP_ZOOM3
+ 	bool "OMAP3630 Zoom3 board"
+@@ -263,6 +265,8 @@ config MACH_OMAP_ZOOM3
+ 	select SERIAL_CORE_CONSOLE
+ 	select SERIAL_8250_CONSOLE
+ 	select REGULATOR_FIXED_VOLTAGE
++	select TWL4030_CORE
++	select I2C
+ 
+ config MACH_CM_T35
+ 	bool "CompuLab CM-T35/CM-T3730 modules"
+@@ -304,6 +308,8 @@ config MACH_OMAP_3630SDP
+ 	depends on ARCH_OMAP3
+ 	default y
+ 	select OMAP_PACKAGE_CBP
++	select TWL4030_CORE
++	select I2C
+ 
+ config MACH_TI8168EVM
+ 	bool "TI8168 Evaluation Module"
 -- 
 1.7.5.4
 
