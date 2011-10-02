@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab1JBAzV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 20:55:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43653 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab1JBAzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 20:55:15 -0400
-Subject: [PATCH] ASoC: wm8782: Add __devexit_p at necessary place
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Johannes Stezenbach <js@sig21.net>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Oct 2011 08:55:02 +0800
-Message-ID: <1317516902.8024.0.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753088Ab1JBBCt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 21:02:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42150 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751597Ab1JBBCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 21:02:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Date: Sun, 2 Oct 2011 03:04:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+References: <4E8655CD.90107@zytor.com> <201110012333.55428.rjw@sisk.pl> <4E8793B6.8030405@zytor.com>
+In-Reply-To: <4E8793B6.8030405@zytor.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201110020304.28288.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the comments in include/linux/init.h:
+On Sunday, October 02, 2011, H. Peter Anvin wrote:
+> On 10/01/2011 02:33 PM, Rafael J. Wysocki wrote:
+> > 
+> > OK, how long should the new key be valid?
+> > 
+> 
+> That is a good question.  At the very least you want it to be valid for
+> long enough that you will be able to get enough signatures on a new key
+> *before* your old key expires.  As such I would recommend 3-5 years
+> depending on how much you trust yourself to keep the key secure.
 
-"Pointers to __devexit functions must use __devexit_p(function_name), the
-wrapper will insert either the function_name or NULL, depending on the config
-options."
+OK, I'm taking this as "5 years is fine by us". :-)
 
-We have __devexit annotation for wm8782_remove(), thus add __devexit_p at
-necessary place.
+And the recommended procedure for rotating keys seems to be (1) generate
+a new key and (2) make as many people as you can sign it before the old
+one expires, right?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8782.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Some people have decided to opt for an unlimited key, but that
+> *requires* that you have a way to revoke the old key, which is why we
+> are considering a key revocation escrow service.
 
-diff --git a/sound/soc/codecs/wm8782.c b/sound/soc/codecs/wm8782.c
-index a2a09f8..f2ced71 100644
---- a/sound/soc/codecs/wm8782.c
-+++ b/sound/soc/codecs/wm8782.c
-@@ -60,7 +60,7 @@ static struct platform_driver wm8782_codec_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 	.probe = wm8782_probe,
--	.remove = wm8782_remove,
-+	.remove = __devexit_p(wm8782_remove),
- };
- 
- static int __init wm8782_init(void)
--- 
-1.7.4.1
+That service will be necessary anyway in case some keys are lost or
+compromised.
 
+I wonder what the procedure of restoring kernel.org access in case one
+has lost keys is supposed to be?
 
-
+Rafael
