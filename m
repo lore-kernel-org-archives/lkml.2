@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab1JBALV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 20:11:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43677 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751093Ab1JBALS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 20:11:18 -0400
-Message-ID: <4E87AC04.2070405@zytor.com>
-Date: Sat, 01 Oct 2011 17:10:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1752630Ab1JBAV0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 20:21:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35428 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab1JBAVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 20:21:19 -0400
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Andy <akwatts@ymail.com>, schwab@linux-m68k.org, Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: hints on how to check your machine for intrusion
-References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com> <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111001224313.GH18690@1wt.eu>
-In-Reply-To: <20111001224313.GH18690@1wt.eu>
-X-Enigmail-Version: 1.3
+In-Reply-To: <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
+References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
+ <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com> <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 1 Oct 2011 17:20:58 -0700
+X-Google-Sender-Auth: -mdO2dTahFhM_q6RA2fNhmj6sfQ
+Message-ID: <CA+55aFyci1PB9Y_BSqWnQKSSfcCrbJud+q1Z8Cdquo7hXJZaMw@mail.gmail.com>
+Subject: Re: taskstats root only breaking iotop
+To: Guillaume Chazarain <guichaz@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2011 03:43 PM, Willy Tarreau wrote:
-> 
->   <version> <umask> <user> <group> <tag md5> <tar md5> <tar.gz md5> <status>
-> 
-> Since I can attest that I exclusively extracted the tarballs from the
-> tar.gz and dumped their md5 at the same time, I'm pretty sure that the
-> tar.gz's md5 is OK if the tar's md5 is OK. This will help speed up sig
-> checks on mirrors.
-> 
+On Sat, Oct 1, 2011 at 3:41 PM, Guillaume Chazarain <guichaz@gmail.com> wrote:
+> On Sat, Oct 1, 2011 at 11:59 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> I think the question should be: why is it *ever* a good idea to let
+>> *anybody* read how many bytes anybody has read.
+>
+> I use iotop to get the throughput of a cp or tar because I don't
+> always think of piping to 'pv'. People also use it as a progress
+> indicator for their less verbose applications (total bytes
+> read/written instead of rate).
 
-By the way, it's usually better to use sha256 or something else more
-modern than MD5.
+I can understand the use of "throughput".
 
-> All the times I got a different MD5 between the tarball and the git
-> tag was because of a different user name in the tarball. It seems
-> that old git versions used to use "git/git" instead of "root/root"
-> now.
+I don't understand why you then even *mention* byte-granularity. NOBODY CARES.
 
-Yes, that change was introduced in git-1.5.0-rc1.
+It really is that simple. Either you care about a single process (and
+you damn well use strace or something similar), or you care about
+"statistics".
 
-> This is hardcoded so it's not easy to change it, and I suspect
-> that the tar format might have changed a bit, so if we want to check
-> those MD5s, either we check on old mirrors that are 100% safe, or we
-> have to reinstall an old version of git.
+For the statistics, something *like* TASKSTATS can make sense, but
+never *ever* does it make sense to give byte-granularity stats in that
+case.
 
-... or extract the tarball and diff the contents versus the git tree.
+So I don't see why you ask for it. What could possibly be a valid use-case?
 
-	-hpa
+                         Linus
