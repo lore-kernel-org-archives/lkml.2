@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1JBOr7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 10:47:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56549 "EHLO
+	id S1753057Ab1JBOrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 10:47:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54337 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab1JBOq5 (ORCPT
+	with ESMTP id S1752702Ab1JBOqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 10:46:57 -0400
+	Sun, 2 Oct 2011 10:46:53 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        "Avinash.H.M" <avinashhm@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 08/30] ARM: omap2+: fix building without i2c
-Date: Sun,  2 Oct 2011 16:45:38 +0200
-Message-Id: <1317566760-25681-9-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 06/30] ARM: omap: fix build with CONFIG_I2C_OMAP disabled
+Date: Sun,  2 Oct 2011 16:45:36 +0200
+Message-Id: <1317566760-25681-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317566760-25681-1-git-send-email-arnd@arndb.de>
 References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:RLg7l9wgZJ3g+NNBXKfoArKv+m8LHpkk10bAj9fZQaI
- zLWMOtbtYnNZhQyc2dBTpvPrOwDZp6qiVO/VX7rgSjAqwkvucf
- FFVnH3AzYzXzNAPqL51Xq3gck8FlptEY7C4GUe1f3qgkehZTrH
- 9xLdDl1kZrqAPhu1UWO+/yzLqZPRYbVVl+jC2Wg/u4wEptvRLB
- 2MvcQ5UNiL1q9lvbo6zA7O4AJ+AHsWw98O1t4t9VzRxFvUzoNx
- wr76KxxVZ5NdG27Mnwv6bGBGYnjjKakFWSVhDk9DjrHL+JwGQF
- itax/zP9drWPOTOqX1VUlaijHHZaeuf2KqxQTKucGRWo38w/dE
- KXeE5ModTRzutk+6Q+gzOakBhuRqp1QI1XsMhdUdzQOrEE2CT6
- htnA76YZ8dIxQ==
+X-Provags-ID: V02:K0:G4oyU1IQ5HPC5fQFg+PxEeGqHW2IJlzx3164VcI2N82
+ B2EQlBxsBa/KErDylXL5XYLK/hi+vvfRZhcAnn1CxxZA542qLE
+ apPL4Uh9YMYsJ4gz7BSPIxfyQlif6fAESkGubJJ94uYbVxPDgz
+ PLr61YlgerJyUjdQVL30f32p3rQNfkQD0grxYCPocdTtJy7L7B
+ mNBf8K+kY3rkJFakzHJ/dF9JxHx+BxSKO/9+/nsIMHFSIhSk1+
+ /Ii2SAl0MKf4EOVsHz+SUAeKQMb7LBlkVtjNNm+xWkUberWL53
+ 92sg/sG7hS4Vz/pFq3JjQGfL450XRGZC7HbhHqc4LqCA1cI+Dn
+ PIwptQSQ4jJVTj7fYnGo8Dj+zdXCJ48IGSlYcaePFvJPpaIrA4
+ WlZ1IPcYlqAJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A trivial typo causes build breakage when I2C is disabled
-and omap_i2c_reset is set to NULL on OMAP:
-
-omap_hwmod_44xx_data.c:2287:11: error: lvalue required as unary '&' operand
-
-Removing the '&' character solves this.
+We must not reference omap_i2c_reset if the file defining it
+does not get built.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Avinash.H.M <avinashhm@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_2420_data.c |    2 +-
- arch/arm/mach-omap2/omap_hwmod_2430_data.c |    2 +-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    2 +-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/plat-omap/include/plat/i2c.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_2420_data.c b/arch/arm/mach-omap2/omap_hwmod_2420_data.c
-index a015c69..3aa6c62 100644
---- a/arch/arm/mach-omap2/omap_hwmod_2420_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_2420_data.c
-@@ -1030,7 +1030,7 @@ static struct omap_hwmod_class i2c_class = {
- 	.name		= "i2c",
- 	.sysc		= &i2c_sysc,
- 	.rev		= OMAP_I2C_IP_VERSION_1,
--	.reset		= &omap_i2c_reset,
-+	.reset		= omap_i2c_reset,
- };
+diff --git a/arch/arm/plat-omap/include/plat/i2c.h b/arch/arm/plat-omap/include/plat/i2c.h
+index 7c22b9e..ae72013 100644
+--- a/arch/arm/plat-omap/include/plat/i2c.h
++++ b/arch/arm/plat-omap/include/plat/i2c.h
+@@ -28,6 +28,8 @@
+ extern int omap_register_i2c_bus(int bus_id, u32 clkrate,
+ 				 struct i2c_board_info const *info,
+ 				 unsigned len);
++struct omap_hwmod;
++int omap_i2c_reset(struct omap_hwmod *oh);
+ #else
+ static inline int omap_register_i2c_bus(int bus_id, u32 clkrate,
+ 				 struct i2c_board_info const *info,
+@@ -35,6 +37,7 @@ static inline int omap_register_i2c_bus(int bus_id, u32 clkrate,
+ {
+ 	return 0;
+ }
++#define omap_i2c_reset NULL
+ #endif
  
- static struct omap_i2c_dev_attr i2c_dev_attr = {
-diff --git a/arch/arm/mach-omap2/omap_hwmod_2430_data.c b/arch/arm/mach-omap2/omap_hwmod_2430_data.c
-index 16743c7..d9ab245 100644
---- a/arch/arm/mach-omap2/omap_hwmod_2430_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_2430_data.c
-@@ -1079,7 +1079,7 @@ static struct omap_hwmod_class i2c_class = {
- 	.name		= "i2c",
- 	.sysc		= &i2c_sysc,
- 	.rev		= OMAP_I2C_IP_VERSION_1,
--	.reset		= &omap_i2c_reset,
-+	.reset		= omap_i2c_reset,
- };
+ /**
+@@ -53,7 +56,4 @@ struct omap_i2c_dev_attr {
+ void __init omap1_i2c_mux_pins(int bus_id);
+ void __init omap2_i2c_mux_pins(int bus_id);
  
- static struct omap_i2c_dev_attr i2c_dev_attr = {
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 25bf43b..b0a0113 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -1309,7 +1309,7 @@ static struct omap_hwmod_class i2c_class = {
- 	.name	= "i2c",
- 	.sysc	= &i2c_sysc,
- 	.rev	= OMAP_I2C_IP_VERSION_1,
--	.reset	= &omap_i2c_reset,
-+	.reset	= omap_i2c_reset,
- };
- 
- static struct omap_hwmod_dma_info omap3xxx_dss_sdma_chs[] = {
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 6201422..a6d42fc 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -2284,7 +2284,7 @@ static struct omap_hwmod_class omap44xx_i2c_hwmod_class = {
- 	.name	= "i2c",
- 	.sysc	= &omap44xx_i2c_sysc,
- 	.rev	= OMAP_I2C_IP_VERSION_2,
--	.reset	= &omap_i2c_reset,
-+	.reset	= omap_i2c_reset,
- };
- 
- static struct omap_i2c_dev_attr i2c_dev_attr = {
+-struct omap_hwmod;
+-int omap_i2c_reset(struct omap_hwmod *oh);
+-
+ #endif /* __ASM__ARCH_OMAP_I2C_H */
 -- 
 1.7.5.4
 
