@@ -1,104 +1,567 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab1JBG7r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 02:59:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42309 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab1JBG7k convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 02:59:40 -0400
-Subject: Re: [BUG] copy file result with zero
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <aedilger@gmail.com>
-In-Reply-To: <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
-Date: Sun, 2 Oct 2011 00:59:22 -0700
-Cc: Dave Young <hidave.darkstar@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+	id S1751538Ab1JBHAT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 03:00:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:33369 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab1JBHAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 03:00:13 -0400
+Date: Sun, 2 Oct 2011 08:59:57 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <greg@kroah.com>
+Cc: Andy <akwatts@ymail.com>, tmhikaru@gmail.com,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
-References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com> <20111001143900.GH28234@thunk.org> <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com> <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
-To: Jeff liu <jeff.liu@oracle.com>, Yongqiang Yang <xiaoqiangnk@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+        hpa@zytor.com
+Subject: Re: kernel.org status: hints on how to check your machine for intrusion
+Message-ID: <20111002065957.GJ18690@1wt.eu>
+References: <20110930235924.GA25176@kroah.com> <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111002022643.GA4076@kroah.com> <20111002033058.GA20166@zeus> <20111002043948.GA6934@kroah.com>
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="/NkBOFFp2J2Af1nK"
+Content-Disposition: inline
+In-Reply-To: <20111002043948.GA6934@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-01, at 11:41 PM, Jeff liu wrote:
->> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
->>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
->>>> Hi,
->>>> 
->>>> Weird problem, when I build app from source,
->>>> make; make install
->>>> run the command, but got "cannot execute binary file"
->>>> 
->>>> hexdump shows the installed binary is full of zero
->>>> 
->>>> Is it related to ext4 fiemap problem described below?
->>>> http://lwn.net/Articles/429349/
->>> 
->>> There is general agreement that /bin/cp should not have been relying
->>> on FIEMAP, and I believe the more recent versions of /bin/cp have
->>> removed that code by default pending implementation of
->>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
->>> FIEMAP implementation that landed in 2.6.39, and you're using
->>> 3.1.0-rc6.
-> 
-> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
 
-My understanding is that cp uses the blocks count to determine whether the file is sparse or not.  In the case of delayed allocation (where blocks are not yet allocated, if they are not reflected in the i_blocks count) it might mistakenly think that the file is sparse.
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Given the danger of this bug, it is important to ensure ext4 returns DELALLOC extents for pages in the page cache.  I think Yongqiang Yang just submitted a patch series to do this for ext4, so it would be important to verify it fixes this problem.
+On Sat, Oct 01, 2011 at 09:39:48PM -0700, Greg KH wrote:
+> I've did this a while ago when we were working on verifying the
+> tarballs, here's what I got, one column is with the umask unset, and the
+> other set to 022, both of them being the sha256sum output.
 
->> Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
->> 
->>> 
->>>> I finally managed to find the way to reproduce this:
->>>> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
->>>> A == B != C
->>>> 
->>>> ie.
->>>> cp /bin/ls ls1
->>>> cp ls1 ls2
->>>> 
->>>> ls2 will be filled with zero
->>> 
->>> If you add a "sync" between the two copies, does that work around the
->>> problem?  I bet it will...
->> 
->> Yes, it works
->> 
->>> 
->>> My suggestion is to upgrade to a newer version of coreutils that
->>> doesn't try to use FIEMAP.
->> 
->> Thanks, will try
->> 
->>> 
->>>                                       - Ted
->>> 
->> 
->> 
->> 
->> -- 
->> Regards
->> Dave
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thank you very much Greg, that was really helpful.
+
+I re-ran the checks on all those images here. I have updated the
+table with a tag "SHA256-COMPARED-OK" instead of the MD5 for the
+git tag when I could check that the sha256 of the .tar matched
+your tag.
+
+The script ran almsot all the night to check the bz2. I'm posting
+here what I have. All the 2.6 kernels between 2.6.0 and 2.6.39.4
+have been hashed. The .tar extracted from the .gz and .bz2 always
+matched. All tar sums that could be compared to a valid git tag
+did match too. I'm attaching the report in the following format :
+
+  version umask user group tagmd5 tarmd5 gzmd5 bz2md5 status
+
+I ran the test on 3.0 with sha256 too and could verify that all of the
+tags match the tarballs, and that .gz and .bz2 produce the same tarballs.
+I'm appending here the sha256 of all of them :
+
+7f7498f6fe78474b986ee2fd617e4def35041547b2d6f5fd6b347dac592e399c  linux-3.0.tar
+64b0228b54ce39b0b2df086109a7b737cde58e3df4f779506ddcaccee90356a0  linux-3.0.tar.bz2
+37e8a1b5d1e488cd9a57cb601d2647ea122fd5a7644a6c535d98282925d025e4  linux-3.0.tar.gz
+5296531e3dbf7bf55573a2f400403061340eec801ecbaade9793791827bd5b1f  linux-3.0.1.tar
+8603c451d6779f55175c2c96a92a40177c89ed4e0217501258214a64c9c4e127  linux-3.0.1.tar.bz2
+c786d357d61719bee5da6a37cd01a0061c5a9fa3854334473e68dc0761b56874  linux-3.0.1.tar.gz
+d2c0636033bbfc6722e71b566cdc95265cf10af300ff2c3f8fba9ab7ec63b725  linux-3.0.2.tar
+0bf66062e2bc23e6fe6fddb329fe06c6994ba5b016c89e2afdf093c059b5c035  linux-3.0.2.tar.bz2
+e5a605780183e90bb23784b27ff835215a3ccefaf414bffee375d6bae4bf7048  linux-3.0.2.tar.gz
+92769e812e8fc83b226e97d5732d2a0eb96e598f096b4f10085b0352be7492e1  linux-3.0.3.tar
+b6a035d724a85f52b6973d11f43a3d215a3226dafc74ea89b8479d4cd4896788  linux-3.0.3.tar.bz2
+298b66f3a3d71aa0b6a9ebe73f67b22974e1de51c4093abfd419f462e3c8246f  linux-3.0.3.tar.gz
+ca42bbbffb6db60f16a7870bc1f3ddc872596d9ef1bc4794377ed1da101f14f9  linux-3.0.4.tar
+13d689714502ed0e4d6224dd322be8b1b4fe39aa3471fd892bb09c181b93d7ef  linux-3.0.4.tar.bz2
+0de107e7d73709d772e87dc08ef846b4f7616525a22890430cdb77929cd999f1  linux-3.0.4.tar.gz
+
+That way it's not needed to decompress tarballs anymore to check them,
+it's enough to check their sigs using "sha256sum -c".
+
+At this point I don't think it's worth the effort of checking the old
+kernels which I was missing nor the ones archived with git/git/000.
+
+Also, I noticed that the 3.0 kernel has umask 002 again.
+
+Hoping this helps,
+Willy
 
 
-Cheers, Andreas
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="26-report5.txt"
 
+2.6.0 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1070dd17ae93b86776c166efc73eb18b 97067974e4a490aa533fae78ff7a424c c9e73737002521a347d2e6617beb56cc
+2.6.1 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f10b247510edd03159634d9309398e1d 6cc71be409c58ea44f5aec5d52f4de30 fa82d1e4be518261b2eeb78eabf9cca7
+2.6.2 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 5b23fc3f726335ae8c1946bd2c625a41 f975be5855f0d9aa7dd169ad7febebd2 2a745088acba366f22f8bd3e284a84d4
+2.6.3 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 5b1837a52ceb92d71583c387d4fabc8f eecc98f673e135f3a7c0f58443f4ce07 6063a7e424355ec52e0cb559fb99034d
+2.6.4 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1aa9881e84c4c4f9e0a17c7914ce3605 43638c35be21f58102fb27ae81b439c0 335f06eba1e5372ba38a0d2b253629bd
+2.6.5 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 5db67c27afb2cfd5d4c52ae1e20f38f4 8eb83dc7ac8608d50086123495af8720 9a76bf64c1151369b250f967d83077aa
+2.6.6 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx eaf803a496e7b8458ba332b04b89c0c0 f4f8f0f5e67205c366a785b1535bce7f 5218790bc3db41e77a7422969639a9ad
+2.6.7 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 104de8f7f6dbf6b84a8089ead4242565 5a1f770ee96b0944added4f7326afc24 a74671ea68b0e3c609e8785ed8497c14
+2.6.8 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d14c5dda32e59dad1ace7ebc537cc493 c91448746afc266197fd0da9b3638311 2f8b0030ce970f3c1a460faf5d2b1cec
+2.6.8.1 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx deda8b8cf299a39418743e14e58ab8f0 98f93075c7c24e681eaf7e70783af5e4 9517ca999e822b898fbdc7e72796b1aa
+2.6.9 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 5c715f55156f8979379c8a749c0bfaed 659eaab11678d84c33c6816bd4c6e6ba e921200f074ca97184e150ef5a4af825
+2.6.10 002 torvalds torvalds xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 720f5102649c0cfc2c078945fc640feb ec711367f805ffff0e6ee82bc736582e cffcd2919d9c8ef793ce1ac07a440eda
+2.6.11 002 torvalds torvalds b390eb0350b4f953a53c16dd5c28810e 6aa8e0b14cdab0757b9474e1a7fb3124 41bb11f9ec307706683c5661f140123e f00fd1b5a80f52baf9d1d83acddfa325
+2.6.11.1 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3cf9eae4f95646ae0ffc2d0b83d8868f 6bc1253824cbe6ddc4d39f501b8f8882 971d541176438154f947705d7c5b77cd
+2.6.11.2 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f13a1007df661c8e1e37523ab5da1673 147fc341abb88cf1127d98929d4bcfc5 61ade860849e8661f14bd754f5a90986
+2.6.11.3 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 12212767ac29e6eea5fd3e839569723d acb17b2519957273da523047e512d15e 9328d85d07e4d02001e0e2ff13a8120d
+2.6.11.4 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7259709a5cb8a0b5a48976a320527d48 a9f0512169b0f9158c65632d4cfd1318 f3bdaa6e7e36827347bbfdbcc6c9bc07
+2.6.11.5 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 69b34aa9bd308ae09938c7a79f36e939 45e89928a4630c203cdf308382aba56f 94af162c2c5c264344f279c6946c4f59
+2.6.11.6 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 068edd6dfc720d7f25511a275afad102 90a33341f6d4d8067de9c33cb8d05c1f 91544ed14e672386bf2f76c94911afe6
+2.6.11.7 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7912910e72409daab452a0833db1a848 0fdda93c77077070d81e6880b1cf0933 04f5efb260ff6fb4eaa221fb5b880d8e
+2.6.11.8 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7e8b246a232e811c754dadc3ccdb8aa2 042bbb773d055189a3b1bad75a064663 08ef09252e3d1428e69fc011f23b5c70
+2.6.11.9 002 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6f4f40d71259fdde0e4b00671768219f 191f324879bc7a9d4ccf866f6ac3c596 e4e23abca482dff11f85119403a703ec
+2.6.11.10 022 greg users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3e66cec82b7246be2b3f49e0faae9e9a 38b1c4956c621d8dbe3d717d0e6ced37 6a66a372a1f8395f241f248f5fe8222a
+2.6.11.11 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 0e159ca8748e2862c9c069e3e9294cac 21af9bfdf3e49d1b1e208634104dc5d0 d074fe2ef6ccbd635ebc6c327bb82a2b
+2.6.11.12 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a655292e4c558d05ebf9cb77d4bfe1da 1fa49d3534cc9b3a3fc97c17b7e8207e 7e3b6e630bb05c1a8c1ba46e010dbe44
+2.6.12 022 git git 7d26979a123817f8386c12c5abb0e20d 2fbb5cbd5fe9b57861c6e4167a292613 6050857c0808975dc0ee58bc9804ee20 c5d2a1b62e1dad502c871bba267337d5
+2.6.12.1 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b94eb2e6c5039d24a453a95f2e0bd777 343d169f40ffc15a9116aa6cd82e9ea5 542d5aa1657f8da60b41d4d08b098841
+2.6.12.2 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx cbec68c32311ea3145017f8f8669d523 ef8385b5a34be8c44d111e9fb3b85fa8 6ee5bf307335e58193c8d2ac0d35677b
+2.6.12.3 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 0f4614744cc9e737c41ad6ddbc863627 ab42137978ea1749c485b894ebd48031 21d642266a9a9ce6c73db17605991ac3
+2.6.12.4 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a50aec151cb375c6bb446fe2d69fc807 752efdbd3cba5c96109c536d31a6a6cd 5fa86c8e199cf3c08db3b356618d2834
+2.6.12.5 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6901d7d629030e24f56a13a7e321446e edcdfd602718ad7282a248cfe60848d3 076f0dc714112c764c790fbaef19e228
+2.6.12.6 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 128bc1c572f16cc23e9bda381d507dd4 dc2b54aff74653aa2175d2bfad9fb934 1592bb2a8ec0deb1ff32e8238f25ecc5
+2.6.13 022 git git 8ae2c8d9d4f5cab99d4d21019dddf6a4 e0f2e6fe9c81a01b3d69ff4454e0c415 8978c9b3976fae17923ef3e511b54a26 560f5fadf59f172973e67939868a4cae
+2.6.13.1 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d30e76b0286f79355041e1fead721a87 88ce10010ed54973122e07e0c8495117 6719cbe5ca5bc916161c825f4ae5b943
+2.6.13.2 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8a62c4b78f7b385d5d5fe0fb402bef39 6b2e04f2ba74552554b606a335d41fd2 6ef3f302348f5b55d0e6e3d53bfbb57b
+2.6.13.3 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 39f7bb153b6718214b0a0b8eb47db48c fe9d89025a343196410d812ab1c8013b 4208271a5a7b273b7bf83cabe2c54cf5
+2.6.13.4 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 015640711c8c108732fb4fd0cf693ef0 9f4aab3cddacae3bcc7887a1c90412c9 94768d7eef90a9d8174639b2a7d3f58d
+2.6.13.5 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 72a599f2c649c9d6cdda1e61bfd2f06a b0a5e640e8d9c61d311365f5b4e82035 d6ba1208a8ace03e36b432b9ba179177
+2.6.14 022 git git 8ee2b4548d71cfa1079ecc2e30723434 9214cedf82c7c5f5639fe40e7c77139a 396029ab7d62bce01122ac50c004a43f 66d02cbd723876c6d69846a067875a22
+2.6.14.1 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ef4ba1942a38cdf2625bf9d4e98a22d9 93206b5d82bea0aa5a72cda37fc374a2 df4e4bf5d97a501977a5dbedbcc90a82
+2.6.14.2 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 202e8e48a2a89e223fef1a5fa2c29ba0 aeab2d967a6710339c96a2a16ca9c361 ace4ef323111e6cffbb159a1f5ffc550
+2.6.14.3 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 57fcc3a29faf0e15b3bf85eb68cf783a fc784ab07783c6caa75cab76879bcb0d 982717a9cb246e3c427cc45e3fc86097
+2.6.14.4 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx df85eb0756950e685834b69d2584f7d5 dc84028e3f485563213d88c576613ee7 45be19ffe79b2729baf27f7468527e08
+2.6.14.5 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4d7e78745ba357e2c5bf131353ca5734 3aaf9adaff17d4e1cd66b067059977ab 9f057e3bd31c50dc48553def01bc8037
+2.6.14.6 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 383c9ca1ef8a08d3fb5b942b15728dfd cc4a7f327c69101550a5c09b56716f08 57368527b7e6f3ce072f0da541cca9c6
+2.6.14.7 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 64979b947b941845d3d53fa25dba75d6 762edf1bcf5ecfbc224dae4ea4eb0c40 cdc8b60949f1cea6634fd9cfe9670ada
+2.6.15 022 git git 2c970565ab3d24d56501091757359bb8 6adddd15e10f2ff228c70733e2e762b3 873a00a1a20d7ccaad2eedc98109d6e1 cdf95e00f5111e31f78e1d97304d9522
+2.6.15.1 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3621e51fac1197238b31bf832f9a9231 9a967e67e202ba898cec83a88996e63f 3a71f70fecf25a893bb95efaa37f575c
+2.6.15.2 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2b3983c48ca97fb8d0c7a9a8243b9f65 b1296fadb23dcc29b7dc98bbd2fbc419 ed6b6f163f181e677fc07e8de5ed7c56
+2.6.15.3 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 85062656e24b616f57463560db8a1a66 344b3f432d1bcc853da1f11b7fe83561 57a8675485bbc4982e9267fab6b24519
+2.6.15.4 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 58d659ef350b6fa9d4a27a289c7f03fa 14c601838dafa97dc9c1944da2741ef4 cee7c554cec949926cf524ee1def88c9
+2.6.15.5 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 104e212d4ffe20efacb44a2db0656aa1 fdebb0ac2d785c0ebf3e5e4989def0a7 1b9d99238a2f8516101462b37f4679c3
+2.6.15.6 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 15036fa9686a0485f84c6aa682c8af34 171da1d500ab72ba47bb830ebd129e98 2ea7c865d6c09a02cbe6ce5fddcd02ca
+2.6.15.7 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9e372e909c237e537321ca313965811c f788ca2f533b6df65383d9ccaefca225 44659dc87414321340f846e9d26d4047
+2.6.16 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e53c27720acee3b64fc10c0ad8d377a3 50695965725367f39007023feac5e256 9a91b2719949ff0856b40bc467fd47be
+2.6.16.1 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3cd78c8412841b6b1ccf246e7bc9f933 51f7ce9d2206c9483cecc1ddfe020e8e 52439ea54fe67b6a0554c01129445118
+2.6.16.2 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 09fb4fce784e09d4575aeb701a5f81a2 ed5211dbddc3d2ec3fe7ceba93b8f3c0 d4105a5ba1d9f82acee2c525c65ef969
+2.6.16.3 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 61292bd2afcdd695aa72f9007681de61 11fae8344ed75b915347f44363ff4148 e8e3f458c72671d8ac041c10b49e2b3f
+2.6.16.4 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8ee3f50d21ccace595dffe58513f68e8 7fbda643e9b81dd5663f3c780d873aac cb675279c9711237a06ebb8379a4da27
+2.6.16.5 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 918b457de742485c5f508314fde78a24 9bc201e9e0153365f5f63d0b94a921ed 45ef23c209bed21ff3d44eb8bb48232f
+2.6.16.6 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 0737c9c3d87d07e8837b77f091edc502 1a0d4faaa51e5eabeebff3ddda3d1837 12a7d9de853f8c8f43b790bf4820b195
+2.6.16.7 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f4be3eb6fffb1168af41c78ff2f99071 f523449a045710dd1e4da04895a8f000 9682b2bd6e02f3087982d7c3f5ba824e
+2.6.16.8 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 92806f840fddc9ab5768d595d3e352fe 26a90f42900e8aed368f155367128c7b 62023a6c29efe6a3cfa670bb8dbab72c
+2.6.16.9 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f3587bea8e2da0a6b67653c980683d7a 53207b81f5fceccc3ee2b4dcd663be94 d1b670c17c1dd49ddc614e480df0ec73
+2.6.16.10 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4ddbc90592f131b17b237e8887fe65fb 2d6d2d5c43fa2c364fffba06205eed9a fa033b62ca83b51ce016adab195aabe6
+2.6.16.11 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 98dfc9b771c9db10909484a781d40e8b 4e1454a3ee75e6112d74ba9faa91986c 0854d832be6227fd757f75ae018ba8c7
+2.6.16.12 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d4a430a76d9c8102ebc79c60e062a253 582a768169afb9a45f29895d86bd439e 93bfa0f0454c368be5fbb6ed71ce5c55
+2.6.16.13 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f2abe5ce6691b781af3be894b985732e 54d5ccce923bf67bf76a1bbd72a409f4 3101894807968d4651b54d9f61d9e5a4
+2.6.16.14 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4db2da1881b5b23cd8edb395defa27c2 f454df464fd8f0c4a71b50ef55921679 4b92c1dceb115e01116bdfd11e027254
+2.6.16.15 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 893b765dc02209a77e064d963a236c72 c7be68856faee83084ec9ff730f021fa 472e74ad57f31eca68044a1bb74e0496
+2.6.16.16 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9d73f2a7c86ec3d5b2443f8842569415 6b17c4b73e32a60092e87cf223b0fe0c dfb066db24a8a9b36358fb290cb06959
+2.6.16.17 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 653d42331c3c242c06899cc699578115 730a6267bed2845a4ca41008d4ad4f28 91a30e391b6dd1dcf71be43fd4271d36
+2.6.16.18 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9941a35299816326a2e56d3167a43f0a 1e9cc3c5b419fdbd92385fca1031ffac 5cb158630f9615983ab32cea9ace3025
+2.6.16.19 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fd2b44e8877ca4adb776175fed981e00 318b60c5851f4d5a0a2911f4796bd96c b1e3c65992b0049fdbee825eb2a856af
+2.6.16.20 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 0ea4c0c8ace3da39c28a2125b99ce4ee 46f4386dc5b0cf5fdbd3344ff745e351 382aa4178ff79d58925622a8a97561eb
+2.6.16.21 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c34aea20cd263b50537c902ec8fcf3c4 04518cd185013e3f2616d4785f1d691f 74a0ec53b3cca229e85985f61d1ee894
+2.6.16.22 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fbb6fa23634c3ecbd53f0905a5d6ced0 a0252f453e0b94e6dd4ade36f8e957eb 5897fe9162a191006be821d570f55ff1
+2.6.16.23 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 17235eb4b092924ae1e4e411e24e30c9 aae2e26b7737a641a5e39790de423601 e17dc74792838545679c159fce8fa2b0
+2.6.16.24 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2ddc69d687e87ce1f3fff59bf6487443 3e5f3bac6a02920c96cc13705135f176 a80eb039c9f75cd13c0654defaa94380
+2.6.16.25 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx acf15c7189bf83089b778e8bcaa53371 7d5d484397392a413c9e0cfa373fd90a e6e16cad21f1226dd7a31947c7c5c4db
+2.6.16.26 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 061f38240cb4465a33c08ec678e6e1d0 30e64749aa292414a30e281276763a4c e50cea2dbc4f427b4b555b8e0f77337d
+2.6.16.27 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx eae7fa6cebd25129aeb036ae53606931 38e0b035137d7a50f672005c7b445e71 ebedfe5376efec483ce12c1629c7a5b1
+2.6.16.28 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1637cf0ea3820166e4ccfd8576679ac4 06cfc319751d5d4c5efd7cc58d08e877 fecb2984385eb0eaed64a40aa9b9eba0
+2.6.16.29 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4424d11ae548cffb550119d4c40543b1 589ed3abde57af7ba0761b74c0e2068c a114d4853317b784ee6e88f35d5fc1aa
+2.6.16.30 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e54ee761cdc9df4447510141d03fb78d 48fc20d86fad36fc8ecea7827c8f8308 4cdd9099ec73b09706eb136ee836f92f
+2.6.16.31 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 51452567b0bdffb973b3a25599ad870a b060b31b1553bd0f4899f919bc75c101 21c88c969d482140d929ba373cfc8a30
+2.6.16.32 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 98093b4b3f6e57c8b227c733b98a9ad6 dd5f65278012c6e0b335ca3892a30997 47e0db0a20cba50751d6865ab6319a8f
+2.6.16.33 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 38ba91f191eefcf2a6d038cd374812e7 47f50c1cf16a7aeb977f9cfffff9eee1 22f56e3a5e7524b2bbde2696152b5ad7
+2.6.16.34 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a0ae34be62515f1257e32e7008a88871 a22c4301e6d1796b8454509e31525ee9 fc5c4ed88ce5c036a29d3c5a4c4b905b
+2.6.16.35 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f50ae18066b2684f6ea11f970039ec6a 2600c6130008afcae818ab9e095207e7 87e383c1446a7e4cb4c919145eb918ce
+2.6.16.36 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f3692397cd3586e56f9f5151b33b8620 7abac83f300c493b9513bb7dfc00b040 a7337e8c1dab21b2bcda717978ac6533
+2.6.16.37 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 64c43e3cbf9d31e8d7ad272db1463a1f a57838e4ecd6ecb7e64fdec18829e17d 0bfeb891c927cb8204ff9f40ad305655
+2.6.16.38 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fdb2ab6866ebd6dff042c1d9aa01751d ca100ed2fe6199f274656702ecc03dbf 4ce97d0f4728d9864c91807f47128deb
+2.6.16.39 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ee3e5b3193a69fffd8347bdf413c5cf6 d552b34038a680a6bd90e0b79ad433ca 8d9ed441f9d349e8257b873539d934df
+2.6.16.40 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e77c3d4f66df6458217e4dc47b4d2313 dedfe569626664f99e97ff7de5098fb9 6814a055e67b4f7d55e179edb04e6b9f
+2.6.16.41 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4d6f616d41d2fc0c1715b21e2b84d1be 2ae13e241821514e460a2b643f75b499 ee399493ff2ac5664618ea707fa4422e
+2.6.16.42 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 55eaa70ab3b5b2cccb968b15e69e9d52 4e0c9eaebd041f43924d8c4a6b3df43c 87e998bb87839b962702815dd5aecc73
+2.6.16.43 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3769304f6058796a56e20ab8407e6846 a18293482bbe59f89a68b0b52ca03ef9 f818e246ae2901fdfa3e5356c426302b
+2.6.16.44 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f1082d194bebec928837f9aff1451e0b c7f4a9003163009ad288b9b0fc752db0 3d4cac27e003dda881e4c891f38b4e20
+2.6.16.45 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e09dcf0597149a4a191e3e5f5fac8d62 03fdf51f5f9e79e2b03630e5160fc254 99a372cdbaa6707703f12ed7b6affe21
+2.6.16.46 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9be83fb732d626e93662e12d1383e01f a1f61fc4989b979460922d06893aba2e 182cd44cc304fea4cd284e75ff4ca4ec
+2.6.16.47 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 32d09b699c7b370a2528122dc25feefc 1cae98732d1337c72f5c9f6f94fc1820 7230c4411375f88d9119e81d6043c22b
+2.6.16.48 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f661ed4d436ae4814c36e86672b487c3 ad574b297d493ff29eb28959b50ab250 21cf770dca6c233659711011a129de79
+2.6.16.49 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx dfee9ff61e6900db6d3c0bda83251420 a0ba0081813721163143bd6f751664f6 0fe3ec42bfb3a69c9489137a482df63d
+2.6.16.50 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 219c23a215e72060cc1ecc2ae3d5e6bd 29d67ef797918d787c99cfb86cabbbe5 cc2106c6188675187d636aa518b04958
+2.6.16.51 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ca1cb3f3318444aaf0a2fb8750d4ce67 49dc39e7e13718c9da014c12b0f4c86a 5051dc22b93880d939fd03c1ca9f7272
+2.6.16.52 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1d81e44a2f617025755b1612fa590df5 ab4c67469172858a7ffbdcd7dd52b77e 7f1ceb334f612f1280ee9a0d57faac64
+2.6.16.53 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 73411eea5a3ee1413e1d9536179ae0e0 f3eb93808b76a527ac8c3527d868a9b5 5c6e965d9121ba0d3f3c747e519de402
+2.6.16.54 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 13a499be8c6696118435e07873bd7d1f c017c3d7b22c062b8be5937a50180933 6d63369a98736bbdf0ee52f3117ae9e0
+2.6.16.55 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 08f48e58130e2893f236d7fbf613c2e2 48184b5ad63a9d9ceef80dea1c88db9f 9885a7f67480b5a75ed80c06b1906874
+2.6.16.56 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 33645decda14080d81a9f7102a3a9c98 7eda8b474155c8e68f441c4348d0d57d 2733ea1e0f924402da4f6903cc38bae9
+2.6.16.57 022 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e282c0992feab273bcb2519e7eb2a117 db92df5e0b54431ab88555bd7a4326ca d6f37a2967be44ab2696eef3132d4b0a
+2.6.16.58 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 5d3376fb90484d6ca7986462a6089195 bc6cc7d08b521ca4da71f06b5ec74073 91ce734d2f6d3d402d2d306397982101
+2.6.16.59 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b5717d5c10760b1da2acef53e7748be3 d3f4995f26b06030ce4a0362d0eaf645 9fa89a490d8c207c26e44187071b5144
+2.6.16.60 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 92426ba59ff88c2e0ce7746cff8a8399 6a94e7a89b622cadb4c1fe6fc86fafa5 551970a317e9573f9ab2a9bde647d00c
+2.6.16.61 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f1cf5204b63d1f6182e5988215dd6286 ffec9c0df8273547d1209183fdc64a81 c5a87bc9804f8e2edd5ee24e1084d59c
+2.6.16.62 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ecca3790043699f681a708e475c2c3ef a90828ab516f8f1ef1b9afede76baa4a ab4c42da260c9023db3ef32b659296d8
+2.6.17 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e9bc6b98374a3a05d6ed81f3a9cfd72e 3ee4dae7b648e9c290f16fcfb368dbb0 37ddefe96625502161f075b9d907f21e
+2.6.17.1 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 533ba20ac908e0238399da293f48dd54 28e927078c6c7e7437bf7e02bf7586bb 0a8f1a66646bc6ac7b3ec3e8f51652a0
+2.6.17.2 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 14a2ef0b72f9e45d868542e5eab58e8e 96c979b9c353032072c3d612f3a6e533 ceaf900cac37616f21135a255e753a19
+2.6.17.3 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 082c624894951abd65fdeeced087d962 086e35843037da099900e5e5575d0aaa 14bcbbbb4206ff8ec863f9f3aa21293d
+2.6.17.4 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 50b80dde882295df16f7471fff48380b d0d78b8b9e9e1a7f250ba1fc39a3959d d33826d07134d33e526f3e828af24287
+2.6.17.5 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8c15c132ae154db002a63e71c3e6bd56 664fb2aa1bdcf22ea436ea6558277b9a 7db2d258700c135bf490c4ea63edafe3
+2.6.17.6 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx aaf65bd8d23aabdf75ddd406a9646bc6 f0220345b7b0426d2f088c2f2cd294c1 5013fbe6049e32675187c203aef92218
+2.6.17.7 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ecda5cbbe914f94d2bed8848ae9a4968 5a06690dd5663eae2907b61590c5c703 cca7d49341ef1aa51135bee56c8cf3e2
+2.6.17.8 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 27e3048e504c7f76f221542b7aa90e71 6d4a92263e2a7c981229bb9b79c35215 eeb862ed0ad868ac458492cbc60b8112
+2.6.17.9 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4fa552b025c43675d7f78cd377281daa f0709af5163d1862fdd9c2e0a806bc81 f7a5b1aedb5b44f4df005caa5f4cceb6
+2.6.17.10 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d2ded9e14f0de702b5af8a3a7ae7106c 7b283d099d5149d81a32040c91eae6d7 cb803b920433a680c4cdafcb3b0f18d5
+2.6.17.11 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 28425b5d774d23a213858763dce32b0c 691637e82c46321322c9d0e9683afb6d 2958a620129c442a8ba3a665ea34ca8b
+2.6.17.12 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 23c1449971ba8dcbcac6e6756609de11 33755004fb8ff86a5780b12ba731e032 527fb3a259a7ec9cc2107b8cbcb7150e
+2.6.17.13 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6fd82a0680b10b55d29cb3430c3b3b91 3a82892b0aed02d60bbd43bbc25c345f 834885b3ad9988b966570bee92459572
+2.6.17.14 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 242b1f18c6f0f569515da596e5b95de1 55473011ddeba627623a2e79eae51478 e721b38e8827f74ca517f5ad617c1db7
+2.6.18 022 git git fa24e3245d8cb475ebffba763912063c ad43dd75219d9e6a8a9460bbf5f65b3e bc483723670bda09198d72293e712d42 296a6d150d260144639c3664d127d174
+2.6.18.1 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 387e945caaf4ffc07f53259f7dc11d72 c06781ec858300b6075a98a6dd075296 38f00633b02f07819d17bcd87d03eb3a
+2.6.18.2 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a5d03c75d8abae325a709fd17f670a98 33deb7218df7d4407b562a2a08ba56ae a93293f01307c47589ebdcafea311c66
+2.6.18.3 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 301f0e1f08d1f055230f5fefd183d84c 6357a0844ac055f63c52f6b726d6d13c fb10bd4918f22f349131af0b5121b70e
+2.6.18.4 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx aad664fe67f3bc95be6335bf7209380a e2c672cf071c75c8bebd5f599e6a07fb 05fcab267befd41e7e48ec2fc6dd4a68
+2.6.18.5 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8bb3b1c18f7a4da706fb59b550d99df9 a03655c1bb317c54b448ece6cecc67b2 df0dda87ec37de5505aacf6163db79a9
+2.6.18.6 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fdd56a2874cf75a87061a7835e3657f3 76d0c0656a470498d58a4b1fe228b9c8 80812ae14dca35b3630883a96531674e
+2.6.18.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 369610db40fc895b615b3995709051fc 1ed8fd27be96085e1b0047d3773fdd9a 1fb48ad0fc6159491e5ce70a11d83400
+2.6.18.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 519f4e1301abd30ff02e1e4c46cf5cc4 8f0e54c3afec1421e743a35f5a07addd dce47badc1faf34b355a10b97ae5d391
+2.6.19 022 git git 2630dcec21807a23b8f3c1d3463a9537 be8a46187734cdb911bb4aa37f864f5a 267a9479c6c6a79a0b2f511ddcc17147 443c265b57e87eadc0c677c3acc37e20
+2.6.19.1 000 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx bfffe69dabc04e2d6a7424be578cb5e4 636e33097b22f6d57de5c7e0a8394d12 2ab08fdfddc00e09b3d5bc7397d3c8be
+2.6.19.2 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c0e23fc100d216497e274e0623640495 ca51612e0055bece7e1b016dede1cfba ca0ce8f288e8ae93ac243b568f906bf8
+2.6.19.3 022 git git xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fe29f6e16d8708b2cba2f0e457cef093 1e0532b214dfbd841d66ecb57b17c281 2439f1889712eaa8a0755942ee869fd5
+2.6.19.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2fea910d90d6f8be6b1d43378f6edf64 33290887f0854cedf180e8ff07afe133 21fc8bcddf29f4bd3d010859ea0e4fd8
+2.6.19.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d09e08774b337128e440e05ceeceae1c 3f436ebe67bc5ce9f5f8f2aaaf43697d 18d23da151acfc834c9a562d3be4024f
+2.6.19.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx eb845873b0f7ed3c3517daeb5967e19d 91bb72c73ee1f004511e06e9d2181139 fa3eecd3f7843bf671b446d7553bd880
+2.6.19.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b7ce869b1fb9a60322b164a03c8cf388 453585d5cee3b534887ed6c1e5fe9590 1cffcf2f40370acb6d0abe90a891a17c
+2.6.20 022 root root 1c3a2b5f69f773e1ce3f02b0f3abddfa 1c3a2b5f69f773e1ce3f02b0f3abddfa 38b0d6ac20164a53cdab54f0039aeaf7 34b0f354819217e6a345f48ebbd8f13e GOOD
+2.6.20.1 002 root root c550ea5cee783951006450caa3dd3f95 c550ea5cee783951006450caa3dd3f95 8de9e67a66fd6e32623be16bff67866f 3288ad6c10ba89e85041a8416bd9644d GOOD
+2.6.20.2 002 root root 61056db1f9194d0a153ece9572200b4a 61056db1f9194d0a153ece9572200b4a 24a8bfbc022ebf729a6fde2d399bbbc4 bc33bd163130df9c59b165a1d31ccfdc GOOD
+2.6.20.3 002 root root 32820a679e81cdeb454f54d0994cf968 32820a679e81cdeb454f54d0994cf968 ed5a2b5870e5259535c46fe2b51a59d2 50541e43ec8b9861e63d2351e5355703 GOOD
+2.6.20.4 002 root root dda6d62ecfcfd5d0f2d7ae9bd1107b6b dda6d62ecfcfd5d0f2d7ae9bd1107b6b 50588c7d6273ad481fdd26fa9ce25f9d ad6df0431ce9eb91dd558538e71239de GOOD
+2.6.20.5 002 root root c39381da208d5c15a2710673df5654fc c39381da208d5c15a2710673df5654fc ff77928d030af8200ad48d90e249b8cc c692bf208707fcc71943a66867d1edd3 GOOD
+2.6.20.6 022 git git 4300abbeb91cc50b48c086c2c329eab8 a4acbfe6fc54823d96dc257a2595257f fdd2e0336ec063cb8f6a4f36b0a3d257 dc2f9b8c76d75802d39ad2a99de587d9
+2.6.20.7 002 root root 4352dedea3918d2c7d3a059bb00aa580 4352dedea3918d2c7d3a059bb00aa580 429632d5efc6c90759c301652cddcc58 ee568778eb50a5bccad8915ce0a72e7d GOOD
+2.6.20.8 002 root root b26f5458b175e3b935586c433aa82c8d b26f5458b175e3b935586c433aa82c8d 04ecc74a2ed79afd267c9c07755ba74a ea3c71b36fe1c835ffd817197199b8c1 GOOD
+2.6.20.9 002 root root 12bf096a9ec27317a7fd0bf5241aa86d 12bf096a9ec27317a7fd0bf5241aa86d 125778f04354ac2e745499b58cf7d6ba 49ca303ce62534165161b0e7d33aee2d GOOD
+2.6.20.10 002 root root 3865227516b1ed115dcf52eda4ff1ad8 3865227516b1ed115dcf52eda4ff1ad8 689ce2cb0737cd95826fc7126c70626a 3ff197ae590d089646e9e68de3456ec1 GOOD
+2.6.20.11 002 root root 235e4c9dda5c423ac3ccd3aee7587553 235e4c9dda5c423ac3ccd3aee7587553 0f6a91c70002e2cfd0c0a6ce17444d8b 471c06e8a9c11e556e7e38e49c6f2f52 GOOD
+2.6.20.12 002 root root 8d9cc27403c29355549998b7966d6350 8d9cc27403c29355549998b7966d6350 02713c1f806436dba157c15e8b8802e2 1c4e5df053bdf4d1dd46064770129382 GOOD
+2.6.20.13 002 root root 7331349a0e0fe5dbd230fb10900846f4 7331349a0e0fe5dbd230fb10900846f4 5d79938dd836d09ad3a5d158e374cf8a cb417e7ac0ef4e257b93159028823136 GOOD
+2.6.20.14 002 root root 8e7be87759f3ead0852137e366c34a90 8e7be87759f3ead0852137e366c34a90 291ef875f6787af051ee943134443cb2 63deab5998064e93196c0b75e77060f0 GOOD
+2.6.20.15 002 root root 7bad3d284c2cbbaed0d2338f81e76859 7bad3d284c2cbbaed0d2338f81e76859 e3ce8fc41c019a0baa05e0b8318745dd 550c9bc15b9c9bdc2a481b08f5459261 GOOD
+2.6.20.16 002 root root 25a1013fabd489d302f71bf3cb1837b3 25a1013fabd489d302f71bf3cb1837b3 e9c78f6182b83f68b0f654ed6837ce5d 9f449e8876c948a18e9d45a48e17f408 GOOD
+2.6.20.17 002 root root 5259b132a710eacc1e7489129f3b9e0f 5259b132a710eacc1e7489129f3b9e0f de390b611f39658ab89c8b519b0daf97 2d3eb0cd555637f2b2aef51dacce23ab GOOD
+2.6.20.18 002 root root 4af3439c081f86b68a30d0bd447179c3 4af3439c081f86b68a30d0bd447179c3 e7189e95ef81cae9eb8b65d4aa828e98 af1334593180ea6540bf256d1ce596ba GOOD
+2.6.20.19 002 root root 8bee08600da3f46bce0d2f15b1e3b68e 8bee08600da3f46bce0d2f15b1e3b68e facb801a1653ec6a8b856032d1f03a1a a00d77305866b6b767291383d4b28132 GOOD
+2.6.20.20 002 root root eb1b62690aa859f6d1deb70695e253a0 eb1b62690aa859f6d1deb70695e253a0 d9c84f85036c1d8745661485d484d61f b2562ee2480ab3618a9cc56f796825ac GOOD
+2.6.20.21 002 root root f85b1a1337f825832d1b39d1c62f457f f85b1a1337f825832d1b39d1c62f457f ecb03f520bb06be2d01b2e6258e2d346 fbedc192e654735936cc780da8deeba4 GOOD
+2.6.21 022 root root 7965f0be6b6c1a4ff4e34336ba25d975 7965f0be6b6c1a4ff4e34336ba25d975 76eb5308dfc7d9ab70534378af379c09 1b515f588078dfa7f4bab2634bd17e80 GOOD
+2.6.21.1 002 root root c081d29d0c6ff1b61fd962b8259ecbc6 c081d29d0c6ff1b61fd962b8259ecbc6 c1e64db8f384a00c19e9a23d0401cadc a28b78793cd368592f7873bf36cb38b0 GOOD
+2.6.21.2 002 root root 78d892b513b1b323ad12e3d3c69f6dbb 78d892b513b1b323ad12e3d3c69f6dbb 862039fcc0a679bd7e387cccda47e5d9 95dfe921a0749a613e2e1aa1d389577d GOOD
+2.6.21.3 002 root root 26b27b1aacaac870c94c3ce14155489c 26b27b1aacaac870c94c3ce14155489c c7815d473e630780ab10c582c7809c0e dd25a51e9efbc13111abe45912895080 GOOD
+2.6.21.4 002 root root 562dbfe628d7f4ec5be02f2eee444209 562dbfe628d7f4ec5be02f2eee444209 82cca4d22dd920c2f22159e5c3d7f4e6 c50995d713ba2d73f148e10073342568 GOOD
+2.6.21.5 002 root root 4c778ee298cba1ba82d8f8ec00959f3d 4c778ee298cba1ba82d8f8ec00959f3d 227d5508dc23bc487d0a5248e690fbb1 2e9a302b5d514b231640227d6a2ab7bf GOOD
+2.6.21.6 002 root root 3fc9cbc5f1eabdb79f0f819785aa79ee 3fc9cbc5f1eabdb79f0f819785aa79ee 51cc7a0f3fdda8aa1c510791c5bc152e 8f27a934b47b199bd0a1abe57a5005f2 GOOD
+2.6.21.7 002 root root d4efe4b192ca2be608b75a881ebca902 d4efe4b192ca2be608b75a881ebca902 66344cad74e92c6226bea32215816ab4 bc15fad1487336d5dcb0945cd039d8ed GOOD
+2.6.22 022 root root 2edfd190ac09c0e5b998ab8514488cfa 2edfd190ac09c0e5b998ab8514488cfa c98e1329975a8a7931ae63bafe39b63a 2e230d005c002fb3d38a3ca07c0200d0 GOOD
+2.6.22.1 002 root root 93e4955063c604799affa171cb6370d4 93e4955063c604799affa171cb6370d4 1ed7fa45fd8ac8faf19f5f48dbe54e9c 50249e822a2a112d9221129a4a3af374 GOOD
+2.6.22.2 002 root root 5af3437e6ff97f9920d227681f1c7b5e 5af3437e6ff97f9920d227681f1c7b5e 296d36f688f82dff934a98e05e1dc5fe 3dd27284fea13e46fc2e110e3cd8a72c GOOD
+2.6.22.3 002 root root 65e5a5d73e732ef3657554b2eeeb3547 65e5a5d73e732ef3657554b2eeeb3547 54dc78c7d23e3e2272ec15b8caa3307f 13dd3e1fff368190a4d4be8838016880 GOOD
+2.6.22.4 002 root root d2294a1e23ef416c0b03cfb84acccd3f d2294a1e23ef416c0b03cfb84acccd3f 1b57bf74df8ee5b2078a33c41fe578f5 6cf83acf21e65dcea4a5170c0bbc7125 GOOD
+2.6.22.5 002 root root 34bfb927e95b7645ecace1becf492b09 34bfb927e95b7645ecace1becf492b09 5077c04dfe5aa3c55e5b77e13a0b2e23 f36616d74f2fde72040bccf50db03522 GOOD
+2.6.22.6 002 root root a610d656962ebfbd46efd96ce0a96c66 a610d656962ebfbd46efd96ce0a96c66 155cf629abc4215744c711f0773fefba 20af4d1e05bd725e89b691da483276e9 GOOD
+2.6.22.7 002 root root d89f77ec176b0eab0be04ecdd06c1a2f d89f77ec176b0eab0be04ecdd06c1a2f ff8d5fa0f97e5f39e3ad3f95b3b18365 dfdb55347ba98f4131c3458d26d4e5fc GOOD
+2.6.22.8 002 root root 3b49a858cd506f320fa24adcec47c8ab 3b49a858cd506f320fa24adcec47c8ab 0fbfc23579850a8869fd2d98671bf5d3 ecff2126dc440913303886978fb0cae7 GOOD
+2.6.22.9 002 root root db2827199bfa42595a25bdad5e6fe500 db2827199bfa42595a25bdad5e6fe500 c23aef37928a4167ccc0cdf4ffb2d6b7 ed31585b9f5da6edfc6f54c74e736775 GOOD
+2.6.22.10 002 root root 2dc8fd7f16668e1997a74a1e731febe6 2dc8fd7f16668e1997a74a1e731febe6 c4f54241f11bb4b9067ca78036dcaae5 de5c6142413a49ca96832841b1aca8e3 GOOD
+2.6.22.11 002 root root 57eb4df5f3863be6c6be405eb8a97c1a 57eb4df5f3863be6c6be405eb8a97c1a bb72d4eb74bbb1b77f121e43cf9a2c50 497ab35cf8ab65bf7c4287ba7bea3128 GOOD
+2.6.22.12 002 root root 055c7b258abb9489dbced86537c7dc4e 055c7b258abb9489dbced86537c7dc4e 6fb1dc14cf4e432fc8ab208bb532cee4 dee9596ce5d0ae168470a8cfbd99f866 GOOD
+2.6.22.13 002 root root c1f411391548652149ea78afd7ffd026 c1f411391548652149ea78afd7ffd026 eb1d0f88827dd076df6ed2c8c3dbe670 bf3d29dec769b33477077a92d50d102b GOOD
+2.6.22.14 002 root root ee15acfef4c0e9b787816546129c34a8 ee15acfef4c0e9b787816546129c34a8 cb29d02fdde2d7c3fe1337d94d629753 e6a50c93b5a5803e9e09d58b903c79a3 GOOD
+2.6.22.15 002 root root 159067c422109e1b56e43fdf34e049f7 159067c422109e1b56e43fdf34e049f7 d66f9c0b68ec9e8001dd98d262dc7c15 e4303364ceb434bcc3f46ca9e4fca67e GOOD
+2.6.22.16 002 root root cf84f4aca3f11062968b5ce2351560c3 cf84f4aca3f11062968b5ce2351560c3 006ce66ee6763320f1309f29bfb1cae2 e2600b6f28723cbb610279a1fa668cd8 GOOD
+2.6.22.17 002 root root 18a6b5c1759d2ed3d2552767d76329a0 18a6b5c1759d2ed3d2552767d76329a0 856368e29051f667b573b5377c410fa3 0ea4d8553511abc74647c63300dbd3fc GOOD
+2.6.22.18 002 root root b64d9b8f3c050692538ec941cc6ffd2c b64d9b8f3c050692538ec941cc6ffd2c 7ce91fc94a08dcca16997313f3af7ec4 bd375d5885bf114c74a2216d52d86e34 GOOD
+2.6.22.19 002 root root 5d5f55c4a794af96dfb7de2114755bba 5d5f55c4a794af96dfb7de2114755bba 99f756bbbc303b7e75eced5116b916bc 4db27facb78aeb79d06e6ae6bf0ac0b6 GOOD
+2.6.23 022 root root 853c87de6fe51e57a0b10eb4dbb12113 853c87de6fe51e57a0b10eb4dbb12113 46434575a50b8d93ec04fae80fc5e890 2cc2fd4d521dc5d7cfce0d8a9d1b3472 GOOD
+2.6.23.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e0fdc51eab8cd05095a79933b1f7dd67 13406ba7dfd3d9ffb6efdea03336d0c4 518d57e08fdacd88907166a3bfe383b7
+2.6.23.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7d8932c757e420c8d5e50f1be9c2411e c54bc9c3fe525ba3315db1cdf790ddbc bf75aecb76d2b8636055e05084516ac9
+2.6.23.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b36557355d75131f193df548978a1ee1 de3ad48cb264e06c7c2fe7b02cb83f7b 3f41b9714835b264e7d9483f2496feb8
+2.6.23.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c3c0824b2c0e1b468eb4866edddc09ff 79f1de0679903f433f2844538e3ccfbb 5781ee91884bfca0d59c9222c0a76f29
+2.6.23.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4630320a2c99bac78c2af3324ce33117 3d3de47b19f46dc01e1e449935edaf31 d5dee267a2b2237d1ce34d891759741e
+2.6.23.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a01191548f580df59157cf273dcbe607 90a759bc2f04b8e5e8e306784c113e78 dd63cfd40e18fbd8e520bc2d224acda5
+2.6.23.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 531e7bb89441309e2a79106bfc28dfbf 35d83826fcf45820ffa678f2eda3cac9 0fcfa54e8cbbde5c08fe62f8c2952392
+2.6.23.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7ad20e137963543c46f4402c79accb1b 7b591da5db63cf9910c0eea6a79cbd3a 2a8895d7e91f4ab7b3c582d8840fe685
+2.6.23.9 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 07c1c75a34bf2cb2517dce78491c2236 dd6d45e2b8d965cd013647ebf3b97f6d fc341e4f23bcd4056bdb0c9edc24ea3d
+2.6.23.10 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ac0da020542a014f8339bd85f520db65 6ec1ee797f5b6bb5f7cddae932df372f 845138753b0346438a2a2089d8567335
+2.6.23.11 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d1807eb886104772ec5721b401d04171 b33625c16a5fe6f29273b4a3fefb0e17 b9e18a02297ee556cac26d65f25e0ccf
+2.6.23.12 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e509962afd2040b4a9dcb88e8dac2d93 527918effc9b8a40b5b15219091d3330 815b2f90b3a61919014cbc6d011fa9c6
+2.6.23.13 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f70e0e9215c751238945e0d65f0bedc6 536b1e209bfe0211928df53e92b577e6 cdf1ebc7ecb40729181fb09ebc3e17c8
+2.6.23.14 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 81d2f44218efa76b849f8d874109395d 763b59f98bf021f2766de996f819d5f2 63a6a28ad2480edcffbc09c008b0939d
+2.6.23.15 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 17b289e417f49cfcb9212d0e8f00ce0b eb0fec1f46afebb2454d2dcf222aa0bf 899067480ab281aa95c8fbb892c769f8
+2.6.23.16 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 14d58be1fdcccb7456eecb887be9e0f8 d87f8215080c53d5403eb26dc99d3242 2637a7f1d4450bc5e27422f307fc6529
+2.6.23.17 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 09c584d8c89f07468703b6a7eeefe147 f36af6492489b0ca8b7ba13ded8872a6 a0300a393ac91ce9c64bf31522b45e2e
+2.6.24 022 root root 19aee46bdd4577a4ba14ba51284cf791 19aee46bdd4577a4ba14ba51284cf791 f09806748f6809d5f7d2a1859240e1a5 3f23ad4b69d0a552042d1ed0f4399857 GOOD
+2.6.24.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fd5d1ca4b097581b7ee67a98212d210e 83e184f27ae53ea14e841af0344e6d85 c726942cd8d1f3205767ae45f4c9fbac
+2.6.24.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx cef2840c958447ef2e00dbdcb638ba17 e4aad2f8c445505cbbfa92864f5941ab dd573a2fae55624ed92fa49c17583964
+2.6.24.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 75cd7750aad7787a1c646988b717da74 facf544191ca836a309ee960eda3a80d bb3f3af4d8feb3b81a2f14aa90186316
+2.6.24.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fc2c8bc930292b6d3ba164374bf65c98 71093ee1daa3e0843b48492d54113f33 91d3ae8d362c8da73a0aa17d5452207d
+2.6.24.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c434ef910d81ab954e212f82d89ede63 21360e644d0feeb259793f86b7295f0b 26500f8f92895bd33e391088b5edd4ad
+2.6.24.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3abb0224ab760b595b86822d0436c237 eedd24c3642f0788a742e1b996119fda 95415b8e7410499303ffb2c4464604b9
+2.6.24.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6305363b40d4e2d44c468133c8290f99 30f254a65227fe388aff8abfe8456a1b 40a73780d51525d28d36dec852c680c4
+2.6.25 022 root root 2b8b848fcae4e1d4fb56c897e3a40c21 2b8b848fcae4e1d4fb56c897e3a40c21 49365ebfea0d5d216f4da597c3e28f9f db95a49a656a3247d4995a797d333153 GOOD
+2.6.25.1 002 root root ca288f8d0a47a31a2007da996212dace ca288f8d0a47a31a2007da996212dace c83890a56cac5e49ad2acba50f3c737f 0d26fcafa00dc5cf27d4bf01301409a0 GOOD
+2.6.25.2 002 root root 5199cfe55c13162661ec4035272e072d 5199cfe55c13162661ec4035272e072d 23148e8640d9dc48bbead012eff4244b 007f941d11744f20b8849111536b19ed GOOD
+2.6.25.3 002 root root 5857b5bb21fe8d41460e89b87b9f5362 5857b5bb21fe8d41460e89b87b9f5362 049eeb232ff9a2e239f2029b91bf8476 39515484f39578a5565faceabc5e6c25 GOOD
+2.6.25.4 002 root root e64c0ae28293e0c578a029af170150d2 e64c0ae28293e0c578a029af170150d2 b7509c03baf2d842556765eb19982d6f c2ec5007ee62e1b1ab05a1ca9155ebd3 GOOD
+2.6.25.5 002 root root 828cad924870acb9643bf4bb0f72cc92 828cad924870acb9643bf4bb0f72cc92 dade9663f31ffe08c36271132835a004 ecbb7bb3e58e6d1fc86c6fb337a2dd95 GOOD
+2.6.25.6 002 root root 6e0ee8c95c9aa2b619dd9159c1eab57d 6e0ee8c95c9aa2b619dd9159c1eab57d 98500db8178718c51ed6b242d9b1ed6c 82f641f5774221bbc27dbd83a31c88f6 GOOD
+2.6.25.7 002 root root 9ccdda12b747a122a94ac30e735ba9f9 9ccdda12b747a122a94ac30e735ba9f9 9a716afe867443cf2ea20d425a79a7f6 783551769cd104de0eac19bd78dc5ad7 GOOD
+2.6.25.8 002 root root b1adac6690deea86340d5e18fd7bee7c b1adac6690deea86340d5e18fd7bee7c 3d9fd797d68e5786236a817200439833 de86aeb5da7c95350140cbd7248dcaa1 GOOD
+2.6.25.9 002 root root b737d23e536e7f9bd93a5888656c6a87 b737d23e536e7f9bd93a5888656c6a87 6efa1677d919a341d2fc6e65df306976 3043ac42f3829701079fc16df04c313d GOOD
+2.6.25.10 002 root root 29fbcbf3fa504b000e6b405c681e91eb 29fbcbf3fa504b000e6b405c681e91eb 0645ab9c54b04ff11d09a949432cabec a6b0aa5b1fa1ae5a02a7b67345f01e86 GOOD
+2.6.25.11 002 root root 225c43654b864c303822385572e8df9d 225c43654b864c303822385572e8df9d cfdb2fdee18d1801939e995da01df804 0cada52b3d40a0456252033e7dd33697 GOOD
+2.6.25.12 002 root root f5d46c6ae6d2a97f8d54610d8a71665b f5d46c6ae6d2a97f8d54610d8a71665b bd25fe05a9a67f0208a2bae486fa5cac 7c413ecf94a84776aaec6ada5694318c GOOD
+2.6.25.13 002 root root d2affb4524db60f4e0c8c79a01fc565b d2affb4524db60f4e0c8c79a01fc565b de9e88a477558d163b0d9f21ba709880 ba05f43172e3bc676f5fbc1a9a75e816 GOOD
+2.6.25.14 002 root root 39380a57e0d2826acc72e16e0d0bbe86 39380a57e0d2826acc72e16e0d0bbe86 2e64c858b2dd1fb276ee752040ed75e7 b258c1e812622c6ade276057fb885911 GOOD
+2.6.25.15 002 root root 32c56b46350368ca97f0afc4dc291e4d 32c56b46350368ca97f0afc4dc291e4d bb916acc0e753c9f70cf65355e234049 13ed94f02fc2a11615e3332e1cdf50e7 GOOD
+2.6.25.16 002 root root 9701b00fedc1d674db536adc5e5ddf11 9701b00fedc1d674db536adc5e5ddf11 ac004c3dff696d484c31b029d9793020 fdb0e08f0e5a2b4fe6dc711ca35f430e GOOD
+2.6.25.17 002 root root 47b63e5d2f59ea4f945fc954ef4aac29 47b63e5d2f59ea4f945fc954ef4aac29 1f9c9421eb0e7513df5c0bc9802800eb 30618bff93fd4fd048e20a9a6aab8e5d GOOD
+2.6.25.18 002 root root a26142b7c3b02860bc1bb2eddaf621e3 a26142b7c3b02860bc1bb2eddaf621e3 290621fad638dc3d9ba48fe6585eee27 f0e4680a17ba0071d1579b890e201951 GOOD
+2.6.25.19 002 root root 78273a08ffe44e3a85a0574e7d67f367 78273a08ffe44e3a85a0574e7d67f367 05b9140207be21a9b67ff669df1c42bc 1b20d2d2a5a0f119372a166eaf816e13 GOOD
+2.6.25.20 002 root root 6eea4d0acd22b88c124ce2dfe70a716a 6eea4d0acd22b88c124ce2dfe70a716a 696eefcb16debacfff616b999e7298da 0da698edccf03e2235abc2830a495114 GOOD
+2.6.26 022 root root 75aa7264f67777b0adf16bb38b2b90fa 75aa7264f67777b0adf16bb38b2b90fa 5d5fe5d6203faa60fa8fbf03e8af20b5 5169d01c405bc3f866c59338e217968c GOOD
+2.6.26.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3a62319934f36c477ea3d8bb053f6537 0061950ce2810d05a4d5417b782bc29d 74e664b7494f81568d655080e06af3bc
+2.6.26.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 78a4296cee5ef15932e893a314982c6f 0ed153e3ece78823ccc3976e7458d6ea 82472622bd26bed0054790ec3e60ee00
+2.6.26.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8d213371ed5147378f4c26923d8b6129 ed0d8efe5f6c5dad54f18b015734f767 90fe36b18dbac6e2f79374e2df60ac67
+2.6.26.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7bc3eb65a67450cbc1a0fc52543d2eb1 15aca687f44a14635d9d3f18156c4bc0 ef17ac2e070cc729d7509ff24da9d081
+2.6.26.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2c3d31c1e98b4a36ed84439a20837ec9 35806a7e00adf0121fca21a5c3c35143 98261b39a558cf0739703ffea7db9f43
+2.6.26.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 59aa2ef47641c64191af3c2405b70f4e 752fd397d8fa65fe26a73bf0dd250bca d93b5b547a6bf0aa850a4e3231ac6339
+2.6.26.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 90320b312a431786e0d2d64d09c0d5c9 79d2648d6e712495e8b3d9af42ca0a5d ada8af1e3ec15bd6e9bdbcadf23a9cc2
+2.6.26.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx bf0e9438e320f93d3ea687db9958a786 f6f632ab5de96f45f822b596a43e516a 05dd0d4f8f110b4219ae6ec7a36c046d
+2.6.27 022 root root f9fb49f756036a34d26eee85240ff8fb f9fb49f756036a34d26eee85240ff8fb 482b04f680ce6676114ccfaaf8f66a55 b3e78977aa79d3754cb7f8143d7ddabd GOOD
+2.6.27.1 002 root root b02d388a1b5179fd40139bdc6d5a2ccd b02d388a1b5179fd40139bdc6d5a2ccd 16f3702145fe1086379456c5450beeb8 76db536623e0ca28757c5464a9dc3fc2 GOOD
+2.6.27.2 002 root root 104577a9cb43ee17832e6079a05bb37d 104577a9cb43ee17832e6079a05bb37d 4e3e7fcb39f06672560da7ea364787cf 2b526f5d73e66c9b9e78cd519e62fd97 GOOD
+2.6.27.3 002 root root 88b3887f45666600820778d4d10d4d86 88b3887f45666600820778d4d10d4d86 45cd5c183f7e391ffc70ecffbac1c885 bbc6a0197c0aa9afd8d95b4eb03dcac2 GOOD
+2.6.27.4 002 root root dbb8b8b58962acf4945a5d73810330d6 dbb8b8b58962acf4945a5d73810330d6 d81f0b3248fedbd04d64b36bd29d3b50 3880fe9f19b9a7690afd151326eb7ce5 GOOD
+2.6.27.5 002 root root 99b5eb960d4709d8eab162696d7601dd 99b5eb960d4709d8eab162696d7601dd 1e08dcb0bdcafa156de5a4d4f32a43f7 99b687c0d2c64831cae00a046731ed94 GOOD
+2.6.27.6 002 root root 921927e2cce7f3e59c4f76d54c77ffcb 921927e2cce7f3e59c4f76d54c77ffcb abb0e4a7d19d65516fb3955fcafd4434 e0a2ccc01319efdfd5869345099f06f4 GOOD
+2.6.27.7 002 root root da79852b3b31b665ddac1eaff1712747 da79852b3b31b665ddac1eaff1712747 d5ec2c2c0ab942d4c8ba3befec5441a7 db323884c7dc46e4cd33d0d944fa59a9 GOOD
+2.6.27.8 002 root root 10b609f0af0a4fcf0ed18e2d076d8310 10b609f0af0a4fcf0ed18e2d076d8310 acbf27c894734fb7e8f106dd070afd88 cbdc1b350ef79dd323b9aeda5cf7f1b6 GOOD
+2.6.27.9 002 root root b62bfd7ba8a13833440abb458267c8cd b62bfd7ba8a13833440abb458267c8cd d85afbc652b42e433ba3193f0cccb46f 0ca39bec243b1d90f496da021b7487f1 GOOD
+2.6.27.10 002 root root 18abcd2d7d157c1cb02bc77f9c2834e7 18abcd2d7d157c1cb02bc77f9c2834e7 d4fe287fc90837eb49e525db7208d543 ef06a3ea963f556948e77971df912303 GOOD
+2.6.27.11 002 root root 38c7b9727f34961d25471cf3962079fd 38c7b9727f34961d25471cf3962079fd 1c1f634c5c391a344e1be0aed106f9e9 29bf3e01673b42f7bf993aa8295b8245 GOOD
+2.6.27.12 002 root root 54f8917ddd5b8c0b89e58aa348a725f0 54f8917ddd5b8c0b89e58aa348a725f0 3840920620f7db785494457b1ce5d6b6 3a81aa35effee2656cd0340f665d4f34 GOOD
+2.6.27.13 002 root root 18dfed96ccf2ca4874953d5a2618ab63 18dfed96ccf2ca4874953d5a2618ab63 587cd2abd05749c05ad56ac45cc4d119 e1035cd771ef2aed59396d8cab543a0c GOOD
+2.6.27.14 002 root root b8721dbdace184d588d68dc5639feb9c b8721dbdace184d588d68dc5639feb9c 0fe6d26c7cd2a8562b5e5c8b5554556e c5daccb7e206f7f0cff21f01ec1bea81 GOOD
+2.6.27.15 002 root root c7e39c082d49e20cf5da354e3e603214 c7e39c082d49e20cf5da354e3e603214 6f41b442780cb4a825fd57dd9358cbaf 0756284efb091dccd012eec61def2004 GOOD
+2.6.27.16 002 root root 81462897e5ddab2c09f79f9c58c6bacf 81462897e5ddab2c09f79f9c58c6bacf 3eb3b891fb008225ed4697fe16ebebf6 f6dbb2a25ba7af6f82639dc0a08376a6 GOOD
+2.6.27.17 002 root root 5a03443dcef39fc7b6afa3d7ab9e22b4 5a03443dcef39fc7b6afa3d7ab9e22b4 648643f873e6a8d197bdc1d7b2be07e1 56ceaa85d19f5f19ff7ec8139ad4ad2d GOOD
+2.6.27.18 002 root root 8e272f65bf0c7dc73c57d85dc6c75b9f 8e272f65bf0c7dc73c57d85dc6c75b9f 4f8983842de76f07174eda5e72d2ee30 f1c05e5771ae556a9d6224c2e76740e2 GOOD
+2.6.27.19 002 root root 61e60b5c2fe91f28da019a078be8d0a5 61e60b5c2fe91f28da019a078be8d0a5 3dea19468d572ab355fb48d4671769c5 182b23174febe7cc8106dd394f368dee GOOD
+2.6.27.20 002 root root 8324c79cc242afdfe86f1e5964e49d60 8324c79cc242afdfe86f1e5964e49d60 b5ae12dc14dbaebcf29d5e08e6739a5b 58bd12ef5348e5e44b7d7b678299ff9f GOOD
+2.6.27.21 002 root root 13a0e7ca645dcc462a2c0f4e265a6760 13a0e7ca645dcc462a2c0f4e265a6760 28a2d38a7f1a5adaeeecdd6551af276a 2912af7938fae1a3f2a9a6bcf8c0009f GOOD
+2.6.27.22 002 root root 7f76aff66928dab42db7fd9c963b0813 7f76aff66928dab42db7fd9c963b0813 14d7dcf5533b2186064227a5580cf9c5 7ae90c041e24941add42a5f6d89a6ab3 GOOD
+2.6.27.23 002 root root 399cf04ceb5f05eddea8a9782cc2ddab 399cf04ceb5f05eddea8a9782cc2ddab f4b09805a0ffaa9b006cedfb5cad85e7 42db72b93641da2fe9fb0eb2ae6388d6 GOOD
+2.6.27.24 002 root root 2cb77153d209a55367edc8398f4afa88 2cb77153d209a55367edc8398f4afa88 5e151df81e74fc992af3af3d43d43970 3e272117ceb50ad8ab3686ae00afa9d8 GOOD
+2.6.27.25 002 root root bb963116a132b885f4902ddc1e561920 bb963116a132b885f4902ddc1e561920 404c9a0a6c9a54223a9c2b1f66be0bae 5d6dcff157f30d742c9ee28ad4589779 GOOD
+2.6.27.26 002 root root 0bf3c35f3807bdd95a3e74d691392afd 0bf3c35f3807bdd95a3e74d691392afd 15823c3469931b24c5d6ab331ac10bb2 6c246d71fa4698fb0dee0ed092f0282b GOOD
+2.6.27.27 002 root root 3e4f73295dc177201ab546bcb360feae 3e4f73295dc177201ab546bcb360feae c70b796328e971e7b472320c1d66580c 69c2ec59da6fcc0d2dfb4c470a721957 GOOD
+2.6.27.28 002 root root e52c78805e8f44af814f9e76613e04b2 e52c78805e8f44af814f9e76613e04b2 003652f373b29da022a3f158c5b7273c f05cd17ba8ee19924c9c473219fbaa9b GOOD
+2.6.27.29 002 root root 5a7de732a819d219f51fe5b47f645555 5a7de732a819d219f51fe5b47f645555 514db1b159b00f4cd9fac94845780288 ab6991ee42603a4dbfba7956a54c89a4 GOOD
+2.6.27.30 002 root root a19b497d70fe55519e1fc158ce5afe0d a19b497d70fe55519e1fc158ce5afe0d f507ffe1095e18685567868814f0b400 f925e467e1a6168ac2a4a376d76571c3 GOOD
+2.6.27.31 002 root root f5bd4a54000bbc19b319cd1c084c0b1a f5bd4a54000bbc19b319cd1c084c0b1a b11e975ba28cd8004c2e8d0671f84043 b066c348e0fbfa700399d62d2fdfbf11 GOOD
+2.6.27.32 002 root root 7321d15dcab7a704bf4bb78a0bc0c599 7321d15dcab7a704bf4bb78a0bc0c599 09b997cdb0732fa875f666df18471586 c9fc4f6c9cbbb335c093971ffceed656 GOOD
+2.6.27.33 002 root root 55fcebf49f18a06e24468d5b4b70dfd9 55fcebf49f18a06e24468d5b4b70dfd9 87dfac18a465cad12476253f348b1024 c21c398f2f80c7856c1334e34ac438b5 GOOD
+2.6.27.34 002 root root 7d8eb3d81e947465a6c0deb52839b20b 7d8eb3d81e947465a6c0deb52839b20b e30a992713b46b49d2e5b7578370ce1f 4036300a95c62d6969de674901b26145 GOOD
+2.6.27.35 002 root root 1289c724be385e99e89593ea39835ad9 1289c724be385e99e89593ea39835ad9 7a8b6e8a26afc82f585c04ec8c0b8cb4 a4fa9eb5ee4876522e8015ca7da3ae40 GOOD
+2.6.27.36 002 root root ee2a5457dcb337956bc03059fc92c2a1 ee2a5457dcb337956bc03059fc92c2a1 743588b4b5ece590484fc094952a88dd 409e922c6e48c5b90df14634595dce52 GOOD
+2.6.27.37 002 root root e90869665b6e4860828c0f7097aaa513 e90869665b6e4860828c0f7097aaa513 8aadc962b0922dc02b4fafefc9320ccb c39b730be217a8cf1000501b5e4bdd16 GOOD
+2.6.27.38 002 root root 763dbfd6558ce5dee3ae8ce720b2645c 763dbfd6558ce5dee3ae8ce720b2645c eaa5ffb8b82b6c43b936f5eef325705b 347f2262d811c06063b469fced4562a2 GOOD
+2.6.27.39 002 root root dc579c8445954eb512977b28224dfef9 dc579c8445954eb512977b28224dfef9 48c2af9882f88f50ef64a21c34b62376 a1f935b170d9b63c0771a579b46c1123 GOOD
+2.6.27.40 002 root root a75c56fb79c601fa6a8ee753672895ef a75c56fb79c601fa6a8ee753672895ef f140e426f5ae345b5252748852ebfdef 0192177fd18fe98d3c98268ca286f8be GOOD
+2.6.27.41 002 root root 832c145c0ad862d038b41c6a09e19e6f 832c145c0ad862d038b41c6a09e19e6f 4fba3a8b572e6eb613d80760fada12fc fa7de0ac40f11864f5d13f54a18fe9ad GOOD
+2.6.27.42 002 root root 5df04b71553553d1e5833c65008425d5 5df04b71553553d1e5833c65008425d5 0babc187fe3f0420d7c5d6dbc5f5ef4a a33e6b22d70dd010525fc43cdda36792 GOOD
+2.6.27.43 002 root root 50b70a5f28747b070bdfd0bcc7f9529b 50b70a5f28747b070bdfd0bcc7f9529b da6c3fae5aa2d353044b9735cb914f38 c530a877d468a03a0121b164008a608b GOOD
+2.6.27.44 002 root root 07f9c9509becfdf6ddef4f142a2b87fd 07f9c9509becfdf6ddef4f142a2b87fd d7fa6cba565a4c03915eb7f6ac622610 06acd9c681346774f08f52b7d4e790e2 GOOD
+2.6.27.45 002 root root 5df8e25fcaaf9ec0b108c68d31c1f23a 5df8e25fcaaf9ec0b108c68d31c1f23a 0e63bce115697e4c12448c958266a6d0 7f6694628915c9974ee325c8aa867cfc GOOD
+2.6.27.46 002 root root feb0c66e8af4e3c73bb7675ad99633cb feb0c66e8af4e3c73bb7675ad99633cb a37732465b3ffccc38a363d45634c098 00815f6e3b4674d799dd924ea5371bb0 GOOD
+2.6.27.47 002 root root a10aedc65ec24f5b9f5e7d2534adf94e a10aedc65ec24f5b9f5e7d2534adf94e f0760a94c42906bf69497eb5d91745f6 a60434da00b67d45c10e29a7602eb069 GOOD
+2.6.27.48 002 root root dab808dedf4eb7e1425cdb0b30a4c8cf dab808dedf4eb7e1425cdb0b30a4c8cf 68de870ad5458f9b17105ad1e5ef342f 635fbe6263ca78a8665ba49f6e17dc11 GOOD
+2.6.27.49 002 root root d0ec0912960ab79e90d228da7fac1d67 d0ec0912960ab79e90d228da7fac1d67 9cd6bc8e911154d4cd47b0b0350bd245 389b1266667e442836373aaa3ae9a906 GOOD
+2.6.27.50 002 root root ce3e327c7291fe271340eaf2904a4347 ce3e327c7291fe271340eaf2904a4347 0237b80ec327334cc76dce743db529ce c7ecbc92fe6f3c5b721c43a7084a5099 GOOD
+2.6.27.51 002 root root 3256ec86d0249f6f0bf967718fd35363 3256ec86d0249f6f0bf967718fd35363 8dd26f17366188f282fbc8af0df2de29 0291c28bf56e16aea98b31705d0f0a5f GOOD
+2.6.27.52 002 root root ed87ed7d7fce749a3faf845c85880ef9 ed87ed7d7fce749a3faf845c85880ef9 344edff782adf44dd23a59e4e00fe4be 4113dd848a325929b279fa4b04157753 GOOD
+2.6.27.53 002 root root 108d6b3f2c723bc4360e3bbbb2474aec 108d6b3f2c723bc4360e3bbbb2474aec 74cd04293010501839f464242f9cbf20 b6e0a7f9ab38e9c108060b7e56fc65b7 GOOD
+2.6.27.54 002 root root cc203656605a40fca27f90e993952788 cc203656605a40fca27f90e993952788 eb7b06fa72c986757dec15043b89a6ee 45f80fbe918028be99a7f71cc648984b GOOD
+2.6.27.55 002 root root 28b6bb904578f3bbc3dafe22b0f3512a 28b6bb904578f3bbc3dafe22b0f3512a b1874eba773004b4601aebf5467c54d8 02e21eaf0531ab1feb4dad1639d54e48 GOOD
+2.6.27.56 002 root root d135df3b77fe7c83ecc369139719085a d135df3b77fe7c83ecc369139719085a d3e6dc3a1fc0fc0ca613c90a257d702c bdf2d3d84789a69ce6a422c7763c393e GOOD
+2.6.27.57 002 root root 8a6cc185e7c91835b12c85969a3f00f3 8a6cc185e7c91835b12c85969a3f00f3 ffe5edcaf2da6ced503f5ee8306478de 418179ad31418c1fb339ac10bccf99d4 GOOD
+2.6.27.58 002 root root b9f88fc59a5b7dede53249eb1cf056d5 b9f88fc59a5b7dede53249eb1cf056d5 d4d5046ee9f0ae87886f1280b1dc6e98 3bf295c147fb24df2abc98b0a969b450 GOOD
+2.6.27.59 002 root root b13ed9fb91f415f16549da6b05cf0a55 b13ed9fb91f415f16549da6b05cf0a55 a9ec0caa367887f48b6ab157da6be804 28cc04e530e71be6a37bca4c7ddd90c5 GOOD
+2.6.28 022 root root afb7b848123b8f2df42cf42f0845860f afb7b848123b8f2df42cf42f0845860f 062c29b626a55f09a65532538a6184d4 d351e44709c9810b85e29b877f50968a GOOD
+2.6.28.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e310b48eb15e8897db9fd276822f3501 9677bf9cb0b8da192ac010f55d71dc36 5298ae8dcbb32202a16c328a046a7df4
+2.6.28.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 763d014e941bfc574de13b8f2db495dc 5db081d864a28894f44c565949b97fff 8fce853ebfe658f0833d34bb1dc14d86
+2.6.28.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2d4c680841ac0c6bca914e8bb3203bd0 715c7ec7db9183d931f896785ef8aec0 4504c72a84322f02fa1917c8a82f36a5
+2.6.28.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 0023f9d52f13929fbc878e6c497d204b 19968a11ed6e19941fdc4cd97827b5ff 8228bb7804d6d0099eadfabf701c295b
+2.6.28.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 34be72201b4e707951f0af857b737be9 0cf4c46e70e19bff4d24d02786ba89ac 677e020f785f57ac48576eacb565a489
+2.6.28.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f8d096f83f2d7ff1592244e37b122b04 4862fea65983bffaa62642f20ba1321b 6bb4f553551033f29d55d78b49b31733
+2.6.28.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx e77300a8e11b15c87074c54d81ae83b5 12a5c040fdce12aa5e3fd29f5e88f722 72d7d509c1f997e6d043bc9c683d89f1
+2.6.28.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f35ba388bb1f6f7bd8bea72eb22b0684 9f69cba9a2740b829cb09914960a51e9 8440a90637cff154195895743ef498a1
+2.6.28.9 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx cacfadf15c10896956e3776e8f603e0e 863ac05e6a7dd0fb46a664b53306716b a4a870fdb8d0a6a7f218a6e25c9d4891
+2.6.28.10 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4c99456b1931d4f0d7f49f7d62d18431 8513345dce011467ff6067c92634c3e9 c4efb2c494d749cb5de274f8ae41c3fa
+2.6.29 022 root root f614a023dd7a9b38303a35aebedb3a4d f614a023dd7a9b38303a35aebedb3a4d fbddd9081c55e4c2f99e48d0f2a269e1 64921b5ff5cdadbccfcd3820f03be7d8 GOOD
+2.6.29.1 002 root root 3378af02af06b10b3725a7f90a1e2832 3378af02af06b10b3725a7f90a1e2832 b8c75fce19ab913d567ce2ceacbd1aa7 4ada43caecb08fe2af71b416b6f586d8 GOOD
+2.6.29.2 002 root root df3f8999068ca47425826f97643a9b01 df3f8999068ca47425826f97643a9b01 4a6e3bb90f5e3c67a2f2af9039185402 a6839571a9e70baf821d2fb752f9c4c6 GOOD
+2.6.29.3 002 root root 0c32afeb514f2909950c10704ea1c251 0c32afeb514f2909950c10704ea1c251 9db11b204a6514d34f6cdedeaf02b513 ff37c696bf0b101620b6a8a7209c57e5 GOOD
+2.6.29.4 002 root root 3510ca1d830c8b9fcef92c258d0a4762 3510ca1d830c8b9fcef92c258d0a4762 9674b69a762c397ace6fc5e7096751f5 fe2d1ec5bd0f1d9d9e660c812cac7d61 GOOD
+2.6.29.5 002 root root cef8e5a3bbf183e7ad3281b1f3bfe657 cef8e5a3bbf183e7ad3281b1f3bfe657 a030d6b2c8e9e38534e9ca58f9f62f04 b0bd0fa7889c0af21eee58d096e26175 GOOD
+2.6.29.6 002 root root 3d9def1cc78eac6271b54194434695e3 3d9def1cc78eac6271b54194434695e3 770efe7eb2d919eb1e794f78088b893c 7cd24826fd3c7b0f83d9f662731a7865 GOOD
+2.6.30 022 root root 2bca7fef9e6aeaafcf4d34740c2a511e 2bca7fef9e6aeaafcf4d34740c2a511e 0f50954dc556d28b2b5719722f599380 7a80058a6382e5108cdb5554d1609615 GOOD
+2.6.30.1 002 root root 1f57a5f8a65bd38e7b9c2f2c1ae32f66 1f57a5f8a65bd38e7b9c2f2c1ae32f66 d6eb48048ba5877d6486c70fb5accb46 7da2e2e31f1c00f2673d2dc50de76b33 GOOD
+2.6.30.2 002 root root bbc68779259558afca403ca041b49073 bbc68779259558afca403ca041b49073 5294e6ebcc148e8db363cc08694b2724 890a03483dc9843100c6b51deebfc3bd GOOD
+2.6.30.3 002 root root 6a5963823ecfc432f36827d5c17b9cd0 6a5963823ecfc432f36827d5c17b9cd0 9900f3ad5adeac73382300b86ef6c3d3 5499e1fd246215d65fc7068cfb040406 GOOD
+2.6.30.4 002 root root 9a3533d3a716913fdf7f8b73f1beae45 9a3533d3a716913fdf7f8b73f1beae45 ad42fc4417bb0a130c769fbf0ba4221a ac05e32764368af7eff79c5e3df65efb GOOD
+2.6.30.5 002 root root b446af3c919a4cf65008b61f75e88cd6 b446af3c919a4cf65008b61f75e88cd6 daea7f2a981260e82aec0fbfce466f5a be9c3a697a54ac099c910d068ff0dc03 GOOD
+2.6.30.6 002 root root 4d87e17f3b3448ce7e69afc9debf0efd 4d87e17f3b3448ce7e69afc9debf0efd 59932afb4ab8ebc5525d69422988a00b 3ae3add6838da3c5a53baa87c9e32924 GOOD
+2.6.30.7 002 root root e5a18192355fc18831f83ad8338378f9 e5a18192355fc18831f83ad8338378f9 f85c1f970ac430d3c239bdf7ff4c72d9 40ac5c687ffd7b4d456fa61e7b250911 GOOD
+2.6.30.8 002 root root f6c70ebeaaa1e0f23cf4310bba9ac827 f6c70ebeaaa1e0f23cf4310bba9ac827 8ab4dc01676fea0e17dc30b2f94947e7 76b8397bfb477788b26c834f71e27df6 GOOD
+2.6.30.9 002 root root 327a5876f9884ac4e2dd79b642790b4f 327a5876f9884ac4e2dd79b642790b4f 69e356027dc7c78190f7c70ae8b1d5d4 5a4cd5543a9d7c1a819700b21be31ef1 GOOD
+2.6.30.10 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 135720e3d5cf72949a6e2c7b7a1661ac 9ef9dd7efee7d6831c770557222987e4 eb6be465f914275967a5602cb33662f5
+2.6.31 022 root root 153f6267e44f5d32a364aa61e2b8c537 153f6267e44f5d32a364aa61e2b8c537 16c0355d3612806ef87addf7c9f8c9f9 84c077a37684e4cbfa67b18154390d8a GOOD
+2.6.31.1 002 root root 0697e50b0515da0c94700a56acaf84f1 0697e50b0515da0c94700a56acaf84f1 1ce57ad412b8497d2bb87728b22d244d 8077cd7f7c1cdeb6aef3872441ae5294 GOOD
+2.6.31.2 002 root root 4e5ee234f4d1ce8a2a97e81d1c3e5e3e 4e5ee234f4d1ce8a2a97e81d1c3e5e3e d7a47e2a6de48ec3831634d3868cc601 2af44f2a4c41e771894058889f976b92 GOOD
+2.6.31.3 002 root root f686666a2218afd13f2c6bc794919615 f686666a2218afd13f2c6bc794919615 19ba8cfdedeb2c59e299526472a2741e 15dbe80bdc5f4135708762ff980080ea GOOD
+2.6.31.4 002 root root e2e84fc3cea9293517698f2af02e3698 e2e84fc3cea9293517698f2af02e3698 1f8185cc6d3892ce3d51efb200a0c585 ae7fde9fd0ae0d8ac12a1e1536d6d3ce GOOD
+2.6.31.5 002 root root a1518ae179af94eb840024655ed4471a a1518ae179af94eb840024655ed4471a cb58822f6046ae2ec13a3ee4bf13896e 926bff46d24e2f303e4ee92234e394d8 GOOD
+2.6.31.6 002 root root 660348915031cc50ede9b6ae2028bf52 660348915031cc50ede9b6ae2028bf52 83323fd772d0e32e4c0c5e16542f9c6e 485472df88af84becdcf47f45de3ba46 GOOD
+2.6.31.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c582645a702bc6a539c6487bd30395b0 b82342ff9af52e850ec839f1a9af5212 ae93db04f169f35c98e786f25e84c237
+2.6.31.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 18c68d06d5890d977794ce6a3cc1a22d 6040125c886efca89ff76ad296834e26 660eb7bb5f3a9a161783d6fd08b734a3
+2.6.31.9 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7470567730a8a92fa106ed9bf04d48b9 3eaee735c2638e5ca9366c156de2410b e531261b99e34208eb823be63fb0ce91
+2.6.31.10 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx bf9694c4e8cb35df6a7fa961ebdb2604 45a97e911650f9085fbb4b835c95aed0 dccdd300961d5baf3d39c904f97b5447
+2.6.31.11 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 73961039212a73f69759ec5a9571c691 c43d50a49aa9ee59fc7170b7be8ea9bf 39e34c9a6439bcd4c088abe631302a99
+2.6.31.12 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 183033ca01ac9acc29c4c5c3934d910b f307fbbb3b73905ea26e20c48d2f0f54 517be354b81b780e2f4b2ad614d030de
+2.6.31.13 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4270ee1105fa539454d81df906ebcffb 49892e185efc74eed80ffeee88975717 a78fa43be317ee936b79df5e84f917a2
+2.6.31.14 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 53b37dc7feb156704ba3e6ff41cac8a0 531292d59308acaa989e18bccd782ae7 3e7feb224197d8e174a90dd3759979fd
+2.6.32 022 root root d1fef908e3b72c37b925e1a399d1a035 d1fef908e3b72c37b925e1a399d1a035 4b1f6f6fac43a23e783079db589fc7e2 260551284ac224c3a43c4adac7df4879 GOOD
+2.6.32.1 002 root root 5be63bd57f8672db69198a8ec7a04637 5be63bd57f8672db69198a8ec7a04637 ae1ef1b076bcb75de5452723131d4570 fc95ca275124537661d64428f79bae50 GOOD
+2.6.32.2 002 root root cbd1bab8027a01ec42c28278879a7209 cbd1bab8027a01ec42c28278879a7209 edab33d73bf12eb000b51e2248fe2493 9809778a867dfd3d6811a2f929256334 GOOD
+2.6.32.3 002 root root 8dd90672223a82d8cbfa9bf0ecf6c70b 8dd90672223a82d8cbfa9bf0ecf6c70b cc3056d350e2f960f9d42c954f8f63de 730045c2c7f7e6618db3c4d4d7094853 GOOD
+2.6.32.4 002 root root 2cf5b76b3aa71790215b45afcfa8906e 2cf5b76b3aa71790215b45afcfa8906e 2d30cf9ba08d4c04754a3457e275cb83 471e0fe07e27796f041ecb990302ccc4 GOOD
+2.6.32.5 002 root root cc137ff7c3f9cd033bab9ddadfa09b9b cc137ff7c3f9cd033bab9ddadfa09b9b e2341d4f225959358e950833cf0758cc 942f676ea51c8ee53212d2f87ed60551 GOOD
+2.6.32.6 002 root root d1561434aa81622f6b17b72c8e00c226 d1561434aa81622f6b17b72c8e00c226 11ddb00d7569c6b8747c6c309e8575e0 5ad2ea7b6aed2d857dd9bb5ae03588e4 GOOD
+2.6.32.7 002 root root c0fcd24b3b3783afefda8f77b0c95a03 c0fcd24b3b3783afefda8f77b0c95a03 ceff62c9522950a6261120424a3ade1e d59aca06609cedabe4d6d161d9f11113 GOOD
+2.6.32.8 002 root root 2e09e2ecd521b5fb43cc577e88e98356 2e09e2ecd521b5fb43cc577e88e98356 813a1d2c3709756d6b234162fd1d89c4 82023ede52f067fcc55c5e70b02e48ae GOOD
+2.6.32.9 002 root root 9e1ddce5bf49fbf740fe4967990b3f83 9e1ddce5bf49fbf740fe4967990b3f83 b78dfc2f66af6c964a147f02abd5d927 0771a9c70503c92f40d815ef76eb62fe GOOD
+2.6.32.10 002 root root 32aa41fbc18fbe1cf1e8535e677c13a4 32aa41fbc18fbe1cf1e8535e677c13a4 5c1140756b29e34fd7bc284a6abaff35 5d996507ad482a3a8c8e6b2d48e7994b GOOD
+2.6.32.11 002 root root 212f747ca5999b395bcc03799399b8ad 212f747ca5999b395bcc03799399b8ad fddf009351f27fdef561d342ae7e7593 3709c691d909b4f8ca692edc6c726cb6 GOOD
+2.6.32.12 002 root root b73836b409909ba691e442a851221bab b73836b409909ba691e442a851221bab cfb8514dc683ac7c875d64d31908e3ab bc87db696ed4be729334584493d6d98d GOOD
+2.6.32.13 002 root root 1f72687582dd1bf5aa7d9a1b01ac11f5 1f72687582dd1bf5aa7d9a1b01ac11f5 ba0d81958297e448b9794b9c7d8e6853 e66b1ec7eeb1a5f5d279574c6a2f3655 GOOD
+2.6.32.14 002 root root 8af1c02cefc69f902008b6d16e2a5f19 8af1c02cefc69f902008b6d16e2a5f19 2b56e9ffe03bfb6b3913bec21f58b5c1 b13dc3ce727039597163cb4bce4cbdbb GOOD
+2.6.32.15 002 root root c86b467e8649d5b782e5c85d7bada2c3 c86b467e8649d5b782e5c85d7bada2c3 4c0c73dc4bac0e83981363b7da3f2124 1cbbf16e93bbe03368172872690600c0 GOOD
+2.6.32.16 002 root root 34f9d86da519c3ac868bb6b9c0edf5fd 34f9d86da519c3ac868bb6b9c0edf5fd 8b42d77e1dbf1d4bf7f887643b046426 d94d91ef3be4eb76765401b4fa462759 GOOD
+2.6.32.17 002 root root 41fa851916eb3e208eb2d07d9a2edc20 41fa851916eb3e208eb2d07d9a2edc20 af941edba8b0ce5e026e4af9c64ea589 33e4f0d69e5d4cb0c1bb2357b27a05be GOOD
+2.6.32.18 002 root root e93ea8c463c761b6733ca9550de9d28d e93ea8c463c761b6733ca9550de9d28d 6b4e6f1a012f9bc6de10ddca007d4f5f 8c8b82d4bf607ddb233deaf7f1c44f0f GOOD
+2.6.32.19 002 root root baa03d63e6eb52c870ef5f4dee6bff81 baa03d63e6eb52c870ef5f4dee6bff81 4c07d9ea18c6eb98f0be7f1b2181e155 7f32112095a164e1330c07be72966ccb GOOD
+2.6.32.20 002 root root 9b4b3ccbdb161284db7c50d8fa7a9cc4 9b4b3ccbdb161284db7c50d8fa7a9cc4 fb5dbf788cd4669a481cc8913e40f22f c254831e3f59b9fef14e61871e5f4738 GOOD
+2.6.32.21 002 root root 4e2d3f2ca147c1d18a0c042bb39e8296 4e2d3f2ca147c1d18a0c042bb39e8296 fbc722a582675ab1039d6f89d60682f2 e4acefa00c5b8fcc539d9cbf34d88cdb GOOD
+2.6.32.22 002 root root c1bbd1b7be8f5bc5b8ec845ba4cfa6d6 c1bbd1b7be8f5bc5b8ec845ba4cfa6d6 6e9eea6ce8ad06b3d16d872dc192f111 c53844ab98703777b0546b5061606a47 GOOD
+2.6.32.23 002 root root 7706a8fa891540f5eaaf0b504505473d 7706a8fa891540f5eaaf0b504505473d e5a0643a9ff87cf4c361d21c7baadf75 f9fbeb2fc55fc41e5e7df16563d33ad1 GOOD
+2.6.32.24 002 root root e19d2bef8b40fe3870bb0b8e9bfa2f4b e19d2bef8b40fe3870bb0b8e9bfa2f4b e43f2b6c1f95e1963f005c422f9bb7a6 bcd2f2b3d6974a9232b9becee8196634 GOOD
+2.6.32.25 002 root root 1e8ea8d88db9ea220746c317c891c6d7 1e8ea8d88db9ea220746c317c891c6d7 f4c9139704e64eb87228d3dda8df1852 0d6ad4e7e387f56c5b5831beb97c0c1f GOOD
+2.6.32.26 002 root root 21db42cb4175753d6b702138b2d16035 21db42cb4175753d6b702138b2d16035 b301eade70974269918484c83469795a bdb37b8e48aaf33d9bd6e2af3ae2f1ea GOOD
+2.6.32.27 002 root root f3b4b1aefc240a75b84ce8c83c1d8203 f3b4b1aefc240a75b84ce8c83c1d8203 4c7b2c1f39a23027dcd1d9ae53e98805 c8df8bed01a3b7e4ce13563e74181d71 GOOD
+2.6.32.28 002 root root c63f9b5a3344f866620f6ae10be15881 c63f9b5a3344f866620f6ae10be15881 acc40b3d114c67fc28857b93fe416c4e 9ee6d4023f34eb055ec32f201b5f9206 GOOD
+2.6.32.29 002 root root a6546c1fad45fa336885860d31f89b9e a6546c1fad45fa336885860d31f89b9e ed37db5e3c2865f17796a003aa5d6c70 0eea644c2cef06b4ec170228866b9685 GOOD
+2.6.32.30 002 root root 8b3e0d9612b61cdbf4a9a01566010fa4 8b3e0d9612b61cdbf4a9a01566010fa4 6c43c3c5144f4b4cac0073b052f90b64 ae69df88a6c68bd0a394ad6077d5c61c GOOD
+2.6.32.31 002 root root 5dcf526758804fa382f231073a442ebe 5dcf526758804fa382f231073a442ebe a1202b74ff6db879834b45d4f792e404 25c432c979f0ec3a67a35f2b8fbd0a4f GOOD
+2.6.32.32 002 root root a3fd490344081ddc863c85e066c26de4 a3fd490344081ddc863c85e066c26de4 b4a0ef12f0c495d4559a0e2199c9f34b 25a3ba004aaaa409c24dfb2cc268d03e GOOD
+2.6.32.33 002 root root a22b0dd689764e1aa2abcbc4f3f38899 a22b0dd689764e1aa2abcbc4f3f38899 7341b2f5672f19435434147678be1664 2b4e5ed210534d9b4f5a563089dfcc80 GOOD
+2.6.32.34 002 root root 7c596527748f917b0df22321b83c9eb9 7c596527748f917b0df22321b83c9eb9 4e8a70aa35a18fda9e6ff034e15f9a7e 0617b091120c1472e313ec5ecfd8cadd GOOD
+2.6.32.35 002 root root 31b9c268a72f183b37a609ce1688ed33 31b9c268a72f183b37a609ce1688ed33 19ae9d746a70788bbfe741c1dbc02329 e16032fa32779668447529e930282cce GOOD
+2.6.32.36 002 root root 21d809b12592e91d100f40ee9c415e94 21d809b12592e91d100f40ee9c415e94 3020bf5a681f1b9b17cacb5a5dd54270 71cd2ab6060fb929fc0d81f4d13b88a8 GOOD
+2.6.32.37 002 root root 88572d1d95f9417a93db60a954f3ce9c 88572d1d95f9417a93db60a954f3ce9c 90414a762722e5ff4ed1c0dfe64b52e9 f0a302ea6883304c3a6a492f620a14ba GOOD
+2.6.32.38 002 root root 75e4d93ea9c57c28acd169902c70ffe7 75e4d93ea9c57c28acd169902c70ffe7 9a6e34ae9209568e090a64eb01b25078 7aee33b26864e31d5d0859d0ed10a88d GOOD
+2.6.32.39 002 root root 6d266224d3ff0d136b336228fe108f3a 6d266224d3ff0d136b336228fe108f3a f89848dbd474e25f2b7dedd13c42a401 e0e741937640a875392b1820e945be25 GOOD
+2.6.32.40 002 root root 27cd2ab5f45c83effbca8f894b9bf9a4 27cd2ab5f45c83effbca8f894b9bf9a4 5423e3dca8f18bdaf278f78df215776c 043403f6264c1ec0aea67a5f039d0a31 GOOD
+2.6.32.41 002 root root 3da56d911ae16e1d9d04d27e97140094 3da56d911ae16e1d9d04d27e97140094 39efe42435365ef3a5f0e43bcab8a519 919fe13fe57f903eb03e291dcaeabf57 GOOD
+2.6.32.42 002 root root 74189193fa0b44a74bfe31de2934396f 74189193fa0b44a74bfe31de2934396f 406b9bb2bde4e54ab210cd7915b627af f1bb2e5ff5ae8d552e6cedeaa70da25e GOOD
+2.6.32.43 002 root root 702e1151878c159021bfed717483d078 702e1151878c159021bfed717483d078 9748e4847f9208f0a8bb9c332e1bc75f d6819da012da0d9772ac79da9dce3d63 GOOD
+2.6.32.44 002 root root -----SHA256-COMPARED-OK--------- 29c4da271ccf54602641b99e744cf03b 8cd314a3449280be8537b3aaf14fb6db 38d43bb91fff88783f57ada146415029 GOOD
+2.6.32.45 002 root root -----SHA256-COMPARED-OK--------- 2cc2aab8a394e0fe20fca3194718b857 d41f1c7e704cc95fdfc3374367b6fd64 0bef1e1b288adbb0e5175f9df804136c GOOD
+2.6.32.46 002 root root -----SHA256-COMPARED-OK--------- c7847bdc87eb7781c7bcacae5c05c91b 73400c79feb280690c74dd0d9f4ffd6c 5f1e580ef27bb7e3a51a5e848d223e26 GOOD
+2.6.33 022 root root 7fb6c834df94d78ad1dc118ba98bab21 7fb6c834df94d78ad1dc118ba98bab21 47512dfa97ba20245907feca2c507006 c3883760b18d50e8d78819c54d579b00 GOOD
+2.6.33.1 002 root root c604a96b1006c24da58237b9e55195a9 c604a96b1006c24da58237b9e55195a9 7abd10bff798a6171127e69efcf36ee7 73b514ec918b88a45656be191b1ee226 GOOD
+2.6.33.2 002 root root 6453571f38b4dfaa602f7585a7616c48 6453571f38b4dfaa602f7585a7616c48 f2589ee097d2c69b573babcfd2efe67f 80c5ff544b0ee4d9b5d8b8b89d4a0ef9 GOOD
+2.6.33.3 002 root root a940c369b6d48fd3aea62d86d3a3b324 a940c369b6d48fd3aea62d86d3a3b324 a1809b6054650d0fe89152c0459d644c f651e9aafb2f910812257a63bcd639f2 GOOD
+2.6.33.4 002 root root a21a8802c2f3a304d79a2b0a6c7d9366 a21a8802c2f3a304d79a2b0a6c7d9366 3f11fe8a42a117ea80dc26bef5174805 f75d21e5c60f18adf0e99d61c243f964 GOOD
+2.6.33.5 002 root root 614d843285a93253eec2431124c5b090 614d843285a93253eec2431124c5b090 bcad38544b4ab5d4abd766112afc3575 4ca73d59b9bdb8f8c30527b17676364d GOOD
+2.6.33.6 002 root root -----SHA256-COMPARED-OK--------- c0c49ff442a9a38bf19b54981c396477 9b9dd78cddf3edaae54ce9041b4d0fb5 7d8f8a4a09866a786fb59c53fba8232a GOOD
+2.6.33.7 002 root root -----SHA256-COMPARED-OK--------- f954231ecad72c06ef7564d46406e44f 3e3cb86995b3c31ecd01b63c1f444886 2cea51deeaa0620a07d005ec3b148f06 GOOD
+2.6.33.8 002 root root -----SHA256-COMPARED-OK--------- 495e5af33b256ff056accf8650986be3 9fe0191d3d5edf9c3fbd4fa9c39a2509 771b6a35800d64ada3956ec715ec267c GOOD
+2.6.33.9 002 root root -----SHA256-COMPARED-OK--------- faab2b03eff6543c8bf63101309b61b4 2cfee0265daeb53706b7e981814af109 f518f2ef32b3d740f4ac00189d781b9a GOOD
+2.6.33.10 002 root root -----SHA256-COMPARED-OK--------- d0466173fe28142b1079041d35e3d326 21aaccd06eceeb17c017124d915a62c0 1b640e4febf64e541f7f42bf4f2330ab GOOD
+2.6.33.11 002 root root -----SHA256-COMPARED-OK--------- bd13cd19cf5ad42a027db60a557ac27b f02801368a879fd6edd8398dae6db526 e8db8741567e464c15ca137097181543 GOOD
+2.6.33.12 002 root root -----SHA256-COMPARED-OK--------- cfb4eeb135b2f872d782b51511c039a5 6ea18c9bf4fd909272d9a60ebb1a2ddc 9aa6210598abb462454e972aa4f07165 GOOD
+2.6.33.13 002 root root -----SHA256-COMPARED-OK--------- f577df3c53a265e4a76aeecbd563d332 afde0d498a65c698288422c412e32735 96b81c9dd2c0aa7a0b32433c7dcaf034 GOOD
+2.6.33.14 002 root root -----SHA256-COMPARED-OK--------- 7805feff0bf8a657d16c5881459f1add 753664a8b45f032f33ef5df7366ba0f1 07e05b47d2fabbcdad7ad35e674795ad GOOD
+2.6.33.15 002 root root -----SHA256-COMPARED-OK--------- a807da8ad93204739e739ddcd06afdd4 dd8dd0cbc87a255cdcb69f2d28950de5 48ba7821051fe60563f6a494eed7f403 GOOD
+2.6.33.16 002 root root -----SHA256-COMPARED-OK--------- 7c7d462611cd35e979e3ff2408765bf4 78544082ee6f62171ec6f8e860cfdfe7 06e70d305aafac5789e1fd8e5077aac7 GOOD
+2.6.33.17 002 root root -----SHA256-COMPARED-OK--------- 9a3f51532f5f753de84145b1bc8dde2f a9950bf9ff5cc84373be7de9bcf21727 ce484fe5a31dd95e27f7d4c6289f6695 GOOD
+2.6.33.18 002 root root -----SHA256-COMPARED-OK--------- 5d5666fc2b7b070de62dc9b581ee2c14 9ec37439f478ceff34a2b13cc4cec732 38849b15dc3c28d80451f6852d657463 GOOD
+2.6.33.19 002 root root -----SHA256-COMPARED-OK--------- 4f7c313f0ec36aa080bea2a29d267978 42bc20e406ee4e3a9292a9969f58b21f 49a7e37b2cfe87bf9f9df7b4efba94d0 GOOD
+2.6.34 022 root root b36063fb6a50e736dc65f1798b4ec12f b36063fb6a50e736dc65f1798b4ec12f 47ed5ccd99d04352253e43d4bc84ea6a 10eebcb0178fb4540e2165bfd7efc7ad GOOD
+2.6.34.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b5ab09577bac71665b0a6afc01aa8991 198c29eff8256c851e2b8e9a1369339c d31d241dc2058698a45fe41359cafb45
+2.6.34.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a51d818279e0402e0f9810f1a81896a4 971c406b402d5c0a46800ce3cf644d1e bccca90a4bfd74b1335012e78d433cd5
+2.6.34.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4171780e929adb9bcf845894d4b34772 eac833497feaa8c5896e3fb79dcd8ad8 8d485588afc2c47fda6da13d0392baea
+2.6.34.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 13f3eb829305c9662a7c61808cd78f5e 8017efe8c7fd53ff4824b91e8740049e 2ceaa35712bfb073e31c54f3bbb75b0b
+2.6.34.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx b52ed8d879f462f80b4171874e345ce2 b27b341b54e4378e7ee461a308c7402a d280b596b32f7497bbe9dd54669c99d6
+2.6.34.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6ff1290538fc568f5c5dec8be92e7304 3884b783e8a596944afd912cc08a4073 032e1d886bf4affb506635be34a25b9d
+2.6.34.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 20d960afa5c81924595bb631aeb25bfe cd6590845d33987e2b67c36e93254082 8964e26120e84844998a673464a980ea
+2.6.34.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9fdc14cbd5272d7951536567ea4d9f28 822311a54b7008642a2f9d76063f63ba 6dedac89df1af57b08981fcc6ad387db
+2.6.34.9 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f81345937f54527cdf05e6e288ca350e 3a5ad3845fb5224924b2d4bd55b0b072 94fb09b4857f9c67539782ff9cc32dd4
+2.6.34.10 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a82c7a3b88e347b158251688020d5206 f60bd1faf6ccec530eb0b9a1ab55af7f d7c5dee6cf999b60b01b4ec14c54d6aa
+2.6.35 022 root root 76e96f2df4eeea351787c65b3b264986 76e96f2df4eeea351787c65b3b264986 62001687bd94d1c0dd9a3654c64257d6 091abeb4684ce03d1d936851618687b6 GOOD
+2.6.35.1 002 root root 208ecf7446037da8929cd89d00201eb6 208ecf7446037da8929cd89d00201eb6 a88f1bcb6d331155cc0cdba9a3cdb508 27b266dda534761fb027a6c47605b7e3 GOOD
+2.6.35.2 002 root root f05f0e9210ed73e1f2471d3c5053a959 f05f0e9210ed73e1f2471d3c5053a959 1f2da16491fe2c3f68a48170749c1731 0da1c090199663c180d8a60bf49de36e GOOD
+2.6.35.3 002 root root 1cbcb42ebbfd2644ec671ec76c30ade7 1cbcb42ebbfd2644ec671ec76c30ade7 887800197a74a160de27f53cd3a75c79 5ebff49fd65a7bad234ce103b0b3ede0 GOOD
+2.6.35.4 002 root root 19a1f86ee7412f80f7ce169a5e126923 19a1f86ee7412f80f7ce169a5e126923 6a2d7e0fa99bea0a3c209c98a3745466 0bb2cd59c13d7412f813c8fbc0769eec GOOD
+2.6.35.5 002 root root 2e5f5a226293a3c56dad081887ff809c 2e5f5a226293a3c56dad081887ff809c c86fcedd98ab0d64fe981575bb06a5c8 ebf9f05360acc0d2405284f0c24fed7e GOOD
+2.6.35.6 002 root root 2f7443cf4efbe36239bcf14488c5a883 2f7443cf4efbe36239bcf14488c5a883 55b944af9b96651cf8a34e4a7fa38a1b 26ff1af2a0a398d3b6ef60bb8ce311d4 GOOD
+2.6.35.7 002 root root bb61b92a0570d10eec4dea37aa84c605 bb61b92a0570d10eec4dea37aa84c605 e09a37dcfdbf256ef20039d0d8fb8058 f741879bcd3a5366a1bbe0ad5cdb7935 GOOD
+2.6.35.8 002 root root 7038815cdb8de9591da6509ae6925714 7038815cdb8de9591da6509ae6925714 51981683457e3cf19b137a5a0df8d0bb 10ccef307e81fb405b01457f312a8c66 GOOD
+2.6.35.9 002 root root 83d50d1b4c46dadab70da7a2172d0819 83d50d1b4c46dadab70da7a2172d0819 85967dc97fb1d5ee50eb53375a652d93 18d339e9229560e73c4249dffdc3fd90 GOOD
+2.6.35.10 002 root root 122a6b0854a9b461dd1271afa6c29826 122a6b0854a9b461dd1271afa6c29826 5f8d0539af9b94a1b5ffef1f3358f73a 8d3732acee1b7ae9c26c70be15b8c8cc GOOD
+2.6.35.11 002 root root ff345053ea0724127f36a7305afa4340 ff345053ea0724127f36a7305afa4340 f3b6db4ca6f1b9856a20f2c160d527e0 4c9ee33801f5ad0f4d5e615fac66d535 GOOD
+2.6.35.12 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6685f3b35b5df4f19290b70c787c4650 7eff266164b794ddaf07d16a5d650259 cc9165deeb48ceeaab14ff5eb2f55cb6
+2.6.35.13 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3cbd9006a7cde4efc2ef669aced7e5fc 2c02fb9f091673aba3e3203ca8a55168 ff6c850159de960f26e010fba08f4d59
+2.6.35.14 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx fc558717fc5ce042f83f6444285c33c6 dfe2630473a7edea339a736ffac67eec 5a0af287a9cc5998321d67cbe112d1f8
+2.6.36 022 root root 2f4d3b5d66aa1c1465e0c05e3c5f36ac 2f4d3b5d66aa1c1465e0c05e3c5f36ac 9083f8da705b0102bcb8999079437132 61f3739a73afb6914cb007f37fb09b62 GOOD
+2.6.36.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 44944e1bf4bbe6be6c9b19caabd2e46a ef410ffece297e8b827fec99cb32b32f 0f1398ad1fcfc14f2420010bc8a03ca9
+2.6.36.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8b6557c4f0cef60b1c0cfd389ac76c81 79383b9cf01cd4b9255b8b9e3a80b0c5 d465f8ba05bf1b7530c596f1cca658e7
+2.6.36.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ac4a519bd303d1552bdf2ef28cea9400 da2224c44d3316fea2316a0ff368b4f1 e23fd2fa5268300038e179919c590f69
+2.6.36.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx eb84076b4f2ffbe6ec397db09c4b76c0 77b981f8319d238856e6e98b3aac0e50 c05dd941d0e249695e9f72568888e1bf
+2.6.37 022 root root 943a4f25288d86b1dbf7808eb539bd42 943a4f25288d86b1dbf7808eb539bd42 c877f8429254e4a4981028b90ea9bb10 c8ee37b4fdccdb651e0603d35350b434 GOOD
+2.6.37.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx a358b14b41133571d8d006c1799c748c 588bef60117c34162b1835f9b0ec5251 07d3b1868a67c1a7ddcf1d54444cb5d1
+2.6.37.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 42865250767ded55861ae0cc569f4cdf 136adc84115d9529a11c875cc861cf8d 89f681bc7c917a84aa7470da6eed5101
+2.6.37.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4cefa352f70a1f5b61f91a7ffcfe4f5b c498fd2c9451849117c1ed29a31466c6 b32fc95037e4e114fcfb33075bb30f46
+2.6.37.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1faea970049f982abd1f735c0eaf5200 639108993d53de32ae3fffb5eb2820ed 1d2dc321017a8dde09b779b4d8233273
+2.6.37.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 918d912d411ecafe07c4c536a192a860 9c01abb4f975f9cf3b5e3dffb62292ae 8f84193d5a08b909aaad2cf30329df1a
+2.6.37.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8c5acdd2de588e03cf788f51ba49fd52 77016b346480466d649ec9d719d8df0a 05970afdce8ec4323a10dcd42bc4fb0c
+2.6.38 022 root root 0e705fd53756f7bddcf6e4bb3f18458b 0e705fd53756f7bddcf6e4bb3f18458b cf0b587742611328f095da4b329e9fc7 7d471477bfa67546f902da62227fa976 GOOD
+2.6.38.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7e61835baf0e180582e7899a53333d36 e7ef42ccbcb0fd716ef25ba1970ff64e 7716316e5fa36e570df2d79dc6067591
+2.6.38.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 28b115c1e5ef3311d83449ca55eb1e93 7b45f4d238bf736f8dd4bac293d40d56 5e9d0edae15053ea9acd932e6d162d03
+2.6.38.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7241f0ed5fdb946958ae07839dc37fc4 6d2ace2e134dbed592dee16320bd41b2 d3071407a33a7bd2ffb47181f200f22c
+2.6.38.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 7e79df0e18344fb38a5222df07124ba2 da2cef8f5c99a664e8b3b86674c49c05 bd11be3155b24415dc4d521ca26ba9e2
+2.6.38.5 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx c334701518dee7a785f24d10b684287e d59b33f52c32e891690a5ec0934b9c88 e81a999e1b1e08bd885bccf0d37cb6df
+2.6.38.6 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx f78b06daf92715dba4f5524eda2db4c2 9ba1b51b427c917f9dde69a6b1b02bd0 e896a3bb3185b8a8af8e2f010f63c02e
+2.6.38.7 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx d8ae75de84c9c8a80b3ae3628550dbe1 f1ae7efecc2742a33141fa64b9370135 fd4c33a1a7462fd076c36464d24a2d7e
+2.6.38.8 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 9f98099e7e89e6eacfefcde48c72c459 f779b3991fcf0e4573a5d5167a60a26b d27b85795c6bc56b5a38d7d31bf1d724
+2.6.39 022 root root 833d224ee42ddc1e7c2d256368b5d7b3 833d224ee42ddc1e7c2d256368b5d7b3 d3b7d50f09c2b396edd6dd1fe8561a62 1aab7a741abe08d42e8eccf20de61e05 GOOD
+2.6.39.1 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3ec312d569811554efce499b8f5f655d 018a6ed132dd44531d11c5d56f4b528c 983834b0138e102a3fb0098367c17150
+2.6.39.2 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 6d5d0821f9febfcba8ce652872240b80 e5010f5da6ba96f1b31f658060439348 51be93d92028658ec93f68b79a378b17
+2.6.39.3 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1b9fdd3b3ce19eec99e5c22d54c466f9 650de652a1f78c60e140f1b3be47f5e9 5afede829846587e798f2631c2ece84f
+2.6.39.4 002 root root xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 829d4bd2e2d2f91b8ae36f52b6f38836 1b834c566316219312e46770021e9f4a a17c748c2070168f1e784e9605ca043d
 
-
-
-
+--/NkBOFFp2J2Af1nK--
