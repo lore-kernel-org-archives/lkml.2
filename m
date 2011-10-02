@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab1JBUyd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 16:54:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62501 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485Ab1JBUy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 16:54:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: Re: [PATCH 2/6] ASoC: codecs: AK4641 depends on GPIOLIB
-Date: Sun, 02 Oct 2011 22:53:24 +0200
-Message-ID: <2726393.3Oc3SrGyN4@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <20111002204106.GB5811@opensource.wolfsonmicro.com>
-References: <1317587284-2776-1-git-send-email-arnd@arndb.de> <1317587284-2776-3-git-send-email-arnd@arndb.de> <20111002204106.GB5811@opensource.wolfsonmicro.com>
+	id S1754673Ab1JBVJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 17:09:57 -0400
+Received: from nm27-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.157]:32094 "HELO
+	nm27-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754630Ab1JBVJv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 17:09:51 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 41220.65487.bm@omp1033.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=LgvG7HhfO+3vOQGrA/OofC2QWAQiq3i0ZT4EKz9dFAxqneIGZlwqdaGjQY1Pu0u4jmxcUrpDJKs0u9LD2acI/SpCd+xfK9CxXI3tknEPRGaONoDC5iP4tU8SCaMtH2eGlrJK9AZtw2omBP/cdcab00N+Fd3mlke1UBN9pcN/s5s=;
+X-YMail-OSG: _aJmS5EVM1kkqZxm55iPWhs6DprPImHQCE9vQwtkdhjCoQz
+ uwYIPU9SqCW3gJeNpSqLql65FNwGEJAikKvHX9TemsqWIyZRdvBfhORxmn_U
+ eo9aO42LkQhmsrNayLHMBihTpE.lC3fuEIVjMYtVxFwaOVuLfMpSEm3aJm1I
+ qvTr8.WprSeT4gc7noVjgUQ2onC37nLKTpU4K4.zZ6H383VOP26SZjG_uqBU
+ .TjV8rDm7KleBVvq8qve8zJsxJU8w13J1BsQ0WpGe.BVHOzSV7eCqFC94EPD
+ wjI2E.DgSlKQrT0dER9H92cXkJEh_BS_VFaDxGO9Jvp4lLaPmX4mR0q5yr3D
+ McQZWeGlrTJQ8Eu.vAAXIHx2XTXHmT4PVel2vALJQM7E5HWA8mK5mylsD.qX
+ dmF6SKBUtGUh81ZUQaO9E5EdgV4VIyqnRrgPkoRWJLuai.Bqlb0_.i6iYg6F
+ gkQ--
+X-Mailer: YahooMailWebService/0.8.114.317681
+References: <1316478488.72684.YahooMailNeo@web130114.mail.mud.yahoo.com> <1316868946.61433.YahooMailNeo@web130123.mail.mud.yahoo.com> <yunvcsim1wk.fsf@aiko.keithp.com> <1316877222.89367.YahooMailNeo@web130124.mail.mud.yahoo.com> <yunsjnln8it.fsf@aiko.keithp.com> <1316957004.77729.YahooMailNeo@web130108.mail.mud.yahoo.com> <1317583219.81808.YahooMailNeo@web130113.mail.mud.yahoo.com>
+Message-ID: <1317589790.89908.YahooMailNeo@web130109.mail.mud.yahoo.com>
+Date: Sun, 2 Oct 2011 14:09:50 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re: [Regression] Laptop screen dark when lid closed and reopened.with 3.1
+To: Keith Packard <keithp@keithp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mjg@redhat.com" <mjg@redhat.com>
+In-Reply-To: <1317583219.81808.YahooMailNeo@web130113.mail.mud.yahoo.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:o7DBiejncW0/tEECXUD9wEDpMVep40tG7XwcPdgVIw+
- 5NfGqOOB0O21g/Y8fDfI+3POiIjTxPveVvGBxdWA/g22KZHFg7
- QdEBpU4ECmX74bXvZuRPyGYoGQ2EyXtm1CcNT7OIHJpXc4zIoo
- bZH4G3WPx6lF9jJ+BLY6FdEn9GQNbpn+in5lxOPl5qi9JS8KFn
- T1BETSILKhdTCkMynuJp9yaN11P7f6ZsXgWp2JWuMIi+AYOUCL
- NSaNRQV9tC/6KG/Vk4Myus4MqXX2g920MDeFl35lgL7BHZ1ZVH
- vJtwULN2EormQ7B5WMDEheBFGK00Rqzpch6Q60lUMDgLsEPaLz
- rl6aHrC8KEtRPBbrASns=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 October 2011 21:41:07 Mark Brown wrote:
-> On Sun, Oct 02, 2011 at 10:28:00PM +0200, Arnd Bergmann wrote:
-> > This driver only builds correctly on platforms that use
-> > GPIOLIB. Disable it otherwise.
-> 
-> No, gpiolib is one implementation of the GPIO API but if platforms want
-> to go and define their own that's currently OK (personally I think at
-> this point we should just be converting all the stragglers over to
-> gpiolib).  As things stand we shouldn't have dependencies on a
-> particular implementation of the API.
 
-Thanks for the explanation!
 
-Is there any other symbol that I can test then?
+>The following patch fixes the problem for me:
 
-I noticed that a lot of places use 'depends on GPIOLIB' or
-'#ifdef CONFIG_GPIOLIB', are those usually wrong, too?
+[ snip ]
 
-	Arnd
+>the panel was disabled, which caused a 0 to be saved as the value to restore the brightness. intel_panel_disable_backlight
+>merely sets the brightness to 0. Commenting out this call allows the correct brightness value to be saved.
+
+> Thoughts?
+
+Use this patch instead:
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index a9e0c7b..6f56676 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -262,8 +262,6 @@ void intel_panel_disable_backlight(struct drm_device *dev)
+                dev_priv->backlight_level = intel_panel_get_backlight(dev);
+                dev_priv->backlight_enabled = false;
+        }
+-
+-       intel_panel_set_backlight(dev, 0);
+ }
+ 
+ void intel_panel_enable_backlight(struct drm_device *dev)
+
