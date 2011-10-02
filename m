@@ -1,177 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1JBTpH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 15:45:07 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:55507 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab1JBTpB (ORCPT
+	id S1754447Ab1JBTpa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 15:45:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab1JBTp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 15:45:01 -0400
-Message-ID: <4E88BF33.10407@linux.vnet.ibm.com>
-Date: Mon, 03 Oct 2011 01:14:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Sun, 2 Oct 2011 15:45:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 15/30] usb/musb: use a Kconfig choice to pick the right DMA method
+Date: Sun, 02 Oct 2011 21:44:26 +0200
+Message-ID: <1546914.88vcgxkfJf@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111002185608.GA25690@legolas.emea.dhcp.ti.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1757336.Qk72n3s00p@wuerfel> <20111002185608.GA25690@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        lucas.demarchi@profusion.mobi, linux-pm@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] CPU hotplug, freezer: Fix bugs in CPU hotplug call path
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:CqY1RtUGI2huCIqJ8NWD2A0kgmtX+yYM4+m9GpAixef
+ LVGz1Ri2C3kiutT4rGn3CzWCi3WLv+EO2W9dUp88PLtX+foKVh
+ u7OjEdYZx63DId0lZzoHN+VTSl/8i0CG18pOTicSYcoQ/hkVx1
+ JH8TbIusLaVaZAMoc1P+Y9XDag8rYXH/QWjfBmKv6apm3QBbba
+ ijqlnSqlZBH5QXsOostWHjTe/6AYXbLtOZ4uql3OIs9oe8VgeF
+ e07TCuFvBZZ7W8UU5KORPH10Su9TY0A0iLE8HFyqu5QaV+cowr
+ zaTSHG8i/uTkOPd6s9W8Yeb2DPYULoyBQ0VjICuzGvQIxkeI0P
+ /rqetFjd3ZhqLOuh4elY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the CPU hotplug infrastructure to offline/online CPUs,
-the cpu_up() and cpu_down() functions are used, which internally
-call _cpu_up() and _cpu_down() with the second argument *always*
-set to 0. The second argument is "tasks_frozen", which should be
-correctly set to 1 when tasks have been frozen, even when the freezing
-of tasks may be due to an event unrelated to CPU hotplug, such as
-a suspend operation in progress, in which case the freezer subsystem
-freezes all the freezable tasks.
+On Sunday 02 October 2011 21:56:09 Felipe Balbi wrote:
+> 
+> > Unfortunately, even with the dma parts out of the way there is
+> > a lot that needs to be done to make musb, ehci or ohci
+> > really cross-platform. Right now, you can only have one
+> > platform driver glue for each of those drivers, and they
+> 
+> that's not true for musb. I can already compile am35x and omap2430
+> together. TUSB is a different story though. With a small effort, we
+> could also allow DaVinci and the like to compile cleanly and work.
 
-Not giving the correct value for the 'tasks_frozen' argument can potentially
-lead to a lot of issues since this will send a wrong notification via the
-notifier mechanism leading to the execution of inappropriate code
-by the callbacks registered for the notifiers. That is, instead of
-CPU_ONLINE_FROZEN and CPU_OFFLINE_FROZEN notifications, it results in
-CPU_ONLINE and CPU_OFFLINE notifications to be sent all the time,
-irrespective of the actual state of the system (i.e., whether tasks
-are frozen or not).
+Ok, good.
 
-This patch adds a check in cpu_up() and cpu_down() to see whether
-the tasks have been frozen (by any event) so that they can call
-_cpu_up() and _cpu_down() respectively by supplying the correct
-value as the second argument based on the state of the system.
-This in turn means that the correct notifications are sent, thus
-ensuring that all the registered callbacks do the right thing.
+> > should eventually be converted to a large library module for
+> > the core, with independent platform driver front-end, similar
+> 
+> that's how MUSB works now and that's what I have been discussing with
+> Alan Stern for the past month or so, wrt to *HCI. There are even patches
+> floating on linux-usb right now trying to hash out the problems.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Ah, glad to see that is happening. I can probably get rid of a bunch
+of randconfig patches I have for those then.
 
- include/linux/freezer.h |    4 ++++
- kernel/cpu.c            |    9 +++++++--
- kernel/power/process.c  |   24 +++++++++++++++++++++++-
- 3 files changed, 34 insertions(+), 3 deletions(-)
+> Maybe you should have consulted the maintainers of those drivers before
+> making such statements.
+>
+> MUSB is not the best example because of its history. I understand the
+> DMA part is still really messy, but we have been working very hard to
+> hash the problems and still allow new glue layers to be merged.
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 1effc8b..3a37d8b 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -51,6 +51,10 @@ extern void refrigerator(void);
- extern int freeze_processes(void);
- extern void thaw_processes(void);
+Sorry if I have made my statement sound like an accusation, it wasn't
+meant as one, merely as a sigh at having identified yet another area
+that needs to be changed in order to have cross-platform ARM kernels
+working in every case.
  
-+extern void set_tasks_frozen_flag(void);
-+extern void clear_tasks_frozen_flag(void);
-+extern int tasks_are_frozen(void);
-+
- static inline int try_to_freeze(void)
- {
- 	if (freezing(current)) {
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 12b7458..e4530ea 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -15,6 +15,7 @@
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
- #include <linux/gfp.h>
-+#include <linux/freezer.h>
- 
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -272,6 +273,7 @@ out_release:
- int __ref cpu_down(unsigned int cpu)
- {
- 	int err;
-+	int tasks_frozen;
- 
- 	cpu_maps_update_begin();
- 
-@@ -280,7 +282,8 @@ int __ref cpu_down(unsigned int cpu)
- 		goto out;
- 	}
- 
--	err = _cpu_down(cpu, 0);
-+	tasks_frozen = tasks_are_frozen();
-+	err = _cpu_down(cpu, tasks_frozen);
- 
- out:
- 	cpu_maps_update_done();
-@@ -328,6 +331,7 @@ out_notify:
- int __cpuinit cpu_up(unsigned int cpu)
- {
- 	int err = 0;
-+	int tasks_frozen;
- 
- #ifdef	CONFIG_MEMORY_HOTPLUG
- 	int nid;
-@@ -373,7 +377,8 @@ int __cpuinit cpu_up(unsigned int cpu)
- 		goto out;
- 	}
- 
--	err = _cpu_up(cpu, 0);
-+	tasks_frozen = tasks_are_frozen();
-+	err = _cpu_up(cpu, tasks_frozen);
- 
- out:
- 	cpu_maps_update_done();
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 0cf3a27..7642314 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -17,11 +17,30 @@
- #include <linux/delay.h>
- #include <linux/workqueue.h>
- 
--/* 
-+/*
-  * Timeout for stopping processes
-  */
- #define TIMEOUT	(20 * HZ)
- 
-+static atomic_t tasks_frozen = ATOMIC_INIT(0);
-+
-+void set_tasks_frozen_flag(void)
-+{
-+	atomic_set(&tasks_frozen, 1);
-+}
-+
-+void clear_tasks_frozen_flag(void)
-+{
-+	atomic_set(&tasks_frozen, 0);
-+}
-+
-+int tasks_are_frozen(void)
-+{
-+	int ret;
-+	ret = atomic_read(&tasks_frozen);
-+	return ret;
-+}
-+
- static inline int freezable(struct task_struct * p)
- {
- 	if ((p == current) ||
-@@ -153,6 +172,8 @@ int freeze_processes(void)
- 		goto Exit;
- 	printk("done.");
- 
-+	set_tasks_frozen_flag();
-+
- 	oom_killer_disable();
-  Exit:
- 	BUG_ON(in_atomic());
-@@ -191,5 +212,6 @@ void thaw_processes(void)
- 	thaw_tasks(false);
- 	schedule();
- 	printk("done.\n");
-+	clear_tasks_frozen_flag();
- }
- 
+> How about taking a sneak pick at what the code does right now ? As of
+> today, I can even even have all UDC controller drivers into one kernel
+> and I generally compile x86 with all controllers available. There's some
+> very small work that has to be done on each of the UDC drivers to remove
+> any references to <arch/..> <asm/..> and <plat/..> headers but that work
+> in in progress.
 
+I didn't really see any problems with UDC at all. What I saw were a lot
+of build problems with the musb host side, and I rewrote this patch half
+a dozen times before I ended up with a version that consistently built
+without making the code look worse.
 
+I also agree that the musb implementation is less of a problem than
+ohci/ehci in its current form, as it already is layered in the right
+way. I did not attempt to turn the Kconfig 'choice' statement there
+into a flat list though, so I wouldn't know what problems to expect.
+
+	Arnd
