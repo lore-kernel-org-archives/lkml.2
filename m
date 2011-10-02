@@ -1,52 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab1JBPcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 11:32:48 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43497 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab1JBPcl convert rfc822-to-8bit (ORCPT
+	id S1753225Ab1JBPdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 11:33:11 -0400
+Received: from mx.binnacle.cx ([74.95.187.105]:52448 "EHLO mx.binnacle.cx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752921Ab1JBPdF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 11:32:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317541807.6176.120.camel@marge.simson.net>
-References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
-	<CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
-	<1317447669.6337.24.camel@marge.simson.net>
-	<CAOVSwNEQzhzoKwnW5dZn8YsL5G+80_yvodmeJKBs2dSAxn7MsQ@mail.gmail.com>
-	<1317541807.6176.120.camel@marge.simson.net>
-Date: Sun, 2 Oct 2011 17:32:40 +0200
-Message-ID: <CAOVSwNF8Qv7ZdARusZv3drcZsYu-=L6-oxcxDHnTu+4sLuzjXw@mail.gmail.com>
-Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
-From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 2 Oct 2011 11:33:05 -0400
+Message-Id: <6.2.5.6.2.20111002110545.03a82460@binnacle.cx>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Sun, 02 Oct 2011 11:06:25 -0400
+To: Eric Dumazet <eric.dumazet@gmail.com>
+From: starlight@binnacle.cx
+Subject: Re: big picture UDP/IP performance question re 2.6.18
+  -> 2.6.32
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <1317540066.3802.32.camel@edumazet-laptop>
+References: <6.2.5.6.2.20111001215241.03a7ed48@binnacle.cx>
+ <1317540066.3802.32.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 2, 2011 at 9:50 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Sat, 2011-10-01 at 22:29 +0200, Tadeus (Eus) Prastowo wrote:
->> On Sat, Oct 1, 2011 at 7:41 AM, Mike Galbraith <efault@gmx.de> wrote:
->> > On Fri, 2011-09-30 at 21:12 +0200, Tadeus (Eus) Prastowo wrote:
->> >> > Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
->> >> > task get the privilege of SCHED_FIFO task for running as long as it
->> >> > wishes even when the task giving the inheritance does not have such
->> >> > privilege?
->> >
->> > Existence of a critical section > slice would be the real problem, no?
->>
->> No, it's not a problem because if a real-time system designer puts a
->> real-time task under SCHED_RR, he will calculate the length of the
->> critical section by taking into account the slice.
+At 09:21 AM 10/2/2011 +0200, Eric Dumazet wrote:
+>Le dimanche 02 octobre 2011 �  01:33 -0400, 
 >
-> Submit a patch, and see if it flies.
+>You might try to disable any fancy power saving
+>mode in your machine.  Maybe on your machine, cost
+>to enter/exit deep sleep state is too high.
 
-Okay, thank you for the direction. It seems that only with a patch I
-can get the answer ;-)
+I'll check this out.  It's an Opteron 6174 and
+so recent and with all the aggressive power
+saving AMD can dish out.  Note that 'cpuspeed'
+is turned off.  Only thing I can think of
+off the top of my head is to boot with 
+'nohalt' (which used to be idle=poll).  If
+anyone knows further Magney Cours tweaks
+please let me know.
 
->        -Mike
+>Just to clarify a bit :
+>
+>Sometimes, optimizing one part of the kernel can
+>have a negative impact on some workloads because
+>we end up doing more sleep/wakeup of consumers :
+>Several threads might try to acquire a lock at the
+>same time, while previously they got no
+>contention.
+>
+>In 2.6.35, commit c377411f2494a (net:
+>sk_add_backlog() take rmem_alloc into account)
+>changed backlog limit, avoid taking socket lock on
+>flood, allowing to receive 200.000 pps on a test
+>machine instead of 100pps.  But the receiver was
+>doing a plain
+>
+>while (1)
+>	recv(...);
+>
+>And maximum throughput was reached because task
+>never called scheduler...
 
---
-Eus
+Sometimes I think it might be nice to run without
+an OS at all :-)
+
+We are looking at various kernel bypass approaches
+for receiving packets and it's in my mind that
+one of these may get us to running on newer
+kernels without giving up performance.
+
+>I see nothing obvious in the profile but userland
+>processing, futex calls.
+
+Indeed, this is from the app-internal queuing
+I mentioned in the last post.  Because UDP is
+presently unusable in any .32 or .39 kernel
+I'm stuck with using packet sockets as a proxy
+for them.  As mentioned, the two produce very
+similar results in all past tests.
+
+>Network processing seems to account less than 10%
+>of total cpu...  All this sounds more a process
+>scheduling regression than a network stack one..
+
+Interesting.  When I start testing kernel bypass
+the degree to which this is the case should become
+clear.
+
+>On new kernels, you can check if your udp sockets
+>drops frames because of rcvbuffer being full (cat
+>/proc/net/udp, check last column 'drops')
+
+As I've stated several times, all these tests are
+run with verifiable zero data loss.  The max-load
+test is the highest rate were zero data loss can
+be maintained.  UDP socket buffers are set to 64MB.
+
+>To check if softirq processing hit some limits :
+>cat /proc/net/softnet_stat
+
+Ok.
+
+>Please send full "dmesg" output 
+
+Ok.
+
+At 07:47 AM 10/2/2011 -0700, Stephen Hemminger wrote:
+>Try disabling PCI DMA remapping. The additional
+>overhead of setting up IO mapping can be a
+>performance buzz kill. Try CONGIG_DMAR=n
+
+Definitely.  Thanks for the tip!
+
+-----
+
+Probably won't get to these until Monday or
+Tuesday.
+
