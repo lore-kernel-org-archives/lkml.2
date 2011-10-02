@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1JBBEU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 21:04:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43863 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab1JBBEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 21:04:16 -0400
-Message-ID: <4E87B885.50005@zytor.com>
-Date: Sat, 01 Oct 2011 18:04:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <201110012333.55428.rjw@sisk.pl> <4E8793B6.8030405@zytor.com> <201110020304.28288.rjw@sisk.pl>
-In-Reply-To: <201110020304.28288.rjw@sisk.pl>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752908Ab1JBBSc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 21:18:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57608 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab1JBBSY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 21:18:24 -0400
+Subject: [PATCH] ASoC: kirkwood-i2s: Add __devexit_p at necessary place
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 02 Oct 2011 09:18:17 +0800
+Message-ID: <1317518297.8024.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2011 06:04 PM, Rafael J. Wysocki wrote:
-> 
-> OK, I'm taking this as "5 years is fine by us". :-)
-> 
-> And the recommended procedure for rotating keys seems to be (1) generate
-> a new key and (2) make as many people as you can sign it before the old
-> one expires, right?
-> 
+According to the comments in include/linux/init.h:
 
-(3) revoke the old key with a status code of "no longer in use", or just
-let it expire.
+"Pointers to __devexit functions must use __devexit_p(function_name), the
+wrapper will insert either the function_name or NULL, depending on the config
+options."
 
->> Some people have decided to opt for an unlimited key, but that
->> *requires* that you have a way to revoke the old key, which is why we
->> are considering a key revocation escrow service.
-> 
-> That service will be necessary anyway in case some keys are lost or
-> compromised.
-> 
-> I wonder what the procedure of restoring kernel.org access in case one
-> has lost keys is supposed to be?
+We have __devexit annotation for kirkwood_i2s_dev_remove(), thus add __devexit_p
+at necessary place.
 
-Get a new key and get it re-signed.  We can work out specific details at KS.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/kirkwood/kirkwood-i2s.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	-hpa
+diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+index d0bcf3f..715e841 100644
+--- a/sound/soc/kirkwood/kirkwood-i2s.c
++++ b/sound/soc/kirkwood/kirkwood-i2s.c
+@@ -476,7 +476,7 @@ static __devexit int kirkwood_i2s_dev_remove(struct platform_device *pdev)
+ 
+ static struct platform_driver kirkwood_i2s_driver = {
+ 	.probe  = kirkwood_i2s_dev_probe,
+-	.remove = kirkwood_i2s_dev_remove,
++	.remove = __devexit_p(kirkwood_i2s_dev_remove),
+ 	.driver = {
+ 		.name = DRV_NAME,
+ 		.owner = THIS_MODULE,
+-- 
+1.7.4.1
+
+
 
