@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1JBS1s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 14:27:48 -0400
-Received: from 1wt.eu ([62.212.114.60]:33376 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab1JBS1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 14:27:42 -0400
-Date: Sun, 2 Oct 2011 20:27:37 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Andy <akwatts@ymail.com>
-Cc: Greg KH <greg@kroah.com>, tmhikaru@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hpa@zytor.com
-Subject: Re: kernel.org status: hints on how to check your machine for intrusion
-Message-ID: <20111002182737.GK18690@1wt.eu>
-References: <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111002022643.GA4076@kroah.com> <20111002033058.GA20166@zeus> <20111002043948.GA6934@kroah.com> <20111002120352.GA26850@zeus>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111002120352.GA26850@zeus>
-User-Agent: Mutt/1.4.2.3i
+	id S1753928Ab1JBSbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 14:31:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54449 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab1JBSbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 14:31:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 21/30] sound/soc/omap: limit to omap2plus
+Date: Sun, 02 Oct 2011 20:30:04 +0200
+Message-ID: <2199880.QsjloS3A60@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111002212426.40a1665618c818fc1f4e001d@bitmer.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <4511363.OPCpQMvKWi@wuerfel> <20111002212426.40a1665618c818fc1f4e001d@bitmer.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:oj9zV7nnnw/aeB7DyY0z+XnjRq2z1FtVUgnpVkaZ/Sw
+ 7cfyQ3jEbhpHfdckVziO82aqPIJL5YcyNO/McX/SN/dwP6pEfw
+ Ms7cx2U6mp/3NBgXW4WgCAD4P22cM7tCqYlvBft7Xv75k5/0SS
+ /P8uguxareK2Bzs6asU+yLehqSDQILwNlSYexENH0hjyE/Q7bN
+ xU6D18L0YIh08PpBqRbpWWQPwAi45/myEq5D0b8/CysOjPcsvW
+ ewhu6taqNDQiv5QuirVZU5PxORULxa7FRbyP0NtnZbKuwI9WhN
+ 3NGHRCnuQ/wY66uucXpOgvVZqRjJNufslm7fHDs9dlPw7RoQ/i
+ c4HnTTzjd4vtFO4iQ7fk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 02, 2011 at 07:03:52AM -0500, Andy wrote:
-> Many of us would benefit from having signatures for some of the recent
-> kernels missing for your list as well as Willy's. For example, a few
-> systems of mine run 2.6.39.4 due to sleep-related issues with 3.0.x+ and
-> those hardware platforms.
-> 
-> It would be great to have fingerprints for:
-> 
-> 2.6.35.1 - 2.6.35.9 (2.6.35.14?)
+On Sunday 02 October 2011 21:24:26 Jarkko Nikula wrote:
+> Now when I remember we had one build error. Hopefully it was the same
+> than you observed?
 
-2.6.35.1...11 were covered by my last mail. The signatures are
-md5 but that should be enough for checking.
+I think it was something different, but it's possible.
 
-> 2.6.36.1 - 2.6.36.4
-> 2.6.37.1 - 2.6.37.6
-> 2.6.38.1 - 2.6.38.8
-> 2.6.39.1 - 2.6.39.4
-
-I did not have these tags.
-
-Regards,
-Willy
-
+	Arnd
