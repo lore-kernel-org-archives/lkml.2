@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab1JBJFT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 05:05:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34824 "EHLO mx1.redhat.com"
+	id S1752017Ab1JBJI0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 05:08:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32831 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1JBJFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 05:05:14 -0400
-Message-ID: <4E88293E.5050006@redhat.com>
-Date: Sun, 02 Oct 2011 11:05:02 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1751515Ab1JBJIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 05:08:17 -0400
+Date: Sun, 2 Oct 2011 11:09:00 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
+Message-ID: <20111002090900.GA29706@redhat.com>
+References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
+ <20110819152335.GA19489@redhat.com>
+ <1313771587.12243.16.camel@lappy>
+ <20110820200043.GB5276@redhat.com>
+ <871uvdryq2.fsf@rustcorp.com.au>
+ <20110919060150.GB1569@redhat.com>
+ <874o09x97m.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Liu >> \"Liu, Jinsong\"" <jinsong.liu@intel.com>,
-        "Tian, Kevin" <kevin.tian@intel.com>
-Subject: Re: [PATCH] KVM: x86: Use do_div for tsc deadline calculation
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au> <4E84CC00.8090702@xenotime.net> <20110930085810.11bc8e2e38e1400a8b0b4cec@canb.auug.org.au> <4E85ACFC.1090509@siemens.com>
-In-Reply-To: <4E85ACFC.1090509@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874o09x97m.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2011 02:50 PM, Jan Kiszka wrote:
-> Required on i386 hosts.
->
->
+On Mon, Sep 19, 2011 at 05:19:49PM +0930, Rusty Russell wrote:
+> On Mon, 19 Sep 2011 09:01:50 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > On Mon, Sep 19, 2011 at 01:05:17PM +0930, Rusty Russell wrote:
+> > > On Sat, 20 Aug 2011 23:00:44 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > On Fri, Aug 19, 2011 at 07:33:07PM +0300, Sasha Levin wrote:
+> > > > > Maybe this is better solved by copying the way it was done in PCI itself
+> > > > > with capability linked list?
+> > > > 
+> > > > There are any number of ways to lay out the structure.  I went for what
+> > > > seemed a simplest one.  For MSI-X the train has left the station.  We
+> > > > can probably still tweak where the high 32 bit features
+> > > > for 64 bit features are.  No idea if it's worth it.
+> > > 
+> > > Sorry, this has been in the back of my mind.  I think it's a good idea;
+> > > can we use the capability linked list for pre-device specific stuff from
+> > > now on?
+> > > 
+> > > Thanks,
+> > > Rusty.
+> > 
+> > Do we even want capability bits then?
+> > We can give each capability an ack flag ...
+> 
+> We could have, and if I'd known PCI when I designed virtio I might have.
+> 
+> But it's not easy now to map structure offsets to that scheme, and we
+> can't really force such a change on the non-PCI users.  So I'd say we
+> should only do it for the non-device-specific options.  ie. we'll still
+> have the MSI-X case move the device-specific config, but we'll use a
+> linked list from now on, eg. for the next 32 features bits...
+> 
+> Thoughts?
+> Rusty.
 
-Thanks, applied.
+So I thought about this some more. It probably makes sense to
+stop adding info in the io space, and start adding new stuff in
+memory space which is much less contrained.
+
+As we need to keep compatibility, and also because memory access is
+much slower with kvm so we prefer io for datapath, we could have the
+first X bytes still mirrored in io space.
+
+MSIX is there, and it's pointed to from config space,
+so we could just put our stuff at offset 0.
+
+Or if we wanted a lot of flexibility, we could add pointers, in config
+space, to device specific and non device specific regions in memory
+space.
+
+Makes sense?
 
 -- 
-error compiling committee.c: too many arguments to function
-
+MST
