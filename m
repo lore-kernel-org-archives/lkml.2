@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab1JAXhk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 19:37:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34325 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab1JAXhd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 19:37:33 -0400
+	id S1752265Ab1JBALV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 20:11:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43677 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751093Ab1JBALS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Oct 2011 20:11:18 -0400
+Message-ID: <4E87AC04.2070405@zytor.com>
+Date: Sat, 01 Oct 2011 17:10:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20111001143900.GH28234@thunk.org>
-References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
-	<20111001143900.GH28234@thunk.org>
-Date: Sun, 2 Oct 2011 07:37:32 +0800
-Message-ID: <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com>
-Subject: Re: [BUG] copy file result with zero
-From: Dave Young <hidave.darkstar@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Dave Young <hidave.darkstar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Willy Tarreau <w@1wt.eu>
+CC: Andy <akwatts@ymail.com>, schwab@linux-m68k.org, Greg KH <greg@kroah.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for intrusion
+References: <4E8655CD.90107@zytor.com> <20110930235924.GA25176@kroah.com> <20111001141751.GA8937@zeus> <20111001142848.GA27058@kroah.com> <20111001165659.GB18690@1wt.eu> <20111001171916.GA11989@zeus> <20111001175456.GC18690@1wt.eu> <20111001184044.GA13608@zeus> <20111001224313.GH18690@1wt.eu>
+In-Reply-To: <20111001224313.GH18690@1wt.eu>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
->> Hi,
->>
->> Weird problem, when I build app from source,
->> make; make install
->> run the command, but got "cannot execute binary file"
->>
->> hexdump shows the installed binary is full of zero
->>
->> Is it related to ext4 fiemap problem described below?
->> http://lwn.net/Articles/429349/
->
-> There is general agreement that /bin/cp should not have been relying
-> on FIEMAP, and I believe the more recent versions of /bin/cp have
-> removed that code by default pending implementation of
-> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
-> FIEMAP implementation that landed in 2.6.39, and you're using
-> 3.1.0-rc6.
+On 10/01/2011 03:43 PM, Willy Tarreau wrote:
+> 
+>   <version> <umask> <user> <group> <tag md5> <tar md5> <tar.gz md5> <status>
+> 
+> Since I can attest that I exclusively extracted the tarballs from the
+> tar.gz and dumped their md5 at the same time, I'm pretty sure that the
+> tar.gz's md5 is OK if the tar's md5 is OK. This will help speed up sig
+> checks on mirrors.
+> 
 
-Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
+By the way, it's usually better to use sha256 or something else more
+modern than MD5.
 
->
->> I finally managed to find the way to reproduce this:
->> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
->> A == B != C
->>
->> ie.
->> cp /bin/ls ls1
->> cp ls1 ls2
->>
->> ls2 will be filled with zero
->
-> If you add a "sync" between the two copies, does that work around the
-> problem?  I bet it will...
+> All the times I got a different MD5 between the tarball and the git
+> tag was because of a different user name in the tarball. It seems
+> that old git versions used to use "git/git" instead of "root/root"
+> now.
 
-Yes, it works
+Yes, that change was introduced in git-1.5.0-rc1.
 
->
-> My suggestion is to upgrade to a newer version of coreutils that
-> doesn't try to use FIEMAP.
+> This is hardcoded so it's not easy to change it, and I suspect
+> that the tar format might have changed a bit, so if we want to check
+> those MD5s, either we check on old mirrors that are 100% safe, or we
+> have to reinstall an old version of git.
 
-Thanks, will try
+... or extract the tarball and diff the contents versus the git tree.
 
->
->                                        - Ted
->
-
-
-
--- 
-Regards
-Dave
+	-hpa
