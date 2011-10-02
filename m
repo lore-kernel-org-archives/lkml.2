@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506Ab1JBUXN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 16:23:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:59646 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1JBUXI (ORCPT
+	id S1754522Ab1JBU3G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 16:29:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55058 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab1JBU3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 16:23:08 -0400
-Date: Sun, 2 Oct 2011 23:22:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] pinctrl: double free on error path in pinctrl_register()
-Message-ID: <20111002202255.GA6991@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E88C82B.0006:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Sun, 2 Oct 2011 16:29:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [PATCH 2/6] ASoC: codecs: AK4641 depends on GPIOLIB
+Date: Sun,  2 Oct 2011 22:28:00 +0200
+Message-Id: <1317587284-2776-3-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317587284-2776-1-git-send-email-arnd@arndb.de>
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:Vhf8zuRsXimmkvXfHaeXZUY40K97dcjP0bzhglANhkL
+ eCOe10BtBTDkfoHebj05W8cnj6aZfFnsF6uyILPNkMyvRtuJc1
+ 1rUdggS9JoLxvopDDCT1pAzrCgm59mtimrCwwj6bWn/qQWMoY5
+ Ip63C1A4qKBD3JuxPkb3Y2i3LTB0miKPRdS0PAYH6Wz1jg8pXj
+ 7cqgnaBlgtiSq/iqUQKWWhFquChD4fB2SK7NKqoZvgmJ9y8F32
+ WFZUfISPwqL0NA9IBq2Eq3GTdUhVKtSmT+S0ssQJ7ZCpjJYUfT
+ tx9rMC2F5KIpSO8v0zAhwVvCrIbdsvumIh1KH/cVm69XjUZjXV
+ zLeeIsJgUQ14DjisbulJAhYfoaV9ZGI/tFNFhPwaNjbABd6Mwm
+ i5vDWSl5rWyNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is duplicated in the error handling after we go to out_err.
+This driver only builds correctly on platforms that use
+GPIOLIB. Disable it otherwise.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>
+---
+ sound/soc/codecs/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index f9263b2..8416a59 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -559,8 +559,6 @@ struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
- 	ret = device_register(&pctldev->dev);
- 	if (ret != 0) {
- 		pr_err("error in device registration\n");
--		put_device(&pctldev->dev);
--		kfree(pctldev);
- 		goto out_err;
- 	}
- 	dev_set_drvdata(&pctldev->dev, pctldev);
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 665d924..4d41447 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -21,7 +21,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_ADS117X
+ 	select SND_SOC_AK4104 if SPI_MASTER
+ 	select SND_SOC_AK4535 if I2C
+-	select SND_SOC_AK4641 if I2C
++	select SND_SOC_AK4641 if I2C && GPIOLIB
+ 	select SND_SOC_AK4642 if I2C
+ 	select SND_SOC_AK4671 if I2C
+ 	select SND_SOC_ALC5623 if I2C
+-- 
+1.7.5.4
+
