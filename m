@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab1JBJgc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 05:36:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab1JBJg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 05:36:26 -0400
-Date: Sun, 2 Oct 2011 11:37:33 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
- support S4
-Message-ID: <20111002093733.GE29706@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
- <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752120Ab1JBJlz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 05:41:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35761 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab1JBJlu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 05:41:50 -0400
+Subject: [PATCH 1/3] ASoC: tegra: Staticise tegra_i2s_dai and
+ tegra_spdif_dai
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Stephen Warren <swarren@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 02 Oct 2011 17:41:40 +0800
+Message-ID: <1317548500.16362.0.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
-> Delete the vq on the freeze callback to prepare for hibernation.
-> Re-create the vq in the restore callback to resume normal function.
-> 
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> ---
->  drivers/block/virtio_blk.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 509760b..9844d2c 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
->  	kfree(vblk);
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int virtblk_freeze(struct virtio_device *vdev)
-> +{
-> +	vdev->config->del_vqs(vdev);
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/tegra/tegra_i2s.c   |    2 +-
+ sound/soc/tegra/tegra_spdif.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-What prevents the guest from trying to use the VQ while
-this is in progress? IF it does, what prevents a crash?
+diff --git a/sound/soc/tegra/tegra_i2s.c b/sound/soc/tegra/tegra_i2s.c
+index f36b996..6728fab 100644
+--- a/sound/soc/tegra/tegra_i2s.c
++++ b/sound/soc/tegra/tegra_i2s.c
+@@ -312,7 +312,7 @@ static struct snd_soc_dai_ops tegra_i2s_dai_ops = {
+ 	.trigger	= tegra_i2s_trigger,
+ };
+ 
+-struct snd_soc_dai_driver tegra_i2s_dai[] = {
++static struct snd_soc_dai_driver tegra_i2s_dai[] = {
+ 	{
+ 		.name = DRV_NAME ".0",
+ 		.probe = tegra_i2s_probe,
+diff --git a/sound/soc/tegra/tegra_spdif.c b/sound/soc/tegra/tegra_spdif.c
+index abe606b..1bd07d1 100644
+--- a/sound/soc/tegra/tegra_spdif.c
++++ b/sound/soc/tegra/tegra_spdif.c
+@@ -232,7 +232,7 @@ static struct snd_soc_dai_ops tegra_spdif_dai_ops = {
+ 	.trigger	= tegra_spdif_trigger,
+ };
+ 
+-struct snd_soc_dai_driver tegra_spdif_dai = {
++static struct snd_soc_dai_driver tegra_spdif_dai = {
+ 	.name = DRV_NAME,
+ 	.probe = tegra_spdif_probe,
+ 	.playback = {
+-- 
+1.7.4.1
 
-> +	return 0;
-> +}
-> +
-> +static int virtblk_restore(struct virtio_device *vdev)
-> +{
-> +	return init_vq(vdev->priv);;
-> +}
-> +#endif
-> +
->  static const struct virtio_device_id id_table[] = {
->  	{ VIRTIO_ID_BLOCK, VIRTIO_DEV_ANY_ID },
->  	{ 0 },
-> @@ -574,6 +587,10 @@ static struct virtio_driver __refdata virtio_blk = {
->  	.probe			= virtblk_probe,
->  	.remove			= __devexit_p(virtblk_remove),
->  	.config_changed		= virtblk_config_changed,
-> +#ifdef CONFIG_PM
-> +	.freeze			= virtblk_freeze,
-> +	.restore		= virtblk_restore,
-> +#endif
->  };
->  
->  static int __init init(void)
-> -- 
-> 1.7.6.2
+
+
