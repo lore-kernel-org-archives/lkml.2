@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab1JBTtM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 15:49:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59871 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab1JBTtJ (ORCPT
+	id S1754481Ab1JBTue (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 15:50:34 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53947 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1JBTu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 15:49:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH 02/26] sound/pxa-zylonite: use a valid device for dev_err()
-Date: Sun, 02 Oct 2011 21:48:13 +0200
-Message-ID: <11180812.GzalXgfRcs@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <20111002184417.GE2857@opensource.wolfsonmicro.com>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <2376094.AH5MH8IXqN@wuerfel> <20111002184417.GE2857@opensource.wolfsonmicro.com>
+	Sun, 2 Oct 2011 15:50:28 -0400
+Date: Sun, 2 Oct 2011 12:50:23 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111002195023.GC31799@mtj.dyndns.org>
+References: <4E88B5E0.6080503@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:OowSiTQY7sQPIhz+BHhUAm+RatqLzcZ0qDN1hfJoyCr
- pqlQY3iYkzxl+em59Sui5pzdi9/ZtLNX3r7Y9QBNz/zx8sB+r6
- Gzx4t+mLgoRvRvr2UAomNcIwwSdJbRJ9ZrDn/hYJhkaxloGMvv
- uvVpH5J8WGs+jOfM09GPEN9DUxQZO521iHnVlNH5wAkdWyNuQ8
- GuSIqN9lnC/6XUUQJnkBhy4FsNKZT9zruECGtSSKGv0TVuBGEq
- 5wbQzfz8aDnpCC+pPaZ44Joefpxp3nNQeFePPayQdFAUsYJQbE
- TJUcxQPp6NKITiqX4oxIndZfJ0/m4KQqoiJ9Sz13hWdoBthbet
- fvp9D8ek9zurxOG7ze/c=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E88B5E0.6080503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 October 2011 19:44:17 Mark Brown wrote:
-> On Sun, Oct 02, 2011 at 08:36:14PM +0200, Arnd Bergmann wrote:
-> 
-> > I also have a few sound/soc fixes in the respective samsung and
-> > omap series, so if you prefer I can move them to a sound/soc
-> > series and submit them all at once to you instead.
-> 
-> Please do.  It's probably not so important at this point in the release
-> cycle but we've got a tendency to run into cross tree issues with ASoC
-> and when it's not trivial build stuff I'd rather review anyway.
-> 
-> Please split the OMAP stuff out, Liam manages the tree for those when
-> he's available (though right now he's only intermittently online so I'm
-> applying those too).
+Hello,
 
-Almost all the patches I have are both trivial and unimportant corner
-cases. I'm removing the ones I have from all the other branches now
-and will try to get them to you both asap.
+On Mon, Oct 03, 2011 at 12:35:04AM +0530, Srivatsa S. Bhat wrote:
+> So, this patch addresses this issue by ensuring that microcode is not freed
+> from kernel memory, nor invalidated when a CPU goes offline. Thus once the
+> kernel gets the microcode during boot-up, it will never have to depend on
+> userspace ever again to get microcode, since it never releases the copy it
+> already has. So every run of the microcode callback for CPU online event will
+> now succeed irrespective of whether userspace is frozen or not. As a result,
+> this fixes the task freezing failure encountered while running CPU hotplug
+> stress test along with suspend/resume operations simultaneously.
 
-> > The subject line was hand-written, any problem in there is purely
-> > my own. What is the naming you want for sound/soc, should I use
-> > "ASoC: pxa-zylonite:" or "sound/soc/pxa/zylonite:" or something
-> > else?
-> 
-> ASoC: is the bit that I'm looking for.
+I'm not familiar with how microcode is supposed to be managed but is
+it impossible for the newly hotplugged CPU (an actual hot unplug /
+plug) may not like the microcode loaded for the previous CPU?  Isn't
+that why CPU_DEAD was invalidating the microcode?
 
-Ok, got it.
+Thanks.
 
-	Arnd
+-- 
+tejun
