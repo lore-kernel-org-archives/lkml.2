@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1JBPWR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 11:22:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34170 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1JBPWK (ORCPT
+	id S1753189Ab1JBPcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 11:32:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43497 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab1JBPcl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 11:22:10 -0400
-Date: Sun, 2 Oct 2011 16:21:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] ARM: export rtc_lock for nvram driver
-Message-ID: <20111002152155.GW11710@n2100.arm.linux.org.uk>
-References: <1317496920-7764-1-git-send-email-arnd@arndb.de> <1317496920-7764-2-git-send-email-arnd@arndb.de>
+	Sun, 2 Oct 2011 11:32:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317496920-7764-2-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1317541807.6176.120.camel@marge.simson.net>
+References: <CAOVSwNFp=p3TmkfvB=BKq8b_jJVTywRspJSE3fhyKQaCfnzUvg@mail.gmail.com>
+	<CAOVSwNHoNuNBsuUecZhF0iWOL3PbJQt0cHR7Evf+gW6Q6SGA7Q@mail.gmail.com>
+	<1317447669.6337.24.camel@marge.simson.net>
+	<CAOVSwNEQzhzoKwnW5dZn8YsL5G+80_yvodmeJKBs2dSAxn7MsQ@mail.gmail.com>
+	<1317541807.6176.120.camel@marge.simson.net>
+Date: Sun, 2 Oct 2011 17:32:40 +0200
+Message-ID: <CAOVSwNF8Qv7ZdARusZv3drcZsYu-=L6-oxcxDHnTu+4sLuzjXw@mail.gmail.com>
+Subject: Re: [Priority Inheritance] SCHED_FIFO or SCHED_RR?
+From: "Tadeus (Eus) Prastowo" <0x657573@googlemail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 09:21:50PM +0200, Arnd Bergmann wrote:
-> The rtc_lock is used by both the nvram and rtc drivers, so
-> we need to export it if at least one of the two is built,
-> not just for the rtc driver.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/kernel/time.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-> index cb634c3..5a54b95 100644
-> --- a/arch/arm/kernel/time.c
-> +++ b/arch/arm/kernel/time.c
-> @@ -39,13 +39,11 @@
->   */
->  static struct sys_timer *system_timer;
->  
-> -#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE)
-> +#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
-> +    defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
->  /* this needs a better home */
->  DEFINE_SPINLOCK(rtc_lock);
-> -
-> -#ifdef CONFIG_RTC_DRV_CMOS_MODULE
->  EXPORT_SYMBOL(rtc_lock);
-> -#endif
->  #endif	/* pc-style 'CMOS' RTC support */
+On Sun, Oct 2, 2011 at 9:50 AM, Mike Galbraith <efault@gmx.de> wrote:
+> On Sat, 2011-10-01 at 22:29 +0200, Tadeus (Eus) Prastowo wrote:
+>> On Sat, Oct 1, 2011 at 7:41 AM, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Fri, 2011-09-30 at 21:12 +0200, Tadeus (Eus) Prastowo wrote:
+>> >> > Why should a SCHED_NORMAL task inheriting the priority of a SCHED_RR
+>> >> > task get the privilege of SCHED_FIFO task for running as long as it
+>> >> > wishes even when the task giving the inheritance does not have such
+>> >> > privilege?
+>> >
+>> > Existence of a critical section > slice would be the real problem, no?
+>>
+>> No, it's not a problem because if a real-time system designer puts a
+>> real-time task under SCHED_RR, he will calculate the length of the
+>> critical section by taking into account the slice.
+>
+> Submit a patch, and see if it flies.
 
-Some architectures always define this lock and export it irrespective of
-the configuration.  Others define it, but never export it.  Some define
-it but only export it for 32-bit builds.
+Okay, thank you for the direction. It seems that only with a patch I
+can get the answer ;-)
 
-One thing springs to mind here - why isn't there a symbol to enable the
-presence of rtc_lock in the kernel?  A second related point is why is
-this in arch code?
+>        -Mike
 
+--
+Eus
