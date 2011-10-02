@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab1JBRTA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 13:19:00 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:43763 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab1JBRS4 (ORCPT
+	id S1753711Ab1JBRZP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 13:25:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42498 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab1JBRZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 13:18:56 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: 3.1-rc8 still references 2.6.42 when ioctls will be removed
-Date: Sun, 2 Oct 2011 19:19:01 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.1; x86_64; ; )
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-References: <alpine.DEB.2.02.1110020640390.3972@p34.internal.lan> <4E889839.30005@xenotime.net>
-In-Reply-To: <4E889839.30005@xenotime.net>
+	Sun, 2 Oct 2011 13:25:10 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110021919.01918.laurent.pinchart@ideasonboard.com>
+X-Originating-IP: [93.172.135.251]
+In-Reply-To: <20110929200423.GB26760@kroah.com>
+References: <1316792756-3395-1-git-send-email-joerg.roedel@amd.com>
+ <1316792756-3395-9-git-send-email-joerg.roedel@amd.com> <20110929200423.GB26760@kroah.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 2 Oct 2011 19:24:49 +0200
+Message-ID: <CAK=WgbabhTk-iAqdW1kSMtzdQNpxdz1kKhEMZDGXwYNknCONGQ@mail.gmail.com>
+Subject: Re: [PATCH 08/10] iommu/omap: Use bus_set_iommu instead of register_iommu
+To: Greg KH <greg@kroah.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, iommu@lists.linux-foundation.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, joro@8bytes.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+(sorry for the late response; we had a big holiday here and I was
+forced away from my keyboard :)
 
-On Sunday 02 October 2011 18:58:33 Randy Dunlap wrote:
-> On 10/02/11 03:41, Justin Piszcz wrote:
-> > Hi,
-> > 
-> > FYI--
-> > 
-> > [   48.519528] uvcvideo: Deprecated UVCIOC_CTRL_{ADD,MAP_OLD,GET,SET}
-> > ioctls will be removed in 2.6.42.
-> > 
-> > $ grep 2.6.42 -r /usr/src/linux/*
-> > 
-> > /usr/src/linux/drivers/media/video/uvc/uvc_v4l2.c:                
-> > "ioctls will be removed in 2.6.42.\n");
-> 
-> Let's tell the linux-media & Laurent.
-> 
-> But linux-next does not contain that line nor that function.
-> I guess something in linux-next needs to be merged into mainline.
+On Thu, Sep 29, 2011 at 11:04 PM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Sep 23, 2011 at 05:45:54PM +0200, Joerg Roedel wrote:
+>> -     register_iommu(&omap_iommu_ops);
+>> +     bus_set_iommu(&platform_bus_type, &omap_iommu_ops);
+>
+> I too worry about this.
+>
+> It kind of looks like the omap code should not be using the platform bus
+> code for this, but instead, use their own bus code, as I'm sure that not
+> all platform devices really work properly with this iommu controller,
+> right?
 
-2.6.42 being 3.2, I've sent a patch to remove the deprecated ioctls. Mauro has 
-applied it to his tree and will push it to Linus for v3.2.
+You're right that not all omap platform devices will work with this
+iommu device.
 
--- 
-Regards,
+But maybe it's worth explaining the bigger difference here: there is
+no omap bus really that makes sense here as much as pci does with x86.
 
-Laurent Pinchart
+On OMAP each iommu device services a single, and specific, on-chip
+device (and not a group of devices that resides on a specific hardware
+bus). E.g. on OMAP4 we have an iommu for the DSP, and another one for
+the dual Cortex M3.
+
+Those remote processors devices happen to be platform devices (because
+there isn't really any relevant hardware bus here), and board code (or
+DT) will set their iommu archdata to point at the relevant iommu
+devices they're physically attached to. This way their drivers will be
+able to configure the appropriate iommu devices as needed.
+
+Binding the iommu ops to the platform bus will not enable other
+platform drivers to configure the iommu: no other device will have the
+relevant iommu archdata set, and any attempt to erroneously configure
+the iommu by an unrelated driver will immediately fail (i.e.
+iommu_attach_device() will fail).
+
+In that sense, binding the iommu ops to the platform bus does not
+increase the chance of error. I guess it even reduces it, because
+today the iommu ops are globally accessible.
+
+I was worried that with this change, sub-devices of the original
+platform device, that belong to a different bus (e.g. virtio or
+rpmsg), might not be able to access those iommu ops anymore. But I
+guess that as long as we set the parent-child device hierarchy
+appropriately, that would be a non issue.
+
+Thanks,
+Ohad.
