@@ -1,112 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1JBWLF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 18:11:05 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:34365 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751913Ab1JBWK6 (ORCPT
+	id S1754741Ab1JBWUP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 18:20:15 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52806 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab1JBWUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 18:10:58 -0400
-Date: Mon, 3 Oct 2011 01:10:51 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 15/30] usb/musb: use a Kconfig choice to pick the right
- DMA method
-Message-ID: <20111002221050.GA25790@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
- <1757336.Qk72n3s00p@wuerfel>
- <20111002185608.GA25690@legolas.emea.dhcp.ti.com>
- <1546914.88vcgxkfJf@wuerfel>
+	Sun, 2 Oct 2011 18:20:07 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <1546914.88vcgxkfJf@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317470040-2000-1-git-send-email-linkinjeon@gmail.com>
+References: <1317470040-2000-1-git-send-email-linkinjeon@gmail.com>
+Date: Mon, 3 Oct 2011 00:20:06 +0200
+Message-ID: <CAAgDR1Mh3W6S1wx9Ag9=LVNxpvfY4tSGt4yN7WzeL8oa48654A@mail.gmail.com>
+Subject: Re: [PATCH v7] mmc : general purpose partition support.
+From: Sebastian Rasmussen <sebras@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, adrian.hunter@intel.com,
+        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
+        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
+        per.forlin@stericsson.com, johan.rudholm@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> It allows gerneral purpose partitions in MMC Device.
 
-Hi,
+Reading this patch raised a few questions with me. I hope
+you can find some time to answer some of them.
 
-On Sun, Oct 02, 2011 at 09:44:26PM +0200, Arnd Bergmann wrote:
-> > that's how MUSB works now and that's what I have been discussing with
-> > Alan Stern for the past month or so, wrt to *HCI. There are even patches
-> > floating on linux-usb right now trying to hash out the problems.
->=20
-> Ah, glad to see that is happening. I can probably get rid of a bunch
-> of randconfig patches I have for those then.
+> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+> After patching, we can see general purpose partitions like this.
+>> cat /proc/partitions
+>          179 0 847872 mmcblk0
+>          179 192 4096 mmcblk0gp3
+>          179 160 4096 mmcblk0gp2
+>          179 128 4096 mmcblk0gp1
+>          179 96  1052672 mmcblk0gp0
+>          179 64  1024 mmcblk0boot1
+>          179 32  1024 mmcblk0boot0
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  drivers/mmc/card/block.c |   31 +++++++++++++++++--------------
+>  drivers/mmc/core/mmc.c   |   45 +++++++++++++++++++++++++++++++++++++++++++--
+>  include/linux/mmc/card.h |   33 ++++++++++++++++++++++++++++++++-
+>  include/linux/mmc/mmc.h  |    2 +-
+>  4 files changed, 93 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 1ff5486..56f7185 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -1377,26 +1377,29 @@ static int mmc_blk_alloc_part(struct mmc_card *card,
+>        return 0;
+>  }
+>
+> +/* MMC Physical partition consist of two boot partitons and
+> + * four general purpose partitions.
 
-glad to hear you're sorting out randconfig :-)
+up to four general purpose partitions.
 
-> > Maybe you should have consulted the maintainers of those drivers before
-> > making such statements.
-> >
-> > MUSB is not the best example because of its history. I understand the
-> > DMA part is still really messy, but we have been working very hard to
-> > hash the problems and still allow new glue layers to be merged.
->=20
-> Sorry if I have made my statement sound like an accusation, it wasn't
-> meant as one, merely as a sigh at having identified yet another area
-> that needs to be changed in order to have cross-platform ARM kernels
-> working in every case.
+> + * if the register of respective partitions is set in ext_csd,
+> + * it allocate block device to be accessed.
 
-no big deal ;-)
+For each partition enabled in EXT_CSD a block device will
+be allocated to provide access to the partition.
 
-> > How about taking a sneak pick at what the code does right now ? As of
-> > today, I can even even have all UDC controller drivers into one kernel
-> > and I generally compile x86 with all controllers available. There's some
-> > very small work that has to be done on each of the UDC drivers to remove
-> > any references to <arch/..> <asm/..> and <plat/..> headers but that work
-> > in in progress.
->=20
-> I didn't really see any problems with UDC at all. What I saw were a lot
-> of build problems with the musb host side, and I rewrote this patch half
-> a dozen times before I ended up with a version that consistently built
-> without making the code look worse.
+> + */
+> +
+>  static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data *md)
+>  {
+> -       int ret = 0;
+> +       int idx, ret = 0;
+>
+>        if (!mmc_card_mmc(card))
+>                return 0;
+>
+> -       if (card->ext_csd.boot_size) {
+> -               ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT0,
+> -                                        card->ext_csd.boot_size >> 9,
+> -                                        true,
+> -                                        "boot0");
+> -               if (ret)
+> -                       return ret;
+> -               ret = mmc_blk_alloc_part(card, md, EXT_CSD_PART_CONFIG_ACC_BOOT1,
+> -                                        card->ext_csd.boot_size >> 9,
+> -                                        true,
+> -                                        "boot1");
+> -               if (ret)
+> -                       return ret;
+> +        for (idx = 0; idx < card->nr_parts; idx++) {
+> +               if (card->part[idx].size) {
+> +                       ret = mmc_blk_alloc_part(card, md,
+> +                               card->part[idx].cookie,
+> +                               card->part[idx].size >> 9,
+> +                               card->part[idx].force_ro,
+> +                               card->part[idx].name);
+> +                       if (ret)
+> +                               return ret;
+> +               }
+>        }
+>
+>        return ret;
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 5700b1c..818778f 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -239,7 +239,8 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd)
+>  */
+>  static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>  {
+> -       int err = 0;
+> +       int err = 0, idx;
+> +       unsigned int part_size, gp_size_mult;
+>
+>        BUG_ON(!card);
+>
+> @@ -340,7 +341,15 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>                 * There are two boot regions of equal size, defined in
+>                 * multiples of 128K.
+>                 */
+> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+> +                       for (idx = 0; idx < MMC_NUM_BOOT_PARTITION;
+> +                               idx++) {
+> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+> +                               mmc_part_add(card, part_size,
+> +                                       EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
+> +                                       "boot%d", idx, true);
+> +                       }
+> +               }
+>        }
+>
+>        card->ext_csd.raw_hc_erase_gap_size =
+> @@ -392,6 +401,38 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>                        card->ext_csd.enhanced_area_offset = -EINVAL;
+>                        card->ext_csd.enhanced_area_size = -EINVAL;
+>                }
+> +
+> +               /*
+> +                * General purpose partition feature support --
+> +                * If ext_csd have the size of general purpose partitions,
+> +                * set size, part_type, partition name in mmc_part.
 
-I understand.
+What does part_type refer to?
 
-> I also agree that the musb implementation is less of a problem than
-> ohci/ehci in its current form, as it already is layered in the right
-> way. I did not attempt to turn the Kconfig 'choice' statement there
-> into a flat list though, so I wouldn't know what problems to expect.
+> +                */
+> +
+> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x1) {
 
-Actually, MUSB still has lots of goofage from the original mentor
-release but that's another story.
+Maybe #define PARTITIONING_EN (0x1) in mmc.h somewhere?
 
-Anyway, I'll take your patches in, but their too late for this merge
-window :-( I already sent my last pull to Greg.
+> +                       u8 hc_erase_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> +                       u8 hc_wp_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+> +
+> +                       card->ext_csd.enhanced_area_en = 1;
 
---=20
-balbi
+Why is it ok to unconditionally enable this without checking
+ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x02, i.e.
+ENH_ATTRIBUTE_EN?
 
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +
+> +                       for (idx = 0, gp_size_mult = 143;
+> +                               idx < MMC_NUM_GP_PARTITION;
+> +                               idx++, gp_size_mult += 3) {
+> +                               if (!ext_csd[gp_size_mult] &&
+> +                                       !ext_csd[gp_size_mult + 1] &&
+> +                                       !ext_csd[gp_size_mult + 2])
+> +                                       continue;
+> +                               part_size = (ext_csd[gp_size_mult + 2] << 16) +
+> +                                       (ext_csd[gp_size_mult + 1] << 8) +
+> +                                       ext_csd[gp_size_mult];
+> +                               part_size *= (size_t)(hc_erase_grp_sz *
+> +                                       hc_wp_grp_sz);
+> +                               mmc_part_add(card, part_size <<= 19,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Is <<= really a valid operator? Does this even compile?
 
-iQEcBAEBAgAGBQJOiOFqAAoJEAv8Txj19kN1tdEH/jW3GhCFAA1rHdmT4BjMZbJq
-tM6bYwQs3EywLQeEglPEkChi0cLnB5obwPzlP2q8zbA9CS66t9uoJOHkHrXuQwqV
-b9hg64Nzsm5yQHP2mrY3jpe/Xi0r/NBdDPBFQhyhNq5YsazeMf3W3quhPj2O6yzq
-6LpenYkAAwQq1bZ/hlPbHKBJ/2UZmNDL7U85lVimXDsdfdj47hj7TTe7pN5pNrlm
-oKtuvVqAA6PIL7N9q7pY4jmsdp2ISOg21omrpgORlGtK72X0VAb+PQHQqttWqdSv
-MDNKNLpc4kebX4qrjslsi8t9Y89b5W86a3BYQTz6tI6ovmuJW+HXoUHy8aQuoDc=
-=Mdj7
------END PGP SIGNATURE-----
+> +                                       EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
+> +                                       "gp%d", idx, false);
+> +                       }
 
---ZGiS0Q5IWpPtfppv--
+I think the gp_size_mult being set to 143 is a magic number
+not very well explained. Also I'm of the opinion that the code
+above could be improved upon readability-wise. Below you
+find my suggestion. This would loose the gp_size_mult variable
+and instead depend on a proper constant that should go in mmc.h.
+Mind you I haven't compiled or tested the code below.
+
+#define EXT_CSD_GP_SIZE_MULT_X_Y    143 /* R/W */
+
+for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++)
+{
+        part_size =
+                (ext_csd[EXT_CSD_GP_SIZE_MULT_X_Y + idx * 3 + 2] << 16) |
+                (ext_csd[EXT_CSD_GP_SIZE_MULT_X_Y + idx * 3 + 1] <<  8) |
+                (ext_csd[EXT_CSD_GP_SIZE_MULT_X_Y + idx * 3] << 0);
+
+        part_size *= (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+
+        if (part_size)
+            mmc_part_add(card, part_size << 19,
+                    EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
+                    "gp%d", idx, false);
+
+}
+
+> +               }
+>                card->ext_csd.sec_trim_mult =
+>                        ext_csd[EXT_CSD_SEC_TRIM_MULT];
+>                card->ext_csd.sec_erase_mult =
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index b460fc2..550c2ed 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -12,6 +12,7 @@
+>
+>  #include <linux/mmc/core.h>
+>  #include <linux/mod_devicetable.h>
+> +#include <linux/genhd.h>
+>
+>  struct mmc_cid {
+>        unsigned int            manfid;
+> @@ -63,7 +64,6 @@ struct mmc_ext_csd {
+>        bool                    enhanced_area_en;       /* enable bit */
+>        unsigned long long      enhanced_area_offset;   /* Units: Byte */
+>        unsigned int            enhanced_area_size;     /* Units: KB */
+> -       unsigned int            boot_size;              /* in bytes */
+>        u8                      raw_partition_support;  /* 160 */
+>        u8                      raw_erased_mem_count;   /* 181 */
+>        u8                      raw_ext_csd_structure;  /* 194 */
+> @@ -157,6 +157,22 @@ struct sdio_func_tuple;
+>
+>  #define SDIO_MAX_FUNCS         7
+>
+> +/* The number of MMC physical partitions
+> + * It consist of boot partitions(2), general purpose partitions(4) in MMC v4.4
+> + */
+> +#define MMC_NUM_BOOT_PARTITION 2
+> +#define MMC_NUM_GP_PARTITION   4
+
+Just to make the code above a little easier to fit into 80 characters,
+maybe these should be known as MMC_BOOT_PARTS and
+MMC_GENERAL_PARTS? That also expands the GP acronym
+without making it too unwieldy.
+
+> +
+> +/*
+> + * MMC Physical partitions
+> + */
+> +struct mmc_part {
+> +       unsigned int    size;   /* partition size (in bytes) */
+> +       unsigned int    cookie; /* it used to part_type */
+
+This information seems to be called part_type, cookie and
+part_cfg in different parts of your patch. A common name
+used everywhere is preferable, maybe settle on part_type?
+
+> +       char    name[DISK_NAME_LEN];
+> +       bool    force_ro;       /* to make boot parts RO by default */
+> +};
+> +
+>  /*
+>  * MMC device
+>  */
+> @@ -216,9 +232,24 @@ struct mmc_card {
+>        unsigned int            sd_bus_speed;   /* Bus Speed Mode set for the card */
+>
+>        struct dentry           *debugfs_root;
+> +       struct mmc_part part[MMC_NUM_BOOT_PARTITION + MMC_NUM_GP_PARTITION];    /* mmc physical partitions */
+> +       unsigned int    nr_parts;
+>  };
+>
+>  /*
+> + * This function fill contents in mmc_part.
+> + */
+> +static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
+> +       unsigned int part_cfg, char *name, int idx, bool ro)
+> +{
+> +       card->part[card->nr_parts].size = size;
+> +       card->part[card->nr_parts].cookie = part_cfg;
+> +       sprintf(card->part[card->nr_parts].name, name, idx);
+> +       card->part[card->nr_parts].force_ro = ro;
+> +       card->nr_parts++;
+> +}
+> +
+> +/*
+>  *  The world is not perfect and supplies us with broken mmc/sdio devices.
+>  *  For at least some of these bugs we need a work-around.
+>  */
+> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+> index 5a794cb..29b7cb6 100644
+> --- a/include/linux/mmc/mmc.h
+> +++ b/include/linux/mmc/mmc.h
+> @@ -302,7 +302,7 @@ struct _mmc_csd {
+>
+>  #define EXT_CSD_PART_CONFIG_ACC_MASK   (0x7)
+>  #define EXT_CSD_PART_CONFIG_ACC_BOOT0  (0x1)
+> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
+> +#define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
+>
+>  #define EXT_CSD_CMD_SET_NORMAL         (1<<0)
+>  #define EXT_CSD_CMD_SET_SECURE         (1<<1)
+> --
+> 1.7.4.4
+>
+>
+
+ / Sebastian
