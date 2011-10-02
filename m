@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab1JBBSc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Oct 2011 21:18:32 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:57608 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab1JBBSY (ORCPT
+	id S1753236Ab1JBB6r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Oct 2011 21:58:47 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55359 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1JBB6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Oct 2011 21:18:24 -0400
-Subject: [PATCH] ASoC: kirkwood-i2s: Add __devexit_p at necessary place
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Oct 2011 09:18:17 +0800
-Message-ID: <1317518297.8024.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sat, 1 Oct 2011 21:58:42 -0400
+Date: Sat, 1 Oct 2011 21:58:38 -0400
+From: tmhikaru@gmail.com
+To: Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for
+ intrusion
+Message-ID: <20111002015838.GA21725@roll>
+References: <4E8655CD.90107@zytor.com>
+ <20110930235924.GA25176@kroah.com>
+ <20111001141751.GA8937@zeus>
+ <20111001142848.GA27058@kroah.com>
+ <20111001165659.GB18690@1wt.eu>
+ <20111001171916.GA11989@zeus>
+ <20111001175456.GC18690@1wt.eu>
+ <20111001184044.GA13608@zeus>
+ <20111001224313.GH18690@1wt.eu>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Disposition: inline
+In-Reply-To: <20111001224313.GH18690@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the comments in include/linux/init.h:
 
-"Pointers to __devexit functions must use __devexit_p(function_name), the
-wrapper will insert either the function_name or NULL, depending on the config
-options."
+--WIyZ46R2i8wDzkSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-We have __devexit annotation for kirkwood_i2s_dev_remove(), thus add __devexit_p
-at necessary place.
+	Any way we could get something like this verification done for the
+3.0.x stable kernels?  I'm currently stuck without any way known to me to
+verify that any of the patches I downloaded from kernel.org before it went
+down are actually correct.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/kirkwood/kirkwood-i2s.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+	Tim McGrath
 
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index d0bcf3f..715e841 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -476,7 +476,7 @@ static __devexit int kirkwood_i2s_dev_remove(struct platform_device *pdev)
- 
- static struct platform_driver kirkwood_i2s_driver = {
- 	.probe  = kirkwood_i2s_dev_probe,
--	.remove = kirkwood_i2s_dev_remove,
-+	.remove = __devexit_p(kirkwood_i2s_dev_remove),
- 	.driver = {
- 		.name = DRV_NAME,
- 		.owner = THIS_MODULE,
--- 
-1.7.4.1
+--WIyZ46R2i8wDzkSu
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEVAwUBTofFTpEncCrqzVruAQLFpgf/T1ABDzbpyRKayljkDEolYgGdpQ+iKgJk
+3RGJV50if9y0B0/EW/AfpktRcFyVFhAHHJ3JVU4sqiXHHSHR5rRtZUAbH1pTcd07
+3RmNwJQrKT0ooOi/9GQpyYhZCnfNipRvycqncLfW0H5k8L03O5VmugvbbqZgD0Lq
+2lM73xZShsyfnacXhD6Eaz6Zoy/IT/0hsqt7v3zwYnGHv+gCv5ewOrCp/9Qvifm+
+GaOx40cewZrW3+MwyU+RqspwQobfILkf/2rSX4YOTUlN6GDwpLaJ3R0bvFlaiWFu
+tEbbBv3oH/drWvNaINb5jN5xLZj+kYST1aZ9g5kfGQ3uPodD7vLuGg==
+=TXll
+-----END PGP SIGNATURE-----
 
+--WIyZ46R2i8wDzkSu--
