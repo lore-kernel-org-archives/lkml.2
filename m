@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab1JBU3j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 16:29:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54409 "EHLO
+	id S1754530Ab1JBUcU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 16:32:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49777 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab1JBU3J (ORCPT
+	with ESMTP id S1751145Ab1JBUcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 16:29:09 -0400
+	Sun, 2 Oct 2011 16:32:13 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 4/6] ASoC: sh: use correct __iomem annotations
-Date: Sun,  2 Oct 2011 22:28:02 +0200
-Message-Id: <1317587284-2776-5-git-send-email-arnd@arndb.de>
+        =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/6] ASoC: imx: eukrea_tlv320 needs i2c
+Date: Sun,  2 Oct 2011 22:28:01 +0200
+Message-Id: <1317587284-2776-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317587284-2776-1-git-send-email-arnd@arndb.de>
 References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:vmY9+JpaPEUmci63+8wGgqyk1LxpfelEkxLSjnvTn6U
- 3vNsv3a+Co8J0HZzsnEWL3X1FsVxeLtWdOaUfkqPC3rd9Qojjv
- OQE47OwOvnKKHgfEGna1ibxWh/mcLZ4Xo4IOAck3HQ2mT1LIVw
- c64hbCJs4GITq0icNCL9Fx8pjFfZXxhgwPWrqLZ+/2MTmDByws
- mNPbctt+QM/41Q7FYzoa+zT+b0Wpgp6NBm6sO447nNxKYqeUd3
- L2wIBG9dUO0Rz/mwPiGjP06J7/OcIzCsvaL6VR44cCjyQvEl3f
- Y5xoUVKFDkOxsPPKcqx1RGg4towENbjRSy8Dhc23nzj8ZOndwQ
- Ou/XN5fmj4S1FpojjE+fom1KicVyySf83veNgnt0mFjRqzD+DD
- etX7ntvbhq1WQ==
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V02:K0:LuRBzmsz0vofjuNY0QS8DkJspYP2Qe40CBEaHsQIK7w
+ adI2ETagwP7DxTdIN1DwaaNvgaB3QYaIw3M7Fz0WMkwIKNY/vw
+ ZURMEENWuNhLTqfjScmJ350D8ozo367hQuD9O78qWX9Rnk61LN
+ UbVf5C9p0hGxxaJsVbIQ1zzsCjCbaLtBPMWK8fR2x015WvIyQW
+ 9Mqw2m34++pj9HstHn5xN0Zs6dO329LkABYhs7/vrgqNo4BHoJ
+ 936K523UVV6YkgH8ZVAnCZPIiRqCLUIWV9hZ0Nnu87fuke2qsD
+ 7LmMPnB8EQ+rEA+zQb2tbP3o7ik4WjmW6Xae/DnIqJTQj7eEff
+ 4ryn5ZNF+p54ukvFVP5luN3RouBtvXYrOzVsRH/6a36Aoux/Of
+ 1EWkzt2Te2r7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes a few unnecessary type casts and avoids
-sparse warnings.
+Add a missing dependency that is required for random configurations.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: "Eric Bénard" <eric@eukrea.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- sound/soc/sh/fsi.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ sound/soc/imx/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/sh/fsi.c b/sound/soc/sh/fsi.c
-index 8e112cc..916b9f9 100644
---- a/sound/soc/sh/fsi.c
-+++ b/sound/soc/sh/fsi.c
-@@ -210,7 +210,7 @@ struct fsi_master {
-  *		basic read write function
-  */
- 
--static void __fsi_reg_write(u32 reg, u32 data)
-+static void __fsi_reg_write(u32 __iomem *reg, u32 data)
- {
- 	/* valid data area is 24bit */
- 	data &= 0x00ffffff;
-@@ -218,12 +218,12 @@ static void __fsi_reg_write(u32 reg, u32 data)
- 	__raw_writel(data, reg);
- }
- 
--static u32 __fsi_reg_read(u32 reg)
-+static u32 __fsi_reg_read(u32 __iomem *reg)
- {
- 	return __raw_readl(reg);
- }
- 
--static void __fsi_reg_mask_set(u32 reg, u32 mask, u32 data)
-+static void __fsi_reg_mask_set(u32 __iomem *reg, u32 mask, u32 data)
- {
- 	u32 val = __fsi_reg_read(reg);
- 
-@@ -250,7 +250,7 @@ static u32 _fsi_master_read(struct fsi_master *master, u32 reg)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&master->lock, flags);
--	ret = __fsi_reg_read((u32)(master->base + reg));
-+	ret = __fsi_reg_read(master->base + reg);
- 	spin_unlock_irqrestore(&master->lock, flags);
- 
- 	return ret;
-@@ -264,7 +264,7 @@ static void _fsi_master_mask_set(struct fsi_master *master,
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&master->lock, flags);
--	__fsi_reg_mask_set((u32)(master->base + reg), mask, data);
-+	__fsi_reg_mask_set(master->base + reg, mask, data);
- 	spin_unlock_irqrestore(&master->lock, flags);
- }
- 
+diff --git a/sound/soc/imx/Kconfig b/sound/soc/imx/Kconfig
+index bb699bb..dcd954b 100644
+--- a/sound/soc/imx/Kconfig
++++ b/sound/soc/imx/Kconfig
+@@ -50,6 +50,7 @@ config SND_SOC_EUKREA_TLV320
+ 		|| MACH_EUKREA_MBIMXSD25_BASEBOARD \
+ 		|| MACH_EUKREA_MBIMXSD35_BASEBOARD \
+ 		|| MACH_EUKREA_MBIMXSD51_BASEBOARD
++	depends on I2C
+ 	select SND_SOC_TLV320AIC23
+ 	select SND_MXC_SOC_FIQ
+ 	help
 -- 
 1.7.5.4
 
