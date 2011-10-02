@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab1JBOst (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 10:48:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53124 "EHLO
+	id S1753395Ab1JBOtG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 10:49:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60561 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab1JBOq6 (ORCPT
+	with ESMTP id S1752761Ab1JBOrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 10:46:58 -0400
+	Sun, 2 Oct 2011 10:47:02 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 03/30] video/omap: fix build dependencies
-Date: Sun,  2 Oct 2011 16:45:33 +0200
-Message-Id: <1317566760-25681-4-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 13/30] ARM: omap2+: fix omap_hdq_init compilation
+Date: Sun,  2 Oct 2011 16:45:43 +0200
+Message-Id: <1317566760-25681-14-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317566760-25681-1-git-send-email-arnd@arndb.de>
 References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:Il1vYsTYtsGxAPG6OF7gJKNFKebOiSl6fjGHF1XQsy1
- Aces/X9R06nyEiI3DOIWKvQxHsPS40bc2Rug7zaCEd05J6yfC+
- MHLbmCsN/i0jot2gwVDWC+wwT5OPremjcvW8A/hENsSOrm7TYS
- IYCxfrH0jEQIaq7rJACTWALlAxs1jPQPA9VVI/bLnm66qUDLK8
- VwYJdBlRT54v5ReNVlOiQkgmZeHWxszkyQTPueGf+10dLEgQZh
- BJDlC+WIcA2JDe7H8tAXwL/7Z1la0YdPyImDnrF2zIYaaEjOTo
- rp0EPxW9J9B3oxoL1c+UdFJjh5amVIqViraq9FENKuJs6GGiRH
- umk4Hb03EOIdqaVyjCxwrfuVricQSqMAsTA5PL0YR3aCH1jnVP
- 3/CzyggIw3/GA==
+X-Provags-ID: V02:K0:Sn4k9sXSe7SEJq5kaPhBFkzW2xK6bX/yVamTRsQfhzo
+ 8jntlU4GrjqkHzE8Fu8zm+lP/LKd8soLHwzx97IiUdjVoVZeoq
+ rXTaczu3Yvr2zQeo4fHM/P1tGc50Vkp92WdHdZv+sXGPxQl0wk
+ siiAnVFpKAX876rEUMGg1EWJs6pQ5KylQgYcJnIWyyUeyj5wBk
+ Hn7JMyKxImefigDNORh6arThvDaYQaH08fBhdMiYFk8SP/C/R2
+ xBJ7M1JrTEncgfG8nSVKar/Os53AufYber/QfmUW6CgJgxEGFH
+ oFQfSrzx7QLys6MmgldwxlFQAF7POgo74fiJ6t0awHHdnBfZ+M
+ LHOdxjZgJGwP8qYC0G4oehh8MZEBvf1dDIz1RsD4uKlzQMOhah
+ fh2W4l59JBiIQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Four of the LCD panel drivers depend on the backlight class,
-so add the dependency in Kconfig.
-Selecting the BACKLIGHT_CLASS_DEVICE symbol does not generally
-work since it has other dependencies.
+The definition of the device must depend on the hardware
+we run on, not on the kernel configuration.
+
+arch/arm/mach-omap2/devices.c:624:13: error: 'OMAP_HDQ_BASE' undeclared here (not in a function)
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
 ---
- drivers/video/omap2/displays/Kconfig |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/devices.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/omap2/displays/Kconfig b/drivers/video/omap2/displays/Kconfig
-index 609a280..8e4278c 100644
---- a/drivers/video/omap2/displays/Kconfig
-+++ b/drivers/video/omap2/displays/Kconfig
-@@ -19,13 +19,15 @@ config PANEL_LGPHILIPS_LB035Q02
- config PANEL_SHARP_LS037V7DW01
-         tristate "Sharp LS037V7DW01 LCD Panel"
-         depends on OMAP2_DSS_DPI
--        select BACKLIGHT_CLASS_DEVICE
-+        depends on BACKLIGHT_CLASS_DEVICE
-         help
-           LCD Panel used in TI's SDP3430 and EVM boards
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 1077ad6..392f2b0 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -29,6 +29,7 @@
+ #include <mach/gpio.h>
+ #include <plat/mmc.h>
+ #include <plat/dma.h>
++#include <plat/cpu.h>
+ #include <plat/omap_hwmod.h>
+ #include <plat/omap_device.h>
+ #include <plat/omap4-keypad.h>
+@@ -615,10 +616,8 @@ void __init omap242x_init_mmc(struct omap_mmc_platform_data **mmc_data)
  
- config PANEL_NEC_NL8048HL11_01B
- 	tristate "NEC NL8048HL11-01B Panel"
- 	depends on OMAP2_DSS_DPI
-+	depends on SPI
-+	depends on BACKLIGHT_CLASS_DEVICE
- 	help
- 		This NEC NL8048HL11-01B panel is TFT LCD
- 		used in the Zoom2/3/3630 sdp boards.
-@@ -33,6 +35,7 @@ config PANEL_NEC_NL8048HL11_01B
- config PANEL_TAAL
-         tristate "Taal DSI Panel"
-         depends on OMAP2_DSS_DSI
-+        depends on BACKLIGHT_CLASS_DEVICE
-         help
-           Taal DSI command mode panel from TPO.
+ /*-------------------------------------------------------------------------*/
  
-@@ -45,7 +48,7 @@ config PANEL_TPO_TD043MTEA1
- config PANEL_ACX565AKM
- 	tristate "ACX565AKM Panel"
- 	depends on OMAP2_DSS_SDI && SPI
--	select BACKLIGHT_CLASS_DEVICE
-+	depends on BACKLIGHT_CLASS_DEVICE
- 	help
- 	  This is the LCD panel used on Nokia N900
- endmenu
+-#if defined(CONFIG_HDQ_MASTER_OMAP) || defined(CONFIG_HDQ_MASTER_OMAP_MODULE)
+ #if defined(CONFIG_SOC_OMAP2430) || defined(CONFIG_SOC_OMAP3430)
+ #define OMAP_HDQ_BASE	0x480B2000
+-#endif
+ static struct resource omap_hdq_resources[] = {
+ 	{
+ 		.start		= OMAP_HDQ_BASE,
+@@ -641,10 +640,13 @@ static struct platform_device omap_hdq_dev = {
+ };
+ static inline void omap_hdq_init(void)
+ {
+-	(void) platform_device_register(&omap_hdq_dev);
++	if (cpu_is_omap2430() || cpu_is_omap3430())
++		(void) platform_device_register(&omap_hdq_dev);
+ }
+ #else
+-static inline void omap_hdq_init(void) {}
++static inline void omap_hdq_init(void)
++{
++}
+ #endif
+ 
+ /*---------------------------------------------------------------------------*/
 -- 
 1.7.5.4
 
