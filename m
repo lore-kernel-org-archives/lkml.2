@@ -1,83 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab1JBIoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 04:44:11 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42569 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1JBIoB (ORCPT
+	id S1751903Ab1JBIqi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 04:46:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35089 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1JBIqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 04:44:01 -0400
+	Sun, 2 Oct 2011 04:46:30 -0400
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <4E831A79.1030402@tilera.com>
-References: <1316940890-24138-1-git-send-email-gilad@benyossef.com>
-	<4E831A79.1030402@tilera.com>
-Date: Sun, 2 Oct 2011 10:44:00 +0200
-Message-ID: <CAOtvUMdGeBfbLpSqonzLTT6+JUiabDjBG5bpd1_RPykt3x+5Hw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <FF2CAA91-5467-497A-AEEF-891785739193@oracle.com>
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+	<20111001143900.GH28234@thunk.org>
+	<CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com>
+	<A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
+	<89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
+	<FF2CAA91-5467-497A-AEEF-891785739193@oracle.com>
+Date: Sun, 2 Oct 2011 16:46:29 +0800
+Message-ID: <CABqxG0dP5JX+AD2pw=Oq2s+2qzb9LVWxYj0QRc6CxhoK9xQ8FQ@mail.gmail.com>
+Subject: Re: [BUG] copy file result with zero
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Jeff liu <jeff.liu@oracle.com>
+Cc: Andreas Dilger <aedilger@gmail.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 3:00 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 9/25/2011 4:54 AM, Gilad Ben-Yossef wrote:
+2011/10/2 Jeff liu <jeff.liu@oracle.com>:
 >
-> I strongly concur with your motivation in looking for and removing sources
-> of unnecessary cross-cpu interrupts.
-
-Thanks for the support :-)
-
-> We have some code in our tree (not yet
-> returned to the community) that tries to deal with some sources of interrupt
-> jitter on tiles that are running isolcpu and want to be 100% in user space.
-
-Yes, I think this work will benefit this kind of use case (CPU/user
-space bound on a dedicated CPU)
-the most, although other use cases can benefit as well (e.g. power
-management with idle cores).
-
-Btw, do you have any plan to share the patches you mentioned? it could
-save me a lot of time. Not wanting to
-re-invent the wheel and all that...
-
-
->> This first version creates an on_each_cpu_mask infrastructure API (derived
->> from
->> existing arch specific versions in Tile and Arm) and uses it to turn two
->> global
->> IPI invocation to per CPU group invocations.
+> 在 2011-10-2，下午3:59， Andreas Dilger 写道：
 >
-> The global version looks fine; I would probably make on_each_cpu() an inline
-> in the !SMP case now that you are (correctly, I suspect) disabling
-> interrupts when calling the function.
+>> On 2011-10-01, at 11:41 PM, Jeff liu wrote:
+>>>> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>>>>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> Weird problem, when I build app from source,
+>>>>>> make; make install
+>>>>>> run the command, but got "cannot execute binary file"
+>>>>>>
+>>>>>> hexdump shows the installed binary is full of zero
+>>>>>>
+>>>>>> Is it related to ext4 fiemap problem described below?
+>>>>>> http://lwn.net/Articles/429349/
+>>>>>
+>>>>> There is general agreement that /bin/cp should not have been relying
+>>>>> on FIEMAP, and I believe the more recent versions of /bin/cp have
+>>>>> removed that code by default pending implementation of
+>>>>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
+>>>>> FIEMAP implementation that landed in 2.6.39, and you're using
+>>>>> 3.1.0-rc6.
+>>>
+>>> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
+>>
+>> My understanding is that cp uses the blocks count to determine whether the file is sparse or not.
+> Yes, it based on blocks count to determine that.
+>
+>> In the case of delayed allocation (where blocks are not yet allocated, if they are not reflected in the i_blocks count) it might mistakenly think that the file is sparse.
+
+I think this might be my case
+
+> Thanks for pointing this out, I missed this case.
+> So for Dave's issue, even if he updated to the upstream Coreutils, this issue will still exists occasionally for delayed allocation, if not  run sync in between times.
+
+Not occasionally, I can easily reproduce it recently.
+
+>
+>>
+>> Given the danger of this bug, it is important to ensure ext4 returns DELALLOC extents for pages in the page cache.  I think Yongqiang Yang just submitted a patch series to do this for ext4, so it would be important to verify it fixes this problem.
+>
+>
+> Thanks,
+> -Jeff
+>>
+>>>> Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
+>>>>
+>>>>>
+>>>>>> I finally managed to find the way to reproduce this:
+>>>>>> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
+>>>>>> A == B != C
+>>>>>>
+>>>>>> ie.
+>>>>>> cp /bin/ls ls1
+>>>>>> cp ls1 ls2
+>>>>>>
+>>>>>> ls2 will be filled with zero
+>>>>>
+>>>>> If you add a "sync" between the two copies, does that work around the
+>>>>> problem?  I bet it will...
+>>>>
+>>>> Yes, it works
+>>>>
+>>>>>
+>>>>> My suggestion is to upgrade to a newer version of coreutils that
+>>>>> doesn't try to use FIEMAP.
+>>>>
+>>>> Thanks, will try
+>>>>
+>>>>>
+>>>>>                                      - Ted
+>>>>>
+>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Regards
+>>>> Dave
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>> Cheers, Andreas
+>>
+>>
+>>
+>>
+>>
+>
 >
 
-Good point. Will do.
-
-I will take this email as an ACK to the tile relevant changes, if that
-is OK with you.
-
-Thanks!
-Gilad
 
 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"I've seen things you people wouldn't believe. Goto statements used to
-implement co-routines. I watched C structures being stored in
-registers. All those moments will be lost in time... like tears in
-rain... Time to die. "
+Regards
+Dave
