@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab1JBNen (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 09:34:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60054 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab1JBNej (ORCPT
+	id S1752642Ab1JBNrj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 09:47:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52673 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1JBNrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 09:34:39 -0400
-Subject: [PATCH] ASoC: samsung: s3c-i2s-v2.c needs module.h
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 02 Oct 2011 21:34:26 +0800
-Message-ID: <1317562466.4996.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Oct 2011 09:47:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/11] ARM: include linux/highmem.h in uaccess functions
+Date: Sun, 02 Oct 2011 15:46:32 +0200
+Message-ID: <1894078.P7yYjKNL5t@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.0.0-rc1nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IYMmO/rAC0Zwvr1wKDRCNsIrVfNU0vxzwCc/ZvOGsV6
+ wN2nua1ZrlvrIsOmR3Yv878qf9WaWxVPLbG8w3ZE6+TmZmcUrF
+ 1vgJbSTybHY66l/xGnYbeCsD4fm213ty55lKktoEv3rDbtI/zR
+ X3GJw189uxoN+3fVmxpwi1eWmnPE1PkQjazkzdBLBemAek07CW
+ s8abetuvzdE5MmsG+ca3nlxyzzYTHfhX25TJHHsnx7+VpgGpRV
+ 2iKI/fC6IXii5WqUDHUX+rILYkugEKZ+kfYq/6hxqp9CL+hfR/
+ jbQGMyQPsykwPjrC2L1Fh6nM+OXyuLT8sl+CDWNB1BeCmO3qJ+
+ NfllJd7t3Lm4scqQcUJ4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include <linux/module.h> to fix below build error:
+When highpte support is enabled, this is required to build
+the kernel.
+    
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-  CC      sound/soc/samsung/s3c-i2s-v2.o
-sound/soc/samsung/s3c-i2s-v2.c:573: warning: data definition has no type or storage class
-sound/soc/samsung/s3c-i2s-v2.c:573: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-sound/soc/samsung/s3c-i2s-v2.c:573: warning: parameter names (without types) in function declaration
-sound/soc/samsung/s3c-i2s-v2.c:638: warning: data definition has no type or storage class
-sound/soc/samsung/s3c-i2s-v2.c:638: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-sound/soc/samsung/s3c-i2s-v2.c:638: warning: parameter names (without types) in function declaration
-sound/soc/samsung/s3c-i2s-v2.c:677: warning: data definition has no type or storage class
-sound/soc/samsung/s3c-i2s-v2.c:677: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-sound/soc/samsung/s3c-i2s-v2.c:677: warning: parameter names (without types) in function declaration
-sound/soc/samsung/s3c-i2s-v2.c: In function 's3c_i2sv2_register_dai':
-sound/soc/samsung/s3c-i2s-v2.c:736: warning: initialization discards qualifiers from pointer target type
-sound/soc/samsung/s3c-i2s-v2.c: At top level:
-sound/soc/samsung/s3c-i2s-v2.c:754: warning: data definition has no type or storage class
-sound/soc/samsung/s3c-i2s-v2.c:754: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-sound/soc/samsung/s3c-i2s-v2.c:754: warning: parameter names (without types) in function declaration
-sound/soc/samsung/s3c-i2s-v2.c:756: error: expected declaration specifiers or '...' before string constant
-sound/soc/samsung/s3c-i2s-v2.c:756: warning: data definition has no type or storage class
-sound/soc/samsung/s3c-i2s-v2.c:756: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-sound/soc/samsung/s3c-i2s-v2.c:756: warning: function declaration isn't a prototype
-make[3]: *** [sound/soc/samsung/s3c-i2s-v2.o] Error 1
-make[2]: *** [sound/soc/samsung] Error 2
-make[1]: *** [sound/soc] Error 2
-make: *** [sound] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-This patch is against linux-next (20110930).
+I was missing this patch at first, but now found it in the omap branch.
 
- sound/soc/samsung/s3c-i2s-v2.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/sound/soc/samsung/s3c-i2s-v2.c b/sound/soc/samsung/s3c-i2s-v2.c
-index 52074a2b..7a73380 100644
---- a/sound/soc/samsung/s3c-i2s-v2.c
-+++ b/sound/soc/samsung/s3c-i2s-v2.c
-@@ -16,6 +16,7 @@
-  * option) any later version.
-  */
+diff --git a/arch/arm/lib/uaccess_with_memcpy.c b/arch/arm/lib/uaccess_with_memcpy.c
+index 8b9b136..025f742 100644
+--- a/arch/arm/lib/uaccess_with_memcpy.c
++++ b/arch/arm/lib/uaccess_with_memcpy.c
+@@ -17,6 +17,7 @@
+ #include <linux/sched.h>
+ #include <linux/hardirq.h> /* for in_atomic() */
+ #include <linux/gfp.h>
++#include <linux/highmem.h>
+ #include <asm/current.h>
+ #include <asm/page.h>
  
-+#include <linux/module.h>
- #include <linux/delay.h>
- #include <linux/clk.h>
- #include <linux/io.h>
--- 
-1.7.4.1
-
-
-
