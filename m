@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1JBPTE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 11:19:04 -0400
-Received: from mail.net.mk ([217.16.70.1]:36377 "EHLO smtp.on.net.mk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750747Ab1JBPS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 11:18:57 -0400
-From: pjudy4@ymail.com
-Subject: is me Judy
-X-Mailer: CommuniGate Pro WebUser v5.2.12
-Date: Sun, 02 Oct 2011 17:18:56 +0200
-Message-ID: <web-49058489@smtp.on.net.mk>
+	id S1753031Ab1JBPWR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 11:22:17 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34170 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1JBPWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 11:22:10 -0400
+Date: Sun, 2 Oct 2011 16:21:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] ARM: export rtc_lock for nvram driver
+Message-ID: <20111002152155.GW11710@n2100.arm.linux.org.uk>
+References: <1317496920-7764-1-git-send-email-arnd@arndb.de> <1317496920-7764-2-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317496920-7764-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo schatje,
+On Sat, Oct 01, 2011 at 09:21:50PM +0200, Arnd Bergmann wrote:
+> The rtc_lock is used by both the nvram and rtc drivers, so
+> we need to export it if at least one of the two is built,
+> not just for the rtc driver.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/kernel/time.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+> index cb634c3..5a54b95 100644
+> --- a/arch/arm/kernel/time.c
+> +++ b/arch/arm/kernel/time.c
+> @@ -39,13 +39,11 @@
+>   */
+>  static struct sys_timer *system_timer;
+>  
+> -#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE)
+> +#if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
+> +    defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+>  /* this needs a better home */
+>  DEFINE_SPINLOCK(rtc_lock);
+> -
+> -#ifdef CONFIG_RTC_DRV_CMOS_MODULE
+>  EXPORT_SYMBOL(rtc_lock);
+> -#endif
+>  #endif	/* pc-style 'CMOS' RTC support */
 
-Mijn naam is Judy, ik ben 25yrs oud, ik ben een vrije geest, open hart meisje, ik hou van het leven te nemen net zo makkelijk als ik kon, ik ben een van de weinige die nog gelooft in vriendschap, liefde, vertrouwen en tekenen , ben heel veel single en klaar om te mengen. was aan het surfen via het internet en kwam uw contactgegevens, het zal mijn oprechte plezier om je vriend zijn als je het niet erg, ik hoop dat je niet mijn verzoek om het toegekende nemen, voel je vrij om me te mailen via (pjudy4 @ YMail. com), ik zal het op prijs stellen als u mij wat foto's op mijn prive e-mailadres, ik kijk ernaar uit van u te horen binnenkort.
+Some architectures always define this lock and export it irrespective of
+the configuration.  Others define it, but never export it.  Some define
+it but only export it for 32-bit builds.
 
-Wees voorzichtig.
+One thing springs to mind here - why isn't there a symbol to enable the
+presence of rtc_lock in the kernel?  A second related point is why is
+this in arch code?
 
-Judy.
-
-Hello sweetie,
-
-My name is Judy, i am 25yrs old, i'm a free minded,open hearted girl, i like to take life as easy as i could, i'm one of the few that still believes in friendship, love, trust and signs, am very much single and ready to mingle. was browsing through the internet and came across your contact,it will be my sincere pleasure to be your friend if you don't mind, i hope you will not take my request for granted,feel free to email me through (pjudy4@ymail.com),i will appreciate it if you can send me some pics to my private email address, i look forward to hear from you soon.
-
-Take care.
-
-Judy.
--- 
-ONE – Официјален спонзор на Македонската кошарка
-www.vklucise.mk
