@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab1JCA2q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 20:28:46 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48178 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab1JCA2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 20:28:39 -0400
-Date: Sun, 2 Oct 2011 17:28:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20111003002832.GC2539@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110928123116.GP18553@somewhere>
- <20110928184025.GF2383@linux.vnet.ibm.com>
- <20110928234633.GA3537@somewhere>
- <20110929005545.GT2383@linux.vnet.ibm.com>
- <20110929123040.GB3537@somewhere>
- <20110929171205.GA2362@linux.vnet.ibm.com>
- <20110930131105.GC19053@somewhere>
- <20110930152946.GA2397@linux.vnet.ibm.com>
- <20110930192438.GA7505@linux.vnet.ibm.com>
- <20111002225019.GA1835@somewhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111002225019.GA1835@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11100300-8974-0000-0000-0000009563A0
+	id S1751856Ab1JCAbt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 20:31:49 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:46810 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1JCAbo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 20:31:44 -0400
+Date: Mon, 3 Oct 2011 09:22:44 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        container ML <containers@lists.linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Miao Xie <miaox@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <htejun@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX] cgroup: create a workqueue for cgroup
+Message-Id: <20111003092244.bcfde141.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110930153049.6719a14e.akpm00@gmail.com>
+References: <20110930165452.19c0fdf4.nishimura@mxp.nes.nec.co.jp>
+	<20110930153049.6719a14e.akpm00@gmail.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 12:50:22AM +0200, Frederic Weisbecker wrote:
-> On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
-> > @@ -328,11 +326,11 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
-> >  		return 1;
-> >  	}
+On Fri, 30 Sep 2011 15:30:49 -0700
+Andrew Morton <akpm00@gmail.com> wrote:
+
+> On Fri, 30 Sep 2011 16:54:52 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> 
+> > In commit:f90d4118, cpuset_wq, a separate workqueue for cpuset, was introduced
+> > to avoid a dead lock against cgroup_mutex between async_rebuild_sched_domains()
+> > and cgroup_tasks_write().
+> > 
+> > But check_for_release() has a similar problem:
+> > 
+> >   check_for_release()
+> >     schedule_work(release_agent_work)
+> >       cgroup_release_agent()
+> >         mutex_lock(&cgroup_mutex)
+> > 
+> > And I actually see a lockup which seems to be caused by this problem
+> > on 2.6.32-131.0.15.el6.x86_64.
+> 
+> Are you sure the bug is still present in current kernels?  Perhaps
+> Tejun's workqueue changes magically made it go away.
+> 
+Not yet, but I'll check it.
+
+> >
+> > ...
+> > --- a/include/linux/cgroup.h
+> > +++ b/include/linux/cgroup.h
+> > @@ -27,6 +27,8 @@ struct css_id;
 > >  
-> > -	/* If preemptible RCU, no point in sending reschedule IPI. */
-> > -	if (rdp->preemptible)
-> > -		return 0;
-> > -
-> > -	/* The CPU is online, so send it a reschedule IPI. */
-> > +	/*
-> > +	 * The CPU is online, so send it a reschedule IPI.  This forces
-> > +	 * it through the scheduler, and (inefficiently) also handles cases
-> > +	 * where idle loops fail to inform RCU about the CPU being idle.
-> > +	 */
+> >  extern int cgroup_init_early(void);
+> >  extern int cgroup_init(void);
+> > +extern void cgroup_wq_init(void);
+> > +extern void queue_cgroup_work(struct work_struct *work);
+> >  extern void cgroup_lock(void);
+> >  extern int cgroup_lock_is_held(void);
+> >  extern bool cgroup_lock_live_group(struct cgroup *cgrp);
 > 
-> If the idle loop forgets to call rcu_idle_enter() before going to
-> sleep, I don't know if it's a good idea to try to cure that situation
-> by forcing a quiescent state remotely. It may make the thing worse
-> because we actually won't notice the lack of call to rcu_idle_enter()
-> that the rcu stall detector would otherwise report to us.
+> Can we spot the odd man out?
 > 
-> Also I don't think that works. If the task doesn't have
-> TIF_RESCHED, it won't go through the scheduler on irq exit.
-> smp_send_reschedule() doesn't set the flag. And also scheduler_ipi()
-> returns right away if no wake up is pending.
+> I shall rename queue_cgroup_work() to cgroup_queue_work().
 > 
-> So, other than resuming the idle loop to sleep again, nothing may happen.
-> 
-> Or am I missing something?
+Thank you for fixing it.
+I agree cgroup_queue_work() is a better name.
 
-Hmmm...  Seems like the IPIs aren't helping in any case, then?
-
-I suppose that I could do an smp_call_function_single(), which then
-did a set_need_resched()...
-
-But this is a separate issue that I need to deal with.  That said, any
-suggestions are welcome!
-
-							Thanx, Paul
-
-> >  	if (rdp->cpu != smp_processor_id())
-> >  		smp_send_reschedule(rdp->cpu);
-> >  	else
-
+Thanks,
+Daisuke Nishimura.
