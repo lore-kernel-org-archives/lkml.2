@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab1JCTH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:07:28 -0400
+	id S1757315Ab1JCTHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:07:37 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:54851 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab1JCTHX (ORCPT
+	with ESMTP id S1757290Ab1JCTH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:07:23 -0400
+	Mon, 3 Oct 2011 15:07:27 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,80 +17,96 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
         Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
         Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 00/10] cgroups: Task counter subsystem v6
-Date: Mon,  3 Oct 2011 21:07:02 +0200
-Message-Id: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 01/10] cgroups: Add res_counter_write_u64() API
+Date: Mon,  3 Oct 2011 21:07:03 +0200
+Message-Id: <1317668832-10784-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Extend the resource counter API with a mirror of
+res_counter_read_u64() to make it handy to update a resource
+counter value from a cgroup subsystem u64 value file.
 
-This contains minor changes, mostly documentation and changelog
-updates, off-case build fix, and a code optimization in
-res_counter_common_ancestor().
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Aditya Kali <adityakali@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Hockin <thockin@hockin.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Containers <containers@lists.linux-foundation.org>
+---
+ include/linux/res_counter.h |    2 ++
+ kernel/res_counter.c        |   25 +++++++++++++++++++------
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
-It's hard to put some statistic numbers while testing this feature
-given that the result is rather binary: we launch a forkbomb and
-either we stop and kill it or the system become unresponsive.
-    
-Meanwhile, one can find a testsuite at this address:
-https://tglx.de/~fweisbec/task_counter_test.tar.gz
-    
-It performs several checks to ensure the interface and the behaviour
-are reliable after common events like moving tasks around over cgroups
-in a hierarchy, forking inside, etc.. It also launches a forkbomb,
-tries to stop and kill it. So beware, don't run it on a system that
-is doing serious things. Ensure you have CGROUP_TASK_COUNTER set
-before, or it may compress the Ten Plagues in your MBR and
-inflate the whole after your next reboot.
-
-Changes in v6:
-
-- Update res_counter_common_ancestor() to be O(n+m) instead of O(n*m),
-patch from Kirill A. Shutemov (6/10)
-- Refine documentation and changelog to better explain the claims and
-goals of this subsystem (10/10)
-- Fix !CONFIG_CGROUPS build crash (10/10)
-- Step over the temporary state that used an ad-hoc fork hook.
-
-Frederic Weisbecker (9):
-  cgroups: Add res_counter_write_u64() API
-  cgroups: New resource counter inheritance API
-  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
-  cgroups: New cancel_attach_task subsystem callback
-  cgroups: Ability to stop res charge propagation on bounded ancestor
-  res_counter: Allow charge failure pointer to be null
-  cgroups: Pull up res counter charge failure interpretation to caller
-  cgroups: Allow subsystems to cancel a fork
-  cgroups: Add a task counter subsystem
-
-Kirill A. Shutemov (1):
-  cgroups: Add res counter common ancestor searching
-
- Documentation/cgroups/cgroups.txt          |   13 ++-
- Documentation/cgroups/resource_counter.txt |   20 +++-
- Documentation/cgroups/task_counter.txt     |  153 ++++++++++++++++++
- block/blk-cgroup.c                         |   12 +-
- include/linux/cgroup.h                     |   28 +++-
- include/linux/cgroup_subsys.h              |    8 +
- include/linux/res_counter.h                |   27 +++-
- init/Kconfig                               |    9 +
- kernel/Makefile                            |    1 +
- kernel/cgroup.c                            |   58 ++++++--
- kernel/cgroup_freezer.c                    |    9 +-
- kernel/cgroup_task_counter.c               |  239 ++++++++++++++++++++++++++++
- kernel/cpuset.c                            |    6 +-
- kernel/events/core.c                       |    5 +-
- kernel/exit.c                              |    2 +-
- kernel/fork.c                              |    7 +-
- kernel/res_counter.c                       |   97 ++++++++++--
- kernel/sched.c                             |    6 +-
- 18 files changed, 644 insertions(+), 56 deletions(-)
- create mode 100644 Documentation/cgroups/task_counter.txt
- create mode 100644 kernel/cgroup_task_counter.c
-
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index c9d625c..1b3fe05 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -82,6 +82,8 @@ int res_counter_memparse_write_strategy(const char *buf,
+ int res_counter_write(struct res_counter *counter, int member,
+ 		      const char *buffer, write_strategy_fn write_strategy);
+ 
++void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
++
+ /*
+  * the field descriptors. one for each member of res_counter
+  */
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 34683ef..0faafcc 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -168,12 +168,26 @@ int res_counter_memparse_write_strategy(const char *buf,
+ 	return 0;
+ }
+ 
++void res_counter_write_u64(struct res_counter *counter, int member, u64 val)
++{
++	unsigned long long *target;
++	unsigned long flags;
++
++	/*
++	 * We need the lock to protect against concurrent add/dec on 32 bits.
++	 * No need to ifdef it's seldom used.
++	 */
++	spin_lock_irqsave(&counter->lock, flags);
++	target = res_counter_member(counter, member);
++	*target = val;
++	spin_unlock_irqrestore(&counter->lock, flags);
++}
++
+ int res_counter_write(struct res_counter *counter, int member,
+ 		      const char *buf, write_strategy_fn write_strategy)
+ {
+ 	char *end;
+-	unsigned long flags;
+-	unsigned long long tmp, *val;
++	unsigned long long tmp;
+ 
+ 	if (write_strategy) {
+ 		if (write_strategy(buf, &tmp))
+@@ -183,9 +197,8 @@ int res_counter_write(struct res_counter *counter, int member,
+ 		if (*end != '\0')
+ 			return -EINVAL;
+ 	}
+-	spin_lock_irqsave(&counter->lock, flags);
+-	val = res_counter_member(counter, member);
+-	*val = tmp;
+-	spin_unlock_irqrestore(&counter->lock, flags);
++
++	res_counter_write_u64(counter, member, tmp);
++
+ 	return 0;
+ }
 -- 
 1.7.5.4
 
