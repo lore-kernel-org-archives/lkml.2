@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab1JCRL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 13:11:57 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41052 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab1JCRLv (ORCPT
+	id S1756997Ab1JCRPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 13:15:22 -0400
+Received: from mga06.intel.com ([134.134.136.21]:22124 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754161Ab1JCRPS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 13:11:51 -0400
-Date: Mon, 3 Oct 2011 19:11:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
-Message-ID: <20111003171140.GF1835@somewhere>
-References: <20110929005545.GT2383@linux.vnet.ibm.com>
- <20110929123040.GB3537@somewhere>
- <20110929171205.GA2362@linux.vnet.ibm.com>
- <20110930131105.GC19053@somewhere>
- <20110930152946.GA2397@linux.vnet.ibm.com>
- <20110930192438.GA7505@linux.vnet.ibm.com>
- <20111002225019.GA1835@somewhere>
- <20111003002832.GC2539@linux.vnet.ibm.com>
- <20111003125858.GC1835@somewhere>
- <20111003162221.GB2403@linux.vnet.ibm.com>
+	Mon, 3 Oct 2011 13:15:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003162221.GB2403@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+Date: Mon, 3 Oct 2011 10:15:16 -0700
+Message-ID: <CABE8wwshrNc3dmzZ+nXSA4ZXO5OgvNwEApKTGW4ieSKu_YC5sw@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 09:22:21AM -0700, Paul E. McKenney wrote:
-> On Mon, Oct 03, 2011 at 02:59:03PM +0200, Frederic Weisbecker wrote:
-> > On Sun, Oct 02, 2011 at 05:28:32PM -0700, Paul E. McKenney wrote:
-> > > On Mon, Oct 03, 2011 at 12:50:22AM +0200, Frederic Weisbecker wrote:
-> > > > On Fri, Sep 30, 2011 at 12:24:38PM -0700, Paul E. McKenney wrote:
-> > > > > @@ -328,11 +326,11 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
-> > > > >  		return 1;
-> > > > >  	}
-> > > > >  
-> > > > > -	/* If preemptible RCU, no point in sending reschedule IPI. */
-> > > > > -	if (rdp->preemptible)
-> > > > > -		return 0;
-> > > > > -
-> > > > > -	/* The CPU is online, so send it a reschedule IPI. */
-> > > > > +	/*
-> > > > > +	 * The CPU is online, so send it a reschedule IPI.  This forces
-> > > > > +	 * it through the scheduler, and (inefficiently) also handles cases
-> > > > > +	 * where idle loops fail to inform RCU about the CPU being idle.
-> > > > > +	 */
-> > > > 
-> > > > If the idle loop forgets to call rcu_idle_enter() before going to
-> > > > sleep, I don't know if it's a good idea to try to cure that situation
-> > > > by forcing a quiescent state remotely. It may make the thing worse
-> > > > because we actually won't notice the lack of call to rcu_idle_enter()
-> > > > that the rcu stall detector would otherwise report to us.
-> > > > 
-> > > > Also I don't think that works. If the task doesn't have
-> > > > TIF_RESCHED, it won't go through the scheduler on irq exit.
-> > > > smp_send_reschedule() doesn't set the flag. And also scheduler_ipi()
-> > > > returns right away if no wake up is pending.
-> > > > 
-> > > > So, other than resuming the idle loop to sleep again, nothing may happen.
-> > > > 
-> > > > Or am I missing something?
-> > > 
-> > > Hmmm...  Seems like the IPIs aren't helping in any case, then?
-> > 
-> > I thought it was there for !PREEMPT cases where the task has TIF_RESCHED
-> > but takes too much time to find an opportunity to go to sleep.
-> 
-> Indeed, and it might be worth leaving in for that.
+On Mon, Oct 3, 2011 at 9:19 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> On 3 October 2011 21:43, Russell King <rmk@arm.linux.org.uk> wrote:
+>> On Mon, Oct 03, 2011 at 11:54:23AM +0530, Jassi Brar wrote:
+>>> On 2 October 2011 06:03, Barry Song <21cnbao@gmail.com> wrote:
+>>> > 2011/10/2 Jassi Brar <jaswinder.singh@linaro.org>
+>>>
+>>> >> > For example, it can't use
+>>> >> > MEM_TO_MEM to map, it still need to know whether the memory is source
+>>> >> > or dest.
+>>> >> MEM_TO_MEM means "From Memory Source To Memory Destination"
+>>> >>  Map Src buffer with DMA_TO_DEVICE and Dst buffer with DMA_FROM_DEVICE
+>>> >>
+>>> >> MEM_TO_DEV means "From Memory Source To FIFO Destination"
+>>> >>  Map Src buffer with DMA_TO_DEVICE.
+>>> >>
+>>> >> DEV_TO_MEM means "From FIFO Source To Memory Destination"
+>>> >>  Map Dst buffer with DMA_FROM_DEVICE
+>>> >>
+>>> >> DEV_TO_DEV means "From FIFO Source To FIFO Destination"
+>>> >>
+>>> >> What else would you want to know ?
+>>> >
+>>> > that is the problem. for example, drivers can't use MEM_TO_MEM as a
+>>> > flag to do dma mapping. so xfer_direction can't cover all that
+>>> > dma_data_direction can do.  that's why you need both
+>>> > dma_data_direction and xfer_direction with some similar flags in them.
+>>> >
+>>> The client drivers map the src/dst buffers and the dmac driver unmaps
+>>> them by default(!). For which, the dmac driver doesn't look at anything
+>>> other than
+>>>      DMA_COMPL_SKIP_SRC/DST_UNMAP
+>>>      DMA_COMPL_SRC/DST_UNMAP_SINGLE
+>>>   bits of 'enum dma_ctrl_flags'.
+>>> For this unmap'ing purpose, the usage of dma_data_direction is already
+>>> internal to the dmac driver.
+>>
+>> No.  Slave DMA engine drivers do *not* (and if they do, they should *not*)
+>> honour the unmapping of submitted buffers.
+>>
+>> The unmapping of these buffers by the DMA engine driver is intended to be
+>> done for the async_tx API and not slave DMA.
+>>
+> The proposed api is usable by both Slave as well as Async(Memcpy etc).
+> So it *does* matter here.
 
-Now I realize it's not even helpful in that case. If you're having a long
-time in the kernel without calling schedule(), an IPI won't be very useful
-on that.
+I think the confusion is reduced if you don't try to use this api for
+mem-to-mem transfers.  Then you can use DMA_NONE to indicate the
+dev-to-dev case.  If a mem-to-mem user arrives we can revisit
+xfer_direction, but as it stands it seems this is primarily useful for
+slave-dma, i.e. I don't see async_tx_dma or net_dma switching to this
+scheme anytime soon, if ever.  Are there other mem-to-mem use cases
+that would use this?
 
-No, the current call looks useless to me :)
+Also in dmaxfer_template I do not understand the need for src_inc and
+dst_inc.  Aren't those properties that the client would know about the
+slave device?
 
-> > > I suppose that I could do an smp_call_function_single(), which then
-> > > did a set_need_resched()...
-> > > 
-> > > But this is a separate issue that I need to deal with.  That said, any
-> > > suggestions are welcome!
-> > 
-> > Note you can't call smp_call_function_*() while irqs are disabled.
-> 
-> Sigh!  This isn't the first time this year that I have forgotten that,
-> is it?
-> 
-> > Perhaps you need something like kernel/sched.c:resched_cpu()
-> > This adds some rq->lock contention though.
-> 
-> This would happen infrequently, and could be made to be event more
-> infrequent.  But I wonder what happens when you do this to a CPU
-> that is running the idle task?  Seems like it should work normally,
-> but...
-
-That should work as well. But I think we shouldn't send an IPI
-with TIF_RESCHED set along to a remote CPU that is running idle.
-
-If there is a missing rcu_idle_enter() call, we should report it (rcu
-stall) and fix it. Not trying to cure the consequences. Sending an IPI
-would make it harder to find such bugs.
+--
+Dan
