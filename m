@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1JCJyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:54:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964Ab1JCJyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:54:14 -0400
-Date: Mon, 3 Oct 2011 11:55:20 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
- support S4
-Message-ID: <20111003095519.GA17023@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
- <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
- <20111002093733.GE29706@redhat.com>
- <20111003091646.GA5192@amit-x200.redhat.com>
- <20111003092443.GA16852@redhat.com>
- <20111003093105.GC5192@amit-x200.redhat.com>
+	id S1754807Ab1JCJy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:54:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52493 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753964Ab1JCJys (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 05:54:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 26/30] ARM: omap: add board autoselection
+Date: Mon, 03 Oct 2011 11:54:41 +0200
+Message-ID: <5055144.Y0IUdMEWXQ@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E898010.80208@ti.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <3656685.pM1zNST8gQ@wuerfel> <4E898010.80208@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003093105.GC5192@amit-x200.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:y+UHHAagusT+iJQbz0XnW82dBgODRdQs6Pak29To0Qv
+ a2g6RWLP+NbNHmbtS97Bwi1fE4kjXzyWyE/E+KVUDebBljLAUG
+ JxMvB+4iBCcLPkt1BrxpFnx06SECMrMevGItwFhoW1tL/NfQRc
+ sE1mO4A7IXms0oQZa/FbtIDq6ISfS2wU3ChlDIlu7fdmJ6L9PT
+ 0McYw5x8TEqyGhTV3fshEUGbP1SrW+Qf9Dc7JfeO3UqCunxc4U
+ qhP3u4QTQ7DazgkqTLNPzLI8JosY+4CCL7ewW8H5Rr+fMbifNz
+ TdeosDHa5xeqW7wjck2vzoWG0WPsGzgb6p15gQ3Nmlj2d5vD4g
+ 9S8StATba1OJ0loYZLSo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 03:01:05PM +0530, Amit Shah wrote:
-> On (Mon) 03 Oct 2011 [11:24:44], Michael S. Tsirkin wrote:
-> > On Mon, Oct 03, 2011 at 02:46:46PM +0530, Amit Shah wrote:
-> > > On (Sun) 02 Oct 2011 [11:37:33], Michael S. Tsirkin wrote:
-> > > > On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
-> > > > > Delete the vq on the freeze callback to prepare for hibernation.
-> > > > > Re-create the vq in the restore callback to resume normal function.
-> > > > > 
-> > > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > > ---
-> > > > >  drivers/block/virtio_blk.c |   17 +++++++++++++++++
-> > > > >  1 files changed, 17 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> > > > > index 509760b..9844d2c 100644
-> > > > > --- a/drivers/block/virtio_blk.c
-> > > > > +++ b/drivers/block/virtio_blk.c
-> > > > > @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
-> > > > >  	kfree(vblk);
-> > > > >  }
-> > > > >  
-> > > > > +#ifdef CONFIG_PM
-> > > > > +static int virtblk_freeze(struct virtio_device *vdev)
-> > > > > +{
-> > > > > +	vdev->config->del_vqs(vdev);
-> > > > 
-> > > > What prevents the guest from trying to use the VQ while
-> > > > this is in progress? IF it does, what prevents a crash?
-> > > 
-> > > An oversight: Sasha pointed this out, too, and I've now fixed this by
-> > > adding a call to vdev->config->reset() before deleting vqs.
-> > 
-> > This stops the host from accessing the VQ, but does not stop the *guest*.
+On Monday 03 October 2011 11:27:44 Cousson, Benoit wrote:
+> >
+> > In the long run, I'd hope we can just get rid of these for subarchitectures
+> > that support device tree probing and make the device tree based machine
+> > description unconditional.
 > 
-> Yes, have to ensure all pending IO is complete and nothing new is
-> queued.
-> 
-> 
-> 		Amit
+> This is really our goal, we will have soon the board-generic.c for that, 
+> someone will just have to migrate these ~30 board files to device tree 
+> DTS files 
 
-reset will effectively cancel pending requests, maybe that
-will help.
+For the purpose of build-time validation using randconfig, there is no
+problem in keeping some board files forever, as long as the generic board
+file is always built-in.
 
-Also, same concern applies to all virtio devices really.
-
--- 
-MST
+	Arnd
