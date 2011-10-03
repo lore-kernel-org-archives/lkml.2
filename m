@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1JCJgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:36:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64386 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891Ab1JCJgL (ORCPT
+	id S1754173Ab1JCJiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:38:20 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54770 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab1JCJiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:36:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] tty/serial: atmel_serial: __devinit_p for probe function
-Date: Mon, 03 Oct 2011 11:36:01 +0200
-Message-ID: <4355360.0xR5ZY7sEk@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <d7c2023edfbeb3d21bccd5b997f7806874b01b04.1317636473.git.nicolas.ferre@atmel.com>
-References: <cd489c1d28c26624d6b68399d222aec371045e53.1317634987.git.nicolas.ferre@atmel.com> <d7c2023edfbeb3d21bccd5b997f7806874b01b04.1317636473.git.nicolas.ferre@atmel.com>
+	Mon, 3 Oct 2011 05:38:14 -0400
+Message-ID: <4E898284.7060906@linux.vnet.ibm.com>
+Date: Mon, 03 Oct 2011 15:08:12 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:O3QNVuLn4ukKan61dgJ8VjNyBE/OsyPXbG2ZhFjmXSY
- j4tC6OdZZliv4tzmdXe7EXMPCX3Lj+TaXZ4Mtm0VPLqq43NHMk
- nu9tjnFmPVUeIGeH0gpr4JnetozmzlUT8x5ElReiKNZOsmmGmQ
- KpKUHXksNgSQS0u2XIxgOkTleUgdgmcSRpj7HhAGlQWOBNZNkZ
- XbzhTsiGgJgrc+ep3XX1dWOvMTBNR7wNBqlqaW/GrexZFfj4dE
- hqrWnsHTp+U4BBumOz77TjtmRB0i9mUCu5CzYxcH9FqsblYWOc
- aTN7UUNbRC6oqmQlznBSmEoEjOcG/vchtNEou11ap58+51ePt/
- mYQPb7xjXc0dDOrb4Ej4=
+To: Pavel Ivanov <paivanof@gmail.com>
+CC: ecryptfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Full lockup when compiling kernel with "optimal" number of threads
+References: <CAG1a4rvdYnOSWu3DJ+DL+Q_bfsfTv_px20vP06fBKRm6B8cwMw@mail.gmail.com>
+In-Reply-To: <CAG1a4rvdYnOSWu3DJ+DL+Q_bfsfTv_px20vP06fBKRm6B8cwMw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 12:11:19 Nicolas Ferre wrote:
->  }
->  
->  static struct platform_driver atmel_serial_driver = {
-> -       .probe          = atmel_serial_probe,
-> +       .probe          = __devinit_p(atmel_serial_probe),
->         .remove         = __devexit_p(atmel_serial_remove),
->         .suspend        = atmel_serial_suspend,
->         .resume         = atmel_serial_resume,
+On 09/03/2011 09:04 AM, Pavel Ivanov wrote:
+> Hi,
+> 
+> I can reliably reproduce a complete machine lockup when compiling
+> kernel sources with "make -j". After making some progress machine
+> stops responding to anything (including CapsLock/NumLock switching or
+> mouse moving) and after hard reboot nothing is left in kern.log or
+> syslog. Only attaching a serial console gives me the following clues
+> to what happens:
+> 
 
-Still wrong: __devinit_p does not exist and is not needed.
+[...]
 
-What bug are you trying to fix here?
+> After that only doing "make distclean" allows me to compile kernel
+> again. And note that when I build with "make -j 10" everything works
+> fine (I have 2 CPUs with 4 cores each without hyper-threading).
 
-	Arnd
+How much memory does your system have? Doing so many fork()s could cause
+a lot of resource conflict and memory pressure leading to heavy swapping
+etc., which can ultimately hang your system, especially when your RAM
+size is small. It is advisable to use make -j only on systems with lot
+of RAM (> 3 or 4GB).
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
