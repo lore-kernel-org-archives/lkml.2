@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab1JCIsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 04:48:05 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49066 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab1JCIr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 04:47:58 -0400
-Date: Mon, 3 Oct 2011 10:47:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111003084754.GB4411@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, mingo@elte.hu,
-	hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-	Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <4E88B5E0.6080503@linux.vnet.ibm.com>
- <20111002195023.GC31799@mtj.dyndns.org>
- <4E88C3D4.2020300@linux.vnet.ibm.com>
- <20111003004051.GD31799@mtj.dyndns.org>
- <4E894D75.808@linux.vnet.ibm.com>
+	id S1752013Ab1JCIvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 04:51:01 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38385 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1JCIuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 04:50:55 -0400
+Date: Mon, 3 Oct 2011 09:50:29 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] tty/serial: atmel_serial: __devinit_p for probe
+	function
+Message-ID: <20111003085029.GA11710@n2100.arm.linux.org.uk>
+References: <b371e80a96a36d962fb8806c2bd7aa20bb688b88.1317634987.git.nicolas.ferre@atmel.com> <cd489c1d28c26624d6b68399d222aec371045e53.1317634987.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E894D75.808@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <cd489c1d28c26624d6b68399d222aec371045e53.1317634987.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srivatsa,
+On Mon, Oct 03, 2011 at 11:46:16AM +0200, Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/tty/serial/atmel_serial.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index a652f8f..453cdb5 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -1789,7 +1789,7 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+>  }
+>  
+>  static struct platform_driver atmel_serial_driver = {
+> -	.probe		= atmel_serial_probe,
+> +	.probe		= __devexit_p(atmel_serial_probe),
 
-On Mon, Oct 03, 2011 at 11:21:49AM +0530, Srivatsa S. Bhat wrote:
-> So my one-liner patch here tries to solve this problem by not
-> invalidating the microcode at all, to handle the corner case of a CPU
-> hotplug going on in parallel with freezer operations. But it creates
-> issues with the usecase you described.
-
-I think your patch makes sense because re-loading the ucode during
-a suspend/resume cycle is unnecessary. If one wants to update the
-microcode, it should happen later when the box is resumed again: you
-simply put the new microcode image in /lib/firmware/... and on AMD
-unload/reload the microcode module and on Intel you do either that or
-use the deprecated microcode_ctl.
-
-However, let me test it on a couple of AMD boxes tomorrow to verify.
-
-> At the moment I can't think of any clean solution that solves both these problems - 
->   a. The problem of requesting microcode from userspace when it is frozen (which can be individually
->      solved by my patch).
->   b. The possible need for a revised microcode during CPU online (due to the remote usecase of 
->      physically plugging-out and plugging-in a new CPU), when the tasks are frozen.
-
-Yeah, let me remind you guys, we're talking about x86 CPUs here. AFAICT,
-I don't think that physical unplug is supported by any vendor yet but
-I'd welcome surprises :-).
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+That doesn't match the patch description (and is probably wrong.)
