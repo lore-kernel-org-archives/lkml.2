@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab1JCKah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 06:30:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60513 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab1JCKab (ORCPT
+	id S1755369Ab1JCKd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 06:33:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49833 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178Ab1JCKdx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 06:30:31 -0400
-Date: Mon, 3 Oct 2011 11:30:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jassi Brar <jassisinghbrar@gmail.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: samsung: s3c-i2s-v2.c needs module.h
-Message-ID: <20111003103026.GB23811@sirena.org.uk>
-References: <1317562466.4996.2.camel@phoenix>
- <20111002182605.GC2857@opensource.wolfsonmicro.com>
- <CAF+7xWkfTJXwt1uUtXgkh5Go9yxWasdM5a3DuLnii_5LqB00UQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF+7xWkfTJXwt1uUtXgkh5Go9yxWasdM5a3DuLnii_5LqB00UQ@mail.gmail.com>
-X-Cookie: Batteries not included.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Mon, 3 Oct 2011 06:33:53 -0400
+Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
+ flags
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 03 Oct 2011 12:33:08 +0200
+References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+	 <20110930034815.GF10425@mtj.dyndns.org>
+	 <1317355529.4588.45.camel@gandalf.stny.rr.com>
+	 <20110930041424.GH10425@mtj.dyndns.org> <1317371699.19415.6.camel@twins>
+	 <20110930085510.GA23868@mtj.dyndns.org> <1317373473.19415.10.camel@twins>
+	 <20111003011506.GE31799@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317637988.20367.13.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 08:17:21AM +0800, Axel Lin wrote:
-> 2011/10/3 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+On Mon, 2011-10-03 at 12:20 +0200, Peter Zijlstra wrote:
+> I didn't write this change for fun, I actually need to get
+> PF_THREAD_BOUND back to sanity, this change alone isn't enough, but it
+> gets rid of the worst abuse. This isn't frivolous perturbation. 
 
-> > What tree is this for? ?My primary development platform is based on this
-> > driver, I'd expect to have noticed any build issues and I rather suspect
-> > this isn't what you're supposed to do after all the module.h stuff has
-> > settled down.
+Not to mention it gets rid of ~250 lines, and it adds stricter checking
+and thereby removes the need to manually flush queues if you really
+meant things to be per-cpu.
 
-> I got the build error on linux-next (20110930).
-
-That's exactly what I'm running at the minute with no problem...
+I mean, really, what's the downside?
