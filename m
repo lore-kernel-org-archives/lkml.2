@@ -1,97 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab1JCTJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:09:18 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:32797 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab1JCTIa (ORCPT
+	id S1757411Ab1JCTJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:09:40 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63026 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757318Ab1JCTHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:08:30 -0400
-X-IronPort-AV: E=Sophos;i="4.68,481,1312156800"; 
-   d="scan'208";a="8186372"
-Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <alpine.LFD.2.02.1110032033530.1489@ionos>
-References: <1317654626.21903.72.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.02.1110032033530.1489@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Mon, 3 Oct 2011 20:08:28 +0100
-Message-ID: <1317668908.11991.20.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Oct 2011 15:07:42 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: [PATCH 05/10] cgroups: Ability to stop res charge propagation on bounded ancestor
+Date: Mon,  3 Oct 2011 21:07:07 +0200
+Message-Id: <1317668832-10784-6-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 19:42 +0100, Thomas Gleixner wrote:
-> On Mon, 3 Oct 2011, Ian Campbell wrote:
-> > I can see a few options for how I might go about solving this in a
-> > non-hacky way, which approach do you think would be preferable:
-> 
-> The question is whether you need to disable the IPI interrupt at
-> all. If not, we have a flag for that.
+Moving a task from a cgroup to another may require to substract
+its resource charge from the old cgroup and add it to the new one.
 
-We already that flag for these (I think that was why it was added even).
-The issue is that in the resuming domain on the other side event
-channels all start off masked and something needs to unmask them.
+For this to happen, the uncharge/charge propagation can just stop
+when we reach the common ancestor for the two cgroups. Further
+the performance reasons, we also want to avoid to temporarily
+overload the common ancestors with a non-accurate resource
+counter usage if we charge first the new cgroup and uncharge the
+old one thereafter. This is going to be a requirement for the coming
+max number of task subsystem.
 
-> >       * Add "IRQF_RESUME_EARLY", driven from syscore_resume, and use it
-> >         for these interrupts.
-> 
-> That's the preferable solution, as we could use that for PPC as well,
-> unless we can move stuff around, so we disable stuff later.
+To solve this, provide a pair of new API that can charge/uncharge
+a resource counter until we reach a given ancestor.
 
-OK
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Aditya Kali <adityakali@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Hockin <thockin@hockin.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Containers <containers@lists.linux-foundation.org>
+---
+ Documentation/cgroups/resource_counter.txt |   18 +++++++++++++++++-
+ include/linux/res_counter.h                |   20 +++++++++++++++++---
+ kernel/res_counter.c                       |   13 ++++++++-----
+ 3 files changed, 42 insertions(+), 9 deletions(-)
 
-> >       * register syscore ops for the Xen event channel subsystem to
-> >         unmask the IPIs earlier (would probably look a lot like the code
-> >         removed by 676dc3cf5bc3).
-> 
-> I'd like to avoid that.
-
-Sure.
-
-> >       * add syscore_ops to Xen smp subsystem to unmask the specific IPIs
-> >         (which it binds at start of day) earlier.
-> >       * push dpm_(suspend|resume)_noirq down into stop machine region
-> 
-> Where is stomp machine used?
-
-It is used by the xen PV suspend handler which runs in that context in
-order to quiesce non-boot CPUs (which Xen does not unplug like native
-does).
-
-> >       * use something other than stop_machine to quiesce system and move
-> >         to cpu0 for suspend (doesn't seem sensible to reproduce that
-> >         functionality).
-> 
-> We already shut down the nonboot cpus on suspend. We could do that
-> _before_ we disable devices and the interrupts.
-
-Xen PV suspend uses many of the PM/suspend core code paths but it does
-not have the bit which shuts down non-boot CPUs.
-
-It was a while ago but IIRC Xen used to unplug the secondary processors
-and it was found to lead to larger latencies in the migration and
-checkpointing cases (which at their core are a suspend/resume). The
-disaster recovery folks in particular care about this latency since they
-want to do rolling checkpoints many times a second.
-
-Ian.
-
->  
-> Raphael ?
-> 
-> Thanks,
-> 
-> 	tglx
-
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index 95b24d7..a2cd05b 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -83,7 +83,15 @@ to work with it.
+ 	res_counter->lock internally (it must be called with res_counter->lock
+ 	held).
+ 
+- e. void res_counter_uncharge[_locked]
++ e. int res_counter_charge_until(struct res_counter *counter,
++			     struct res_counter *limit, unsigned long val,
++			     struct res_counter **limit_fail_at)
++
++	The same as res_counter_charge(), but the charge propagation to
++	the hierarchy stops at the limit given in the "limit" parameter.
++
++
++ f. void res_counter_uncharge[_locked]
+ 			(struct res_counter *rc, unsigned long val)
+ 
+ 	When a resource is released (freed) it should be de-accounted
+@@ -92,6 +100,14 @@ to work with it.
+ 
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
++
++ g. void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit,
++				unsigned long val)
++
++	The same as res_counter_charge, but the uncharge propagation to
++	the hierarchy stops at the limit given in the "limit" parameter.
++
+  2.1 Other accounting routines
+ 
+     There are more routines that may help you with common needs, like
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 109d118..de4ba29 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -117,8 +117,16 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
+ 
+ int __must_check res_counter_charge_locked(struct res_counter *counter,
+ 		unsigned long val);
+-int __must_check res_counter_charge(struct res_counter *counter,
+-		unsigned long val, struct res_counter **limit_fail_at);
++int __must_check res_counter_charge_until(struct res_counter *counter,
++					  struct res_counter *limit,
++					  unsigned long val,
++					  struct res_counter **limit_fail_at);
++static inline int __must_check
++res_counter_charge(struct res_counter *counter, unsigned long val,
++		   struct res_counter **limit_fail_at)
++{
++	return res_counter_charge_until(counter, NULL, val, limit_fail_at);
++}
+ 
+ /*
+  * uncharge - tell that some portion of the resource is released
+@@ -131,7 +139,13 @@ int __must_check res_counter_charge(struct res_counter *counter,
+  */
+ 
+ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val);
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit, unsigned long val);
++static inline void res_counter_uncharge(struct res_counter *counter,
++					unsigned long val)
++{
++	res_counter_uncharge_until(counter, NULL, val);
++}
+ 
+ /**
+  * res_counter_margin - calculate chargeable space of a counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 37abf4e..0cc9c7e 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -35,8 +35,9 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
+ 	return 0;
+ }
+ 
+-int res_counter_charge(struct res_counter *counter, unsigned long val,
+-			struct res_counter **limit_fail_at)
++int res_counter_charge_until(struct res_counter *counter,
++			     struct res_counter *limit, unsigned long val,
++			     struct res_counter **limit_fail_at)
+ {
+ 	int ret;
+ 	unsigned long flags;
+@@ -44,7 +45,7 @@ int res_counter_charge(struct res_counter *counter, unsigned long val,
+ 
+ 	*limit_fail_at = NULL;
+ 	local_irq_save(flags);
+-	for (c = counter; c != NULL; c = c->parent) {
++	for (c = counter; c != limit; c = c->parent) {
+ 		spin_lock(&c->lock);
+ 		ret = res_counter_charge_locked(c, val);
+ 		spin_unlock(&c->lock);
+@@ -74,13 +75,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+ 	counter->usage -= val;
+ }
+ 
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++void res_counter_uncharge_until(struct res_counter *counter,
++				struct res_counter *limit,
++				unsigned long val)
+ {
+ 	unsigned long flags;
+ 	struct res_counter *c;
+ 
+ 	local_irq_save(flags);
+-	for (c = counter; c != NULL; c = c->parent) {
++	for (c = counter; c != limit; c = c->parent) {
+ 		spin_lock(&c->lock);
+ 		res_counter_uncharge_locked(c, val);
+ 		spin_unlock(&c->lock);
+-- 
+1.7.5.4
 
