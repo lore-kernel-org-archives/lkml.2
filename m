@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab1JCVH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 17:07:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57464 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab1JCVHW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 17:07:22 -0400
-Subject: Re: lockdep recursive locking detected (rcu_kthread / __cache_free)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, penberg@kernel.org, mpm@selenic.com,
-        linux-mm@kvack.org
-Date: Mon, 03 Oct 2011 23:06:19 +0200
-In-Reply-To: <alpine.DEB.2.00.1110031540560.11713@router.home>
-References: <20111003175322.GA26122@sucs.org>
-	 <20111003203139.GH2403@linux.vnet.ibm.com>
-	 <alpine.DEB.2.00.1110031540560.11713@router.home>
-Content-Type: text/plain; charset="UTF-8"
+	id S1757581Ab1JCVLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 17:11:18 -0400
+Received: from nm24-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.226]:29168 "HELO
+	nm24-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752190Ab1JCVLL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 17:11:11 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 907717.13118.bm@omp1014.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=uGRESrnbtvn7CPmTam9yfsVBH/6LWfbMH5WQ4pXgU4eyLvT7QgE7w5n45dSUmzTayx/PAzXRmUWSLEAtX18R89IYfEwcyZDdvzJ29AWcIzR0Ypg/9BDhJD2TO3ZfkUBX/NbD64BoaO79azBq3PGkudohT4GGpI85lU51T1oXTYk=;
+X-YMail-OSG: vf9iMQMVM1lgweWFf32fUIZbYizXedcFPYIIL0kIGfbJFcZ
+ 57YjEtDjMpy0N2Kc.yitY4LHJSz6C3hJ7512cVeKv2Ui3MmktDFDnKxqCkvv
+ o7u87sT2CyebgfxvTn4Brb5ccAZUm5inxyoxTTyiDgNdSKqOlUg8dLLIOM1B
+ kfwk6R0MmUd5LgV75Vuut6RUgFMe.MQhKxoqQpk_lCNabZaSs0_1DRj9iF66
+ cpuYNItDKbUpCvUCKlRgxUdmrQILenBipLd9sbenUuTxrSPJVQ7JAfzbEygV
+ pG9TCbL_drm3Ak5TSNMcNs5SngrysynESERjG9.aujlW1set0jtziRm3MTGe
+ SSudtStT5sRyiDHJM_ZA2EaUxWiocK0NaPrAM4Z0Sx90KroBn8CzdbESU5ID
+ yWbbLb4Tie2JU3EaZBsapEZGs1hkY9YDnZnHXxO8E_9S3gosVULU6CHRS3nV
+ 2Z9AxdKgHGVdDVLGGgBEC8dXo0KLwtt0C3PBMvrdWCj.CnuzWM3Iw71ctmC5
+ NwYKYkc86fig.4Zt5bw2WpXGKKNSw8XjEy9n8ynpbcA--
+X-Mailer: YahooMailWebService/0.8.114.317681
+References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com>
+Message-ID: <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com>
+Date: Mon, 3 Oct 2011 14:10:10 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+To: "terraluna977@gmail.com" <terraluna977@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317675980.9417.1.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 15:46 -0500, Christoph Lameter wrote:
-> On Mon, 3 Oct 2011, Paul E. McKenney wrote:
-> 
-> > The first lock was acquired here in an RCU callback.  The later lock that
-> > lockdep complained about appears to have been acquired from a recursive
-> > call to __cache_free(), with no help from RCU.  This looks to me like
-> > one of the issues that arise from the slab allocator using itself to
-> > allocate slab metadata.
-> 
-> Right. However, this is a false positive since the slab cache with
-> the metadata is different from the slab caches with the slab data. The slab
-> cache with the metadata does not use itself any metadata slab caches.
+>From: Alex Davis <alex14641@yahoo.com>
+>To: "terraluna977@gmail.com" <terraluna977@gmail.com>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+>Cc: 
+>Sent: Sunday, September 25, 2011 9:37 AM
+>Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+>
+>I'm having the same problem.
+>
+>http://marc.info/?l=linux-kernel&m=131695739702141&w=2
+>
+>Please keep me on the CC list for this thread.
+>
+>Thanks.
+>
+>
+> I code, therefore I am
 
-Sure, but we're supposed to have annotated that.. see
-init_node_lock_keys()
+The following patch fixed my backlight issues:
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index a9e0c7b..6f56676 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -262,8 +262,6 @@ void intel_panel_disable_backlight(struct drm_device *dev)
+         dev_priv->backlight_level = intel_panel_get_backlight(dev);
+         dev_priv->backlight_enabled = false;
+     }
+-
+-    intel_panel_set_backlight(dev, 0);
+ }
+ 
+ void intel_panel_enable_backlight(struct drm_device *dev)
+
+I've been using it since yesterday morning with no issues.
+
