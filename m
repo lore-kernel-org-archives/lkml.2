@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab1JCUEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:04:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40244 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab1JCUEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:04:46 -0400
-Date: Mon, 3 Oct 2011 15:04:23 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Serge Hallyn <serge@hallyn.com>,
-        akpm@osdl.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org, dhowells@redhat.com,
-        rdunlap@xenotime.net, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt
- (v3)
-Message-ID: <20111003200423.GA5880@sergelap>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
- <1314993400-6910-4-git-send-email-serge@hallyn.com>
- <20110926191737.GA4562@albatros>
- <20110927132157.GB3111@sergelap>
- <20110927155659.GA22532@albatros>
- <20111001170047.GA2935@sergelap>
- <m1aa9i4zkx.fsf@fess.ebiederm.org>
- <m1zkhh3l83.fsf@fess.ebiederm.org>
+	id S1757516Ab1JCUN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:13:27 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:39159 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755231Ab1JCUNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 16:13:21 -0400
+In-Reply-To: <20111003160036.GX11984@tux1.beaverton.ibm.com>
+References: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se> <20110930161223.GW11984@tux1.beaverton.ibm.com> <OF34B3D797.8C95417C-ONC125791C.00497BA8-C125791C.004C2C5A@transmode.se> <20111003160036.GX11984@tux1.beaverton.ibm.com>
+Subject: Re: [PATCH v3] crc32c: Implement CRC32c with slicing-by-8 algorithm
+X-KeepSent: DEA4FB6B:CBB97DA3-C125791E:006E5FDA;
+ type=4; name=$KeepSent
+To: djwong@us.ibm.com
+Cc: linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OFDEA4FB6B.CBB97DA3-ONC125791E.006E5FDA-C125791E.006F14E4@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Mon, 3 Oct 2011 22:13:18 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 10/03/2011 22:13:18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1zkhh3l83.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> ebiederm@xmission.com (Eric W. Biederman) writes:
-> 
-> > "Serge E. Hallyn" <serge.hallyn@canonical.com> writes:
-> >
-> >> Quoting Vasiliy Kulikov (segoon@openwall.com):
-> >>> On Tue, Sep 27, 2011 at 08:21 -0500, Serge E. Hallyn wrote:
-> >>> > > First, the patches by design expose much kernel code to unprivileged
-> >>> > > userspace processes.  This code doesn't expect malformed data (e.g. VFS,
-> >>> > > specific filesystems, block layer, char drivers, sysadmin part of LSMs,
-> >>> > > etc. etc.).  By relaxing permission rules you greatly increase attack
-> >>> > > surface of the kernel from unprivileged users.  Are you (or somebody
-> >>> > > else) planning to audit this code?
-> >
-> > Well in theory this codes does expose this code to unprivileged user
-> > space in a way that increases the attack surface.    However right now
-> > there are a lot of cases where because the kernel lacks a sufficient
-> > mechanism people are just given root provileges so that can get things
-> > done.  Network manager controlling the network stack as an unprivileged
-> > user.  Random filesystems on usb sticks being mounted and unmounted
-> > automatically when the usb sticks are inserted and removed.
-> >
-> > I completely agree that auditing and looking at the code is necessary I
-> > think most of what will happen is that we will start directly supporting
-> > how the kernel is actually used in the real world.  Which should
-> > actually reduce our level of vulnerability, because we give up the
-> > delusion that large classes of operations don't need careful
-> > attention because only root can perform them.   Operations which the
-> > user space authors turn around and write a suid binary for and
-> > unprivileged user space performs those operations all day long.
-> >
-> >>> > I had wanted to (but didn't) propose a discussion at ksummit about how
-> >>> > best to approach the filesystem code.  That's not even just for user
-> >>> > namespaces - patches have been floated in the past to make mount an
-> >>> > unprivileged operation depending on the FS and the user's permission
-> >>> > over the device and target.
-> >>> 
-> >>> This is a dangerous operation by itself.
-> >>
-> >> Of course it is :)  And it's been a while since it has been brought up,
-> >> but it *was* quite well thought through and throrougly discussed - see
-> >> i.e. https://lkml.org/lkml/2008/1/8/131
-> >>
-> >> Oh, that's right.  In the end the reason it didn't go in had to do with
-> >> the ability for an unprivileged user to prevent a privileged user from
-> >> unmounting trees by leaving a busy mount in a hidden namespace.
-> >>
-> >> Eric, in the past we didn't know what to do about that, but I wonder
-> >> if setns could be used in some clever way to solve it from userspace.
-> >
-> > Oh.  That is a good objection.  I had not realized that unprivileged
-> > mounts had that problem.
-> 
-> I just re-read the discussion you are referring to and that wasn't
+"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/10/03 18:00:36:
+>
+> On Sat, Oct 01, 2011 at 03:52:00PM +0200, Joakim Tjernlund wrote:
+> > "Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/09/30 18:12:23:
+> > >
+> > > [putting mailing lists on cc]
 
-The one I linked was one discussion, but not the final one.
+[SNIP]
 
-https://lkml.org/lkml/2008/10/6/72 is the one where the need for
-revoke is brought up.
+> > >
+> > > <shrug> I suppose I could make CRC32C_BITS configurable.  What is the hardware
+> > > profile of your ppc32 processor?  How much L1D/L2 cache?  slice-by-8 does have
+> > > a big cache footprint.  On the other hand it's faster than the slice-by-4
+> > > (crc32) and Sarwate (crc32c) code in the kernel, even on old slow 32-bit x86
+> > > processors (PII, PIII, P4).
+> >
+> > It is a low end embedded 333 MHz CPU with only L1 cache. How much faster
+> > is slice by 8 than slice by 4 on these old x86 machines?
+>
+> How much L1 cache?  Or, if you'd rather not give away specifics, has the CPU
+> more than 8KB L1 cache?  I'm willing to concede that with little cache the
+> added memory pressure could be painful.
+>
+> As for the old x86 machines, please have a look at:
+> http://djwong.org/docs/ext4_metadata_checksums.html#Benchmarking
+>
+> ~15% faster on a 2GHz Via C7
+> ~20% faster on a 2.7GHz P4
+> ~25% faster on a 500MHz P3
+>
+> I vaguely recall it was ~20% faster on a 400MHz P2, but all the kernel.org
+> wikis are still down. :(
+>
+> So I suspect the key factor here is memory hierachy, since all of those systems
+> have at least 16K of L1 cache.  Slice by 8 might actually suck on a Pentium
+> Proor earlier.  Unfortunately I don't have anything older than a PII...
 
-> it.  Fuse already has something like a revoke in it's umount -f
-> implementation.
+It is 16KB cache on this CPU. I don't know why it was so much slower. Could be a
+gcc thing as gcc does a fairly lame job at optimizing crc32. Still think making this
+configurable is a good thing. At least until the verdict is in from other CPUs.
 
-I'll have to (haven't yet) take a look at it.
+  Jocke
 
--serge
