@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab1JCNv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:51:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45829 "EHLO mx1.redhat.com"
+	id S932133Ab1JCNvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:51:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744Ab1JCNum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:50:42 -0400
+	id S1756074Ab1JCNuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:50:39 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: avi@redhat.com, kvm@vger.kernel.org, joerg.roedel@amd.com, mingo@elte.hu,
         a.p.zijlstra@chello.nl
-Subject: [PATCH 3/9] perf, tools: Add support for guest/host-only profiling
-Date: Mon,  3 Oct 2011 15:49:49 +0200
-Message-Id: <1317649795-18259-4-git-send-email-gleb@redhat.com>
+Subject: [PATCH 8/9] KVM, VMX: Add support for guest/host-only profiling
+Date: Mon,  3 Oct 2011 15:49:54 +0200
+Message-Id: <1317649795-18259-9-git-send-email-gleb@redhat.com>
 In-Reply-To: <1317649795-18259-1-git-send-email-gleb@redhat.com>
 References: <1317649795-18259-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+Support guest/host-only profiling by switch perf msrs on
+a guest entry if needed.
 
-To restrict a counter to either host or guest mode this
-patch introduces two new event modifiers: G and H.
-With G the counter is configured in guest-only mode and with
-H in host-only mode.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- tools/perf/util/parse-events.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/kvm/vmx.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 928918b..3b00775 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -735,8 +735,8 @@ static int
- parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- {
- 	const char *str = *strp;
--	int exclude = 0;
--	int eu = 0, ek = 0, eh = 0, precise = 0;
-+	int exclude = 0, exclude_GH = 0;
-+	int eu = 0, ek = 0, eh = 0, eH = 0, eG = 0, precise = 0;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index e4cc3c2..fef7bd9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -39,6 +39,7 @@
+ #include <asm/mce.h>
+ #include <asm/i387.h>
+ #include <asm/xcr.h>
++#include <asm/perf_event.h>
  
- 	if (!*str)
- 		return 0;
-@@ -760,6 +760,14 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 			if (!exclude)
- 				exclude = eu = ek = eh = 1;
- 			eh = 0;
-+		} else if (*str == 'G') {
-+			if (!exclude_GH)
-+				exclude_GH = eG = eH = 1;
-+			eG = 0;
-+		} else if (*str == 'H') {
-+			if (!exclude_GH)
-+				exclude_GH = eG = eH = 1;
-+			eH = 0;
- 		} else if (*str == 'p') {
- 			precise++;
- 		} else
-@@ -776,6 +784,8 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
- 	attr->exclude_kernel = ek;
- 	attr->exclude_hv     = eh;
- 	attr->precise_ip     = precise;
-+	attr->exclude_host   = eH;
-+	attr->exclude_guest  = eG;
+ #include "trace.h"
  
- 	return 0;
+@@ -417,6 +418,9 @@ struct vcpu_vmx {
+ 
+ 	/* Support for a guest hypervisor (nested VMX) */
+ 	struct nested_vmx nested;
++
++	int perf_msrs_cnt;
++	struct perf_guest_switch_msr *perf_msrs;
+ };
+ 
+ enum segment_cache_field {
+@@ -6052,6 +6056,26 @@ static void vmx_cancel_injection(struct kvm_vcpu *vcpu)
+ 	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);
  }
+ 
++static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
++{
++#ifdef CONFIG_PERF_EVENTS
++	int i;
++
++	if (!cpu_has_arch_perfmon || vmx->perf_msrs_cnt <= 0)
++		return;
++
++	perf_guest_get_msrs(vmx->perf_msrs_cnt, vmx->perf_msrs);
++	for (i = 0; i < vmx->perf_msrs_cnt; i++) {
++		struct perf_guest_switch_msr *msr = &vmx->perf_msrs[i];
++		if (msr->host == msr->guest)
++			clear_atomic_switch_msr(vmx, msr->msr);
++		else
++			add_atomic_switch_msr(vmx, msr->msr, msr->guest,
++					msr->host);
++	}
++#endif
++}
++
+ #ifdef CONFIG_X86_64
+ #define R "r"
+ #define Q "q"
+@@ -6101,6 +6125,8 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+ 	if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP)
+ 		vmx_set_interrupt_shadow(vcpu, 0);
+ 
++	atomic_switch_perf_msrs(vmx);
++
+ 	vmx->__launched = vmx->loaded_vmcs->launched;
+ 	asm(
+ 		/* Store host registers */
+@@ -6306,6 +6332,15 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+ 	vmx->nested.current_vmptr = -1ull;
+ 	vmx->nested.current_vmcs12 = NULL;
+ 
++	vmx->perf_msrs_cnt = perf_guest_get_msrs_count();
++	if (vmx->perf_msrs_cnt > 0) {
++		vmx->perf_msrs = kmalloc(vmx->perf_msrs_cnt *
++				sizeof(struct perf_guest_switch_msr),
++				GFP_KERNEL);
++		if (!vmx->perf_msrs)
++			goto free_vmcs;
++	}
++
+ 	return &vmx->vcpu;
+ 
+ free_vmcs:
 -- 
 1.7.5.3
 
