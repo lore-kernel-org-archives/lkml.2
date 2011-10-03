@@ -1,20 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab1JCBBu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 21:01:50 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:46680 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab1JCBBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 21:01:44 -0400
-Date: Sun, 2 Oct 2011 18:00:29 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+	id S1754600Ab1JCBJk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 21:09:40 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:40940 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482Ab1JCBJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 21:09:34 -0400
+Date: Sun, 2 Oct 2011 21:09:18 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
 To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Olof Johansson <olof@lixom.net>,
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Olof Johansson <olof@lixom.net>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
         Randy Dunlap <rdunlap@xenotime.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Greg KH <gregkh@suse.de>
 Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111003010029.GA22918@ericsson.com>
+Message-ID: <20111003010918.GG2969@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jeremy Fitzhardinge <jeremy@goop.org>,
+	"H. Peter Anvin" <hpa@zytor.com>, Olof Johansson <olof@lixom.net>,
+	Guenter Roeck <guenter.roeck@ericsson.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Greg KH <gregkh@suse.de>
 References: <4E8655CD.90107@zytor.com>
  <201110020304.28288.rjw@sisk.pl>
  <4E87B885.50005@zytor.com>
@@ -26,35 +35,29 @@ References: <4E8655CD.90107@zytor.com>
  <4E88F35E.9000306@zytor.com>
  <4E890581.3060508@goop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <4E890581.3060508@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 02, 2011 at 08:44:49PM -0400, Jeremy Fitzhardinge wrote:
-> On 10/02/2011 04:27 PM, H. Peter Anvin wrote:
-> > On 10/02/2011 04:23 PM, Olof Johansson wrote:
-> >> On Sun, Oct 2, 2011 at 3:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>> On 10/02/2011 03:54 PM, Guenter Roeck wrote:
-> >>>> Anyone in Silicon Valley looking for key signings, please get in touch.
-> >>>>
-> >>> I would be happy to be there, and I know Olof Johansson has been talking
-> >>> about one.
-> >>
-> >> Yeah, I don't think there's enough interest(?) to justify a full-blown
-> >> key signing party, but meeting up at a coffee shop or something sounds
-> >> like a good idea.
-> >>
+On Sun, Oct 02, 2011 at 05:44:49PM -0700, Jeremy Fitzhardinge wrote:
 > > FWIW, Tuesday evening works really well for me.
 > 
 > How many people are in San Francisco?  I'm happy to head down to
 > Mountain View or somewhere similar to meet up some mid-afternoon though.
-> 
-Coming from the other side - south San Jose. Almost walking distance to hpa, small world
-as it is. Mountain View would be fine for me, and Tuesday evening (or anytime else, really)
-would work as well.
 
-Guenter
+I could meet people Monday afternoon or evening in Mountain View;
+contact me privately if you're interested.  Tuesday evening doesn't
+work for me since I'm flying up to Portland for a LF board meeting on
+Wednesday.
+
+Both Peter and I have signed the new GPG key that Linus has created;
+I can also verify folks for CACert.
+
+						- Ted
