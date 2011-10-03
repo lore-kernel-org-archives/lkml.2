@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab1JCOLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 10:11:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab1JCOKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 10:10:53 -0400
-Date: Mon, 3 Oct 2011 15:07:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Matt Fleming <matt@console-pimps.org>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111003130701.GB25952@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com> <20110930235625.GD2658@mtj.dyndns.org> <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com> <1317474209.12973.15.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317474209.12973.15.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932167Ab1JCOLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 10:11:55 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48354 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab1JCOLt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 10:11:49 -0400
+From: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH V1 2/2] Staging: comedi: fix printk issue in cb_pcidas.c
+Date: Mon,  3 Oct 2011 19:41:05 +0530
+Message-Id: <1317651065-2870-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.6.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01, Peter Zijlstra wrote:
->
-> On Sat, 2011-10-01 at 11:16 +0100, Matt Fleming wrote:
-> > I also think Thomas/Peter mentioned something about latency in
-> > delivering timer signals because of contention on the per-process
-> > siglock. They might have some more details on that. 
->
-> Right, so signal delivery is O(nr_threads),
+This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-Yes, a !SIGEV_THREAD_ID timer needs to find a thread which doesn't
-block the signal.
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ Space issue is fixed. Sorry by mistake Earlier i sent wrong one.
+ please find the correct one.
+	
+ drivers/staging/comedi/drivers/cb_pcidas.c |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
 
-But this series can't help afaics. At least in its current state. It
-only adds more locking to the sending paths.
-
-And anyway it is wrong (afaics, and I didn't read it yet ;).
-
-> which precludes being able
-> to deliver signals from hardirq context, leading to lots of ugly in -rt.
-
-I think, the best solution would be: never send the signal from irq
-context, and ->siglock shouldn't disable irqs.
-
-> The hope is that this work is a stepping stone to O(1) signal delivery.
-
-Probably this is possible too. I was thinking anout this when
-set_current_blocked() was added. Unfortunately this needs a lot of
-complications.
-
-> Breaking up the multitude of uses of siglock certainly seems worthwhile
-> esp.
-
-Agreed. But I am not sure how much we should split the locking when
-it comes to sending/dequeueing/etc signals. 5 locks seems too much.
-
-> And yes, aside from that the siglock can be quite contended because its
-> pretty much the one lock serializing all of the process wide state.
-
-True.
-
-Mostly this is because we moved misc stuff from tasklist to siglock,
-previously this was a win. Today this doesn't look good.
-
-Oleg.
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+index 9dec153..1fc8db4 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+@@ -565,7 +565,8 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 	int index;
+ 	int i;
+ 
+-	pr_info("comedi%d: cb_pcidas: ", dev->minor);
++	dev_info(&pcidev->dev, "comedi%d: cb_pcidas:\n",
++		dev->minor);
+ 
+ /*
+  * Allocate the private structure area.
+@@ -576,7 +577,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ /*
+  * Probe the device to determine what device in the series it is.
+  */
+-	printk("\n");
+ 
+ 	for_each_pci_dev(pcidev) {
+ 		/*  is it not a computer boards card? */
+@@ -600,20 +600,24 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 		}
+ 	}
+ 
+-	printk("No supported ComputerBoards/MeasurementComputing card found on "
+-	       "requested position\n");
++	dev_err(&pcidev->dev, "No supported "
++		"ComputerBoards/MeasurementComputing "
++		"card found on requested position\n");
+ 	return -EIO;
+ 
+ found:
+ 
+-	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	dev_info(&pcidev->dev, "Found %s on bus %i, slot %i\n",
++		cb_pcidas_boards[index].name,
++		pcidev->bus->number,
++		PCI_SLOT(pcidev->devfn));
+ 
+ 	/*
+ 	 * Enable PCI device and reserve I/O ports.
+ 	 */
+ 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
+-		printk(" Failed to enable PCI device and request regions\n");
++		dev_err(&pcidev->dev, "Failed to enable PCI "
++			"device and request regions\n");
+ 		return -EIO;
+ 	}
+ 	/*
+@@ -639,7 +643,8 @@ found:
+ 	/*  get irq */
+ 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
+ 			IRQF_SHARED, "cb_pcidas", dev)) {
+-		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
++		dev_warn(&pcidev->dev, "unable to allocate irq %d\n",
++			devpriv->pci_dev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = devpriv->pci_dev->irq;
+@@ -768,7 +773,8 @@ found:
+  */
+ static int cb_pcidas_detach(struct comedi_device *dev)
+ {
+-	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
++	pr_info(&pcidev->dev, "comedi%d: cb_pcidas: remove\n",
++		dev->minor);
+ 
+ 	if (devpriv) {
+ 		if (devpriv->s5933_config) {
+-- 
+1.7.6.2
 
