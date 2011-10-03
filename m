@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab1JCUN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:13:27 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:39159 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755231Ab1JCUNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:13:21 -0400
-In-Reply-To: <20111003160036.GX11984@tux1.beaverton.ibm.com>
-References: <OF1BEE9025.31A1BE17-ONC125791B.00203167-C125791B.00211B4A@transmode.se> <20110930161223.GW11984@tux1.beaverton.ibm.com> <OF34B3D797.8C95417C-ONC125791C.00497BA8-C125791C.004C2C5A@transmode.se> <20111003160036.GX11984@tux1.beaverton.ibm.com>
-Subject: Re: [PATCH v3] crc32c: Implement CRC32c with slicing-by-8 algorithm
-X-KeepSent: DEA4FB6B:CBB97DA3-C125791E:006E5FDA;
- type=4; name=$KeepSent
-To: djwong@us.ibm.com
-Cc: linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OFDEA4FB6B.CBB97DA3-ONC125791E.006E5FDA-C125791E.006F14E4@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Mon, 3 Oct 2011 22:13:18 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 10/03/2011 22:13:18
+	id S1757531Ab1JCUNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:13:46 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33861 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757505Ab1JCUNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 16:13:38 -0400
+Message-ID: <4E8A1770.20001@xenotime.net>
+Date: Mon, 03 Oct 2011 13:13:36 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+To: Jan Keromnes <jan.keromnes@gmail.com>
+CC: torvalds@linux-foundation.org, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][TRIVIAL] Fixed alphabetical order in CREDITS
+References: <4E88A947.7020702@gmail.com> <4E88AEE5.2050904@xenotime.net> <4E8A0BA4.4020905@gmail.com>
+In-Reply-To: <4E8A0BA4.4020905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/10/03 18:00:36:
->
-> On Sat, Oct 01, 2011 at 03:52:00PM +0200, Joakim Tjernlund wrote:
-> > "Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/09/30 18:12:23:
-> > >
-> > > [putting mailing lists on cc]
+On 10/03/11 12:23, Jan Keromnes wrote:
+> On 10/02/2011 08:35 PM, Randy Dunlap wrote:
+>> On 10/02/11 11:11, Jan Keromnes wrote:
+>>> diff --git a/CREDITS b/CREDITS
+>>> index 07e32a8..650402c 100644
+>>> --- a/CREDITS
+>>> +++ b/CREDITS
+>>> @@ -90,7 +90,7 @@ N: Erik Andersen
+>>>   E:andersen@codepoet.org
+>>>   W:http://www.codepoet.org/
+>>>   P: 1024D/30D39057 1BC4 2742 E885 E4DE 9301  0C82 5F9B 643E 30D3 9057
+>>> -D: Maintainer of ide-cd and Uniform CD-ROM driver,
+>>> +D: Maintainer of ide-cd and Uniform CD-ROM driver,
+>> I don't see a change for the line above or several other lines (maybe something
+>> ate the trailing spaces that you were trying to fix).
+> Yes sorry about that, something in my mailing process is eating trailing spaces.
+> 
+> Please pull from:
+> 
+>     git://github.com/jankeromnes/linux.git for-linus
+> 
+> to get the changes.
 
-[SNIP]
+>>> @@ -2489,6 +2489,10 @@ S: 12725 SW Millikan Way, Suite 400
+>>>   S: Beaverton, Oregon 97005
+>> OSDL is no longer there.
+> I was unable to ask Patrick Mochel about his current whereabouts, both his email addresses do not exist anymore. How should I fix this? Surely not replace the old address by his Linked In location: Greater Seattle Area?
+>>>   S: USA
 
-> > >
-> > > <shrug> I suppose I could make CRC32C_BITS configurable.  What is the hardware
-> > > profile of your ppc32 processor?  How much L1D/L2 cache?  slice-by-8 does have
-> > > a big cache footprint.  On the other hand it's faster than the slice-by-4
-> > > (crc32) and Sarwate (crc32c) code in the kernel, even on old slow 32-bit x86
-> > > processors (PII, PIII, P4).
-> >
-> > It is a low end embedded 333 MHz CPU with only L1 cache. How much faster
-> > is slice by 8 than slice by 4 on these old x86 machines?
->
-> How much L1 cache?  Or, if you'd rather not give away specifics, has the CPU
-> more than 8KB L1 cache?  I'm willing to concede that with little cache the
-> added memory pressure could be painful.
->
-> As for the old x86 machines, please have a look at:
-> http://djwong.org/docs/ext4_metadata_checksums.html#Benchmarking
->
-> ~15% faster on a 2GHz Via C7
-> ~20% faster on a 2.7GHz P4
-> ~25% faster on a 500MHz P3
->
-> I vaguely recall it was ~20% faster on a 400MHz P2, but all the kernel.org
-> wikis are still down. :(
->
-> So I suspect the key factor here is memory hierachy, since all of those systems
-> have at least 16K of L1 cache.  Slice by 8 might actually suck on a Pentium
-> Proor earlier.  Unfortunately I don't have anything older than a PII...
+I would just delete those snail mail address lines.
 
-It is 16KB cache on this CPU. I don't know why it was so much slower. Could be a
-gcc thing as gcc does a fairly lame job at optimizing crc32. Still think making this
-configurable is a good thing. At least until the verdict is in from other CPUs.
-
-  Jocke
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
