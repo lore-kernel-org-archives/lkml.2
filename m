@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1JCJdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:33:41 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:42460 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753788Ab1JCJdg (ORCPT
+	id S1754137Ab1JCJgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:36:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64386 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab1JCJgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:33:36 -0400
-Message-ID: <4E89816A.5050704@ti.com>
-Date: Mon, 03 Oct 2011 15:03:30 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 3 Oct 2011 05:36:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] tty/serial: atmel_serial: __devinit_p for probe function
+Date: Mon, 03 Oct 2011 11:36:01 +0200
+Message-ID: <4355360.0xR5ZY7sEk@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <d7c2023edfbeb3d21bccd5b997f7806874b01b04.1317636473.git.nicolas.ferre@atmel.com>
+References: <cd489c1d28c26624d6b68399d222aec371045e53.1317634987.git.nicolas.ferre@atmel.com> <d7c2023edfbeb3d21bccd5b997f7806874b01b04.1317636473.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 28/30] ARM: omap: select CPU_FREQ_TABLE where needed
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-29-git-send-email-arnd@arndb.de> <4E894A95.5030107@ti.com> <5173921.eT2vCfT35d@wuerfel>
-In-Reply-To: <5173921.eT2vCfT35d@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:O3QNVuLn4ukKan61dgJ8VjNyBE/OsyPXbG2ZhFjmXSY
+ j4tC6OdZZliv4tzmdXe7EXMPCX3Lj+TaXZ4Mtm0VPLqq43NHMk
+ nu9tjnFmPVUeIGeH0gpr4JnetozmzlUT8x5ElReiKNZOsmmGmQ
+ KpKUHXksNgSQS0u2XIxgOkTleUgdgmcSRpj7HhAGlQWOBNZNkZ
+ XbzhTsiGgJgrc+ep3XX1dWOvMTBNR7wNBqlqaW/GrexZFfj4dE
+ hqrWnsHTp+U4BBumOz77TjtmRB0i9mUCu5CzYxcH9FqsblYWOc
+ aTN7UUNbRC6oqmQlznBSmEoEjOcG/vchtNEou11ap58+51ePt/
+ mYQPb7xjXc0dDOrb4Ej4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 02:45 PM, Arnd Bergmann wrote:
-> On Monday 03 October 2011 11:09:33 Santosh Shilimkar wrote:
->>> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
->>> index bb8f4a6..f7ef9f4 100644
->>> --- a/arch/arm/plat-omap/Kconfig
->>> +++ b/arch/arm/plat-omap/Kconfig
->>> @@ -217,6 +217,11 @@ config OMAP_PM_NOOP
->>>  
->>>  endchoice
->>>  
->>> +config OMAP_CPU_FREQ
->>> +     def_bool "y"
->>> +     depends on CPU_FREQ
->>> +     select CPU_FREQ_TABLE
->>> +
->>>  endmenu
->> With CPUFREQ series from Kevin [1], I don't think we need this any-more.
-> 
-> I guess if it's needed, it should at least be moved to the new cpufreq
-> location.
-> 
-Probably you are right. CPU_FREQ_TABLE is selected today if
-CPU_FREQ_STAT or CPU_FREQ_GOV_ONDEMAND is selected. Without these two
-enabled, in won't be selected.
+On Monday 03 October 2011 12:11:19 Nicolas Ferre wrote:
+>  }
+>  
+>  static struct platform_driver atmel_serial_driver = {
+> -       .probe          = atmel_serial_probe,
+> +       .probe          = __devinit_p(atmel_serial_probe),
+>         .remove         = __devexit_p(atmel_serial_remove),
+>         .suspend        = atmel_serial_suspend,
+>         .resume         = atmel_serial_resume,
 
->> More so, I didn't find OMAP_CPU_FREQ is being used anywhere on mainline.
-> 
-> Yes, OMAP_CPU_FREQ is a symbol that is intentionally unused, with the
-> only purpose of selecting CPU_FREQ_TABLE if any omap platform together
-> with CPU_FREQ is enabled.
->
-I see. This wasn't clear to me.
+Still wrong: __devinit_p does not exist and is not needed.
 
-> Let's drop this patch for now, if it is still needed as I think, I can
-> do a patch during the 3.2 cycle for the right location.
-> 
-Ok.
+What bug are you trying to fix here?
 
-Regards
-Santosh
+	Arnd
