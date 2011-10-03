@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab1JCJj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:39:57 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55597 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab1JCJju (ORCPT
+	id S1754406Ab1JCJkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:40:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56196 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab1JCJkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:39:50 -0400
-Message-ID: <4E8982E3.9080809@linux.vnet.ibm.com>
-Date: Mon, 03 Oct 2011 15:09:47 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Mon, 3 Oct 2011 05:40:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 15/30] usb/musb: use a Kconfig choice to pick the right DMA method
+Date: Mon, 03 Oct 2011 11:40:26 +0200
+Message-ID: <3529819.LQllWhb43D@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111002221050.GA25790@legolas.emea.dhcp.ti.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1546914.88vcgxkfJf@wuerfel> <20111002221050.GA25790@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: ecryptfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Full lockup when compiling kernel with "optimal" number of threads
-References: <CAG1a4rvdYnOSWu3DJ+DL+Q_bfsfTv_px20vP06fBKRm6B8cwMw@mail.gmail.com>
-In-Reply-To: <CAG1a4rvdYnOSWu3DJ+DL+Q_bfsfTv_px20vP06fBKRm6B8cwMw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1gghC9PkUKXm+JtZWOQB70+2uMQxaxhOINJj0wE3sev
+ PQXjtLDtRCSMXt0k3mhhNehjgMGzMSPenbk62VRW3HDQp0uctm
+ ub5sKEwme0p8oPlhjMU86q0jmylw9Q5eXXg50hppWZ+3ww6NIi
+ sKu+17zchAO7+xdORWQPBcZgdpMAM3jaxsXwtRtU8ryudomm26
+ VECdgWhGyhqopZu6nLIivsEbNBTTf9Tc3Y66N0N1p7CkCU3RgP
+ HdRA1QjiASnx8r5SOhItdUgflb7/tnnpsgMDpv/THBnvcqM5ln
+ nu3T3gqT1yr/zvlEz9b/wJRUzQL5zR+KFqkRwpS0afIUxRxw+5
+ TiJSiQ5djr5JY04UY3JU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2011 09:04 AM, Pavel Ivanov wrote:
-> Hi,
-> 
-> I can reliably reproduce a complete machine lockup when compiling
-> kernel sources with "make -j". After making some progress machine
-> stops responding to anything (including CapsLock/NumLock switching or
-> mouse moving) and after hard reboot nothing is left in kern.log or
-> syslog. Only attaching a serial console gives me the following clues
-> to what happens:
-> 
-By the way "optimal" is supposed to be make -j <nr_cpus*2> isn't it?
-IIRC, "maximal" refers to make -j
+On Monday 03 October 2011 01:10:51 Felipe Balbi wrote:
+> Anyway, I'll take your patches in, but their too late for this merge
+> window  I already sent my last pull to Greg.
 
+No problem. I need the full set of arm-randconfig patches upstream in order
+to make randconfig work in general, and that's not happening for 3.2
+anyway. Right now, I'm just trying to as many patches as possible into
+maintainer trees.
 
--- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+Is your tree part of linux-next, or will it only show up after the merge
+window once Greg has pulled your first set for 3.3?
+
+	Arnd
