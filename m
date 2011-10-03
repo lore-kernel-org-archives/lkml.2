@@ -1,35 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab1JCIeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 04:34:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34219 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab1JCIeZ (ORCPT
+	id S1753212Ab1JCIgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 04:36:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47902 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab1JCIgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 04:34:25 -0400
+	Mon, 3 Oct 2011 04:36:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1317388114.3935.2.camel@phoenix>
-References: <1317388114.3935.2.camel@phoenix>
-Date: Mon, 3 Oct 2011 10:34:24 +0200
-Message-ID: <CACRpkdaDXQRA-vGDFTi=yHkhbBh=NOak4sSMwzdFNyYO1aTU2Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH] pinmux: fix pinctrl_register error handling
+In-Reply-To: <20111002202255.GA6991@elgon.mountain>
+References: <20111002202255.GA6991@elgon.mountain>
+Date: Mon, 3 Oct 2011 10:36:42 +0200
+Message-ID: <CACRpkdZ8qdbTZshFyuYaeDVfUSb2j0AkNid-N=WRVRZpqaRSWg@mail.gmail.com>
+Subject: Re: [patch] pinctrl: double free on error path in pinctrl_register()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Axel Lin <axel.lin@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 3:08 PM, Axel Lin <axel.lin@gmail.com> wrote:
+On Sun, Oct 2, 2011 at 10:22 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-> Hi Linus,
-> The fix is base on my understanding of the driver-model code,
-> and it is untested ( only compile test), thus I add [RFC] on subject line.
-> Also CC Greg KH who is the maintainer of drivers/base/*.
+> This is duplicated in the error handling after we go to out_err.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-You understand it better than me for sure, I have rebased the patch
-on the v9 patchset and applied it to my tree.
+This got fixed by Axel Lin's patch that arrived just a little bit
+before this one,
+but thanks anyway!
 
-Thanks!
+Yours,
 Linus Walleij
