@@ -1,106 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab1JCPBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:01:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4035 "EHLO mx1.redhat.com"
+	id S1756384Ab1JCPDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:03:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab1JCPAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:00:52 -0400
-Message-ID: <4E89CE09.1080808@redhat.com>
-Date: Mon, 03 Oct 2011 17:00:25 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1756260Ab1JCPC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:02:58 -0400
+Date: Mon, 3 Oct 2011 11:02:06 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
+ initialized, don't nop it out
+Message-ID: <20111003150205.GB2462@redhat.com>
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
+ <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 8/9] KVM, VMX: Add support for guest/host-only profiling
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com> <1317649795-18259-9-git-send-email-gleb@redhat.com>
-In-Reply-To: <1317649795-18259-9-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> Support guest/host-only profiling by switch perf msrs on
-> a guest entry if needed.
->
-> @@ -6052,6 +6056,26 @@ static void vmx_cancel_injection(struct kvm_vcpu *vcpu)
->   	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);
->   }
->
-> +static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
-> +{
-> +#ifdef CONFIG_PERF_EVENTS
+Hi,
 
-No need for #ifdef (if you also define perf_guest_get_msrs() when 
-!CONFIG_PERF_EVENTS).
+(Sorry for the late reply - I was away for a few days).
 
->
-> +	int i;
+The early enable is really nice - it means there are not restrictions on
+when jump_label_inc()/dec() can be called which is nice.
+
+comments below.
+
+
+On Sat, Oct 01, 2011 at 02:55:35PM -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> 
+> If a key has been enabled before jump_label_init() is called, don't
+> nop it out.
+> 
+> This removes arch_jump_label_text_poke_early() (which can only nop
+> out a site) and uses arch_jump_label_transform() instead.
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  include/linux/jump_label.h |    3 ++-
+>  kernel/jump_label.c        |   20 ++++++++------------
+>  2 files changed, 10 insertions(+), 13 deletions(-)
+> 
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 1213e9d..c8fb1b3 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -45,7 +45,8 @@ extern void jump_label_lock(void);
+>  extern void jump_label_unlock(void);
+>  extern void arch_jump_label_transform(struct jump_entry *entry,
+>  				 enum jump_label_type type);
+> -extern void arch_jump_label_text_poke_early(jump_label_t addr);
+> +extern void arch_jump_label_transform_early(struct jump_entry *entry,
+> +				 enum jump_label_type type);
+>  extern int jump_label_text_reserved(void *start, void *end);
+>  extern void jump_label_inc(struct jump_label_key *key);
+>  extern void jump_label_dec(struct jump_label_key *key);
+> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+> index a8ce450..059202d5 100644
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -121,13 +121,6 @@ static void __jump_label_update(struct jump_label_key *key,
+>  	}
+>  }
+>  
+> -/*
+> - * Not all archs need this.
+> - */
+> -void __weak arch_jump_label_text_poke_early(jump_label_t addr)
+> -{
+> -}
+> -
+>  static __init int jump_label_init(void)
+>  {
+>  	struct jump_entry *iter_start = __start___jump_table;
+> @@ -139,12 +132,15 @@ static __init int jump_label_init(void)
+>  	jump_label_sort_entries(iter_start, iter_stop);
+>  
+>  	for (iter = iter_start; iter < iter_stop; iter++) {
+> -		arch_jump_label_text_poke_early(iter->code);
+> -		if (iter->key == (jump_label_t)(unsigned long)key)
+> +		struct jump_label_key *iterk;
 > +
-> +	if (!cpu_has_arch_perfmon || vmx->perf_msrs_cnt<= 0)
-> +		return;
+> +		iterk = (struct jump_label_key *)(unsigned long)iter->key;
+> +		arch_jump_label_transform(iter, jump_label_enabled(iterk) ?
+> +					  JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
 
-Why the first check?
+The only reason I called this at boot-time was that the 'ideal' x86
+no-op isn't known until boot time. Thus, in the enabled case we could
+skip the the arch_jump_label_transform() call. ie:
 
->
-> +
-> +	perf_guest_get_msrs(vmx->perf_msrs_cnt, vmx->perf_msrs);
-> +	for (i = 0; i<  vmx->perf_msrs_cnt; i++) {
-> +		struct perf_guest_switch_msr *msr =&vmx->perf_msrs[i];
-> +		if (msr->host == msr->guest)
-> +			clear_atomic_switch_msr(vmx, msr->msr);
-> +		else
-> +			add_atomic_switch_msr(vmx, msr->msr, msr->guest,
-> +					msr->host);
+if (!enabled)
+	arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
 
-This generates a lot of VMWRITEs even if nothing changes, just to re-set 
-bits in the VMCS to their existing values.  Need to add something like this:
 
-    if (loaded_vmcs->msr[i].host == msr->host
-&& loaded_vmcs->msr[i].guest == msr->guest)
-           continue;
+> +		if (iterk == key)
+>  			continue;
+>  
+> -		key = (struct jump_label_key *)(unsigned long)iter->key;
+> -		atomic_set(&key->enabled, 0);
+> +		key = iterk;
+>  		key->entries = iter;
+>  #ifdef CONFIG_MODULES
+>  		key->next = NULL;
+> @@ -212,7 +208,7 @@ void jump_label_apply_nops(struct module *mod)
+>  		return;
+>  
+>  	for (iter = iter_start; iter < iter_stop; iter++)
+> -		arch_jump_label_text_poke_early(iter->code);
+> +		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
+>  }
+>  
+>  static int jump_label_add_module(struct module *mod)
+> -- 
+> 1.7.6.2
+> 
 
-btw, shouldn't the msr autoload list be part of loaded_vmcs as well?
+hmmm...this is used on module load in smp - so this would introduce a number of
+calls to stop_machine() where we didn't have them before. Yes, module
+load is a very slow path to begin with, but I think its at least worth
+pointing out...
 
->
-> +	}
-> +#endif
-> +}
-> +
->   #ifdef CONFIG_X86_64
->   #define R "r"
->   #define Q "q"
-> @@ -6101,6 +6125,8 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
->   	if (vcpu->guest_debug&  KVM_GUESTDBG_SINGLESTEP)
->   		vmx_set_interrupt_shadow(vcpu, 0);
->
-> +	atomic_switch_perf_msrs(vmx);
-> +
->   	vmx->__launched = vmx->loaded_vmcs->launched;
->   	asm(
->   		/* Store host registers */
-> @@ -6306,6 +6332,15 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
->   	vmx->nested.current_vmptr = -1ull;
->   	vmx->nested.current_vmcs12 = NULL;
->
-> +	vmx->perf_msrs_cnt = perf_guest_get_msrs_count();
-> +	if (vmx->perf_msrs_cnt>  0) {
-> +		vmx->perf_msrs = kmalloc(vmx->perf_msrs_cnt *
-> +				sizeof(struct perf_guest_switch_msr),
-> +				GFP_KERNEL);
-> +		if (!vmx->perf_msrs)
-> +			goto free_vmcs;
-> +	}
-> +
+thanks,
 
-Do we really need a private buffer?  Perhaps perf_guest_get_msrs() can 
-return a perf-internal buffer (but then, we will need to copy it for the 
-optimization above, but that's a separate issue).
-
--- 
-error compiling committee.c: too many arguments to function
-
+-Jason
