@@ -1,177 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab1JCHhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 03:37:54 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34137 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1JCHhs (ORCPT
+	id S1752223Ab1JCHnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 03:43:17 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56164 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab1JCHnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 03:37:48 -0400
-Date: Mon, 3 Oct 2011 13:07:35 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
-        kexec@lists.infradead.org
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
-Subject: [Patch 3/4][makedumpfile] Capture slimdump if elf-note NT_NOCOREDUMP
- present
-Message-ID: <20111003073735.GC22694@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111003070735.GJ2223@in.ibm.com>
+	Mon, 3 Oct 2011 03:43:12 -0400
+Subject: [PATCH V8 0/4] cpuidle: Global registration of idle states with
+ per-cpu statistics
+To: khilman@ti.com, venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        peterz@infradead.org, santosh.shilimkar@ti.com, arjan@linux.intel.com,
+        lenb@kernel.org
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Mon, 03 Oct 2011 13:12:15 +0530
+Message-ID: <20111003074147.21968.86106.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003070735.GJ2223@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel decides to add a new elf-note of type NT_NOCOREDUMP for various
-hardware error triggered crashes where it makes no sense (or sometimes
-dangerous) to capture kernel memory into the dump. This patch teaches
-'makedumpfile' tool needs to recognise the new elf-note type and act
-accordingly.
+Version 6 of this patch series dated 22nd Sept 2011 was 
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Acked-by: Kevin Hilman <khilman@ti.com> for OMAP specific parts.
+Reviewed-by: Kevin Hilman <khilman@ti.com>
+Tested-by: Jean Pihet <j-pihet@ti.com>
 
-Since only a 'slimdump' of a very small size (containing only elf-headers and
-elf-notes section) will be captured, the coredump will be of ELF type (and not
-kdump-compressed format).
+Hi Len, 
+Can you please queue this series for the next mainline merge window by merging
+it into your development tree and also linux-next for further testing.
 
-Todo: Make changes to the man pages of makedumpfile to describe these changes.
+I also tested it by applying these patches on your ACPI tree hosted @github.
 
-Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
----
- elf_info.c     |   36 ++++++++++++++++++++++++++++++++++++
- elf_info.h     |    8 ++++++++
- makedumpfile.c |   13 ++++++++++++-
- makedumpfile.h |    1 +
- 4 files changed, 57 insertions(+), 1 deletions(-)
+Thanks
+-Deepthi
 
-diff --git a/elf_info.c b/elf_info.c
-index 114dd05..de93d9a 100644
---- a/elf_info.c
-+++ b/elf_info.c
-@@ -287,6 +287,41 @@ offset_note_desc(void *note)
- 	return offset;
- }
- 
-+/*
-+ * The kernel generally adds an elf-note of type NT_NOCOREDUMP if the crash is
-+ * due to a hardware error and when it makes no sense to read/store the
-+ * crashing kernel's memory. In such a case, only a 'slimdump' is captured.
-+ *
-+ * This function checks if the elf-header has a note of type NT_NOCOREDUMP.
-+ */
-+int
-+has_nocoredump_note(void)
-+{
-+	char note[MAX_SIZE_NHDR];
-+	off_t offset;
-+
-+	offset = offset_pt_note_memory;
-+	while (offset < offset_pt_note_memory + size_pt_note_memory) {
-+		if (lseek(fd_memory, offset, SEEK_SET) < 0) {
-+			ERRMSG("Can't seek the dump memory(%s). %s\n",
-+			    name_memory, strerror(errno));
-+			return FALSE;
-+		}
-+		if (read(fd_memory, note, sizeof(note)) != sizeof(note)) {
-+			ERRMSG("Can't read the dump memory(%s). %s\n",
-+			    name_memory, strerror(errno));
-+			return FALSE;
-+		}
-+		if (note_type(note) == NT_NOCOREDUMP) {
-+			DEBUG_MSG("kdump will not be collected. "
-+				  "NT_NOCOREDUMP elf-note present.\n");
-+			return TRUE;
-+		}
-+		offset += offset_next_note(note);
-+	}
-+	return FALSE;
-+}
-+
- static int
- get_pt_note_info(void)
- {
-@@ -630,6 +665,7 @@ get_elf_info(int fd, char *filename)
- 		ERRMSG("Can't find PT_NOTE Phdr.\n");
- 		return FALSE;
- 	}
-+	has_nocoredump_note();
- 	if (!get_pt_note_info()) {
- 		ERRMSG("Can't get PT_NOTE information.\n");
- 		return FALSE;
-diff --git a/elf_info.h b/elf_info.h
-index 4dff9c1..10fdc0b 100644
---- a/elf_info.h
-+++ b/elf_info.h
-@@ -22,6 +22,12 @@
- #define ERASEINFO_NOTE_NAME		"ERASEINFO"
- #define ERASEINFO_NOTE_NAME_BYTES	(sizeof(ERASEINFO_NOTE_NAME))
- 
-+/*
-+ * Temporary definition of new elf-note type for compilation purposes.
-+ * Not required when run on a new kernel containing this definition.
-+ */
-+#define NT_NOCOREDUMP	21
-+
- #define MAX_SIZE_NHDR	MAX(sizeof(Elf64_Nhdr), sizeof(Elf32_Nhdr))
- 
- 
-@@ -34,6 +40,8 @@ unsigned long long get_max_paddr(void);
- int get_elf64_ehdr(int fd, char *filename, Elf64_Ehdr *ehdr);
- int get_elf32_ehdr(int fd, char *filename, Elf32_Ehdr *ehdr);
- int get_elf_info(int fd, char *filename);
-+int has_nocoredump_note(void);
-+
- void free_elf_info(void);
- 
- int is_elf64_memory(void);
-diff --git a/makedumpfile.c b/makedumpfile.c
-index 7b7c266..a73b4f7 100644
---- a/makedumpfile.c
-+++ b/makedumpfile.c
-@@ -4173,7 +4173,11 @@ write_elf_pages(struct cache_data *cd_header, struct cache_data *cd_page)
- 		if (!get_phdr_memory(i, &load))
- 			return FALSE;
- 
--		if (load.p_type != PT_LOAD)
-+		/*
-+		 * Do not capture the kernel's memory if flag_nocoredump is
-+		 * turned on. This may be dangerous to the system stability.
-+		 */
-+		if ((load.p_type != PT_LOAD) || (info->flag_nocoredump))
- 			continue;
- 
- 		off_memory= load.p_offset;
-@@ -5760,6 +5764,13 @@ create_dumpfile(void)
- 		if (!get_elf_info(info->fd_memory, info->name_memory))
- 			return FALSE;
- 	}
-+	/*
-+	 * If NT_NOCOREDUMP elf-note is present, indicate the same through
-+	 * 'flag_nocoredump' flag. The resultant slimdump will always be in ELF
-+	 * format, irrespective of the user options.
-+	 */
-+	info->flag_nocoredump = info->flag_elf_dumpfile = has_nocoredump_note();
-+
- 	if (is_xen_memory()) {
- 		if (!initial_xen())
- 			return FALSE;
-diff --git a/makedumpfile.h b/makedumpfile.h
-index f0e5da8..faf1c65 100644
---- a/makedumpfile.h
-+++ b/makedumpfile.h
-@@ -778,6 +778,7 @@ struct DumpInfo {
- 	int		flag_exclude_xen_dom;/* exclude Domain-U from xen-kdump */
- 	int             flag_dmesg;          /* dump the dmesg log out of the vmcore file */
- 	int		flag_nospace;	     /* the flag of "No space on device" error */
-+	int		flag_nocoredump;	/* coredump not collected */
- 	unsigned long	vaddr_for_vtop;      /* virtual address for debugging */
- 	long		page_size;           /* size of page */
- 	long		page_shift;
+--
+
+The following patch series implements global registration of cpuidle
+states, and also has the necessary data structure changes to
+accommodate the per-cpu writable members of the cpuidle_states
+structure.
+
+This patch series had been in discussion earlier and
+following are the links to the previous discussions.
+
+v7 --> https://lkml.org/lkml/2011/9/27/74 
+v6 --> https://lkml.org/lkml/2011/9/22/58
+v5 --> https://lkml.org/lkml/2011/6/6/259
+v4 --> https://lkml.org/lkml/2011/4/28/312
+v3 --> https://lkml.org/lkml/2011/2/8/73
+v2 --> https://lkml.org/lkml/2011/1/13/98
+v1 --> https://lkml.org/lkml/2011/3/22/161
+
+Changes from previous version (V7):
+
+   1. Rebased and tested it on 3.1-rc8
+
+   2. As suggested by Kevin in V7, Signature of Jean
+      was moved from signed-off tag to tested-by.
+    
+Tests done:
+
+    1. Compile tested for ARM using the following configs: da8xx_omapl_defconfig,
+    exynos4_defconfig, kirkwood_defconfig, omap2plus_defconfig, 
+    at91rm9200_defconfig
+      
+    2. Boot tested on x86 nehalem with multiple C-states for both intel_idle
+    and acpi_idle drivers.
+
+    3. Boot tested on T60p thinkpad that has T2600 cpu with multiple C-states. 
+    Also tested the case when there is dynamic changes in C-states 
+    AC <-> Battery Power switch.
+
+Brief description of the patches:
+
+Core change in this series is to split the cpuidle_device structure 
+into two parts, i.e  global and per-cpu basis. 
+
+The per-cpu pieces are mostly generic statistics that can be independent 
+of current running driver. As a result of these changes, there is single 
+copy of cpuidle_states structure and single registration done by one 
+cpu. The low level driver is free to set per-cpu driver data on
+each cpu if needed using the cpuidle_set_statedata() as the case
+today. Only in very rare cases asymmetric C-states exist which can be 
+handled within the cpuidle driver. Most architectures do not have 
+asymmetric C-states.
+
+First two patches in the series facilitate splitting of cpuidle_states
+and cpuidle_device structure and next two patches do the actual split,
+change the API's and make existing code follow the changed API.
+
+[1/4] - Move the idle residency accounting part from cpuidle.c to
+the respective low level drivers, so that the accounting can
+be accurately maintained if the driver decides to demote the
+chosen (suggested) by the governor.
+
+[2/4] - removes the cpuidle_device()->prepare API since is is not
+widely used and the only use case was to allow software
+demotion using CPUIDLE_FLAG_IGNORE flag.  Both these
+functions can be absorbed within the cpuidle back-end
+driver ad hence deprecating the prepare routine and the
+CPUIDLE_FLAG_IGNORE flag.
+
+    - Ref: https://lkml.org/lkml/2011/3/25/52
+
+[3/4] - Splits the usage statistics (read/write) part out of
+cpuidle_state structure, so that the states can become read
+only and hence made global.
+
+[4/4] - Most APIs will now need to pass pointer to both global
+cpuidle_driver and per-cpu cpuidle_device structure.
+
+ arch/arm/mach-at91/cpuidle.c          |   41 +++--
+ arch/arm/mach-davinci/cpuidle.c       |   51 ++++---
+ arch/arm/mach-exynos4/cpuidle.c       |   30 ++--
+ arch/arm/mach-kirkwood/cpuidle.c      |   42 +++---
+ arch/arm/mach-omap2/cpuidle34xx.c     |  133 +++++++++++------
+ arch/sh/kernel/cpu/shmobile/cpuidle.c |   28 ++--
+ drivers/acpi/processor_driver.c       |   20 ---
+ drivers/acpi/processor_idle.c         |  251 +++++++++++++++++++++++++++------
+ drivers/cpuidle/cpuidle.c             |   86 ++++-------
+ drivers/cpuidle/driver.c              |   25 +++
+ drivers/cpuidle/governors/ladder.c    |   41 ++++-
+ drivers/cpuidle/governors/menu.c      |   29 ++--
+ drivers/cpuidle/sysfs.c               |   22 ++-
+ drivers/idle/intel_idle.c             |  130 +++++++++++++----
+ include/acpi/processor.h              |    1 
+ include/linux/cpuidle.h               |   52 ++++---
+ 16 files changed, 650 insertions(+), 332 deletions(-)
+
+
 -- 
-1.7.4.1
 
+-Deepthi
