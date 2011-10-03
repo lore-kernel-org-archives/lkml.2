@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab1JCQmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:42:42 -0400
-Received: from mx.binnacle.cx ([74.95.187.105]:59503 "EHLO mx.binnacle.cx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab1JCQmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:42:33 -0400
-Message-Id: <6.2.5.6.2.20111003121925.03a83a28@binnacle.cx>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Mon, 03 Oct 2011 12:28:13 -0400
-To: Eric Dumazet <eric.dumazet@gmail.com>
-From: starlight@binnacle.cx
-Subject: Re: big picture UDP/IP performance question re 2.6.18
-  -> 2.6.32
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>
-In-Reply-To: <1317658588.2442.5.camel@edumazet-HP-Compaq-6005-Pro
- -SFF-PC>
-References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
- <1317658588.2442.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1756894Ab1JCQne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:43:34 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33712 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab1JCQn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:43:29 -0400
+Date: Mon, 3 Oct 2011 17:43:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rob Herring <robherring2@gmail.com>, Mike Turquette <mturquette@ti.com>,
+        linux-kernel@vger.kernel.org, paul@pwsan.com,
+        linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
+        patches@linaro.org, eric.miao@linaro.org, magnus.damm@gmail.com,
+        amit.kucheria@linaro.org, richard.zhao@linaro.org,
+        grant.likely@secretlab.ca, dsaxena@linaro.org,
+        arnd.bergmann@linaro.org, shawn.guo@freescale.com, skannan@quicinc.com,
+        jeremy.kerr@canonical.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111003164309.GA19925@n2100.arm.linux.org.uk>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-2-git-send-email-mturquette@ti.com> <4E89C3FA.9020206@gmail.com> <20111003142524.GN3731@opensource.wolfsonmicro.com> <4E89D3C4.8090001@gmail.com> <20111003163107.GQ3731@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003163107.GQ3731@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 06:16 PM 10/3/2011 +0200, Eric Dumazet wrote:
->> >Please send full "dmesg" output 
->> 
->> Attached.
->> 
->
->Minor note :
->
->It seems you use 4096 2MB hugepages, and your
->machine has 1GB pages availabe, you could
->try to use them.
->
->(boot cmd : hugepagesz=1GB hugepages=8 )
+On Mon, Oct 03, 2011 at 05:31:08PM +0100, Mark Brown wrote:
+> I dunno, I get the impression that some of this is due to the current
+> limitations of the clock API rather than due to a lack of clocks -
+> perhaps that's specific to the applications I look at, though.
+> applications 
 
-Interesting.  I'll give it a try for sure, but
-since hugepages only gives a 5% improvement
-taking the page size up probably will not
-dent it by more than an additional percent
-or so.
+The clk API per-se has nothing to do with how clocks are registered.
+There are two things that are the clk API:
 
-BTW I goofed on the kernel version number in my
-last post.  It should be 2.6.39.4.  That .27 was
-my mind transposing the 2.6.32 sub-version
-onto 2.6.39.
+1. clkdev - which deals with translating devices + connection IDs to
+   struct clk.  This has no ordering requirements wrt requiring
+   parents to be "initialized" before their children (it has no care
+   about that at all because it's not within its definition.)
 
-Have one closing thought, which is to wonder if the
+   For this, registration is about connecting device + connection IDs
+   to a struct clk.
 
-    9.98% swapper [kernel.kallsyms]  [k] native_safe_halt
+2. the driver API, defining how the opaque struct clk is looked up,
+   obtained and then manipulated.  This has no 'registration' stuff.
 
-CPU is included in the 2.6.18(rhel) CPU accounting
-or not.  If it's excluded that would make 2.6.39.4
-look much better--possibly put it at near parity
-though I'm too lazy to do the math just now.
+So, whether clocks are a tree or flat is unspecified.  It's unspecified
+whether there's any particular order required.
 
-My guess is that this number is something of an
-artifact of the clock-tick CPU histogram logic.
-Perhaps it's seeing the IP register parked in the
-idle-loop HALT instruction some of the time and
-counting it as non-idle time.  I'd be happier if
-it either counted all idle time and showed the
-45% that the poll=idle run shows, or none of
-the idle time at all--if it is in fact idle time.
-
-Unfortunately 'perf' is not available for
-2.6.18(rhel) so the value cannot be compared.
-
+In fact, with a clock tree, it's entirely possible that only the leaf
+clocks will be 'registered' with clkdev.  How the rest of the clock tree
+is initialized is beyond the scope of the driver clk API.
