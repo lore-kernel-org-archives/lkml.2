@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab1JCOoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 10:44:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab1JCOoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 10:44:05 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christophe Saout <christophe@saout.de>,
-        device-mapper development <dm-devel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [dm-devel] Block regression since 3.1-rc3
-References: <1317397918.27140.15.camel@localhost>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 03 Oct 2011 10:43:52 -0400
-In-Reply-To: <1317397918.27140.15.camel@localhost> (Christophe Saout's message
-	of "Fri, 30 Sep 2011 17:51:57 +0200")
-Message-ID: <x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756280Ab1JCOrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 10:47:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53319 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab1JCOrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 10:47:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 2/6] ASoC: codecs: AK4641 depends on GPIOLIB
+Date: Mon, 03 Oct 2011 16:47:07 +0200
+Message-ID: <1343003.MpQlxoEPa6@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111003143553.GG23811@sirena.org.uk>
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de> <20111003134527.GF11710@n2100.arm.linux.org.uk> <20111003143553.GG23811@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:M1RT9Y8JwTI6bympm3zoTcfRP05K1mGdUAl6ljV8nQH
+ mkwV04eDqCLK61iaoVGYse7iCFa2K9tYqacndK5WvwOGBRxU6d
+ Hdkt8UXNAyaPeWCeD0JYqrD70JGrNUl0I98vpqrd7ohwLa3OlG
+ JuzDSD1s39OtWvQu/9bsENq1taU1hI/Sl7aUUOidcfRKz/9yEx
+ ZPqkB/gQjR066m599f7G8BCR1QTh+K2EaRrcvV1/8UJb0/+MIG
+ jowtGwyqThWBz65/MhJk25uaxkhrG94VNwJyL0HomF/Fb00JOL
+ FTTbU+ZYlxQeUlGs23PvlnbDZR7cxxPhe6+kX4TjoBW7zjFAsn
+ 7+pbVJDeMB8GF1V8KNkw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christophe Saout <christophe@saout.de> writes:
+On Monday 03 October 2011 15:35:53 Mark Brown wrote:
+> On Mon, Oct 03, 2011 at 02:45:27PM +0100, Russell King - ARM Linux wrote:
+> > On Sun, Oct 02, 2011 at 09:41:07PM +0100, Mark Brown wrote:
+> 
+> > > No, gpiolib is one implementation of the GPIO API but if platforms want
+> > > to go and define their own that's currently OK (personally I think at
+> > > this point we should just be converting all the stragglers over to
+> > > gpiolib).  As things stand we shouldn't have dependencies on a
+> > > particular implementation of the API.
+> 
+> > Then it should depend on GENERIC_GPIO (not to be confused with GPIO_GENERIC,
+> > the generic gpiolib driver), which is the symbol meaning that the GPIO API
+> > is provided by something.
+> 
+> Not for devices like this where the GPIOs are an optional thing the
+> driver can use, a dependency is far too strong.  Devices like that
+> should be able to rely on the stubs.
 
-> I think you guys should know - maybe you have an idea or have something
-> for me to test.  I would have tried to file a bug somewhere, but half of
-> the infrastructure is down at the moment.
+FWIW, while trying to reproduce this (I still could not), I stumbled over a
+different build error with
 
-You didn't include the top few lines which tell us what went wrong.  I
-tried to reproduce this myself, but I ran into other issues with GFS2.
-Anyway, it would help a great deal if you could retrigger the failure
-and provide the full failure output.  You can get that by issuing the
-'dmesg' command and redirecting it to a file.  And please CC me on any
-future correspondences on this issue.
+CONFIG_ARCH_PRIMA2=y
+CONFIG_SND_SOC_ALL_CODECS=m
+CONFIG_SND_SOC_WM1250_EV1=m
 
-Thanks!
-Jeff
+sound/soc/codecs/wm1250-ev1.c:32:14: error: array type has incomplete element type
+sound/soc/codecs/wm1250-ev1.c: In function 'wm1250_ev1_pdata':
+sound/soc/codecs/wm1250-ev1.c:126:87: error: negative width in bit-field '<anonymous>'
+sound/soc/codecs/wm1250-ev1.c:134:111: error: negative width in bit-field '<anonymous>'
+sound/soc/codecs/wm1250-ev1.c: In function 'wm1250_ev1_free':
+sound/soc/codecs/wm1250-ev1.c:155:103: error: negative width in bit-field '<anonymous>'
+
+	Arnd
