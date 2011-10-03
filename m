@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1JCXVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:21:22 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:53154 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751170Ab1JCXVU (ORCPT
+	id S1751858Ab1JCXVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 19:21:34 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57081 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab1JCXVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:21:20 -0400
-Date: Mon, 3 Oct 2011 16:21:08 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Paulo Zanoni <przanoni@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] PCH reference clock cleanups
-Message-ID: <20111003162108.07c6b9bb@jbarnes-desktop>
-In-Reply-To: <yun7h4lmzon.fsf@aiko.keithp.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com>
-	<1317103906-4649-1-git-send-email-keithp@keithp.com>
-	<CA+gsUGTZfxt2L9mT-kYGGKiYhtRKn2xO5tXperwAWLVi2mKeOQ@mail.gmail.com>
-	<20111003141423.0ff5447c@jbarnes-desktop>
-	<yun7h4lmzon.fsf@aiko.keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Mon, 3 Oct 2011 19:21:32 -0400
+Date: Mon, 03 Oct 2011 19:21:29 -0400 (EDT)
+Message-Id: <20111003.192129.745977451712127515.davem@davemloft.net>
+To: johnmusbach1@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Handling of multiple DHCP OFFERs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <loom.20111004T011704-753@post.gmane.org>
+References: <loom.20111004T011704-753@post.gmane.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 03 Oct 2011 16:21:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Oct 2011 16:18:48 -0700
-Keith Packard <keithp@keithp.com> wrote:
+From: John Musbach <johnmusbach1@gmail.com>
+Date: Mon, 3 Oct 2011 23:18:06 +0000 (UTC)
 
-> On Mon, 3 Oct 2011 14:14:23 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> 
-> > Now... is keeping the various refclks enabled costing us any power?
-> > IOW, should we be trying to disable them when everything has been
-> > DPMS'd off too?
-> 
-> That's the same as tracking usage and enabling/disabling on the fly as
-> modes are set. I think it's possible, but I'd like to have the 'simpler'
-> fix present before we try a power saving move.
+> Hello, I am configuring a network that'll have multiple DHCP servers
+> and I was wondering how Linux handles receiving multiple DHCP OFFERs?
+> More specifically, how does it choose which one to prefer and how long
+> will it wait for a answer from a preferred server if the other server
+> answers first? Thanks.
 
-Agreed; fortunately shutting everything off when no outputs are
-active should be simpler than trying flip the bits on & off every mode
-set. :)
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+There are multiple userspace implementations of DHCP, and the kernel
+does not usually get involved at all.  You'll therefore have to ask
+the folks who write and maintain the various DHCP implementations.
