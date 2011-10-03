@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab1JCPEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:04:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756288Ab1JCPEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:04:42 -0400
-Date: Mon, 3 Oct 2011 11:03:46 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Andrew Morton <akpm00@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, hongjiu.lu@intel.com,
-        linux-kernel@vger.kernel.org,
+	id S1756327Ab1JCPGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:06:32 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:36193 "EHLO
+	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752924Ab1JCPGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:06:25 -0400
+Date: Mon, 3 Oct 2011 11:06:20 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] binfmt_elf: Fix PIE execution with randomization
- disabled
-Message-ID: <20111003150345.GP16720@zod.bos.redhat.com>
-References: <20110929195359.GJ16720@zod.bos.redhat.com>
- <20110929141929.43df799d.akpm00@gmail.com>
- <alpine.LFD.2.02.1109291958210.9106@xanadu.home>
- <20110930021629.GL16720@zod.bos.redhat.com>
- <alpine.LNX.2.00.1110031651400.31654@pobox.suse.cz>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
+Message-ID: <20111003150619.GA12778@mgebm.net>
+References: <1317170947-17074-1-git-send-email-walken@google.com>
+ <20110929164319.GA3509@mgebm.net>
+ <CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
+ <4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
+ <20110930181914.GA17817@mgebm.net>
+ <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1110031651400.31654@pobox.suse.cz>
+In-Reply-To: <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 04:53:34PM +0200, Jiri Kosina wrote:
-> On Thu, 29 Sep 2011, Josh Boyer wrote:
-> 
-> > Perhaps another check here for randomize?  Something like:
-> > 
-> > #if defined(CONFIG_X86) || defined(CONFIG_ARM)
-> > 		if (current->flags & PF_RANDOMIZE)
-> > 			load_bias = 0;
-> > 		else if (vaddr)
-> > 			load_bias = 0;
-> > 		else
-> > 			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE);
-> > #else
-> > 		load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
-> > #endif
-> > 
-> > If that's stupid, then feel free to tell me.  I won't pretend like I
-> > understand what is going on here yet, but based on the explanation you
-> > provided that might work.
-> 
-> I have just verified my hunch that the original patch from H.J. / Josh 
-> breaks ASLR completely, so Andrew, please drop it for now.
 
-Yes, please drop the original.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I am now looking into how to fix things properly.
-> 
-> Josh, looking at what you are proposing -- do you see any reason to make 
-> the behavior different in #else branch and in !(current->flags & 
-> PF_RANDOMIZE) case?
+On Fri, 30 Sep 2011, Michel Lespinasse wrote:
 
-I was mostly just trying to adapt H.J.'s patch to account for the
-PF_RANDOMIZE case.  Looking at it a bit more, I'm not sure why they
-would need to be different.  H.J., do you recall why you made that
-change originally?
+> On Fri, Sep 30, 2011 at 11:19 AM, Eric B Munson <emunson@mgebm.net> wrote:
+> > I am able to recreate on a second desktop I have here (same model CPU b=
+ut a
+> > different MB so I am fairly sure it isn't dying hardware). =A0It looks =
+to me like
+> > a CPU softlocks and it stalls the process active there, so most recentl=
+y that
+> > was XOrg. =A0The machine lets me login via ssh for a few minutes, but t=
+hings like
+> > ps and cat or /proc files will start to work and give some output but h=
+ang.
+> > I cannot call reboot, nor can I sync the fs and reboot via SysRq. =A0My=
+ next step
+> > is to setup a netconsole to see if anything comes out in the syslog tha=
+t I
+> > cannot see.
+>=20
+> I haven't had time to try & reproduce locally yet (apologies - things
+> have been coming up at me).
+>=20
+> But a prime suspect would be a bad interaction with
+> CONFIG_MEMORY_HOTPLUG, as Kamezama remarked in his reply to patch 4. I
+> think this could be the most likely cause of what you're observing.
+>=20
 
-josh
+CONFIG_MEMORY_HOTPLUG seems to be the responsible party here, I disabled it=
+ in
+my config and have been able to build 6 kernels straight without a hang.
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOic9rAAoJEH65iIruGRnNOM8H/RM6ZqrSNl7ImpPexVB6Tv+a
+TYYY01tChp8Oci2tMPj1aKHLH/uVdxZyiT22XmnveudQxOETQTgKRzNFdcO9DskS
+s8ZlOkTyg3CJ4g7BpDBNtwHisq1ePL5UfGtTH5cEz5Jc6UEvxRrjKO183r/Fo1Wt
+ot4LEJ/BTDJAj438QdIMvZusvFz0UvjsBnWWhQhqT5XID3e57DavtpZGlOZCU1LZ
+h0j60XnPd0fifxO3mthVsczHwC+LQJ9MIKtH/RWX4gDdknyWh0+lrjnMWM19XkDN
+ew1Vsrxmfsz9d0nlyY6FqwvmVoFuya17HK28wz3jXrT/M7+gBRrTDSp0kz0a4Ro=
+=NErA
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
