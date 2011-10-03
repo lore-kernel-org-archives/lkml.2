@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab1JCPG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:06:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab1JCPGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:06:50 -0400
-Message-ID: <4E89CF73.4020208@redhat.com>
-Date: Mon, 03 Oct 2011 17:06:27 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 6/9] perf, intel: Use GO/HO bits in perf-ctr
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com> <1317649795-18259-7-git-send-email-gleb@redhat.com>
-In-Reply-To: <1317649795-18259-7-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756376Ab1JCPJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:09:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49601 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1JCPJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:09:39 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=GPLZHOGeRasA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=7O3H4tdZAAAA:8 a=gyy_yjy6DqaCIDUInX0A:9 a=PUjeQqilurYA:10 a=btqigNEo-2kInjr9:21 a=sNLrYS1XBwfl1d5m:21 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <greg@kroah.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 03 Oct 2011 11:09:37 -0400
+In-Reply-To: <20111003141312.GA4901@kroah.com>
+References: <4E8655CD.90107@zytor.com> <20111001140519.GA26662@kroah.com>
+	 <20111003091430.GA13919@home.goodmis.org> <20111003141312.GA4901@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1317654578.17991.1.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> Intel does not have guest/host-only bit in perf counters like AMD
-> does.  To support GO/HO bits KVM needs to switch EVENTSELn values
-> (or PERF_GLOBAL_CTRL if available) at a guest entry. If a counter is
-> configured to count only in a guest mode it stays disabled in a host,
-> but VMX is configured to switch it to enabled value during guest entry.
->
-> This patch adds GO/HO tracking to Intel perf code and provides interface
-> for KVM to get a list of MSRs that need to be switched on a guest entry.
->
-> Only cpus with architectural PMU (v1 or later) are supported with this
-> patch.  To my knowledge there is not p6 models with VMX but without
-> architectural PMU and p4 with VMX are rare and the interface is general
-> enough to support them if need arise.
->
-> +
-> +static int core_guest_get_msrs(int cnt, struct perf_guest_switch_msr *arr)
-> +{
-> +	struct cpu_hw_events *cpuc =&__get_cpu_var(cpu_hw_events);
-> +	int idx;
-> +
-> +	if (cnt<  x86_pmu.num_counters)
-> +		return -ENOMEM;
-> +
-> +	for (idx = 0; idx<  x86_pmu.num_counters; idx++)  {
-> +		struct perf_event *event = cpuc->events[idx];
-> +
-> +		arr[idx].msr = x86_pmu_config_addr(idx);
-> +		arr[idx].host = arr[idx].guest = 0;
-> +
-> +		if (!test_bit(idx, cpuc->active_mask))
-> +			continue;
-> +
-> +		arr[idx].host = arr[idx].guest =
-> +				event->hw.config | ARCH_PERFMON_EVENTSEL_ENABLE;
-> +
-> +		if (event->attr.exclude_host)
-> +			arr[idx].host&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
-> +		else if (event->attr.exclude_guest)
-> +			arr[idx].guest&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
-> +	}
-> +
-> +	return 0;
-> +}
+On Mon, 2011-10-03 at 07:13 -0700, Greg KH wrote:
+> On Mon, Oct 03, 2011 at 05:14:30AM -0400, Steven Rostedt wrote:
+> > On Sat, Oct 01, 2011 at 07:05:19AM -0700, Greg KH wrote:
+> > > 
+> > > I would recommend a physical access device for your new gpg key that you
+> > > create.  I've heard good things about this USB device:
+> > > 	http://www.crypto-stick.org/
+> > > and am trying to have a bunch of them at the Kernel Summit this year to
+> > > hand out to people if they want one.
+> > 
+> > Hmm, if I'm going to get one at KS, should I stop getting signed keys
+> > now? A few of us have already started the GPG song and dance to get
+> > signed keys over the phone (where we know each other enough to know
+> > phone numbers and recognize voices).
+> 
+> You can put a key into the device, and then delete it from your
+> computer, so you don't have to create the key in the device.
 
-Would be better to calculate these when the host msrs are calculated, 
-instead of here, every vmentry.
+OK, then I'll go with my old plan to take my current key and put it on
+an encrypted USB stick and remove it from my main machine. When I get
+this new device, I'll add it to that device and use it afterward.
 
+Thanks!
 
--- 
-error compiling committee.c: too many arguments to function
+-- Steve
+
 
