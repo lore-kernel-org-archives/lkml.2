@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab1JCFyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 01:54:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52309 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1JCFyD (ORCPT
+	id S1755274Ab1JCFyY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 01:54:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45837 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755145Ab1JCFyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 01:54:03 -0400
-Date: Mon, 3 Oct 2011 08:53:53 +0300
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Staticise ep93xx_ac97_dai
-Message-ID: <20111003055353.GA2673@mwesterb-mobl.ger.corp.intel.com>
-References: <1317612785.5065.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317612785.5065.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Oct 2011 01:54:18 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] regmap: Fix doc comment
+Date: Mon,  3 Oct 2011 06:54:16 +0100
+Message-Id: <1317621256-32476-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 11:33:05AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regcache.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Acked-by: Mika Westerberg <mika.westerberg@iki.fi>
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 2d55b26..f32c08c 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -291,7 +291,7 @@ EXPORT_SYMBOL_GPL(regcache_cache_only);
+  * regcache_cache_bypass: Put a register map into cache bypass mode
+  *
+  * @map: map to configure
+- * @cache_only: flag if changes should not be written to the hardware
++ * @cache_bypass: flag if changes should not be written to the hardware
+  *
+  * When a register map is marked with the cache bypass option, writes
+  * to the register map API will only update the hardware and not the
+-- 
+1.7.6.4
 
-> ---
->  sound/soc/ep93xx/ep93xx-ac97.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/ep93xx/ep93xx-ac97.c b/sound/soc/ep93xx/ep93xx-ac97.c
-> index c7417c7..3cd6158 100644
-> --- a/sound/soc/ep93xx/ep93xx-ac97.c
-> +++ b/sound/soc/ep93xx/ep93xx-ac97.c
-> @@ -335,7 +335,7 @@ static struct snd_soc_dai_ops ep93xx_ac97_dai_ops = {
->  	.trigger	= ep93xx_ac97_trigger,
->  };
->  
-> -struct snd_soc_dai_driver ep93xx_ac97_dai = {
-> +static struct snd_soc_dai_driver ep93xx_ac97_dai = {
->  	.name		= "ep93xx-ac97",
->  	.id		= 0,
->  	.ac97_control	= 1,
-> -- 
-> 1.7.4.1
-> 
-> 
