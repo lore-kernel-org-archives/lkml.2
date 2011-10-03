@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab1JCM1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 08:27:31 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42917 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944Ab1JCM1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 08:27:25 -0400
-Message-ID: <4E89AA01.3000803@parallels.com>
-Date: Mon, 3 Oct 2011 16:26:41 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755717Ab1JCMaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 08:30:24 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50965 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1JCMaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 08:30:15 -0400
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 7/8] Display current tcp memory allocation in kmem
- cgroup
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-8-git-send-email-glommer@parallels.com> <20111003121446.GD29312@shutemov.name> <4E89A846.1010200@parallels.com> <20111003122511.GA29982@shutemov.name>
-In-Reply-To: <20111003122511.GA29982@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111003121655.GB3731@opensource.wolfsonmicro.com>
+References: <20110927181420.GQ4289@opensource.wolfsonmicro.com>
+	<CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
+	<20110927182636.GR4289@opensource.wolfsonmicro.com>
+	<CAMLZHHR0rMZct2E91X8k+Lhv_y-pY_5+vshZw6dj194o9vSCJQ@mail.gmail.com>
+	<20110927183832.GS4289@opensource.wolfsonmicro.com>
+	<CAMLZHHRvr-diYGwZ2Kg647Ht7NNb8LEku0pCW8EujRuUeOW5yQ@mail.gmail.com>
+	<20110928123154.GG3279@opensource.wolfsonmicro.com>
+	<CAMLZHHRFY_MazF_MOzPrS06z-48-ohORTtbANMxUT=mjevXhhQ@mail.gmail.com>
+	<20111003102846.GA23811@sirena.org.uk>
+	<CAMLZHHTMP+DJA35bUswXPbTv_U0DAWY_h_-Eg53-_4RuC3bx7A@mail.gmail.com>
+	<20111003121655.GB3731@opensource.wolfsonmicro.com>
+Date: Mon, 3 Oct 2011 13:30:15 +0100
+X-Google-Sender-Auth: 2qXXr6hVgLZdoUoiUyXWyTWI-0k
+Message-ID: <CAMLZHHS+fFzuWtwOwt-g2y38g93uaZFyUGsooZyYLMT=mdWQFQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
+From: Daniel Drake <dsd@laptop.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, dilinger@queued.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 04:25 PM, Kirill A. Shutemov wrote:
-> On Mon, Oct 03, 2011 at 04:19:18PM +0400, Glauber Costa wrote:
->> On 10/03/2011 04:14 PM, Kirill A. Shutemov wrote:
->>> On Mon, Oct 03, 2011 at 02:18:42PM +0400, Glauber Costa wrote:
->>>> This patch introduces kmem.tcp_current_memory file, living in the
->>>> kmem_cgroup filesystem. It is a simple read-only file that displays the
->>>> amount of kernel memory currently consumed by the cgroup.
->>>>
->>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>>> CC: David S. Miller<davem@davemloft.net>
->>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->>>> CC: Eric W. Biederman<ebiederm@xmission.com>
->>>> ---
->>>>    Documentation/cgroups/memory.txt |    1 +
->>>>    mm/memcontrol.c                  |   11 +++++++++++
->>>>    2 files changed, 12 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->>>> index 1ffde3e..f5a539d 100644
->>>> --- a/Documentation/cgroups/memory.txt
->>>> +++ b/Documentation/cgroups/memory.txt
->>>> @@ -79,6 +79,7 @@ Brief summary of control files.
->>>>     memory.independent_kmem_limit	 # select whether or not kernel memory limits are
->>>>    				   independent of user limits
->>>>     memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
->>>> + memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
->>>
->>> Both are in pages, right?
->>> Shouldn't it be scaled to bytes and named uniform with other memcg file?
->>> memory.kmem.tcp.limit_in_bytes/usage_in_bytes.
->>>
->> You are absolutely correct.
->> Since the internal tcp comparison works, I just ended up never noticing
->> this.
+On Mon, Oct 3, 2011 at 1:16 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> It seems to me like either the IP block is heavily dependant on the core
+> and shouldn't be split out in the device tree at all (but should instead
+> be part of the core node) or the IP block is very isolated from the core
+> (in which case we should just be able to instantiate the device from the
+> device tree without using explict code in the core driver).
 >
-> Should we have failcnt and max_usage_in_bytes for tcp as well?
->
+> This all feels like there's some abstraction violation going on.
 
-Well, we get a fail count from the tracer anyway, so I don't really see 
-a need for that. I see value in having it for the slab allocation 
-itself, but since this only controls the memory pressure framework, I 
-think we can live without it.
+I guess it is a matter of opinion. To me, the abstraction is sensible
+and representative of the hardware.
 
-That said, this is not a strong opinion. I can add it if you'd prefer.
+The gpio controller (and several other components) are abstracted at
+the hardware level behind an ISA bridge.
+In the device tree, we have the ISA bridge represented as /pci/isa.
 
+Then we have various child nodes of that ISA bridge, such as the gpio
+controller at /pci/isa/gpios or the timer controller at /pci/isa/timer
+
+This also matches the way that the hardware is described by VIA in the
+specs, and it matches the way that Linux has its own device hierachy
+laid out (i.e. the ISA bridge driven by the mfd driver, which then
+spawns off a child device for the GPIO controller).
+
+It would not be possible to fold all of the isa bridge child
+components into the same device tree node without dealing with various
+namespace collisions.
+
+Grant, could we have your opinion on whether this is a good
+abstraction or not? and generally how we go forward.
+
+Thanks,
+Daniel
