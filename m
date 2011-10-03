@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab1JCTcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:32:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60374 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756250Ab1JCTck (ORCPT
+	id S1757432Ab1JCTfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:35:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46398 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab1JCTfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:32:40 -0400
-Subject: Re: Re: BUG in kernel: Wrong Handling of USB
- =?UTF-8?Q?HDD=E2=80=99s?= in scsiglue(slave_configure) and
- scsi/sd(sd_read_cache_type)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-In-Reply-To: <Pine.LNX.4.44L0.1110031408420.1882-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1110031408420.1882-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 03 Oct 2011 14:32:35 -0500
-Message-ID: <1317670355.3041.53.camel@dabdike.int.hansenpartnership.com>
+	Mon, 3 Oct 2011 15:35:13 -0400
+Date: Mon, 03 Oct 2011 15:35:09 -0400 (EDT)
+Message-Id: <20111003.153509.1840897953839267838.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] IDE
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 03 Oct 2011 12:35:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 14:10 -0400, Alan Stern wrote:
-> > No. You need to also take into account the RBC
-> > device parameters mode page if present. See above.
-> 
-> All right, suppose neither page is present.  Does it then make sense to 
-> assume by default that write caching is enabled?
 
-You're the USB expert ... if we do that, we'll start sending
-SYNCHRONIZE_CACHE commands down to a whole slew of devices we didn't
-before ... is that going to cause problems with any USB SATLs?
+Please pull to get this request leak fix from Borislav Petkov.
 
-James
+Thanks!
 
+The following changes since commit 9b13776977d45505469edc6decc93e9e3799afe2:
 
+  Merge branch 'for-linus' of git://git.infradead.org/users/sameo/mfd-2.6 (2011-10-02 19:23:44 -0700)
+
+are available in the git repository at:
+
+  git://github.com/davem330/ide.git master
+
+Borislav Petkov (1):
+      ide-disk: Fix request requeuing
+
+ drivers/ide/ide-disk.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
