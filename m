@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab1JCU5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:57:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35450 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961Ab1JCU5L (ORCPT
+	id S932592Ab1JCU6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:58:42 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:41574 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756726Ab1JCU6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:57:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317653420-21404-3-git-send-email-mason@myri.com>
-References: <1317653420-21404-3-git-send-email-mason@myri.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 3 Oct 2011 13:56:50 -0700
-X-Google-Sender-Auth: NtlRgwgmbqxZUZeN6byauW6C1Ec
-Message-ID: <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
-To: Jon Mason <mason@myri.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Oct 2011 16:58:35 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 03/10] drbd: cmdname() enum to string convertion was missing a few constants
+Date: Mon,  3 Oct 2011 22:58:26 +0200
+Message-Id: <1317675513-12745-4-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1317675513-12745-1-git-send-email-philipp.reisner@linbit.com>
+References: <1317675513-12745-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 3, 2011 at 7:50 AM, Jon Mason <mason@myri.com> wrote:
->
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Acked-by: Jon Mason <mason@myri.com>
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-You need to sign off on this one too, since you're passing it on.
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_main.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Also, I'd *really* like some more acks/reviews on the series. Anybody?
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index a0d81de..96add4e 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -3243,8 +3243,17 @@ const char *cmdname(enum drbd_packet cmd)
+ 		[P_DELAY_PROBE]         = "DelayProbe",
+ 		[P_OUT_OF_SYNC]		= "OutOfSync",
+ 		[P_RETRY_WRITE]		= "RetryWrite",
++		[P_RS_CANCEL]		= "RSCancel",
++		[P_CONN_ST_CHG_REQ]	= "conn_st_chg_req",
++		[P_CONN_ST_CHG_REPLY]	= "conn_st_chg_reply",
++
++		/* enum drbd_packet, but not commands - obsoleted flags:
++		 *	P_MAY_IGNORE
++		 *	P_MAX_OPT_CMD
++		 */
+ 	};
+ 
++	/* too big for the array: 0xfffX */
+ 	if (cmd == P_INITIAL_META)
+ 		return "InitialMeta";
+ 	if (cmd == P_INITIAL_DATA)
+-- 
+1.7.4.1
 
-                    Linus
