@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab1JCSkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 14:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756564Ab1JCSjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 14:39:55 -0400
-Date: Mon, 3 Oct 2011 20:40:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-net: Prevent NULL dereference
-Message-ID: <20111003184037.GA22427@redhat.com>
-References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
- <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
+	id S932483Ab1JCSlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 14:41:15 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:47864 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382Ab1JCSlG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 14:41:06 -0400
+Date: Mon, 3 Oct 2011 21:41:04 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [3.1 patch] x86: default to vsyscall=native
+Message-ID: <20111003184104.GA2996@localhost.pp.htv.fi>
+References: <20111003090846.GA25136@localhost.pp.htv.fi>
+ <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
+ <20111003173359.GA3072@localhost.pp.htv.fi>
+ <CAObL_7F2=L+0wpFg7c-TL9FzvPos5kFM5=KPMvzeHuTaG5sysQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAObL_7F2=L+0wpFg7c-TL9FzvPos5kFM5=KPMvzeHuTaG5sysQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 28, 2011 at 05:40:55PM +0300, Sasha Levin wrote:
-> This patch prevents a NULL dereference when the user has passed a length
-> longer than an actual buffer to virtio-net.
+On Mon, Oct 03, 2011 at 11:06:13AM -0700, Andrew Lutomirski wrote:
+> On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
+> > On Mon, Oct 03, 2011 at 06:04:53AM -0700, Andrew Lutomirski wrote:
+>...
+> >> of a bug in that the new code doesn't report si_addr properly, but
+> >> that sounds unlikely as a culprit.  Did you try with the offending
+> >> commit reverted (i.e. fce8dc0)?  I bet that it also fails there.
+> >
+> > fce8dc0 is "x86-64: Wire up getcpu syscall", is that really the one you
+> > want me to revert?
 > 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Cc: kvm@vger.kernel.org
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  drivers/net/virtio_net.c |   12 +++++++++++-
->  1 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index bde0dec..4a53d2a 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -208,12 +208,22 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
->  		return NULL;
->  	}
->  
-> -	while (len) {
-> +	while (len && page) {
->  		set_skb_frag(skb, page, offset, &len);
->  		page = (struct page *)page->private;
->  		offset = 0;
->  	}
->  
-> +	/*
-> +	 * This is the case where we ran out of pages in our linked list, but
-> +	 * supposedly have more data to read.
+> No -- I actually meant to try running that revision or to try with the
+> vsyscall= patch reverted.
 
-Again, let's clarify that this only happens with broken devices.
+I now tried both, and your bet was right.
 
-> +	 */	
-> +	if (len > 0) {
-> +		pr_debug("%s: missing data to assemble skb\n", skb->dev->name);
-> +		dev_kfree_skb(skb);
-> +		return NULL;
-> +	}
-> +
->  	if (page)
->  		give_pages(vi, page);
->  
-> -- 
-> 1.7.6.1
+>...
+> --Andy
+
+cu
+Adrian
+
+-- 
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
+
