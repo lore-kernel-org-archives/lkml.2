@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab1JCQ4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:56:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36900 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753119Ab1JCQ4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:56:32 -0400
-Date: Mon, 3 Oct 2011 18:56:29 +0200
-From: Lars =?iso-8859-1?Q?M=FCller?= <lmuelle@suse.de>
-To: Anton Altaparmakov <aia21@cam.ac.uk>
-Cc: Jim McDonough <jmcd@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>,
-        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
-        Jeremy Allison <jra@samba.org>
-Subject: Re: CIFS kernel module bug
-Message-ID: <20111003165629.GM5170@giles.fritz.box>
-References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
- <20110930140409.51c1a94c@tlielax.poochiereds.net>
- <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
- <20110930234711.GD14147@samba2>
- <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk>
- <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk>
- <20111001150730.GJ5170@giles.fritz.box>
- <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
- <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
- <65C75335-2A74-4B00-989A-212BAC06A646@cam.ac.uk>
+	id S1756975Ab1JCQ6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:58:30 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:10926 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754464Ab1JCQ6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:58:25 -0400
+Message-ID: <4E89E93B.1060707@vmware.com>
+Date: Mon, 03 Oct 2011 18:56:27 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SgT04PEqo/+yUDw3"
-Content-Disposition: inline
-In-Reply-To: <65C75335-2A74-4B00-989A-212BAC06A646@cam.ac.uk>
-X-Operating-System: SUSE Linux 2.6.37.6-0.7-default x86_64
-X-PGP-Key-Fingerprint: FEEE 231E 36E5 AD5F 1F80  BF7E E0D0 622B 414A 57C3
-X-PGP-Key-ID: 0x414A57C3
-X-Pflichtfeld: X-Pflichtfeld: SUSE LINUX =?iso-8859-1?Q?P?=
- =?iso-8859-1?Q?roducts_GmbH=2C_GF=3A_Jeff_Hawn=2C_Jennifer_Guild=2C_Felix?=
- =?iso-8859-1?Q?_Imend=F6rffer=2C_HRB_16746_=28AG_N=FCrnberg=29?=
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, j.glisse@redhat.com, thomas@shipmail.org,
+        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH] TTM DMA pool v1.8
+References: <1317328432-25620-1-git-send-email-konrad.wilk@oracle.com> <4E8568E8.1070800@vmware.com> <20110930140949.GA18905@phenom.oracle.com> <4E89E45E.7010009@vmware.com> <20111003164606.GI17108@phenom.oracle.com>
+In-Reply-To: <20111003164606.GI17108@phenom.oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/03/2011 06:46 PM, Konrad Rzeszutek Wilk wrote:
+>
+> It does now (I had a spinlock mishap).. which reminds me - how
+> do I test these patches with your vmwgfx driver? I've an old version
+> of VMWare Workstation 8, would that do?
+>    
 
---SgT04PEqo/+yUDw3
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+VMware workstation 8 is OK (it's actually the latest version of 
+workstation).
 
-Hi,
+You'd need the vmwgfx kernel, driver,
+latest mesa master compiled with the "svga" driver and the "dri" and 
+"xa" state trackers.
+xf86-video-vmware, the "vmwgfx" branch.
 
-On Sun, Oct 02, 2011 at 09:16:33PM +0100, Anton Altaparmakov wrote:
->=20
-> On 1 Oct 2011, at 21:22, Jim McDonough wrote:
-[ 8< ]
-> > I believe both are available on OES, samba and the CIFS server that
-> > has its origins in Netware.
->=20
-> That is correct but apparently Salford Software (who handle our Netware &=
- OES site license here in the UK including providing support) have told the=
- guys running the file server that the samba server on OES is not scalable,=
- has loads of bugs, and they must stay away from it at all costs and that t=
-hey would not provide any support if our filestore runs that instead of the=
- Novell CIFSd.
->=20
-> You can understand why the filestore is thus running the Novell CIFSd rat=
-her than Samba=E2=80=A6
+And you should be fine running 3D.
 
-This OES is very likely SUSE Linux Enterprise (SLE) 10 based.  This code
-base initially included Samba 3.0.
 
-There is an additional, optional software repository available online
-for SUSE Linux Enterprise customers - named SLES10-GPLv3-Extras - which
-provides Samba 3.4.3[0] - same version and including the same fixes as
-the version used with SLE 11 SP 1.
 
-Ok, that's the good news.  Now to the potential bad part.
+>>      
+>>> The swapping code back (so from swap to pool) does not seem to
+>>> distinguish it that much - it just allocates a new page - and
+>>> then copies from whatever was in the swap cache?
+>>>
+>>> This is something you were thinking to do in the future I presume?
+>>>        
+>> Yes. If / when I do that, I might be adding a new backend function
+>> to put a ttm in an
+>> "anonymous state", that is using only pages that can be inserted in
+>> the swap cache or passed
+>> around to other devices, and to put a ttm in a "device" state, that
+>> copies it to device mappable pages.
+>>      
+> OK, that should be no trouble - we would need to expose a function
+> call to "detach" the page from the TTM pool (which could mean
+> actually allocating a new page for the "other" device, and copying
+> it from the "source" to "other" and then freeing the "source).
+>
+> I am thinking ... you hotplug an high-end radeon while the machine has
+> an ATI ES1000 in it, and want to move those pages to the new
+> card. The ATI ES1000 can only do up to 4GB, while the new fancy card
+> has no such limits (and perhaps does not want to use the TTM DMA
+> pool).
+>
+> Is this what you had in mind?
+>    
+Yes, that's a typical use-case. Or passing pages between an array of 
+GPGPUs...
 
-The bad part only applies if you make use of Domain Services for Windows
-(DSfW) formerly known as xad.
 
-Some of the required modifications had not been ported to Samba post-3.0
-and therefore running any post-3.0 Samba code will cause trouble aka
-will not work.  We're working on this with the OES colleagues.
+>> Thanks,
+>> /Thomas
+>>      
 
-Lars
+/Thomas
 
-[0]
-http://www.novell.com/support/viewContent.do?externalId=3D7007836&sliceId=
-=3D1
---=20
-Lars M=C3=BCller [=CB=88la=CB=90(r)z =CB=88m=CA=8Fl=C9=90]
-Samba Team
-SUSE Linux, Maxfeldstra=C3=9Fe 5, 90409 N=C3=BCrnberg, Germany
-
---SgT04PEqo/+yUDw3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iD8DBQFOiek94NBiK0FKV8MRAg6tAJ9qTVnd3by9FSkAhDMeAJHmEDY9RACgkZ9j
-SF8c91ugwSuzE5SczY355KU=
-=OB0j
------END PGP SIGNATURE-----
-
---SgT04PEqo/+yUDw3--
