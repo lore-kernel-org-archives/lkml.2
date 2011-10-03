@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab1JCEPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 00:15:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55143 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1JCEPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 00:15:51 -0400
-Message-ID: <4E8936F4.5060506@lwfinger.net>
-Date: Sun, 02 Oct 2011 23:15:48 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110922 Thunderbird/7.0
+	id S1753610Ab1JCEdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 00:33:40 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:35761 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746Ab1JCEdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 00:33:36 -0400
+Date: Mon, 3 Oct 2011 00:33:20 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Geoff Levand <geoff@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Olof Johansson <olof@lixom.net>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Junio C Hamano <gitster@pobox.com>,
+        Michael Rubin <mrubin@google.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111003043320.GG4542@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm00@gmail.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Geoff Levand <geoff@infradead.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>,
+	Olof Johansson <olof@lixom.net>,
+	Guenter Roeck <guenter.roeck@ericsson.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Greg KH <gregkh@suse.de>, Junio C Hamano <gitster@pobox.com>,
+	Michael Rubin <mrubin@google.com>
+References: <20111002225434.GA22333@ericsson.com>
+ <4E8928B5.3000905@infradead.org>
+ <20111003032934.GB4542@thunk.org>
+ <201110022038.27682.dmitry.torokhov@gmail.com>
+ <20111003035455.GE4542@thunk.org>
+ <20111002210215.884f6140.akpm00@gmail.com>
 MIME-Version: 1.0
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, git@vger.kernel.org
-Subject: Re: unable to resolve reference refs/tags/v3.1-rc8: Success (Re:
- git problem)
-References: <4E892483.7070605@lwfinger.net> <20111003035907.GA17134@elie>
-In-Reply-To: <20111003035907.GA17134@elie>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111002210215.884f6140.akpm00@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2011 10:59 PM, Jonathan Nieder wrote:
-> Hi,
->
-> Larry Finger wrote:
->
->> I had my system freeze when doing a pull from Linus's repo. Since then,
->> every pull results in the following errors:
->>
->> ~>  git pull
->> error: unable to resolve reference refs/tags/v3.1-rc8: Success
->>  From git://github.com/torvalds/linux
->>   ! [new tag]         v3.1-rc8   ->  v3.1-rc8  (unable to update local ref)
->
-> Could you try pulling again with
-> "/path/to/git/sources/bin-wrappers/git pull" after applying this
-> patch?
->
-> Thanks,
->
-> diff --git i/refs.c w/refs.c
-> index a615043b..b15f78a4 100644
-> --- i/refs.c
-> +++ w/refs.c
-> @@ -493,12 +493,15 @@ const char *resolve_ref(const char *ref, unsigned char *sha1, int reading, int *
->   		char *buf;
->   		int fd;
->
-> -		if (--depth<  0)
-> +		if (--depth<  0) {
-> +			errno = ELOOP;
->   			return NULL;
-> +		}
->
->   		git_snpath(path, sizeof(path), "%s", ref);
->   		/* Special case: non-existing file. */
->   		if (lstat(path,&st)<  0) {
-> +			int saved_errno = errno;
->   			struct ref_list *list = get_packed_refs(NULL);
->   			while (list) {
->   				if (!strcmp(ref, list->name)) {
-> @@ -509,6 +512,7 @@ const char *resolve_ref(const char *ref, unsigned char *sha1, int reading, int *
->   				}
->   				list = list->next;
->   			}
-> +			errno = saved_errno;
->   			if (reading || errno != ENOENT)
->   				return NULL;
->   			hashclr(sha1);
-> @@ -562,7 +566,8 @@ const char *resolve_ref(const char *ref, unsigned char *sha1, int reading, int *
->   			*flag |= REF_ISSYMREF;
->   	}
->   	if (len<  40 || get_sha1_hex(buffer, sha1))
-> -		return NULL;
-> +		die("ref %s is corrupt: length=%d, content=%.*s", ref,
-> +		    (int) len, (int) len, buffer);
->   	return ref;
->   }
+On Sun, Oct 02, 2011 at 09:02:15PM -0700, Andrew Morton wrote:
+> 
+> Guys, I for one haven't had to futz with key generation in at least
+> five years.
+> 
+> Please, tell us (or me, at least) what to do.  As in "type this".
 
-After applying that patch, I get
+Step-by-step instructions can be found here:
 
-finger@larrylap:~/linux-2.6> ~/git/git pull
-fatal: ref refs/tags/v3.1-rc8 is corrupt: length=41, content=
+http://cryptnet.net/fdp/crypto/keysigning_party/en/keysigning_party.html#prep
 
-Larry
+							- Ted
