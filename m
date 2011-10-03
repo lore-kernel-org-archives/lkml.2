@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab1JCMOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 08:14:54 -0400
-Received: from shutemov.name ([188.40.19.243]:33010 "EHLO shutemov.name"
+	id S1755638Ab1JCMPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 08:15:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49816 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568Ab1JCMOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 08:14:47 -0400
-Date: Mon, 3 Oct 2011 15:14:46 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, avagin@parallels.com
-Subject: Re: [PATCH v4 7/8] Display current tcp memory allocation in kmem
- cgroup
-Message-ID: <20111003121446.GD29312@shutemov.name>
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
- <1317637123-18306-8-git-send-email-glommer@parallels.com>
+	id S1752520Ab1JCMPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 08:15:43 -0400
+Date: Mon, 3 Oct 2011 14:15:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Add support MacbookAir 4,1 keyboard
+In-Reply-To: <alpine.LNX.2.00.1110031402360.31654@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1110031415110.31654@pobox.suse.cz>
+References: <1317452093-25555-1-git-send-email-iwamatsu@nigauri.org> <alpine.LNX.2.00.1110031402360.31654@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317637123-18306-8-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 02:18:42PM +0400, Glauber Costa wrote:
-> This patch introduces kmem.tcp_current_memory file, living in the
-> kmem_cgroup filesystem. It is a simple read-only file that displays the
-> amount of kernel memory currently consumed by the cgroup.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  Documentation/cgroups/memory.txt |    1 +
->  mm/memcontrol.c                  |   11 +++++++++++
->  2 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index 1ffde3e..f5a539d 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -79,6 +79,7 @@ Brief summary of control files.
->   memory.independent_kmem_limit	 # select whether or not kernel memory limits are
->  				   independent of user limits
->   memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
-> + memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
+On Mon, 3 Oct 2011, Jiri Kosina wrote:
 
-Both are in pages, right?
-Shouldn't it be scaled to bytes and named uniform with other memcg file?
-memory.kmem.tcp.limit_in_bytes/usage_in_bytes.
+> > Added USB device IDs and keyboard map for MacBookAir 4,1 keyboard.
+> > 
+> > Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+> 
+> Applied, thank you.
+
+Oh, and don't we BTW need the hid_mouse_ignore_list[] addition as well? Is 
+the respective mouse being handled properly by appletouch driver?
 
 -- 
- Kirill A. Shutemov
+Jiri Kosina
+SUSE Labs
