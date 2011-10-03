@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1JCLTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 07:19:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46905 "EHLO mx2.suse.de"
+	id S1755502Ab1JCLWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 07:22:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47161 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab1JCLTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 07:19:32 -0400
-Date: Mon, 3 Oct 2011 13:19:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-In-Reply-To: <4E8655CD.90107@zytor.com>
-Message-ID: <alpine.LRH.2.00.1110031316260.14853@twin.jikos.cz>
-References: <4E8655CD.90107@zytor.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752592Ab1JCLWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 07:22:12 -0400
+Date: Mon, 3 Oct 2011 12:22:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Shaohua Li <shaohua.li@intel.com>, xfs@oss.sgi.com,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/5] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20111003112205.GA5011@suse.de>
+References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
+ <1317367044-475-2-git-send-email-jweiner@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1317367044-475-2-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011, H. Peter Anvin wrote:
-
-> Since the kernel.org status announcement last week a number of you
-> have contacted me about re-establishing credentials.  In order to
-> establish a proper PGP web of trust we need keys that are cross-signed
-> by other developers.  As such, we ask that you follow the following
-> steps:
+On Fri, Sep 30, 2011 at 09:17:20AM +0200, Johannes Weiner wrote:
+> The amount of dirtyable pages should not include the full number of
+> free pages: there is a number of reserved pages that the page
+> allocator and kswapd always try to keep free.
 > 
-> 1. Make sure your systems are uncompromised.  We will address specific
->    recommended steps for that in a separate email.
+> The closer (reclaimable pages - dirty pages) is to the number of
+> reserved pages, the more likely it becomes for reclaim to run into
+> dirty pages:
 > 
-> 2. Create a new PGP/GPG key, and also generate a key revocation
->    certificate (but don't import it anywhere -- save it for the
->    future) for your new key.  In the near future we are considering
->    setting up an escrow service for key revocation certificates.
+>        +----------+ ---
+>        |   anon   |  |
+>        +----------+  |
+>        |          |  |
+>        |          |  -- dirty limit new    -- flusher new
+>        |   file   |  |                     |
+>        |          |  |                     |
+>        |          |  -- dirty limit old    -- flusher old
+>        |          |                        |
+>        +----------+                       --- reclaim
+>        | reserved |
+>        +----------+
+>        |  kernel  |
+>        +----------+
 > 
->    I recommend using a 4096-bit RSA key.  Given how fast computers are
->    these days, there is no reason to use a shorter key.  DSA keys
->    should be considered obsolete; substantial weaknesses have been
->    found in DSA.
+> This patch introduces a per-zone dirty reserve that takes both the
+> lowmem reserve as well as the high watermark of the zone into account,
+> and a global sum of those per-zone values that is subtracted from the
+> global amount of dirtyable pages.  The lowmem reserve is unavailable
+> to page cache allocations and kswapd tries to keep the high watermark
+> free.  We don't want to end up in a situation where reclaim has to
+> clean pages in order to balance zones.
 > 
->    $ gpg --gen-key
->    $ gpg -u <key ID> -o <key ID>.revoke --gen-revoke
+> Not treating reserved pages as dirtyable on a global level is only a
+> conceptual fix.  In reality, dirty pages are not distributed equally
+> across zones and reclaim runs into dirty pages on a regular basis.
 > 
-> 3. If you are reasonably certain that your old key has never been
->    jeopardized, sign the new key with the old key.
+> But it is important to get this right before tackling the problem on a
+> per-zone level, where the distance between reclaim and the dirty pages
+> is mostly much smaller in absolute numbers.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
 
-I have a question here. In case people are 'reasonably certain' that the 
-old key has never been jeoparadized, why are they required to create a new 
-key?
-
-(if the old key would have been compromised, the attacker could as well 
-generate a new key and sign it with the old key himself, so I fail to see 
-any benefit of this PGP excercise).
-
-It doesn't make too much sense to force people to live with two different 
-personalities in this "PGP web of trust" world just for the sake of 
-kernel.org, does it?
-
-Thanks,
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Jiri Kosina
+Mel Gorman
 SUSE Labs
-
