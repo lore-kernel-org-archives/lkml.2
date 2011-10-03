@@ -1,46 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1JCBWz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 21:22:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34474 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab1JCBWs (ORCPT
+	id S1754868Ab1JCBbe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 21:31:34 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:37238 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab1JCBbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 21:22:48 -0400
-Date: Sun, 2 Oct 2011 18:22:44 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-Message-ID: <20111003012244.GF31799@mtj.dyndns.org>
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
- <20110930034815.GF10425@mtj.dyndns.org>
- <1317374865.19415.15.camel@twins>
+	Sun, 2 Oct 2011 21:31:25 -0400
+Date: Sun, 2 Oct 2011 19:31:25 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Avinash.H.M" <avinashhm@ti.com>
+Subject: Re: [PATCH 08/30] ARM: omap2+: fix building without i2c
+In-Reply-To: <1317566760-25681-9-git-send-email-arnd@arndb.de>
+Message-ID: <alpine.DEB.2.00.1110021928170.4611@utopia.booyaka.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-9-git-send-email-arnd@arndb.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317374865.19415.15.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 11:27:45AM +0200, Peter Zijlstra wrote:
-> There is no correctness issue what so ever with those, and userspace
-> moving them about doesn't matter one whit.
+Hello Arnd,
 
-I wanted to make it consistent and disallow diddling wq worker
-affinity from userland.  As those workers are shared and managed
-dynamically, it didn't make sense to allow affinity manipulation.
-That said, it might make sense allowing control over affinity of
-unbound wq workers for things like cpu isolation.  Userspace doing
-that per-worker doesn't make whole lot of sense.  Allowing putting
-unbound workers automatically into a cpuset would work better, I
-think.
+On Sun, 2 Oct 2011, Arnd Bergmann wrote:
 
-Thanks.
+> A trivial typo causes build breakage when I2C is disabled
+> and omap_i2c_reset is set to NULL on OMAP:
+> 
+> omap_hwmod_44xx_data.c:2287:11: error: lvalue required as unary '&' operand
+> 
+> Removing the '&' character solves this.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Avinash.H.M <avinashhm@ti.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
 
+Nice catch.  I think the bug is different, though.  omap_i2c_reset should 
+never be NULL: that code is intended to execute even when 
+CONFIG_I2C_OMAP=n.  The idea is to prevent the IP block from interfering 
+with the rest of the kernel even if the driver is not compiled in, no 
+matter how the bootloader or previous OS programmed the IP block.
+
+I'd suggest something like the following patch instead.
+
+
+- Paul
+
+From: Paul Walmsley <paul@pwsan.com>
+Date: Sun, 2 Oct 2011 19:15:10 -0600
+Subject: [PATCH] ARM: omap2+: fix build breakage when CONFIG_I2C_OMAP=n
+
+arch/arm/mach-omap2/Makefile incorrectly skips compilation of the I2C
+IP block reset code when CONFIG_I2C_OMAP=n.  Fix by unconditionally
+compiling arch/arm/mach-omap2/i2c.o, which is needed on all OMAP2+ platforms.
+
+Problem noted by Arnd Bergmann <arnd@arndb.de>.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Avinash.H.M <avinashhm@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>
+---
+ arch/arm/mach-omap2/Makefile |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index f343365..0951986 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -4,7 +4,7 @@
+ 
+ # Common support
+ obj-y := id.o io.o control.o mux.o devices.o serial.o gpmc.o timer.o pm.o \
+-	 common.o gpio.o dma.o wd_timer.o
++	 common.o gpio.o dma.o wd_timer.o i2c.o
+ 
+ omap-2-3-common				= irq.o sdrc.o
+ hwmod-common				= omap_hwmod.o \
+@@ -175,9 +175,6 @@ obj-$(CONFIG_OMAP_IOMMU)		+= iommu2.o
+ iommu-$(CONFIG_OMAP_IOMMU)		:= omap-iommu.o
+ obj-y					+= $(iommu-m) $(iommu-y)
+ 
+-i2c-omap-$(CONFIG_I2C_OMAP)		:= i2c.o
+-obj-y					+= $(i2c-omap-m) $(i2c-omap-y)
+-
+ ifneq ($(CONFIG_TIDSPBRIDGE),)
+ obj-y					+= dsp.o
+ endif
 -- 
-tejun
+1.7.6.3
+
