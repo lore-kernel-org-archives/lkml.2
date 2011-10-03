@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab1JCUAL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:00:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45489 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757004Ab1JCUAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:00:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
-Date: Mon, 3 Oct 2011 22:02:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel" <xen-devel@lists.xensource.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1317654626.21903.72.camel@zakaz.uk.xensource.com> <alpine.LFD.2.02.1110032033530.1489@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110032033530.1489@ionos>
+	id S1757499Ab1JCUDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:03:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:9314 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab1JCUDJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 16:03:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=n06UoajY3enFYtIkpUei2r50P4IG+ewnbvlmte2tCNO+Aio9gt+AwWkvHFSuutpUZ
+	dh4hrCXkRX7zW+Pm+O2Cw==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110032202.24237.rjw@sisk.pl>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6B44@HQMAIL01.nvidia.com>
+References: <1317061425-1030-1-git-send-email-dianders@chromium.org>
+	<74CDBE0F657A3D45AFBB94109FB122FF173A2C6B44@HQMAIL01.nvidia.com>
+Date: Mon, 3 Oct 2011 13:03:00 -0700
+X-Google-Sender-Auth: MBuETZZJYAe6xt-J01oh7XwuArE
+Message-ID: <CAD=FV=WxqKX62vM4r=qtQKVmNKbNP2u4jXd35iF4raveOudUqA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: tegra: Make earlyprintk choose a UART at runtime.
+From: Doug Anderson <dianders@chromium.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Simon Glass <sjg@chromium.org>, Allen Martin <AMartin@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 03, 2011, Thomas Gleixner wrote:
-> On Mon, 3 Oct 2011, Ian Campbell wrote:
-> > I can see a few options for how I might go about solving this in a
-> > non-hacky way, which approach do you think would be preferable:
-> 
-> The question is whether you need to disable the IPI interrupt at
-> all. If not, we have a flag for that.
->  
-> >       * Add "IRQF_RESUME_EARLY", driven from syscore_resume, and use it
-> >         for these interrupts.
-> 
-> That's the preferable solution, as we could use that for PPC as well,
-> unless we can move stuff around, so we disable stuff later. 
-> 
-> >       * register syscore ops for the Xen event channel subsystem to
-> >         unmask the IPIs earlier (would probably look a lot like the code
-> >         removed by 676dc3cf5bc3).
-> 
-> I'd like to avoid that.
-> 
-> >       * add syscore_ops to Xen smp subsystem to unmask the specific IPIs
-> >         (which it binds at start of day) earlier.
-> >       * push dpm_(suspend|resume)_noirq down into stop machine region
-> 
-> Where is stomp machine used?
-> 
-> >       * use something other than stop_machine to quiesce system and move
-> >         to cpu0 for suspend (doesn't seem sensible to reproduce that
-> >         functionality).
-> 
-> We already shut down the nonboot cpus on suspend. We could do that
-> _before_ we disable devices and the interrupts.
->  
-> Raphael ?
+Stephen,
 
-I'm afraid that wouldn't work.  At least right now our suspend sequence is
-reasonably in line with what ACPI says.
+OK, thanks for testing!  I will rev the patch and resend in a little bit.
 
-Besides, we suspend devices in parallel now, so that would be going backwards
-a bit.
+-Doug
 
-Thanks,
-Rafael
+---
+
+On Fri, Sep 30, 2011 at 3:11 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Doug Anderson wrote at Monday, September 26, 2011 12:24 PM:
+>> With this change we automatically detect which UART to use for
+>> earlyprintk (and for printing during decompression).  The
+>> detection involves coordination with the bootloader: it's expected
+>> that the bootloader will leave a 'D' (for [D]ebug) in the UART
+>> scratchpad register for whichever UART we should use for debugging.
+>
+> This works fine on Tegra20; there, even if the UART clock is off and/or
+> the UART is in reset, you can still read the UART_SCR register (and get
+> a bogus value) without the system hanging.
+>
+> However, I just tested on Tegra30, and the behavior has changed; if either
+> a UART is in reset /or/ the UART clock is stopped, then the system hangs
+> when UART_SCR is read.
+>
+> As such, this change will cause Tegra30 to fail to boot. I'd rather it
+> was augmented to check the clock enable and module reset bits as well
+> as the scratch register value in all cases.
+>
+> Yes, I know mainline doesn't support Tegra30 yet, but we're very close
+> to posting the first few patches to start enabling it, and I wouldn't
+> want to break it right before that!
+>
+> --
+> nvpublic
+>
+>
