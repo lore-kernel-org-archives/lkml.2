@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab1JCVz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 17:55:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50833 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757664Ab1JCVzx (ORCPT
+	id S932690Ab1JCWCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 18:02:48 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53132 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932667Ab1JCWCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 17:55:53 -0400
-Date: Mon, 3 Oct 2011 16:55:48 -0500
-From: Jon Mason <mason@myri.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance"
- settings
-Message-ID: <20111003215547.GA3107@myri.com>
-References: <1317653420-21404-3-git-send-email-mason@myri.com>
+	Mon, 3 Oct 2011 18:02:34 -0400
+X-Sasl-enc: VDP7umcXeJcgIHFqVemo32bJhrSYp/S9IBoc9f5RgpF3 1317679353
+Date: Mon, 3 Oct 2011 15:02:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: movement of my usb / staging / tty / driver-core trees
+Message-ID: <20111003220219.GA9913@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
 Content-Disposition: inline
-In-Reply-To: <1317653420-21404-3-git-send-email-mason@myri.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-When configuring the PCIe settings for "performance", we allow parents
-to have a larger Max Payload Size than children and rely on children
-Max Read Request Size to not be larger than their own MPS to avoid
-having the host bridge generate responses they can't cope with.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-However, various drivers in Linux call pci_set_readrq() with arbitrary
-values, assuming this to be a simple performance tweak. This breaks
-under our "performance" configuration.
+Hi Stephen,
 
-Fix that by making sure the value programmed by pcie_set_readrq() is
-never larger than the configured MPS for that device.
+Now that git.kernel.org is back up, I've moved my linux-next git trees
+to a different name, dropping the "2.6" suffix on them.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Jon Mason <mason@myri.com>
----
- drivers/pci/pci.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+So, they are now at:
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 4e84fd4..d369316 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3203,8 +3203,6 @@ int pcie_set_readrq(struct pci_dev *dev, int rq)
- 	if (rq < 128 || rq > 4096 || !is_power_of_2(rq))
- 		goto out;
- 
--	v = (ffs(rq) - 8) << 12;
--
- 	cap = pci_pcie_cap(dev);
- 	if (!cap)
- 		goto out;
-@@ -3212,6 +3210,22 @@ int pcie_set_readrq(struct pci_dev *dev, int rq)
- 	err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
- 	if (err)
- 		goto out;
-+	/*
-+	 * If using the "performance" PCIe config, we clamp the
-+	 * read rq size to the max packet size to prevent the
-+	 * host bridge generating requests larger than we can
-+	 * cope with
-+	 */
-+	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
-+		int mps = pcie_get_mps(dev);
-+
-+		if (mps < 0)
-+			return mps;
-+		if (mps < rq)
-+			rq = mps;
-+	}
-+
-+	v = (ffs(rq) - 8) << 12;
- 
- 	if ((ctl & PCI_EXP_DEVCTL_READRQ) != v) {
- 		ctl &= ~PCI_EXP_DEVCTL_READRQ;
--- 
-1.7.6.2
+ USB:		git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
+ staging:	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+ driver-core:	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
+ TTY:		git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
 
+All of the branch names are the same as before, and they are now all up
+to date with the local copy of my trees that I kept while kernel.org was
+down.
+
+If you have any problems with them, please let me know.  I'll be
+updating the MAINTAINERS file for 3.2 to update the locations to keep
+everything in sync.
+
+thanks,
+
+greg k-h
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk6KMOsACgkQMUfUDdst+ylhcQCcCoqtNHfZqXV1hAcRRrC7XZ1L
+UZgAn1ptZccr2xpIMOpkvQgRc+WD1m7F
+=+ZTC
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
