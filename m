@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab1JCPuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:50:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63114 "EHLO mga01.intel.com"
+	id S1756584Ab1JCPwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:52:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28722 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab1JCPuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:50:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,480,1312182000"; 
-   d="scan'208";a="69804314"
-Date: Mon, 3 Oct 2011 17:53:31 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Vijaya Kumar Kilari <vijay.kilari@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 13/23] mfd/db5500-prcmu: update mailbox handling
-Message-ID: <20111003155331.GR4118@sortiz-mobl>
-References: <1313137760-31015-1-git-send-email-linus.walleij@stericsson.com>
+	id S1755816Ab1JCPwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:52:08 -0400
+Date: Mon, 3 Oct 2011 17:51:57 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Andreas Dilger <aedilger@gmail.com>, Jeff liu <jeff.liu@oracle.com>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [BUG] copy file result with zero
+In-Reply-To: <20111003141823.GA6684@thunk.org>
+Message-ID: <alpine.LFD.2.00.1110031751010.4447@dhcp-27-109.brq.redhat.com>
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com> <20111001143900.GH28234@thunk.org> <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com> <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
+ <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca> <CAGBYx2ZwCQDis-M0-qbdpBgbq34BR-OStMrcCK_+4u20CemXzg@mail.gmail.com> <alpine.LFD.2.00.1110031500430.4447@dhcp-27-109.brq.redhat.com> <20111003141823.GA6684@thunk.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313137760-31015-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 3 Oct 2011, Ted Ts'o wrote:
 
-On Fri, Aug 12, 2011 at 10:29:20AM +0200, Linus Walleij wrote:
-> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+> On Mon, Oct 03, 2011 at 03:11:30PM +0200, Lukas Czerner wrote:
+> > 
+> > Oops, you're right. I think that the best solution would be to revert
+> > the commit
+> > 
+> > c03f8aa9abdd517477c2021ea1251939b4da49e6
+> > ext4: use FIEMAP_EXTENT_LAST flag for last extent in fiemap
+> > 
+> > and then fix the original problem with your delayed extent tree
+> > solution, where we can easily check not only for next allocated extent,
+> > but also for next delayed extent to see if the current one is last or
+> > not.
+> > ...
+> >
+> > I do not know how "ready" are your patches..Is it possible to wait for
+> > them to be ready and fix it in your patch set ? That means, revert the
+> > mentioned commit and reimplement fiemap with delayed extent tree.
 > 
-> This updates the mailbox handling to be more robust and
-> adds basic infrastructure for event (IRQ) handling.
-This patch and the next one (#14) adds 500 lines of code but I have the
-feeling a lot of it could be shared between 8500 and 5500. What are your plans
-for that ?
+> Sigh, yeah, we need to fix this to avoid the hang in xfstests #252 but
+> users losing data even if the coreutils release was only out there for
+> 13 days is bad juju.
+> 
+> I'm working on reviewing the kernel patch backlog this week, and I'll
+> give this series one priority.
 
-Cheers,
-Samuel.
+Actually the series needs to be changed to to fix the problem. I'll
+comment the appropriate patch.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks!
+-Lukas
+> 
+> Thanks to Yongqiang and Lukas for looking into this!
+> 
+> 							- Ted
