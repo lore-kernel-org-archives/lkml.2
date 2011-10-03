@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab1JCPse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:48:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56651 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab1JCPsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:48:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,480,1312182000"; 
-   d="scan'208";a="73882931"
-Date: Mon, 3 Oct 2011 17:51:28 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 03/23] mfd/db8500-prcmu: initialize DB8500 PRCMU regs
-Message-ID: <20111003155128.GN4118@sortiz-mobl>
-References: <1313137670-30683-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313137670-30683-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756578Ab1JCPsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:48:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53657 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab1JCPsk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:48:40 -0400
+Subject: Re: [V7][PATCH 0/6] x86, nmi: new NMI handling routines
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        avi@redhat.com, jeremy@goop.org
+Date: Mon, 03 Oct 2011 17:47:18 +0200
+In-Reply-To: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
+References: <1317409584-23662-1-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317656838.20367.28.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+I fixed up:
 
-On Fri, Aug 12, 2011 at 10:27:50AM +0200, Linus Walleij wrote:
-> From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-> 
-> Some clocks may be force enabled when we probe the
-> driver, but they need to be turned off by default so
-> we have a known state. We call this the register
-> initialization function if we need more stuff in
-> there in the future.
-> 
-> Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/mfd/db8500-prcmu.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-> index dcc690e..e2c4a26 100644
-> --- a/drivers/mfd/db8500-prcmu.c
-> +++ b/drivers/mfd/db8500-prcmu.c
-> @@ -1840,6 +1840,16 @@ void __init prcmu_early_init(void)
->  	}
->  }
->  
-> +static void __init init_prcm_registers(void)
-Could we have a less generic function name here ?
 
-Cheers,
-Samuel.
+drivers/watchdog/hpwdt.c: In function ‘hpwdt_init_nmi_decoding’:
+drivers/watchdog/hpwdt.c:734: error: ‘NMI_HANDLE_FIRST’ undeclared (first use in this function)
+drivers/watchdog/hpwdt.c:734: error: (Each undeclared identifier is reported only once
+drivers/watchdog/hpwdt.c:734: error: for each function it appears in.)
+drivers/watchdog/hpwdt.c:735: warning: passing argument 2 of ‘register_nmi_handler’ from incompatible pointer type
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+---
+
+Index: linux-2.6/drivers/watchdog/hpwdt.c
+===================================================================
+--- linux-2.6.orig/drivers/watchdog/hpwdt.c
++++ linux-2.6/drivers/watchdog/hpwdt.c
+@@ -477,8 +477,7 @@ static int hpwdt_time_left(void)
+ /*
+  *	NMI Handler
+  */
+-static int hpwdt_pretimeout(unsigned int ulReason, struct pt_regs *regs,
+-				void *data)
++static int hpwdt_pretimeout(unsigned int ulReason, struct pt_regs *regs)
+ {
+ 	unsigned long rom_pl;
+ 	static int die_nmi_called;
+@@ -731,7 +730,7 @@ static int __devinit hpwdt_init_nmi_deco
+ 	 * be last so other users of the NMI signal can function.
+ 	 */
+ 	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
+-					(priority) ? NMI_HANDLE_FIRST : 0,
++					(priority) ? NMI_FLAG_FIRST : 0,
+ 					"hpwdt");
+ 	if (retval != 0) {
+ 		dev_warn(&dev->dev,
+
