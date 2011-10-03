@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab1JCUhd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:37:33 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38448 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932210Ab1JCUgs (ORCPT
+	id S932549Ab1JCUnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:43:10 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40895 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932195Ab1JCUnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:36:48 -0400
-X-Sasl-enc: iVhI/EiGEekjaasucfY9mmzp2f64I+OGnTV7T/e3+cLi 1317674207
-Date: Mon, 3 Oct 2011 13:36:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.6
-Message-ID: <20111003203633.GD22113@kroah.com>
-References: <20111003203537.GC22113@kroah.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
-Content-Disposition: inline
-In-Reply-To: <20111003203537.GC22113@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Oct 2011 16:43:02 -0400
+Date: Mon, 3 Oct 2011 13:42:50 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 04/21] drm/i915: Only use VBT panel mode on
+ eDP if no EDID is found
+Message-ID: <20111003134250.54221856@jbarnes-desktop>
+In-Reply-To: <yun4nzt9akd.fsf@aiko.keithp.com>
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+	<1317344993-24945-1-git-send-email-keithp@keithp.com>
+	<1317344993-24945-5-git-send-email-keithp@keithp.com>
+	<20110930163235.GD2859@phenom.ffwll.local>
+	<yun4nzt9akd.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 30 Sep 2011 10:58:26 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
---AH+kv8CCoFf6qPuz
-Content-Type: multipart/mixed; boundary="cPi+lWm09sJ+d57q"
-Content-Disposition: inline
+> On Fri, 30 Sep 2011 18:32:35 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+> 
+> > Ok, this is way over my head, just checked whether the patch does what it
+> > claims to - nice exercise in reading dp modeset code ;-)
+> 
+> Yeah, it's purely heuristic -- the VBT contains a mode which was
+> originally for the LVDS. It's unclear whether it should ever be applied
+> to an eDP panel, but absent other information, it seems like we should
+> at least consider it.
+> 
+> Many LVDS panels don't bother to include an EDID rom, or the vendor
+> didn't bother to hook up the DDC wire; presumably it's cheaper for them
+> to stick more data in the VBIOS than add hardware.  However, there are
+> some LVDS panels with EDID roms which contain *incorrect* mode data for
+> the panel (amazing, I know), and so the driver prefers to use the VBT
+> data when both are present.
+> 
+> eDP, on the other hand, doesn't require any additional wiring (at least)
+> to connect up the DDC channel, and eDP panels are required to provide
+> EDID data. So far, in my (very small) sample set, I've got one machine
+> which provides accurate VBT *and* EDID data (an HP 2540p) and one
+> machine which provides inaccurate VBT data but accurate EDID data (a
+> MacBook air). So, I just decided to prefer the EDID data.
+> 
+> One option would be to extract the current mode from the hardware when
+> the driver starts and use that if present. But, that might mean that
+> you'd get different modes depending on whether the machine booted with
+> the lid closed or open, which seems like a bad plan.
 
+More than that, I think eDP *requires* an EDID, and it sounds like even
+the Air has one (and if any machine didn't, you know it would be an
+Apple).
 
---cPi+lWm09sJ+d57q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So I'm definitely in favor of this change.
 
-Here is the 3.0.6 incremental patch, to be applied on top of 3.0.5,
-signed with my stable kernel signing key.
-
-thanks,
-
-greg k-h
-
-
---cPi+lWm09sJ+d57q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="patch-3.0.5-6"
-Content-Transfer-Encoding: quoted-printable
-
-diff --git a/Makefile b/Makefile
-index eeff5df..7767a64 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION =3D 3
- PATCHLEVEL =3D 0
--SUBLEVEL =3D 5
-+SUBLEVEL =3D 6
- EXTRAVERSION =3D
- NAME =3D Sneaky Weasel
-=20
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 830e1f1..7fcdbbb 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -773,8 +773,8 @@ int r100_copy_blit(struct radeon_device *rdev,
- 		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
- 		radeon_ring_write(rdev, 0);
- 		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
--		radeon_ring_write(rdev, num_pages);
--		radeon_ring_write(rdev, num_pages);
-+		radeon_ring_write(rdev, num_gpu_pages);
-+		radeon_ring_write(rdev, num_gpu_pages);
- 		radeon_ring_write(rdev, cur_pages | (stride_pixels << 16));
- 	}
- 	radeon_ring_write(rdev, PACKET0(RADEON_DSTCACHE_CTLSTAT, 0));
-
---cPi+lWm09sJ+d57q--
-
---AH+kv8CCoFf6qPuz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOihzRAAoJEDjbvchgkmk+GrQQANQxEQRM4P3Jc8HLYMYJx3Va
-ZGvVUHTbOi2GSrWh/N3CqgPDP/j6e14unKEe5HAZfp45GDUkTDB1oCwFucs0TlGR
-tyUqaoDFTPdaOP6nKywpjyN3LrBZYiiIP3akjCT/GC+DhUqLLU7CYgFW10w2m5HU
-k/3hZ23dS1fVnTkBqrzUXYnSW4014CXWeAw8KgjOQPJtPGzP3H5m0hkpGpzPuvhA
-A2wmgzjVqxhkvidiqBH/5RGiHa67HUAqEFEpjVxyUEPtXT3VIsCkikU/v34VPak0
-6Q6LTSscI7zR6pdRdyvc5Es46h5LzORUnUzQu54M1eYttgfl7/t4TxSjIpCwBF7m
-psZlckltnZU12reX7/a/EHXv5IBESa9mr/oh36FpWYn2ltz9Y0JVW9IkSjHLCJJC
-9AshyKfQpDYaoncE1S+yu22EYha5zoWBx5l5pYGXMqLyGb/9o27YI/a4WD81E8GF
-RueAKsYnLKK4HGXXGk/5dWRJK60M766PI62UzDyBJelH7xYDI/NHeH4vfs8xpGa+
-mErOiohwLeAB7uZACA2TnEz0KBp1yK47JjRjClPumxZky+vqiKpFRF6Leq5NGZjC
-M/SOy/AeJI+4W4G05gYBxS0jXf6j9q+HsyeQEzNVzQYOR1WfnMPLIqZQ32++2zDc
-cmNXvmWq2iCAX9twdpUr
-=iC9V
------END PGP SIGNATURE-----
-
---AH+kv8CCoFf6qPuz--
+-- 
+Jesse Barnes, Intel Open Source Technology Center
