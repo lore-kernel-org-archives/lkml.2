@@ -1,139 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1JCKtC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 06:49:02 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52807 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab1JCKsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 06:48:55 -0400
-Message-ID: <4E8992EF.30001@parallels.com>
-Date: Mon, 3 Oct 2011 14:48:15 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 2/8] socket: initial cgroup code.
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-3-git-send-email-glommer@parallels.com> <20111003104733.GB29312@shutemov.name>
-In-Reply-To: <20111003104733.GB29312@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755454Ab1JCKva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 06:51:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50037 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab1JCKvX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 06:51:23 -0400
+Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
+ flags
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 03 Oct 2011 12:50:37 +0200
+References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+	 <20110930034815.GF10425@mtj.dyndns.org>
+	 <1317355529.4588.45.camel@gandalf.stny.rr.com>
+	 <20110930041424.GH10425@mtj.dyndns.org> <1317371699.19415.6.camel@twins>
+	 <20110930085510.GA23868@mtj.dyndns.org> <1317373473.19415.10.camel@twins>
+	 <20111003011506.GE31799@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317639037.20367.17.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 02:47 PM, Kirill A. Shutemov wrote:
-> On Mon, Oct 03, 2011 at 02:18:37PM +0400, Glauber Costa wrote:
->> We aim to control the amount of kernel memory pinned at any
->> time by tcp sockets. To lay the foundations for this work,
->> this patch adds a pointer to the kmem_cgroup to the socket
->> structure.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: David S. Miller<davem@davemloft.net>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Eric W. Biederman<ebiederm@xmission.com>
->> ---
->>   include/linux/memcontrol.h |   15 +++++++++++++++
->>   include/net/sock.h         |    2 ++
->>   mm/memcontrol.c            |   33 +++++++++++++++++++++++++++++++++
->>   net/core/sock.c            |    3 +++
->>   4 files changed, 53 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 3b535db..2cb9226 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -395,5 +395,20 @@ mem_cgroup_print_bad_page(struct page *page)
->>   }
->>   #endif
->>
->> +#ifdef CONFIG_INET
->> +struct sock;
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +void sock_update_memcg(struct sock *sk);
->> +void sock_release_memcg(struct sock *sk);
->> +
->> +#else
->> +static inline void sock_update_memcg(struct sock *sk)
->> +{
->> +}
->> +static inline void sock_release_memcg(struct sock *sk)
->> +{
->> +}
->> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->> +#endif /* CONFIG_INET */
->>   #endif /* _LINUX_MEMCONTROL_H */
->>
->> diff --git a/include/net/sock.h b/include/net/sock.h
->> index 8e4062f..afe1467 100644
->> --- a/include/net/sock.h
->> +++ b/include/net/sock.h
->> @@ -228,6 +228,7 @@ struct sock_common {
->>     *	@sk_security: used by security modules
->>     *	@sk_mark: generic packet mark
->>     *	@sk_classid: this socket's cgroup classid
->> +  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup
->>     *	@sk_write_pending: a write to stream socket waits to start
->>     *	@sk_state_change: callback to indicate change in the state of the sock
->>     *	@sk_data_ready: callback to indicate there is data to be processed
->> @@ -339,6 +340,7 @@ struct sock {
->>   #endif
->>   	__u32			sk_mark;
->>   	u32			sk_classid;
->> +	struct mem_cgroup	*sk_cgrp;
->>   	void			(*sk_state_change)(struct sock *sk);
->>   	void			(*sk_data_ready)(struct sock *sk, int bytes);
->>   	void			(*sk_write_space)(struct sock *sk);
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 8aaf4ce..08a520e 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -339,6 +339,39 @@ struct mem_cgroup {
->>   	spinlock_t pcp_counter_lock;
->>   };
->>
->> +/* Writing them here to avoid exposing memcg's inner layout */
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +#ifdef CONFIG_INET
->> +#include<net/sock.h>
->> +
->> +void sock_update_memcg(struct sock *sk)
->> +{
->> +	/* right now a socket spends its whole life in the same cgroup */
->> +	BUG_ON(sk->sk_cgrp);
->
-> Do we really want to panic in this case?
->
-> What about WARN() + return?
+On Mon, 2011-10-03 at 12:20 +0200, Peter Zijlstra wrote:
+> I didn't write this change for fun, I actually need to get
+> PF_THREAD_BOUND back to sanity, this change alone isn't enough, but it
+> gets rid of the worst abuse. 
 
-Kirill,
+I think the below patch is sufficient (on top of the previous one), but
+I haven't actually build or boot tested it (with the scheduler tests
+that yell on a PF_THREAD_BOUND task migrating -- note to self: need to
+exclude self migration due to the below)
 
-I am keeping this code just to have something workable in between.
-If you take a look at the last patch, this hunk is going away anyway.
+It also looks like there's some more room for simplification now that we
+don't actually need to worry about trying to run on cpus that aren't
+there anymore.
 
-So if you don't oppose it, I'll just keep it to avoid rebasing it.
-
-> Otherwise: Acked-by: Kirill A. Shutemov<kirill@shutemov.name>
->
->> +
->> +	rcu_read_lock();
->> +	sk->sk_cgrp = mem_cgroup_from_task(current);
->> +
->> +	/*
->> +	 * We don't need to protect against anything task-related, because
->> +	 * we are basically stuck with the sock pointer that won't change,
->> +	 * even if the task that originated the socket changes cgroups.
->> +	 *
->> +	 * What we do have to guarantee, is that the chain leading us to
->> +	 * the top level won't change under our noses. Incrementing the
->> +	 * reference count via cgroup_exclude_rmdir guarantees that.
->> +	 */
->> +	cgroup_exclude_rmdir(mem_cgroup_css(sk->sk_cgrp));
->> +	rcu_read_unlock();
->> +}
->
+---
+Index: linux-2.6/kernel/workqueue.c
+===================================================================
+--- linux-2.6.orig/kernel/workqueue.c
++++ linux-2.6/kernel/workqueue.c
+@@ -1285,8 +1285,14 @@ __acquires(&gcwq->lock)
+ 		 * it races with cpu hotunplug operation.  Verify
+ 		 * against GCWQ_DISASSOCIATED.
+ 		 */
+-		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
++		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
++			/*
++			 * Since we're binding to a particular cpu and need to
++			 * stay there for correctness, mark us PF_THREAD_BOUND.
++			 */
++			task->flags |= PF_THREAD_BOUND;
+ 			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
++		}
+ 
+ 		spin_lock_irq(&gcwq->lock);
+ 		if (gcwq->flags & GCWQ_DISASSOCIATED)
+@@ -1308,6 +1314,18 @@ __acquires(&gcwq->lock)
+ 	}
+ }
+ 
++static void worker_unbind_and_unlock(struct worker *worker)
++{
++	struct global_cwq *gcwq = worker->gcwq;
++	struct task_struct *task = worker->task;
++
++	/*
++	 * Its no longer required we're PF_THREAD_BOUND, the work is done.
++	 */
++	task->flags &= ~PF_THREAD_BOUND;
++	spin_unlock_irq(&gcwq->lock);
++}
++
+ static struct worker *alloc_worker(void)
+ {
+ 	struct worker *worker;
+@@ -1370,15 +1388,9 @@ static struct worker *create_worker(stru
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
+ 
+-	/*
+-	 * A rogue worker will become a regular one if CPU comes
+-	 * online later on.  Make sure every worker has
+-	 * PF_THREAD_BOUND set.
+-	 */
+ 	if (bind && !on_unbound_cpu)
+ 		kthread_bind(worker->task, gcwq->cpu);
+ 	else {
+-		worker->task->flags |= PF_THREAD_BOUND;
+ 		if (on_unbound_cpu)
+ 			worker->flags |= WORKER_UNBOUND;
+ 	}
+@@ -2055,7 +2067,7 @@ static int rescuer_thread(void *__wq)
+ 		if (keep_working(gcwq))
+ 			wake_up_worker(gcwq);
+ 
+-		spin_unlock_irq(&gcwq->lock);
++		worker_unbind_and_unlock(rescuer);
+ 	}
+ 
+ 	schedule();
+@@ -3004,7 +3016,6 @@ struct workqueue_struct *__alloc_workque
+ 		if (IS_ERR(rescuer->task))
+ 			goto err;
+ 
+-		rescuer->task->flags |= PF_THREAD_BOUND;
+ 		wake_up_process(rescuer->task);
+ 	}
+ 
 
