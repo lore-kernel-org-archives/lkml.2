@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab1JCJYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:24:45 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:54037 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab1JCJYk (ORCPT
+	id S1753898Ab1JCJ0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:26:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48493 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab1JCJ0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:24:40 -0400
-Message-ID: <4E897F4E.5010703@panasas.com>
-Date: Mon, 3 Oct 2011 11:24:30 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Mon, 3 Oct 2011 05:26:39 -0400
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, <osd-dev@open-osd.org>,
-        <bhalevy@panasas.com>
-Subject: Re: [PATCH] exofs/super.c: local functions should be static
-References: <201109231346.51759.hartleys@visionengravers.com>
-In-Reply-To: <201109231346.51759.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com>
+	<20111001143900.GH28234@thunk.org>
+	<CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com>
+	<A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
+	<89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca>
+Date: Mon, 3 Oct 2011 17:26:38 +0800
+Message-ID: <CAGBYx2ZwCQDis-M0-qbdpBgbq34BR-OStMrcCK_+4u20CemXzg@mail.gmail.com>
+Subject: Re: [BUG] copy file result with zero
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Andreas Dilger <aedilger@gmail.com>, Lukas Czerner <lczerner@redhat.com>
+Cc: Jeff liu <jeff.liu@oracle.com>, Dave Young <hidave.darkstar@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2011 11:46 PM, H Hartley Sweeten wrote:
-> This quiets the following sparse noise:
-> 
-> warning: symbol 'exofs_sync_fs' was not declared. Should it be static?
-> warning: symbol 'exofs_free_sbi' was not declared. Should it be static?
-> warning: symbol 'exofs_get_parent' was not declared. Should it be static?
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
-> Cc: Benny Halevy <bhalevy@panasas.com>
-> 
+On Sun, Oct 2, 2011 at 3:59 PM, Andreas Dilger <aedilger@gmail.com> wrote:
+> On 2011-10-01, at 11:41 PM, Jeff liu wrote:
+>>> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>>>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
+>>>>> Hi,
+>>>>>
+>>>>> Weird problem, when I build app from source,
+>>>>> make; make install
+>>>>> run the command, but got "cannot execute binary file"
+>>>>>
+>>>>> hexdump shows the installed binary is full of zero
+>>>>>
+>>>>> Is it related to ext4 fiemap problem described below?
+>>>>> http://lwn.net/Articles/429349/
+>>>>
+>>>> There is general agreement that /bin/cp should not have been relying
+>>>> on FIEMAP, and I believe the more recent versions of /bin/cp have
+>>>> removed that code by default pending implementation of
+>>>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
+>>>> FIEMAP implementation that landed in 2.6.39, and you're using
+>>>> 3.1.0-rc6.
+>>
+>> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
+>
+> My understanding is that cp uses the blocks count to determine whether the file is sparse or not.  In the case of delayed allocation (where blocks are not yet allocated, if they are not reflected in the i_blocks count) it might mistakenly think that the file is sparse.
+>
+> Given the danger of this bug, it is important to ensure ext4 returns DELALLOC extents for pages in the page cache.  I think Yongqiang Yang just submitted a patch series to do this for ext4, so it would be important to verify it fixes this problem.
+It seemed the patch[ ext4: in fiemap use FIEMAP_EXTENT_LAST flag for
+last extent] (http://www.spinics.net/lists/linux-ext4/msg25698.html)
+Lukas submitted on FIEMAP which ignores delayed extents beyond the
+last allocated block.  e.g.  AAAHHHHDDDD
+A - allocated, H - hole, D - delayed alloc, then the ending delayed
+extent is ignored.
 
-Both patches are in linux-next for the next merge window
+Yongqiang.
+>
+>>> Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
+>>>
+>>>>
+>>>>> I finally managed to find the way to reproduce this:
+>>>>> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
+>>>>> A == B != C
+>>>>>
+>>>>> ie.
+>>>>> cp /bin/ls ls1
+>>>>> cp ls1 ls2
+>>>>>
+>>>>> ls2 will be filled with zero
+>>>>
+>>>> If you add a "sync" between the two copies, does that work around the
+>>>> problem?  I bet it will...
+>>>
+>>> Yes, it works
+>>>
+>>>>
+>>>> My suggestion is to upgrade to a newer version of coreutils that
+>>>> doesn't try to use FIEMAP.
+>>>
+>>> Thanks, will try
+>>>
+>>>>
+>>>>                                       - Ted
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Regards
+>>> Dave
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+> Cheers, Andreas
+>
+>
+>
+>
+>
+>
 
-Thanks Hartley
-Boaz
 
-> ---
-> 
-> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
-> index 9049e27..8c900d4 100644
-> --- a/fs/exofs/super.c
-> +++ b/fs/exofs/super.c
-> @@ -356,7 +356,7 @@ static const struct export_operations exofs_export_ops;
->  /*
->   * Write the superblock to the OSD
->   */
-> -int exofs_sync_fs(struct super_block *sb, int wait)
-> +static int exofs_sync_fs(struct super_block *sb, int wait)
->  {
->  	struct exofs_sb_info *sbi;
->  	struct exofs_fscb *fscb;
-> @@ -430,7 +430,7 @@ static void _exofs_print_device(const char *msg, const char *dev_path,
->  		msg, dev_path ?: "", odi->osdname, _LLU(pid));
->  }
->  
-> -void exofs_free_sbi(struct exofs_sb_info *sbi)
-> +static void exofs_free_sbi(struct exofs_sb_info *sbi)
->  {
->  	while (sbi->comps.numdevs) {
->  		int i = --sbi->comps.numdevs;
-> @@ -969,7 +969,7 @@ static const struct super_operations exofs_sops = {
->   * EXPORT OPERATIONS
->   *****************************************************************************/
->  
-> -struct dentry *exofs_get_parent(struct dentry *child)
-> +static struct dentry *exofs_get_parent(struct dentry *child)
->  {
->  	unsigned long ino = exofs_parent_ino(child);
->  
 
+-- 
+Best Wishes
+Yongqiang Yang
