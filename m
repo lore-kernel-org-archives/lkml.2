@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab1JCRxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 13:53:41 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:50895 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154Ab1JCRxg (ORCPT
+	id S1757189Ab1JCRyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 13:54:35 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63617 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154Ab1JCRy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 13:53:36 -0400
-Date: Mon, 3 Oct 2011 18:53:22 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: lockdep recursive locking detected (rcu_kthread / __cache_free)
-Message-ID: <20111003175322.GA26122@sucs.org>
+	Mon, 3 Oct 2011 13:54:28 -0400
+Message-ID: <4E89F6D1.6000502@vflare.org>
+Date: Mon, 03 Oct 2011 13:54:25 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
+        gregkh@suse.de, devel@driverdev.osuosl.org, cascardo@holoscopio.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>  <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>  <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>  <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>  <4E72284B.2040907@linux.vnet.ibm.com>  <075c4e4c-a22d-47d1-ae98-31839df6e722@default 4E725109.3010609@linux.vnet.ibm.com>  <863f8de5-a8e5-427d-a329-e69a5402f88a@default> <1317657556.16137.696.camel@nimitz>
+In-Reply-To: <1317657556.16137.696.camel@nimitz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Dave,
 
-While running 3.1.0-rc8 the following lockdep warning (seemingly related
-to RCU) was printed as the kernel was starting.
+On 10/03/2011 11:59 AM, Dave Hansen wrote:
+
+> 
+> I've been reading through Seth's patches a bit and looking over the
+> locking in general.  I'm wondering why preempt_disable() is used so
+> heavily.  Preempt seems to be disabled for virtually all of zcache's
+> operations.  It seems a bit unorthodox, and I guess I'm anticipating the
+> future screams of the low-latency folks. :)
+> 
+> I think long-term it will hurt zcache's ability to move in to other
+> code.  Right now, it's pretty limited to being used in conjunction with
+> memory reclaim called from kswapd.  Seems like something we ought to add
+> to the TODO list before it escapes from staging/.
+> 
 
 
-udev: starting version 151
-udevd (263): /proc/263/oom_adj is deprecated, please use /proc/263/oom_score_adj instead.
+I think disabling preemption on the local CPU is the cheapest we can get
+to protect PCPU buffers. We may experiment with, say, multiple buffers
+per CPU, so we end up disabling preemption only in highly improbable
+case of getting preempted just too many times exactly within critical
+section. But before we do all that, we really need to come up with cases
+where zcache induced latency is/can be a problem.
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.1.0-rc8-dirty #508
----------------------------------------------
-rcu_kthread/6 is trying to acquire lock:
- (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
-
-but task is already holding lock:
- (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
-
-other info that might help us debug this:
- Possible unsafe locking scenario:
-
-       CPU0
-       ----
-  lock(&(&parent->list_lock)->rlock);
-  lock(&(&parent->list_lock)->rlock);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-1 lock held by rcu_kthread/6:
- #0:  (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
-
-stack backtrace:
-Pid: 6, comm: rcu_kthread Not tainted 3.1.0-rc8-dirty #508
-Call Trace:
- [<b0144466>] __lock_acquire+0xb90/0xc0e
- [<b044c0c2>] ? _raw_spin_unlock_irqrestore+0x2f/0x46
- [<b0223ebc>] ? debug_object_active_state+0x94/0xbc
- [<b01315af>] ? rcuhead_fixup_activate+0x26/0x4c
- [<b01448be>] lock_acquire+0x5b/0x72
- [<b016fe11>] ? __cache_free+0x2dd/0x382
- [<b044bb22>] _raw_spin_lock+0x25/0x34
- [<b016fe11>] ? __cache_free+0x2dd/0x382
- [<b016fe11>] __cache_free+0x2dd/0x382
- [<b016ff5c>] kmem_cache_free+0x3e/0x5b
- [<b0170097>] slab_destroy+0x11e/0x126
- [<b0170184>] free_block+0xe5/0x112
- [<b016fe54>] __cache_free+0x320/0x382
- [<b01759a1>] ? file_free_rcu+0x32/0x39
- [<b016ff5c>] kmem_cache_free+0x3e/0x5b
- [<b01759a1>] file_free_rcu+0x32/0x39
- [<b014ca68>] rcu_process_callbacks+0x95/0xa8
- [<b014cb34>] rcu_kthread+0xb9/0xd2
- [<b013356c>] ? wake_up_bit+0x1b/0x1b
- [<b014ca7b>] ? rcu_process_callbacks+0xa8/0xa8
- [<b0133305>] kthread+0x6c/0x71
- [<b0133299>] ? __init_kthread_worker+0x42/0x42
- [<b044ce02>] kernel_thread_helper+0x6/0xd
-
--- 
-Sitsofe | http://sucs.org/~sits/
+Thanks,
+Nitin
