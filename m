@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1JCJBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:01:15 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:56902 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1JCJBD (ORCPT
+	id S1752283Ab1JCJDx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:03:53 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18409 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751391Ab1JCJDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:01:03 -0400
-X-SENDER-IP: [85.230.28.149]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhVcAM14iU5V5hyVPGdsb2JhbABCiSyeZhkBAQEBNzKBTAcBAQQBJxMcIwULCAMOOBQlChoTh3sCuFAOhjJhBJkTjA0
-X-IronPort-AV: E=Sophos;i="4.68,478,1312149600"; 
-   d="scan'208";a="486998646"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 3 Oct 2011 11:06:41 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: evdev - use monotonic clock for event timestamps
-Message-ID: <20111003090641.GA5615@polaris.bitmath.org>
-References: <1317624200-9762-1-git-send-email-djkurtz@chromium.org>
+	Mon, 3 Oct 2011 05:03:46 -0400
+From: <oskar.andero@sonyericsson.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Johan Hovold <jhovold@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hakan Kvist <hakan.kvist@sonyericsson.com>,
+        Oskar Andero <oskar.andero@sonyericsson.com>
+Subject: [PATCH] USB: ftdi_sio: add PID for Sony Ericsson Urban
+Date: Mon, 3 Oct 2011 10:51:31 +0200
+Message-ID: <1317631891-13648-1-git-send-email-oskar.andero@sonyericsson.com>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317624200-9762-1-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+From: Hakan Kvist <hakan.kvist@sonyericsson.com>
 
-> Using wallclock time for event timestamps subjects inter-event timing to
-> ntp and other clock adjustments.  This complicates userspace drivers
-> that use these timestamps to calculate velocities, or while processing
-> state transitions.
-> 
-> Instead, use the kernel monotonic clock for event timestamps, which is
-> at least guaranteed never to go backwards.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/evdev.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 4cf2534..118f936 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -94,8 +94,11 @@ static void evdev_event(struct input_handle *handle,
->  	struct evdev *evdev = handle->private;
->  	struct evdev_client *client;
->  	struct input_event event;
-> +	struct timespec now;
->  
-> -	do_gettimeofday(&event.time);
-> +	getrawmonotonic(&now);
-> +	event.time.tv_sec = now.tv_sec;
-> +	event.time.tv_usec = now.tv_nsec/1000;
->  	event.type = type;
->  	event.code = code;
->  	event.value = value;
-> -- 
-> 1.7.3.1
+Add PID 0xfc8a, 0xfc8b for device Sony Ericsson Urban
 
-Good thing per se, but reporting time relative to boot instead of
-using real time, for all input events, may cause regression on some
-obscure systems. Perhaps it is possible to improve on the desired
-monotonicity in most cases, without such a drastic change.
+Signed-off-by: Hakan Kvist <hakan.kvist@sonyericsson.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+---
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Thanks,
-Henrik
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 5fc13e7..79fcac3 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -207,6 +207,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_640_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_642_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DSS20_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_0_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_1_PID) },
+ 	{ USB_DEVICE(FTDI_NF_RIC_VID, FTDI_NF_RIC_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_VNHCPCUSB_D_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MTXORB_0_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index bf5227a..9617f91 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -420,9 +420,11 @@
+ #define PROTEGO_SPECIAL_4	0xFC73	/* special/unknown device */
+ 
+ /*
+- * DSS-20 Sync Station for Sony Ericsson P800
++ * Sony Ericsson product ids
+  */
+-#define FTDI_DSS20_PID          0xFC82
++#define FTDI_DSS20_PID          0xFC82 /* DSS-20 Sync Station for Sony Ericsson P800 */
++#define FTDI_URBAN_0_PID        0xFC8A /* Sony Ericsson Urban, uart #0 */
++#define FTDI_URBAN_1_PID        0xFC8B /* Sony Ericsson Urban, uart #1 */
+ 
+ /* www.irtrans.de device */
+ #define FTDI_IRTRANS_PID 0xFC60 /* Product Id */
+-- 
+1.7.3.4
+
