@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab1JCMaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 08:30:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50965 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab1JCMaP (ORCPT
+	id S1755731Ab1JCMcM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 08:32:12 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:44730 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab1JCMcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 08:30:15 -0400
+	Mon, 3 Oct 2011 08:32:05 -0400
+Date: Mon, 3 Oct 2011 15:31:58 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Guillaume Chazarain <guichaz@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: taskstats root only breaking iotop
+Message-ID: <20111003123158.GA28898@localhost.pp.htv.fi>
+References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
+ <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
+ <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
+ <CA+55aFyci1PB9Y_BSqWnQKSSfcCrbJud+q1Z8Cdquo7hXJZaMw@mail.gmail.com>
+ <CAA879TMgMm4u6kDFahXqCHAFyvDc_hTt+Q93tdSdHKnAcUaMTw@mail.gmail.com>
+ <20111002105457.GA5598@albatros>
 MIME-Version: 1.0
-In-Reply-To: <20111003121655.GB3731@opensource.wolfsonmicro.com>
-References: <20110927181420.GQ4289@opensource.wolfsonmicro.com>
-	<CAMLZHHSuoeAJ-AC9daxb83+EANV=YGK-aiYpQ_j2wFiyQa5ytw@mail.gmail.com>
-	<20110927182636.GR4289@opensource.wolfsonmicro.com>
-	<CAMLZHHR0rMZct2E91X8k+Lhv_y-pY_5+vshZw6dj194o9vSCJQ@mail.gmail.com>
-	<20110927183832.GS4289@opensource.wolfsonmicro.com>
-	<CAMLZHHRvr-diYGwZ2Kg647Ht7NNb8LEku0pCW8EujRuUeOW5yQ@mail.gmail.com>
-	<20110928123154.GG3279@opensource.wolfsonmicro.com>
-	<CAMLZHHRFY_MazF_MOzPrS06z-48-ohORTtbANMxUT=mjevXhhQ@mail.gmail.com>
-	<20111003102846.GA23811@sirena.org.uk>
-	<CAMLZHHTMP+DJA35bUswXPbTv_U0DAWY_h_-Eg53-_4RuC3bx7A@mail.gmail.com>
-	<20111003121655.GB3731@opensource.wolfsonmicro.com>
-Date: Mon, 3 Oct 2011 13:30:15 +0100
-X-Google-Sender-Auth: 2qXXr6hVgLZdoUoiUyXWyTWI-0k
-Message-ID: <CAMLZHHS+fFzuWtwOwt-g2y38g93uaZFyUGsooZyYLMT=mdWQFQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-From: Daniel Drake <dsd@laptop.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: sameo@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, dilinger@queued.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111002105457.GA5598@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 3, 2011 at 1:16 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> It seems to me like either the IP block is heavily dependant on the core
-> and shouldn't be split out in the device tree at all (but should instead
-> be part of the core node) or the IP block is very isolated from the core
-> (in which case we should just be able to instantiate the device from the
-> device tree without using explict code in the core driver).
->
-> This all feels like there's some abstraction violation going on.
+On Sun, Oct 02, 2011 at 02:54:57PM +0400, Vasiliy Kulikov wrote:
+> (cc'ed kernel-hardening)
+> 
+> On Sun, Oct 02, 2011 at 12:22 +0200, Guillaume Chazarain wrote:
+> > On Sun, Oct 2, 2011 at 2:20 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > > So I don't see why you ask for it. What could possibly be a valid use-case?
+> > 
+> > Right, kbyte granularity is enough.
+> 
+> It is not enough.  In some border cases an attacker may still learn
+> private information given the counters with _arbitrary_ granularity:
+> 
+> http://www.openwall.com/lists/oss-security/2011/06/29/9
 
-I guess it is a matter of opinion. To me, the abstraction is sensible
-and representative of the hardware.
+If you request a CVE for that, shouldn't there also be a CVE for
+/proc/<pid>/cmdline being readable by all users?
 
-The gpio controller (and several other components) are abstracted at
-the hardware level behind an ISA bridge.
-In the device tree, we have the ISA bridge represented as /pci/isa.
+I'd expect "ps -ef" to be more likely to give private information to an 
+attacker than counters with kbyte granularity, or am I wrong on that?
 
-Then we have various child nodes of that ISA bridge, such as the gpio
-controller at /pci/isa/gpios or the timer controller at /pci/isa/timer
+>...
+> Thanks,
 
-This also matches the way that the hardware is described by VIA in the
-specs, and it matches the way that Linux has its own device hierachy
-laid out (i.e. the ISA bridge driven by the mfd driver, which then
-spawns off a child device for the GPIO controller).
+cu
+Adrian
 
-It would not be possible to fold all of the isa bridge child
-components into the same device tree node without dealing with various
-namespace collisions.
+-- 
 
-Grant, could we have your opinion on whether this is a good
-abstraction or not? and generally how we go forward.
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
 
-Thanks,
-Daniel
