@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab1JCKva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 06:51:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50037 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab1JCKvX convert rfc822-to-8bit (ORCPT
+	id S1755472Ab1JCLAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 07:00:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:60280 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab1JCLAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 06:51:23 -0400
-Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
- flags
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 03 Oct 2011 12:50:37 +0200
-References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
-	 <20110930034815.GF10425@mtj.dyndns.org>
-	 <1317355529.4588.45.camel@gandalf.stny.rr.com>
-	 <20110930041424.GH10425@mtj.dyndns.org> <1317371699.19415.6.camel@twins>
-	 <20110930085510.GA23868@mtj.dyndns.org> <1317373473.19415.10.camel@twins>
-	 <20111003011506.GE31799@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317639037.20367.17.camel@twins>
-Mime-Version: 1.0
+	Mon, 3 Oct 2011 07:00:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: Re: [PATCH 2/6] ASoC: codecs: AK4641 depends on GPIOLIB
+Date: Mon, 03 Oct 2011 12:59:58 +0200
+Message-ID: <1655842.jHSiigr4V5@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111002212711.GC4506@opensource.wolfsonmicro.com>
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de> <2726393.3Oc3SrGyN4@wuerfel> <20111002212711.GC4506@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:zvzWTmoz7XMeR1ZkbKjHu9NcWWPdN8sow0q6L3VxpgI
+ bj/hfuuXpspCrnQz6IDdHeTA+vKv0yugdBZgDfsvzjbhPOl+Ug
+ D84K2dZ7EJ24TE09gyznlCS+weGM2x7puEzHrOv6fk1YRTe20k
+ 9O3EBiDD/0eyMoT+MY1PV64Q+9eD5Pf01u2M7ur2udHYhIh6X6
+ 0ZcvzIVfZPtczo7BrdiaZvtXglfIpMZrqqCG7Kz9COQDdTyCAY
+ 9cuexIpGrnmbZ0s9IdQ0EbufeZWhim+mApuN5NVpDwYYIfa1J8
+ 3JKu6bML/UWgvRdU1h99lY1N0+d4FNN8Wu2JQ1rmsUuuLZHWBL
+ tuDG6YnrryKfvxYtoq3w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 12:20 +0200, Peter Zijlstra wrote:
-> I didn't write this change for fun, I actually need to get
-> PF_THREAD_BOUND back to sanity, this change alone isn't enough, but it
-> gets rid of the worst abuse. 
+On Sunday 02 October 2011 22:27:11 Mark Brown wrote:
+> > Is there any other symbol that I can test then?
+> 
+> You shouldn't be testing anything - the client side GPIO API (which is
+> what this driver is using) is supposed to stub itself out when not in
+> use so drivers should just be able to use it without worrying about
+> dependencies.  You didn't report the problem but I'd expect that
+> whatever you saw will be an issue in whatever platform you were trying
+> to build for (I'm guessing it hasn't provided gpio_request_one()),
+> though it could be a problem in the gpiolib stubs if that's being used.
 
-I think the below patch is sufficient (on top of the previous one), but
-I haven't actually build or boot tested it (with the scheduler tests
-that yell on a PF_THREAD_BOUND task migrating -- note to self: need to
-exclude self migration due to the below)
+I don't remember where I first saw it. If the problem comes back,
+I'll do a full bug report. I've verified now that it works on
+various platforms with and without GPIOLIB.
 
-It also looks like there's some more room for simplification now that we
-don't actually need to worry about trying to run on cpus that aren't
-there anymore.
+I didn't know how the GPIO bits fit together, so I ended up doing
+something that made the problem go away, whatever it was. This
+is of course a problem with the randconfig fixing: One really needs
+to understand every possible corner of the kernel to get it right,
+and if you don't you end up with a patch that avoids the symptom
+without fixing the underlying bug and then you make it harder to
+find.
 
----
-Index: linux-2.6/kernel/workqueue.c
-===================================================================
---- linux-2.6.orig/kernel/workqueue.c
-+++ linux-2.6/kernel/workqueue.c
-@@ -1285,8 +1285,14 @@ __acquires(&gcwq->lock)
- 		 * it races with cpu hotunplug operation.  Verify
- 		 * against GCWQ_DISASSOCIATED.
- 		 */
--		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
-+		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
-+			/*
-+			 * Since we're binding to a particular cpu and need to
-+			 * stay there for correctness, mark us PF_THREAD_BOUND.
-+			 */
-+			task->flags |= PF_THREAD_BOUND;
- 			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
-+		}
- 
- 		spin_lock_irq(&gcwq->lock);
- 		if (gcwq->flags & GCWQ_DISASSOCIATED)
-@@ -1308,6 +1314,18 @@ __acquires(&gcwq->lock)
- 	}
- }
- 
-+static void worker_unbind_and_unlock(struct worker *worker)
-+{
-+	struct global_cwq *gcwq = worker->gcwq;
-+	struct task_struct *task = worker->task;
-+
-+	/*
-+	 * Its no longer required we're PF_THREAD_BOUND, the work is done.
-+	 */
-+	task->flags &= ~PF_THREAD_BOUND;
-+	spin_unlock_irq(&gcwq->lock);
-+}
-+
- static struct worker *alloc_worker(void)
- {
- 	struct worker *worker;
-@@ -1370,15 +1388,9 @@ static struct worker *create_worker(stru
- 	if (IS_ERR(worker->task))
- 		goto fail;
- 
--	/*
--	 * A rogue worker will become a regular one if CPU comes
--	 * online later on.  Make sure every worker has
--	 * PF_THREAD_BOUND set.
--	 */
- 	if (bind && !on_unbound_cpu)
- 		kthread_bind(worker->task, gcwq->cpu);
- 	else {
--		worker->task->flags |= PF_THREAD_BOUND;
- 		if (on_unbound_cpu)
- 			worker->flags |= WORKER_UNBOUND;
- 	}
-@@ -2055,7 +2067,7 @@ static int rescuer_thread(void *__wq)
- 		if (keep_working(gcwq))
- 			wake_up_worker(gcwq);
- 
--		spin_unlock_irq(&gcwq->lock);
-+		worker_unbind_and_unlock(rescuer);
- 	}
- 
- 	schedule();
-@@ -3004,7 +3016,6 @@ struct workqueue_struct *__alloc_workque
- 		if (IS_ERR(rescuer->task))
- 			goto err;
- 
--		rescuer->task->flags |= PF_THREAD_BOUND;
- 		wake_up_process(rescuer->task);
- 	}
- 
+I really appreciate you doing the thorough review of the patches
+to make sure we find the actual bugs, which is one of the main
+things I want to achieve here anyway.
 
+> > I noticed that a lot of places use 'depends on GPIOLIB' or
+> > '#ifdef CONFIG_GPIOLIB', are those usually wrong, too?
+> 
+> Checks for gpiolib in drivers providing GPIOs are sensible, if a
+> platform hasn't used gpiolib then it's generally not even got an
+> interface for drivers to provide GPIOs.
+> 
+> On the user side these are usually due to people making the sort of
+> changes you're making here due to a random build coverage issue - it
+> seems unfortunately common for people to just shove a dependency in
+> Kconfig when they run into a build coverage issue without looking at
+> what's going on.  For a lot of the stuff you see on PCs it's going to
+> make sense but for some of the "service" APIs like GPIOs that are more
+> commonly used only in embedded contexts the use of the API is usually
+> completely optional (eg, in this case the driver is controlling power
+> and reset lines which could easily just be strapped in the hardware with
+> no soft control and are supplied as optional platform data) so for many
+> systems the driver is going to work completely happily without doing
+> anything with GPIOs.
+> 
+> Adding dependencies to all the users needlessly restricts which systems
+> can use the drivers.  Adding ifdefs to the drivers is repetitive and
+> isn't great for legiblity, having the header stub itself out is simpler
+> and easier to use on the driver side.
+
+Ok, makes sense. Thanks for the background information!
+
+	Arnd
