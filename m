@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab1JCU7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:59:42 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:41598 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579Ab1JCU6h (ORCPT
+	id S932664Ab1JCU7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:59:55 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:48899 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932587Ab1JCU7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:58:37 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 09/10] drbd: remove useless kobject_uevent from drbd_adm_connect
-Date: Mon,  3 Oct 2011 22:58:32 +0200
-Message-Id: <1317675513-12745-10-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317675513-12745-1-git-send-email-philipp.reisner@linbit.com>
-References: <1317675513-12745-1-git-send-email-philipp.reisner@linbit.com>
+	Mon, 3 Oct 2011 16:59:48 -0400
+Date: Mon, 3 Oct 2011 13:59:37 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 10/21] drm/i915: Wrap DP EDID fetch
+ functions to enable eDP panel power
+Message-ID: <20111003135937.7e3734a1@jbarnes-desktop>
+In-Reply-To: <1317344993-24945-11-git-send-email-keithp@keithp.com>
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+	<1317344993-24945-1-git-send-email-keithp@keithp.com>
+	<1317344993-24945-11-git-send-email-keithp@keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+On Thu, 29 Sep 2011 18:09:42 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-Calling kobject_uevent, which may sleep, from within rcu_read_lock()
-protected regions is not possible.
-This particular kobject_uevent also is also wrong. It was supposed to
-trigger a udev run, just in case something relevant to udev symlink
-magic has changed, when adjusting runtime re-configurable settings while
-we still had the "syncer conf".  It was improperly placed in connect
-when we dropped the "syncer conf".  The right thing to do is probably to
-call "udevadm trigger" directly in those cases where drbdadm thinks
-there was a need to trigger extra udev runs.
+> Talking to the eDP DDC channel requires that the panel be powered
+> up. Wrap both the EDID and modes fetch code with calls to turn the vdd
+> power on and back off.
+> 
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_nl.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+These VDD AUX changes look good, ack on all of them.
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 7926491..c475654 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2088,15 +2088,15 @@ int drbd_adm_connect(struct sk_buff *skb, struct genl_info *info)
- 
- 	mutex_unlock(&tconn->net_conf_update);
- 
--	retcode = conn_request_state(tconn, NS(conn, C_UNCONNECTED), CS_VERBOSE);
--
- 	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, i) {
- 		mdev->send_cnt = 0;
- 		mdev->recv_cnt = 0;
--		kobject_uevent(&disk_to_dev(mdev->vdisk)->kobj, KOBJ_CHANGE);
- 	}
- 	rcu_read_unlock();
-+
-+	retcode = conn_request_state(tconn, NS(conn, C_UNCONNECTED), CS_VERBOSE);
-+
- 	conn_reconfig_done(tconn);
- 	drbd_adm_finish(info, retcode);
- 	return 0;
 -- 
-1.7.4.1
-
+Jesse Barnes, Intel Open Source Technology Center
