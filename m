@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab1JCJbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:31:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab1JCJbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:31:12 -0400
-Date: Mon, 3 Oct 2011 15:01:05 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
- support S4
-Message-ID: <20111003093105.GC5192@amit-x200.redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
- <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
- <20111002093733.GE29706@redhat.com>
- <20111003091646.GA5192@amit-x200.redhat.com>
- <20111003092443.GA16852@redhat.com>
+	id S1754048Ab1JCJcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:32:47 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38204 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1JCJcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 05:32:41 -0400
+Date: Mon, 3 Oct 2011 12:32:39 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111003093239.GB25136@localhost.pp.htv.fi>
+References: <4E8655CD.90107@zytor.com>
+ <201110020304.28288.rjw@sisk.pl>
+ <4E87B885.50005@zytor.com>
+ <201110021354.57995.rjw@sisk.pl>
+ <4E88A537.4010008@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111003092443.GA16852@redhat.com>
+In-Reply-To: <4E88A537.4010008@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 03 Oct 2011 [11:24:44], Michael S. Tsirkin wrote:
-> On Mon, Oct 03, 2011 at 02:46:46PM +0530, Amit Shah wrote:
-> > On (Sun) 02 Oct 2011 [11:37:33], Michael S. Tsirkin wrote:
-> > > On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
-> > > > Delete the vq on the freeze callback to prepare for hibernation.
-> > > > Re-create the vq in the restore callback to resume normal function.
-> > > > 
-> > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > ---
-> > > >  drivers/block/virtio_blk.c |   17 +++++++++++++++++
-> > > >  1 files changed, 17 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> > > > index 509760b..9844d2c 100644
-> > > > --- a/drivers/block/virtio_blk.c
-> > > > +++ b/drivers/block/virtio_blk.c
-> > > > @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
-> > > >  	kfree(vblk);
-> > > >  }
-> > > >  
-> > > > +#ifdef CONFIG_PM
-> > > > +static int virtblk_freeze(struct virtio_device *vdev)
-> > > > +{
-> > > > +	vdev->config->del_vqs(vdev);
-> > > 
-> > > What prevents the guest from trying to use the VQ while
-> > > this is in progress? IF it does, what prevents a crash?
+On Sun, Oct 02, 2011 at 10:53:59AM -0700, H. Peter Anvin wrote:
+> On 10/02/2011 04:54 AM, Rafael J. Wysocki wrote:
+> > On Sunday, October 02, 2011, H. Peter Anvin wrote:
 > > 
-> > An oversight: Sasha pointed this out, too, and I've now fixed this by
-> > adding a call to vdev->config->reset() before deleting vqs.
+> > Hmm.  That doesn't seem very practical if someone doesn't live close
+> > to any other core kernel developers.
+> > 
 > 
-> This stops the host from accessing the VQ, but does not stop the *guest*.
+> You probably know enough people (including myself) that would be willing
+> to sign your key over the phone.
+>...
 
-Yes, have to ensure all pending IO is complete and nothing new is
-queued.
+You have personally checked Rafael's user id (e.g. passport)?
 
+This might or might not be true in this case, but generally signing keys 
+without having ever checked the user id (no matter how long you know the 
+person) is a common mistake.
 
-		Amit
+> 	-hpa
+
+cu
+Adrian
+
+-- 
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
+
