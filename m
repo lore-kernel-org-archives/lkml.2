@@ -1,109 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab1JCNtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:49:12 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52135 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092Ab1JCNtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:49:04 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH V1 2/2] Staging: comedi: fix printk issue in cb_pcidas.c
-Date: Mon,  3 Oct 2011 19:18:13 +0530
-Message-Id: <1317649693-2301-2-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.2
-In-Reply-To: <1317649693-2301-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1317649693-2301-1-git-send-email-ravishankar.km@greenturtles.in>
+	id S1756070Ab1JCNuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:50:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312Ab1JCNue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:50:34 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: avi@redhat.com, kvm@vger.kernel.org, joerg.roedel@amd.com, mingo@elte.hu,
+        a.p.zijlstra@chello.nl
+Subject: [PATCH 5/9] perf, tools: Do guest-only counting in perf-kvm by default
+Date: Mon,  3 Oct 2011 15:49:51 +0200
+Message-Id: <1317649795-18259-6-git-send-email-gleb@redhat.com>
+In-Reply-To: <1317649795-18259-1-git-send-email-gleb@redhat.com>
+References: <1317649795-18259-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+Make use of exclude_guest and exlude_host in perf-kvm to do
+only guest-only counting by default.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- Space issue is fixed.
-	
- drivers/staging/comedi/drivers/cb_pcidas.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+ tools/perf/builtin-kvm.c       |    3 ++-
+ tools/perf/util/event.c        |    8 ++++++++
+ tools/perf/util/event.h        |    2 ++
+ tools/perf/util/evlist.c       |    5 ++++-
+ tools/perf/util/parse-events.c |    1 +
+ 5 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 9dec153..1fc8db4 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -565,7 +565,8 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 	int index;
- 	int i;
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 032324a..9b05afa 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -107,7 +107,8 @@ static int __cmd_buildid_list(int argc, const char **argv)
  
--	pr_info("comedi%d: cb_pcidas: ", dev->minor);
-+	dev_info(&pcidev->dev, "comedi%d: cb_pcidas:\n",
-+		dev->minor);
- 
- /*
-  * Allocate the private structure area.
-@@ -576,7 +577,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
--	printk("\n");
- 
- 	for_each_pci_dev(pcidev) {
- 		/*  is it not a computer boards card? */
-@@ -600,20 +600,24 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 		}
- 	}
- 
--	printk("No supported ComputerBoards/MeasurementComputing card found on "
--	       "requested position\n");
-+	dev_err(&pcidev->dev,"No supported "
-+		"ComputerBoards/MeasurementComputing "
-+		"card found on requested position\n");
- 	return -EIO;
- 
- found:
- 
--	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_info(&pcidev->dev, "Found %s on bus %i, slot %i\n",
-+		cb_pcidas_boards[index].name,
-+		pcidev->bus->number,
-+		PCI_SLOT(pcidev->devfn));
- 
- 	/*
- 	 * Enable PCI device and reserve I/O ports.
- 	 */
- 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
--		printk(" Failed to enable PCI device and request regions\n");
-+		dev_err(&pcidev->dev,"Failed to enable PCI "
-+			"device and request regions\n");
- 		return -EIO;
- 	}
- 	/*
-@@ -639,7 +643,8 @@ found:
- 	/*  get irq */
- 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
- 			IRQF_SHARED, "cb_pcidas", dev)) {
--		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
-+		dev_warn(&pcidev->dev, "unable to allocate irq %d\n",
-+			devpriv->pci_dev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = devpriv->pci_dev->irq;
-@@ -768,7 +773,8 @@ found:
-  */
- static int cb_pcidas_detach(struct comedi_device *dev)
+ int cmd_kvm(int argc, const char **argv, const char *prefix __used)
  {
--	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
-+	pr_info(&pcidev->dev, "comedi%d: cb_pcidas: remove\n",
-+		dev->minor);
+-	perf_host = perf_guest = 0;
++	perf_host  = 0;
++	perf_guest = 1;
  
- 	if (devpriv) {
- 		if (devpriv->s5933_config) {
+ 	argc = parse_options(argc, argv, kvm_options, kvm_usage,
+ 			PARSE_OPT_STOP_AT_NON_OPTION);
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 437f8ca..31a6d7f 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -44,6 +44,14 @@ static struct perf_sample synth_sample = {
+ 	.period	   = 1,
+ };
+ 
++void event_attr_init(struct perf_event_attr *attr)
++{
++	if (!perf_host)
++		attr->exclude_host  = 1;
++	if (!perf_guest)
++		attr->exclude_guest = 1;
++}
++
+ static pid_t perf_event__synthesize_comm(union perf_event *event, pid_t pid,
+ 					 int full, perf_event__handler_t process,
+ 					 struct perf_session *session)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 357a85b..e5f101e 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -150,6 +150,8 @@ typedef int (*perf_event__handler_t)(union perf_event *event,
+ 				     struct perf_sample *sample,
+ 				      struct perf_session *session);
+ 
++void event_attr_init(struct perf_event_attr *attr);
++
+ int perf_event__synthesize_thread_map(struct thread_map *threads,
+ 				      perf_event__handler_t process,
+ 				      struct perf_session *session);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 72e9f48..4773fbe 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -82,8 +82,11 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 		.type = PERF_TYPE_HARDWARE,
+ 		.config = PERF_COUNT_HW_CPU_CYCLES,
+ 	};
+-	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
++	struct perf_evsel *evsel;
++
++	event_attr_init(&attr);
+ 
++	evsel = perf_evsel__new(&attr, 0);
+ 	if (evsel == NULL)
+ 		goto error;
+ 
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3b00775..620ba98 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -848,6 +848,7 @@ int parse_events(struct perf_evlist *evlist , const char *str, int unset __used)
+ 	for (;;) {
+ 		ostr = str;
+ 		memset(&attr, 0, sizeof(attr));
++		event_attr_init(&attr);
+ 		ret = parse_event_symbols(evlist, &str, &attr);
+ 		if (ret == EVT_FAILED)
+ 			return -1;
 -- 
-1.7.6.2
+1.7.5.3
 
