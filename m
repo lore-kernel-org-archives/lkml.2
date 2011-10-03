@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab1JCQkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:40:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29014 "EHLO mx1.redhat.com"
+	id S1756890Ab1JCQmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:42:42 -0400
+Received: from mx.binnacle.cx ([74.95.187.105]:59503 "EHLO mx.binnacle.cx"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab1JCQkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:40:18 -0400
-Date: Mon, 3 Oct 2011 18:35:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Mosberger-Tang <davidm@egauge.net>
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111003163559.GA3957@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <m21uuxirxi.fsf@firstfloor.org> <1317461738.3375.46.camel@mfleming-mobl1.ger.corp.intel.com> <CA+55aFyscb=PcUDrEUhFbH89+W-KYEKrqKHeNN3dqmZD1GF_Hw@mail.gmail.com> <1317656613.3375.78.camel@mfleming-mobl1.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317656613.3375.78.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751640Ab1JCQmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:42:33 -0400
+Message-Id: <6.2.5.6.2.20111003121925.03a83a28@binnacle.cx>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Mon, 03 Oct 2011 12:28:13 -0400
+To: Eric Dumazet <eric.dumazet@gmail.com>
+From: starlight@binnacle.cx
+Subject: Re: big picture UDP/IP performance question re 2.6.18
+  -> 2.6.32
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <stephen.hemminger@vyatta.com>
+In-Reply-To: <1317658588.2442.5.camel@edumazet-HP-Compaq-6005-Pro
+ -SFF-PC>
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
+ <1317658588.2442.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Matt Fleming wrote:
+At 06:16 PM 10/3/2011 +0200, Eric Dumazet wrote:
+>> >Please send full "dmesg" output 
+>> 
+>> Attached.
+>> 
 >
-> Oh, are you referring to Oleg's email about the slow down under kvm?
-> Yeah, admittedly that's a pretty clear indicator that something is wrong
-> with the approach in this patch series.
+>Minor note :
+>
+>It seems you use 4096 2MB hugepages, and your
+>machine has 1GB pages availabe, you could
+>try to use them.
+>
+>(boot cmd : hugepagesz=1GB hugepages=8 )
 
-Or there was something wrong with my testing, please recheck. I specially
-mentioned I was surprised by the numbers. May be kvm, or lockdep...
+Interesting.  I'll give it a try for sure, but
+since hugepages only gives a 5% improvement
+taking the page size up probably will not
+dent it by more than an additional percent
+or so.
 
-Oleg.
+BTW I goofed on the kernel version number in my
+last post.  It should be 2.6.39.4.  That .27 was
+my mind transposing the 2.6.32 sub-version
+onto 2.6.39.
+
+Have one closing thought, which is to wonder if the
+
+    9.98% swapper [kernel.kallsyms]  [k] native_safe_halt
+
+CPU is included in the 2.6.18(rhel) CPU accounting
+or not.  If it's excluded that would make 2.6.39.4
+look much better--possibly put it at near parity
+though I'm too lazy to do the math just now.
+
+My guess is that this number is something of an
+artifact of the clock-tick CPU histogram logic.
+Perhaps it's seeing the IP register parked in the
+idle-loop HALT instruction some of the time and
+counting it as non-idle time.  I'd be happier if
+it either counted all idle time and showed the
+45% that the poll=idle run shows, or none of
+the idle time at all--if it is in fact idle time.
+
+Unfortunately 'perf' is not available for
+2.6.18(rhel) so the value cannot be compared.
 
