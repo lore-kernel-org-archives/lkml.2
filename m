@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1JCXaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:30:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45752 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab1JCXaM (ORCPT
+	id S1751980Ab1JCXdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 19:33:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56692 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab1JCXdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:30:12 -0400
-Message-ID: <4E8A457F.5050106@gmail.com>
-Date: Tue, 04 Oct 2011 10:30:07 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
+	Mon, 3 Oct 2011 19:33:41 -0400
 MIME-Version: 1.0
-To: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-CC: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] Staging: comedi: fix printk issue in cb_pcidas.c
-References: <1317388707-1980-1-git-send-email-ravishankar.km@greenturtles.in> <1317388707-1980-3-git-send-email-ravishankar.km@greenturtles.in>
-In-Reply-To: <1317388707-1980-3-git-send-email-ravishankar.km@greenturtles.in>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1110031415110.31654@pobox.suse.cz>
+References: <1317452093-25555-1-git-send-email-iwamatsu@nigauri.org>
+ <alpine.LNX.2.00.1110031402360.31654@pobox.suse.cz> <alpine.LNX.2.00.1110031415110.31654@pobox.suse.cz>
+From: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+Date: Tue, 4 Oct 2011 08:33:18 +0900
+Message-ID: <CABMQnV+y+yw-cY9CexT_eVWqsJFkT0ffZLx87y5CRuX=KiOtpQ@mail.gmail.com>
+Subject: Re: [PATCH] HID: Add support MacbookAir 4,1 keyboard
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Joshua V. Dillon" <jvdillon@gmail.com>
+Content-Type: multipart/mixed; boundary=0015173ff1ee9ddd7904ae6d67b2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/11 23:18, Ravishankar Karkala Mallikarjunayya wrote:
+--0015173ff1ee9ddd7904ae6d67b2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
-> 
-> Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
-> ---
->  drivers/staging/comedi/drivers/cb_pcidas.c |   21 +++++++++++++--------
->  1 files changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-> index 9dec153..9d16c6c 100644
-> --- a/drivers/staging/comedi/drivers/cb_pcidas.c
-> +++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-> @@ -565,7 +565,8 @@ static int cb_pcidas_attach(struct comedi_device *dev,
->  	int index;
->  	int i;
->  
-> -	pr_info("comedi%d: cb_pcidas: ", dev->minor);
-> +	dev_info(&pcidev->dev, "comedi%d: cb_pcidas:\n",
-> +		dev->minor);
+Hi,
 
-This printk can probably be removed now. It's just noise. Similar in
-other places too.
+2011/10/3 Jiri Kosina <jkosina@suse.cz>:
+> On Mon, 3 Oct 2011, Jiri Kosina wrote:
+>
+>> > Added USB device IDs and keyboard map for MacBookAir 4,1 keyboard.
+>> >
+>> > Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+>>
+>> Applied, thank you.
+>
+Thanks.
 
-~Ryan
+> Oh, and don't we BTW need the hid_mouse_ignore_list[] addition as well? I=
+s
+> the respective mouse being handled properly by appletouch driver?
+
+I don't work touchpad on MacbookAir yet.
+But I think that the change is necessary when I show a past change.
+And I think that I am necessary for MacbookAir 4,2.
+I made patches, and I attached.
+
+Best regards,
+  Nobuhiro
+
+--=20
+Nobuhiro Iwamatsu
+=A0=A0 iwamatsu at {nigauri.org / debian.org}
+=A0=A0 GPG ID: 40AD1FA6
+
+--0015173ff1ee9ddd7904ae6d67b2
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-HID-Add-MacbookAir4-2-to-hid_mouse_ignore_list.patch"
+Content-Disposition: attachment; 
+	filename="0001-HID-Add-MacbookAir4-2-to-hid_mouse_ignore_list.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gtc3ixpu0
+
+RnJvbSBlODJhOWJkNzYxYzg1N2EyZTZjMTg1YzBiYWI4ODk0YjE5N2RmZTkxIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBOb2J1aGlybyBJd2FtYXRzdSA8aXdhbWF0c3VAbmlnYXVyaS5v
+cmc+CkRhdGU6IFR1ZSwgNCBPY3QgMjAxMSAwMzo0Mjo1OSArMDkwMApTdWJqZWN0OiBbUEFUQ0gg
+MS8yXSBISUQ6IEFkZCBNYWNib29rQWlyNCwyIHRvIGhpZF9tb3VzZV9pZ25vcmVfbGlzdAoKTWFj
+Ym9va0FpcjQsMiB1c2VzIGJjbTU5NzQgZHJpdmVyIGZvciB0b3VjaHBhZC4KClNpZ25lZC1vZmYt
+Ynk6IE5vYnVoaXJvIEl3YW1hdHN1IDxpd2FtYXRzdUBuaWdhdXJpLm9yZz4KLS0tCiBkcml2ZXJz
+L2hpZC9oaWQtY29yZS5jIHwgICAgMyArKysKIDEgZmlsZXMgY2hhbmdlZCwgMyBpbnNlcnRpb25z
+KCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMg
+Yi9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCmluZGV4IDQxNjNjODguLjlmYzE2YmUgMTAwNjQ0Ci0t
+LSBhL2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMKKysrIGIvZHJpdmVycy9oaWQvaGlkLWNvcmUuYwpA
+QCAtMTkzOCw2ICsxOTM4LDkgQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhp
+ZF9tb3VzZV9pZ25vcmVfbGlzdFtdID0gewogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNV9BTlNJKSB9LAogCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxM
+U1BSSU5HNV9JU08pIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBV
+U0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc1X0pJUykgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzZfQU5T
+SSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0Vf
+SURfQVBQTEVfV0VMTFNQUklORzZfSVNPKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNl9KSVMpIH0sCiAJeyBI
+SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0ZP
+VU5UQUlOX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExF
+LCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBfT05MWSkgfSwKIAl7IH0KLS0gCjEuNy42
+LjMKCg==
+--0015173ff1ee9ddd7904ae6d67b2
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0002-HID-Add-MacbookAir4-1-to-hid_mouse_ignore_list.patch"
+Content-Disposition: attachment; 
+	filename="0002-HID-Add-MacbookAir4-1-to-hid_mouse_ignore_list.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gtc3j3r61
+
+RnJvbSA3ZDU2YjAyM2M4ZjUyYjIzNGEyYzk4ZTYwMDE0OWMwNjY2ZjdhNWZkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBOb2J1aGlybyBJd2FtYXRzdSA8aXdhbWF0c3VAbmlnYXVyaS5v
+cmc+CkRhdGU6IFR1ZSwgNCBPY3QgMjAxMSAwMzo0NDowNyArMDkwMApTdWJqZWN0OiBbUEFUQ0gg
+Mi8yXSBISUQ6IEFkZCBNYWNib29rQWlyNCwxIHRvIGhpZF9tb3VzZV9pZ25vcmVfbGlzdAoKTWFj
+Ym9va0FpcjQsMSB1c2VzIGJjbTU5NzQgZHJpdmVyIGZvciB0b3VjaHBhZC4KClNpZ25lZC1vZmYt
+Ynk6IE5vYnVoaXJvIEl3YW1hdHN1IDxpd2FtYXRzdUBuaWdhdXJpLm9yZz4KLS0tCiBkcml2ZXJz
+L2hpZC9oaWQtY29yZS5jIHwgICAgMyArKysKIDEgZmlsZXMgY2hhbmdlZCwgMyBpbnNlcnRpb25z
+KCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMg
+Yi9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCmluZGV4IDlmYzE2YmUuLjllY2FkZjUgMTAwNjQ0Ci0t
+LSBhL2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMKKysrIGIvZHJpdmVycy9oaWQvaGlkLWNvcmUuYwpA
+QCAtMTk0MSw2ICsxOTQxLDkgQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhp
+ZF9tb3VzZV9pZ25vcmVfbGlzdFtdID0gewogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNl9BTlNJKSB9LAogCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxM
+U1BSSU5HNl9JU08pIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBV
+U0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc2X0pJUykgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzZBX0FO
+U0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNF
+X0lEX0FQUExFX1dFTExTUFJJTkc2QV9JU08pIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
+RE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc2QV9KSVMpIH0sCiAJ
+eyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExF
+X0ZPVU5UQUlOX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQ
+UExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBfT05MWSkgfSwKIAl7IH0KLS0gCjEu
+Ny42LjMKCg==
+--0015173ff1ee9ddd7904ae6d67b2--
