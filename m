@@ -1,130 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab1JCLEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 07:04:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55958 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390Ab1JCLEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 07:04:22 -0400
-Message-ID: <4E899687.8010607@parallels.com>
-Date: Mon, 3 Oct 2011 15:03:35 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755494Ab1JCLJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 07:09:08 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:28047 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab1JCLJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 07:09:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArQBAGiXiU5tTATM/2dsb2JhbAAMNoRlmAWNbgEBAQQjDwFGEAsNAQoCAgUWCwICCQMCAQIBDzYGDQEFAgEBry2QUIEthGGBEwSZJIRahyE
+Message-ID: <4E8997CA.7060404@draigBrady.com>
+Date: Mon, 03 Oct 2011 12:08:58 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 2/8] socket: initial cgroup code.
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-3-git-send-email-glommer@parallels.com> <20111003104733.GB29312@shutemov.name> <4E8992EF.30001@parallels.com> <20111003110230.GC29312@shutemov.name>
-In-Reply-To: <20111003110230.GC29312@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Dave Young <hidave.darkstar@gmail.com>
+CC: Andreas Dilger <aedilger@gmail.com>, Jeff liu <jeff.liu@oracle.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4 development <linux-ext4@vger.kernel.org>,
+        Coreutils <coreutils@gnu.org>
+Subject: Re: [BUG] copy file result with zero
+References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com> <20111001143900.GH28234@thunk.org> <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com> <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com> <CA140AD1-B715-46BF-81B3-EA2069CBC131@dilger.ca> <CABqxG0eMarBn_8xHCOZPq3pae4K01C51Rmxdox7uZr0gWOHGGw@mail.gmail.com>
+In-Reply-To: <CABqxG0eMarBn_8xHCOZPq3pae4K01C51Rmxdox7uZr0gWOHGGw@mail.gmail.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 03:02 PM, Kirill A. Shutemov wrote:
-> On Mon, Oct 03, 2011 at 02:48:15PM +0400, Glauber Costa wrote:
->> On 10/03/2011 02:47 PM, Kirill A. Shutemov wrote:
->>> On Mon, Oct 03, 2011 at 02:18:37PM +0400, Glauber Costa wrote:
->>>> We aim to control the amount of kernel memory pinned at any
->>>> time by tcp sockets. To lay the foundations for this work,
->>>> this patch adds a pointer to the kmem_cgroup to the socket
->>>> structure.
->>>>
->>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>>> CC: David S. Miller<davem@davemloft.net>
->>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->>>> CC: Eric W. Biederman<ebiederm@xmission.com>
->>>> ---
->>>>    include/linux/memcontrol.h |   15 +++++++++++++++
->>>>    include/net/sock.h         |    2 ++
->>>>    mm/memcontrol.c            |   33 +++++++++++++++++++++++++++++++++
->>>>    net/core/sock.c            |    3 +++
->>>>    4 files changed, 53 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>>> index 3b535db..2cb9226 100644
->>>> --- a/include/linux/memcontrol.h
->>>> +++ b/include/linux/memcontrol.h
->>>> @@ -395,5 +395,20 @@ mem_cgroup_print_bad_page(struct page *page)
->>>>    }
->>>>    #endif
->>>>
->>>> +#ifdef CONFIG_INET
->>>> +struct sock;
->>>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>>> +void sock_update_memcg(struct sock *sk);
->>>> +void sock_release_memcg(struct sock *sk);
->>>> +
->>>> +#else
->>>> +static inline void sock_update_memcg(struct sock *sk)
->>>> +{
->>>> +}
->>>> +static inline void sock_release_memcg(struct sock *sk)
->>>> +{
->>>> +}
->>>> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->>>> +#endif /* CONFIG_INET */
->>>>    #endif /* _LINUX_MEMCONTROL_H */
->>>>
->>>> diff --git a/include/net/sock.h b/include/net/sock.h
->>>> index 8e4062f..afe1467 100644
->>>> --- a/include/net/sock.h
->>>> +++ b/include/net/sock.h
->>>> @@ -228,6 +228,7 @@ struct sock_common {
->>>>      *	@sk_security: used by security modules
->>>>      *	@sk_mark: generic packet mark
->>>>      *	@sk_classid: this socket's cgroup classid
->>>> +  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup
->>>>      *	@sk_write_pending: a write to stream socket waits to start
->>>>      *	@sk_state_change: callback to indicate change in the state of the sock
->>>>      *	@sk_data_ready: callback to indicate there is data to be processed
->>>> @@ -339,6 +340,7 @@ struct sock {
->>>>    #endif
->>>>    	__u32			sk_mark;
->>>>    	u32			sk_classid;
->>>> +	struct mem_cgroup	*sk_cgrp;
->>>>    	void			(*sk_state_change)(struct sock *sk);
->>>>    	void			(*sk_data_ready)(struct sock *sk, int bytes);
->>>>    	void			(*sk_write_space)(struct sock *sk);
->>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>>> index 8aaf4ce..08a520e 100644
->>>> --- a/mm/memcontrol.c
->>>> +++ b/mm/memcontrol.c
->>>> @@ -339,6 +339,39 @@ struct mem_cgroup {
->>>>    	spinlock_t pcp_counter_lock;
->>>>    };
->>>>
->>>> +/* Writing them here to avoid exposing memcg's inner layout */
->>>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>>> +#ifdef CONFIG_INET
->>>> +#include<net/sock.h>
->>>> +
->>>> +void sock_update_memcg(struct sock *sk)
->>>> +{
->>>> +	/* right now a socket spends its whole life in the same cgroup */
->>>> +	BUG_ON(sk->sk_cgrp);
+On 10/02/2011 09:43 AM, Dave Young wrote:
+> On Sun, Oct 2, 2011 at 4:02 PM, Andreas Dilger <aedilger@gmail.com> wrote:
+>> On 2011-10-01, at 11:41 PM, Jeff liu wrote:
+>>>> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
+>>>>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
+>>>>>> Weird problem, when I build app from source,
+>>>>>> make; make install
+>>>>>> run the command, but got "cannot execute binary file"
+>>>>>>
+>>>>>> hexdump shows the installed binary is full of zero
+>>>>>>
+>>>>>> Is it related to ext4 fiemap problem described below?
+>>>>>> http://lwn.net/Articles/429349/
+>>>>>
+>>>>> There is general agreement that /bin/cp should not have been relying
+>>>>> on FIEMAP, and I believe the more recent versions of /bin/cp have
+>>>>> removed that code by default pending implementation of
+>>>>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
+>>>>> FIEMAP implementation that landed in 2.6.39, and you're using
+>>>>> 3.1.0-rc6.
 >>>
->>> Do we really want to panic in this case?
->>>
->>> What about WARN() + return?
+>>> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
 >>
->> Kirill,
+>> Are there any distros that are shipping with a version of cp that depends on FIEMAP?  That would dramatically increase the severity of this problem, since orders of magnitude more users will hit the problem.
+> 
+> I'm not sure if it depends on FIEMAP, I think it should be not so old.
+> 
 >>
->> I am keeping this code just to have something workable in between.
->> If you take a look at the last patch, this hunk is going away anyway.
->>
->> So if you don't oppose it, I'll just keep it to avoid rebasing it.
->
-> Sorry, but I don't see where you remove BUG_ON().
-> You remove only cgroup_exclude_rmdir().
->
-Oh yeah, you are right, sorry.
+>> Dave, what distro were you seeing this problem on, and had you installed/upgraded your coreutils and/or kernel yourself?
+> 
+> Slackware 13.37, coreutils 8.11
+> kernel is always built from linus's git by myself
 
-So, I guess some kind of check is sane here. I am happy to change it to 
-WARN_ON.
+Coreutils 8.11 was only released for 13 days,
+before 8.12 was released specifically to avoid this issue.
+Slackware should update.
 
+Coreutils 8.12 only uses a fiemap based copy for
+sparse files, where it will do a sync first.
+The sparseness heuristic is st_blocks < st_size / st_blksize
 
+cheers,
+Pádraig.
