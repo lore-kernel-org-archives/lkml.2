@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab1JCFVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 01:21:53 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:50588 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753391Ab1JCFVq (ORCPT
+	id S1755154Ab1JCFXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 01:23:44 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:56563 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1JCFXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 01:21:46 -0400
-Message-ID: <4E894664.5090609@ti.com>
-Date: Mon, 03 Oct 2011 10:51:40 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/30] ARM: OMAP depends on MMU
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-26-git-send-email-arnd@arndb.de>
-In-Reply-To: <1317566760-25681-26-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Oct 2011 01:23:38 -0400
+Date: Mon, 3 Oct 2011 14:19:11 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        container ML <containers@lists.linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Miao Xie <miaox@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <htejun@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX] cgroup: create a workqueue for cgroup
+Message-Id: <20111003141911.b4ee7bca.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20111003092244.bcfde141.nishimura@mxp.nes.nec.co.jp>
+References: <20110930165452.19c0fdf4.nishimura@mxp.nes.nec.co.jp>
+	<20110930153049.6719a14e.akpm00@gmail.com>
+	<20111003092244.bcfde141.nishimura@mxp.nes.nec.co.jp>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 02 October 2011 08:15 PM, Arnd Bergmann wrote:
-> There is no way to build OMAP kernels without an MMU
-> at this point because of dependencies on MMU-only functions.
+On Mon, 3 Oct 2011 09:22:44 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> On Fri, 30 Sep 2011 15:30:49 -0700
+> Andrew Morton <akpm00@gmail.com> wrote:
 > 
-> As long as nobody is interested in fixing this, let's just disable
-> this platforms for nommu kernels.
+> > On Fri, 30 Sep 2011 16:54:52 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > In commit:f90d4118, cpuset_wq, a separate workqueue for cpuset, was introduced
+> > > to avoid a dead lock against cgroup_mutex between async_rebuild_sched_domains()
+> > > and cgroup_tasks_write().
+> > > 
+> > > But check_for_release() has a similar problem:
+> > > 
+> > >   check_for_release()
+> > >     schedule_work(release_agent_work)
+> > >       cgroup_release_agent()
+> > >         mutex_lock(&cgroup_mutex)
+> > > 
+> > > And I actually see a lockup which seems to be caused by this problem
+> > > on 2.6.32-131.0.15.el6.x86_64.
+> > 
+> > Are you sure the bug is still present in current kernels?  Perhaps
+> > Tejun's workqueue changes magically made it go away.
+> > 
+> Not yet, but I'll check it.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+As you said, I cannot repricate this issue on 3.1-rc8. But I've verified
+it happens on 2.6.32.46 and this patch fixes it, so I think this patch is
+necessary for stable at least.
+
+Thanks,
+Daisuke Nishimura.
