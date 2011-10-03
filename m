@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab1JCTyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:54:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54654 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757469Ab1JCTxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:53:50 -0400
-Date: Mon, 3 Oct 2011 15:53:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: Re: BUG in kernel: Wrong Handling of USB =?UTF-8?Q?HDD=E2=80=99s?=
- in scsiglue(slave_configure) and scsi/sd(sd_read_cache_type)
-In-Reply-To: <1317670355.3041.53.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <Pine.LNX.4.44L0.1110031548310.1882-100000@iolanthe.rowland.org>
+	id S1757489Ab1JCTzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:55:10 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:46809 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757444Ab1JCTzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 15:55:05 -0400
+Date: Mon, 3 Oct 2011 12:53:30 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.1
+Message-ID: <20111003195330.GB30684@ericsson.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011, James Bottomley wrote:
+--Pd0ReVV5GZGQvF3a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Mon, 2011-10-03 at 14:10 -0400, Alan Stern wrote:
-> > > No. You need to also take into account the RBC
-> > > device parameters mode page if present. See above.
-> > 
-> > All right, suppose neither page is present.  Does it then make sense to 
-> > assume by default that write caching is enabled?
-> 
-> You're the USB expert ... if we do that, we'll start sending
-> SYNCHRONIZE_CACHE commands down to a whole slew of devices we didn't
-> before ... is that going to cause problems with any USB SATLs?
+Hi Linus,
 
-Hmmm...  Actually, I doubt it would bother any SATLs, but it might well
-bother other sorts of USB translation layers.  No way to tell without
-trying it, and I don't really want to deal with the fallout.
+Please pull hwmon subsystem fixes for Linux 3.1 from:
 
-Maybe a better question to be asking is this: What happens when one of 
-these drives (the ones that report their caching capabilities 
-incorrectly) is plugged into a Windows system?
+    git://github.com/groeck/linux.git hwmon-for-linus
 
-Alan Stern
+Thanks,
+Guenter
 
+------
+[this time with cc:]
+
+The following changes since commit a102a9ece5489e1718cd7543aa079082450ac3a2:
+
+  Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
+
+are available in the git repository at:
+  git://github.com/groeck/linux.git hwmon-for-linus
+
+Guenter Roeck (1):
+      hwmon: (coretemp) Avoid leaving around dangling pointer
+
+Jean Delvare (1):
+      hwmon: (coretemp) Fixup platform device ID change
+
+ drivers/hwmon/coretemp.c |   28 +++++++++++++---------------
+ 1 files changed, 13 insertions(+), 15 deletions(-)
+
+--Pd0ReVV5GZGQvF3a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOihK6AAoJEMsfJm/On5mBPqwP/35jSg47fgOhHHztHC0FJWhP
+vEDlkRzqIlWCNB1wUw7DoXQmJlCdyAaV7+z6Tt2XqRlpu+/29AQ+RKG/jinYBNUQ
+0ax5swrjZpgyDj4JpyYCZAZNSIAmH3n7UQrobn76zgUiBeuM5VFrM6hI+V+obVIH
+8RGmh8aX+YyaYaXNgfZHl1S6vDpEZyoGjDHI3Lrj19Qw+Q9eLxBJX68/qFssuNHX
+HEVFQLAkVlYBP8XHFLm7193bjzOamRgJOEIZnWH+RLd1a5fcSNakXZmgyzJ4BcgN
+Y/+LlONJ6gG/PagYzC3Id5hlZndVCslAzuJ+AuleFFOtdVOQR2ZLSpsNtmOrNd2Q
+Y089Lj5dqUWnEWpbsNmE01xdeZ0tMwM7a1G8GNgBWC2477fx6Yt6OCLQy7k7B4Ze
+3dxaEDUWgmBGxVLsqWmG8ZWJtId/U/VZAaOoXrTe7OTa96bhx6jL3lkNd6e8FZBx
+j9Jtu2RSFcrQbSyy6CsTYsriPBHheU/bQYH1MPDbK3mVDPhBIauEpXB4dPZERUUP
+y+UymOaghzD7APSxya0FVUINQ23shvw+UW7+9pLKEn1vjVBfj1o3y3rYTYuq3VgL
+zrfsp0NClMq3jsluCoszWOJXntxdiak0NKnB9c53yU7VS+WMZYwG9yiC2A2aTD+q
+sg0nlhaj/6glHKLVQbQZ
+=yiCw
+-----END PGP SIGNATURE-----
+
+--Pd0ReVV5GZGQvF3a--
