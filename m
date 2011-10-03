@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab1JCIxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 04:53:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38394 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab1JCIxO (ORCPT
+	id S1752042Ab1JCI5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 04:57:03 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:59083 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab1JCI47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 04:53:14 -0400
-Date: Mon, 3 Oct 2011 09:52:40 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] AT91: dt: at91sam9g45 family and board device tree
-	files
-Message-ID: <20111003085240.GB11710@n2100.arm.linux.org.uk>
-References: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 3 Oct 2011 04:56:59 -0400
+Message-ID: <4E8978CB.1000807@atmel.com>
+Date: Mon, 03 Oct 2011 10:56:43 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] tty/serial: atmel_serial: __devinit_p for probe function
+References: <b371e80a96a36d962fb8806c2bd7aa20bb688b88.1317634987.git.nicolas.ferre@atmel.com> <cd489c1d28c26624d6b68399d222aec371045e53.1317634987.git.nicolas.ferre@atmel.com> <20111003085029.GA11710@n2100.arm.linux.org.uk>
+In-Reply-To: <20111003085029.GA11710@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 12:00:56PM +0200, Nicolas Ferre wrote:
-> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
-> new file mode 100644
-> index 0000000..7bcb9a9
-> --- /dev/null
-> +++ b/arch/arm/mach-at91/board-dt.c
-> @@ -0,0 +1,122 @@
-> +/*
-> + *  Setup code for AT91SAM Evaluation Kits with Device Tree support
-> + *
-> + *  Covers: * AT91SAM9G45-EKES  board
-> + *          * AT91SAM9M10-EKES  board
-> + *          * AT91SAM9M10G45-EK board
-> + *
-> + *  Copyright (C) 2011 Atmel,
-> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +
-> +#include <linux/types.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_platform.h>
-> +
-> +#include <mach/hardware.h>
-> +#include <mach/board.h>
-> +#include <mach/gpio.h>
+On 10/03/2011 10:50 AM, Russell King - ARM Linux :
+> On Mon, Oct 03, 2011 at 11:46:16AM +0200, Nicolas Ferre wrote:
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  drivers/tty/serial/atmel_serial.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+>> index a652f8f..453cdb5 100644
+>> --- a/drivers/tty/serial/atmel_serial.c
+>> +++ b/drivers/tty/serial/atmel_serial.c
+>> @@ -1789,7 +1789,7 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+>>  }
+>>  
+>>  static struct platform_driver atmel_serial_driver = {
+>> -	.probe		= atmel_serial_probe,
+>> +	.probe		= __devexit_p(atmel_serial_probe),
+> 
+> That doesn't match the patch description (and is probably wrong.)
 
-Is linux/gpio.h broken for you?
+Yes, indeed.
+Sorry for the noise!
+-- 
+Nicolas Ferre
+
+
