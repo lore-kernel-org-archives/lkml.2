@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab1JCJTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:19:46 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:50046 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413Ab1JCJTj (ORCPT
+	id S1753767Ab1JCJXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:23:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55809 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab1JCJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:19:39 -0400
-Message-ID: <4E897E22.2000703@ti.com>
-Date: Mon, 03 Oct 2011 14:49:30 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 3 Oct 2011 05:23:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/30] ARM/omap: omap specific randconfig fixes
+Date: Mon, 03 Oct 2011 11:22:56 +0200
+Message-ID: <7246478.IyGHQ24uSq@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E894295.5000608@ti.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <4E894295.5000608@ti.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 26/30] ARM: omap: add board autoselection
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-27-git-send-email-arnd@arndb.de> <4E8947F7.2070108@ti.com> <3656685.pM1zNST8gQ@wuerfel>
-In-Reply-To: <3656685.pM1zNST8gQ@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:eTZgEZ2cPajNnGufCY5Vrx70+n5HJw5bi8oXnQRc89k
+ p3QmlJ28vb6bT7i2XFoJBAVC48eBGGXH/GCvroialzOb3jRxDL
+ +/VMIhSBlSOGZCaLH5npqPazQm+YHU5mGxoC6Ag379lP6cXapb
+ +byKVI1w5EJAc1GXwIdBFF0xcKfZNfP/gJBYKQR79F16ahmWiw
+ b4CQk/aAkuoxKWDLc/aMnEJq+R7s9NuUMPSmAwQ1V8uPgC509C
+ fbf6BXdsSgenyFjRXYNnJybw4t4ph8e+33O+oPbePVvB5Xt9EY
+ LTWD+h9SmNo/k+4NvSmVtQ7PWq1f6RFHD6ruprDmenjfNLIxo4
+ K+EDxyAFxxK3f+U5XFLo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 02:41 PM, Arnd Bergmann wrote:
-> On Monday 03 October 2011 10:58:23 Santosh Shilimkar wrote:
->>> +config MACH_OMAP_AUTO_BOARD
->>> +     def_bool y
->>> +     depends on !MACH_OMAP2_TUSB6010
->>> +     depends on !MACH_OMAP_H4
->>> +     depends on !MACH_OMAP_APOLLON
->>> +     depends on !MACH_OMAP_APOLLON
->>> +     depends on !MACH_OMAP_2430SDP
->>> +     depends on !MACH_OMAP3_BEAGLE
->>> +     depends on !MACH_DEVKIT8000
->>> +     depends on !MACH_OMAP_LDP
->>> +     depends on !MACH_OMAP3530_LV_SOM
->>> +     depends on !MACH_OMAP3_TORPEDO
->>> +     depends on !MACH_OVERO
->>> +     depends on !MACH_OMAP3EVM
->>> +     depends on !MACH_OMAP3517EVM
->>> +     depends on !MACH_CRANEBOARD
->>> +     depends on !MACH_OMAP3_PANDORA
->>> +     depends on !MACH_OMAP3_TOUCHBOOK
->>> +     depends on !MACH_NOKIA_N8X0
->>> +     depends on !MACH_NOKIA_RM680
->>> +     depends on !MACH_NOKIA_RX51
->>> +     depends on !MACH_OMAP_ZOOM2
->>> +     depends on !MACH_OMAP_ZOOM3
->>> +     depends on !MACH_CM_T35
->>> +     depends on !MACH_CM_T3517
->>> +     depends on !MACH_IGEP0020
->>> +     depends on !MACH_IGEP0030
->>> +     depends on !MACH_SBC3530
->>> +     depends on !MACH_OMAP_3630SDP
->>> +     depends on !MACH_TI8168EVM
->>> +     depends on !MACH_OMAP4_PANDA
->> Do we need all above 'depends on *' ?
->> Even if they get selected for one of the below
->> ARCH along with default machine, build should be happy.
->> Right ?
-> 
-> I'm not too happy with having to maintain a list for each subarchitecture,
-> when each one has the same problem. In general, I would really like to have
-> the flexibility to disable all but any one board, which requires either
-> maintaining a list like the above, or expressing the same like
-> 
-Ok.
+On Monday 03 October 2011 10:35:25 Santosh Shilimkar wrote:
 
-> config MACH_OMAP_AUTO_BOARD
-> 	 def_bool y
->        depends on !MACH_OMAP_BOARD_SELECTED
->        select MACH_OMAP_GENERIC if ARCH_OMAP2
->        select MACH_OMAP_3430SDP if ARCH_OMAP3 && !ARCH_OMAP2
->        select MACH_OMAP_4430SDP if ARCH_OMAP4 && !ARCH_OMAP3 && !ARCH_OMAP2
-> 
-> and adding a 'select MACH_OMAP_BOARD_SELECTED' for each one. Slightly more
-> to write but perhaps a little less error-prone.
-> 
-> In the long run, I'd hope we can just get rid of these for subarchitectures
-> that support device tree probing and make the device tree based machine
-> description unconditional.
-> 
-I see your point. Sounds a good idea to me.
+> > The entire set is also available from
+> >  git pull git://git.linaro.org/people/arnd/arm-soc.git randconfig/omap
+> > 
+> > but I have not yet pulled them into the for-next branch.
+> > 
+> Do you have any scripts to create these randconfigs ?
+> These are useful to run on newer set of patches also to get all
+> builds right first place.
 
-Regards
-Santosh
+Yes, see the for-next+randconfig branch of
+git://git.linaro.org/people/arnd/arm-soc.git. It has all my patches
+and a randconfig.sh script.
+
+Right now, I'm trying to get a baseline upstream, since I have around 150
+patches that are needed to always build ten platforms successfully.
+
+The main problem is that you basically need all the patches I did in order
+to find regressions, and some of the device driver patches are not currently
+in a state where I could submit them. I hope that by the time of the 3.3
+merge window, I have enough patches upstream that you no longer need to
+pull in an extra tree.
+
+Thanks a lot for your review of the omap set!
+
+	Arnd
