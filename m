@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1JCJXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:23:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753258Ab1JCJXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:23:38 -0400
-Date: Mon, 3 Oct 2011 11:24:44 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
- support S4
-Message-ID: <20111003092443.GA16852@redhat.com>
-References: <cover.1317309123.git.amit.shah@redhat.com>
- <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
- <20111002093733.GE29706@redhat.com>
- <20111003091646.GA5192@amit-x200.redhat.com>
-MIME-Version: 1.0
+	id S1753882Ab1JCJYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:24:30 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:43146 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab1JCJYX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 05:24:23 -0400
+Mime-Version: 1.0 (Apple Message framework v1244.3)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003091646.GA5192@amit-x200.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Jon Masters <jonathan@jonmasters.org>
+In-Reply-To: <20111003084407.GC18195@e102109-lin.cambridge.arm.com>
+Date: Mon, 3 Oct 2011 05:24:27 -0400
+Cc: Mark Salter <msalter@redhat.com>,
+        "ming.lei@canonical.com" <ming.lei@canonical.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C8392961-1EBF-410F-9214-05C060FD6D24@jonmasters.org>
+References: <1314826214-22428-1-git-send-email-msalter@redhat.com> <1314826214-22428-3-git-send-email-msalter@redhat.com> <CAHkRjk7ZMDQh8sYf7N_4LLS12JU2ps8dkC34gNWNH+-Zp0p8Rg@mail.gmail.com> <1315319837.2313.1.camel@deneb.redhat.com> <CAHkRjk6TD4Qg-b3nkCE_wwj-tWr-_5evndxo3f+_6gtXEV6gNg@mail.gmail.com> <1315321331.2313.10.camel@deneb.redhat.com> <026571E7-67F6-4B0F-998C-2A845AA22E59@jonmasters.org> <20111003084407.GC18195@e102109-lin.cambridge.arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+X-Mailer: Apple Mail (2.1244.3)
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: [PATCH 2/3] define ARM-specific dma_coherent_write_sync
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 02:46:46PM +0530, Amit Shah wrote:
-> On (Sun) 02 Oct 2011 [11:37:33], Michael S. Tsirkin wrote:
-> > On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
-> > > Delete the vq on the freeze callback to prepare for hibernation.
-> > > Re-create the vq in the restore callback to resume normal function.
-> > > 
-> > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > ---
-> > >  drivers/block/virtio_blk.c |   17 +++++++++++++++++
-> > >  1 files changed, 17 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> > > index 509760b..9844d2c 100644
-> > > --- a/drivers/block/virtio_blk.c
-> > > +++ b/drivers/block/virtio_blk.c
-> > > @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
-> > >  	kfree(vblk);
-> > >  }
-> > >  
-> > > +#ifdef CONFIG_PM
-> > > +static int virtblk_freeze(struct virtio_device *vdev)
-> > > +{
-> > > +	vdev->config->del_vqs(vdev);
-> > 
-> > What prevents the guest from trying to use the VQ while
-> > this is in progress? IF it does, what prevents a crash?
-> 
-> An oversight: Sasha pointed this out, too, and I've now fixed this by
-> adding a call to vdev->config->reset() before deleting vqs.
-> 
-> 		Amit
 
-This stops the host from accessing the VQ, but does not stop the *guest*.
+On Oct 3, 2011, at 4:44 AM, Catalin Marinas wrote:
+
+> On Mon, Oct 03, 2011 at 02:40:19AM +0100, Jon Masters wrote:
+>> On Sep 6, 2011, at 11:02 AM, Mark Salter wrote:
+>>> In any case, the current thinking is that the original problem with
+>>> the USB performance seen on cortex A9 multicore is probably something
+>>> more than just write buffer delays. Once the original problem is better
+>>> understood, we can take another look at this patch if it is still
+>>> needed.
+>> 
+>> Thanks again for looking into this Mark. My understanding is that this
+>> is still being investigated. I'll followup with ARM to see how that's
+>> going since I've heard nothing recently :) Meanwhile, we're continuing
+>> to carry a hack based on these patches in Fedora ARM kernels.
+> 
+> Not talking about hardware specifics here, the architecture (though
+> ARMv7 onwards) mandates that the write buffer is eventually drained. But
+> doesn't state any upper limit, so it could even be half a second.
+
+<snip mechanics of dma_coherent_write_sync, etc.>
+
+I guess my main question is, do you think this is just a write buffer delay? If you do, then we should definitely get back to this question of defining DMA extensions. But are we sure that's what this is?
+
+Mark: did you have any more insight into this recently?
+
+Jon.
+
