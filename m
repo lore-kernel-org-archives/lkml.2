@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab1JCSww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 14:52:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42642 "EHLO mx2.suse.de"
+	id S1757281Ab1JCTDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:03:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23944 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932513Ab1JCSwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 14:52:46 -0400
-Date: Mon, 3 Oct 2011 11:38:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jon Mason <mason@myri.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: [099/244] PCI: Set PCI-E Max Payload Size on fabric
-Message-ID: <20111003183806.GA22292@suse.de>
-References: <20110928220225.GA27128@kroah.com>
- <20110928220135.776796691@clark.kroah.org>
- <CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
+	id S1756250Ab1JCTDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 15:03:33 -0400
+Date: Mon, 3 Oct 2011 21:04:16 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] virtio-net: Verify page list size before fitting
+ into  skb
+Message-ID: <20111003190416.GC22427@redhat.com>
+References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
+In-Reply-To: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 04:33:29PM -0600, Bjorn Helgaas wrote:
-> On Wed, Sep 28, 2011 at 4:01 PM, Greg KH <gregkh@suse.de> wrote:
-> > 3.0-stable review patch.  If anyone has any objections, please let us know.
+On Wed, Sep 28, 2011 at 05:40:54PM +0300, Sasha Levin wrote:
+> This patch verifies that the length of a buffer stored in a linked list
+> of pages is small enough to fit into a skb.
 > 
-> I object to this :)  I think the following patches should be omitted
-> from -stable:
+> If the size is larger than a max size of a skb, it means that we shouldn't
+> go ahead building skbs anyway since we won't be able to send the buffer as
+> the user requested.
 > 
-> [099/244] PCI: Set PCI-E Max Payload Size on fabric
-> [100/244] PCI: export pcie_bus_configure_settings symbol
-> [101/244] PCI: Remove MRRS modification from MPS setting code
-> [212/244] pci: Dont crash when reading mpss from root complex
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Cc: kvm@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  drivers/net/virtio_net.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
 > 
-> I've heard rumors that these patches are required to make 3.0 boot on
-> some machines, but I don't really believe it, and I haven't seen the
-> problem reports myself.
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 0c7321c..bde0dec 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -195,6 +195,19 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+>  	len -= copy;
+>  	offset += copy;
+>  
+> +	/*
+> +	 * Verify that we can indeed put this data into a skb.
+> +	 * This is here to handle cases when the device erroneously
+> +	 * tries to receive more than is possible. This is usually
+> +	 * the case of a broken device.
+> +	 */
+> +	if (unlikely(len > MAX_SKB_FRAGS * PAGE_SIZE)) {
+> +		if (net_ratelimit())
+> +			pr_debug("%s: too much data\n", skb->dev->name);
+> +		dev_kfree_skb(skb);
+> +		return NULL;
+> +	}
+> +
 
-Ok, I've removed these from the 3.0.5 release, but I really want them in
-a future 3.0-stable release, so I'll carry them over to the next one and
-keep trying until it all gets worked out.
+BTW, receive_mergeable does
+                        pr_debug("%s: packet too long\n", skb->dev->name);
+                        skb->dev->stats.rx_length_errors++;
 
-As for the bug reports, I've seen them, but I don't know the status of
-the hardware to be able to have them reported publicly at the moment,
-sorry.
+which makes sense.
 
-> Also, these patches introduce an open regression (Avi's e1000e
-> problem).  Jon has mooted a patch that we hope will fix the
-> regression, but I'm still not confident that this is all safe for 3.1,
-> much less 3.0-stable.
-
-I'll keep working with Jon on these.
-
-thanks,
-
-greg k-h
+>  	while (len) {
+>  		set_skb_frag(skb, page, offset, &len);
+>  		page = (struct page *)page->private;
+> -- 
+> 1.7.6.1
