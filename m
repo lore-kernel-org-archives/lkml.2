@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1JCQa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:30:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27865 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab1JCQaV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:30:21 -0400
-Date: Mon, 3 Oct 2011 12:30:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Dan Carpenter <error27@gmail.com>
-Subject: Re: [Xen-devel] [PATCH 8/9] xen/enlighten: Fix compile warnings.
-Message-ID: <20111003163001.GG17108@phenom.oracle.com>
-References: <1317325971-21603-1-git-send-email-konrad.wilk@oracle.com>
- <1317325971-21603-9-git-send-email-konrad.wilk@oracle.com>
- <1317370252.26672.224.camel@zakaz.uk.xensource.com>
+	id S1756829Ab1JCQay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:30:54 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41397 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753351Ab1JCQat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:30:49 -0400
+Date: Mon, 3 Oct 2011 09:30:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next-20110923: warning kernel/rcutree.c:1833
+Message-ID: <20111003163036.GC2403@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110928234633.GA3537@somewhere>
+ <20110929005545.GT2383@linux.vnet.ibm.com>
+ <20110929123040.GB3537@somewhere>
+ <20110929171205.GA2362@linux.vnet.ibm.com>
+ <20110930131105.GC19053@somewhere>
+ <20110930152946.GA2397@linux.vnet.ibm.com>
+ <20110930192438.GA7505@linux.vnet.ibm.com>
+ <20111002230753.GB1835@somewhere>
+ <20111003003247.GD2539@linux.vnet.ibm.com>
+ <20111003130335.GD1835@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317370252.26672.224.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
-X-CT-RefId: str=0001.0A090204.4E89E319.0154,ss=1,re=0.000,fgs=0
+In-Reply-To: <20111003130335.GD1835@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 09:10:51AM +0100, Ian Campbell wrote:
-> On Thu, 2011-09-29 at 20:52 +0100, Konrad Rzeszutek Wilk wrote:
-> > linux/arch/x86/xen/enlighten.c: In function ‘xen_start_kernel’:
-> > linux/arch/x86/xen/enlighten.c:226: warning: ‘cx’ may be used uninitialized in this function
-> > linux/arch/x86/xen/enlighten.c:240: note: ‘cx’ was declared here
+On Mon, Oct 03, 2011 at 03:03:48PM +0200, Frederic Weisbecker wrote:
+> On Sun, Oct 02, 2011 at 05:32:47PM -0700, Paul E. McKenney wrote:
+> > > > -void rcu_irq_enter(void)
+> > > > +int rcu_is_cpu_idle(void)
+> > > >  {
+> > > > -	rcu_exit_nohz();
+> > > > +	return (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
+> > > >  }
+> > > 
+> > > So that's not used in this patch but it's interesting for me
+> > > to backport "rcu: Detect illegal rcu dereference in extended quiescent state".
+> > 
+> > Yep, that is why it is there.
 > 
-> Before 61f4237d5b005767a76f4f3694e68e6f78f392d9 we used to initialise cx
-> to zero before calling xen_cpuid.
+> Ok.
 > 
-> 947ccf9c3c30307b774af3666ee74fcd9f47f646 didn't put it back for some
-> reason.
+> > 
+> > > The above should be read from a preempt disabled section though
+> > > (remember "rcu: Fix preempt-unsafe debug check of rcu extended quiescent state")
+> > 
+> > Yes, and that is why the last line of the header comment reads "The
+> > caller must have at least disabled preemption."  Disabling preemption
+> > is not necessary in Tiny RCU because there is no other CPU for the task
+> > to go to.  (Right?)
 > 
-> Regardless I'm not sure how cx can be unused while {a,b,d}x apparently
-> are not. All four are passed to xen_cpuid(&ax, &bx, &cx, &dx) and even
-> if gcc were being clever and looking into xen_cpuid all four are in the
-> output constraints of the real cpuid asm call.
+> Right.
 > 
-> Oh, I see, ax and cx are also in the input side of the asm and ax is
-> initialised but cx is not and that is the use not the one later in
-> xen_init_cpuid_mask.
+> > > Those functions should probably lay in a separate patch. But I don't mind
+> > > much keeping the things as is and use these APIs in my next patches though.
+> > > I'll just fix the preempt enabled thing above.
+> > 
+> > Or were you saying that you wish to make calls to rcu_is_cpu_idle()
+> > that have preemption enabled?
 > 
-> I think that even if cpuid leaf ax=1 happens not to use the subleaf
-> index in cx we'd be better to initialise cx=0 than use uninitialized_var
+> Yeah. That's going to be called from places like rcu_read_lock_held()
+> and things like this that don't need to disable preemption themselves.
+> 
+> Would be better to disable preemption from that function.
 
-<nods> I somehow read the code as 'cx' being set in xen_cpuid, but your
-analysis correct. Done!
+Hmmm...  This might be a good use for the "drive-by" per-CPU access
+functions.
 
+No, that doesn't work.  We could pick up the pointer, switch to another
+CPU, the original CPU could run a task that blocks before we start running,
+and then we could incorrectly decide that we were running in idle context,
+issuing a spurious warning.  This approach would only work in environments
+that (unlike the Linux kernel) mapped all the per-CPU variables to the
+same virtual address on all CPUs.  (DYNIX/ptx did this, but this leads
+to other problems, like being unable to reasonably access other CPUs'
+variables.  Double mapping has other issues on some architectures.)
+
+OK, agreed.  I will make this function disable preemption.
+
+> > And I can split the patch easily enough while keeping the diff the same,
+> > so you should be able to do your porting on top of the existing code.
+> 
+> No I'm actually pretty fine with the current state. Whether that's defined
+> in this patch or a following one is actually not important.
+
+Fair enough!
+
+							Thanx, Paul
