@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab1JCPGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:06:32 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:36193 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752924Ab1JCPGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:06:25 -0400
-Date: Mon, 3 Oct 2011 11:06:20 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Michael Wolf <mjwolf@us.ibm.com>
-Subject: Re: [PATCH 0/9] V2: idle page tracking / working set estimation
-Message-ID: <20111003150619.GA12778@mgebm.net>
-References: <1317170947-17074-1-git-send-email-walken@google.com>
- <20110929164319.GA3509@mgebm.net>
- <CANN689H1G-USQYQrOTb47Hrc7KMjLdxkppYCDKsTUy5WhuRs7w@mail.gmail.com>
- <4186d5662b3fb21af1b45f8a335414d3@mgebm.net>
- <20110930181914.GA17817@mgebm.net>
- <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
+	id S1756420Ab1JCPG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:06:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755559Ab1JCPGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:06:50 -0400
+Message-ID: <4E89CF73.4020208@redhat.com>
+Date: Mon, 03 Oct 2011 17:06:27 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
-Content-Disposition: inline
-In-Reply-To: <CANN689EN8KsBZj_9cABjJoZNou_UegZ8uqB4Lx=uM-B_4aCd7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 6/9] perf, intel: Use GO/HO bits in perf-ctr
+References: <1317649795-18259-1-git-send-email-gleb@redhat.com> <1317649795-18259-7-git-send-email-gleb@redhat.com>
+In-Reply-To: <1317649795-18259-7-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/03/2011 03:49 PM, Gleb Natapov wrote:
+> Intel does not have guest/host-only bit in perf counters like AMD
+> does.  To support GO/HO bits KVM needs to switch EVENTSELn values
+> (or PERF_GLOBAL_CTRL if available) at a guest entry. If a counter is
+> configured to count only in a guest mode it stays disabled in a host,
+> but VMX is configured to switch it to enabled value during guest entry.
+>
+> This patch adds GO/HO tracking to Intel perf code and provides interface
+> for KVM to get a list of MSRs that need to be switched on a guest entry.
+>
+> Only cpus with architectural PMU (v1 or later) are supported with this
+> patch.  To my knowledge there is not p6 models with VMX but without
+> architectural PMU and p4 with VMX are rare and the interface is general
+> enough to support them if need arise.
+>
+> +
+> +static int core_guest_get_msrs(int cnt, struct perf_guest_switch_msr *arr)
+> +{
+> +	struct cpu_hw_events *cpuc =&__get_cpu_var(cpu_hw_events);
+> +	int idx;
+> +
+> +	if (cnt<  x86_pmu.num_counters)
+> +		return -ENOMEM;
+> +
+> +	for (idx = 0; idx<  x86_pmu.num_counters; idx++)  {
+> +		struct perf_event *event = cpuc->events[idx];
+> +
+> +		arr[idx].msr = x86_pmu_config_addr(idx);
+> +		arr[idx].host = arr[idx].guest = 0;
+> +
+> +		if (!test_bit(idx, cpuc->active_mask))
+> +			continue;
+> +
+> +		arr[idx].host = arr[idx].guest =
+> +				event->hw.config | ARCH_PERFMON_EVENTSEL_ENABLE;
+> +
+> +		if (event->attr.exclude_host)
+> +			arr[idx].host&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
+> +		else if (event->attr.exclude_guest)
+> +			arr[idx].guest&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
+> +	}
+> +
+> +	return 0;
+> +}
 
---UugvWAfsgieZRqgk
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Would be better to calculate these when the host msrs are calculated, 
+instead of here, every vmentry.
 
-On Fri, 30 Sep 2011, Michel Lespinasse wrote:
 
-> On Fri, Sep 30, 2011 at 11:19 AM, Eric B Munson <emunson@mgebm.net> wrote:
-> > I am able to recreate on a second desktop I have here (same model CPU b=
-ut a
-> > different MB so I am fairly sure it isn't dying hardware). =A0It looks =
-to me like
-> > a CPU softlocks and it stalls the process active there, so most recentl=
-y that
-> > was XOrg. =A0The machine lets me login via ssh for a few minutes, but t=
-hings like
-> > ps and cat or /proc files will start to work and give some output but h=
-ang.
-> > I cannot call reboot, nor can I sync the fs and reboot via SysRq. =A0My=
- next step
-> > is to setup a netconsole to see if anything comes out in the syslog tha=
-t I
-> > cannot see.
->=20
-> I haven't had time to try & reproduce locally yet (apologies - things
-> have been coming up at me).
->=20
-> But a prime suspect would be a bad interaction with
-> CONFIG_MEMORY_HOTPLUG, as Kamezama remarked in his reply to patch 4. I
-> think this could be the most likely cause of what you're observing.
->=20
+-- 
+error compiling committee.c: too many arguments to function
 
-CONFIG_MEMORY_HOTPLUG seems to be the responsible party here, I disabled it=
- in
-my config and have been able to build 6 kernels straight without a hang.
-
---UugvWAfsgieZRqgk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOic9rAAoJEH65iIruGRnNOM8H/RM6ZqrSNl7ImpPexVB6Tv+a
-TYYY01tChp8Oci2tMPj1aKHLH/uVdxZyiT22XmnveudQxOETQTgKRzNFdcO9DskS
-s8ZlOkTyg3CJ4g7BpDBNtwHisq1ePL5UfGtTH5cEz5Jc6UEvxRrjKO183r/Fo1Wt
-ot4LEJ/BTDJAj438QdIMvZusvFz0UvjsBnWWhQhqT5XID3e57DavtpZGlOZCU1LZ
-h0j60XnPd0fifxO3mthVsczHwC+LQJ9MIKtH/RWX4gDdknyWh0+lrjnMWM19XkDN
-ew1Vsrxmfsz9d0nlyY6FqwvmVoFuya17HK28wz3jXrT/M7+gBRrTDSp0kz0a4Ro=
-=NErA
------END PGP SIGNATURE-----
-
---UugvWAfsgieZRqgk--
