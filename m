@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab1JCSlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 14:41:15 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:47864 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382Ab1JCSlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 14:41:06 -0400
-Date: Mon, 3 Oct 2011 21:41:04 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-Message-ID: <20111003184104.GA2996@localhost.pp.htv.fi>
-References: <20111003090846.GA25136@localhost.pp.htv.fi>
- <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
- <20111003173359.GA3072@localhost.pp.htv.fi>
- <CAObL_7F2=L+0wpFg7c-TL9FzvPos5kFM5=KPMvzeHuTaG5sysQ@mail.gmail.com>
+	id S932518Ab1JCSmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 14:42:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15469 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932382Ab1JCSmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 14:42:14 -0400
+Date: Mon, 3 Oct 2011 20:42:57 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: levinsasha928@gmail.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] virtio-net: Verify page list size before fitting
+ into skb
+Message-ID: <20111003184257.GB22427@redhat.com>
+References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+ <20111003.141951.1122469843900651595.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAObL_7F2=L+0wpFg7c-TL9FzvPos5kFM5=KPMvzeHuTaG5sysQ@mail.gmail.com>
+In-Reply-To: <20111003.141951.1122469843900651595.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 11:06:13AM -0700, Andrew Lutomirski wrote:
-> On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
-> > On Mon, Oct 03, 2011 at 06:04:53AM -0700, Andrew Lutomirski wrote:
->...
-> >> of a bug in that the new code doesn't report si_addr properly, but
-> >> that sounds unlikely as a culprit.  Did you try with the offending
-> >> commit reverted (i.e. fce8dc0)?  I bet that it also fails there.
-> >
-> > fce8dc0 is "x86-64: Wire up getcpu syscall", is that really the one you
-> > want me to revert?
+On Mon, Oct 03, 2011 at 02:19:51PM -0400, David Miller wrote:
+> From: Sasha Levin <levinsasha928@gmail.com>
+> Date: Wed, 28 Sep 2011 17:40:54 +0300
 > 
-> No -- I actually meant to try running that revision or to try with the
-> vsyscall= patch reverted.
+> > This patch verifies that the length of a buffer stored in a linked list
+> > of pages is small enough to fit into a skb.
+> > 
+> > If the size is larger than a max size of a skb, it means that we shouldn't
+> > go ahead building skbs anyway since we won't be able to send the buffer as
+> > the user requested.
+> > 
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > Cc: virtualization@lists.linux-foundation.org
+> > Cc: netdev@vger.kernel.org
+> > Cc: kvm@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> Michael, tell me what's happening with these two virtio-net bug fixes.
+> 
+> Thanks.
 
-I now tried both, and your bet was right.
-
->...
-> --Andy
-
-cu
-Adrian
+Thanks for the reminder.
+They are more enhancements than bugfixes, in that both help debug buggy
+hypervisors. So net-next material.
+Patch 1 is ok patch 2 would benefit from a slightly clearer comment.
 
 -- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
-
+MST
