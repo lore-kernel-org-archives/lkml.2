@@ -1,142 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab1JCPDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:03:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab1JCPC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:02:58 -0400
-Date: Mon, 3 Oct 2011 11:02:06 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
- initialized, don't nop it out
-Message-ID: <20111003150205.GB2462@redhat.com>
-References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
- <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
+	id S1756407Ab1JCPDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:03:15 -0400
+Received: from cernmx32.cern.ch ([137.138.144.178]:29569 "EHLO
+	CERNMX32.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756389Ab1JCPDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:03:11 -0400
+Date: Mon, 3 Oct 2011 16:59:24 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: <gregkh@suse.de>
+CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] [RESEND v6] VME Framework Fixes
+Message-ID: <20111003145924.GA16136@becoht-mvanga>
+Mail-Followup-To: gregkh@suse.de, martyn.welch@ge.com, cota@braap.org,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1317029238-13357-1-git-send-email-manohar.vanga@cern.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hey Martyn,
 
-(Sorry for the late reply - I was away for a few days).
+Can you review these patches and let me know if any other changes need to
+be made?
 
-The early enable is really nice - it means there are not restrictions on
-when jump_label_inc()/dec() can be called which is nice.
+Thanks!
 
-comments below.
-
-
-On Sat, Oct 01, 2011 at 02:55:35PM -0700, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Mon, Sep 26, 2011 at 11:27:14AM +0200, Manohar Vanga wrote:
+> Hi,
 > 
-> If a key has been enabled before jump_label_init() is called, don't
-> nop it out.
+> I start by apologizing for my absence recently as I was away on vacation
+> for a few weeks. Picking up where I left off, this is the resend of the
+> two final patches along with some movement of code into additional patches.
 > 
-> This removes arch_jump_label_text_poke_early() (which can only nop
-> out a site) and uses arch_jump_label_transform() instead.
+> Martyn, Emilio: Thanks for all the feedback :-)
 > 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> ---
->  include/linux/jump_label.h |    3 ++-
->  kernel/jump_label.c        |   20 ++++++++------------
->  2 files changed, 10 insertions(+), 13 deletions(-)
+> Thanks!
+> Manohar
 > 
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 1213e9d..c8fb1b3 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -45,7 +45,8 @@ extern void jump_label_lock(void);
->  extern void jump_label_unlock(void);
->  extern void arch_jump_label_transform(struct jump_entry *entry,
->  				 enum jump_label_type type);
-> -extern void arch_jump_label_text_poke_early(jump_label_t addr);
-> +extern void arch_jump_label_transform_early(struct jump_entry *entry,
-> +				 enum jump_label_type type);
->  extern int jump_label_text_reserved(void *start, void *end);
->  extern void jump_label_inc(struct jump_label_key *key);
->  extern void jump_label_dec(struct jump_label_key *key);
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index a8ce450..059202d5 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -121,13 +121,6 @@ static void __jump_label_update(struct jump_label_key *key,
->  	}
->  }
->  
-> -/*
-> - * Not all archs need this.
-> - */
-> -void __weak arch_jump_label_text_poke_early(jump_label_t addr)
-> -{
-> -}
-> -
->  static __init int jump_label_init(void)
->  {
->  	struct jump_entry *iter_start = __start___jump_table;
-> @@ -139,12 +132,15 @@ static __init int jump_label_init(void)
->  	jump_label_sort_entries(iter_start, iter_stop);
->  
->  	for (iter = iter_start; iter < iter_stop; iter++) {
-> -		arch_jump_label_text_poke_early(iter->code);
-> -		if (iter->key == (jump_label_t)(unsigned long)key)
-> +		struct jump_label_key *iterk;
-> +
-> +		iterk = (struct jump_label_key *)(unsigned long)iter->key;
-> +		arch_jump_label_transform(iter, jump_label_enabled(iterk) ?
-> +					  JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
-
-The only reason I called this at boot-time was that the 'ideal' x86
-no-op isn't known until boot time. Thus, in the enabled case we could
-skip the the arch_jump_label_transform() call. ie:
-
-if (!enabled)
-	arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
-
-
-> +		if (iterk == key)
->  			continue;
->  
-> -		key = (struct jump_label_key *)(unsigned long)iter->key;
-> -		atomic_set(&key->enabled, 0);
-> +		key = iterk;
->  		key->entries = iter;
->  #ifdef CONFIG_MODULES
->  		key->next = NULL;
-> @@ -212,7 +208,7 @@ void jump_label_apply_nops(struct module *mod)
->  		return;
->  
->  	for (iter = iter_start; iter < iter_stop; iter++)
-> -		arch_jump_label_text_poke_early(iter->code);
-> +		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
->  }
->  
->  static int jump_label_add_module(struct module *mod)
+> Manohar Vanga (4):
+>   staging: vme: add struct vme_dev for VME devices
+>   staging: vme: make match() driver specific to improve non-VME64x
+>     support
+>   staging: vme: get rid of struct vme_device_id and slots
+>   staging: vme_user: rename USER_BUS_MAX to VME_USER_BUS_MAX
+> 
+>  drivers/staging/vme/devices/vme_user.c |   67 +++-----
+>  drivers/staging/vme/devices/vme_user.h |    2 +-
+>  drivers/staging/vme/vme.c              |  284 +++++++++++++++-----------------
+>  drivers/staging/vme/vme.h              |   50 ++++--
+>  drivers/staging/vme/vme_api.txt        |   90 ++++++-----
+>  drivers/staging/vme/vme_bridge.h       |    6 +-
+>  6 files changed, 246 insertions(+), 253 deletions(-)
+> 
 > -- 
-> 1.7.6.2
+> 1.7.4.1
 > 
 
-hmmm...this is used on module load in smp - so this would introduce a number of
-calls to stop_machine() where we didn't have them before. Yes, module
-load is a very slow path to begin with, but I think its at least worth
-pointing out...
-
-thanks,
-
--Jason
+-- 
+/manohar
