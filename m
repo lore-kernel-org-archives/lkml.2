@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1JCTQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:16:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab1JCTQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:16:07 -0400
-Date: Mon, 3 Oct 2011 21:15:43 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
- sample type
-Message-ID: <20111003191543.GA2017@jolsa.Belkin>
-References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
- <20110929220548.GA17597@ghostprotocols.net>
- <20111003102235.GB1838@jolsa.redhat.com>
- <20111003162704.GB24281@ghostprotocols.net>
+	id S1757374Ab1JCT0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:26:25 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:35671 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab1JCT0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 15:26:22 -0400
+Date: Mon, 3 Oct 2011 15:24:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [Xen-devel] [PATCH RFC V2 2/5] stop_machine: make stop_machine
+ safe and efficient to call early
+Message-ID: <20111003192424.GB30091@phenom.oracle.com>
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
+ <58bc7c7142fe54cd6c17f2f18f4b11fd2f597d5a.1317506051.git.jeremy.fitzhardinge@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111003162704.GB24281@ghostprotocols.net>
+In-Reply-To: <58bc7c7142fe54cd6c17f2f18f4b11fd2f597d5a.1317506051.git.jeremy.fitzhardinge@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090203.4E8A0C04.00DB,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 01:27:04PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Oct 03, 2011 at 12:22:35PM +0200, Jiri Olsa escreveu:
-> > On Thu, Sep 29, 2011 at 07:05:48PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
-> > > > The event processing relies on all events having the same sample_type.
-> > > > 
-> > > > This is being checked when the session is being opened read only.
-> > > > It also needs to be checked when we do record, since events could be
-> > > > read during processing build IDs at the end of the record command.
-> > > > 
-> > > > If we process events with different sample_type the processing might
-> > > > skip some events or hang.
-> > > > 
-> > > > Following command hangs on my setup:
-> > > >   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
-> > > >    -e LLC-loads -- date '+%F'
-> > > > 
-> > > > because hardware and tracepoint events have different sample type.
-> > > > 
-> > > > With the patch applied the record command displays
-> > > > "Non matching sample_type" message and exits.
-> > > 
-> > > That is way too cryptic :-\
-> > > 
-> > > What is that makes the sample type not match in this case? Can we make
-> > > it match instead?
-> > > 
-> > > This is something to be properly fixed by _allowing_ non matching sample
-> > > types, the evsel/evlist abstractions are getting we close but not there
-> > > yet, multiple files in a perf.data/ directory are needed.
-> > > 
-> > > Till then can you check if we can make it match or else just say that
-> > > the mix of events is not yet supported, please collect them in different
-> > > sessions or something along those lines?
-> > > 
-> > > - Arnaldo
-> > hi,
-> > thanks for comments..
-> > I just was this got in the tip tree git://tesla.tglx.de/git/linux-2.6-tip
-> > 
-> > perf tools: Exit record if events have non matching sample type
-> > commit 6f9a4869e15de8af2fd715af876bc3e6b00757a7
-> > Author: Jiri Olsa <jolsa@redhat.com>
-> > Date:   Thu Sep 29 19:49:50 2011 +0200
-> > 
-> > I've read the email trail.. I'll check the sources and try to come up
-> > with something.. ;)
+On Sat, Oct 01, 2011 at 02:55:34PM -0700, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> Couldn't understand, will check if the patch was already applied, if so,
-> why bother commenting, right? :-)
+> Make stop_machine() safe to call early in boot, before SMP has been
+> set up, by simply calling the callback function directly if there's
+> only one CPU online.
+> 
+> [ Fixes from AKPM:
+>    - add comment
+>    - local_irq_flags, not save_flags
+>    - also call hard_irq_disable() for systems which need it
+> 
+>   Tejun suggested using an explicit flag rather than just looking at
+>   the online cpu count. ]
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/stop_machine.c |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+> index ba5070c..9c59d9e 100644
+> --- a/kernel/stop_machine.c
+> +++ b/kernel/stop_machine.c
+> @@ -41,6 +41,7 @@ struct cpu_stopper {
+>  };
+>  
+>  static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
+> +static bool stop_machine_initialized = false;
 
-I meant solving the 'sample_type issue' some other 'better' way,
-probably along the lines you guys suggested.. ;)
+__read_mostly?
 
-jirka
+Thought it probably does not really matter that much in what section it
+is put in.
