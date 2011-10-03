@@ -1,157 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1JCNLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:11:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411Ab1JCNLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:11:41 -0400
-Date: Mon, 3 Oct 2011 15:11:30 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-cc: Andreas Dilger <aedilger@gmail.com>, Lukas Czerner <lczerner@redhat.com>,
-        Jeff liu <jeff.liu@oracle.com>, Dave Young <hidave.darkstar@gmail.com>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [BUG] copy file result with zero
-In-Reply-To: <CAGBYx2ZwCQDis-M0-qbdpBgbq34BR-OStMrcCK_+4u20CemXzg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1110031500430.4447@dhcp-27-109.brq.redhat.com>
-References: <CABqxG0feuZCmx=RfxU-50uFK9-P2vNbAMqJUdWM5RhuJifD5Ow@mail.gmail.com> <20111001143900.GH28234@thunk.org> <CABqxG0eiRiCSirXi5rBB0bJ2AJSQjF2dje2BcjbVYEYWgf-zpw@mail.gmail.com> <A2FF8835-2386-47F9-AFF8-4E09BEC4F80E@oracle.com>
- <89E75765-AC24-4EF4-9547-6EE7A1A38B5A@dilger.ca> <CAGBYx2ZwCQDis-M0-qbdpBgbq34BR-OStMrcCK_+4u20CemXzg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755919Ab1JCNOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:14:11 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18595 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411Ab1JCNOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:14:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 03 Oct 2011 06:13:56 -0700
+Date: Mon, 3 Oct 2011 16:13:52 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] arm/tegra: select AUTO_ZRELADDR by default
+Message-ID: <20111003131352.GX21166@tbergstrom-lnx.Nvidia.com>
+References: <1317647209-22303-1-git-send-email-pdeschrijver@nvidia.com>
+ <1317647209-22303-3-git-send-email-pdeschrijver@nvidia.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1348833973-1317647494=:4447"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1317647209-22303-3-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-1348833973-1317647494=:4447
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Ignore this one.
 
-On Mon, 3 Oct 2011, Yongqiang Yang wrote:
+Sorry,
 
-> On Sun, Oct 2, 2011 at 3:59 PM, Andreas Dilger <aedilger@gmail.com> wrote:
-> > On 2011-10-01, at 11:41 PM, Jeff liu wrote:
-> >>> On Sat, Oct 1, 2011 at 10:39 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> >>>> On Sat, Oct 01, 2011 at 10:01:35PM +0800, Dave Young wrote:
-> >>>>> Hi,
-> >>>>>
-> >>>>> Weird problem, when I build app from source,
-> >>>>> make; make install
-> >>>>> run the command, but got "cannot execute binary file"
-> >>>>>
-> >>>>> hexdump shows the installed binary is full of zero
-> >>>>>
-> >>>>> Is it related to ext4 fiemap problem described below?
-> >>>>> http://lwn.net/Articles/429349/
-> >>>>
-> >>>> There is general agreement that /bin/cp should not have been relying
-> >>>> on FIEMAP, and I believe the more recent versions of /bin/cp have
-> >>>> removed that code by default pending implementation of
-> >>>> SEEK_HOLE/SEEK_DATA.  That being said, ext4 had a workaround to its
-> >>>> FIEMAP implementation that landed in 2.6.39, and you're using
-> >>>> 3.1.0-rc6.
-> >>
-> >> Actually, upstream cp(1) using FIEMAP only if the source file is sparse,  or else, it will do normal copy, i.e, block based.
-> >
-> > My understanding is that cp uses the blocks count to determine whether the file is sparse or not.  In the case of delayed allocation (where blocks are not yet allocated, if they are not reflected in the i_blocks count) it might mistakenly think that the file is sparse.
-> >
-> > Given the danger of this bug, it is important to ensure ext4 returns DELALLOC extents for pages in the page cache.  I think Yongqiang Yang just submitted a patch series to do this for ext4, so it would be important to verify it fixes this problem.
-> It seemed the patch[ ext4: in fiemap use FIEMAP_EXTENT_LAST flag for
-> last extent] (http://www.spinics.net/lists/linux-ext4/msg25698.html)
-> Lukas submitted on FIEMAP which ignores delayed extents beyond the
-> last allocated block.  e.g.  AAAHHHHDDDD
-> A - allocated, H - hole, D - delayed alloc, then the ending delayed
-> extent is ignored.
-
-Oops, you're right. I think that the best solution would be to revert
-the commit
-
-c03f8aa9abdd517477c2021ea1251939b4da49e6
-ext4: use FIEMAP_EXTENT_LAST flag for last extent in fiemap
-
-and then fix the original problem with your delayed extent tree
-solution, where we can easily check not only for next allocated extent,
-but also for next delayed extent to see if the current one is last or
-not.
-
-Currently, the problem is that at the point we are filling the fiemap
-extent with fiemap_fill_next_extent() we do not have enough information
-to say whether the extent is really the last or is not. And currently
-there is not easy way to check for next delayed extent (which will be
-fixed with your delayed extent tree).
-
-I do not know how "ready" are your patches..Is it possible to wait for
-them to be ready and fix it in your patch set ? That means, revert the
-mentioned commit and reimplement fiemap with delayed extent tree.
-
-Thanks!
--Lukas
-
-> 
-> Yongqiang.
-> >
-> >>> Do you means It should work in 3.1.0-rc6 even with cp which depends fiemap?
-> >>>
-> >>>>
-> >>>>> I finally managed to find the way to reproduce this:
-> >>>>> just cp a elf binary A  to file B, then cp B to file C,  then you will get:
-> >>>>> A == B != C
-> >>>>>
-> >>>>> ie.
-> >>>>> cp /bin/ls ls1
-> >>>>> cp ls1 ls2
-> >>>>>
-> >>>>> ls2 will be filled with zero
-> >>>>
-> >>>> If you add a "sync" between the two copies, does that work around the
-> >>>> problem?  I bet it will...
-> >>>
-> >>> Yes, it works
-> >>>
-> >>>>
-> >>>> My suggestion is to upgrade to a newer version of coreutils that
-> >>>> doesn't try to use FIEMAP.
-> >>>
-> >>> Thanks, will try
-> >>>
-> >>>>
-> >>>>                                       - Ted
-> >>>>
-> >>>
-> >>>
-> >>>
-> >>> --
-> >>> Regards
-> >>> Dave
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> > Cheers, Andreas
-> >
-> >
-> >
-> >
-> >
-> >
-> 
-> 
-> 
-> 
-
--- 
---8323328-1348833973-1317647494=:4447--
+Peter.
