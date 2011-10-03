@@ -1,181 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab1JCTJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:09:40 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:63026 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318Ab1JCTHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:07:42 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 05/10] cgroups: Ability to stop res charge propagation on bounded ancestor
-Date: Mon,  3 Oct 2011 21:07:07 +0200
-Message-Id: <1317668832-10784-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+	id S1757350Ab1JCTQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:16:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509Ab1JCTQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 15:16:07 -0400
+Date: Mon, 3 Oct 2011 21:15:43 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+Message-ID: <20111003191543.GA2017@jolsa.Belkin>
+References: <1317312068-10411-1-git-send-email-jolsa@redhat.com>
+ <20110929220548.GA17597@ghostprotocols.net>
+ <20111003102235.GB1838@jolsa.redhat.com>
+ <20111003162704.GB24281@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003162704.GB24281@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving a task from a cgroup to another may require to substract
-its resource charge from the old cgroup and add it to the new one.
+On Mon, Oct 03, 2011 at 01:27:04PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Oct 03, 2011 at 12:22:35PM +0200, Jiri Olsa escreveu:
+> > On Thu, Sep 29, 2011 at 07:05:48PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
+> > > > The event processing relies on all events having the same sample_type.
+> > > > 
+> > > > This is being checked when the session is being opened read only.
+> > > > It also needs to be checked when we do record, since events could be
+> > > > read during processing build IDs at the end of the record command.
+> > > > 
+> > > > If we process events with different sample_type the processing might
+> > > > skip some events or hang.
+> > > > 
+> > > > Following command hangs on my setup:
+> > > >   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
+> > > >    -e LLC-loads -- date '+%F'
+> > > > 
+> > > > because hardware and tracepoint events have different sample type.
+> > > > 
+> > > > With the patch applied the record command displays
+> > > > "Non matching sample_type" message and exits.
+> > > 
+> > > That is way too cryptic :-\
+> > > 
+> > > What is that makes the sample type not match in this case? Can we make
+> > > it match instead?
+> > > 
+> > > This is something to be properly fixed by _allowing_ non matching sample
+> > > types, the evsel/evlist abstractions are getting we close but not there
+> > > yet, multiple files in a perf.data/ directory are needed.
+> > > 
+> > > Till then can you check if we can make it match or else just say that
+> > > the mix of events is not yet supported, please collect them in different
+> > > sessions or something along those lines?
+> > > 
+> > > - Arnaldo
+> > hi,
+> > thanks for comments..
+> > I just was this got in the tip tree git://tesla.tglx.de/git/linux-2.6-tip
+> > 
+> > perf tools: Exit record if events have non matching sample type
+> > commit 6f9a4869e15de8af2fd715af876bc3e6b00757a7
+> > Author: Jiri Olsa <jolsa@redhat.com>
+> > Date:   Thu Sep 29 19:49:50 2011 +0200
+> > 
+> > I've read the email trail.. I'll check the sources and try to come up
+> > with something.. ;)
+> 
+> Couldn't understand, will check if the patch was already applied, if so,
+> why bother commenting, right? :-)
 
-For this to happen, the uncharge/charge propagation can just stop
-when we reach the common ancestor for the two cgroups. Further
-the performance reasons, we also want to avoid to temporarily
-overload the common ancestors with a non-accurate resource
-counter usage if we charge first the new cgroup and uncharge the
-old one thereafter. This is going to be a requirement for the coming
-max number of task subsystem.
+I meant solving the 'sample_type issue' some other 'better' way,
+probably along the lines you guys suggested.. ;)
 
-To solve this, provide a pair of new API that can charge/uncharge
-a resource counter until we reach a given ancestor.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Paul Menage <paul@paulmenage.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Aditya Kali <adityakali@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tim Hockin <thockin@hockin.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Containers <containers@lists.linux-foundation.org>
----
- Documentation/cgroups/resource_counter.txt |   18 +++++++++++++++++-
- include/linux/res_counter.h                |   20 +++++++++++++++++---
- kernel/res_counter.c                       |   13 ++++++++-----
- 3 files changed, 42 insertions(+), 9 deletions(-)
-
-diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
-index 95b24d7..a2cd05b 100644
---- a/Documentation/cgroups/resource_counter.txt
-+++ b/Documentation/cgroups/resource_counter.txt
-@@ -83,7 +83,15 @@ to work with it.
- 	res_counter->lock internally (it must be called with res_counter->lock
- 	held).
- 
-- e. void res_counter_uncharge[_locked]
-+ e. int res_counter_charge_until(struct res_counter *counter,
-+			     struct res_counter *limit, unsigned long val,
-+			     struct res_counter **limit_fail_at)
-+
-+	The same as res_counter_charge(), but the charge propagation to
-+	the hierarchy stops at the limit given in the "limit" parameter.
-+
-+
-+ f. void res_counter_uncharge[_locked]
- 			(struct res_counter *rc, unsigned long val)
- 
- 	When a resource is released (freed) it should be de-accounted
-@@ -92,6 +100,14 @@ to work with it.
- 
- 	The _locked routines imply that the res_counter->lock is taken.
- 
-+
-+ g. void res_counter_uncharge_until(struct res_counter *counter,
-+				struct res_counter *limit,
-+				unsigned long val)
-+
-+	The same as res_counter_charge, but the uncharge propagation to
-+	the hierarchy stops at the limit given in the "limit" parameter.
-+
-  2.1 Other accounting routines
- 
-     There are more routines that may help you with common needs, like
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 109d118..de4ba29 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -117,8 +117,16 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
- 
- int __must_check res_counter_charge_locked(struct res_counter *counter,
- 		unsigned long val);
--int __must_check res_counter_charge(struct res_counter *counter,
--		unsigned long val, struct res_counter **limit_fail_at);
-+int __must_check res_counter_charge_until(struct res_counter *counter,
-+					  struct res_counter *limit,
-+					  unsigned long val,
-+					  struct res_counter **limit_fail_at);
-+static inline int __must_check
-+res_counter_charge(struct res_counter *counter, unsigned long val,
-+		   struct res_counter **limit_fail_at)
-+{
-+	return res_counter_charge_until(counter, NULL, val, limit_fail_at);
-+}
- 
- /*
-  * uncharge - tell that some portion of the resource is released
-@@ -131,7 +139,13 @@ int __must_check res_counter_charge(struct res_counter *counter,
-  */
- 
- void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
--void res_counter_uncharge(struct res_counter *counter, unsigned long val);
-+void res_counter_uncharge_until(struct res_counter *counter,
-+				struct res_counter *limit, unsigned long val);
-+static inline void res_counter_uncharge(struct res_counter *counter,
-+					unsigned long val)
-+{
-+	res_counter_uncharge_until(counter, NULL, val);
-+}
- 
- /**
-  * res_counter_margin - calculate chargeable space of a counter
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 37abf4e..0cc9c7e 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -35,8 +35,9 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
- 	return 0;
- }
- 
--int res_counter_charge(struct res_counter *counter, unsigned long val,
--			struct res_counter **limit_fail_at)
-+int res_counter_charge_until(struct res_counter *counter,
-+			     struct res_counter *limit, unsigned long val,
-+			     struct res_counter **limit_fail_at)
- {
- 	int ret;
- 	unsigned long flags;
-@@ -44,7 +45,7 @@ int res_counter_charge(struct res_counter *counter, unsigned long val,
- 
- 	*limit_fail_at = NULL;
- 	local_irq_save(flags);
--	for (c = counter; c != NULL; c = c->parent) {
-+	for (c = counter; c != limit; c = c->parent) {
- 		spin_lock(&c->lock);
- 		ret = res_counter_charge_locked(c, val);
- 		spin_unlock(&c->lock);
-@@ -74,13 +75,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
- 	counter->usage -= val;
- }
- 
--void res_counter_uncharge(struct res_counter *counter, unsigned long val)
-+void res_counter_uncharge_until(struct res_counter *counter,
-+				struct res_counter *limit,
-+				unsigned long val)
- {
- 	unsigned long flags;
- 	struct res_counter *c;
- 
- 	local_irq_save(flags);
--	for (c = counter; c != NULL; c = c->parent) {
-+	for (c = counter; c != limit; c = c->parent) {
- 		spin_lock(&c->lock);
- 		res_counter_uncharge_locked(c, val);
- 		spin_unlock(&c->lock);
--- 
-1.7.5.4
-
+jirka
