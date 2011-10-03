@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab1JCCLM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 22:11:12 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:39037 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887Ab1JCCLI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 22:11:08 -0400
-X-Greylist: delayed 1851 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Oct 2011 22:11:08 EDT
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=us-ascii
-From: Jon Masters <jonathan@jonmasters.org>
-In-Reply-To: <1315321331.2313.10.camel@deneb.redhat.com>
-Date: Sun, 2 Oct 2011 21:40:19 -0400
-Cc: Catalin Marinas <catalin.marinas@arm.com>, ming.lei@canonical.com,
-        stern@rowland.harvard.edu, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <026571E7-67F6-4B0F-998C-2A845AA22E59@jonmasters.org>
-References: <1314826214-22428-1-git-send-email-msalter@redhat.com> <1314826214-22428-3-git-send-email-msalter@redhat.com> <CAHkRjk7ZMDQh8sYf7N_4LLS12JU2ps8dkC34gNWNH+-Zp0p8Rg@mail.gmail.com> <1315319837.2313.1.camel@deneb.redhat.com> <CAHkRjk6TD4Qg-b3nkCE_wwj-tWr-_5evndxo3f+_6gtXEV6gNg@mail.gmail.com> <1315321331.2313.10.camel@deneb.redhat.com>
-To: Mark Salter <msalter@redhat.com>
-X-Mailer: Apple Mail (2.1244.3)
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 2/3] define ARM-specific dma_coherent_write_sync
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	id S1754631Ab1JCCoM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 22:44:12 -0400
+Received: from fn.samba.org ([216.83.154.106]:51533 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127Ab1JCCoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 22:44:05 -0400
+Date: Sun, 2 Oct 2011 19:44:02 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Jim McDonough <jmcd@samba.org>,
+        Lars =?iso-8859-1?Q?M=FCller?= <lmuelle@suse.de>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        PWF Linux <pwf-linux@ucs.cam.ac.uk>, Steve French <sfrench@samba.org>,
+        Jeremy Allison <jra@samba.org>
+Subject: Re: CIFS kernel module bug
+Message-ID: <20111003024402.GB1644@jeremy-desktop>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <A904EFBF-CBC1-4842-9E50-2A556103B8AA@cam.ac.uk>
+ <20110930140409.51c1a94c@tlielax.poochiereds.net>
+ <E35BF115-B84D-4DB2-BDDC-E356052282F2@cam.ac.uk>
+ <20110930234711.GD14147@samba2>
+ <alpine.LSU.2.00.1110010122210.15683@hermes-2.csi.cam.ac.uk>
+ <6704F264-5437-4948-8C1B-FE3F5CE59C24@cam.ac.uk>
+ <20111001150730.GJ5170@giles.fritz.box>
+ <6A5AB13C-F313-4BF2-A402-F41AB53493F0@cam.ac.uk>
+ <CAFneQcc8D7ho-Yfr2X0DxaLLX11iMU=wSgCw9daKoViZCMk6dA@mail.gmail.com>
+ <65C75335-2A74-4B00-989A-212BAC06A646@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <65C75335-2A74-4B00-989A-212BAC06A646@cam.ac.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 6, 2011, at 11:02 AM, Mark Salter wrote:
+On Sun, Oct 02, 2011 at 09:16:33PM +0100, Anton Altaparmakov wrote:
 > 
-> In any case, the current thinking is that the original problem with
-> the USB performance seen on cortex A9 multicore is probably something
-> more than just write buffer delays. Once the original problem is better
-> understood, we can take another look at this patch if it is still
-> needed.
+> That is correct but apparently Salford Software (who handle our Netware & OES site license here in the UK including providing support) have told the guys running the file server that the samba server on OES is not scalable, has loads of bugs, and they must stay away from it at all costs and that they would not provide any support if our filestore runs that instead of the Novell CIFSd.
+> 
+> You can understand why the filestore is thus running the Novell CIFSd rather than Samba…
+> 
+> PS. Whether this is FUD or not I cannot comment on.  I am just passing on what I was told!
 
+Wow. And Samba being (partly) a UK-written project too (at least
+ from me :-).
 
-Thanks again for looking into this Mark. My understanding is that this is still being investigated. I'll followup with ARM to see how that's going since I've heard nothing recently :) Meanwhile, we're continuing to carry a hack based on these patches in Fedora ARM kernels.
+I think the Samba Team members from Novell who work full time
+on said Samba server in OES might have some follow-ups here,
+so I think I'll let them do that.
 
-Jon.
+FYI. Just for fun, try running smbtorture4 against the CIFSd
+thing you're running now. I'll be (probably) grimly amused by
+the results. A warning - don't do that on a production system :-).
 
+Jeremy.
