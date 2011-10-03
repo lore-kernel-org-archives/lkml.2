@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab1JCRxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 13:53:20 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27398 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756159Ab1JCRxL (ORCPT
+	id S1757181Ab1JCRxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 13:53:41 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:50895 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154Ab1JCRxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 13:53:11 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Vaevie31SgXLwHb8wK314
-Date: Mon, 3 Oct 2011 10:53:08 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/30] ARM: omap: enable building omap2 without
- omap2420/2430
-Message-ID: <20111003175308.GR6324@atomide.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
- <1317566760-25681-6-git-send-email-arnd@arndb.de>
+	Mon, 3 Oct 2011 13:53:36 -0400
+Date: Mon, 3 Oct 2011 18:53:22 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: lockdep recursive locking detected (rcu_kthread / __cache_free)
+Message-ID: <20111003175322.GA26122@sucs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317566760-25681-6-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [111002 07:13]:
-> Kconfig allows selecting CONFIG_OMAP2 but no specific SOC, the options
-> being omap2420 and omap2430, but that leads to a build error when
-> omap3 or omap4 are also enabled and the MULTI_OMAP2 symbol is
-> undefined.
-> 
-> This adds another clause to plat/multi.h, mainly to allow all
-> possible randconfig combinations to build cleanly.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Hi,
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+While running 3.1.0-rc8 the following lockdep warning (seemingly related
+to RCU) was printed as the kernel was starting.
 
-> ---
->  arch/arm/plat-omap/include/plat/multi.h |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-omap/include/plat/multi.h b/arch/arm/plat-omap/include/plat/multi.h
-> index 999ffba..fb7f196 100644
-> --- a/arch/arm/plat-omap/include/plat/multi.h
-> +++ b/arch/arm/plat-omap/include/plat/multi.h
-> @@ -82,6 +82,11 @@
->  #  define OMAP_NAME omap2430
->  # endif
->  #endif
-> +#ifdef CONFIG_ARCH_OMAP2
-> +# ifndef OMAP_NAME
-> +#  define OMAP_NAME omap2
-> +# endif
-> +#endif
->  #ifdef CONFIG_ARCH_OMAP3
->  # ifdef OMAP_NAME
->  #  undef  MULTI_OMAP2
-> -- 
-> 1.7.5.4
-> 
+
+udev: starting version 151
+udevd (263): /proc/263/oom_adj is deprecated, please use /proc/263/oom_score_adj instead.
+
+=============================================
+[ INFO: possible recursive locking detected ]
+3.1.0-rc8-dirty #508
+---------------------------------------------
+rcu_kthread/6 is trying to acquire lock:
+ (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+
+but task is already holding lock:
+ (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&(&parent->list_lock)->rlock);
+  lock(&(&parent->list_lock)->rlock);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+1 lock held by rcu_kthread/6:
+ #0:  (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+
+stack backtrace:
+Pid: 6, comm: rcu_kthread Not tainted 3.1.0-rc8-dirty #508
+Call Trace:
+ [<b0144466>] __lock_acquire+0xb90/0xc0e
+ [<b044c0c2>] ? _raw_spin_unlock_irqrestore+0x2f/0x46
+ [<b0223ebc>] ? debug_object_active_state+0x94/0xbc
+ [<b01315af>] ? rcuhead_fixup_activate+0x26/0x4c
+ [<b01448be>] lock_acquire+0x5b/0x72
+ [<b016fe11>] ? __cache_free+0x2dd/0x382
+ [<b044bb22>] _raw_spin_lock+0x25/0x34
+ [<b016fe11>] ? __cache_free+0x2dd/0x382
+ [<b016fe11>] __cache_free+0x2dd/0x382
+ [<b016ff5c>] kmem_cache_free+0x3e/0x5b
+ [<b0170097>] slab_destroy+0x11e/0x126
+ [<b0170184>] free_block+0xe5/0x112
+ [<b016fe54>] __cache_free+0x320/0x382
+ [<b01759a1>] ? file_free_rcu+0x32/0x39
+ [<b016ff5c>] kmem_cache_free+0x3e/0x5b
+ [<b01759a1>] file_free_rcu+0x32/0x39
+ [<b014ca68>] rcu_process_callbacks+0x95/0xa8
+ [<b014cb34>] rcu_kthread+0xb9/0xd2
+ [<b013356c>] ? wake_up_bit+0x1b/0x1b
+ [<b014ca7b>] ? rcu_process_callbacks+0xa8/0xa8
+ [<b0133305>] kthread+0x6c/0x71
+ [<b0133299>] ? __init_kthread_worker+0x42/0x42
+ [<b044ce02>] kernel_thread_helper+0x6/0xd
+
+-- 
+Sitsofe | http://sucs.org/~sits/
