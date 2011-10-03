@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121Ab1JCFDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 01:03:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55542 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab1JCFDh (ORCPT
+	id S1755134Ab1JCFFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 01:05:39 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:59428 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753310Ab1JCFFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 01:03:37 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH v2] isofs : add readpages support for isofs. 
-Date: Mon,  3 Oct 2011 14:03:23 +0900
-Message-Id: <1317618203-22212-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 3 Oct 2011 01:05:32 -0400
+Message-ID: <4E894295.5000608@ti.com>
+Date: Mon, 03 Oct 2011 10:35:25 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/30] ARM/omap: omap specific randconfig fixes
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using mpage_readpages instead of multiple calls to isofs_readpage to reduce the CPU utilization and make performance higher.
+Arnd,
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
----
- fs/isofs/inode.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+On Sunday 02 October 2011 08:15 PM, Arnd Bergmann wrote:
+> Hi Tony,
+> 
+> I've mentioned these patches before, and now I've managed to
+> go through them again and clean them enough for submission.
+> 
+> If nobody has any objections, I would like to send them to
+> Linus in the coming merge window, otherwise it would be nice
+> if you could pick the ones that look good to you and send
+> me a pull request. If any of these look like they should be
+> backported to stable kernels, please tell me and I'll add
+> a cc:stable@k.o tag.
+> 
+> The entire set is also available from
+>  git pull git://git.linaro.org/people/arnd/arm-soc.git randconfig/omap
+> 
+> but I have not yet pulled them into the for-next branch.
+> 
+Do you have any scripts to create these randconfigs ?
+These are useful to run on newer set of patches also to get all
+builds right first place.
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index a5d0367..46844ff 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -20,6 +20,7 @@
- #include <linux/statfs.h>
- #include <linux/cdrom.h>
- #include <linux/parser.h>
-+#include <linux/mpage.h>
- 
- #include "isofs.h"
- #include "zisofs.h"
-@@ -1148,7 +1149,13 @@ struct buffer_head *isofs_bread(struct inode *inode, sector_t block)
- 
- static int isofs_readpage(struct file *file, struct page *page)
- {
--	return block_read_full_page(page,isofs_get_block);
-+	return mpage_readpage(page, isofs_get_block);
-+}
-+
-+static int isofs_readpages(struct file *file, struct address_space *mapping,
-+			struct list_head *pages, unsigned nr_pages)
-+{
-+	return mpage_readpages(mapping, pages, nr_pages, isofs_get_block);
- }
- 
- static sector_t _isofs_bmap(struct address_space *mapping, sector_t block)
-@@ -1158,6 +1165,7 @@ static sector_t _isofs_bmap(struct address_space *mapping, sector_t block)
- 
- static const struct address_space_operations isofs_aops = {
- 	.readpage = isofs_readpage,
-+	.readpages = isofs_readpages,
- 	.bmap = _isofs_bmap
- };
- 
--- 
-1.7.4.4
-
+Regards
+Santosh
