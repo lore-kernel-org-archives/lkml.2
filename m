@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1JCJMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:12:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61408 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab1JCJMG (ORCPT
+	id S1752870Ab1JCJOj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:14:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50372 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab1JCJOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:12:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 26/30] ARM: omap: add board autoselection
-Date: Mon, 03 Oct 2011 11:11:52 +0200
-Message-ID: <3656685.pM1zNST8gQ@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <4E8947F7.2070108@ti.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-27-git-send-email-arnd@arndb.de> <4E8947F7.2070108@ti.com>
+	Mon, 3 Oct 2011 05:14:32 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=wom5GMh1gUkA:10 a=GPLZHOGeRasA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=7O3H4tdZAAAA:8 a=v9BBqCx-N3AfPes4hwMA:9 a=CjuIK1q_8ugA:10 a=wSnxOa7AQRACTwhq:21 a=1KNthZk2ej3xbDHa:21 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Date: Mon, 3 Oct 2011 05:14:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <greg@kroah.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111003091430.GA13919@home.goodmis.org>
+References: <4E8655CD.90107@zytor.com>
+ <20111001140519.GA26662@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vfSwK+QDuaDGX6g+GJeu+vLP6/qutoYnMMR5COFuzqd
- WpBcLHMHujLxEOUqLTMwY3qMhYx9Wvle2ujCdBkbWV3MphwgFx
- phULUdQIHXmYdzpGj/j+hBkHvLwzTbxVSnaA1+DYGhth4s8pJi
- OwzKO+GLhQ/HZOXqmXSfK7EgyLqH5btqRnNcAcfrveKd4VBgAo
- +DcgEsHEYAI43uzH5R62ofk8WbLWQqpaYmSFYXJ2dz3BjtE8dM
- 5iSA8KDr7mHiZ5xttgkbUVE58xtsiS33T6ugI2qJbVUzge8JlH
- aeOrEGgo49C21TCuY5rPp86hyUSh5orhT61azi5AngSC/FNSm/
- GU9QChsXxqkxkHPA1Ia0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111001140519.GA26662@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 10:58:23 Santosh Shilimkar wrote:
-> > +config MACH_OMAP_AUTO_BOARD
-> > +     def_bool y
-> > +     depends on !MACH_OMAP2_TUSB6010
-> > +     depends on !MACH_OMAP_H4
-> > +     depends on !MACH_OMAP_APOLLON
-> > +     depends on !MACH_OMAP_APOLLON
-> > +     depends on !MACH_OMAP_2430SDP
-> > +     depends on !MACH_OMAP3_BEAGLE
-> > +     depends on !MACH_DEVKIT8000
-> > +     depends on !MACH_OMAP_LDP
-> > +     depends on !MACH_OMAP3530_LV_SOM
-> > +     depends on !MACH_OMAP3_TORPEDO
-> > +     depends on !MACH_OVERO
-> > +     depends on !MACH_OMAP3EVM
-> > +     depends on !MACH_OMAP3517EVM
-> > +     depends on !MACH_CRANEBOARD
-> > +     depends on !MACH_OMAP3_PANDORA
-> > +     depends on !MACH_OMAP3_TOUCHBOOK
-> > +     depends on !MACH_NOKIA_N8X0
-> > +     depends on !MACH_NOKIA_RM680
-> > +     depends on !MACH_NOKIA_RX51
-> > +     depends on !MACH_OMAP_ZOOM2
-> > +     depends on !MACH_OMAP_ZOOM3
-> > +     depends on !MACH_CM_T35
-> > +     depends on !MACH_CM_T3517
-> > +     depends on !MACH_IGEP0020
-> > +     depends on !MACH_IGEP0030
-> > +     depends on !MACH_SBC3530
-> > +     depends on !MACH_OMAP_3630SDP
-> > +     depends on !MACH_TI8168EVM
-> > +     depends on !MACH_OMAP4_PANDA
-> Do we need all above 'depends on *' ?
-> Even if they get selected for one of the below
-> ARCH along with default machine, build should be happy.
-> Right ?
+On Sat, Oct 01, 2011 at 07:05:19AM -0700, Greg KH wrote:
+> 
+> I would recommend a physical access device for your new gpg key that you
+> create.  I've heard good things about this USB device:
+> 	http://www.crypto-stick.org/
+> and am trying to have a bunch of them at the Kernel Summit this year to
+> hand out to people if they want one.
 
-I'm not too happy with having to maintain a list for each subarchitecture,
-when each one has the same problem. In general, I would really like to have
-the flexibility to disable all but any one board, which requires either
-maintaining a list like the above, or expressing the same like
+Hmm, if I'm going to get one at KS, should I stop getting signed keys
+now? A few of us have already started the GPG song and dance to get
+signed keys over the phone (where we know each other enough to know
+phone numbers and recognize voices).
 
-config MACH_OMAP_AUTO_BOARD
-	 def_bool y
-       depends on !MACH_OMAP_BOARD_SELECTED
-       select MACH_OMAP_GENERIC if ARCH_OMAP2
-       select MACH_OMAP_3430SDP if ARCH_OMAP3 && !ARCH_OMAP2
-       select MACH_OMAP_4430SDP if ARCH_OMAP4 && !ARCH_OMAP3 && !ARCH_OMAP2
+But I did it all wrong. I have a 4k RSA key for both signing and
+encrypting with no revoke generated and no expiration. The key is
+currently on one of my machines, which I was about to move to an
+encrypted usb device.
 
-and adding a 'select MACH_OMAP_BOARD_SELECTED' for each one. Slightly more
-to write but perhaps a little less error-prone.
+If I can get one of these devices, it sounds like I should create a new
+key on it as my master key and start using subkeys as described in the
+debian link that someone posted before. Then at the keysigning I would
+just use the key from this device.
 
-In the long run, I'd hope we can just get rid of these for subarchitectures
-that support device tree probing and make the device tree based machine
-description unconditional.
 
-	Arnd
+> 
+> There are also lots of other smart-card form-factor devices that can be
+> used to store GPG keys.  Some places to purchase these can be found at
+> links from the above site.
+
+I just pulled out an old GNU GPG card I had, and unfortunately it only
+supports 1024 RSA keys.
+
+-- Steve
+
