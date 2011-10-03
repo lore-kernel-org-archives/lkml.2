@@ -1,65 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab1JCMkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 08:40:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58905 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754652Ab1JCMkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 08:40:46 -0400
-Date: Mon, 3 Oct 2011 13:40:44 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        dilinger@queued.net
-Subject: Re: [PATCH 1/3] mfd: allow mfd_cell association with device tree node
-Message-ID: <20111003124044.GF3731@opensource.wolfsonmicro.com>
-References: <20110927182636.GR4289@opensource.wolfsonmicro.com>
- <CAMLZHHR0rMZct2E91X8k+Lhv_y-pY_5+vshZw6dj194o9vSCJQ@mail.gmail.com>
- <20110927183832.GS4289@opensource.wolfsonmicro.com>
- <CAMLZHHRvr-diYGwZ2Kg647Ht7NNb8LEku0pCW8EujRuUeOW5yQ@mail.gmail.com>
- <20110928123154.GG3279@opensource.wolfsonmicro.com>
- <CAMLZHHRFY_MazF_MOzPrS06z-48-ohORTtbANMxUT=mjevXhhQ@mail.gmail.com>
- <20111003102846.GA23811@sirena.org.uk>
- <CAMLZHHTMP+DJA35bUswXPbTv_U0DAWY_h_-Eg53-_4RuC3bx7A@mail.gmail.com>
- <20111003121655.GB3731@opensource.wolfsonmicro.com>
- <CAMLZHHS+fFzuWtwOwt-g2y38g93uaZFyUGsooZyYLMT=mdWQFQ@mail.gmail.com>
+	id S1755799Ab1JCMw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 08:52:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755173Ab1JCMwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 08:52:21 -0400
+Date: Mon, 3 Oct 2011 14:46:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 3/26]   Uprobes: register/unregister
+	probes.
+Message-ID: <20111003124640.GA25811@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120022.25326.35868.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMLZHHS+fFzuWtwOwt-g2y38g93uaZFyUGsooZyYLMT=mdWQFQ@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110920120022.25326.35868.sendpatchset@srdronam.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 01:30:15PM +0100, Daniel Drake wrote:
-> On Mon, Oct 3, 2011 at 1:16 PM, Mark Brown
+On 09/20, Srikar Dronamraju wrote:
+>
+> +static struct vma_info *__find_next_vma_info(struct list_head *head,
+> +			loff_t offset, struct address_space *mapping,
+> +			struct vma_info *vi)
+> +{
+> +	struct prio_tree_iter iter;
+> +	struct vm_area_struct *vma;
+> +	struct vma_info *tmpvi;
+> +	loff_t vaddr;
+> +	unsigned long pgoff = offset >> PAGE_SHIFT;
+> +	int existing_vma;
+> +
+> +	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
+> +		if (!vma || !valid_vma(vma))
+> +			return NULL;
 
-> > It seems to me like either the IP block is heavily dependant on the core
-> > and shouldn't be split out in the device tree at all (but should instead
-> > be part of the core node) or the IP block is very isolated from the core
-> > (in which case we should just be able to instantiate the device from the
-> > device tree without using explict code in the core driver).
+!vma is not possible.
 
-> > This all feels like there's some abstraction violation going on.
+But I can't understand the !valid_vma(vma) check... We shouldn't return,
+we should ignore this vma and continue, no? Otherwise, I can't see how
+this can work if someone does, say, mmap(PROT_READ).
 
-> I guess it is a matter of opinion. To me, the abstraction is sensible
-> and representative of the hardware.
+> +		existing_vma = 0;
+> +		vaddr = vma->vm_start + offset;
+> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> +		list_for_each_entry(tmpvi, head, probe_list) {
+> +			if (tmpvi->mm == vma->vm_mm && tmpvi->vaddr == vaddr) {
+> +				existing_vma = 1;
+> +				break;
+> +			}
+> +		}
+> +		if (!existing_vma &&
+> +				atomic_inc_not_zero(&vma->vm_mm->mm_users)) {
 
-> This also matches the way that the hardware is described by VIA in the
-> specs, and it matches the way that Linux has its own device hierachy
-> laid out (i.e. the ISA bridge driven by the mfd driver, which then
-> spawns off a child device for the GPIO controller).
+This looks suspicious. If atomic_inc_not_zero() can fail, iow if we can
+see ->mm_users == 0, then why it is safe to touch this counter/memory?
+How we can know ->mm_count != 0 ?
 
-> It would not be possible to fold all of the isa bridge child
-> components into the same device tree node without dealing with various
-> namespace collisions.
+I _think_ this is probably correct, ->mm_users == 0 means we are racing
+mmput(), ->i_mmap_mutex and the fact we found this vma guarantees that
+mmput() can't pass unlink_file_vma() and thus mmdrop() is not possible.
+May be needs a comment...
 
-So, I made two suggestions above and it sounds like you want the second
-one but you've only responded to the first one without commenting on the
-second.  My second suggestion was that if the block is sufficiently
-isoltated from the core we should be able instantiate it from the device
-tree without requiring explicit code in the core driver.
+> +static struct vma_info *find_next_vma_info(struct list_head *head,
+> +			loff_t offset, struct address_space *mapping)
+> +{
+> +	struct vma_info *vi, *retvi;
+> +	vi = kzalloc(sizeof(struct vma_info), GFP_KERNEL);
+> +	if (!vi)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	INIT_LIST_HEAD(&vi->probe_list);
+
+Looks unneeded.
+
+> +	mutex_lock(&mapping->i_mmap_mutex);
+> +	retvi = __find_next_vma_info(head, offset, mapping, vi);
+> +	mutex_unlock(&mapping->i_mmap_mutex);
+
+It is not clear why we can't race with mmap() after find_next_vma_info()
+returns NULL. I guess this is solved by the next patches.
+
+> +static int __register_uprobe(struct inode *inode, loff_t offset,
+> +				struct uprobe *uprobe)
+> +{
+> +	struct list_head try_list;
+> +	struct vm_area_struct *vma;
+> +	struct address_space *mapping;
+> +	struct vma_info *vi, *tmpvi;
+> +	struct mm_struct *mm;
+> +	int ret = 0;
+> +
+> +	mapping = inode->i_mapping;
+> +	INIT_LIST_HEAD(&try_list);
+> +	while ((vi = find_next_vma_info(&try_list, offset,
+> +							mapping)) != NULL) {
+> +		if (IS_ERR(vi)) {
+> +			ret = -ENOMEM;
+> +			break;
+> +		}
+> +		mm = vi->mm;
+> +		down_read(&mm->mmap_sem);
+> +		vma = find_vma(mm, (unsigned long) vi->vaddr);
+
+But we can't trust find_vma? The original vma found by find_next_vma_info()
+could go away, at least we should verify vi->vaddr >= vm_start.
+
+And worse, I do not understand how we can trust ->vaddr. Can't we race with
+sys_mremap() ?
+
+> +static void __unregister_uprobe(struct inode *inode, loff_t offset,
+> +						struct uprobe *uprobe)
+> +{
+> +	struct list_head try_list;
+> +	struct address_space *mapping;
+> +	struct vma_info *vi, *tmpvi;
+> +	struct vm_area_struct *vma;
+> +	struct mm_struct *mm;
+> +
+> +	mapping = inode->i_mapping;
+> +	INIT_LIST_HEAD(&try_list);
+> +	while ((vi = find_next_vma_info(&try_list, offset,
+> +							mapping)) != NULL) {
+> +		if (IS_ERR(vi))
+> +			break;
+> +		mm = vi->mm;
+> +		down_read(&mm->mmap_sem);
+> +		vma = find_vma(mm, (unsigned long) vi->vaddr);
+
+Same problems...
+
+> +		if (!vma || !valid_vma(vma)) {
+> +			list_del(&vi->probe_list);
+> +			kfree(vi);
+> +			up_read(&mm->mmap_sem);
+> +			mmput(mm);
+> +			continue;
+> +		}
+
+Not sure about !valid_vma() (and note that __find_next_vma_info does() this
+check too).
+
+Suppose that register_uprobe() succeeds. After that unregister_ should work
+even if user-space does mprotect() which can make valid_vma() == F, right?
+
+> +int register_uprobe(struct inode *inode, loff_t offset,
+> +				struct uprobe_consumer *consumer)
+> +{
+> +	struct uprobe *uprobe;
+> +	int ret = 0;
+> +
+> +	inode = igrab(inode);
+> +	if (!inode || !consumer || consumer->next)
+> +		return -EINVAL;
+> +
+> +	if (offset > inode->i_size)
+> +		return -EINVAL;
+
+I guess this needs i_size_read().
+
+And every "return" in register/unregister leaks something.
+
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	uprobe = alloc_uprobe(inode, offset);
+
+Looks like, alloc_uprobe() doesn't need ->i_mutex.
+
+OTOH,
+
+> +void unregister_uprobe(struct inode *inode, loff_t offset,
+> +				struct uprobe_consumer *consumer)
+> +{
+> +	struct uprobe *uprobe;
+> +
+> +	inode = igrab(inode);
+> +	if (!inode || !consumer)
+> +		return;
+> +
+> +	if (offset > inode->i_size)
+> +		return;
+> +
+> +	uprobe = find_uprobe(inode, offset);
+> +	if (!uprobe)
+> +		return;
+> +
+> +	if (!del_consumer(uprobe, consumer)) {
+> +		put_uprobe(uprobe);
+> +		return;
+> +	}
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	if (!uprobe->consumers)
+> +		__unregister_uprobe(inode, offset, uprobe);
+
+It seemes that del_consumer() should be done under ->i_mutex. If it
+removes the last consumer, we can race with register_uprobe() which
+takes ->i_mutex before us and does another __register_uprobe(), no?
+
+Oleg.
+
