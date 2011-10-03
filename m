@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab1JCXL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:11:58 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46521 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1JCXLw (ORCPT
+	id S1751291Ab1JCXMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 19:12:52 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56120 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750745Ab1JCXMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:11:52 -0400
-Date: Mon, 3 Oct 2011 16:11:49 -0700
-From: Andrew Morton <akpm00@gmail.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/10] memcg naturalization -rc4
-Message-Id: <20111003161149.bc458294.akpm00@gmail.com>
-In-Reply-To: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
-References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Oct 2011 19:12:51 -0400
+X-Sasl-enc: m00n+AOIXWzIORQ7JbJ1/W/zbc4L8V0Mxt1dd2CRvQOj 1317683353
+Date: Mon, 3 Oct 2011 16:06:32 -0700
+From: Greg KH <greg@kroah.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: gregkh@suse.de, cascardo@holoscopio.com, dan.magenheimer@oracle.com,
+        rdunlap@xenotime.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: zcache: reduce tmem bucket lock contention
+Message-ID: <20111003230632.GA12719@kroah.com>
+References: <1317306746-27072-1-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317306746-27072-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011 23:00:54 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+On Thu, Sep 29, 2011 at 09:32:26AM -0500, Seth Jennings wrote:
+> tmem uses hash buckets each with their own rbtree and lock to
+> quickly lookup tmem objects.  tmem has TMEM_HASH_BUCKETS (256)
+> buckets per pool.  However, because of the way the tmem_oid is
+> generated for frontswap pages, only 16 unique tmem_oids are being
+> generated, resulting in only 16 of the 256 buckets being used.
+> This cause high lock contention for the per bucket locks.
+> 
+> This patch changes SWIZ_BITS to include more bits of the offset.
+> The result is that all 256 hash buckets are potentially used resulting in a
+> 95% drop in hash bucket lock contention.
 
-> this is the fourth revision of the memory cgroup naturalization
-> series.
+This patch is somehow corrupted and can't be applied, care to resend it
+with Dan's acked-by so that I can apply it?
 
-The patchset removes 20 lines from include/linux/*.h and removes
-exactly zero lines from mm/*.c.  Freaky.
+thanks,
 
-If we were ever brave/stupid emough to make
-CONFIG_CGROUP_MEM_RES_CTLR=y unconditional, how much could we simplify
-mm/?
-
-We are adding bits of overhead to the  CONFIG_CGROUP_MEM_RES_CTLR=n case
-all over the place.  This patchset actually decreases the size of allnoconfig
-mm/built-in.o by 1/700th.
-
-A "struct mem_cgroup" sometimes gets called "mem", sometimes "memcg",
-sometimes "mem_cont".  Any more candidates?  Is there any logic to
-this?
-
-
-Anyway...  it all looks pretty sensible to me, but the timing (at
--rc8!) is terrible.  Please keep this material maintained for -rc1, OK?
+greg k-h
