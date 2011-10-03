@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab1JCRuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 13:50:24 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:45895 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab1JCRuS (ORCPT
+	id S1757173Ab1JCRxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 13:53:20 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:27398 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756159Ab1JCRxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 13:50:18 -0400
-Date: Mon, 3 Oct 2011 20:50:16 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111003175016.GC3072@localhost.pp.htv.fi>
-References: <4E8655CD.90107@zytor.com>
+	Mon, 3 Oct 2011 13:53:11 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Vaevie31SgXLwHb8wK314
+Date: Mon, 3 Oct 2011 10:53:08 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/30] ARM: omap: enable building omap2 without
+ omap2420/2430
+Message-ID: <20111003175308.GR6324@atomide.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+ <1317566760-25681-6-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E8655CD.90107@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317566760-25681-6-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 04:50:37PM -0700, H. Peter Anvin wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+* Arnd Bergmann <arnd@arndb.de> [111002 07:13]:
+> Kconfig allows selecting CONFIG_OMAP2 but no specific SOC, the options
+> being omap2420 and omap2430, but that leads to a build error when
+> omap3 or omap4 are also enabled and the MULTI_OMAP2 symbol is
+> undefined.
 > 
-> Hi all,
+> This adds another clause to plat/multi.h, mainly to allow all
+> possible randconfig combinations to build cleanly.
 > 
-> Since the kernel.org status announcement last week a number of you
-> have contacted me about re-establishing credentials.  In order to
-> establish a proper PGP web of trust we need keys that are cross-signed
-> by other developers.  As such, we ask that you follow the following
-> steps:
->...
-> 5. Get as many other kernel developers that you have physical access to
->    to sign your key after verifying the fingerprint.  Verifying keys
->    over the phone is OK if and only if you know them *extremely* well;
->    think "would I be willing to testify in court that the person I
->    talked to was X"?
-> 
->    If you work in an office with multiple other Linux developers, it
->    would be a very good thing to organize a local key signing.  We will
->    do a key signing at Kernel Summit for the core kernel developers.
-> 
->    A web site with recommendations for running a key signing:
-> 
-> 
-> http://www.cryptnet.net/fdp/crypto/keysigning_party/en/keysigning_party.html
-> 
->    $ gpg --fingerprint <key ID>
->    $ gpg --keyserver pgp.mit.edu --recv-key <their key ID>
->    $ gpg -u <your key ID> --sign-key <their key ID>
->    $ gpg --keyserver pgp.mit.edu --send-key <their key ID>
->    $ gpg --keyserver pgp.mit.edu --recv-key <your key ID>
-> 
-> 6. Please send me the key identifier and fingerprint to
->    <keys@zytor.com>.  This is a temporary address until the kernel.org
->    MX is ready to put back online; eventually we will probably have a
->    web form interface for this.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-What are the exact technical requirements for key acceptance?
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-"as many other kernel developers" is quite vague, starting with the fact 
-that there is not a clear definition of "kernel developer"...
-
-> 	-hpa
-
-cu
-Adrian
-
--- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
-
+> ---
+>  arch/arm/plat-omap/include/plat/multi.h |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/include/plat/multi.h b/arch/arm/plat-omap/include/plat/multi.h
+> index 999ffba..fb7f196 100644
+> --- a/arch/arm/plat-omap/include/plat/multi.h
+> +++ b/arch/arm/plat-omap/include/plat/multi.h
+> @@ -82,6 +82,11 @@
+>  #  define OMAP_NAME omap2430
+>  # endif
+>  #endif
+> +#ifdef CONFIG_ARCH_OMAP2
+> +# ifndef OMAP_NAME
+> +#  define OMAP_NAME omap2
+> +# endif
+> +#endif
+>  #ifdef CONFIG_ARCH_OMAP3
+>  # ifdef OMAP_NAME
+>  #  undef  MULTI_OMAP2
+> -- 
+> 1.7.5.4
+> 
