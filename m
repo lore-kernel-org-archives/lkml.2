@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132Ab1JCODT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 10:03:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64735 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab1JCODO convert rfc822-to-8bit (ORCPT
+	id S932155Ab1JCOEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 10:04:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60695 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932099Ab1JCOES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 10:03:14 -0400
+	Mon, 3 Oct 2011 10:04:18 -0400
+Date: Mon, 3 Oct 2011 15:04:12 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/11] ARM: vfp: use -mfloat-abi=soft to build vfp
+Message-ID: <20111003140411.GB2117@arm.com>
+References: <1317496920-7764-1-git-send-email-arnd@arndb.de>
+ <1317496920-7764-6-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CADLM8XP09kFhxjMYbxD80+4cS00cm2aWZE1Zvjoby0Afrdz9eQ@mail.gmail.com>
-References: <CADLM8XNiaxLFRZXs4NKJmoORvED-DV0bNxPF6eHsfnLqtxw09w@mail.gmail.com>
-	<20111003192458.14d198a3.kamezawa.hiroyu@jp.fujitsu.com>
-	<CAMuHMdVuMHjbDkAdrkfTS-ZaYCwN-avihsQyDsOAVFt+PdWqYw@mail.gmail.com>
-	<CADLM8XP09kFhxjMYbxD80+4cS00cm2aWZE1Zvjoby0Afrdz9eQ@mail.gmail.com>
-Date: Mon, 3 Oct 2011 16:03:14 +0200
-X-Google-Sender-Auth: kFxPT3VO7GnQPlKFLXzWNxv-1rk
-Message-ID: <CAMuHMdV_aKGscAw1UmQU45VZONtdvYLTK18nTYX4wvg0YLTx4A@mail.gmail.com>
-Subject: Re: One comment on the __release_region in kernel/resource.c
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wei Yang <weiyang.kernel@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317496920-7764-6-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 3, 2011 at 15:35, Wei Yang <weiyang.kernel@gmail.com> wrote:
-> 2011/10/3 Geert Uytterhoeven <geert@linux-m68k.org>
->> On Mon, Oct 3, 2011 at 12:24, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > On Sun, 2 Oct 2011 21:57:07 +0800
->> > Wei Yang <weiyang.kernel@gmail.com> wrote:
->> >
->> >> Dear experts,
->> >>
->> >> I am viewing the source code of __release_region() in
->> >> kernel/resource.c.
->> >> And I have one comment for the performance issue.
->> >>
->> >> For example, we have a resource tree like this.
->> >> 10-89
->> >>    20-79
->> >>        30-49
->> >>        55-59
->> >>        60-64
->> >>        65-69
->> >>    80-89
->> >> 100-279
->> >>
->> >> If the caller wants to release a region of [50,59], the original code
->> >> will
->>                                              ^^^^^^^
->> Do you really mean [50,59]?
->
-> Yes.
->>
->> I don't think that's allowed, as the tree has [55,59], so you would
->> release a
->> larger region that allocated.
->
-> So you mean the case I mentioned will not happen?
+On Sat, Oct 01, 2011 at 09:21:54PM +0200, Arnd Bergmann wrote:
+> Distros are starting to ship with toolchains defaulting to
+> hardfloat. Using such a compiler to build the kernel fails
+> in the VFP directory with
+> 
+> arch/arm/vfp/entry.S:1:0: sorry, unimplemented: -mfloat-abi=hard and VFP
+> 
+> Adding -mfloat-abi=soft to the gcc command line fixes this.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/vfp/Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/vfp/Makefile b/arch/arm/vfp/Makefile
+> index 6de73aa..a81404c 100644
+> --- a/arch/arm/vfp/Makefile
+> +++ b/arch/arm/vfp/Makefile
+> @@ -7,7 +7,7 @@
+>  # ccflags-y := -DDEBUG
+>  # asflags-y := -DDEBUG
+>  
+> -KBUILD_AFLAGS	:=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=softvfp+vfp)
+> +KBUILD_AFLAGS	:=$(KBUILD_AFLAGS:-msoft-float=-Wa,-mfpu=softvfp+vfp -mfloat-abi=soft)
 
-Indeed, it should not happen.
-Actually I'm surprised it doesn't return an error code.
+Although -mfpu=softvfp+vfp and -mfloat-abi=soft look mutually
+contradictory, this seems to have the correct effect, i.e. the
+assembler allows floating-point instructions but marks the resulting
+object as using the soft-float calling conventions.
 
-> Actually, I believe every developer should pass the resource region which
-> has been allocated.
-> While if some one made a mistake and pass a region which is not allocated
-> before and overlap
-> some "BUSY" region?
+The binutils documentation also seems to confirm that that's what
+should happen.
 
-Gr{oetje,eeting}s,
+I don't see another combination of options for getting this effect.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+So, if you like:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Reviewed-by: Dave Martin <dave.martin@linaro.org>
+
+Cheers
+---Dave
