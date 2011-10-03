@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab1JCJXF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:23:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab1JCJXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:23:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/30] ARM/omap: omap specific randconfig fixes
-Date: Mon, 03 Oct 2011 11:22:56 +0200
-Message-ID: <7246478.IyGHQ24uSq@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <4E894295.5000608@ti.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <4E894295.5000608@ti.com>
+	id S1753876Ab1JCJXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753258Ab1JCJXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 05:23:38 -0400
+Date: Mon, 3 Oct 2011 11:24:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
+ support S4
+Message-ID: <20111003092443.GA16852@redhat.com>
+References: <cover.1317309123.git.amit.shah@redhat.com>
+ <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
+ <20111002093733.GE29706@redhat.com>
+ <20111003091646.GA5192@amit-x200.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:eTZgEZ2cPajNnGufCY5Vrx70+n5HJw5bi8oXnQRc89k
- p3QmlJ28vb6bT7i2XFoJBAVC48eBGGXH/GCvroialzOb3jRxDL
- +/VMIhSBlSOGZCaLH5npqPazQm+YHU5mGxoC6Ag379lP6cXapb
- +byKVI1w5EJAc1GXwIdBFF0xcKfZNfP/gJBYKQR79F16ahmWiw
- b4CQk/aAkuoxKWDLc/aMnEJq+R7s9NuUMPSmAwQ1V8uPgC509C
- fbf6BXdsSgenyFjRXYNnJybw4t4ph8e+33O+oPbePVvB5Xt9EY
- LTWD+h9SmNo/k+4NvSmVtQ7PWq1f6RFHD6ruprDmenjfNLIxo4
- K+EDxyAFxxK3f+U5XFLo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003091646.GA5192@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 10:35:25 Santosh Shilimkar wrote:
-
-> > The entire set is also available from
-> >  git pull git://git.linaro.org/people/arnd/arm-soc.git randconfig/omap
+On Mon, Oct 03, 2011 at 02:46:46PM +0530, Amit Shah wrote:
+> On (Sun) 02 Oct 2011 [11:37:33], Michael S. Tsirkin wrote:
+> > On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
+> > > Delete the vq on the freeze callback to prepare for hibernation.
+> > > Re-create the vq in the restore callback to resume normal function.
+> > > 
+> > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > > ---
+> > >  drivers/block/virtio_blk.c |   17 +++++++++++++++++
+> > >  1 files changed, 17 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> > > index 509760b..9844d2c 100644
+> > > --- a/drivers/block/virtio_blk.c
+> > > +++ b/drivers/block/virtio_blk.c
+> > > @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+> > >  	kfree(vblk);
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_PM
+> > > +static int virtblk_freeze(struct virtio_device *vdev)
+> > > +{
+> > > +	vdev->config->del_vqs(vdev);
 > > 
-> > but I have not yet pulled them into the for-next branch.
-> > 
-> Do you have any scripts to create these randconfigs ?
-> These are useful to run on newer set of patches also to get all
-> builds right first place.
+> > What prevents the guest from trying to use the VQ while
+> > this is in progress? IF it does, what prevents a crash?
+> 
+> An oversight: Sasha pointed this out, too, and I've now fixed this by
+> adding a call to vdev->config->reset() before deleting vqs.
+> 
+> 		Amit
 
-Yes, see the for-next+randconfig branch of
-git://git.linaro.org/people/arnd/arm-soc.git. It has all my patches
-and a randconfig.sh script.
-
-Right now, I'm trying to get a baseline upstream, since I have around 150
-patches that are needed to always build ten platforms successfully.
-
-The main problem is that you basically need all the patches I did in order
-to find regressions, and some of the device driver patches are not currently
-in a state where I could submit them. I hope that by the time of the 3.3
-merge window, I have enough patches upstream that you no longer need to
-pull in an extra tree.
-
-Thanks a lot for your review of the omap set!
-
-	Arnd
+This stops the host from accessing the VQ, but does not stop the *guest*.
