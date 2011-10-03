@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab1JCMKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 08:10:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49695 "EHLO mx2.suse.de"
+	id S1755619Ab1JCMOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 08:14:54 -0400
+Received: from shutemov.name ([188.40.19.243]:33010 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754445Ab1JCMKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 08:10:31 -0400
-Date: Mon, 3 Oct 2011 14:10:26 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        hongjiu.lu@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] binfmt_elf: Fix PIE execution with randomization
- disabled
-In-Reply-To: <20110929195359.GJ16720@zod.bos.redhat.com>
-Message-ID: <alpine.LNX.2.00.1110031407280.31654@pobox.suse.cz>
-References: <20110929195359.GJ16720@zod.bos.redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752568Ab1JCMOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 08:14:47 -0400
+Date: Mon, 3 Oct 2011 15:14:46 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
+        linux-mm@kvack.org, avagin@parallels.com
+Subject: Re: [PATCH v4 7/8] Display current tcp memory allocation in kmem
+ cgroup
+Message-ID: <20111003121446.GD29312@shutemov.name>
+References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
+ <1317637123-18306-8-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317637123-18306-8-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Sep 2011, Josh Boyer wrote:
-
-> We've had a bug report[1] of some PIE programs getting a SIGKILL upon exec
-> if you disable address randomization with:
+On Mon, Oct 03, 2011 at 02:18:42PM +0400, Glauber Costa wrote:
+> This patch introduces kmem.tcp_current_memory file, living in the
+> kmem_cgroup filesystem. It is a simple read-only file that displays the
+> amount of kernel memory currently consumed by the cgroup.
 > 
-> 	echo 0 > /proc/sys/kernel/randomize_va_space
-> 
-> I tracked this down to get_unmapped_area_prot returning -ENOMEM because
-> the address being passed in is larger than TASK_SIZE - len for the bss
-> section of the test executable.  That filters back to set_brk returning
-> an error to load_elf_binary and the SIGKILL being sent around line 872
-> of binfmt_elf.c.
-> 
-> H.J. submitted an upstream bug report [2] as well, but got no feedback
-> and we can't view it with kernel.org being down anyway.  He came up with
-> the patch below as well, which is what I'm sending on for comments.  The
-> changelog is my addition, so if that is wrong yell at me.
-> 
-> I wanted to get some more eyes on this, because the current code sets
-> load_bias to 0 unconditionally on CONFIG_X86 or CONFIG_ARM.  I have no
-> idea why that is.  The original execshield patches had an #ifdef on
-> __i386__ but the patch that was commited to add PIE support has the
-> CONFIG_X86 setting.
-> 
-> Thoughts welcome.
-> 
-> [1] https://bugzilla.redhat.com/show_bug.cgi?id=708563
-> [2] http://bugzilla.kernel.org/show_bug.cgi?id=36372
-> 
-> josh
-> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
 > ---
+>  Documentation/cgroups/memory.txt |    1 +
+>  mm/memcontrol.c                  |   11 +++++++++++
+>  2 files changed, 12 insertions(+), 0 deletions(-)
 > 
-> From: H.J. Lu <hongjiu.lu@intel.com>
-> 
-> Set the load_bias for PIE executables to a non-zero address if no virtual
-> address is specified.  This prevents us from running out of room for all
-> the various loadable segments when ASLR is disabled.
-> 
-> Signed-off-by: H.J. Lu <hongjiu.lu@intel.com>
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> 
-> ---
-> 
-> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-> index 303983f..069ee29 100644
-> --- a/fs/binfmt_elf.c
-> +++ b/fs/binfmt_elf.c
-> @@ -794,9 +794,14 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
->  			/* Try and get dynamic programs out of the way of the
->  			 * default mmap base, as well as whatever program they
->  			 * might try to exec.  This is because the brk will
-> -			 * follow the loader, and is not movable.  */
-> +			 * follow the loader, and is not movable.  Don't use
-> +			 * 0 load address since we may not have room for
-> +			 * all loadable segements.  */
->  #if defined(CONFIG_X86) || defined(CONFIG_ARM)
-> -			load_bias = 0;
-> +			if (vaddr)
-> +				load_bias = 0;
-> +			else
-> +				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE);
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 1ffde3e..f5a539d 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -79,6 +79,7 @@ Brief summary of control files.
+>   memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+>  				   independent of user limits
+>   memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
+> + memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
 
-If you do this unconditionally, I can't see how ASLR could be working at 
-all -- this patch causes that elf_addr() is always called with non-zero 
-'addr' argument, right? (haven't verified by actually testing the patch 
-yet, but I fail to see how come this simply doesn't break ASLR 
-completely).
-
-Checking for PF_RANDOMIZE flag should be the way to go here.
+Both are in pages, right?
+Shouldn't it be scaled to bytes and named uniform with other memcg file?
+memory.kmem.tcp.limit_in_bytes/usage_in_bytes.
 
 -- 
-Jiri Kosina
-SUSE Labs
+ Kirill A. Shutemov
