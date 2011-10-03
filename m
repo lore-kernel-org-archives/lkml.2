@@ -1,124 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab1JCPgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:36:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7081 "EHLO mx1.redhat.com"
+	id S1756536Ab1JCPlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:41:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab1JCPgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:36:39 -0400
-Date: Mon, 3 Oct 2011 17:36:19 +0200
+	id S1753229Ab1JCPlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:41:37 -0400
+Date: Mon, 3 Oct 2011 17:41:13 +0200
 From: Gleb Natapov <gleb@redhat.com>
 To: Avi Kivity <avi@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 8/9] KVM, VMX: Add support for guest/host-only profiling
-Message-ID: <20111003153619.GA3225@redhat.com>
+Subject: Re: [PATCH 6/9] perf, intel: Use GO/HO bits in perf-ctr
+Message-ID: <20111003154113.GB3225@redhat.com>
 References: <1317649795-18259-1-git-send-email-gleb@redhat.com>
- <1317649795-18259-9-git-send-email-gleb@redhat.com>
- <4E89CE09.1080808@redhat.com>
+ <1317649795-18259-7-git-send-email-gleb@redhat.com>
+ <4E89CF73.4020208@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E89CE09.1080808@redhat.com>
+In-Reply-To: <4E89CF73.4020208@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 05:00:25PM +0200, Avi Kivity wrote:
+On Mon, Oct 03, 2011 at 05:06:27PM +0200, Avi Kivity wrote:
 > On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> >Support guest/host-only profiling by switch perf msrs on
-> >a guest entry if needed.
+> >Intel does not have guest/host-only bit in perf counters like AMD
+> >does.  To support GO/HO bits KVM needs to switch EVENTSELn values
+> >(or PERF_GLOBAL_CTRL if available) at a guest entry. If a counter is
+> >configured to count only in a guest mode it stays disabled in a host,
+> >but VMX is configured to switch it to enabled value during guest entry.
 > >
-> >@@ -6052,6 +6056,26 @@ static void vmx_cancel_injection(struct kvm_vcpu *vcpu)
-> >  	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);
-> >  }
+> >This patch adds GO/HO tracking to Intel perf code and provides interface
+> >for KVM to get a list of MSRs that need to be switched on a guest entry.
 > >
-> >+static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
+> >Only cpus with architectural PMU (v1 or later) are supported with this
+> >patch.  To my knowledge there is not p6 models with VMX but without
+> >architectural PMU and p4 with VMX are rare and the interface is general
+> >enough to support them if need arise.
+> >
+> >+
+> >+static int core_guest_get_msrs(int cnt, struct perf_guest_switch_msr *arr)
 > >+{
-> >+#ifdef CONFIG_PERF_EVENTS
-> 
-> No need for #ifdef (if you also define perf_guest_get_msrs() when
-> !CONFIG_PERF_EVENTS).
-> 
-Yes, but will compiler be smart enough to remove the code of the
-function completely? It will have to figure that vmx->perf_msrs_cnt is
-always 0 somehow.
-
-> >
-> >+	int i;
+> >+	struct cpu_hw_events *cpuc =&__get_cpu_var(cpu_hw_events);
+> >+	int idx;
 > >+
-> >+	if (!cpu_has_arch_perfmon || vmx->perf_msrs_cnt<= 0)
-> >+		return;
-> 
-> Why the first check?
-> 
-Leftovers from previous iteration of the patch. Not needed any more.
-
-> >
+> >+	if (cnt<  x86_pmu.num_counters)
+> >+		return -ENOMEM;
 > >+
-> >+	perf_guest_get_msrs(vmx->perf_msrs_cnt, vmx->perf_msrs);
-> >+	for (i = 0; i<  vmx->perf_msrs_cnt; i++) {
-> >+		struct perf_guest_switch_msr *msr =&vmx->perf_msrs[i];
-> >+		if (msr->host == msr->guest)
-> >+			clear_atomic_switch_msr(vmx, msr->msr);
-> >+		else
-> >+			add_atomic_switch_msr(vmx, msr->msr, msr->guest,
-> >+					msr->host);
-> 
-> This generates a lot of VMWRITEs even if nothing changes, just to
-> re-set bits in the VMCS to their existing values.  Need to add
-> something like this:
-> 
->    if (loaded_vmcs->msr[i].host == msr->host
-> && loaded_vmcs->msr[i].guest == msr->guest)
->           continue;
-VMWRITE happens only when number of autoloaded MSRs changes (which is
-rare), not on each call to add_atomic_switch_msr(). I thought about
-optimizing this write too by doing
-vmcs_write32(VM_(ENTRY|EXIT)_MSR_LOAD_COUNT, m->nr) only once by
-checking that  m->nr changed during vmentry. Can be done later.
-> 
-> btw, shouldn't the msr autoload list be part of loaded_vmcs as well?
-> 
-Why?
-
-> >
+> >+	for (idx = 0; idx<  x86_pmu.num_counters; idx++)  {
+> >+		struct perf_event *event = cpuc->events[idx];
+> >+
+> >+		arr[idx].msr = x86_pmu_config_addr(idx);
+> >+		arr[idx].host = arr[idx].guest = 0;
+> >+
+> >+		if (!test_bit(idx, cpuc->active_mask))
+> >+			continue;
+> >+
+> >+		arr[idx].host = arr[idx].guest =
+> >+				event->hw.config | ARCH_PERFMON_EVENTSEL_ENABLE;
+> >+
+> >+		if (event->attr.exclude_host)
+> >+			arr[idx].host&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
+> >+		else if (event->attr.exclude_guest)
+> >+			arr[idx].guest&= ~ARCH_PERFMON_EVENTSEL_ENABLE;
 > >+	}
-> >+#endif
+> >+
+> >+	return 0;
 > >+}
-> >+
-> >  #ifdef CONFIG_X86_64
-> >  #define R "r"
-> >  #define Q "q"
-> >@@ -6101,6 +6125,8 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
-> >  	if (vcpu->guest_debug&  KVM_GUESTDBG_SINGLESTEP)
-> >  		vmx_set_interrupt_shadow(vcpu, 0);
-> >
-> >+	atomic_switch_perf_msrs(vmx);
-> >+
-> >  	vmx->__launched = vmx->loaded_vmcs->launched;
-> >  	asm(
-> >  		/* Store host registers */
-> >@@ -6306,6 +6332,15 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
-> >  	vmx->nested.current_vmptr = -1ull;
-> >  	vmx->nested.current_vmcs12 = NULL;
-> >
-> >+	vmx->perf_msrs_cnt = perf_guest_get_msrs_count();
-> >+	if (vmx->perf_msrs_cnt>  0) {
-> >+		vmx->perf_msrs = kmalloc(vmx->perf_msrs_cnt *
-> >+				sizeof(struct perf_guest_switch_msr),
-> >+				GFP_KERNEL);
-> >+		if (!vmx->perf_msrs)
-> >+			goto free_vmcs;
-> >+	}
-> >+
 > 
-> Do we really need a private buffer?  Perhaps perf_guest_get_msrs()
-> can return a perf-internal buffer (but then, we will need to copy it
-> for the optimization above, but that's a separate issue).
-> 
-The buffer will be small, so IMHO private one is not an issue. We can
-make it perf internal per cpu buffer I think.
+> Would be better to calculate these when the host msrs are
+> calculated, instead of here, every vmentry.
+>
+For arch PMU v2 and greater it is precalculated. For v1 (which is almost
+non existent, even my oldest cpu with VMX has v2 PMU) I am not sure it
+will help since we need to copy information to perf_guest_switch_msr
+array anyway here.
 
 --
 			Gleb.
