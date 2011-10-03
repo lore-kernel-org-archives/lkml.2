@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1JCJuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:50:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40151 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754074Ab1JCJuQ (ORCPT
+	id S1754666Ab1JCJvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:51:23 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62002 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab1JCJvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:50:16 -0400
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regmap: Optimize the lookup path to use binary search
-Date: Mon,  3 Oct 2011 10:50:14 +0100
-Message-Id: <1317635414-31082-1-git-send-email-dp@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.4
+	Mon, 3 Oct 2011 05:51:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/30] video/omap: fix dependencies
+Date: Mon, 03 Oct 2011 11:51:10 +0200
+Message-ID: <4098767.aLCa4gBHda@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317624830.2026.6.camel@deskari>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-3-git-send-email-arnd@arndb.de> <1317624830.2026.6.camel@deskari>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wrg3hSnh68J3I4YktZSJL4uOBiPYCYRy0YTefDnYLQt
+ ZLAl/VVlaVsE5G+5JJeN2jLXRKl90t0Q+obvgMNZMYb955yzSk
+ oN+mNI0pStMV7gmqmxtXklj4aRIXclYcnCd4fc1GrPMEOHomli
+ 8cmLiOF0wMnheD8GksmfxwqhqDXcblQsc/F35ZMnPQSfHc3UWz
+ hxZvbJiduYESTTuptmkWNbwfPQJWE1ogeQZuj9AcVZ9pU6ukIs
+ apMEaV6jCuDrNP8klyeuidEf+o4DSV2qqDP/55TEPOM8c6ihQU
+ OX/LHItzOX9hY/UC24aFnmEvdbZa1uo5ktcxgmoK/Ao761dr12
+ VSdRYi8bEl4rk753ExRU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there are more lookups than insertions in a typical
-scenario, optimize the linear search into a binary search.  For
-this to work, we need to keep reg_defaults sorted upon
-insertions, for now be lazy and use sort().
+On Monday 03 October 2011 09:53:50 Tomi Valkeinen wrote:
+> Your patch will conflict with both of those changes. Is it ok for you to
+> drop this patch, and I'll make a new one on top of my changes to clean
+> up the Makefile in a similar way than you did? The new patch wouldn't
+> make it in the next merge window, though, but I don't think this patch
+> is fixing any bigger bug, so perhaps it's not so urgent.
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regcache.c |   29 ++++++++++++++++++++++++-----
- 1 files changed, 24 insertions(+), 5 deletions(-)
+Sure, no problem. I'll put it into my "hacks" branch then, so I can
+still do randconfig builds and we get back to it later.
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index f32c08c..b10e38f 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/slab.h>
- #include <trace/events/regmap.h>
-+#include <linux/sort.h>
- 
- #include "internal.h"
- 
-@@ -356,14 +357,30 @@ unsigned int regcache_get_val(const void *base, unsigned int idx,
- 
- int regcache_lookup_reg(struct regmap *map, unsigned int reg)
- {
--	unsigned int i;
--
--	for (i = 0; i < map->num_reg_defaults; i++)
--		if (map->reg_defaults[i].reg == reg)
--			return i;
-+	unsigned int min, max, index;
-+
-+	min = 0;
-+	max = map->num_reg_defaults - 1;
-+	do {
-+		index = (min + max) / 2;
-+		if (map->reg_defaults[index].reg == reg)
-+			return index;
-+		if (map->reg_defaults[index].reg < reg)
-+			min = index + 1;
-+		else
-+			max = index;
-+	} while (min <= max);
- 	return -1;
- }
- 
-+static int regcache_insert_cmp(const void *a, const void *b)
-+{
-+	const struct reg_default *_a = a;
-+	const struct reg_default *_b = b;
-+
-+	return _a->reg - _b->reg;
-+}
-+
- int regcache_insert_reg(struct regmap *map, unsigned int reg,
- 			unsigned int val)
- {
-@@ -378,5 +395,7 @@ int regcache_insert_reg(struct regmap *map, unsigned int reg,
- 	map->num_reg_defaults++;
- 	map->reg_defaults[map->num_reg_defaults - 1].reg = reg;
- 	map->reg_defaults[map->num_reg_defaults - 1].def = val;
-+	sort(map->reg_defaults, map->num_reg_defaults,
-+	     sizeof(struct reg_default), regcache_insert_cmp, NULL);
- 	return 0;
- }
--- 
-1.7.6.4
-
+	Arnd
