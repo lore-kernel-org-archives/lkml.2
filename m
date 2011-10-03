@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab1JCGng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 02:43:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:15920 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab1JCGn2 (ORCPT
+	id S1751643Ab1JCGtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 02:49:00 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:9065 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab1JCGs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 02:43:28 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH] Input: evdev - use monotonic clock for event timestamps
-Date: Mon,  3 Oct 2011 14:43:20 +0800
-Message-Id: <1317624200-9762-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Mon, 3 Oct 2011 02:48:56 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-d6-4e895ad60442
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: alsa-devel@alsa-project.org, "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        linux-kernel@vger.kernel.org, "'Liam Girdwood'" <lrg@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
+ <1317587284-2776-6-git-send-email-arnd@arndb.de>
+ <20111002204729.GC5811@opensource.wolfsonmicro.com>
+ <3289863.m6ULFZUV3p@wuerfel>
+In-reply-to: <3289863.m6ULFZUV3p@wuerfel>
+Subject: RE: [alsa-devel] [PATCH 5/6] ASoC: samsung: fix Kconfig dependencies
+Date: Mon, 03 Oct 2011 15:48:54 +0900
+Message-id: <004e01cc8198$848347f0$8d89d7d0$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyBSHlS6nbfC4PURjyN4s7L5omUwgAS0swQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using wallclock time for event timestamps subjects inter-event timing to
-ntp and other clock adjustments.  This complicates userspace drivers
-that use these timestamps to calculate velocities, or while processing
-state transitions.
+Hi,
+On Mon, Oct 03, 2011 at 6:15:03AM , Arnd Bergmann wrote:
+> It's a bug that I only observed on exynos4, and it could be that
+> this patch didn't actually solve it in the end. I'll drop it for
+> now and do a better report when the problem comes back.
 
-Instead, use the kernel monotonic clock for event timestamps, which is
-at least guaranteed never to go backwards.
+Could you please explain problem which observed on exynos4?
+If possible, I want to check it too.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/evdev.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Thanks
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 4cf2534..118f936 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -94,8 +94,11 @@ static void evdev_event(struct input_handle *handle,
- 	struct evdev *evdev = handle->private;
- 	struct evdev_client *client;
- 	struct input_event event;
-+	struct timespec now;
- 
--	do_gettimeofday(&event.time);
-+	getrawmonotonic(&now);
-+	event.time.tv_sec = now.tv_sec;
-+	event.time.tv_usec = now.tv_nsec/1000;
- 	event.type = type;
- 	event.code = code;
- 	event.value = value;
--- 
-1.7.3.1
+Sangbeom.
 
