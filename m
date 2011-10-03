@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab1JCPUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:20:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60764 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756413Ab1JCPUE (ORCPT
+	id S1756491Ab1JCPU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:20:59 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42728 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755885Ab1JCPUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:20:04 -0400
-Date: Mon, 3 Oct 2011 16:20:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, Dmitry Artamonow <mad_soft@inbox.ru>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH 2/6] ASoC: codecs: AK4641 depends on GPIOLIB
-Message-ID: <20111003152002.GP3731@opensource.wolfsonmicro.com>
-References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
- <20111003134527.GF11710@n2100.arm.linux.org.uk>
- <20111003143553.GG23811@sirena.org.uk>
- <1343003.MpQlxoEPa6@wuerfel>
+	Mon, 3 Oct 2011 11:20:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1343003.MpQlxoEPa6@wuerfel>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKTCnzmM1sNqf4udk+osgYgY6zk8tQYx7DN0K02MBHuRCOYShQ@mail.gmail.com>
+References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
+ <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com> <CAKTCnzmM1sNqf4udk+osgYgY6zk8tQYx7DN0K02MBHuRCOYShQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 3 Oct 2011 08:20:33 -0700
+X-Google-Sender-Auth: t5H37G0yYbtHhifU9lLJGOWG7qU
+Message-ID: <CA+55aFzW-E7=Mgtm7uUWLh7GtTxmkWWLpwc9CcWqG3vgVtOHTw@mail.gmail.com>
+Subject: Re: taskstats root only breaking iotop
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Guillaume Chazarain <guichaz@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 04:47:07PM +0200, Arnd Bergmann wrote:
+On Mon, Oct 3, 2011 at 7:52 AM, Balbir Singh <bsingharora@gmail.com> wrote:
+>>
+>
+> Namespaces came in later, much later after taskstats. I think your
+> biased and not even thinking about your bias.
 
-> sound/soc/codecs/wm1250-ev1.c:32:14: error: array type has incomplete element type
+Umm. Yes, I'm biased. I'm biased as hell by the fact that I reported
+the taskstats namespace breakage with a suggested approach to fix it,
+and never heard back from anybody involved with it.
 
-OK, that's the gpio_request_ stuff not being implemented thing that I
-have seen some reports of.  Looks like that's not been stubbed out, but
-for Prima2 the best fix is just to turn on gpiolib since there's no
-excuse for a new platform to not use it.
+And yes, you were cc'd on that.
+
+> What was badly designed?
+
+The fact that it had no security what-so-ever? Unlike /proc, which at
+least has the *structure* for security, even if it then often for
+historical reasons leaves things a bit too open.
+
+                           Linus
