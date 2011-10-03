@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab1JCBWa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 21:22:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50388 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1JCBWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 21:22:25 -0400
-Message-ID: <4E890E3F.5090106@zytor.com>
-Date: Sun, 02 Oct 2011 18:22:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754811Ab1JCBWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 21:22:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34474 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab1JCBWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Oct 2011 21:22:48 -0400
+Date: Sun, 2 Oct 2011 18:22:44 -0700
+From: Tejun Heo <htejun@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sched/kthread: Complain loudly when others violate our
+ flags
+Message-ID: <20111003012244.GF31799@mtj.dyndns.org>
+References: <1317158254.26514.55.camel@gandalf.stny.rr.com>
+ <20110930034815.GF10425@mtj.dyndns.org>
+ <1317374865.19415.15.camel@twins>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Olof Johansson <olof@lixom.net>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-CC: Junio C Hamano <gitster@pobox.com>, Andrew Morton <akpm00@gmail.com>,
-        Michael Rubin <mrubin@google.com>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88AF15.7000503@xenotime.net> <20111002225434.GA22333@ericsson.com> <4E88EC86.8000601@zytor.com> <CAOesGMgD-vdJantBAoc97vqb0y1k3ESg6_=KaRbbHUO+m+sJPQ@mail.gmail.com> <4E88F35E.9000306@zytor.com> <4E890581.3060508@goop.org> <20111003010918.GG2969@thunk.org>
-In-Reply-To: <20111003010918.GG2969@thunk.org>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317374865.19415.15.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2011 06:09 PM, Ted Ts'o wrote:
-> On Sun, Oct 02, 2011 at 05:44:49PM -0700, Jeremy Fitzhardinge wrote:
->>> FWIW, Tuesday evening works really well for me.
->>
->> How many people are in San Francisco?  I'm happy to head down to
->> Mountain View or somewhere similar to meet up some mid-afternoon though.
-> 
-> I could meet people Monday afternoon or evening in Mountain View;
-> contact me privately if you're interested.  Tuesday evening doesn't
-> work for me since I'm flying up to Portland for a LF board meeting on
-> Wednesday.
-> 
-> Both Peter and I have signed the new GPG key that Linus has created;
-> I can also verify folks for CACert.
-> 
+On Fri, Sep 30, 2011 at 11:27:45AM +0200, Peter Zijlstra wrote:
+> There is no correctness issue what so ever with those, and userspace
+> moving them about doesn't matter one whit.
 
-Junio and a few others have tried to get a keysigning together for the
-Google MTV people ... if we could do that on Monday that would be a
-really good thing.
+I wanted to make it consistent and disallow diddling wq worker
+affinity from userland.  As those workers are shared and managed
+dynamically, it didn't make sense to allow affinity manipulation.
+That said, it might make sense allowing control over affinity of
+unbound wq workers for things like cpu isolation.  Userspace doing
+that per-worker doesn't make whole lot of sense.  Allowing putting
+unbound workers automatically into a cpuset would work better, I
+think.
 
-	-hpa
+Thanks.
 
-
+-- 
+tejun
