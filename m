@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1JCAbt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Oct 2011 20:31:49 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:46810 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab1JCAbo (ORCPT
+	id S1751554Ab1JCAeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Oct 2011 20:34:07 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38118 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1JCAd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Oct 2011 20:31:44 -0400
-Date: Mon, 3 Oct 2011 09:22:44 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrew Morton <akpm00@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        container ML <containers@lists.linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Miao Xie <miaox@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <htejun@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [BUGFIX] cgroup: create a workqueue for cgroup
-Message-Id: <20111003092244.bcfde141.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20110930153049.6719a14e.akpm00@gmail.com>
-References: <20110930165452.19c0fdf4.nishimura@mxp.nes.nec.co.jp>
-	<20110930153049.6719a14e.akpm00@gmail.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 2 Oct 2011 20:33:58 -0400
+From: "Thiago A. Correa" <thiago.correa@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: "Thiago A. Correa" <thiago.correa@gmail.com>
+Subject: [PATCH 1/1] ARM: Make debug UART optional for S3C devices
+Date: Sun,  2 Oct 2011 20:32:48 -0400
+Message-Id: <1317601968-9194-1-git-send-email-thiago.correa@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <yes>
+References: <yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011 15:30:49 -0700
-Andrew Morton <akpm00@gmail.com> wrote:
+This patch makes serial debug messages optional on
+Samsung SoC s3c devices making all UART ports available
+for other uses.
 
-> On Fri, 30 Sep 2011 16:54:52 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > In commit:f90d4118, cpuset_wq, a separate workqueue for cpuset, was introduced
-> > to avoid a dead lock against cgroup_mutex between async_rebuild_sched_domains()
-> > and cgroup_tasks_write().
-> > 
-> > But check_for_release() has a similar problem:
-> > 
-> >   check_for_release()
-> >     schedule_work(release_agent_work)
-> >       cgroup_release_agent()
-> >         mutex_lock(&cgroup_mutex)
-> > 
-> > And I actually see a lockup which seems to be caused by this problem
-> > on 2.6.32-131.0.15.el6.x86_64.
-> 
-> Are you sure the bug is still present in current kernels?  Perhaps
-> Tejun's workqueue changes magically made it go away.
-> 
-Not yet, but I'll check it.
+Signed-off-by: Thiago A. Correa <thiago.correa@gmail.com>
+---
+ arch/arm/boot/compressed/head.S                 |    2 +-
+ arch/arm/plat-samsung/Kconfig                   |   11 +++++++++++
+ arch/arm/plat-samsung/include/plat/uncompress.h |    9 +++++++++
+ 3 files changed, 21 insertions(+), 1 deletions(-)
 
-> >
-> > ...
-> > --- a/include/linux/cgroup.h
-> > +++ b/include/linux/cgroup.h
-> > @@ -27,6 +27,8 @@ struct css_id;
-> >  
-> >  extern int cgroup_init_early(void);
-> >  extern int cgroup_init(void);
-> > +extern void cgroup_wq_init(void);
-> > +extern void queue_cgroup_work(struct work_struct *work);
-> >  extern void cgroup_lock(void);
-> >  extern int cgroup_lock_is_held(void);
-> >  extern bool cgroup_lock_live_group(struct cgroup *cgrp);
-> 
-> Can we spot the odd man out?
-> 
-> I shall rename queue_cgroup_work() to cgroup_queue_work().
-> 
-Thank you for fixing it.
-I agree cgroup_queue_work() is a better name.
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 9f5ac11..3afb755 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -58,7 +58,7 @@
+ 		add	\rb, \rb, #0x00010000	@ Ser1
+ #endif
+ 		.endm
+-#elif defined(CONFIG_ARCH_S3C2410)
++#elif defined(CONFIG_ARCH_S3C2410) && CONFIG_ENABLE_DEBUG_S3C_UART
+ 		.macro loadsp, rb, tmp
+ 		mov	\rb, #0x50000000
+ 		add	\rb, \rb, #0x4000 * CONFIG_S3C_LOWLEVEL_UART_PORT
+diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+index b3e1065..c2183f0 100644
+--- a/arch/arm/plat-samsung/Kconfig
++++ b/arch/arm/plat-samsung/Kconfig
+@@ -33,7 +33,17 @@ config S3C_BOOT_ERROR_RESET
+ 	  Say y here to use the watchdog to reset the system if the
+ 	  kernel decompressor detects an error during decompression.
+ 
++
++config ENABLE_DEBUG_S3C_UART
++	bool "Enable S3C Debug UART"
++	help
++	  Say Y here if you want debug print of low level kernel messages
++	  using S3C UARTS.
++
++	  If in doubt, say N.
++
+ config S3C_BOOT_UART_FORCE_FIFO
++       depends on ENABLE_DEBUG_S3C_UART
+        bool "Force UART FIFO on during boot process"
+        default y
+        help
+@@ -42,6 +52,7 @@ config S3C_BOOT_UART_FORCE_FIFO
+ 
+ 
+ config S3C_LOWLEVEL_UART_PORT
++	depends on ENABLE_DEBUG_S3C_UART
+ 	int "S3C UART to use for low-level messages"
+ 	default 0
+ 	help
+diff --git a/arch/arm/plat-samsung/include/plat/uncompress.h b/arch/arm/plat-samsung/include/plat/uncompress.h
+index ee48e12..778c2df 100644
+--- a/arch/arm/plat-samsung/include/plat/uncompress.h
++++ b/arch/arm/plat-samsung/include/plat/uncompress.h
+@@ -37,6 +37,7 @@ static void arch_detect_cpu(void);
+ /* how many bytes we allow into the FIFO at a time in FIFO mode */
+ #define FIFO_MAX	 (14)
+ 
++#if defined(CONFIG_ENABLE_DEBUG_S3C_UART)
+ #define uart_base S3C_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT)
+ 
+ static __inline__ void
+@@ -85,11 +86,19 @@ static void putc(int ch)
+ 	/* write byte to transmission register */
+ 	uart_wr(S3C2410_UTXH, ch);
+ }
++#else
++static inline void putc(int ch)
++{
++}
++
++
++#endif
+ 
+ static inline void flush(void)
+ {
+ }
+ 
++
+ #define __raw_writel(d, ad)			\
+ 	do {							\
+ 		*((volatile unsigned int __force *)(ad)) = (d); \
+-- 
+1.7.3.4
 
-Thanks,
-Daisuke Nishimura.
