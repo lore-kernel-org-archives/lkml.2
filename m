@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab1JCNUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:20:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65415 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab1JCNUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:20:00 -0400
+	id S1756029Ab1JCNUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:20:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756012Ab1JCNUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:20:13 -0400
+Date: Mon, 3 Oct 2011 15:16:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC][PATCH 0/5] Signal scalability series
+Message-ID: <20111003131610.GA26823@redhat.com>
+References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20111003090846.GA25136@localhost.pp.htv.fi>
-References: <20111003090846.GA25136@localhost.pp.htv.fi>
-Date: Mon, 3 Oct 2011 15:19:59 +0200
-Message-ID: <CAFLxGvwFcn+YAWveuYV4roo7ZDmx8VkWWYxJ52_qt3cw1e4TWQ@mail.gmail.com>
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Adrian Bunk <bunk@stusta.de>
-Cc: Andy Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adrian,
-
-On Mon, Oct 3, 2011 at 11:08 AM, Adrian Bunk <bunk@stusta.de> wrote:
-> After upgrading a kernel the existing userspace should just work
-> (assuming it did work before ;-) ), but when I upgraded my kernel
-> from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
+On 09/30, Matt Fleming wrote:
 >
+> On Fri, 2011-09-30 at 18:52 +0200, Oleg Nesterov wrote:
+>
+> > Hmm. Just out of curiosity, I blindly applied the whole series and poke
+> > the _random_ function to look at, dequeue_signal(). And it looks wrong.
+> >
+> > 	spin_lock_irqsave(&current->signal->ctrl_lock, flags);
+> > 	current->jobctl |= JOBCTL_STOP_DEQUEUED;
+> >
+> > This signal->ctrl_lock can't help. A sig_kernel_stop() should be
+> > dequeued under the same lock, and we shouldn't release it unless we
 
-Are only old UML kernels like 2.6.30.1 affected?
-Anyway, it's time to upgrade my main machine to 3.1.0-rc8 to observe
-some new UML issues. ;-)
+s/unless/until/
 
--- 
-Thanks,
-//richard
+> > set JOBCTL_STOP_DEQUEUED. Otherwise we race with SIGCONT.
+>
+> Hmm.. is that really a problem? Does the dequeue and setting
+> JOBCTL_STOP_DEQUEUED actually need to be atomic?
+
+It should be atomic wrt SIGCONT.
+
+> Does it matter if we
+> have SIGCONT on the signal queue when we set JOBCTL_STOP_DEQUEUED?
+
+Why do we have? Usually SIGCONT is ignored. But this doesn't matter,
+SIGCONT acts at the sending time.
+
+If SIGCONT is sent - the process must not stop. Since we drop the lock
+we can't guarantee this.
+
+> > May be do_signal_stop() does something special? At first flance it doesn't.
+> > But wait, it does while_each_thread() under ->ctrl_lock, why this is safe?
+>
+> Why is it not safe? What scenario are you thinking of where that isn't
+> safe?
+
+This series doesn't add ->ctrl_lock into copy_process/__unhash_process
+or I misread the patches. This means we can't trust >thread_group list.
+
+Even this is safe (say, we can rely on rcu), we can't calculate
+->group_stop_count correctly. In particular, without ->siglock we can
+race with exit_signals() which sets PF_EXITING. Note that PF_EXITING
+check in task_set_jobctl_pending() is important.
+
+Oleg.
+
