@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab1JCVLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 17:11:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53542 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757574Ab1JCVLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 17:11:16 -0400
-Date: Mon, 3 Oct 2011 23:11:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Greg KH <gregkh@suse.de>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.6
-In-Reply-To: <20111003203537.GC22113@kroah.com>
-Message-ID: <alpine.LFD.2.02.1110032308120.1489@ionos>
-References: <20111003203537.GC22113@kroah.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1757609Ab1JCVMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 17:12:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61684 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755360Ab1JCVMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 17:12:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,481,1312182000"; 
+   d="scan'208";a="58330339"
+Subject: Re: [patch 1/2] sched: use resched IPI to kick off the nohz idle
+ balance
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Mon, 03 Oct 2011 14:13:54 -0700
+In-Reply-To: <1317670590.20367.38.camel@twins>
+References: <20110929223242.837017656@sbsiddha-desk.sc.intel.com>
+	 <1317670590.20367.38.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317676434.11592.156.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011, Greg KH wrote:
-
-> I'm announcing the release of the 3.0.6 kernel.
+On Mon, 2011-10-03 at 12:36 -0700, Peter Zijlstra wrote:
+> On Thu, 2011-09-29 at 15:30 -0700, Suresh Siddha wrote:
 > 
-> There was a build error in the radeon driver of the 3.0.5 kernel, so
-> this update is only needed if you have problems building that kernel.
+> > ---
+> >  kernel/sched.c      |   14 +++++++++++---
+> >  kernel/sched_fair.c |   27 +++++++--------------------
+> >  2 files changed, 18 insertions(+), 23 deletions(-)
+> > 
+> > Index: linux-2.6-tip/kernel/sched.c
+> > ===================================================================
+> > --- linux-2.6-tip.orig/kernel/sched.c
+> > +++ linux-2.6-tip/kernel/sched.c
+> > @@ -2733,7 +2733,7 @@ void scheduler_ipi(void)
+> >  	struct rq *rq = this_rq();
+> >  	struct task_struct *list = xchg(&rq->wake_list, NULL);
+> >  
+> > -	if (!list)
+> > +	if (!list && !idle_cpu(cpu_of(rq)))
+> >  		return;
 > 
-> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
->         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+> Why not make that !rq->nohz_balance_kick? (wrapped in a helper for !
+> CONFIG_NO_HZ)
 
-That's missing the branch
+If a rq gets busy before we do nohz_idle_balance() which does the
+nohz_balance_kick reset, we will have a busy rq with nohz_balance_kick
+set. And wanted to bail out sooner by checking for idle cpu and minimize
+the impact for a busy rq having the nohz_idle_balance set.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git 3.0.y
+I can probably rename your got_nohz_kick() as got_nohz_idle_kick() and
+fix it.
 
-and while I can see the reason to make branches instead of separate
-trees, it's a nightmare when you want to get the 3.0.y tags because
-git insists on downloading the world and some more :(. It's just a one
-time thing, but nevertheless anoying as hell.
+> > tself as idle load_balancer, while
+> > @@ -4450,11 +4434,14 @@ static void nohz_balancer_kick(int cpu)
+> >  	}
+> >  
+> >  	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
+> > -		struct call_single_data *cp;
+> > -
+> >  		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
+> > -		cp = &per_cpu(remote_sched_softirq_cb, cpu);
+> > -		__smp_call_function_single(ilb_cpu, cp, 0);
+> > +		/*
+> > +		 * Use kick_process instead of resched_cpu.
+> > +		 * This way we generate a sched IPI on the target cpu which
+> > +		 * is idle. And the softirq performing nohz idle load balance
+> > +		 * will be run before returning from the IPI.
+> > +		 */
+> 
+> Shouldn't we have a memory barrier of sorts before sending the IPI?
+> 
+> > +		kick_process(idle_task(ilb_cpu));
 
-Thanks,
+Correct and also I think we can use smp_send_reschedule() directly
+instead of kick process. Will fix it.
 
-	tglx
+thanks,
+suresh
+
