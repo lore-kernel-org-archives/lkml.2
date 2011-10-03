@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab1JCJ4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:56:54 -0400
-Received: from rackplans.net ([209.44.101.17]:40418 "EHLO mtl.rackplans.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754582Ab1JCJ4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:56:41 -0400
-Date: Mon, 3 Oct 2011 05:47:26 -0400 (EDT)
-From: gmack@innerfire.net
-X-X-Sender: gmack@mtl.rackplans.net
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: David Miller <davem@davemloft.net>, w@1wt.eu, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel.org status: hints on how to check your machine for
- intrusion
-In-Reply-To: <1317494738.4588.78.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.DEB.2.00.1110030539390.7763@mtl.rackplans.net>
-References: <20110930235924.GA25176@kroah.com>  <20111001073533.GA18690@1wt.eu> <20111001180641.GD6309@home.goodmis.org>  <20111001.141343.2293070262147973147.davem@davemloft.net> <1317494738.4588.78.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754904Ab1JCKFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 06:05:14 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52021 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab1JCKFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 06:05:10 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 3 Oct 2011 19:04:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 00/10] memcg naturalization -rc4
+Message-Id: <20111003190411.2c8c6b29.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110930093231.GE30857@redhat.com>
+References: <1317330064-28893-1-git-send-email-jweiner@redhat.com>
+	<20110930170510.4695b8f0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110930093231.GE30857@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Date: Sat, 01 Oct 2011 14:45:38 -0400
-> From: Steven Rostedt <rostedt@goodmis.org>
-> To: David Miller <davem@davemloft.net>
-> Cc: w@1wt.eu, greg@kroah.com, linux-kernel@vger.kernel.org
-> Subject: Re: kernel.org status: hints on how to check your machine for
->     intrusion
+On Fri, 30 Sep 2011 11:32:31 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
+
+> On Fri, Sep 30, 2011 at 05:05:10PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 29 Sep 2011 23:00:54 +0200
+> > Thank you for your work. Now, I'm ok this series to be tested in -mm.
+> > Ack. to all.
 > 
-> On Sat, 2011-10-01 at 14:40 -0400, Steven Rostedt wrote:
-> > OK, I decided to attach the perl script anyway. It is very crude, and
-> > really needs to be cleaned up for generic use.
-> > 
+> Thanks!
 > 
-> I've just been pointed to:
+> > Do you have any plan, concerns ?
 > 
-> http://www.fail2ban.org/wiki/index.php/Main_Page
+> I would really like to get them into 3.2.  While it's quite intrusive,
+> I stress-tested various scenarios for quite some time - tests that
+> revealed more bugs in the existing memcg code than in my changes - so
+> I don't expect too big surprises.  AFAICS, Google uses these patches
+> internally already and their bug reports early on also helped iron out
+> the most obvious problems.
 > 
-> This looks like something similar.
+> What I am concerned about is the scalability on setups with thousands
+> of tiny memcgs that go into global reclaim, as this would try to scan
+> pages from all existing memcgs.  There is a mitigating factor in that
+> concurrent reclaimers divide the memcgs to scan among themselves (the
+> shared mem_cgroup_reclaim_iter), and with hundreds or thousands of
+> memcgs, I expect several threads to go into reclaim upon global memory
+> pressure at the same time in the common case.  I don't have the means
+> to test this and I also don't know if such setups exist or are within
+> the realm of sanity that we would like to support, anyway. 
+
+As far as I hear, some users use hundreds of memcg in a host.
+
+> If this
+> shows up, I think the fix would be as easy as bailing out early from
+> the hierarchy walk, but I would like to cross that bridge when we come
+> to it.
 > 
-> You see, the reason I posted this tool is because I was sure people will
-> point me to better ones that do the same thing (and more!)   ;)
+> Other than that, I see no reason to hold it off.  Traditional reclaim
+> without memcgs except root_mem_cgroup - what most people care about -
+> is mostly unaffected.  There is a real interest in the series, and
+> maintaining it out-of-tree is a major pain and quite error prone.
+> 
+> What do you think?
 > 
 
-The nice thing about fail2ban is that you can use it to montitor other 
-ports since many bots are now doing ftp/smtp sasl/imap/imaps/pop3/pop3s 
-scans to find system accounts and then use the result for an ssh login.
-
-As a warning though, at least on debian the SMTP SASL regex is non 
-functional and I haven't had time to work out a working one so hopefully 
-if someone has one it would be helpful. A fix for this is doubly important 
-since the SASL package has a memory leak on failed login that they have 
-known about for at least 3 years but haven't bothered fixing.  A scanning 
-bot can take up several gigs of memory in about an hour.
-
-	Gerhard
+I think this should be merged/tested as soon as possible because this patch
+must be a base for memcg patches which are now being developped.
 
 
---
-Gerhard Mack
+Thanks,
+-Kame
 
-gmack@innerfire.net
-
-<>< As a computer, I find your faith in technology amusing.
