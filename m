@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab1JCUqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:46:22 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:44504 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932195Ab1JCUqP (ORCPT
+	id S932569Ab1JCUsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:48:36 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34745 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755033Ab1JCUsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:46:15 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: NnligPQVM1nm._cO6bZUtUwkHhreEN.ZPzV9ygS.9V7qKww
- VgA.KEcbJIHT6ccY5No3QKfvPqVpxYlKGBa1BMq05mPYVoTr_7sPeXff8Mpq
- LmtrVVfQYYxHJfonNkx_TldTyqJXtKAfVwQy1AhEbIO6wRFDvfWTGOlC_tI3
- fJvf_e6nW3hKEmNu7j2tkDi16n4iTHJHTfM4W5wIVE9AvA1QD6GyMBOqfuSx
- KrgPCdF11PG8NcQALmPT9jq_j4ND9GIzhVD77IfMD2U0SYz7KfRHyeuT.8tM
- r.IEipfm2MZKWVf0q.qwCk5pY77S1q29ejemXPq3E41fji00onUio_HjIlKV
- L6oZ3OCtAR9SNSXqotZxo2wTop9Iq8oSwt.GVaTizWAXoR3g1B8L_LPn5zt.
- DAm0YnTMcIMOLzf3rv0pUia4-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 3 Oct 2011 15:46:11 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Sitsofe Wheeler <sitsofe@yahoo.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org
-Subject: Re: lockdep recursive locking detected (rcu_kthread /
- __cache_free)
-In-Reply-To: <20111003203139.GH2403@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1110031540560.11713@router.home>
-References: <20111003175322.GA26122@sucs.org> <20111003203139.GH2403@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 3 Oct 2011 16:48:30 -0400
+Date: Mon, 3 Oct 2011 13:48:18 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 05/21] drm/i915: Check eDP power when doing
+ aux channel communications
+Message-ID: <20111003134818.0ef811ce@jbarnes-desktop>
+In-Reply-To: <1317344993-24945-6-git-send-email-keithp@keithp.com>
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+	<1317344993-24945-1-git-send-email-keithp@keithp.com>
+	<1317344993-24945-6-git-send-email-keithp@keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011, Paul E. McKenney wrote:
+On Thu, 29 Sep 2011 18:09:37 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-> The first lock was acquired here in an RCU callback.  The later lock that
-> lockdep complained about appears to have been acquired from a recursive
-> call to __cache_free(), with no help from RCU.  This looks to me like
-> one of the issues that arise from the slab allocator using itself to
-> allocate slab metadata.
+> Verify that the eDP VDD is on, either with the panel being on or with
+> the VDD force-on bit being set.
+> 
+> This demonstrates that in many instances, VDD is not on when needed,
+> which leads to failed EDID communications.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/intel_dp.c |   22 ++++++++++++++++++++++
+>  1 files changed, 22 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 8ab2a88..3b29a6f 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -279,6 +279,24 @@ intel_hrawclk(struct drm_device *dev)
+>  	}
+>  }
+>  
+> +static void
+> +intel_dp_check_edp(struct intel_dp *intel_dp)
+> +{
+> +	struct drm_device *dev = intel_dp->base.base.dev;
+> +	struct drm_i915_private *dev_priv = dev->dev_private;
+> +	u32 pp_status, pp_control;
+> +	if (!is_edp(intel_dp))
+> +		return;
+> +	pp_status = I915_READ(PCH_PP_STATUS);
+> +	pp_control = I915_READ(PCH_PP_CONTROL);
+> +	if ((pp_status & PP_ON) == 0 && (pp_control & EDP_FORCE_VDD) == 0) {
+> +		WARN(1, "eDP powered off while attempting aux channel communication.\n");
+> +		DRM_DEBUG_KMS("Status 0x%08x Control 0x%08x\n",
+> +			      pp_status,
+> +			      I915_READ(PCH_PP_CONTROL));
+> +	}
+> +}
 
-Right. However, this is a false positive since the slab cache with
-the metadata is different from the slab caches with the slab data. The slab
-cache with the metadata does not use itself any metadata slab caches.
+I'd call it "intel_dp_assert_dp_power" or something more descriptive
+(or just assert_panel_power to match the other asserts in
+intel_display.c), but other than that this is a nice sanity check.
 
+-- 
+Jesse Barnes, Intel Open Source Technology Center
