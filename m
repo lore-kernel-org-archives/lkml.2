@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab1JCQ1c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:27:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61146 "EHLO mx1.redhat.com"
+	id S1756808Ab1JCQ2v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:28:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab1JCQ1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:27:25 -0400
-Date: Mon, 3 Oct 2011 13:27:04 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
-	sample type
-Message-ID: <20111003162704.GB24281@ghostprotocols.net>
-References: <1317312068-10411-1-git-send-email-jolsa@redhat.com> <20110929220548.GA17597@ghostprotocols.net> <20111003102235.GB1838@jolsa.redhat.com>
+	id S1753085Ab1JCQ2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:28:47 -0400
+To: Adrian Bunk <bunk@stusta.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl>
+	<4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>
+	<4E88A537.4010008@zytor.com>
+	<20111003093239.GB25136@localhost.pp.htv.fi>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Mon, 03 Oct 2011 12:28:17 -0400
+In-Reply-To: <20111003093239.GB25136@localhost.pp.htv.fi> (Adrian Bunk's message of "Mon, 3 Oct 2011 12:32:39 +0300")
+Message-ID: <y0mobxyjazi.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003102235.GB1838@jolsa.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 03, 2011 at 12:22:35PM +0200, Jiri Olsa escreveu:
-> On Thu, Sep 29, 2011 at 07:05:48PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Sep 29, 2011 at 06:01:08PM +0200, Jiri Olsa escreveu:
-> > > The event processing relies on all events having the same sample_type.
-> > > 
-> > > This is being checked when the session is being opened read only.
-> > > It also needs to be checked when we do record, since events could be
-> > > read during processing build IDs at the end of the record command.
-> > > 
-> > > If we process events with different sample_type the processing might
-> > > skip some events or hang.
-> > > 
-> > > Following command hangs on my setup:
-> > >   ./perf record -o perf.data -e ext4:ext4_mb_new_group_pa \
-> > >    -e LLC-loads -- date '+%F'
-> > > 
-> > > because hardware and tracepoint events have different sample type.
-> > > 
-> > > With the patch applied the record command displays
-> > > "Non matching sample_type" message and exits.
-> > 
-> > That is way too cryptic :-\
-> > 
-> > What is that makes the sample type not match in this case? Can we make
-> > it match instead?
-> > 
-> > This is something to be properly fixed by _allowing_ non matching sample
-> > types, the evsel/evlist abstractions are getting we close but not there
-> > yet, multiple files in a perf.data/ directory are needed.
-> > 
-> > Till then can you check if we can make it match or else just say that
-> > the mix of events is not yet supported, please collect them in different
-> > sessions or something along those lines?
-> > 
-> > - Arnaldo
-> hi,
-> thanks for comments..
-> I just was this got in the tip tree git://tesla.tglx.de/git/linux-2.6-tip
-> 
-> perf tools: Exit record if events have non matching sample type
-> commit 6f9a4869e15de8af2fd715af876bc3e6b00757a7
-> Author: Jiri Olsa <jolsa@redhat.com>
-> Date:   Thu Sep 29 19:49:50 2011 +0200
-> 
-> I've read the email trail.. I'll check the sources and try to come up
-> with something.. ;)
 
-Couldn't understand, will check if the patch was already applied, if so,
-why bother commenting, right? :-)
+bunk@stusta.de wrote:
 
-- Arnaldo
+> [...]
+>> You probably know enough people (including myself) that would be willing
+>> to sign your key over the phone.
+>>...
+>
+> You have personally checked Rafael's user id (e.g. passport)?
+>
+> This might or might not be true in this case, but generally signing keys 
+> without having ever checked the user id (no matter how long you know the 
+> person) is a common mistake.
+
+What is the threat that this passport checking is intended to cure?
+That someone else might have been impersonating Rafael for years,
+sending patches, chatting in email and over the phone, and attending
+conferences?  If so, perhaps the impostor is of more value to the
+project than the Real Rafael.
+
+- FChE
