@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab1JCXVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:21:34 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:57081 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab1JCXVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:21:32 -0400
-Date: Mon, 03 Oct 2011 19:21:29 -0400 (EDT)
-Message-Id: <20111003.192129.745977451712127515.davem@davemloft.net>
-To: johnmusbach1@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Handling of multiple DHCP OFFERs
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <loom.20111004T011704-753@post.gmane.org>
-References: <loom.20111004T011704-753@post.gmane.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S1751795Ab1JCXZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 19:25:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45312 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab1JCXZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 19:25:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: John Musbach <johnmusbach1@gmail.com>
+Subject: Re: (unknown)
+Date: Mon, 3 Oct 2011 23:23:35 +0000 (UTC)
+Message-ID: <loom.20111004T012305-491@post.gmane.org>
+References: <5e3ffb407e78f737859395355d44867e.squirrel@webmail.iitk.ac.in>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 03 Oct 2011 16:21:30 -0700 (PDT)
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 24.93.19.169 (Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.186 Safari/535.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Musbach <johnmusbach1@gmail.com>
-Date: Mon, 3 Oct 2011 23:18:06 +0000 (UTC)
+Mr Omar Hasan <nehal <at> iitk.ac.in> writes:
 
-> Hello, I am configuring a network that'll have multiple DHCP servers
-> and I was wondering how Linux handles receiving multiple DHCP OFFERs?
-> More specifically, how does it choose which one to prefer and how long
-> will it wait for a answer from a preferred server if the other server
-> answers first? Thanks.
+> 
+> 
+> I am Omar Hasan a merchant from Dubai,i am sick and i need your assistance
+> to help me collect my deposit and dispatched it to charity organizations.
 
-There are multiple userspace implementations of DHCP, and the kernel
-does not usually get involved at all.  You'll therefore have to ask
-the folks who write and maintain the various DHCP implementations.
+Hello, how can we help you fine sir?
+
+
+
