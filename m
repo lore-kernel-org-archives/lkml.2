@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab1JCVqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 17:46:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33510 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189Ab1JCVqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 17:46:46 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Fix return code from regulator_disable_deferred()
-Date: Mon,  3 Oct 2011 22:46:41 +0100
-Message-Id: <1317678401-30772-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1757647Ab1JCVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 17:48:29 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53434 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756689Ab1JCVsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 17:48:22 -0400
+Date: Mon, 3 Oct 2011 13:31:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, cl@linux-foundation.org,
+        penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org
+Subject: Re: lockdep recursive locking detected (rcu_kthread / __cache_free)
+Message-ID: <20111003203139.GH2403@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111003175322.GA26122@sucs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003175322.GA26122@sucs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-schedule_delayed_work() returns a bool indicating if the work was already
-queued when it succeeds so we need to squash a true down to zero.
+On Mon, Oct 03, 2011 at 06:53:22PM +0100, Sitsofe Wheeler wrote:
+> Hi,
+> 
+> While running 3.1.0-rc8 the following lockdep warning (seemingly related
+> to RCU) was printed as the kernel was starting.
+> 
+> 
+> udev: starting version 151
+> udevd (263): /proc/263/oom_adj is deprecated, please use /proc/263/oom_score_adj instead.
+> 
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.1.0-rc8-dirty #508
+> ---------------------------------------------
+> rcu_kthread/6 is trying to acquire lock:
+>  (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+> 
+> but task is already holding lock:
+>  (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(&(&parent->list_lock)->rlock);
+>   lock(&(&parent->list_lock)->rlock);
+> 
+>  *** DEADLOCK ***
+> 
+>  May be due to missing lock nesting notation
+> 
+> 1 lock held by rcu_kthread/6:
+>  #0:  (&(&parent->list_lock)->rlock){..-...}, at: [<b016fe11>] __cache_free+0x2dd/0x382
+> 
+> stack backtrace:
+> Pid: 6, comm: rcu_kthread Not tainted 3.1.0-rc8-dirty #508
+> Call Trace:
+>  [<b0144466>] __lock_acquire+0xb90/0xc0e
+>  [<b044c0c2>] ? _raw_spin_unlock_irqrestore+0x2f/0x46
+>  [<b0223ebc>] ? debug_object_active_state+0x94/0xbc
+>  [<b01315af>] ? rcuhead_fixup_activate+0x26/0x4c
+>  [<b01448be>] lock_acquire+0x5b/0x72
+>  [<b016fe11>] ? __cache_free+0x2dd/0x382
+>  [<b044bb22>] _raw_spin_lock+0x25/0x34
+>  [<b016fe11>] ? __cache_free+0x2dd/0x382
+>  [<b016fe11>] __cache_free+0x2dd/0x382
+>  [<b016ff5c>] kmem_cache_free+0x3e/0x5b
+>  [<b0170097>] slab_destroy+0x11e/0x126
+>  [<b0170184>] free_block+0xe5/0x112
+>  [<b016fe54>] __cache_free+0x320/0x382
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+The first lock was acquired here in an RCU callback.  The later lock that
+lockdep complained about appears to have been acquired from a recursive
+call to __cache_free(), with no help from RCU.  This looks to me like
+one of the issues that arise from the slab allocator using itself to
+allocate slab metadata.
 
-I'll queue this up along with the addition of the call in ASoC - please
-say if this is a problem.
+So the allocator guys (added to CC) need to sort this one out.
 
- drivers/regulator/core.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+							Thanx, Paul
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index b39ec9f..0c6d301 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1600,13 +1600,18 @@ static void regulator_disable_work(struct work_struct *work)
- int regulator_disable_deferred(struct regulator *regulator, int ms)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
-+	int ret;
- 
- 	mutex_lock(&rdev->mutex);
- 	rdev->deferred_disables++;
- 	mutex_unlock(&rdev->mutex);
- 
--	return schedule_delayed_work(&rdev->disable_work,
--				     msecs_to_jiffies(ms));
-+	ret = schedule_delayed_work(&rdev->disable_work,
-+				    msecs_to_jiffies(ms));
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return 0;
- }
- EXPORT_SYMBOL_GPL(regulator_disable_deferred);
- 
--- 
-1.7.6.3
-
+>  [<b01759a1>] ? file_free_rcu+0x32/0x39
+>  [<b016ff5c>] kmem_cache_free+0x3e/0x5b
+>  [<b01759a1>] file_free_rcu+0x32/0x39
+>  [<b014ca68>] rcu_process_callbacks+0x95/0xa8
+>  [<b014cb34>] rcu_kthread+0xb9/0xd2
+>  [<b013356c>] ? wake_up_bit+0x1b/0x1b
+>  [<b014ca7b>] ? rcu_process_callbacks+0xa8/0xa8
+>  [<b0133305>] kthread+0x6c/0x71
+>  [<b0133299>] ? __init_kthread_worker+0x42/0x42
+>  [<b044ce02>] kernel_thread_helper+0x6/0xd
+> 
+> -- 
+> Sitsofe | http://sucs.org/~sits/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
