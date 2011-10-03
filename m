@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1JCKHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 06:07:06 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48720 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754255Ab1JCKHC (ORCPT
+	id S1755148Ab1JCKHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 06:07:19 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:38846 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755040Ab1JCKHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 06:07:02 -0400
-Date: Mon, 3 Oct 2011 11:06:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Doron Cohen" <doronc@siano-ms.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: How can LKM store persistent data?
-Message-ID: <20111003110601.127f3043@lxorguk.ukuu.org.uk>
-In-Reply-To: <D945C405928A9949A0F33C69E64A1A3BCD3DB9@s-mail.siano-ms.ent>
-References: <D945C405928A9949A0F33C69E64A1A3BCD3DB9@s-mail.siano-ms.ent>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Oct 2011 06:07:10 -0400
+Date: Mon, 3 Oct 2011 13:07:05 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 15/30] usb/musb: use a Kconfig choice to pick the right
+ DMA method
+Message-ID: <20111003100704.GD3363@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+ <1546914.88vcgxkfJf@wuerfel>
+ <20111002221050.GA25790@legolas.emea.dhcp.ti.com>
+ <3529819.LQllWhb43D@wuerfel>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
+Content-Disposition: inline
+In-Reply-To: <3529819.LQllWhb43D@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Our device has some configuration data like DVB standard and operation
-> mode which is not changes frequently. Currently it can be changed using
-> module parameters and by ioctl calls. But when the driver is down and up
-> again (meaning - every restart, sleep, reboot etc.)  the module is back
 
-Shouldn't be every sleep - you can reload across a suspend/resume
-yourself simply by remembering the module settings in the driver.
+--SO98HVl1bnMOfKZd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Our users asked us to keep this data persistent, if someone is using
-> ISDBT he would probably use it forever unless traveling to another
-> region. So the request is once a mode was set, do not change it on the
-> next reload just work at that mode until instructed otherwise. Therefore
-> the driver needs to save this data somehow, and read it when it loads
-> and work according to it.
+Hi,
 
-The usual way is to load the settings when the driver is loaded. udev has
-rules for what to do on driver loads (create things, configure stuff etc)
-so you can use a udev rule to run a program on driver load which loads
-the settings.
+On Mon, Oct 03, 2011 at 11:40:26AM +0200, Arnd Bergmann wrote:
+> On Monday 03 October 2011 01:10:51 Felipe Balbi wrote:
+> > Anyway, I'll take your patches in, but their too late for this merge
+> > window  I already sent my last pull to Greg.
+>=20
+> No problem. I need the full set of arm-randconfig patches upstream in ord=
+er
+> to make randconfig work in general, and that's not happening for 3.2
+> anyway. Right now, I'm just trying to as many patches as possible into
+> maintainer trees.
+>=20
+> Is your tree part of linux-next, or will it only show up after the merge
+> window once Greg has pulled your first set for 3.3?
 
-Saving them in userspace so the udev app can reload them is then up to
-your configuration tool/apps.
+My tree isn't in linux-next yet so my patches go to Greg and from there
+to -next.
 
-Alan
+--=20
+balbi
+
+--SO98HVl1bnMOfKZd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOiYlIAAoJEAv8Txj19kN1CDYH/2+3/wYhWXA7fHPdfefo6QDu
+mL/EPGzv2Ub7oZ3qjQ48oEYaCUGwqsahjK0DNGtVKaE/y/Hv4twF3WXvK7VqKvMB
+0mhiiVp6Sx5/GafgZbmRnc8xEG0gvkb+n63eETlsmbITYJM5sB88WA83QpJOYJ7r
+LGAfYDGVZ/SMe1sKco/LC1xgyxlP7+Vrb+OVs+os+An2PaaRaTvfHkPDokoKARDl
+CsyMDeWuPoEaihRAuHIkq40KIp4634YfTa/pV7xtu0+ghy1tEyISizQVG5X7cwVC
+O+dwHLsIgX4KUbS/WFQsyUPHHNARWRtKD1SvOmp9rpEFCp7lGeKp65W8tm+VzNc=
+=2pOE
+-----END PGP SIGNATURE-----
+
+--SO98HVl1bnMOfKZd--
