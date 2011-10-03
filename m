@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab1JCTIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 15:08:11 -0400
+	id S1757395Ab1JCTIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 15:08:38 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:54851 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab1JCTHy (ORCPT
+	with ESMTP id S1757344Ab1JCTHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 15:07:54 -0400
+	Mon, 3 Oct 2011 15:07:51 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
         Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
         Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH 09/10] cgroups: Allow subsystems to cancel a fork
-Date: Mon,  3 Oct 2011 21:07:11 +0200
-Message-Id: <1317668832-10784-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/10] cgroups: Pull up res counter charge failure interpretation to caller
+Date: Mon,  3 Oct 2011 21:07:10 +0200
+Message-Id: <1317668832-10784-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
 References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
@@ -27,11 +27,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the subsystem's fork callback return an error value so
-that they can cancel a fork. This is going to be used by
-the task counter subsystem to implement the limit.
+res_counter_charge() always returns -ENOMEM when the limit is reached
+and the charge thus can't happen.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
+However it's up to the caller to interpret this failure and return
+the appropriate error value. The task counter subsystem will need
+to report the user that a fork() has been cancelled because of some
+limit reached, not because we are too short on memory.
+
+Fix this by returning -1 when res_counter_charge() fails.
+
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
@@ -45,205 +50,36 @@ Cc: Tejun Heo <tj@kernel.org>
 Cc: Kirill A. Shutemov <kirill@shutemov.name>
 Cc: Containers <containers@lists.linux-foundation.org>
 ---
- include/linux/cgroup.h  |   20 ++++++++++++++------
- kernel/cgroup.c         |   23 +++++++++++++++++++----
- kernel/cgroup_freezer.c |    6 ++++--
- kernel/exit.c           |    2 +-
- kernel/fork.c           |    7 +++++--
- 5 files changed, 43 insertions(+), 15 deletions(-)
+ Documentation/cgroups/resource_counter.txt |    2 ++
+ kernel/res_counter.c                       |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b62cf5e..9c8151e 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -17,10 +17,11 @@
- #include <linux/rwsem.h>
- #include <linux/idr.h>
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index a2cd05b..24ec61c 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -76,6 +76,8 @@ to work with it.
+ 	limit_fail_at parameter is set to the particular res_counter element
+ 	where the charging failed.
  
-+struct cgroup_subsys;
++	It returns 0 on success and -1 on failure.
 +
- #ifdef CONFIG_CGROUPS
+  d. int res_counter_charge_locked
+ 			(struct res_counter *rc, unsigned long val)
  
- struct cgroupfs_root;
--struct cgroup_subsys;
- struct inode;
- struct cgroup;
- struct css_id;
-@@ -32,9 +33,11 @@ extern int cgroup_lock_is_held(void);
- extern bool cgroup_lock_live_group(struct cgroup *cgrp);
- extern void cgroup_unlock(void);
- extern void cgroup_fork(struct task_struct *p);
--extern void cgroup_fork_callbacks(struct task_struct *p);
-+extern int cgroup_fork_callbacks(struct task_struct *p,
-+				 struct cgroup_subsys **failed_ss);
- extern void cgroup_post_fork(struct task_struct *p);
--extern void cgroup_exit(struct task_struct *p, int run_callbacks);
-+extern void cgroup_exit(struct task_struct *p, int run_callbacks,
-+			struct cgroup_subsys *failed_ss);
- extern int cgroupstats_build(struct cgroupstats *stats,
- 				struct dentry *dentry);
- extern int cgroup_load_subsys(struct cgroup_subsys *ss);
-@@ -479,7 +482,7 @@ struct cgroup_subsys {
- 			    struct task_struct *tsk);
- 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		       struct cgroup *old_cgrp, struct task_struct *tsk);
--	void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
-+	int (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
- 	void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			struct cgroup *old_cgrp, struct task_struct *task);
- 	int (*populate)(struct cgroup_subsys *ss,
-@@ -636,9 +639,14 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
- static inline int cgroup_init_early(void) { return 0; }
- static inline int cgroup_init(void) { return 0; }
- static inline void cgroup_fork(struct task_struct *p) {}
--static inline void cgroup_fork_callbacks(struct task_struct *p) {}
-+static inline int cgroup_fork_callbacks(struct task_struct *p,
-+					struct cgroup_subsys **failed_ss)
-+{
-+	return 0;
-+}
- static inline void cgroup_post_fork(struct task_struct *p) {}
--static inline void cgroup_exit(struct task_struct *p, int callbacks) {}
-+static inline void cgroup_exit(struct task_struct *p, int callbacks,
-+			       struct cgroup_subsys *failed_ss) {}
- 
- static inline void cgroup_lock(void) {}
- static inline void cgroup_unlock(void) {}
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 709baef..018df9d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4540,8 +4540,11 @@ void cgroup_fork(struct task_struct *child)
-  * tasklist. No need to take any locks since no-one can
-  * be operating on this task.
-  */
--void cgroup_fork_callbacks(struct task_struct *child)
-+int cgroup_fork_callbacks(struct task_struct *child,
-+			  struct cgroup_subsys **failed_ss)
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 6b36823..b814d6c 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -26,7 +26,7 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
  {
-+	int err;
-+
- 	if (need_forkexit_callback) {
- 		int i;
- 		/*
-@@ -4551,10 +4554,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
--			if (ss->fork)
--				ss->fork(ss, child);
-+			if (ss->fork) {
-+				err = ss->fork(ss, child);
-+				if (err) {
-+					*failed_ss = ss;
-+					return err;
-+				}
-+			}
- 		}
+ 	if (counter->usage + val > counter->limit) {
+ 		counter->failcnt++;
+-		return -ENOMEM;
++		return -1;
  	}
-+
-+	return 0;
- }
  
- /**
-@@ -4612,7 +4622,8 @@ void cgroup_post_fork(struct task_struct *child)
-  *    which wards off any cgroup_attach_task() attempts, or task is a failed
-  *    fork, never visible to cgroup_attach_task.
-  */
--void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-+void cgroup_exit(struct task_struct *tsk, int run_callbacks,
-+		 struct cgroup_subsys *failed_ss)
- {
- 	struct css_set *cg;
- 	int i;
-@@ -4641,6 +4652,10 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
-+
-+			if (ss == failed_ss)
-+				break;
-+
- 			if (ss->exit) {
- 				struct cgroup *old_cgrp =
- 					rcu_dereference_raw(cg->subsys[i])->cgroup;
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index c1421a1..30a4332 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -187,7 +187,7 @@ static int freezer_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 	return 0;
- }
- 
--static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-+static int freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- {
- 	struct freezer *freezer;
- 
-@@ -207,7 +207,7 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	 * following check.
- 	 */
- 	if (!freezer->css.cgroup->parent)
--		return;
-+		return 0;
- 
- 	spin_lock_irq(&freezer->lock);
- 	BUG_ON(freezer->state == CGROUP_FROZEN);
-@@ -216,6 +216,8 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	if (freezer->state == CGROUP_FREEZING)
- 		freeze_task(task, true);
- 	spin_unlock_irq(&freezer->lock);
-+
-+	return 0;
- }
- 
- /*
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 2913b35..abab32b 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -994,7 +994,7 @@ NORET_TYPE void do_exit(long code)
- 	 */
- 	perf_event_exit_task(tsk);
- 
--	cgroup_exit(tsk, 1);
-+	cgroup_exit(tsk, 1, NULL);
- 
- 	if (group_dead)
- 		disassociate_ctty(1);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8e6b6f4..ee8abdb 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1058,6 +1058,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	int retval;
- 	struct task_struct *p;
- 	int cgroup_callbacks_done = 0;
-+	struct cgroup_subsys *cgroup_failed_ss = NULL;
- 
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1312,8 +1313,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	/* Now that the task is set up, run cgroup callbacks if
- 	 * necessary. We need to run them before the task is visible
- 	 * on the tasklist. */
--	cgroup_fork_callbacks(p);
-+	retval = cgroup_fork_callbacks(p, &cgroup_failed_ss);
- 	cgroup_callbacks_done = 1;
-+	if (retval)
-+		goto bad_fork_free_pid;
- 
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
-@@ -1419,7 +1422,7 @@ bad_fork_cleanup_cgroup:
- #endif
- 	if (clone_flags & CLONE_THREAD)
- 		threadgroup_fork_read_unlock(current);
--	cgroup_exit(p, cgroup_callbacks_done);
-+	cgroup_exit(p, cgroup_callbacks_done, cgroup_failed_ss);
- 	delayacct_tsk_free(p);
- 	module_put(task_thread_info(p)->exec_domain->module);
- bad_fork_cleanup_count:
+ 	counter->usage += val;
 -- 
 1.7.5.4
 
