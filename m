@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab1JCSwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 14:52:18 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28908 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1JCSwM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 14:52:12 -0400
+	id S932543Ab1JCSww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 14:52:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42642 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932513Ab1JCSwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 14:52:46 -0400
+Date: Mon, 3 Oct 2011 11:38:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jon Mason <mason@myri.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: Re: [099/244] PCI: Set PCI-E Max Payload Size on fabric
+Message-ID: <20111003183806.GA22292@suse.de>
+References: <20110928220225.GA27128@kroah.com>
+ <20110928220135.776796691@clark.kroah.org>
+ <CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
 MIME-Version: 1.0
-Message-ID: <a4291ee6-2352-45af-acd9-4a87d1b897bd@default>
-Date: Mon, 3 Oct 2011 11:51:53 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de
-Cc: cascardo@holoscopio.com, rdunlap@xenotime.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] staging: zcache: reduce tmem bucket lock contention
-References: <1317306746-27072-1-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1317306746-27072-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet24.oracle.com [156.151.31.67]
-X-CT-RefId: str=0001.0A02020A.4E8A0453.0100,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAErSpo5ynWTUNSY7NuXC-bRx5ZT0J-Ya5iTg=MBCSH37PYMS+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Sent: Thursday, September 29, 2011 8:32 AM
-> To: gregkh@suse.de
-> Cc: cascardo@holoscopio.com; Dan Magenheimer; rdunlap@xenotime.net; devel@driverdev.osuosl.org; linux-
-> kernel@vger.kernel.org; Seth Jennings
-> Subject: [PATCH] staging: zcache: reduce tmem bucket lock contention
+On Fri, Sep 30, 2011 at 04:33:29PM -0600, Bjorn Helgaas wrote:
+> On Wed, Sep 28, 2011 at 4:01 PM, Greg KH <gregkh@suse.de> wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let us know.
 > 
-> tmem uses hash buckets each with their own rbtree and lock to
-> quickly lookup tmem objects.  tmem has TMEM_HASH_BUCKETS (256)
-> buckets per pool.  However, because of the way the tmem_oid is
-> generated for frontswap pages, only 16 unique tmem_oids are being
-> generated, resulting in only 16 of the 256 buckets being used.
-> This cause high lock contention for the per bucket locks.
+> I object to this :)  I think the following patches should be omitted
+> from -stable:
 > 
-> This patch changes SWIZ_BITS to include more bits of the offset.
-> The result is that all 256 hash buckets are potentially used resulting in a
-> 95% drop in hash bucket lock contention.
+> [099/244] PCI: Set PCI-E Max Payload Size on fabric
+> [100/244] PCI: export pcie_bus_configure_settings symbol
+> [101/244] PCI: Remove MRRS modification from MPS setting code
+> [212/244] pci: Dont crash when reading mpss from root complex
 > 
-> Based on v3.1-rc7
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> I've heard rumors that these patches are required to make 3.0 boot on
+> some machines, but I don't really believe it, and I haven't seen the
+> problem reports myself.
 
-Good catch Seth!
+Ok, I've removed these from the 3.0.5 release, but I really want them in
+a future 3.0-stable release, so I'll carry them over to the next one and
+keep trying until it all gets worked out.
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+As for the bug reports, I've seen them, but I don't know the status of
+the hardware to be able to have them reported publicly at the moment,
+sorry.
+
+> Also, these patches introduce an open regression (Avi's e1000e
+> problem).  Jon has mooted a patch that we hope will fix the
+> regression, but I'm still not confident that this is all safe for 3.1,
+> much less 3.0-stable.
+
+I'll keep working with Jon on these.
+
+thanks,
+
+greg k-h
