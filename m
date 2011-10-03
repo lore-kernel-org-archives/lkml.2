@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab1JCWCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 18:02:48 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53132 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932667Ab1JCWCe (ORCPT
+	id S932676Ab1JCWCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 18:02:35 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63567 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757678Ab1JCWCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 18:02:34 -0400
-X-Sasl-enc: VDP7umcXeJcgIHFqVemo32bJhrSYp/S9IBoc9f5RgpF3 1317679353
-Date: Mon, 3 Oct 2011 15:02:19 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: movement of my usb / staging / tty / driver-core trees
-Message-ID: <20111003220219.GA9913@kroah.com>
+	Mon, 3 Oct 2011 18:02:31 -0400
+Message-ID: <4E8A30F2.7010502@gmail.com>
+Date: Mon, 03 Oct 2011 17:02:26 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@ti.com>
+CC: linux-kernel@vger.kernel.org, paul@pwsan.com, linaro-dev@lists.linaro.org,
+        linus.walleij@stericsson.com, patches@linaro.org, eric.miao@linaro.org,
+        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
+        amit.kucheria@linaro.org, richard.zhao@linaro.org,
+        grant.likely@secretlab.ca, dsaxena@linaro.org,
+        arnd.bergmann@linaro.org, shawn.guo@freescale.com, skannan@quicinc.com,
+        linux@arm.linux.org.uk, jeremy.kerr@canonical.com, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, sboyd@quiinc.com
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-2-git-send-email-mturquette@ti.com>
+In-Reply-To: <1316730422-20027-2-git-send-email-mturquette@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mike,
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 09/22/2011 05:26 PM, Mike Turquette wrote:
 
-Hi Stephen,
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index 6db161f..e2a9719 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -23,6 +23,13 @@
+>  static LIST_HEAD(clocks);
+>  static DEFINE_MUTEX(clocks_mutex);
+>  
+> +/* For USE_COMMON_STRUCT_CLK, these are provided in clk.c, but not exported
+> + * through other headers; we don't want them used anywhere but here. */
+> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
+> +extern int __clk_get(struct clk *clk);
+> +extern void __clk_put(struct clk *clk);
+> +#endif
+> +
 
-Now that git.kernel.org is back up, I've moved my linux-next git trees
-to a different name, dropping the "2.6" suffix on them.
+This is dead code left from prior versions.
 
-So, they are now at:
-
- USB:		git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
- staging:	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
- driver-core:	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
- TTY:		git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
-
-All of the branch names are the same as before, and they are now all up
-to date with the local copy of my trees that I kept while kernel.org was
-down.
-
-If you have any problems with them, please let me know.  I'll be
-updating the MAINTAINERS file for 3.2 to update the locations to keep
-everything in sync.
-
-thanks,
-
-greg k-h
-
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAk6KMOsACgkQMUfUDdst+ylhcQCcCoqtNHfZqXV1hAcRRrC7XZ1L
-UZgAn1ptZccr2xpIMOpkvQgRc+WD1m7F
-=+ZTC
------END PGP SIGNATURE-----
-
---yrj/dFKFPuw6o+aM--
+Rob
