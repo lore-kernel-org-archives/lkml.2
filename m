@@ -1,134 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab1JCQeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:34:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752980Ab1JCQeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:34:09 -0400
-Date: Mon, 3 Oct 2011 18:29:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 5/26]   Uprobes: copy of the original
-	instruction.
-Message-ID: <20111003162905.GA3752@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120057.25326.63780.sendpatchset@srdronam.in.ibm.com>
+	id S1756860Ab1JCQew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:34:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55285 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab1JCQes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 12:34:48 -0400
+Date: Mon, 3 Oct 2011 17:34:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dmitry Artamonow <mad_soft@inbox.ru>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 2/6] ASoC: codecs: AK4641 depends on
+ GPIOLIB
+Message-ID: <20111003163441.GH23811@sirena.org.uk>
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de>
+ <1343003.MpQlxoEPa6@wuerfel>
+ <20111003152002.GP3731@opensource.wolfsonmicro.com>
+ <9353092.2X2OeIUYGE@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110920120057.25326.63780.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <9353092.2X2OeIUYGE@wuerfel>
+X-Cookie: Batteries not included.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20, Srikar Dronamraju wrote:
->
-> +static int __copy_insn(struct address_space *mapping,
-> +			struct vm_area_struct *vma, char *insn,
-> +			unsigned long nbytes, unsigned long offset)
-> +{
-> +	struct file *filp = vma->vm_file;
-> +	struct page *page;
-> +	void *vaddr;
-> +	unsigned long off1;
-> +	unsigned long idx;
-> +
-> +	if (!filp)
-> +		return -EINVAL;
-> +
-> +	idx = (unsigned long) (offset >> PAGE_CACHE_SHIFT);
-> +	off1 = offset &= ~PAGE_MASK;
-> +
-> +	/*
-> +	 * Ensure that the page that has the original instruction is
-> +	 * populated and in page-cache.
-> +	 */
+On Mon, Oct 03, 2011 at 06:19:48PM +0200, Arnd Bergmann wrote:
 
-Hmm. But how we can ensure?
+> When the GPIO API is stubbed out, the definition of struct gpio
+> is empty, so you cannot access the members, which seems to be
+> intentional behavior.
 
-> +	page_cache_sync_readahead(mapping, &filp->f_ra, filp, idx, 1);
+That doesn't seem terribly helpful, it means drivers either need to
+ifdef or not use the bulk functions.
 
-This schedules the i/o,
+>  struct device;
+> -struct gpio;
+> +struct gpio {
+> +       unsigned        gpio;
+> +       unsigned long   flags;
+> +       const char      *label;
+> +};
 
-> +	page = grab_cache_page(mapping, idx);
+This looks much more sensible to me.
 
-This finds/locks the page in the page-cache,
+>  	select SND_SOC_WL1273 if MFD_WL1273_CORE
+> -	select SND_SOC_WM1250_EV1 if I2C
+> +	select SND_SOC_WM1250_EV1 if I2C && GENERIC_GPIO
 
-> +	if (!page)
-> +		return -ENOMEM;
-> +
-> +	vaddr = kmap_atomic(page);
-> +	memcpy(insn, vaddr + off1, nbytes);
-
-What if this page is not PageUptodate() ?
-
-Somehow this assumes that the i/o was already completed, I don't
-understand this.
-
-But I am starting to think I simply do not understand this change.
-To the point, I do not underestand why do we need copy_insn() at all.
-We are going to replace this page, can't we save/analyze ->insn later
-when we copy the content of the old page? Most probably I missed
-something simple...
-
-
-> +static struct task_struct *get_mm_owner(struct mm_struct *mm)
-> +{
-> +	struct task_struct *tsk;
-> +
-> +	rcu_read_lock();
-> +	tsk = rcu_dereference(mm->owner);
-> +	if (tsk)
-> +		get_task_struct(tsk);
-> +	rcu_read_unlock();
-> +	return tsk;
-> +}
-
-Hmm. Do we really need task_struct?
-
-> -static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
-> +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
-> +				struct vm_area_struct *vma, loff_t vaddr)
->  {
-> -	/* Placeholder: Yet to be implemented */
-> +	struct task_struct *tsk;
-> +	unsigned long addr;
-> +	int ret = -EINVAL;
-> +
->  	if (!uprobe->consumers)
->  		return 0;
->
-> -	atomic_inc(&mm->mm_uprobes_count);
-> -	return 0;
-> +	tsk = get_mm_owner(mm);
-> +	if (!tsk)	/* task is probably exiting; bail-out */
-> +		return -ESRCH;
-> +
-> +	if (vaddr > TASK_SIZE_OF(tsk))
-> +		goto put_return;
-
-But this should not be possible, no? How it can map this vaddr above
-TASK_SIZE ?
-
-get_user_pages(tsk => NULL) is fine. Why else do we need mm->owner ?
-
-Probably used by the next patches... Say, is_32bit_app(tsk). This
-can use mm->context.ia32_compat (hopefully will be replaced with
-MMF_COMPAT).
-
-Oleg.
-
+Or ifdefs in the driver.
