@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab1JCVOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 17:14:48 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:58798 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932653Ab1JCVOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 17:14:36 -0400
-Date: Mon, 3 Oct 2011 14:14:23 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Paulo Zanoni <przanoni@gmail.com>
-Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] PCH reference clock cleanups
-Message-ID: <20111003141423.0ff5447c@jbarnes-desktop>
-In-Reply-To: <CA+gsUGTZfxt2L9mT-kYGGKiYhtRKn2xO5tXperwAWLVi2mKeOQ@mail.gmail.com>
-References: <yunbou6lxb4.fsf@aiko.keithp.com>
-	<1317103906-4649-1-git-send-email-keithp@keithp.com>
-	<CA+gsUGTZfxt2L9mT-kYGGKiYhtRKn2xO5tXperwAWLVi2mKeOQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S932654Ab1JCVZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 17:25:52 -0400
+Received: from home.keithp.com ([63.227.221.253]:59925 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756850Ab1JCVZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 17:25:44 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Ben Widawsky <ben@bwidawsk.net>, intel-gfx@lists.freedesktop.org
+Cc: Ben Widawsky <ben@bwidawsk.net>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH 1/2] drm: Add Panel Self Refresh DP addresses
+In-Reply-To: <1316557787-14935-1-git-send-email-ben@bwidawsk.net>
+References: <1316557787-14935-1-git-send-email-ben@bwidawsk.net>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 03 Oct 2011 14:25:39 -0700
+Message-ID: <yunaa9hn4x8.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Sep 2011 15:22:48 -0300
-Paulo Zanoni <przanoni@gmail.com> wrote:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> 2011/9/27 Keith Packard <keithp@keithp.com>:
-> > Here's a patch sequence which cleans up a bunch of PCH refclk related
-> > bits.
-> 
-> For the series: Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-> 
-> Tested all the patches on Ironlake (LVDS + VGA). Fixes fd.o bug #38750 for me.
-> 
-> I also tested the patch you sent today 1 hour ago (inline in one of
-> the emails) and things still work with it. I'll keep using these
-> patches since they fix my laptop. Any problem will be reported.
-> 
-> Maybe my email client/server is ruining things, but I believe patch 7
-> includes whitespace errors.
+On Tue, 20 Sep 2011 15:29:47 -0700, Ben Widawsky <ben@bwidawsk.net> wrote:
 
-Yay excellent.
+> Add the addresses and definitions I care about for Panel Self Refresh, as
+> documented in the eDP spec.
 
-Now... is keeping the various refclks enabled costing us any power?
-IOW, should we be trying to disable them when everything has been
-DPMS'd off too?
+I generally review the addresses and bit definitions for any new
+registers -- getting them wrong makes debugging the code really hard. I
+couldn't find these in a brief search through the bspec. Can you point
+out where they are?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBToooUzYtFsjWk68qAQgUrQ/8D7ZzdDWVP/TZhSPAYmvagOTRs4T4Yp5e
+17xDsL3jIaJNXy1xqPs0bsks9c/GISfpBEbURr/WoTakTFpcqsBz3uinzQBeexVX
+bx23fA0nh2ZxPyUH4P9bLM4OvQS0QHAXehMLRlSlvlKXiXceBMwXTPBAVn1nBAw4
+TMfLULz2XXjlvvHMOVuesadFkjbii5pM4jlBvul4IoERefpZoBARDNKhemHpUpzF
+ixafeto7f1loI6gDzEP4gXuPvQnmh5zX1eOL4Mlk9qHv7R/YrbQDD87ErkjKLsud
+7nWmiAWGwnX0Ovk40AVOhpK5pKoBUB2mRv5hxnC3ZVdRVZT6hHz7bDs3tzWs9tSa
+560Zc6S7Ldj5KlVV/HuxZYXYvPf5ApVFDHT2lDLFfW9tbbAvhodIfu/yV3eJiGSz
+QcCzjuwPcbRrA/6HVIMdJUhPOnI+7Acw7xmWc1AjJe+E4n3CxtTTmCZTq0DnAptm
+9gpIDmmUGKo4KSTQURZ/pMFWDwm6EVv2rC6k/WWraJ5cllLpPm6P46Hn/Bf0xis0
+Mr2WvpcB616W9Fa6JW2WLn6PxkWAPkiJ6+WmeJZkrZ3OTCu6Z34HbvNmNRynA2cE
+Vep7gd5B/IiUP3nB6GVnoOMfYyNNwMG7JQ45adbmAs5/+huYUeoPyGmX8Rmv8bQF
+6PrhoFP9tD4=
+=RwBg
+-----END PGP SIGNATURE-----
+--=-=-=--
