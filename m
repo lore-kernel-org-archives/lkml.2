@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1JCOsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 10:48:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46841 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab1JCOsl convert rfc822-to-8bit (ORCPT
+	id S1756295Ab1JCOuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 10:50:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58491 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab1JCOud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 10:48:41 -0400
-From: "Premi, Sanjeev" <premi@ti.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 3 Oct 2011 20:18:36 +0530
-Subject: RE: [PATCH] kconfig: fix warnings due to unused return values
-Thread-Topic: [PATCH] kconfig: fix warnings due to unused return values
-Thread-Index: Acx5G+T4By9qa1y/Qf+0VgU+OtPs4QIv3wEQ
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59302578FA0F6@dbde02.ent.ti.com>
-References: <1316691396-25447-1-git-send-email-premi@ti.com>
-In-Reply-To: <1316691396-25447-1-git-send-email-premi@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 3 Oct 2011 10:50:33 -0400
+From: Jon Mason <mason@myri.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: PCI-E MPS patches for 3.1-rc9
+Date: Mon,  3 Oct 2011 09:50:17 -0500
+Message-Id: <1317653420-21404-1-git-send-email-mason@myri.com>
+X-Mailer: git-send-email 1.7.6.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Premi, Sanjeev 
-> Sent: Thursday, September 22, 2011 5:07 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: Premi, Sanjeev
-> Subject: [PATCH] kconfig: fix warnings due to unused return values
-> 
-> The return value of wattrset() is being ignored in the
-> code and newer compilers complain about this e.g.
-> 
-> HOSTCC  scripts/kconfig/lxdialog/checklist.o
-> scripts/kconfig/lxdialog/checklist.c: In function print_item:
-> scripts/kconfig/lxdialog/checklist.c:40: warning: value 
-> computed is not used
-> scripts/kconfig/lxdialog/checklist.c:46: warning: value 
-> computed is not used
-> 
-> Let the compiler know that ignore is intentional.
-> 
-> Signed-off-by: Sanjeev Premi <premi@ti.com>
-> ---
+Linus,
+Please include these patches in 3.1-rc9.  The first 2 fix bugs in the
+PCI-E MPS "performance" tuning and the third disables MPS tuning by
+default.  The patch to disable MPS by default was made at the request
+of Bjorn, due to an outstanding regression and the fear that more are
+out there.  The MPS tuning can still be enabled via boot arg, which
+should correct the issue Greg KH was seeing with some systems being
+unable to boot without the MPS tuning enabled.  Hopefully this is
+acceptable until such time as all the regressions can be found, solved,
+and MPS turning being enabled by default.
 
-Just wanted to ping on the status...
+Thanks,
+Jon
 
-~sanjeev
-
-[snip]...[snip]
