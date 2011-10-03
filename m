@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab1JCXqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:46:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53858 "EHLO mx2.suse.de"
+	id S1751678Ab1JDAEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 20:04:33 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38621 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab1JCXqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:46:31 -0400
-Date: Mon, 3 Oct 2011 16:32:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG: kernel 3.0.4] Hard lockup / NULL pointer reference USB /
- BLOCK Layer
-Message-ID: <20111003233216.GA30470@suse.de>
-References: <4E89E374.8020804@t-online.de>
+	id S1751007Ab1JDAEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 20:04:32 -0400
+Date: Mon, 3 Oct 2011 14:47:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org
+Subject: Re: lockdep recursive locking detected (rcu_kthread / __cache_free)
+Message-ID: <20111003214739.GK2403@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111003175322.GA26122@sucs.org>
+ <20111003203139.GH2403@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1110031540560.11713@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E89E374.8020804@t-online.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1110031540560.11713@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 06:31:48PM +0200, Knut Petersen wrote:
-> Hi everybody!
+On Mon, Oct 03, 2011 at 03:46:11PM -0500, Christoph Lameter wrote:
+> On Mon, 3 Oct 2011, Paul E. McKenney wrote:
 > 
-> I connected two USB flash drives and tried to erase them using dd:
+> > The first lock was acquired here in an RCU callback.  The later lock that
+> > lockdep complained about appears to have been acquired from a recursive
+> > call to __cache_free(), with no help from RCU.  This looks to me like
+> > one of the issues that arise from the slab allocator using itself to
+> > allocate slab metadata.
 > 
-> dd if=/dev/zero of=/dev/sdc bs=65536
-> dd if=/dev/zero of=/dev/sdd bs=65536
-> 
-> I left the machine for some hours and found it completely locked
-> on return. No reaction to the keybard, network access impossible.
-> A hard reboot was necessary.
-> 
-> Attached find the relevant part of /var/log/messages and the configuration
-> of the kernel used.
+> Right. However, this is a false positive since the slab cache with
+> the metadata is different from the slab caches with the slab data. The slab
+> cache with the metadata does not use itself any metadata slab caches.
 
-Can you please try 3.0.6 which is now out?  There is a USB/block layer
-fix in it.
+Wouldn't it be possible to pass a new flag to the metadata slab caches
+upon creation so that their locks could be placed in a separate lock
+class?  Just allocate a separate lock_class_key structure for each such
+lock in that case, and then use lockdep_set_class_and_name to associate
+that structure with the corresponding lock.  I do this in kernel/rcutree.c
+in order to allow the rcu_node tree's locks to nest properly.
 
-thanks,
-
-greg k-h
+							Thanx, Paul
