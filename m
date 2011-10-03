@@ -1,188 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab1JCNm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab1JCNmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:42:21 -0400
-Date: Mon, 3 Oct 2011 15:37:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
-	mmap/munmap.
-Message-ID: <20111003133710.GA28118@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
+	id S1755950Ab1JCNna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:43:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51118 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab1JCNn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:43:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        linux-kernel@vger.kernel.org, "'Liam Girdwood'" <lrg@ti.com>
+Subject: [PATCH 5/6] ASoC: samsung: wm8994 depends on mfd_wm8994
+Date: Mon, 03 Oct 2011 15:43:10 +0200
+Message-ID: <11174515.ANsqIhx0NX@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <20111003120741.GD23811@sirena.org.uk>
+References: <1317587284-2776-1-git-send-email-arnd@arndb.de> <1869072.QQLATNzYYx@wuerfel> <20111003120741.GD23811@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Yf89Dj60vSporU/ytQwytU1ug0zXqvUuJbVKA9Ntp6U
+ orYZYwMgnTWcrENFijPNsM+TPYAOP1AVscNg/Feu8arjW+DQtI
+ JFTnH53mP/6h+RSgG1wGGVe/zKm7YoyojU2bzrTEmGlsQSoGsF
+ LDelvM9v4ClxevtSu6l/nGNJ47LbcfoZiVsKq93HDathOGMUlY
+ VtVmP6qpipYseYfKVZ6xhnXB2rDEpFOTEav/d0jRgAmSlQSeDp
+ iky5XlMQf93LT+Q85pbYsUeakJeCF0ZgVUn9++LTGGl+dCuGcI
+ Im4NCqyLQBpl+WlzxidHAh2egjzPucq1T/pE4L8pM3KZEE5tg5
+ 3hJaNaS9eXezZiW+elOU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20, Srikar Dronamraju wrote:
->
-> @@ -739,6 +740,10 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  	mm->pmd_huge_pte = NULL;
->  #endif
-> +#ifdef CONFIG_UPROBES
-> +	atomic_set(&mm->mm_uprobes_count,
-> +			atomic_read(&oldmm->mm_uprobes_count));
+Any driver that selects SND_SOC_WM8994 should also make sure that
+MFD_WM8994 is set, since the codec relies on the mfd code:
 
-Hmm. Why this can't race with install_breakpoint/remove_breakpoint
-between _read and _set ?
+  sound/built-in.o: In function `wm8994_read':
+  last.c:(.text+0x20160): undefined reference to `wm8994_reg_read'
+  sound/built-in.o: In function `wm8994_write':
+  last.c:(.text+0x20e68): undefined reference to `wm8994_reg_write'
 
-What about VM_DONTCOPY vma's with breakpoints ?
+This adds the missing 'depends' statements to Kconfig, as found
+during ARM randconfig tests.
 
-> -static int match_uprobe(struct uprobe *l, struct uprobe *r)
-> +static int match_uprobe(struct uprobe *l, struct uprobe *r, int *match_inode)
->  {
-> +	/*
-> +	 * if match_inode is non NULL then indicate if the
-> +	 * inode atleast match.
-> +	 */
-> +	if (match_inode)
-> +		*match_inode = 0;
-> +
->  	if (l->inode < r->inode)
->  		return -1;
->  	if (l->inode > r->inode)
->  		return 1;
->  	else {
-> +		if (match_inode)
-> +			*match_inode = 1;
-> +
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ sound/soc/samsung/Kconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
-It is very possible I missed something, but imho this looks confusing.
+On Monday 03 October 2011 13:07:41 Mark Brown wrote:
+> On Mon, Oct 03, 2011 at 01:50:08PM +0200, Arnd Bergmann wrote:
+> 
+> > the patch. The other problem in this patch is still there, with
+> > CONFIG_SND_SOC_SMDK_WM8994_PCM=y and CONFIG_MFD_WM8994=n:
+> 
+> You've not sent a seprate patch for that one yet...
 
-This close_match logic is only needed for build_probe_list() and
-dec_mm_uprobes_count(), and both do not actually need the returned
-uprobe.
+I wasn't sure any more which version you wanted. Is this this right one?
 
-Instead of complicating match_uprobe() and __find_uprobe(), perhaps
-it makes sense to add "struct rb_node *__find_close_rb_node(inode)" ?
-
-> +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
->  {
->  	/* Placeholder: Yet to be implemented */
-> +	if (!uprobe->consumers)
-> +		return 0;
-
-How it is possible to see ->consumers == NULL?
-
-OK, afaics it _is_ possible, but only because unregister does del_consumer()
-without ->i_mutex, but this is bug afaics (see the previous email).
-
-Another user is mmap_uprobe() and it checks ->consumers != NULL itself (but
-see below).
-
-> +int mmap_uprobe(struct vm_area_struct *vma)
-> +{
-> +	struct list_head tmp_list;
-> +	struct uprobe *uprobe, *u;
-> +	struct inode *inode;
-> +	int ret = 0;
-> +
-> +	if (!valid_vma(vma))
-> +		return ret;	/* Bail-out */
-> +
-> +	inode = igrab(vma->vm_file->f_mapping->host);
-> +	if (!inode)
-> +		return ret;
-> +
-> +	INIT_LIST_HEAD(&tmp_list);
-> +	mutex_lock(&uprobes_mmap_mutex);
-> +	build_probe_list(inode, &tmp_list);
-> +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-> +		loff_t vaddr;
-> +
-> +		list_del(&uprobe->pending_list);
-> +		if (!ret && uprobe->consumers) {
-> +			vaddr = vma->vm_start + uprobe->offset;
-> +			vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> +			if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-> +				continue;
-> +			ret = install_breakpoint(vma->vm_mm, uprobe);
-
-So. We are adding the new mapping, we should find all breakpoints this
-file has in the start/end range.
-
-We are holding ->mmap_sem... this seems enough to protect against the
-races with register/unregister. Except, what if __register_uprobe()
-fails? In this case __unregister_uprobe() does delete_uprobe() at the
-very end. What if mmap mmap_uprobe() is called right before delete_?
-
-> +static void dec_mm_uprobes_count(struct vm_area_struct *vma,
-> +		struct inode *inode)
-> +{
-> +	struct uprobe *uprobe;
-> +	struct rb_node *n;
-> +	unsigned long flags;
-> +
-> +	n = uprobes_tree.rb_node;
-> +	spin_lock_irqsave(&uprobes_treelock, flags);
-> +	uprobe = __find_uprobe(inode, 0, &n);
-> +
-> +	/*
-> +	 * If indeed there is a probe for the inode and with offset zero,
-> +	 * then lets release its reference. (ref got thro __find_uprobe)
-> +	 */
-> +	if (uprobe)
-> +		put_uprobe(uprobe);
-> +	for (; n; n = rb_next(n)) {
-> +		loff_t vaddr;
-> +
-> +		uprobe = rb_entry(n, struct uprobe, rb_node);
-> +		if (uprobe->inode != inode)
-> +			break;
-> +		vaddr = vma->vm_start + uprobe->offset;
-> +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> +		if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-> +			continue;
-> +		atomic_dec(&vma->vm_mm->mm_uprobes_count);
-
-So, this does atomic_dec() for each bp in this vma?
-
-And the caller is
-
-> @@ -1337,6 +1338,9 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
->  		if (unlikely(is_pfn_mapping(vma)))
->  			untrack_pfn_vma(vma, 0, 0);
->
-> +		if (vma->vm_file)
-> +			munmap_uprobe(vma);
-
-Doesn't look right...
-
-munmap_uprobe() assumes that the whole region goes away. This is
-true in munmap() case afaics, it does __split_vma() if necessary.
-
-But what about truncate() ? In this case this vma is not unmapped,
-but unmap_vmas() is called anyway and [start, end) can be different.
-IOW, unless I missed something (this is very possible) we can do
-more atomic_dec's then needed.
-
-Also, truncate() obviously changes ->i_size. Doesn't this mean
-unregister_uprobe() should return if offset > i_size ? We need to
-free uprobes anyway.
-
-MADV_DONTNEED? It calls unmap_vmas() too. And application can do
-madvise(DONTNEED) in a loop.
-
-Oleg.
-
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -65,6 +65,7 @@ config SND_SOC_SAMSUNG_SMDK_WM8580
+ config SND_SOC_SAMSUNG_SMDK_WM8994
+ 	tristate "SoC I2S Audio support for WM8994 on SMDK"
+ 	depends on SND_SOC_SAMSUNG && (MACH_SMDKV310 || MACH_SMDKC210)
++	depends on MFD_WM8994
+ 	select SND_SOC_WM8994
+ 	select SND_SAMSUNG_I2S
+ 	help
+@@ -152,6 +153,7 @@ config SND_SOC_GONI_AQUILA_WM8994
+ 	tristate "SoC I2S Audio support for AQUILA/GONI - WM8994"
+ 	depends on SND_SOC_SAMSUNG && (MACH_GONI || MACH_AQUILA)
+ 	select SND_SAMSUNG_I2S
++	depends on MFD_WM8994
+ 	select SND_SOC_WM8994
+ 	help
+ 	  Say Y if you want to add support for SoC audio on goni or aquila
+@@ -175,6 +177,7 @@ config SND_SOC_SMDK_WM8580_PCM
+ config SND_SOC_SMDK_WM8994_PCM
+ 	tristate "SoC PCM Audio support for WM8994 on SMDK"
+ 	depends on SND_SOC_SAMSUNG && (MACH_SMDKC210 || MACH_SMDKV310)
++	depends on MFD_WM8994
+ 	select SND_SOC_WM8994
+ 	select SND_SAMSUNG_PCM
+ 	help
