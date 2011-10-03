@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab1JCXjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 19:39:32 -0400
-Received: from exprod7og118.obsmtp.com ([64.18.2.8]:43898 "EHLO
-	exprod7og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab1JCXjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 19:39:31 -0400
-Message-ID: <4E8A46E9.2070509@genband.com>
-Date: Mon, 03 Oct 2011 17:36:09 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+	id S1752097Ab1JCXjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 19:39:54 -0400
+Received: from home.keithp.com ([63.227.221.253]:33539 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751674Ab1JCXjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 19:39:52 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Paulo Zanoni <przanoni@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] PCH reference clock cleanups
+In-Reply-To: <20111003162108.07c6b9bb@jbarnes-desktop>
+References: <yunbou6lxb4.fsf@aiko.keithp.com> <1317103906-4649-1-git-send-email-keithp@keithp.com> <CA+gsUGTZfxt2L9mT-kYGGKiYhtRKn2xO5tXperwAWLVi2mKeOQ@mail.gmail.com> <20111003141423.0ff5447c@jbarnes-desktop> <yun7h4lmzon.fsf@aiko.keithp.com> <20111003162108.07c6b9bb@jbarnes-desktop>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 03 Oct 2011 16:39:48 -0700
+Message-ID: <yun1uutmypn.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: johnmusbach1@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: Handling of multiple DHCP OFFERs
-References: <loom.20111004T011704-753@post.gmane.org> <20111003.192129.745977451712127515.davem@davemloft.net>
-In-Reply-To: <20111003.192129.745977451712127515.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Oct 2011 23:36:10.0866 (UTC) FILETIME=[3B633520:01CC8225]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18424.002
-X-TM-AS-Result: No--11.165500-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 05:21 PM, David Miller wrote:
-> From: John Musbach<johnmusbach1@gmail.com>
-> Date: Mon, 3 Oct 2011 23:18:06 +0000 (UTC)
->
->> Hello, I am configuring a network that'll have multiple DHCP servers
->> and I was wondering how Linux handles receiving multiple DHCP OFFERs?
->> More specifically, how does it choose which one to prefer and how long
->> will it wait for a answer from a preferred server if the other server
->> answers first? Thanks.
->
-> There are multiple userspace implementations of DHCP, and the kernel
-> does not usually get involved at all.  You'll therefore have to ask
-> the folks who write and maintain the various DHCP implementations.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-What about netbooting?  Or are you expecting people to use initramfs 
-with a userspace implementation?
+On Mon, 3 Oct 2011 16:21:08 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
 
-Chris
+> Agreed; fortunately shutting everything off when no outputs are
+> active should be simpler than trying flip the bits on & off every mode
+> set. :)
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+We'd have to track when outputs are shut off; just tracking per clock
+doesn't seem any harder. I'll expect a patch in the morning, ok?
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTopHxDYtFsjWk68qAQiYtA//fkzpnPdvyve2Aubssort4z/pgyWtr8yO
+CZby+YXFRHNXTYMuNEG7VSsvHl+fqsc3+Q71Asl5tszIVFx91f6lfuAIf1ybdx4a
+jkKbvzrs9eKSCwQ+xxMaRSdcRMwaXHIx0BUv9ichvroZfvviI+bTjxsTeB/Vlxgt
+F72tGovl1Bgf3NHxzzbrJabTp4QIkjNVoSHm4gfW/E9Q/BUyXfaqyZpkr/rE4ktg
+6oV4ssCVjS39cYXniv6xebETbPA3nUafLn8vGbDFuO9Rb+ALZSZORfFGi+qmDXkI
+cA3yQ+Rt03r4UojWie8zE01UOqz59wr4f9Ik4jEqec4IAhziXR4R5x2flSTzzRsE
+u/3YumUQ3Ro1zENDRGdl+eVWGMihzI+35bpV0Qdg0V/jfyY6tquH4xlLy1ecBG7K
+dyPmEzmE+8PfBX9O+MMF0oSDW5W66oEPauJliOFmeBKo0Xg32DCkD6pVwaxwE8i9
+KwzfAH0RLfpMwVk9aeJfk1a1DYmaFdDFGgQWVkwMZpKx4K972wypHCqCkFMa3Jjz
+isPFKGUM3xcO9wBS+yber8Qsrb4cNiLCyBdsDGzNmWFRpIlnORzQwo4VZRBtEQ3P
+Cy08MdUh1j1GWV7dXnFDUCDDCD7HPNBnpHMK2IsyEvUo4yng8qtBUbS5RvRaBKVh
+Y//q+M2pQ2w=
+=mvg6
+-----END PGP SIGNATURE-----
+--=-=-=--
