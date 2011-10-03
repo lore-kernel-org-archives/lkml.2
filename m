@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1JCLCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 07:02:38 -0400
-Received: from shutemov.name ([188.40.19.243]:48513 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab1JCLCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 07:02:31 -0400
-Date: Mon, 3 Oct 2011 14:02:30 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, avagin@parallels.com
-Subject: Re: [PATCH v4 2/8] socket: initial cgroup code.
-Message-ID: <20111003110230.GC29312@shutemov.name>
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
- <1317637123-18306-3-git-send-email-glommer@parallels.com>
- <20111003104733.GB29312@shutemov.name>
- <4E8992EF.30001@parallels.com>
+	id S1755490Ab1JCLD6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 07:03:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55103 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab1JCLDv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 07:03:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 23/30] ARM: omap2: select twl4030 support on boards that need it
+Date: Mon, 03 Oct 2011 13:03:48 +0200
+Message-ID: <8140311.pfrshFtPLz@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E8945CE.6070800@ti.com>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-24-git-send-email-arnd@arndb.de> <4E8945CE.6070800@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8992EF.30001@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:6rvbRjrbJwUBRnVk3ST7iCBGqYN6VHVwmqFuNIbtfd9
+ 3f6Uls0Y0g3hxmMvy0xqE1DmefEC8b5QFiXF4FYDoIhKqqqkAm
+ e9HRUaeX+LnABZS4HkVBCNh8Kewcf4OlM5XByXYOblQFwGE8KY
+ po5db5rZL4eVAbLp81t2ffOYVepqyynx2ciS8jf59ZD4VAdY43
+ 4UYduN4+mQxnAB+kJTPYqiHmnB2rqBGytyxvpONDNtgb1Ihd5t
+ Q+OvicfHz28Djgd4ALdQo8FPSQ4RdruU0R13LnHddLUwTw9h90
+ klLo6wGcpxit/BEN7lrFpc5Ss6CYYMOdODP62AWob3BkbbmI9D
+ QYRrS9eGyXdDV1O2x21Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 02:48:15PM +0400, Glauber Costa wrote:
-> On 10/03/2011 02:47 PM, Kirill A. Shutemov wrote:
-> > On Mon, Oct 03, 2011 at 02:18:37PM +0400, Glauber Costa wrote:
-> >> We aim to control the amount of kernel memory pinned at any
-> >> time by tcp sockets. To lay the foundations for this work,
-> >> this patch adds a pointer to the kmem_cgroup to the socket
-> >> structure.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: David S. Miller<davem@davemloft.net>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: Eric W. Biederman<ebiederm@xmission.com>
-> >> ---
-> >>   include/linux/memcontrol.h |   15 +++++++++++++++
-> >>   include/net/sock.h         |    2 ++
-> >>   mm/memcontrol.c            |   33 +++++++++++++++++++++++++++++++++
-> >>   net/core/sock.c            |    3 +++
-> >>   4 files changed, 53 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> >> index 3b535db..2cb9226 100644
-> >> --- a/include/linux/memcontrol.h
-> >> +++ b/include/linux/memcontrol.h
-> >> @@ -395,5 +395,20 @@ mem_cgroup_print_bad_page(struct page *page)
-> >>   }
-> >>   #endif
-> >>
-> >> +#ifdef CONFIG_INET
-> >> +struct sock;
-> >> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> >> +void sock_update_memcg(struct sock *sk);
-> >> +void sock_release_memcg(struct sock *sk);
-> >> +
-> >> +#else
-> >> +static inline void sock_update_memcg(struct sock *sk)
-> >> +{
-> >> +}
-> >> +static inline void sock_release_memcg(struct sock *sk)
-> >> +{
-> >> +}
-> >> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> >> +#endif /* CONFIG_INET */
-> >>   #endif /* _LINUX_MEMCONTROL_H */
-> >>
-> >> diff --git a/include/net/sock.h b/include/net/sock.h
-> >> index 8e4062f..afe1467 100644
-> >> --- a/include/net/sock.h
-> >> +++ b/include/net/sock.h
-> >> @@ -228,6 +228,7 @@ struct sock_common {
-> >>     *	@sk_security: used by security modules
-> >>     *	@sk_mark: generic packet mark
-> >>     *	@sk_classid: this socket's cgroup classid
-> >> +  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup
-> >>     *	@sk_write_pending: a write to stream socket waits to start
-> >>     *	@sk_state_change: callback to indicate change in the state of the sock
-> >>     *	@sk_data_ready: callback to indicate there is data to be processed
-> >> @@ -339,6 +340,7 @@ struct sock {
-> >>   #endif
-> >>   	__u32			sk_mark;
-> >>   	u32			sk_classid;
-> >> +	struct mem_cgroup	*sk_cgrp;
-> >>   	void			(*sk_state_change)(struct sock *sk);
-> >>   	void			(*sk_data_ready)(struct sock *sk, int bytes);
-> >>   	void			(*sk_write_space)(struct sock *sk);
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index 8aaf4ce..08a520e 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -339,6 +339,39 @@ struct mem_cgroup {
-> >>   	spinlock_t pcp_counter_lock;
-> >>   };
-> >>
-> >> +/* Writing them here to avoid exposing memcg's inner layout */
-> >> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> >> +#ifdef CONFIG_INET
-> >> +#include<net/sock.h>
-> >> +
-> >> +void sock_update_memcg(struct sock *sk)
-> >> +{
-> >> +	/* right now a socket spends its whole life in the same cgroup */
-> >> +	BUG_ON(sk->sk_cgrp);
-> >
-> > Do we really want to panic in this case?
-> >
-> > What about WARN() + return?
-> 
-> Kirill,
-> 
-> I am keeping this code just to have something workable in between.
-> If you take a look at the last patch, this hunk is going away anyway.
-> 
-> So if you don't oppose it, I'll just keep it to avoid rebasing it.
+On Monday 03 October 2011 10:49:10 Santosh Shilimkar wrote:
+> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> > index 57b66d5..4deeade 100644
+> > --- a/arch/arm/mach-omap2/Kconfig
+> > +++ b/arch/arm/mach-omap2/Kconfig
+> > @@ -253,6 +253,8 @@ config MACH_OMAP_ZOOM2
+> >       select SERIAL_CORE_CONSOLE
+> >       select SERIAL_8250_CONSOLE
+> >       select REGULATOR_FIXED_VOLTAGE
+> > +     select TWL4030_CORE
+> > +     select I2C
+> >  
+> Another option to ensure I2C is selected when
+> TWL* drivers are selected is let it depends
+> on I2C. That wat we can avoid patching every
+> machine entry with I2C option.
+> Not a strong opinion though.
 
-Sorry, but I don't see where you remove BUG_ON().
-You remove only cgroup_exclude_rmdir().
+I generally try to avoid having select statements where a
+depends on works fine, as in the generic TWL4030_CORE config.
 
--- 
- Kirill A. Shutemov
+For platforms that require TWL4030, this does not work, although
+it would be better not to have this strict dependency and make
+the configuration build if the driver is disabled, even if that
+is rather pointless.
+
+	Arnd
