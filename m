@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab1JCNRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:17:07 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10243 "EHLO
+	id S1755962Ab1JCNSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:18:16 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10351 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940Ab1JCNRD (ORCPT
+	with ESMTP id S1754431Ab1JCNSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:17:03 -0400
+	Mon, 3 Oct 2011 09:18:08 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 03 Oct 2011 06:16:54 -0700
-Date: Mon, 3 Oct 2011 16:16:51 +0300
+	by hqnvupgp08.nvidia.com on Mon, 03 Oct 2011 06:18:00 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+To: <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v6 0/3] Add support for tegra2 based ventana board
-Message-ID: <20111003131651.GY21166@tbergstrom-lnx.Nvidia.com>
-References: <1317647209-22303-1-git-send-email-pdeschrijver@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1317647209-22303-1-git-send-email-pdeschrijver@nvidia.com>
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v7 0/3] Add support for tegra2 based ventana board
+Date: Mon, 3 Oct 2011 16:17:49 +0300
+Message-ID: <1317647872-22627-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch set adds support for the tegra2 based ventana development board.
 
-Forget this one. It lacks the important fix. It's monday I guess :)
+Boot tested on ventana.                                                                                                                               
 
-Peter
+Uses a table based approach to select the correct init function.
+
+Fix some compiler errors.
+
+Peter De Schrijver (3):
+  arm/tegra: prepare Seaboard pinmux code for derived boards
+  arm/tegra: add support for ventana pinmuxing
+  arm/tegra: device tree support for ventana board
+
+ arch/arm/boot/dts/tegra-ventana.dts         |   32 ++++++++++++++
+ arch/arm/mach-tegra/Kconfig                 |    6 +++
+ arch/arm/mach-tegra/Makefile                |    1 +
+ arch/arm/mach-tegra/Makefile.boot           |    1 +
+ arch/arm/mach-tegra/board-dt.c              |    5 ++-
+ arch/arm/mach-tegra/board-seaboard-pinmux.c |   63 ++++++++++++++++++++++++---
+ 6 files changed, 101 insertions(+), 7 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tegra-ventana.dts
+
