@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1JCKMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 06:12:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53193 "EHLO mx1.redhat.com"
+	id S1755269Ab1JCKUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 06:20:17 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:18639 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755066Ab1JCKMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 06:12:19 -0400
-Message-ID: <4E898A69.8060306@redhat.com>
-Date: Mon, 03 Oct 2011 12:11:53 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Jon Mason <mason@myri.com>
-CC: Sven Schnelle <svens@stackframe.org>, Simon Kirby <sim@hostway.ca>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: Workaround for Intel MPS errata
-References: <4E82017C.3010304@redhat.com> <CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com> <4E8215B6.1020108@redhat.com> <20110930001633.GA11436@myri.com> <4E882E34.8040409@redhat.com> <20111003045823.GA13222@myri.com>
-In-Reply-To: <20111003045823.GA13222@myri.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754398Ab1JCKUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 06:20:13 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v4 2/8] socket: initial cgroup code.
+Date: Mon,  3 Oct 2011 14:18:37 +0400
+Message-Id: <1317637123-18306-3-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.2
+In-Reply-To: <1317637123-18306-1-git-send-email-glommer@parallels.com>
+References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 06:58 AM, Jon Mason wrote:
-> On Sun, Oct 02, 2011 at 11:26:12AM +0200, Avi Kivity wrote:
-> >  On 09/30/2011 03:16 AM, Jon Mason wrote:
-> >  >Hey Avi,
-> >  >Can you try this patch?  It should resolve the issue you are seeing.
-> >
-> >  It doesn't; the fixup: label is not reached (though I do have an
-> >  0x25d4 device).
-> >
-> >  -- 
-> >  error compiling committee.c: too many arguments to function
-> >
->
-> I found a system with a 5000X Memory controller (which should have the
-> same errata).  It doesn't have the faulty bit (perhaps better BIOS).  I
-> was able to findout why the code in the previous patch wasn't working,
-> but wasn't able to cause the crash by setting the bit from the errata.
-> The reworked version of the previous patch found below should resolve
-> the issue.  Please test it if you can.
+We aim to control the amount of kernel memory pinned at any
+time by tcp sockets. To lay the foundations for this work,
+this patch adds a pointer to the kmem_cgroup to the socket
+structure.
 
-Will be happy to test, but patch appears to be against a different tree?
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+---
+ include/linux/memcontrol.h |   15 +++++++++++++++
+ include/net/sock.h         |    2 ++
+ mm/memcontrol.c            |   33 +++++++++++++++++++++++++++++++++
+ net/core/sock.c            |    3 +++
+ 4 files changed, 53 insertions(+), 0 deletions(-)
 
-$ git apply -C2 .git/rebase-apply/patch
-.git/rebase-apply/patch:75: trailing whitespace, shock horror.
-      *
-Context reduced to (2/2) to apply fragment at 1362
-Context reduced to (2/2) to apply fragment at 1475
-error: patch failed: drivers/pci/probe.c:1433
-error: drivers/pci/probe.c: patch does not apply
-
-
-
-
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 3b535db..2cb9226 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -395,5 +395,20 @@ mem_cgroup_print_bad_page(struct page *page)
+ }
+ #endif
+ 
++#ifdef CONFIG_INET
++struct sock;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++void sock_update_memcg(struct sock *sk);
++void sock_release_memcg(struct sock *sk);
++
++#else
++static inline void sock_update_memcg(struct sock *sk)
++{
++}
++static inline void sock_release_memcg(struct sock *sk)
++{
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++#endif /* CONFIG_INET */
+ #endif /* _LINUX_MEMCONTROL_H */
+ 
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 8e4062f..afe1467 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -228,6 +228,7 @@ struct sock_common {
+   *	@sk_security: used by security modules
+   *	@sk_mark: generic packet mark
+   *	@sk_classid: this socket's cgroup classid
++  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup
+   *	@sk_write_pending: a write to stream socket waits to start
+   *	@sk_state_change: callback to indicate change in the state of the sock
+   *	@sk_data_ready: callback to indicate there is data to be processed
+@@ -339,6 +340,7 @@ struct sock {
+ #endif
+ 	__u32			sk_mark;
+ 	u32			sk_classid;
++	struct mem_cgroup	*sk_cgrp;
+ 	void			(*sk_state_change)(struct sock *sk);
+ 	void			(*sk_data_ready)(struct sock *sk, int bytes);
+ 	void			(*sk_write_space)(struct sock *sk);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8aaf4ce..08a520e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -339,6 +339,39 @@ struct mem_cgroup {
+ 	spinlock_t pcp_counter_lock;
+ };
+ 
++/* Writing them here to avoid exposing memcg's inner layout */
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++#ifdef CONFIG_INET
++#include <net/sock.h>
++
++void sock_update_memcg(struct sock *sk)
++{
++	/* right now a socket spends its whole life in the same cgroup */
++	BUG_ON(sk->sk_cgrp);
++
++	rcu_read_lock();
++	sk->sk_cgrp = mem_cgroup_from_task(current);
++
++	/*
++	 * We don't need to protect against anything task-related, because
++	 * we are basically stuck with the sock pointer that won't change,
++	 * even if the task that originated the socket changes cgroups.
++	 *
++	 * What we do have to guarantee, is that the chain leading us to
++	 * the top level won't change under our noses. Incrementing the
++	 * reference count via cgroup_exclude_rmdir guarantees that.
++	 */
++	cgroup_exclude_rmdir(mem_cgroup_css(sk->sk_cgrp));
++	rcu_read_unlock();
++}
++
++void sock_release_memcg(struct sock *sk)
++{
++	cgroup_release_and_wakeup_rmdir(mem_cgroup_css(sk->sk_cgrp));
++}
++#endif /* CONFIG_INET */
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ /* Stuffs for move charges at task migration. */
+ /*
+  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+diff --git a/net/core/sock.c b/net/core/sock.c
+index bc745d0..5426ba0 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -125,6 +125,7 @@
+ #include <net/xfrm.h>
+ #include <linux/ipsec.h>
+ #include <net/cls_cgroup.h>
++#include <linux/memcontrol.h>
+ 
+ #include <linux/filter.h>
+ 
+@@ -1141,6 +1142,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
+ 		atomic_set(&sk->sk_wmem_alloc, 1);
+ 
+ 		sock_update_classid(sk);
++		sock_update_memcg(sk);
+ 	}
+ 
+ 	return sk;
+@@ -1172,6 +1174,7 @@ static void __sk_free(struct sock *sk)
+ 		put_cred(sk->sk_peer_cred);
+ 	put_pid(sk->sk_peer_pid);
+ 	put_net(sock_net(sk));
++	sock_release_memcg(sk);
+ 	sk_prot_free(sk->sk_prot_creator, sk);
+ }
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.6
 
