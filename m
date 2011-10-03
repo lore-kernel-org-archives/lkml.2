@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1JCURB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:17:01 -0400
-Received: from lucidpixels.com ([72.73.18.11]:47935 "EHLO lucidpixels.com"
+	id S1757544Ab1JCU1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:27:14 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:55389 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755221Ab1JCUQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:16:52 -0400
-Date: Mon, 3 Oct 2011 16:16:52 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: =?ISO-8859-15?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: HighPoint RocketRaid 620 vs. RocketRaid 640 -- supported?
-In-Reply-To: <20111003201315.GD12984@reaktio.net>
-Message-ID: <alpine.DEB.2.02.1110031615490.20248@p34.internal.lan>
-References: <alpine.DEB.2.02.1109191754531.7938@p34.internal.lan> <alpine.DEB.2.02.1109210726250.31360@p34.internal.lan> <20111003201315.GD12984@reaktio.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753172Ab1JCU1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 16:27:06 -0400
+In-Reply-To: <20111003153634.GA12447@tux1.beaverton.ibm.com>
+References: <20110930192956.4176.29905.stgit@elm3c44.beaverton.ibm.com> <OF54094699.6F5CF2B6-ONC125791C.004C901C-C125791C.004D1A61@transmode.se> <20111003153634.GA12447@tux1.beaverton.ibm.com>
+Subject: Re: [PATCH v4] crc32c: Implement CRC32c with slicing-by-8 algorithm
+X-KeepSent: A190E2A9:231A7DD6-C125791E:006F1765;
+ type=4; name=$KeepSent
+To: djwong@us.ibm.com
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Mingming Cao <cmm@us.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Theodore Tso <tytso@mit.edu>
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OFA190E2A9.231A7DD6-ONC125791E.006F1765-C125791E.00705758@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Mon, 3 Oct 2011 22:27:03 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 10/03/2011 22:27:03
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="655616-1354032898-1317673012=:20248"
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---655616-1354032898-1317673012=:20248
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-
-
-On Mon, 3 Oct 2011, Pasi K=E4rkk=E4inen wrote:
-
-> On Wed, Sep 21, 2011 at 07:28:26AM -0400, Justin Piszcz wrote:
->> Hi,
->>
->> Incase anyone is wondering the same thing, I contacted Highpoint and the=
-y
->> said (confirmed) the 620 support (which I am using now) is built-in to
->> the kernel and the 640 is not, so unless you like compiling kernel
->> modules/out of tree drivers for a _boot_ volume and want a regular SATA
->> 6.0gbps controller that supports TRIM, I'd go for the 620 even though it
->> maxes out around 390-420MiB/s read where a real SAS controller supports
->> 490-500MiB/s for an Intel 510 SSD, but remember, SAS controllers (at
->> least the one I tested with does not support TRIM and there is no Intel
->> SSD optimizer for Linux.
->>
+"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/10/03 17:36:46:
 >
-> Hmm.. does SAS "SCSI UNMAP" automatically get translated to
-> ATA TRIM if you hook up SATA disk to SAS HBA ?
-When attached to a SAS HBA, it simply says:
+> On Sat, Oct 01, 2011 at 04:02:10PM +0200, Joakim Tjernlund wrote:
+> >
+> > "Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/09/30 21:29:56:
 
-Jul 14 16:12:03 p34 kernel: [   22.258855] EXT4-fs warning (device sda2): r=
-elease_blocks_on_commit:2679: discard not supported, disabling
+[SNIP]
+
+> >
+> > This is based on an old version of Bobs slice by 8 that has lots duplication and
+> > hard to maintain.
+>
+> Are you referring to "[PATCH v6 05/10] crc32-misc-cleanup.diff" from 8/31?  I
+> haven't seen that one, so I'll go comb the internet.  Thank you for the
+> pointer, I'll update my patch.
+
+Not sure what version it was anymore as some time has passed. I think Bob was
+supposed to do one more round of polishing the code and resend it.
 
 >
-> Is the ATA<->SCSI translation being done by the HBA firmware,
-> or is it handled in the driver?
-I'm not sure, it would appear the driver handles it, when its on the Sata 6=
-gbps
-card (not SAS), it works fine:
-Sep 20 13:53:34 p34 kernel: [    6.786898] EXT4-fs (sdb2): re-mounted. Opts=
-: discard
-
+> > Start from Bobs latest patches and add crc32c to lib/crc32.c
 >
-> -- Pasi (who is too lazy to grep in the driver right now ;)
+> If I did that, how should I handle patching in the hardware accelerated version
+> on Intel systems?  That switcheroo ability seems to have been Herbert Xu's
+> motivation for moving crc32c into crypto/ in the first place:
 
-Justin.
+I don't know, I haven't looked at that problem. I suspect it moved because that
+was the easiest solution. Having an identical impl. of crc32(only the table values differ)
+in crypto compared to the one in lib is not the way forward though.
 
---655616-1354032898-1317673012=:20248--
+Could not someone on the cc list weigh in here? I have no formal right to
+demand anything, I am just expressing my opinion.
+
+    Jocke
+
