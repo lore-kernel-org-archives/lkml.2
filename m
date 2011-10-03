@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1JCIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 04:09:29 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:60183 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775Ab1JCIJY (ORCPT
+	id S1752766Ab1JCIMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 04:12:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53277 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab1JCIMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 04:09:24 -0400
-Message-ID: <4E896DA2.6040906@atmel.com>
-Date: Mon, 03 Oct 2011 10:09:06 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] at91 fixes for 3.1
-References: <4E838F77.2040705@atmel.com> <201109302217.13937.arnd@arndb.de>
-In-Reply-To: <201109302217.13937.arnd@arndb.de>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Oct 2011 04:12:03 -0400
+Subject: [PATCH] ASoC: Staticise simtec_audio_resume()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, Ben Dooks <ben@simtec.co.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 03 Oct 2011 16:11:52 +0800
+Message-ID: <1317629512.2820.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2011 10:17 PM, Arnd Bergmann :
-> On Wednesday 28 September 2011, Nicolas FERRE wrote:
->> Here is a couple of fixes that may be included in 3.1-final.
->> The Kconfig modification will allow to select the PWM driver for SAM9G45 
->> SoC. This will also benefit to stable kernels.
->> The new defconfig for SAM9G45 family will allow us to better monitor the 
->> health of this port through automatic compilation mechanism. I find it 
->> interesting to have it included the sooner.
->>
->> The pull is based on the following changes since commit 
->> a102a9ece5489e1718cd7543aa079082450ac3a2:
->>
->>    Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
->>
->> are available in the git repository at:
->>    git://github.com/at91linux/linux-at91.git at91-fixes
-> 
-> Hi Nicolas,
-> 
-> I've pulled them into the fixes branch now. My feeling however is that
-> these by themselves are not reason enough to send a pull request to Linus,
-> so they will probably be the first thing I send in the 3.2 merge window,
-> unless some other important fixes appear.
+It is exported via resume callback of struct dev_pm_ops rather than referenced
+directly and so should be staticised.
 
-Ok, that makes sense.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/samsung/s3c24xx_simtec.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks Arnd, bye,
+diff --git a/sound/soc/samsung/s3c24xx_simtec.c b/sound/soc/samsung/s3c24xx_simtec.c
+index 349566f..c8d525b 100644
+--- a/sound/soc/samsung/s3c24xx_simtec.c
++++ b/sound/soc/samsung/s3c24xx_simtec.c
+@@ -300,7 +300,7 @@ static void detach_gpio_amp(struct s3c24xx_audio_simtec_pdata *pd)
+ }
+ 
+ #ifdef CONFIG_PM
+-int simtec_audio_resume(struct device *dev)
++static int simtec_audio_resume(struct device *dev)
+ {
+ 	simtec_call_startup(pdata);
+ 	return 0;
 -- 
-Nicolas Ferre
+1.7.4.1
+
+
 
