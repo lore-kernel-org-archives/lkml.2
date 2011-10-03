@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab1JCUNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:13:46 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33861 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757505Ab1JCUNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:13:38 -0400
-Message-ID: <4E8A1770.20001@xenotime.net>
-Date: Mon, 03 Oct 2011 13:13:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1757535Ab1JCURB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:17:01 -0400
+Received: from lucidpixels.com ([72.73.18.11]:47935 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755221Ab1JCUQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 16:16:52 -0400
+Date: Mon, 3 Oct 2011 16:16:52 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: =?ISO-8859-15?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: HighPoint RocketRaid 620 vs. RocketRaid 640 -- supported?
+In-Reply-To: <20111003201315.GD12984@reaktio.net>
+Message-ID: <alpine.DEB.2.02.1110031615490.20248@p34.internal.lan>
+References: <alpine.DEB.2.02.1109191754531.7938@p34.internal.lan> <alpine.DEB.2.02.1109210726250.31360@p34.internal.lan> <20111003201315.GD12984@reaktio.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jan Keromnes <jan.keromnes@gmail.com>
-CC: torvalds@linux-foundation.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][TRIVIAL] Fixed alphabetical order in CREDITS
-References: <4E88A947.7020702@gmail.com> <4E88AEE5.2050904@xenotime.net> <4E8A0BA4.4020905@gmail.com>
-In-Reply-To: <4E8A0BA4.4020905@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: MULTIPART/MIXED; BOUNDARY="655616-1354032898-1317673012=:20248"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/11 12:23, Jan Keromnes wrote:
-> On 10/02/2011 08:35 PM, Randy Dunlap wrote:
->> On 10/02/11 11:11, Jan Keromnes wrote:
->>> diff --git a/CREDITS b/CREDITS
->>> index 07e32a8..650402c 100644
->>> --- a/CREDITS
->>> +++ b/CREDITS
->>> @@ -90,7 +90,7 @@ N: Erik Andersen
->>>   E:andersen@codepoet.org
->>>   W:http://www.codepoet.org/
->>>   P: 1024D/30D39057 1BC4 2742 E885 E4DE 9301  0C82 5F9B 643E 30D3 9057
->>> -D: Maintainer of ide-cd and Uniform CD-ROM driver,
->>> +D: Maintainer of ide-cd and Uniform CD-ROM driver,
->> I don't see a change for the line above or several other lines (maybe something
->> ate the trailing spaces that you were trying to fix).
-> Yes sorry about that, something in my mailing process is eating trailing spaces.
-> 
-> Please pull from:
-> 
->     git://github.com/jankeromnes/linux.git for-linus
-> 
-> to get the changes.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->>> @@ -2489,6 +2489,10 @@ S: 12725 SW Millikan Way, Suite 400
->>>   S: Beaverton, Oregon 97005
->> OSDL is no longer there.
-> I was unable to ask Patrick Mochel about his current whereabouts, both his email addresses do not exist anymore. How should I fix this? Surely not replace the old address by his Linked In location: Greater Seattle Area?
->>>   S: USA
+--655616-1354032898-1317673012=:20248
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-I would just delete those snail mail address lines.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+On Mon, 3 Oct 2011, Pasi K=E4rkk=E4inen wrote:
+
+> On Wed, Sep 21, 2011 at 07:28:26AM -0400, Justin Piszcz wrote:
+>> Hi,
+>>
+>> Incase anyone is wondering the same thing, I contacted Highpoint and the=
+y
+>> said (confirmed) the 620 support (which I am using now) is built-in to
+>> the kernel and the 640 is not, so unless you like compiling kernel
+>> modules/out of tree drivers for a _boot_ volume and want a regular SATA
+>> 6.0gbps controller that supports TRIM, I'd go for the 620 even though it
+>> maxes out around 390-420MiB/s read where a real SAS controller supports
+>> 490-500MiB/s for an Intel 510 SSD, but remember, SAS controllers (at
+>> least the one I tested with does not support TRIM and there is no Intel
+>> SSD optimizer for Linux.
+>>
+>
+> Hmm.. does SAS "SCSI UNMAP" automatically get translated to
+> ATA TRIM if you hook up SATA disk to SAS HBA ?
+When attached to a SAS HBA, it simply says:
+
+Jul 14 16:12:03 p34 kernel: [   22.258855] EXT4-fs warning (device sda2): r=
+elease_blocks_on_commit:2679: discard not supported, disabling
+
+>
+> Is the ATA<->SCSI translation being done by the HBA firmware,
+> or is it handled in the driver?
+I'm not sure, it would appear the driver handles it, when its on the Sata 6=
+gbps
+card (not SAS), it works fine:
+Sep 20 13:53:34 p34 kernel: [    6.786898] EXT4-fs (sdb2): re-mounted. Opts=
+: discard
+
+>
+> -- Pasi (who is too lazy to grep in the driver right now ;)
+
+Justin.
+
+--655616-1354032898-1317673012=:20248--
