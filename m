@@ -1,91 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1JCWGf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 18:06:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51037 "EHLO mx2.suse.de"
+	id S1757718Ab1JCWLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 18:11:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23847 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab1JCWG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 18:06:29 -0400
-Date: Tue, 4 Oct 2011 00:06:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Morton <akpm00@gmail.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, hongjiu.lu@intel.com,
-        linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [PATCH v2] binfmt_elf: Fix PIE execution with randomization
- disabled (was Re: [RFC PATCH] binfmt_elf: Fix PIE execution with randomization
- disabled)
-In-Reply-To: <20111003150305.936fc46e.akpm00@gmail.com>
-Message-ID: <alpine.LNX.2.00.1110040004330.31654@pobox.suse.cz>
-References: <20110929195359.GJ16720@zod.bos.redhat.com> <20110929141929.43df799d.akpm00@gmail.com> <alpine.LFD.2.02.1109291958210.9106@xanadu.home> <20110930021629.GL16720@zod.bos.redhat.com> <alpine.LNX.2.00.1110031651400.31654@pobox.suse.cz>
- <20111003150345.GP16720@zod.bos.redhat.com> <alpine.LNX.2.00.1110031709230.31654@pobox.suse.cz> <20111003150305.936fc46e.akpm00@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752311Ab1JCWLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 18:11:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="59514251"
+Message-Id: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 03 Oct 2011 15:09:00 -0700
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Prarit Bhargava <prarit@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, stable@kernel.org
+Subject: [patch v2 1/2] sched: Use resched IPI to kick off the nohz idle balance
+Content-Disposition: inline; filename=sched-use_resched_ipi_to_kick_off_the_nohz_idle.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011, Andrew Morton wrote:
+Current use of smp call function to kick the nohz idle balance can deadlock
+in this scenario.
 
-> > From: Jiri Kosina <jkosina@suse.cz>
-> > Subject: [PATCH] binfmt_elf: fix PIE execution with randomization disabled
-> > 
-> > The case of address space randomization being disabled in runtime through
-> > randomize_va_space sysctl is not treated properly in load_elf_binary(),
-> > resulting in SIGKILL coming at exec() time for certain PIE-linked binaries
-> > in case the randomization has been disabled at runtime prior to calling
-> > exec().
-> > 
-> > Handle the randomize_va_space == 0 case the same way as if we were not
-> > supporting .text randomization at all.
-> > 
-> > Based on original patch by H.J. Lu <hongjiu.lu@intel.com> and
-> > Josh Boyer <jwboyer@redhat.com>
-> > 
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Jiri Kosina <jkosina@suse.cz>
-> > Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Cc: Russell King <rmk@arm.linux.org.uk>
-> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> > ---
-> >  fs/binfmt_elf.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-> > index dd0fdfc..bb11fe4 100644
-> > --- a/fs/binfmt_elf.c
-> > +++ b/fs/binfmt_elf.c
-> > @@ -795,7 +795,10 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
-> >  			 * might try to exec.  This is because the brk will
-> >  			 * follow the loader, and is not movable.  */
-> >  #if defined(CONFIG_X86) || defined(CONFIG_ARM)
-> > -			load_bias = 0;
-> > +			if (current->flags & PF_RANDOMIZE)
-> > +				load_bias = 0;
-> > +			else
-> > +				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
-> >  #else
-> >  			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
-> >  #endif
-> 
-> Guys, it took several people several days and 10+ emails to work out
-> what's happening in there, and the first attempt to fix it was buggy. 
-> This is all a huuuuge signal that the code is unobvious, hard to
-> understand, hard to maintain.
+1. cpu-A did a generic_exec_single() to cpu-B and after queuing its call single
+data (csd) to the call single queue, cpu-A took a timer interrupt.  Actual IPI
+to cpu-B to process the call single queue is not yet sent.
 
-It's unfortunately true. Rewriting the ELF binary loader is on my list of 
-very-long-term TODOs. It has became quite a monster over decades.
+2. As part of the timer interrupt handler, cpu-A decided to kick cpu-B
+for the idle load balancing (sets cpu-B's rq->nohz_balance_kick to 1)
+and __smp_call_function_single() with nowait will queue the csd to the
+cpu-B's queue. But the generic_exec_single() won't send an IPI to cpu-B
+as the call single queue was not empty.
 
-> Please, let's get a good code comment in there while it's fresh in your 
-> minds.  So the next person who comes along doesn't have the same amount 
-> of difficulty?
+3. cpu-A is busy with lot of interrupts
 
-I have to run now, I will resend the patch to you with an explanatory 
-comment added in about 8 hours from now.
+4. Meanwhile cpu-B is entering and exiting idle and noticed that it has
+it's rq->nohz_balance_kick set to '1'. So it will go ahead and do the
+idle load balancer and clear its rq->nohz_balance_kick.
 
-Thanks,
+5. At this point, csd queued as part of the step-2 above is still locked
+and waiting to be serviced on cpu-B.
 
--- 
-Jiri Kosina
-SUSE Labs
+6. cpu-A is still busy with interrupt load and now it got another timer
+interrupt and as part of it decided to kick cpu-B for another idle load
+balancing (as it finds cpu-B's rq->nohz_balance_kick cleared in step-4
+above) and does __smp_call_function_single() with the same csd that is
+still locked.
+
+7. And we get a deadlock waiting for the csd_lock() in the
+__smp_call_function_single().
+
+Main issue here is that cpu-B can service the idle load balancer kick
+request from cpu-A even with out receiving the IPI and this lead to
+doing multiple __smp_call_function_single() on the same csd leading to
+deadlock.
+
+To kick a cpu, scheduler already has the reschedule vector reserved. Use
+that mechanism (kick_process()) instead of using the generic smp call function
+mechanism to kick off the nohz idle load balancing and avoid the deadlock.
+
+   [ This issue is present from 2.6.35+ kernels, but marking it -stable
+     only from v3.0+ as the proposed fix depends on the scheduler_ipi()
+     that is introduced recently. ]
+
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@kernel.org # v3.0+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c      |   21 +++++++++++++++++++--
+ kernel/sched_fair.c |   29 +++++++++--------------------
+ 2 files changed, 28 insertions(+), 22 deletions(-)
+Index: linux-2.6-tip/kernel/sched.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/sched.c
++++ linux-2.6-tip/kernel/sched.c
+@@ -1404,6 +1404,18 @@ void wake_up_idle_cpu(int cpu)
+ 		smp_send_reschedule(cpu);
+ }
+ 
++static inline bool got_nohz_idle_kick(void)
++{
++	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
++}
++
++#else /* CONFIG_NO_HZ */
++
++static inline bool got_nohz_idle_kick(void)
++{
++	return false;
++}
++
+ #endif /* CONFIG_NO_HZ */
+ 
+ static u64 sched_avg_period(void)
+@@ -2717,7 +2729,7 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
+-	if (llist_empty(&this_rq()->wake_list))
++	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+ 		return;
+ 
+ 	/*
+@@ -2735,6 +2747,12 @@ void scheduler_ipi(void)
+ 	 */
+ 	irq_enter();
+ 	sched_ttwu_pending();
++
++	/*
++	 * Check if someone kicked us for doing the nohz idle load balance.
++	 */
++	if (unlikely(got_nohz_idle_kick() && !need_resched()))
++		raise_softirq_irqoff(SCHED_SOFTIRQ);
+ 	irq_exit();
+ }
+ 
+@@ -8280,7 +8298,6 @@ void __init sched_init(void)
+ 		rq_attach_root(rq, &def_root_domain);
+ #ifdef CONFIG_NO_HZ
+ 		rq->nohz_balance_kick = 0;
+-		init_sched_softirq_csd(&per_cpu(remote_sched_softirq_cb, i));
+ #endif
+ #endif
+ 		init_rq_hrtick(rq);
+Index: linux-2.6-tip/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/sched_fair.c
++++ linux-2.6-tip/kernel/sched_fair.c
+@@ -4269,22 +4269,6 @@ out_unlock:
+ }
+ 
+ #ifdef CONFIG_NO_HZ
+-
+-static DEFINE_PER_CPU(struct call_single_data, remote_sched_softirq_cb);
+-
+-static void trigger_sched_softirq(void *data)
+-{
+-	raise_softirq_irqoff(SCHED_SOFTIRQ);
+-}
+-
+-static inline void init_sched_softirq_csd(struct call_single_data *csd)
+-{
+-	csd->func = trigger_sched_softirq;
+-	csd->info = NULL;
+-	csd->flags = 0;
+-	csd->priv = 0;
+-}
+-
+ /*
+  * idle load balancing details
+  * - One of the idle CPUs nominates itself as idle load_balancer, while
+@@ -4450,11 +4434,16 @@ static void nohz_balancer_kick(int cpu)
+ 	}
+ 
+ 	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
+-		struct call_single_data *cp;
+-
+ 		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
+-		cp = &per_cpu(remote_sched_softirq_cb, cpu);
+-		__smp_call_function_single(ilb_cpu, cp, 0);
++
++		smp_mb();
++		/*
++		 * Use smp_send_reschedule() instead of resched_cpu().
++		 * This way we generate a sched IPI on the target cpu which
++		 * is idle. And the softirq performing nohz idle load balance
++		 * will be run before returning from the IPI.
++		 */
++		smp_send_reschedule(ilb_cpu);
+ 	}
+ 	return;
+ }
+
+
