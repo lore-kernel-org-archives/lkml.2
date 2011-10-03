@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab1JCUaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:30:46 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33609 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1JCUaj (ORCPT
+	id S1757559Ab1JCUey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:34:54 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:47189 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752994Ab1JCUeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:30:39 -0400
-X-Greylist: delayed 4037 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Oct 2011 16:30:39 EDT
-X-Originating-IP: 217.70.178.145
-X-Originating-IP: 134.214.169.83
-Message-ID: <4E8A1B66.2080805@gmail.com>
-Date: Mon, 03 Oct 2011 22:30:30 +0200
-From: Jan Keromnes <jan.keromnes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: torvalds@linux-foundation.org, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][TRIVIAL] Fixed alphabetical order in CREDITS
-References: <4E88A947.7020702@gmail.com> <4E88AEE5.2050904@xenotime.net> <4E8A0BA4.4020905@gmail.com> <4E8A1770.20001@xenotime.net>
-In-Reply-To: <4E8A1770.20001@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 3 Oct 2011 16:34:50 -0400
+Date: Mon, 3 Oct 2011 13:34:38 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 01/21] drm/i915: Enable digital port hotplug
+ on PCH systems
+Message-ID: <20111003133438.54579f5c@jbarnes-desktop>
+In-Reply-To: <20110930161732.GA2859@phenom.ffwll.local>
+References: <20110923085243.6e4b7b4c@jbarnes-x220>
+	<1317344993-24945-1-git-send-email-keithp@keithp.com>
+	<1317344993-24945-2-git-send-email-keithp@keithp.com>
+	<20110930161732.GA2859@phenom.ffwll.local>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 10:13 PM, Randy Dunlap wrote:
-> On 10/03/11 12:23, Jan Keromnes wrote:
->> On 10/02/2011 08:35 PM, Randy Dunlap wrote:
->>> On 10/02/11 11:11, Jan Keromnes wrote:
->>>> diff --git a/CREDITS b/CREDITS
->>>> index 07e32a8..650402c 100644
->>>> --- a/CREDITS
->>>> +++ b/CREDITS
->>>> @@ -90,7 +90,7 @@ N: Erik Andersen
->>>>    E:andersen@codepoet.org
->>>>    W:http://www.codepoet.org/
->>>>    P: 1024D/30D39057 1BC4 2742 E885 E4DE 9301  0C82 5F9B 643E 30D3 9057
->>>> -D: Maintainer of ide-cd and Uniform CD-ROM driver,
->>>> +D: Maintainer of ide-cd and Uniform CD-ROM driver,
->>> I don't see a change for the line above or several other lines (maybe something
->>> ate the trailing spaces that you were trying to fix).
->> Yes sorry about that, something in my mailing process is eating trailing spaces.
->>
->> Please pull from:
->>
->>      git://github.com/jankeromnes/linux.git for-linus
->>
->> to get the changes.
->>>> @@ -2489,6 +2489,10 @@ S: 12725 SW Millikan Way, Suite 400
->>>>    S: Beaverton, Oregon 97005
->>> OSDL is no longer there.
->> I was unable to ask Patrick Mochel about his current whereabouts, both his email addresses do not exist anymore. How should I fix this? Surely not replace the old address by his Linked In location: Greater Seattle Area?
->>>>    S: USA
-> I would just delete those snail mail address lines.
->
-Done. Final amended commit can now be pulled from:
+On Fri, 30 Sep 2011 18:17:32 +0200
+Daniel Vetter <daniel@ffwll.ch> wrote:
 
-     git://github.com/jankeromnes/linux.git for-linus
+> On Thu, Sep 29, 2011 at 06:09:33PM -0700, Keith Packard wrote:
+> > We were relying on the BIOS to set these bits, which doesn't always
+> > happen.
+> > 
+> > Signed-off-by: Keith Packard <keithp@keithp.com>
+> 
+> Ok, I'll try to increase our review-bandwidth for modesetting stuff by
+> jumping into this maze myself. For the moment I'll shortly explain what
+> I've actually checked so you know how much weight/little to attach to my
+> r-b's.
+> 
+> Checked with docs, noticed that the public one's lack register addresses
+> for PCH regs ...
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Commit diffs are here:
+Yep, I like it too:
 
-http://github.com/jankeromnes/linux/commit/b3d5cc 
-<https://github.com/jankeromnes/linux/commit/b3d5cc0d2c2d0da1a5c1b7973ee2cb55053cd3e1> 
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
+-- 
+Jesse Barnes, Intel Open Source Technology Center
