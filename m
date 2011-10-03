@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab1JCQxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 12:53:19 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:59260 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab1JCQxM (ORCPT
+	id S1756938Ab1JCQxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 12:53:44 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:36899 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab1JCQxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 12:53:12 -0400
-From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-To: linux-serial@vger.kernel.org
-Cc: Breno Leitao <leitao@linux.vnet.ibm.com>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, cascardo@linux.vnet.ibm.com,
-        Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-Subject: [PATCH] jsm: Fixed EEH recovery error
-Date: Mon,  3 Oct 2011 13:52:12 -0300
-Message-Id: <1317660732-3647-1-git-send-email-lucaskt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.4
-x-cbid: 11100316-8936-0000-0000-000004A2DE87
+	Mon, 3 Oct 2011 12:53:39 -0400
+Date: Mon, 3 Oct 2011 17:53:32 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        MikeWaychiso@bitmath.org
+Subject: Re: [PATCH v3 10/10] x86, efi: EFI boot stub support
+Message-ID: <20111003165332.GA22562@srcf.ucam.org>
+References: <1315838094-2307-11-git-send-email-matt@console-pimps.org>
+ <1316607036-9235-1-git-send-email-matt@console-pimps.org>
+ <20110929101418.GA2215@polaris.bitmath.org>
+ <1317368465.3375.6.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20110930111312.GA6567@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110930111312.GA6567@polaris.bitmath.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was an error on the jsm driver that would cause it to be unable to
-recover after a second error is detected.
+On Fri, Sep 30, 2011 at 01:13:12PM +0200, Henrik Rydberg wrote:
 
-At the first error, the device recovers properly:
+> No, sorry, it never worked on this machine when booting from EFI.
+> AFAICT, there is no known way to control backlight either (nvidia
+> 320M). If you have a similar setup, sharing findings would be most
+> interesting (off-line).
 
-[72521.485691] EEH: Detected PCI bus error on device 0003:02:00.0
-[72521.485695] EEH: This PCI device has failed 1 times in the last hour:
-...
-[72532.035693] ttyn3 at MMIO 0x0 (irq = 49) is a jsm
-[72532.105689] jsm: Port 3 added
+Should work with current nouveau git.
 
-However, at the second error, it cascades until EEH disables the device:
-
-[72631.229549] Call Trace:
-...
-[72641.725687] jsm: Port 3 added
-[72641.725695] EEH: Detected PCI bus error on device 0003:02:00.0
-[72641.725698] EEH: This PCI device has failed 3 times in the last hour:
-
-It was caused because the PCI state was not being saved after the first
-restore. Therefore, at the second recovery the PCI state would not be
-restored.
-
-Signed-off-by: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
----
- drivers/tty/serial/jsm/jsm_driver.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
-index 96da178..8941b15 100644
---- a/drivers/tty/serial/jsm/jsm_driver.c
-+++ b/drivers/tty/serial/jsm/jsm_driver.c
-@@ -270,6 +270,7 @@ static void jsm_io_resume(struct pci_dev *pdev)
- 	struct jsm_board *brd = pci_get_drvdata(pdev);
- 
- 	pci_restore_state(pdev);
-+	pci_save_state(pdev);
- 
- 	jsm_uart_port_init(brd);
- }
 -- 
-1.7.4.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
