@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab1JCPrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 11:47:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56835 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679Ab1JCPr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 11:47:29 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=yaZdvZR3UvQ5Ywe43s0A:9 a=glSFNH00a4lcUjO01FwA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
- initialized, don't nop it out
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Date: Mon, 03 Oct 2011 11:47:26 -0400
-In-Reply-To: <20111003150205.GB2462@redhat.com>
-References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
-	 <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
-	 <20111003150205.GB2462@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317656848.17991.4.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1756561Ab1JCPse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 11:48:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56651 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679Ab1JCPsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 11:48:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,480,1312182000"; 
+   d="scan'208";a="73882931"
+Date: Mon, 3 Oct 2011 17:51:28 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 03/23] mfd/db8500-prcmu: initialize DB8500 PRCMU regs
+Message-ID: <20111003155128.GN4118@sortiz-mobl>
+References: <1313137670-30683-1-git-send-email-linus.walleij@stericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313137670-30683-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 11:02 -0400, Jason Baron wrote:
+Hi Linus,
 
-> if (!enabled)
-> 	arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
+On Fri, Aug 12, 2011 at 10:27:50AM +0200, Linus Walleij wrote:
+> From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 > 
+> Some clocks may be force enabled when we probe the
+> driver, but they need to be turned off by default so
+> we have a known state. We call this the register
+> initialization function if we need more stuff in
+> there in the future.
 > 
-> > +		if (iterk == key)
-> >  			continue;
-> >  
-> > -		key = (struct jump_label_key *)(unsigned long)iter->key;
-> > -		atomic_set(&key->enabled, 0);
-> > +		key = iterk;
-> >  		key->entries = iter;
-> >  #ifdef CONFIG_MODULES
-> >  		key->next = NULL;
-> > @@ -212,7 +208,7 @@ void jump_label_apply_nops(struct module *mod)
-> >  		return;
-> >  
-> >  	for (iter = iter_start; iter < iter_stop; iter++)
-> > -		arch_jump_label_text_poke_early(iter->code);
-> > +		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
-> >  }
-> >  
-> >  static int jump_label_add_module(struct module *mod)
-> > -- 
-> > 1.7.6.2
-> > 
+> Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mfd/db8500-prcmu.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
 > 
-> hmmm...this is used on module load in smp - so this would introduce a number of
-> calls to stop_machine() where we didn't have them before. Yes, module
-> load is a very slow path to begin with, but I think its at least worth
-> pointing out...
+> diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> index dcc690e..e2c4a26 100644
+> --- a/drivers/mfd/db8500-prcmu.c
+> +++ b/drivers/mfd/db8500-prcmu.c
+> @@ -1840,6 +1840,16 @@ void __init prcmu_early_init(void)
+>  	}
+>  }
+>  
+> +static void __init init_prcm_registers(void)
+Could we have a less generic function name here ?
 
-And it is a good point to point out. As stop_machine becomes noticeable
-by users on large scale CPU boxes. Ideally, we want to avoid stopmachine
-when we do not need it.
+Cheers,
+Samuel.
 
--- Steve
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
