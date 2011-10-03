@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab1JCJQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 05:16:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60943 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab1JCJQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 05:16:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Archit Taneja <archit@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "JAIN, AMBER" <amber@ti.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: Re: [PATCH 20/30] media/omap_vout: disable driver for now
-Date: Mon, 03 Oct 2011 11:16:26 +0200
-Message-ID: <1742744.loikWKTXp9@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <4E8951B7.7010106@ti.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <1317566760-25681-21-git-send-email-arnd@arndb.de> <4E8951B7.7010106@ti.com>
+	id S1753799Ab1JCJRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 05:17:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752982Ab1JCJQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 05:16:56 -0400
+Date: Mon, 3 Oct 2011 14:46:46 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/11] virtio: blk: Add freeze, restore handlers to
+ support S4
+Message-ID: <20111003091646.GA5192@amit-x200.redhat.com>
+References: <cover.1317309123.git.amit.shah@redhat.com>
+ <5160f2cf536e7c506a5e90b4cb95e0f2e41c53d9.1317309123.git.amit.shah@redhat.com>
+ <20111002093733.GE29706@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:pBWiyun4RTrRm/tAfZO3Ad0SOGjHdC+re6KLtP9XZdx
- dbv3dHnPdDq8x3LgqPs/ocWvxXNaIuH1TL3uRqkEx47MwnJnpw
- 7BkrDj1U1GAFBZyuRA0jZMKbfiIBS6VKIXSvd4GsWsuz5CXTWi
- DXnZP1gp5FSZV5VZdMB67oRN4t+/BUCo90FyPRDmon24AgB5Y+
- g8LfwX89yTynIkZOI/pWqnB7J5Uy+A5nCQW4oAH1vJiJ5K44lg
- xpRqh/1IUS/H/V7vVSTpo2SawGAjqa4BwqRugPIX+aNiAyiaE4
- 1y/Mdci5mTg3a1p6ikWTw/wUrPKQ6s7wpqV13XuLlN1hD57pV3
- AMOqW0WgyX2gLOzF+HfA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111002093733.GE29706@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011 11:39:59 Archit Taneja wrote:
+On (Sun) 02 Oct 2011 [11:37:33], Michael S. Tsirkin wrote:
+> On Thu, Sep 29, 2011 at 08:56:02PM +0530, Amit Shah wrote:
+> > Delete the vq on the freeze callback to prepare for hibernation.
+> > Re-create the vq in the restore callback to resume normal function.
+> > 
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > ---
+> >  drivers/block/virtio_blk.c |   17 +++++++++++++++++
+> >  1 files changed, 17 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> > index 509760b..9844d2c 100644
+> > --- a/drivers/block/virtio_blk.c
+> > +++ b/drivers/block/virtio_blk.c
+> > @@ -549,6 +549,19 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+> >  	kfree(vblk);
+> >  }
+> >  
+> > +#ifdef CONFIG_PM
+> > +static int virtblk_freeze(struct virtio_device *vdev)
+> > +{
+> > +	vdev->config->del_vqs(vdev);
 > 
-> A fix for this is already in the master branch of Mauro's tree:
-> 
-> git://linuxtv.org/media_tree.git
-> 
-> with the commit id:
-> 
-> 5ebbf72dc51bd3b481aa91fea37a7157da5fc548
-> 
-> I am guessing this would during the 3.2 merge window.
+> What prevents the guest from trying to use the VQ while
+> this is in progress? IF it does, what prevents a crash?
 
-Ok, thanks for the info! We can drop this then.
+An oversight: Sasha pointed this out, too, and I've now fixed this by
+adding a call to vdev->config->reset() before deleting vqs.
 
-	Arnd
+		Amit
