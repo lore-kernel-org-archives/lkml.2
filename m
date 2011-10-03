@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab1JCNqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 09:46:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31235 "EHLO mga14.intel.com"
+	id S1756079Ab1JCNqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 09:46:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17735 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab1JCNqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 09:46:04 -0400
+	id S1756017Ab1JCNqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 09:46:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,479,1312182000"; 
-   d="scan'208";a="58158746"
-Message-Id: <20111003134537.584729093@intel.com>
+   d="scan'208";a="58158739"
+Message-Id: <20111003134536.893011942@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 03 Oct 2011 21:42:39 +0800
+Date: Mon, 03 Oct 2011 21:42:34 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,110 +26,257 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/11] writeback: per-bdi background threshold
+Subject: [PATCH 06/11] writeback: per task dirty rate limit
 References: <20111003134228.090592370@intel.com>
-Content-Disposition: inline; filename=writeback-bdi-background-thresh.patch
+Content-Disposition: inline; filename=per-task-ratelimit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One thing puzzled me is that in JBOD case, the per-disk writeout
-performance is smaller than the corresponding single-disk case even
-when they have comparable bdi_thresh. Tracing shows find that in single
-disk case, bdi_writeback is always kept high while in JBOD case, it
-could drop low from time to time and correspondingly bdi_reclaimable
-could sometimes rush high.
+Add two fields to task_struct.
 
-The fix is to watch bdi_reclaimable and kick background writeback as
-soon as it goes high. This resembles the global background threshold
-but in per-bdi manner. The trick is, as long as bdi_reclaimable does
-not go high, bdi_writeback naturally won't go low because
-bdi_reclaimable+bdi_writeback ~= bdi_thresh.
+1) account dirtied pages in the individual tasks, for accuracy
+2) per-task balance_dirty_pages() call intervals, for flexibility
 
-With less fluctuated writeback pages, JBOD performance is observed to
-increase noticeably in various cases.
+The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
+scale near-sqrt to the safety gap between dirty pages and threshold.
 
-vmstat:nr_written values before/after patch:
+The main problem of per-task nr_dirtied is, if 1k+ tasks start dirtying
+pages at exactly the same time, each task will be assigned a large
+initial nr_dirtied_pause, so that the dirty threshold will be exceeded
+long before each task reached its nr_dirtied_pause and hence call
+balance_dirty_pages().
 
-  3.1.0-rc4-wo-underrun+      3.1.0-rc4-bgthresh3+  
-------------------------  ------------------------  
-               125596480       +25.9%    158179363  JBOD-10HDD-16G/ext4-100dd-1M-24p-16384M-20:10-X
-                61790815      +110.4%    130032231  JBOD-10HDD-16G/ext4-10dd-1M-24p-16384M-20:10-X
-                58853546        -0.1%     58823828  JBOD-10HDD-16G/ext4-1dd-1M-24p-16384M-20:10-X
-               110159811       +24.7%    137355377  JBOD-10HDD-16G/xfs-100dd-1M-24p-16384M-20:10-X
-                69544762       +10.8%     77080047  JBOD-10HDD-16G/xfs-10dd-1M-24p-16384M-20:10-X
-                50644862        +0.5%     50890006  JBOD-10HDD-16G/xfs-1dd-1M-24p-16384M-20:10-X
-                42677090       +28.0%     54643527  JBOD-10HDD-thresh=100M/ext4-100dd-1M-24p-16384M-100M:10-X
-                47491324       +13.3%     53785605  JBOD-10HDD-thresh=100M/ext4-10dd-1M-24p-16384M-100M:10-X
-                52548986        +0.9%     53001031  JBOD-10HDD-thresh=100M/ext4-1dd-1M-24p-16384M-100M:10-X
-                26783091       +36.8%     36650248  JBOD-10HDD-thresh=100M/xfs-100dd-1M-24p-16384M-100M:10-X
-                35526347       +14.0%     40492312  JBOD-10HDD-thresh=100M/xfs-10dd-1M-24p-16384M-100M:10-X
-                44670723        -1.1%     44177606  JBOD-10HDD-thresh=100M/xfs-1dd-1M-24p-16384M-100M:10-X
-               127996037       +22.4%    156719990  JBOD-10HDD-thresh=2G/ext4-100dd-1M-24p-16384M-2048M:10-X
-                57518856        +3.8%     59677625  JBOD-10HDD-thresh=2G/ext4-10dd-1M-24p-16384M-2048M:10-X
-                51919909       +12.2%     58269894  JBOD-10HDD-thresh=2G/ext4-1dd-1M-24p-16384M-2048M:10-X
-                86410514       +79.0%    154660433  JBOD-10HDD-thresh=2G/xfs-100dd-1M-24p-16384M-2048M:10-X
-                40132519       +38.6%     55617893  JBOD-10HDD-thresh=2G/xfs-10dd-1M-24p-16384M-2048M:10-X
-                48423248        +7.5%     52042927  JBOD-10HDD-thresh=2G/xfs-1dd-1M-24p-16384M-2048M:10-X
-               206041046       +44.1%    296846536  JBOD-10HDD-thresh=4G/xfs-100dd-1M-24p-16384M-4096M:10-X
-                72312903       -19.4%     58272885  JBOD-10HDD-thresh=4G/xfs-10dd-1M-24p-16384M-4096M:10-X
-                50635672        -0.5%     50384787  JBOD-10HDD-thresh=4G/xfs-1dd-1M-24p-16384M-4096M:10-X
-                68308534      +115.7%    147324758  JBOD-10HDD-thresh=800M/ext4-100dd-1M-24p-16384M-800M:10-X
-                57882933       +14.5%     66269621  JBOD-10HDD-thresh=800M/ext4-10dd-1M-24p-16384M-800M:10-X
-                52183472       +12.8%     58855181  JBOD-10HDD-thresh=800M/ext4-1dd-1M-24p-16384M-800M:10-X
-                53788956       +94.2%    104460352  JBOD-10HDD-thresh=800M/xfs-100dd-1M-24p-16384M-800M:10-X
-                44493342       +35.5%     60298210  JBOD-10HDD-thresh=800M/xfs-10dd-1M-24p-16384M-800M:10-X
-                42641209       +18.9%     50681038  JBOD-10HDD-thresh=800M/xfs-1dd-1M-24p-16384M-800M:10-X
+The solution is to watch for the number of pages dirtied on each CPU in
+between the calls into balance_dirty_pages(). If it exceeds ratelimit_pages
+(3% dirty threshold), force call balance_dirty_pages() for a chance to
+set bdi->dirty_exceeded. In normal situations, this safeguarding
+condition is not expected to trigger at all.
 
+On the sqrt in dirty_poll_interval():
+
+It will serve as an initial guess when dirty pages are still in the
+freerun area.
+
+When dirty pages are floating inside the dirty control scope [freerun,
+limit], a followup patch will use some refined dirty poll interval to
+get the desired pause time.
+
+   thresh-dirty (MB)    sqrt
+		   1      16
+		   2      22
+		   4      32
+		   8      45
+		  16      64
+		  32      90
+		  64     128
+		 128     181
+		 256     256
+		 512     362
+		1024     512
+
+The above table means, given 1MB (or 1GB) gap and the dd tasks polling
+balance_dirty_pages() on every 16 (or 512) pages, the dirty limit won't
+be exceeded as long as there are less than 16 (or 512) concurrent dd's.
+
+So sqrt naturally leads to less overheads and more safe concurrent tasks
+for large memory servers, which have large (thresh-freerun) gaps.
+
+peter: keep the per-CPU ratelimit for safeguarding the 1k+ tasks case
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Andrea Righi <andrea@betterlinux.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ include/linux/sched.h |    7 +++
+ kernel/fork.c         |    3 +
+ mm/page-writeback.c   |   89 ++++++++++++++++++++++------------------
+ 3 files changed, 60 insertions(+), 39 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2011-10-02 10:28:55.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2011-10-02 10:42:22.000000000 +0800
-@@ -658,14 +658,21 @@ long writeback_inodes_wb(struct bdi_writ
- 	return nr_pages - work.nr_pages;
+--- linux-next.orig/include/linux/sched.h	2011-10-03 21:05:31.000000000 +0800
++++ linux-next/include/linux/sched.h	2011-10-03 21:05:40.000000000 +0800
+@@ -1525,6 +1525,13 @@ struct task_struct {
+ 	int make_it_fail;
+ #endif
+ 	struct prop_local_single dirties;
++	/*
++	 * when (nr_dirtied >= nr_dirtied_pause), it's time to call
++	 * balance_dirty_pages() for some dirty throttling pause
++	 */
++	int nr_dirtied;
++	int nr_dirtied_pause;
++
+ #ifdef CONFIG_LATENCYTOP
+ 	int latency_record_count;
+ 	struct latency_record latency_record[LT_SAVECOUNT];
+--- linux-next.orig/mm/page-writeback.c	2011-10-03 21:05:39.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-10-03 21:05:40.000000000 +0800
+@@ -54,20 +54,6 @@
+  */
+ static long ratelimit_pages = 32;
+ 
+-/*
+- * When balance_dirty_pages decides that the caller needs to perform some
+- * non-background writeback, this is how many pages it will attempt to write.
+- * It should be somewhat larger than dirtied pages to ensure that reasonably
+- * large amounts of I/O are submitted.
+- */
+-static inline long sync_writeback_pages(unsigned long dirtied)
+-{
+-	if (dirtied < ratelimit_pages)
+-		dirtied = ratelimit_pages;
+-
+-	return dirtied + dirtied / 2;
+-}
+-
+ /* The following parameters are exported via /proc/sys/vm */
+ 
+ /*
+@@ -169,6 +155,8 @@ static void update_completion_period(voi
+ 	int shift = calc_period_shift();
+ 	prop_change_shift(&vm_completions, shift);
+ 	prop_change_shift(&vm_dirties, shift);
++
++	writeback_set_ratelimit();
  }
  
--static inline bool over_bground_thresh(void)
-+static bool over_bground_thresh(struct backing_dev_info *bdi)
- {
- 	unsigned long background_thresh, dirty_thresh;
- 
- 	global_dirty_limits(&background_thresh, &dirty_thresh);
- 
--	return (global_page_state(NR_FILE_DIRTY) +
--		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
-+	if (global_page_state(NR_FILE_DIRTY) +
-+	    global_page_state(NR_UNSTABLE_NFS) > background_thresh)
-+		return true;
-+
-+	if (bdi_stat(bdi, BDI_RECLAIMABLE) >
-+				bdi_dirty_limit(bdi, background_thresh))
-+		return true;
-+
-+	return false;
+ int dirty_background_ratio_handler(struct ctl_table *table, int write,
+@@ -979,6 +967,23 @@ static void bdi_update_bandwidth(struct 
  }
  
  /*
-@@ -727,7 +734,7 @@ static long wb_writeback(struct bdi_writ
- 		 * For background writeout, stop when we are below the
- 		 * background dirty threshold
- 		 */
--		if (work->for_background && !over_bground_thresh())
-+		if (work->for_background && !over_bground_thresh(wb->bdi))
- 			break;
++ * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
++ * will look to see if it needs to start dirty throttling.
++ *
++ * If dirty_poll_interval is too low, big NUMA machines will call the expensive
++ * global_page_state() too often. So scale it near-sqrt to the safety margin
++ * (the number of pages we may dirty without exceeding the dirty limits).
++ */
++static unsigned long dirty_poll_interval(unsigned long dirty,
++					 unsigned long thresh)
++{
++	if (thresh > dirty)
++		return 1UL << (ilog2(thresh - dirty) >> 1);
++
++	return 1;
++}
++
++/*
+  * balance_dirty_pages() must be called by processes which are generating dirty
+  * data.  It looks at the number of dirty pages in the machine and will force
+  * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+@@ -1112,6 +1117,9 @@ static void balance_dirty_pages(struct a
+ 	if (clear_dirty_exceeded && bdi->dirty_exceeded)
+ 		bdi->dirty_exceeded = 0;
  
- 		if (work->for_kupdate) {
-@@ -811,7 +818,7 @@ static unsigned long get_nr_dirty_pages(
++	current->nr_dirtied = 0;
++	current->nr_dirtied_pause = dirty_poll_interval(nr_dirty, dirty_thresh);
++
+ 	if (writeback_in_progress(bdi))
+ 		return;
  
- static long wb_check_background_flush(struct bdi_writeback *wb)
+@@ -1138,7 +1146,7 @@ void set_page_dirty_balance(struct page 
+ 	}
+ }
+ 
+-static DEFINE_PER_CPU(unsigned long, bdp_ratelimits) = 0;
++static DEFINE_PER_CPU(int, bdp_ratelimits);
+ 
+ /**
+  * balance_dirty_pages_ratelimited_nr - balance dirty memory state
+@@ -1158,31 +1166,39 @@ void balance_dirty_pages_ratelimited_nr(
+ 					unsigned long nr_pages_dirtied)
  {
--	if (over_bground_thresh()) {
-+	if (over_bground_thresh(wb->bdi)) {
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+-	unsigned long ratelimit;
+-	unsigned long *p;
++	int ratelimit;
++	int *p;
  
- 		struct wb_writeback_work work = {
- 			.nr_pages	= LONG_MAX,
+ 	if (!bdi_cap_account_dirty(bdi))
+ 		return;
+ 
+-	ratelimit = ratelimit_pages;
+-	if (mapping->backing_dev_info->dirty_exceeded)
+-		ratelimit = 8;
++	ratelimit = current->nr_dirtied_pause;
++	if (bdi->dirty_exceeded)
++		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
++
++	current->nr_dirtied += nr_pages_dirtied;
+ 
++	preempt_disable();
+ 	/*
+-	 * Check the rate limiting. Also, we do not want to throttle real-time
+-	 * tasks in balance_dirty_pages(). Period.
++	 * This prevents one CPU to accumulate too many dirtied pages without
++	 * calling into balance_dirty_pages(), which can happen when there are
++	 * 1000+ tasks, all of them start dirtying pages at exactly the same
++	 * time, hence all honoured too large initial task->nr_dirtied_pause.
+ 	 */
+-	preempt_disable();
+ 	p =  &__get_cpu_var(bdp_ratelimits);
+-	*p += nr_pages_dirtied;
+-	if (unlikely(*p >= ratelimit)) {
+-		ratelimit = sync_writeback_pages(*p);
++	if (unlikely(current->nr_dirtied >= ratelimit))
+ 		*p = 0;
+-		preempt_enable();
+-		balance_dirty_pages(mapping, ratelimit);
+-		return;
++	else {
++		*p += nr_pages_dirtied;
++		if (unlikely(*p >= ratelimit_pages)) {
++			*p = 0;
++			ratelimit = 0;
++		}
+ 	}
+ 	preempt_enable();
++
++	if (unlikely(current->nr_dirtied >= ratelimit))
++		balance_dirty_pages(mapping, current->nr_dirtied);
+ }
+ EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+ 
+@@ -1277,22 +1293,17 @@ void laptop_sync_completion(void)
+  *
+  * Here we set ratelimit_pages to a level which ensures that when all CPUs are
+  * dirtying in parallel, we cannot go more than 3% (1/32) over the dirty memory
+- * thresholds before writeback cuts in.
+- *
+- * But the limit should not be set too high.  Because it also controls the
+- * amount of memory which the balance_dirty_pages() caller has to write back.
+- * If this is too large then the caller will block on the IO queue all the
+- * time.  So limit it to four megabytes - the balance_dirty_pages() caller
+- * will write six megabyte chunks, max.
++ * thresholds.
+  */
+ 
+ void writeback_set_ratelimit(void)
+ {
+-	ratelimit_pages = vm_total_pages / (num_online_cpus() * 32);
++	unsigned long background_thresh;
++	unsigned long dirty_thresh;
++	global_dirty_limits(&background_thresh, &dirty_thresh);
++	ratelimit_pages = dirty_thresh / (num_online_cpus() * 32);
+ 	if (ratelimit_pages < 16)
+ 		ratelimit_pages = 16;
+-	if (ratelimit_pages * PAGE_CACHE_SIZE > 4096 * 1024)
+-		ratelimit_pages = (4096 * 1024) / PAGE_CACHE_SIZE;
+ }
+ 
+ static int __cpuinit
+--- linux-next.orig/kernel/fork.c	2011-10-03 21:05:31.000000000 +0800
++++ linux-next/kernel/fork.c	2011-10-03 21:05:40.000000000 +0800
+@@ -1302,6 +1302,9 @@ static struct task_struct *copy_process(
+ 	p->pdeath_signal = 0;
+ 	p->exit_state = 0;
+ 
++	p->nr_dirtied = 0;
++	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
++
+ 	/*
+ 	 * Ok, make it visible to the rest of the system.
+ 	 * We dont wake it up yet.
 
 
