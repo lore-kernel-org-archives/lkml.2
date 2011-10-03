@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab1JCU3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 16:29:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53453 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1JCU3F (ORCPT
+	id S1757556Ab1JCUaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 16:30:46 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33609 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab1JCUaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 16:29:05 -0400
-Date: Mon, 3 Oct 2011 22:28:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
-In-Reply-To: <201110032202.24237.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.02.1110032228390.1489@ionos>
-References: <1317654626.21903.72.camel@zakaz.uk.xensource.com> <alpine.LFD.2.02.1110032033530.1489@ionos> <201110032202.24237.rjw@sisk.pl>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 3 Oct 2011 16:30:39 -0400
+X-Greylist: delayed 4037 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Oct 2011 16:30:39 EDT
+X-Originating-IP: 217.70.178.145
+X-Originating-IP: 134.214.169.83
+Message-ID: <4E8A1B66.2080805@gmail.com>
+Date: Mon, 03 Oct 2011 22:30:30 +0200
+From: Jan Keromnes <jan.keromnes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: torvalds@linux-foundation.org, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][TRIVIAL] Fixed alphabetical order in CREDITS
+References: <4E88A947.7020702@gmail.com> <4E88AEE5.2050904@xenotime.net> <4E8A0BA4.4020905@gmail.com> <4E8A1770.20001@xenotime.net>
+In-Reply-To: <4E8A1770.20001@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011, Rafael J. Wysocki wrote:
-> On Monday, October 03, 2011, Thomas Gleixner wrote:
-> > We already shut down the nonboot cpus on suspend. We could do that
-> > _before_ we disable devices and the interrupts.
-> >  
-> > Raphael ?
-> 
-> I'm afraid that wouldn't work.  At least right now our suspend sequence is
-> reasonably in line with what ACPI says.
-> 
-> Besides, we suspend devices in parallel now, so that would be going backwards
-> a bit.
+On 10/03/2011 10:13 PM, Randy Dunlap wrote:
+> On 10/03/11 12:23, Jan Keromnes wrote:
+>> On 10/02/2011 08:35 PM, Randy Dunlap wrote:
+>>> On 10/02/11 11:11, Jan Keromnes wrote:
+>>>> diff --git a/CREDITS b/CREDITS
+>>>> index 07e32a8..650402c 100644
+>>>> --- a/CREDITS
+>>>> +++ b/CREDITS
+>>>> @@ -90,7 +90,7 @@ N: Erik Andersen
+>>>>    E:andersen@codepoet.org
+>>>>    W:http://www.codepoet.org/
+>>>>    P: 1024D/30D39057 1BC4 2742 E885 E4DE 9301  0C82 5F9B 643E 30D3 9057
+>>>> -D: Maintainer of ide-cd and Uniform CD-ROM driver,
+>>>> +D: Maintainer of ide-cd and Uniform CD-ROM driver,
+>>> I don't see a change for the line above or several other lines (maybe something
+>>> ate the trailing spaces that you were trying to fix).
+>> Yes sorry about that, something in my mailing process is eating trailing spaces.
+>>
+>> Please pull from:
+>>
+>>      git://github.com/jankeromnes/linux.git for-linus
+>>
+>> to get the changes.
+>>>> @@ -2489,6 +2489,10 @@ S: 12725 SW Millikan Way, Suite 400
+>>>>    S: Beaverton, Oregon 97005
+>>> OSDL is no longer there.
+>> I was unable to ask Patrick Mochel about his current whereabouts, both his email addresses do not exist anymore. How should I fix this? Surely not replace the old address by his Linked In location: Greater Seattle Area?
+>>>>    S: USA
+> I would just delete those snail mail address lines.
+>
+Done. Final amended commit can now be pulled from:
 
-Fair enough.
+     git://github.com/jankeromnes/linux.git for-linus
+
+Commit diffs are here:
+
+http://github.com/jankeromnes/linux/commit/b3d5cc 
+<https://github.com/jankeromnes/linux/commit/b3d5cc0d2c2d0da1a5c1b7973ee2cb55053cd3e1> 
+
