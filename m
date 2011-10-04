@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab1JDKQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 06:16:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3640 "EHLO mga02.intel.com"
+	id S1755881Ab1JDKRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 06:17:10 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:5367 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755666Ab1JDKQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 06:16:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="59680185"
-Date: Tue, 4 Oct 2011 12:19:02 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: Add WM1811 support
-Message-ID: <20111004101902.GV4118@sortiz-mobl>
-References: <1317149407-27635-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1755668Ab1JDKRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 06:17:09 -0400
+Message-ID: <4E8AD453.8000809@atmel.com>
+Date: Tue, 04 Oct 2011 11:39:31 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317149407-27635-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+References: <20111004112623.aa04e959d29cb19af8053739@canb.auug.org.au> <201110040940.12876.arnd@arndb.de>
+In-Reply-To: <201110040940.12876.arnd@arndb.de>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Tue, Sep 27, 2011 at 07:50:05PM +0100, Mark Brown wrote:
-> The WM1811 is mostly register compatible with the WM8994 and WM8958,
-> providing a high performance audio hub CODEC in a small form factor
-> suitable for ultra compact system designs.
+On 10/04/2011 09:40 AM, Arnd Bergmann :
+> On Tuesday 04 October 2011, Stephen Rothwell wrote:
+>> After merging the arm-soc tree, today's linux-next build (x86_64
+>> allmodconfig) failed like this:
+>>
+>> ERROR: "clk_enable" [drivers/misc/atmel_pwm.ko] undefined!
+>> ERROR: "clk_disable" [drivers/misc/atmel_pwm.ko] undefined!
+>> ERROR: "clk_put" [drivers/misc/atmel_pwm.ko] undefined!
+>> ERROR: "clk_get_rate" [drivers/misc/atmel_pwm.ko] undefined!
+>> ERROR: "clk_get" [drivers/misc/atmel_pwm.ko] undefined!
+>>
+>> Caused by commit 9dccc010c816 ("ARM: at91: remove dependency for Atmel
+>> PWM driver selector in Kconfig").
+>>
+>> I have used the arm-soc tree from next-20110930 for today.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
+> Ah, thanks for tracking this down. I actually noticed the same
+> problem on an ARM build but did not realize it was from one of
+> the patches I had jut put in there myself.
 > 
-> Due to the ASoC cross dependencies it seems like it'll be easier to
-> merge this via ASoC - Samuel, does this make sense to you?
-It does.
-Liam, please add my:
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> I'm really glad I didn't send this to Linus cc:stable yet then.
+> Nicolas, in my randconfig branch, I've fixed this by adding
+> 
+> 	depends on HAVE_CLK
+> 
+> which I think is the right solution. I'll replace your patch
+> with one that does this if you don't mind.
 
-to this one.
+Sure, thanks a lot for fixing this!
 
-Cheers,
-Samuel.
+> I'd also remove the stable tag for this patch, because it can
+> have unintended side-effects on other architectures.
 
+Yes, I have not figured out it can have such an impact.
+
+Thanks for your help, best regards,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Nicolas Ferre
