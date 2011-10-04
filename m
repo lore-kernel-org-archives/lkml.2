@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab1JDRAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:00:06 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49433 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab1JDRAD (ORCPT
+	id S932893Ab1JDREd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:04:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63428 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932791Ab1JDREc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:00:03 -0400
-Date: Tue, 4 Oct 2011 09:59:58 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Huajun Li <huajun.li.lee@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
-Message-ID: <20111004165958.GA18371@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
- <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
- <20110929192818.GB10425@mtj.dyndns.org>
- <20111003152126.GM18195@e102109-lin.cambridge.arm.com>
- <20111004075915.GE15637@dhcp-172-17-108-109.mtv.corp.google.com>
- <20111004090446.GA10071@e102109-lin.cambridge.arm.com>
- <20111004091314.GF15637@dhcp-172-17-108-109.mtv.corp.google.com>
- <20111004092624.GB10071@e102109-lin.cambridge.arm.com>
+	Tue, 4 Oct 2011 13:04:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111004092624.GB10071@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFwc-KQSZfciq87nXgGXvXwx95z1HSVKVprc=tajJOd20g@mail.gmail.com>
+References: <alpine.DEB.2.00.1110041731390.29734@skynet.skynet.ie>
+	<CA+55aFwc-KQSZfciq87nXgGXvXwx95z1HSVKVprc=tajJOd20g@mail.gmail.com>
+Date: Tue, 4 Oct 2011 13:04:31 -0400
+Message-ID: <CADnq5_NL2t8BBhybkqf+s=6z3gBAPUpmvgWjkMabCsgb9YpjGA@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Catalin.
+On Tue, Oct 4, 2011 at 12:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Oct 4, 2011 at 9:34 AM, Dave Airlie <airlied@linux.ie> wrote:
+>>
+>> all radeon fixes, one nasty startup crash and/or memory corruption on one
+>> family of radeon hd6450s resulted in a patch to stop setting a bunch of
+>> regs in the drivers and let the BIOS set them correctly, displayport
+>> regression fix, and some off-by-one in the cursor code around the corners
+>> of the screens.
+>
+> Has this been tested with suspend/resume on a lot of machines?
+>
+> In general, the registers that get set on boot correctly absolutely do
+> *not* get set on resume.
+>
+> So the registers that you now no longer set at boot-time should almost
+> certainly still be saved and restored across suspend/resume. I don't
+> know the code well enough to read the diffs, but a quick grep seems to
+> show that when you removed the boot-time setup, you also removed the
+> resume-time setup (well, at least MC_SHARED_CHREMAP doesn't seem to be
+> used anywhere any more: it may be that it's saved-restores in some
+> kind of "loop over all registers" that wouldn't have triggered the
+> grep).
+>
+> I pulled, but please verify that whole thing.
 
-On Tue, Oct 04, 2011 at 10:26:24AM +0100, Catalin Marinas wrote:
-> Before kmemleak is initialised we still get memory allocations that
-> kmemleak stores in an early_log buffer (via the log_early() function
-> called from kmemleak_alloc_percpu). Later when kmemleak has all the data
-> structures in place, the kmemleak_init() function goes through the
-> early_log array and replays the previously recorded requests. The
-> early_alloc_percpu() function is used during early_log replaying and it
-> indeed registers every percpu memory block but the early_log is always
-> O(#PCPU_ALLOCS).
-> 
-> The reason we don't call kmemleak_alloc_percpu() directly during
-> replaying is that early_alloc() also copies the previously recorded
-> stack trace into the newly created object (otherwise all early
-> allocations would be shown as done by kmemleak_init).
+It's safe.  The hw default value is fine (value in the register at
+asic power up).  On most cards the hw default value is is fine.  If it
+needs to be overridden in certain cases, that's handled by the
+asic_init vbios table which is executed at boot by the vbios and by
+the driver at resume time.
 
-Ah, okay, I was misreading the patch.  For some reason, log_early()
-was nested inside for_each_possible_cpu(), but one other thing.
-kmemleak_free_percpu() is calling log_early() w/ KMEMLEAK_FREE.
-Shouldn't it be KMEMLEAK_FREE_PERCPU?
-
-Thanks.
-
--- 
-tejun
+Alex
