@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab1JDLah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 07:30:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab1JDLag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 07:30:36 -0400
-Date: Tue, 4 Oct 2011 13:30:23 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-cc: Andi Kleen <andi@firstfloor.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH v2] ext4: Prevent stack overrun in ext4_file_open when
- recording last known mountpoint
-In-Reply-To: <20110930194655.GX12086@tux1.beaverton.ibm.com>
-Message-ID: <alpine.LFD.2.00.1110041127420.7833@dhcp-27-109.brq.redhat.com>
-References: <20110915231645.GE12086@tux1.beaverton.ibm.com> <m239fwfk4k.fsf@firstfloor.org> <20110916184005.GH12086@tux1.beaverton.ibm.com> <20110930194655.GX12086@tux1.beaverton.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756416Ab1JDLy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 07:54:26 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:48843 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755994Ab1JDLyY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 07:54:24 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1109301259570.12185@utopia.booyaka.com>
+References: <1317306247-1103-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1109301259570.12185@utopia.booyaka.com>
+Date: Tue, 4 Oct 2011 17:24:23 +0530
+Message-ID: <CAP05o4+AQee0dJdiU9gaTcSh6vMX=qRd9prtqPN_n=SpW-cWgQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5 v12] mfd: omap: usb: Runtime PM support for EHCI and
+ OHCI drivers
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Sep 2011, Darrick J. Wong wrote:
+On Sat, Oct 1, 2011 at 12:31 AM, Paul Walmsley <paul@pwsan.com> wrote:
+>
+> Hi Keshava,
+>
+> by the way, when you repost these, can you split this into two series --
+> one for the arch/arm/*omap* changes, and the other for changes that should
+> go in through the MFD tree?  Then just note in the second series that it
+> has a dependency on the first.  That will make it easier to merge these
+> patches, and should cut down on the number of cc's that are necessary for
+> most of these patches.
 
-> On Fri, Sep 16, 2011 at 11:40:05AM -0700, Darrick J. Wong wrote:
-> > In ext4_file_open, the filesystem records the mountpoint of the first file that
-> > is opened after mounting the filesystem.  It does this by allocating a 64-byte
-> > stack buffer, calling d_path() to grab the mount point through which this file
-> > was accessed, and then memcpy()ing 64 bytes into the superblock's
-> > s_last_mounted field, starting from the return value of d_path(), which is
-> > stored as "cp".  However, if cp > buf (which it frequently is since path
-> > components are prepended starting at the end of buf) then we can end up copying
-> > stack data into the superblock.
-> > 
-> > Writing stack variables into the superblock doesn't sound like a great idea, so
-> > use strlcpy instead.  Andi Kleen suggested using strlcpy instead of strncpy.
-> 
-> Ok, it's been a couple of weeks.... any thoughts, Ted?
-> 
-> --D
+so, only patch 5 will be out this existing series;
+1-4 will be one series and only patch 5 will be sent as a separate patch.
 
-Makes sense.
-
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-
-> > 
-> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> > ---
-> > 
-> >  fs/ext4/file.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-> > index e4095e9..9781099 100644
-> > --- a/fs/ext4/file.c
-> > +++ b/fs/ext4/file.c
-> > @@ -181,8 +181,8 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
-> >  		path.dentry = mnt->mnt_root;
-> >  		cp = d_path(&path, buf, sizeof(buf));
-> >  		if (!IS_ERR(cp)) {
-> > -			memcpy(sbi->s_es->s_last_mounted, cp,
-> > -			       sizeof(sbi->s_es->s_last_mounted));
-> > +			strlcpy(sbi->s_es->s_last_mounted, cp,
-> > +				sizeof(sbi->s_es->s_last_mounted));
-> >  			ext4_mark_super_dirty(sb);
-> >  		}
-> >  	}
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+regards
+keshava
