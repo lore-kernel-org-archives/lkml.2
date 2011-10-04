@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab1JDRSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:18:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932204Ab1JDRSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:18:36 -0400
-Date: Tue, 4 Oct 2011 19:14:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Matt Fleming <matt@console-pimps.org>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111004171437.GA3489@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com> <20110930235625.GD2658@mtj.dyndns.org> <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com> <1317474209.12973.15.camel@twins> <20111003130701.GB25952@redhat.com> <1317655320.20367.25.camel@twins>
+	id S933064Ab1JDRXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:23:54 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:8776 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756465Ab1JDRXx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 13:23:53 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: Hyper-V TODO file
+Thread-Topic: Hyper-V TODO file
+Thread-Index: AQHMeUqH30ei4wp9K0mbEHnyw+BQsZVZpNPggAB6NQCAEiac4IAArGqA//+OiRA=
+Date: Tue, 4 Oct 2011 17:23:51 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
+ <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110922173618.GA5624@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004170415.GA1320@suse.de>
+In-Reply-To: <20111004170415.GA1320@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317655320.20367.25.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Peter Zijlstra wrote:
->
-> On Mon, 2011-10-03 at 15:07 +0200, Oleg Nesterov wrote:
-> > On 10/01, Peter Zijlstra wrote:
->
-> > But this series can't help afaics. At least in its current state. It
-> > only adds more locking to the sending paths.
->
-> Right, so I was hoping Matt had a plan (TM)... :-)
 
-Whatever we do with the locking, this can't remove O(nr_threads),
-although read_lock() could help to reduce the contention.
 
-> > I think, the best solution would be: never send the signal from irq
-> > context, and ->siglock shouldn't disable irqs.
->
-> Bit hard that, posix timers need to deliver signals which pretty much
-> mandates we do something from irq context
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, October 04, 2011 1:04 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: Hyper-V TODO file
+> 
+> On Tue, Oct 04, 2011 at 01:59:56PM +0000, KY Srinivasan wrote:
+> > Greg, sometime back you checked in the changes to the TODO file reflecting
+> > that there are no outstanding vmbus related issues. What is the process now
+> > for getting the vmbus (and util) drivers out of staging. Let me know if there is
+> > something I can do to help this along.  As you know, we had posted the
+> network
+> > driver for public review a while ago (several months ago) and we have
+> addressed
+> > all the review comments we got. Any guidance on what we should do next
+> would be
+> > greatly appreciated.
+> 
+> At this point in time, just ask me, and I will move the files.
+> 
+> So, to confirm, you want to have the following files moved to
+> drivers/hv/:
+> 	drivers/staging/hv/Kconfig (part of this file)
+> 	drivers/staging/hv/Makefile (part of this file)
+> 	drivers/staging/hv/vmbus_drv.c
+> 	drivers/staging/hv/hv.c
+> 	drivers/staging/hv/connection.c
+> 	drivers/staging/hv/channel.c
+> 	drivers/staging/hv/channel_mgmt.c
+> 	drivers/staging/hv/ring_buffer.c
+> 	drivers/staging/hv/hv_util.c
+> 	drivers/staging/hv/hv_kmp.c
+This is hv_kvp.c
+> 	drivers/staging/hv/hv_kvp.h
+> 	drivers/staging/hv/hyperv_vmbus.h
+> 
 
-Of course. We should notify a thread even if it blocks the signal.
+Yes; this would be the list of files to be moved to drivers/hv/
 
-> (and the round-trip through
-> softirq context really isn't pretty nor good for performance).
+> The following file moved to include/linux/:
+> 	drivers/staging/hv/hyperv.h
+> (I think there is stuff in there that can go into hyperv_vmbus.h as it's
+> not needed in the "global" directory, but I can do that movement.)
+> 
 
-No, no. I meant, it would be nice to offload the sending to the target.
-The process itself should take care.
+Correct.
+> The following file moved to tools/hv/:
+> 	drivers/staging/hv/tools/*
+> 
+> And the following files modified to tie drivers/hv/ into the build service:
+> 	drivers/Makefile
+> 	drivers/Kconfig
+> 
+> Is all of that correct?
+> 
 
-> > Probably this is possible too. I was thinking anout this when
-> > set_current_blocked() was added. Unfortunately this needs a lot of
-> > complications.
->
-> Right, so the thing Thomas and I have been promoting for a while now is
-> to update a signal target vector on every signal mask update. Mask
-> updates should be the slow path. This would leave us with a ready target
-> in O(1).
+Yes; the list you have is correct. Thanks a lot for doing this.
 
-Yes. This is the "obvious" solution ;) Now that we have
-set_current_blocked() this is simple. Except, of course, this blows
-signal_struct and set_current_blocked() can't rely on TIF_SIGPENDING.
-But we can probably add TIF_YOU_ARE_LISTED_IN_CURR_TARGET_ARRAY.
+Regards,
 
-And in fact this was _one_ of the reasons for set_current_blocked().
-
-> > Agreed. But I am not sure how much we should split the locking when
-> > it comes to sending/dequeueing/etc signals. 5 locks seems too much.
->
-> It doesn't need all 5 locks to send a signal, does it?
-
-Depending on group/private 3 or 4. Plus ->ctrl_lock if the signal
-is fatal but I don't really understand this part... Fortunately I
-think this is not needed ;)
-
-And mostly (afaics) this tries to help to dequeue the signal, not
-to send. At least currently.
-
-Oleg.
+K. Y
 
