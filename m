@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab1JDRlN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:41:13 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:40259 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932791Ab1JDRlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:41:12 -0400
-Date: Tue, 4 Oct 2011 13:41:11 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jon Mason <mason@myri.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
-Message-ID: <20111004174111.GI19130@kvack.org>
-References: <1317653420-21404-3-git-send-email-mason@myri.com> <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com> <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com> <1317744493.29415.238.camel@pasglop> <CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com> <1317749439.29415.251.camel@pasglop>
-Mime-Version: 1.0
+	id S933094Ab1JDRmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:42:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39774 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932703Ab1JDRmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 13:42:22 -0400
+Date: Tue, 4 Oct 2011 12:42:13 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20111004174213.GA24179@sergelap>
+References: <20110919214531.GA18085@sergelap>
+ <20110920174849.GB22317@redhat.com>
+ <20110920185354.GA19629@sergelap>
+ <20110921175357.GA25590@redhat.com>
+ <20110923163113.GA3820@sergelap>
+ <20110923173656.GA5233@redhat.com>
+ <20110923212025.GA21330@sergelap>
+ <20110924163709.GA6776@redhat.com>
+ <20110925201723.GA5288@sergelap>
+ <20110926160619.GA13736@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317749439.29415.251.camel@pasglop>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20110926160619.GA13736@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 07:30:39PM +0200, Benjamin Herrenschmidt wrote:
-> Well, thing is, you -already- have the whole "performance" option which
-> is what we are 'arguing' about upstream. Except that the implementation
-> of it that you have in your tree now has very nasty bugs (ie it doesn't
-> do what it's supposed to and really doesn't work).
+Quoting Oleg Nesterov (oleg@redhat.com):
+> --- x/kernel/signal.c
+> +++ x/kernel/signal.c
+> @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
+>  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+>  }
+>  
+> +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
+> +{
+> +#ifdef CONFIG_USER_NS
+> +	if (current_user_ns() == task_cred_xxx(t, user_ns)))
+> +#endif
+> +		return;
+> +
+> +	if (SI_FROMKERNEL(info))
+> +		switch (info->si_code & __SI_MASK) {
+> +			default:
+> +				return;
+> +
+> +			case __SI_CHLD:
+
+If I'm reading this right, this will catch do_notify_parent, which is
+sending signals not from current.  Not sure of the best way to avoid
+this.  For pids that case is being ignored by not using the __SI_MASK,
+so CLD_EXITED etc will cause from_ancestor_ns to be false.  Could we
+do that here too, and then translate the pids in do_notify_parent?
+
+> +			case __SI_MESGQ:
+> +				break;
+> +		}
+> +
+> +	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
+> +					current_cred(), info->si_uid);
+> +}
+> +
+>  static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+>  			int group, int from_ancestor_ns)
+>  {
+> @@ -1088,6 +1109,9 @@ static int __send_signal(int sig, struct
+>  				q->info.si_pid = 0;
+>  			break;
+>  		}
+> +
+> +		fixup_uid(info, t);
+> +
+>  	} else if (!is_si_special(info)) {
+>  		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
+>  			/*
 > 
-> Patches 1 and 2 fix it to do what it's supposed to.
-
-I'll agree with benh for now since, yes, the performance option is 
-completely broken in just blindly applying settings right now.  It should 
-be revisted and made so that a safe performance setting is supported in 
-the future (possibly via suggestions from arch-specific quirks), since 
-having to configure this makes little sense for the vast majority of 
-users.  Applying 3/3 first would also make the most sense.
-
-		-ben
-
