@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1JDKdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 06:33:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755594Ab1JDKdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 06:33:15 -0400
-Date: Tue, 4 Oct 2011 11:57:26 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 7/9] KVM, VMX: add support for switching of
- PERF_GLOBAL_CTRL
-Message-ID: <20111004095726.GF30105@redhat.com>
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com>
- <1317649795-18259-8-git-send-email-gleb@redhat.com>
- <4E8AD293.8070905@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8AD293.8070905@redhat.com>
+	id S1756054Ab1JDKjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 06:39:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47334 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755594Ab1JDKjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 06:39:11 -0400
+Date: Tue, 4 Oct 2011 11:35:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH 1/5] spi-topcliff-pch: add tx-memory clear after
+ complete transmitting
+Message-ID: <20111004113559.5a8fb2f3@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E8ACEAE.3040400@dsn.lapis-semi.com>
+References: <1315295914-6862-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	<4E8ACEAE.3040400@dsn.lapis-semi.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 11:32:03AM +0200, Avi Kivity wrote:
-> On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> >Some cpus have special support for switching PERF_GLOBAL_CTRL msr.
-> >Add logic to detect if such support exists and works properly and extend
-> >msr switching code to use it if available. Also extend number of generic
-> >msr switching entries to 8.
-> >
-> >
-> >  static DECLARE_BITMAP(vmx_vpid_bitmap, VMX_NR_VPIDS);
-> >  static DEFINE_SPINLOCK(vmx_vpid_lock);
-> >@@ -1195,10 +1196,29 @@ static void clear_atomic_switch_msr(struct vcpu_vmx *vmx, unsigned msr)
-> >  {
-> >  	unsigned i;
-> >  	struct msr_autoload *m =&vmx->msr_autoload;
-> >+	u32 entry_load, exit_load;
-> >+	bool done = false;
-> >
-> >-	if (msr == MSR_EFER&&  cpu_has_load_ia32_efer) {
-> >-		vmcs_clear_bits(VM_ENTRY_CONTROLS, VM_ENTRY_LOAD_IA32_EFER);
-> >-		vmcs_clear_bits(VM_EXIT_CONTROLS, VM_EXIT_LOAD_IA32_EFER);
-> >+	switch (msr) {
-> >+	case MSR_EFER:
-> >+		if (cpu_has_load_ia32_efer) {
-> >+			entry_load = VM_ENTRY_LOAD_IA32_EFER;
-> >+			exit_load = VM_EXIT_LOAD_IA32_EFER;
-> >+			done = true;
-> >+		}
-> >+		break;
-> >+	case MSR_CORE_PERF_GLOBAL_CTRL:
-> >+		if (cpu_has_load_perf_global_ctrl) {
-> >+			entry_load = VM_ENTRY_LOAD_IA32_PERF_GLOBAL_CTRL;
-> >+			exit_load = VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL;
-> >+			done = true;
-> >+		}
-> >+		break;
-> >+	}
-> >+
-> >+	if (done) {
-> >+		vmcs_clear_bits(VM_ENTRY_CONTROLS, entry_load);
-> >+		vmcs_clear_bits(VM_EXIT_CONTROLS, exit_load);
-> >  		return;
-> >  	}
-> >
-> >
-> 
-> This is ugly.  How about
-> 
->    if (msr == MSR_EFER && cpu_has_load_ia32_efer) {
->        clear_atomic_switch_msr_special(VM_ENTRY_LOAD_IA32_EFER,
-> VM_EXIT_LOAD_IA32_EFER);
->        return;
->    }
-> 
-> avoids the fake 'done' variable.
-> 
-OK.
+On Tue, 04 Oct 2011 18:15:26 +0900
+Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com> wrote:
 
---
-			Gleb.
+> Hi Grant,
+> 
+> 1 month has passed. You look very busy, right ?
+> We've been long waiting for your accept.
+> Could you review these patch series ?
+
+If you've not had a response in a month for something that is a trivial
+fix to a driver you maintain anyway then send it direct to Linus with a
+note that Grant hasn't responded for a month. Ditto the GPIO driver.
+
+Alan
