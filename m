@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1JDGct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 02:32:49 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50867 "EHLO mx2.parallels.com"
+	id S1754341Ab1JDGes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 02:34:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55623 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab1JDGcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 02:32:48 -0400
-Message-ID: <4E8AA866.3010509@parallels.com>
-Date: Tue, 4 Oct 2011 10:32:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754220Ab1JDGer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 02:34:47 -0400
+Date: Tue, 4 Oct 2011 08:34:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        crash-utility@redhat.com, kexec@lists.infradead.org,
+        Vivek Goyal <vgoyal@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111004063440.GB5723@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"K.Prasad" <prasad@linux.vnet.ibm.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+	kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>,
+	"Luck, Tony" <tony.luck@intel.com>, anderson@redhat.com,
+	tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <m162k64c7w.fsf@fess.ebiederm.org>
+ <20111003120336.GK2223@in.ibm.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 3/8] foundations of per-cgroup memory pressure controlling.
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-4-git-send-email-glommer@parallels.com> <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111003120336.GK2223@in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2011 04:57 AM, KAMEZAWA Hiroyuki wrote:
-> On Mon,  3 Oct 2011 14:18:38 +0400
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> This patch converts struct sock fields memory_pressure,
->> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
->> to function pointers, receiving a struct mem_cgroup parameter.
->>
->> enter_memory_pressure is kept the same, since all its callers
->> have socket a context, and the kmem_cgroup can be derived from
->> the socket itself.
->>
->> To keep things working, the patch convert all users of those fields
->> to use acessor functions.
->>
->> In my benchmarks I didn't see a significant performance difference
->> with this patch applied compared to a baseline (around 1 % diff, thus
->> inside error margin).
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: David S. Miller<davem@davemloft.net>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Eric W. Biederman<ebiederm@xmission.com>
->
-> A nitpick.
->
->
->>   #ifdef CONFIG_INET
->>   struct sock;
->> +struct proto;
->>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>   void sock_update_memcg(struct sock *sk);
->>   void sock_release_memcg(struct sock *sk);
->> -
->> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
->> +			  int amt, int *parent_failure);
->> +void memcg_sock_mem_free(struct mem_cgroup *mem, struct proto *prot, int amt);
->> +void memcg_sockets_allocated_dec(struct mem_cgroup *mem, struct proto *prot);
->> +void memcg_sockets_allocated_inc(struct mem_cgroup *mem, struct proto *prot);
->>   #else
->> +/* memcontrol includes sockets.h, that includes memcontrol.h ... */
->> +static inline void memcg_sock_mem_alloc(struct mem_cgroup *mem,
->> +					struct proto *prot, int amt,
->> +					int *parent_failure)
->> +{
->> +}
->
-> In these days, at naming memory cgroup pointers, we use "memcg" instead of
-> "mem". So, could you use "memcg" for represeinting memory cgroup ?
->
->
->> +
->> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
->> +			  int amt, int *parent_failure)
->> +{
->> +	mem = parent_mem_cgroup(mem);
->> +	for (; mem != NULL; mem = parent_mem_cgroup(mem)) {
->> +		long alloc;
->> +		long *prot_mem = prot->prot_mem(mem);
->> +		/*
->> +		 * Large nestings are not the common case, and stopping in the
->> +		 * middle would be complicated enough, that we bill it all the
->> +		 * way through the root, and if needed, unbill everything later
->> +		 */
->> +		alloc = atomic_long_add_return(amt,
->> +					       prot->memory_allocated(mem));
->> +		*parent_failure |= (alloc>  prot_mem[2]);
->> +	}
->> +}
->> +EXPORT_SYMBOL(memcg_sock_mem_alloc);
->
-> Hmm. why not using res_counter ? for reusing 'unbill' code ?
->
-Well,
+On Mon, Oct 03, 2011 at 05:33:36PM +0530, K.Prasad wrote:
+> It's interesting...according to Intel's Software Developer Manual
+> (quoting from Volume 3A, Chapter 15), the MCIP bit in IA32_MCG_STATUS
+> MSR behaves as described below.
+> 
+> "MCIP (machine check in progress) flag, bit 2 Indicates (when set)
+> that a machine-check exception was generated. Software can set or clear this
+> flag. The occurrence of a second Machine-Check Event while MCIP is set will
+> cause the processor to enter a shutdown state."
+> 
+> While in do_machine_check function, we enter the panic path (for
+> unrecoverable errors) much before the IA32_MCG_STATUS MSR is reset and
+> this is likely to dangerous.
+> 
+> 911 void do_machine_check(struct pt_regs *regs, long error_code)
+> 912 {
+> .............
+> ................
+> 1055         if (no_way_out && tolerant < 3)
+> 1056                 mce_panic("Fatal machine check on current CPU", final, msg);
+> .............
+> ................
+> 1073         mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+> 1074 out:
+> 
+> It'd be interesting to know the type of memory error (as classified by
+> the processor) for which you're able to capture the memory dump.
+> Maybe a dump of the various MCE status registers (and struct mce) would
+> help us understand the behaviour on your system better.
 
-res_counters are slightly more expensive than needed here, since we need 
-to clear interrupts and hold a spinlock. No particular reason besides it.
+Well, there are MCE types for which we need to panic but we don't
+necessarily corrupt memory. Your approach is to unconditionally avoid
+dumping core whenever we panic while you should look at the MCE
+signature and decide then whether to capture crashed kernel memory or
+not.
 
+For example, if the MCE signature says UC DRAM error, then you can
+be pretty sure that there is a landmine somewhere in the DRAM region
+mapping the crashed kernel. If it is, say, a UC when doing data fills
+from L2 to L1, that doesn't necessarily mean that DRAM is corrupted. But
+even in the first case, you can evaluate the MCi_ADDR reported with the
+UC DRAM error and simply skip that particular cacheline when dumping the
+core instead of not capturing anything at all.
 
+Btw, the doublefault example you give above - is this something you
+experience on real hardware or just a theoretical thing?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
