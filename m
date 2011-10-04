@@ -1,271 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab1JDTcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:32:55 -0400
-Received: from claw.goop.org ([74.207.240.146]:56859 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932752Ab1JDTcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:32:53 -0400
-Message-ID: <4E8B5F61.6@goop.org>
-Date: Tue, 04 Oct 2011 12:32:49 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH / GIT PULL] x86: more spinlock/asm tidyups
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933483Ab1JDTdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:33:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54091 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933211Ab1JDTdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:33:04 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Joey Lee <jlee@novell.com>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acer-wmi: Add wireless quirk for Lenovo 3000 N200
+Date: Tue,  4 Oct 2011 14:32:58 -0500
+Message-Id: <1317756778-11822-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This quirk fixes the wlan rfkill status on this machine. Without
+it, wlan is permanently soft blocked whenever acer-wmi is loaded.
 
-This patch adds a helper for atomic adds in arch/x86/asm/cmpxchg.h, and
-uses them in spinlock.h rather than the open-coded asms.
+BugLink: https://bugs.launchpad.net/bugs/865807
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/platform/x86/acer-wmi.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-It also unifies the two exchange-type instructions (xchg and xadd) so
-they share the same core.
-
-Thanks,
-    J
-
-The following changes since commit 695d16f7870847c304a8cb9555572b07a541d4ee:
-
-  Merge branch 'upstream/ticketlock-cleanup' of git://github.com/jsgf/linux-xen into x86/spinlocks (2011-09-28 08:57:10 +0200)
-
-are available in the git repository at:
-
-  git://github.com/jsgf/linux-xen upstream/ticketlock-cleanup
-
-Jeremy Fitzhardinge (2):
-      x86/cmpxchg: add a locked add() helper
-      x86: consolidate xchg and xadd macros
-
- arch/x86/include/asm/cmpxchg.h  |  140 +++++++++++++++++++-------------------
- arch/x86/include/asm/spinlock.h |   15 +----
- 2 files changed, 71 insertions(+), 84 deletions(-)
-
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index 5d3acdf..5488e10 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -14,6 +14,8 @@ extern void __cmpxchg_wrong_size(void)
- 	__compiletime_error("Bad argument size for cmpxchg");
- extern void __xadd_wrong_size(void)
- 	__compiletime_error("Bad argument size for xadd");
-+extern void __add_wrong_size(void)
-+	__compiletime_error("Bad argument size for add");
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index af2bb20..dac286a 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -464,6 +464,15 @@ static struct dmi_system_id acer_quirks[] = {
+ 		},
+ 		.driver_data = &quirk_lenovo_ideapad_s205,
+ 	},
++	{
++		.callback = dmi_matched,
++		.ident = "Lenovo 3000 N200",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "0687A31"),
++		},
++		.driver_data = &quirk_fujitsu_amilo_li_1718,
++	},
+ 	{}
+ };
  
- /*
-  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
-@@ -31,60 +33,47 @@ extern void __xadd_wrong_size(void)
- #define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
- #endif
- 
-+/* 
-+ * An exchange-type operation, which takes a value and a pointer, and
-+ * returns a the old value.
-+ */
-+#define __xchg_op(ptr, arg, op, lock)					\
-+	({								\
-+	        __typeof__ (*(ptr)) __ret = (arg);			\
-+		switch (sizeof(*(ptr))) {				\
-+		case __X86_CASE_B:					\
-+			asm volatile (lock #op "b %b0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_W:					\
-+			asm volatile (lock #op "w %w0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_L:					\
-+			asm volatile (lock #op "l %0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case __X86_CASE_Q:					\
-+			asm volatile (lock #op "q %q0, %1\n"		\
-+				      : "+r" (__ret), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		default:						\
-+			__ ## op ## _wrong_size();			\
-+		}							\
-+		__ret;							\
-+	})
-+
- /*
-  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-  * Since this is generally used to protect other memory information, we
-  * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-  * information around.
-  */
--#define __xchg(x, ptr, size)						\
--({									\
--	__typeof(*(ptr)) __x = (x);					\
--	switch (size) {							\
--	case __X86_CASE_B:						\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile("xchgb %0,%1"				\
--			     : "=q" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case __X86_CASE_W:						\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile("xchgw %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case __X86_CASE_L:						\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case __X86_CASE_Q:						\
--	{								\
--		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile("xchgq %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__xchg_wrong_size();					\
--	}								\
--	__x;								\
--})
--
--#define xchg(ptr, v)							\
--	__xchg((v), (ptr), sizeof(*ptr))
-+#define xchg(ptr, v)	__xchg_op((ptr), (v), xchg, "")
- 
- /*
-  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-@@ -165,46 +154,57 @@ extern void __xadd_wrong_size(void)
- 	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
- #endif
- 
--#define __xadd(ptr, inc, lock)						\
-+/*
-+ * xadd() adds "inc" to "*ptr" and atomically returns the previous
-+ * value of "*ptr".
-+ *
-+ * xadd() is locked when multiple CPUs are online
-+ * xadd_sync() is always locked
-+ * xadd_local() is never locked
-+ */
-+#define __xadd(ptr, inc, lock)	__xchg_op((ptr), (inc), xadd, lock)
-+#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
-+#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
-+#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
-+
-+#define __add(ptr, inc, lock)						\
- 	({								\
- 	        __typeof__ (*(ptr)) __ret = (inc);			\
- 		switch (sizeof(*(ptr))) {				\
- 		case __X86_CASE_B:					\
--			asm volatile (lock "xaddb %b0, %1\n"		\
--				      : "+r" (__ret), "+m" (*(ptr))	\
--				      : : "memory", "cc");		\
-+			asm volatile (lock "addb %b1, %0\n"		\
-+				      : "+m" (*(ptr)) : "ri" (inc)	\
-+				      : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_W:					\
--			asm volatile (lock "xaddw %w0, %1\n"		\
--				      : "+r" (__ret), "+m" (*(ptr))	\
--				      : : "memory", "cc");		\
-+			asm volatile (lock "addw %w1, %0\n"		\
-+				      : "+m" (*(ptr)) : "ri" (inc)	\
-+				      : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_L:					\
--			asm volatile (lock "xaddl %0, %1\n"		\
--				      : "+r" (__ret), "+m" (*(ptr))	\
--				      : : "memory", "cc");		\
-+			asm volatile (lock "addl %1, %0\n"		\
-+				      : "+m" (*(ptr)) : "ri" (inc)	\
-+				      : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_Q:					\
--			asm volatile (lock "xaddq %q0, %1\n"		\
--				      : "+r" (__ret), "+m" (*(ptr))	\
--				      : : "memory", "cc");		\
-+			asm volatile (lock "addq %1, %0\n"		\
-+				      : "+m" (*(ptr)) : "ri" (inc)	\
-+				      : "memory", "cc");		\
- 			break;						\
- 		default:						\
--			__xadd_wrong_size();				\
-+			__add_wrong_size();				\
- 		}							\
- 		__ret;							\
- 	})
- 
- /*
-- * xadd() adds "inc" to "*ptr" and atomically returns the previous
-- * value of "*ptr".
-+ * add_*() adds "inc" to "*ptr"
-  *
-- * xadd() is locked when multiple CPUs are online
-- * xadd_sync() is always locked
-- * xadd_local() is never locked
-+ * __add() takes a lock prefix
-+ * add_smp() is locked when multiple CPUs are online
-+ * add_sync() is always locked
-  */
--#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
--#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
--#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
-+#define add_smp(ptr, inc)	__add((ptr), (inc), LOCK_PREFIX)
-+#define add_sync(ptr, inc)	__add((ptr), (inc), "lock; ")
- 
- #endif	/* ASM_X86_CMPXCHG_H */
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 972c260..a82c2bf 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -79,23 +79,10 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
- }
- 
--#if (NR_CPUS < 256)
- static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- {
--	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
--		     : "+m" (lock->head_tail)
--		     :
--		     : "memory", "cc");
-+	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
- }
--#else
--static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
--{
--	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
--		     : "+m" (lock->head_tail)
--		     :
--		     : "memory", "cc");
--}
--#endif
- 
- static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
-
+-- 
+1.7.4.1
 
