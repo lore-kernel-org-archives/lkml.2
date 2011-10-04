@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822Ab1JDVKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:10:51 -0400
-Received: from fep21.mx.upcmail.net ([62.179.121.41]:45861 "EHLO
-	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab1JDVKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:10:49 -0400
-X-Greylist: delayed 677 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Oct 2011 17:10:48 EDT
-X-SourceIP: 14.99.143.68
-X-Authenticated-Sender: hymax@chello.nl
-Reply-To: <drawsupdate222@qatar.io>
-From: "COCA COLA 2011" <a.kumar@ncl.res.in>
-Subject: 
-Date: Wed, 5 Oct 2011 02:29:20 +0530
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0079_01C2A9A6.506DB150"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111004205927.ZABZ1724.viefep12-int.chello.at@edge01.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=7AjrSHUygkxmgKj9+ZdWPzZoKYzIcpgZMIt1Yxqn8hE= c=1 sm=0 a=8EU9Q7FnrCoA:10 a=Ivii9v0jYZAA:10 a=1U3JOZu5GBEdGYPV8BYA:9 a=Ft8UYL4EG9YA:10 a=XVfht3aBBUtrZPzMzncA:9 a=yAJl9DJjjL8A:10 a=LFYWT4zcRpGS8mOd:21 a=_w2mBiEpNL6TsWTr:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	id S933831Ab1JDVLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:11:11 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36364
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S933776Ab1JDVLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 17:11:10 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, longli@microsoft.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: util: Fix a bug in kvp implementation
+Date: Tue,  4 Oct 2011 14:00:02 -0700
+Message-Id: <1317762002-4351-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+The host gurantees that there can be only one kvp transaction active
+against the guest. So, the transaction active state is needed only to
+protect against spurious user level calls. The current code had a race
+condition where the guest could prematurely return because the previous
+transaction state was not cleared - this state was being cleared after
+sending the response to the host and there was a window where the host
+could notify the guest of a new transaction before the transaction active
+state was properly set. 
+Also deal with the case when the user mode component
+does not respond in a timely fashion correctly.
+I would like to thank Long Li <longli@microsoft.com>
+for identifying the problem.
 
-------=_NextPart_000_0079_01C2A9A6.506DB150
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Diagnosed-by: Long Li <longli@microsoft.com>
+---
+ drivers/staging/hv/hv_kvp.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
 
-DOWNLOAD ATTACHTMENT
+diff --git a/drivers/staging/hv/hv_kvp.c b/drivers/staging/hv/hv_kvp.c
+index 9aa9ede..307aedc 100644
+--- a/drivers/staging/hv/hv_kvp.c
++++ b/drivers/staging/hv/hv_kvp.c
+@@ -50,6 +50,8 @@ static struct {
+ 
+ static int kvp_send_key(int index);
+ 
++#define TIMEOUT_FIRED 1
++
+ static void kvp_respond_to_host(char *key, char *value, int error);
+ static void kvp_work_func(struct work_struct *dummy);
+ static void kvp_register(void);
+@@ -58,7 +60,6 @@ static DECLARE_DELAYED_WORK(kvp_work, kvp_work_func);
+ 
+ static struct cb_id kvp_id = { CN_KVP_IDX, CN_KVP_VAL };
+ static const char kvp_name[] = "kvp_kernel_module";
+-static int timeout_fired;
+ static u8 *recv_buffer;
+ /*
+  * Register the kernel component with the user-level daemon.
+@@ -90,8 +91,7 @@ kvp_work_func(struct work_struct *dummy)
+ 	 * If the timer fires, the user-mode component has not responded;
+ 	 * process the pending transaction.
+ 	 */
+-	kvp_respond_to_host("Unknown key", "Guest timed out", timeout_fired);
+-	timeout_fired = 1;
++	kvp_respond_to_host("Unknown key", "Guest timed out", TIMEOUT_FIRED);
+ }
+ 
+ /*
+@@ -177,6 +177,8 @@ kvp_respond_to_host(char *key, char *value, int error)
+ 	channel = kvp_transaction.recv_channel;
+ 	req_id = kvp_transaction.recv_req_id;
+ 
++	kvp_transaction.active = false;
++
+ 	if (channel->onchannel_callback == NULL)
+ 		/*
+ 		 * We have raced with util driver being unloaded;
+@@ -224,7 +226,6 @@ response_done:
+ 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
+ 				VM_PKT_DATA_INBAND, 0);
+ 
+-	kvp_transaction.active = false;
+ }
+ 
+ /*
+@@ -250,10 +251,6 @@ void hv_kvp_onchannelcallback(void *context)
+ 	struct icmsg_negotiate *negop = NULL;
+ 
+ 
+-	if (kvp_transaction.active)
+-		return;
+-
+-
+ 	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE, &recvlen, &requestid);
+ 
+ 	if (recvlen > 0) {
+-- 
+1.7.4.1
 
-------=_NextPart_000_0079_01C2A9A6.506DB150
-Content-Type: application/octet-stream;
-	name="COCA COLA2.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="COCA COLA2.rtf"
-
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjB7XGZvbnR0Ymx7XGYwXGZu
-aWxcZmNoYXJzZXQwIENhbGlicmk7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVk
-aXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxwYXJkXHNhMjAwXHNs
-Mjc2XHNsbXVsdDFcbGFuZzlcZjBcZnMyMiBZb3UgaGF2ZSBiZWVuIHNlbGVj
-dGVkIGluIHRoZSBvbi1nb2luZyBDT0NBIENPTEEgYXdhcmQgaGVsZCB0aGlz
-ICBPY3RvYmVyXHBhcg0KMjAxMS5XZSB0aGUgUHJvbW8gQm9hcmQgYXJlIHBs
-ZWFzZWQgdG8gaW5mb3JtIHlvdSB0aGF0IHlvdSBhbG9uZ3NpZGUgZm91cig0
-KVxwYXINCm90aGVybHVja3kgd2lubmVycyBoYXZlIGJlZW4gYXBwcm92ZWQg
-Zm9yIGEgcGF5bWVudCBvZiAxLDAwMCAwMDBHQlAgKE9uZVxwYXINCk1pbGxp
-b24gUG91bmRzIFN0ZXJsaW5nKS5ccGFyDQpJZiB5b3UgZGlkIHJlY2VpdmUg
-dGhpcyBlbWFpbCwgaXQgbWVhbnMgeW91IGFyZSBvbmUgb2YgdGhlIGZpdmUo
-NSlsdWNreVxwYXINCndpbm5lcnMuXHBhcg0KXHBhcg0KKkNMQUlNUyBQUk9D
-RVNTSU5HIE9GRklDRVI6XHBhcg0KKk5hbWU6TXIgVE9NTVkgUk9HRVJccGFy
-DQpFbWFpbDogZHJhd3N1cGRhdGUyMjJAcWF0YXIuaW9ccGFyDQpccGFyDQpZ
-b3UgYXJlIGFsc28gYWR2aXNlZCB0byBwcm92aWRlIGhpbSB3aXRoIHRoZSB1
-bmRlciBsaXN0ZWQgaW5mb3JtYXRpb25ccGFyDQphcyBzb29uIGFzIHBvc3Np
-YmxlOlxwYXINClxwYXINCipOQU1FIElOIEZVTEw6XHBhcg0KKkRFTElWRVJZ
-IEFERFJFU1M6XHBhcg0KKlNFWDpccGFyDQoqQUdFOlxwYXINCipDT1VOVFJZ
-OlxwYXINCipOQVRJT05BTElUWTpccGFyDQoqT0NDVVBBVElPTjpccGFyDQoq
-TU9CSUxFIE5VTUJFUjpccGFyDQpFTUFJTCBJRDpccGFyDQpccGFyDQpXZSBh
-cmUgZ2xhZCB0byBoYXZlIHlvdSBhcyBvbmUgb2Ygb3VyIGx1Y2tseSB3aW5u
-ZXJzLlxwYXINCn0NCgA=
-
-------=_NextPart_000_0079_01C2A9A6.506DB150--
