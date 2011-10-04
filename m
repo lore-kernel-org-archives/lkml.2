@@ -1,546 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab1JDVB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:01:56 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:50354 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab1JDVBz (ORCPT
+	id S933789Ab1JDVDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:03:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62943 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab1JDVDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:01:55 -0400
-Subject: [PATCH] [TRIVIAL] fix DocBook references
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 23:01:10 +0200
-Message-ID: <1317762070.1933.6.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Oct 2011 17:03:36 -0400
+Date: Tue, 4 Oct 2011 23:03:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 53/55] rcu: Warn when srcu_read_lock() is
+ used in an extended quiescent state
+Message-ID: <20111004210325.GA14165@somewhere.redhat.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <1315332049-2604-53-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315332049-2604-53-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In their current format these references look like file paths, but they do
-not point to actual files. Fix these references by making them point to
-existing .tmpl files. Than it's trivial to open these files in editors
-through their references and also trivial to check (eg, through a
-script) whether these references are still correct.
+On Tue, Sep 06, 2011 at 11:00:47AM -0700, Paul E. McKenney wrote:
+> Catch SRCU up to the other variants of RCU by making PROVE_RCU
+> complain if either srcu_read_lock() or srcu_read_lock_held() are
+> used from within dyntick-idle mode.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  include/linux/srcu.h |   25 +++++++++++++++----------
+>  1 files changed, 15 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> index 58971e8..fcbaee7 100644
+> --- a/include/linux/srcu.h
+> +++ b/include/linux/srcu.h
+> @@ -28,6 +28,7 @@
+>  #define _LINUX_SRCU_H
+>  
+>  #include <linux/mutex.h>
+> +#include <linux/rcupdate.h>
+>  
+>  struct srcu_struct_array {
+>  	int c[2];
+> @@ -60,18 +61,10 @@ int __init_srcu_struct(struct srcu_struct *sp, const char *name,
+>  	__init_srcu_struct((sp), #sp, &__srcu_key); \
+>  })
+>  
+> -# define srcu_read_acquire(sp) \
+> -		lock_acquire(&(sp)->dep_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+> -# define srcu_read_release(sp) \
+> -		lock_release(&(sp)->dep_map, 1, _THIS_IP_)
+> -
+>  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+>  
+>  int init_srcu_struct(struct srcu_struct *sp);
+>  
+> -# define srcu_read_acquire(sp)  do { } while (0)
+> -# define srcu_read_release(sp)  do { } while (0)
+> -
+>  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+>  
+>  void cleanup_srcu_struct(struct srcu_struct *sp);
+> @@ -90,11 +83,23 @@ long srcu_batches_completed(struct srcu_struct *sp);
+>   * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
+>   * this assumes we are in an SRCU read-side critical section unless it can
+>   * prove otherwise.
+> + *
+> + * Note that if the CPU is in an extended quiescent state, for example,
+> + * if the CPU is in dyntick-idle mode, then rcu_read_lock_held() returns
+> + * false even if the CPU did an rcu_read_lock().  The reason for this is
+> + * that RCU ignores CPUs that are in extended quiescent states, so such
+> + * a CPU is effectively never in an RCU read-side critical section
+> + * regardless of what RCU primitives it invokes.  This state of affairs
+> + * is required -- RCU would otherwise need to periodically wake up
+> + * dyntick-idle CPUs, which would defeat the whole purpose of dyntick-idle
+> + * mode.
+>   */
+>  static inline int srcu_read_lock_held(struct srcu_struct *sp)
+>  {
+>  	if (debug_locks)
+>  		return lock_is_held(&sp->dep_map);
+> +	if (rcu_check_extended_qs())
+> +		return 0;
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) I've CC'ed jkosina@suse.cz because trivial@kernel.org bounced last
-time I tried it.
+Just to warn you, While rebasing this, I'm also moving things around:
 
-1) This is a follow-up to commit 395cf96 ("doc: fix broken references")
-which is now in the trivial for-next branch (and perhaps already in
-linux-next).
+	if (!debug_lock)
+		return 1;
 
- Documentation/PCI/MSI-HOWTO.txt |    2 +-
- drivers/ata/acard-ahci.c        |    3 +--
- drivers/ata/ahci.c              |    3 +--
- drivers/ata/ahci.h              |    3 +--
- drivers/ata/ata_piix.c          |    3 +--
- drivers/ata/libahci.c           |    3 +--
- drivers/ata/libata-core.c       |    3 +--
- drivers/ata/libata-eh.c         |    3 +--
- drivers/ata/libata-scsi.c       |    3 +--
- drivers/ata/libata-sff.c        |    3 +--
- drivers/ata/libata.h            |    3 +--
- drivers/ata/pata_pdc2027x.c     |    3 +--
- drivers/ata/pdc_adma.c          |    3 +--
- drivers/ata/sata_nv.c           |    3 +--
- drivers/ata/sata_promise.c      |    3 +--
- drivers/ata/sata_promise.h      |    3 +--
- drivers/ata/sata_qstor.c        |    3 +--
- drivers/ata/sata_sil.c          |    3 +--
- drivers/ata/sata_sis.c          |    3 +--
- drivers/ata/sata_svw.c          |    3 +--
- drivers/ata/sata_sx4.c          |    3 +--
- drivers/ata/sata_uli.c          |    3 +--
- drivers/ata/sata_via.c          |    3 +--
- drivers/ata/sata_vsc.c          |    3 +--
- fs/debugfs/file.c               |    2 +-
- fs/debugfs/inode.c              |    2 +-
- include/linux/ata.h             |    3 +--
- include/linux/debugfs.h         |    2 +-
- include/linux/libata.h          |    3 +--
- kernel/irq/chip.c               |    2 +-
- kernel/irq/handle.c             |    2 +-
- kernel/irq/irqdesc.c            |    2 +-
- lib/Kconfig.debug               |    2 +-
- lib/Kconfig.kgdb                |    2 +-
- 34 files changed, 34 insertions(+), 59 deletions(-)
+	if (rcu_is_cpu_idle())
+		return 0;
 
-diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-index 3f5e0b0..abfc876 100644
---- a/Documentation/PCI/MSI-HOWTO.txt
-+++ b/Documentation/PCI/MSI-HOWTO.txt
-@@ -268,7 +268,7 @@ acquire the spinlock.
- 
- There are two solutions.  The first is to take the lock with
- spin_lock_irqsave() or spin_lock_irq() (see
--Documentation/DocBook/kernel-locking).  The second is to specify
-+Documentation/DocBook/kernel-locking.tmpl).  The second is to specify
- IRQF_DISABLED to request_irq() so that the kernel runs the entire
- interrupt routine with interrupts disabled.
- 
-diff --git a/drivers/ata/acard-ahci.c b/drivers/ata/acard-ahci.c
-index 3bc8c79..6be6992 100644
---- a/drivers/ata/acard-ahci.c
-+++ b/drivers/ata/acard-ahci.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- * libata documentation is available via 'make {ps|pdf}docs',
-- * as Documentation/DocBook/libata.*
-+ * libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  * AHCI hardware documentation:
-  * http://www.intel.com/technology/serialata/pdf/rev1_0.pdf
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index fb7b90b..b0bdb57 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -23,8 +23,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- * libata documentation is available via 'make {ps|pdf}docs',
-- * as Documentation/DocBook/libata.*
-+ * libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  * AHCI hardware documentation:
-  * http://www.intel.com/technology/serialata/pdf/rev1_0.pdf
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index b175000..14f6ce3 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -23,8 +23,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- * libata documentation is available via 'make {ps|pdf}docs',
-- * as Documentation/DocBook/libata.*
-+ * libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  * AHCI hardware documentation:
-  * http://www.intel.com/technology/serialata/pdf/rev1_0.pdf
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 43107e9..ca58c37 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -32,8 +32,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available at http://developer.intel.com/
-  *
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 3c92dbd..7d801d8 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -23,8 +23,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- * libata documentation is available via 'make {ps|pdf}docs',
-- * as Documentation/DocBook/libata.*
-+ * libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  * AHCI hardware documentation:
-  * http://www.intel.com/technology/serialata/pdf/rev1_0.pdf
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 4a3a5ae..8e31845 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available from http://www.t13.org/ and
-  *  http://www.sata-io.org/
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index ed16fbe..64c2363 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -24,8 +24,7 @@
-  *  USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available from http://www.t13.org/ and
-  *  http://www.sata-io.org/
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 46d087f..1b9d500 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available from
-  *  - http://www.t10.org/
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index c24127d..2ba42f4 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available from http://www.t13.org/ and
-  *  http://www.sata-io.org/
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index 773de97..47ace41 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -20,8 +20,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  */
- 
-diff --git a/drivers/ata/pata_pdc2027x.c b/drivers/ata/pata_pdc2027x.c
-index b1511f3..1e6f8a0 100644
---- a/drivers/ata/pata_pdc2027x.c
-+++ b/drivers/ata/pata_pdc2027x.c
-@@ -16,8 +16,7 @@
-  *  Released under terms of General Public License
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware information only available under NDA.
-  *
-diff --git a/drivers/ata/pdc_adma.c b/drivers/ata/pdc_adma.c
-index 04911d5..71e9906 100644
---- a/drivers/ata/pdc_adma.c
-+++ b/drivers/ata/pdc_adma.c
-@@ -20,8 +20,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *
-  *  Supports ATA disks in single-packet ADMA mode.
-diff --git a/drivers/ata/sata_nv.c b/drivers/ata/sata_nv.c
-index e0bc964..bc0cb81 100644
---- a/drivers/ata/sata_nv.c
-+++ b/drivers/ata/sata_nv.c
-@@ -20,8 +20,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  No hardware documentation available outside of NVIDIA.
-  *  This driver programs the NVIDIA SATA controller in a similar
-diff --git a/drivers/ata/sata_promise.c b/drivers/ata/sata_promise.c
-index 000fcc9..ad14cf9 100644
---- a/drivers/ata/sata_promise.c
-+++ b/drivers/ata/sata_promise.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware information only available under NDA.
-  *
-diff --git a/drivers/ata/sata_promise.h b/drivers/ata/sata_promise.h
-index 00d6000..74673b1 100644
---- a/drivers/ata/sata_promise.h
-+++ b/drivers/ata/sata_promise.h
-@@ -19,8 +19,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  */
- 
-diff --git a/drivers/ata/sata_qstor.c b/drivers/ata/sata_qstor.c
-index 9d1a47b..16a1f50 100644
---- a/drivers/ata/sata_qstor.c
-+++ b/drivers/ata/sata_qstor.c
-@@ -22,8 +22,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  */
- 
-diff --git a/drivers/ata/sata_sil.c b/drivers/ata/sata_sil.c
-index 98c1d78..75416aa 100644
---- a/drivers/ata/sata_sil.c
-+++ b/drivers/ata/sata_sil.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Documentation for SiI 3112:
-  *  http://gkernel.sourceforge.net/specs/sii/3112A_SiI-DS-0095-B2.pdf.bz2
-diff --git a/drivers/ata/sata_sis.c b/drivers/ata/sata_sis.c
-index 447d9c0..c40a3ae 100644
---- a/drivers/ata/sata_sis.c
-+++ b/drivers/ata/sata_sis.c
-@@ -23,8 +23,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available under NDA.
-  *
-diff --git a/drivers/ata/sata_svw.c b/drivers/ata/sata_svw.c
-index c646118..5e6ec62 100644
---- a/drivers/ata/sata_svw.c
-+++ b/drivers/ata/sata_svw.c
-@@ -29,8 +29,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available under NDA.
-  *
-diff --git a/drivers/ata/sata_sx4.c b/drivers/ata/sata_sx4.c
-index cdaebbe..9fd9710 100644
---- a/drivers/ata/sata_sx4.c
-+++ b/drivers/ata/sata_sx4.c
-@@ -23,8 +23,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available under NDA.
-  *
-diff --git a/drivers/ata/sata_uli.c b/drivers/ata/sata_uli.c
-index b54ebfc..c9ed3e4 100644
---- a/drivers/ata/sata_uli.c
-+++ b/drivers/ata/sata_uli.c
-@@ -17,8 +17,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available under NDA.
-  *
-diff --git a/drivers/ata/sata_via.c b/drivers/ata/sata_via.c
-index f93e43b..cf876d9 100644
---- a/drivers/ata/sata_via.c
-+++ b/drivers/ata/sata_via.c
-@@ -24,8 +24,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available under NDA.
-  *
-diff --git a/drivers/ata/sata_vsc.c b/drivers/ata/sata_vsc.c
-index 6135a52..a58c832 100644
---- a/drivers/ata/sata_vsc.c
-+++ b/drivers/ata/sata_vsc.c
-@@ -25,8 +25,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Vitesse hardware documentation presumably available under NDA.
-  *  Intel 31244 (same hardware interface) documentation presumably
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 90f7657..0e80898 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -9,7 +9,7 @@
-  *	2 as published by the Free Software Foundation.
-  *
-  *  debugfs is for people to use instead of /proc or /sys.
-- *  See Documentation/DocBook/filesystems for more details.
-+ *  See Documentation/DocBook/filesystems.tmpl for more details.
-  *
-  */
- 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index e7a7a2f..643d32d 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -9,7 +9,7 @@
-  *	2 as published by the Free Software Foundation.
-  *
-  *  debugfs is for people to use instead of /proc or /sys.
-- *  See Documentation/DocBook/kernel-api for more details.
-+ *  See Documentation/DocBook/kernel-api.tmpl for more details.
-  *
-  */
- 
-diff --git a/include/linux/ata.h b/include/linux/ata.h
-index 32df2b6..59cc072 100644
---- a/include/linux/ata.h
-+++ b/include/linux/ata.h
-@@ -19,8 +19,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  *  Hardware documentation available from http://www.t13.org/
-  *
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index e7d9b20..0240bb0 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -9,7 +9,7 @@
-  *	2 as published by the Free Software Foundation.
-  *
-  *  debugfs is for people to use instead of /proc or /sys.
-- *  See Documentation/DocBook/filesystems for more details.
-+ *  See Documentation/DocBook/filesystems.tmpl for more details.
-  */
- 
- #ifndef _DEBUGFS_H_
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index efd6f98..6da8c52 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -18,8 +18,7 @@
-  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-  *
-  *
-- *  libata documentation is available via 'make {ps|pdf}docs',
-- *  as Documentation/DocBook/libata.*
-+ *  libata documentation is available in Documentation/DocBook/libata.tmpl
-  *
-  */
- 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index d5a3009..4876960 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -7,7 +7,7 @@
-  * This file contains the core interrupt handling code, for irq-chip
-  * based architectures.
-  *
-- * Detailed information is available in Documentation/DocBook/genericirq
-+ * Detailed information is available in Documentation/DocBook/genericirq.tmpl
-  */
- 
- #include <linux/irq.h>
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 470d08c..e7a174a 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -6,7 +6,7 @@
-  *
-  * This file contains the core interrupt handling code.
-  *
-- * Detailed information is available in Documentation/DocBook/genericirq
-+ * Detailed information is available in Documentation/DocBook/genericirq.tmpl
-  *
-  */
- 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 4c60a50..f578427 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -4,7 +4,7 @@
-  *
-  * This file contains the interrupt descriptor management code
-  *
-- * Detailed information is available in Documentation/DocBook/genericirq
-+ * Detailed information is available in Documentation/DocBook/genericirq.tmpl
-  *
-  */
- #include <linux/irq.h>
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0cb9c4..5f520b3 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -94,7 +94,7 @@ config DEBUG_FS
- 	  write to these files.
- 
- 	  For detailed documentation on the debugfs API, see
--	  Documentation/DocBook/filesystems.
-+	  Documentation/DocBook/filesystems.tmpl
- 
- 	  If unsure, say N.
- 
-diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
-index 43cb93f..d331cbc 100644
---- a/lib/Kconfig.kgdb
-+++ b/lib/Kconfig.kgdb
-@@ -13,7 +13,7 @@ menuconfig KGDB
- 	  CONFIG_FRAME_POINTER to aid in producing more reliable stack
- 	  backtraces in the external debugger.  Documentation of
- 	  kernel debugger is available at http://kgdb.sourceforge.net
--	  as well as in DocBook form in Documentation/DocBook/.  If
-+	  as well as in DocBook form in Documentation/DocBook/kgdb.tmpl.  If
- 	  unsure, say N.
- 
- if KGDB
--- 
-1.7.4.4
+	return lock_is_held(&sp->dep_map);
 
+Otherwise we only do the check if lock debugging is disabled,
+which is not what we want I think.
 
-
+>  	return 1;
+>  }
+>  
+> @@ -150,7 +155,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  {
+>  	int retval = __srcu_read_lock(sp);
+>  
+> -	srcu_read_acquire(sp);
+> +	rcu_lock_acquire(&(sp)->dep_map);
+>  	return retval;
+>  }
+>  
+> @@ -164,7 +169,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+>  static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+>  	__releases(sp)
+>  {
+> -	srcu_read_release(sp);
+> +	rcu_lock_release(&(sp)->dep_map);
+>  	__srcu_read_unlock(sp, idx);
+>  }
+>  
+> -- 
+> 1.7.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
