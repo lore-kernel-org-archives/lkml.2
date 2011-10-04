@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab1JDJWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 05:22:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16635 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755319Ab1JDJWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 05:22:22 -0400
-Message-ID: <4E8AD021.1030602@redhat.com>
-Date: Tue, 04 Oct 2011 11:21:37 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 6/9] perf, intel: Use GO/HO bits in perf-ctr
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com> <1317649795-18259-7-git-send-email-gleb@redhat.com> <4E89CF73.4020208@redhat.com> <20111003154113.GB3225@redhat.com>
-In-Reply-To: <20111003154113.GB3225@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755544Ab1JDJYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 05:24:44 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40357 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab1JDJYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 05:24:43 -0400
+Subject: ASoC: snd_soc_codec_set_cache_io does not set codec->hw_write 
+ callback now
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Oct 2011 17:24:32 +0800
+Message-ID: <1317720272.2536.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 05:41 PM, Gleb Natapov wrote:
-> >  Would be better to calculate these when the host msrs are
-> >  calculated, instead of here, every vmentry.
-> >
-> For arch PMU v2 and greater it is precalculated. For v1 (which is almost
-> non existent, even my oldest cpu with VMX has v2 PMU) I am not sure it
-> will help since we need to copy information to perf_guest_switch_msr
-> array anyway here.
->
+Hi,
+I just found that after commit be3ea3b9e
+"SoC: Use new register map API for ASoC generic physical I/O",
+snd_soc_codec_set_cache_io does not set codec->hw_write any more.
 
-Okay.
+It is still used in some drivers. e.g.
+In wm8988_resume, we call codec->hw_write(codec->control_data, data, 2);
 
--- 
-error compiling committee.c: too many arguments to function
+For the drivers that is using snd_soc_codec_set_cache_io now,
+where is the place to set codec->hw_write callback now? 
+
+Regards,
+Axel
 
