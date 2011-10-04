@@ -1,63 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab1JDAfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 20:35:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55199 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab1JDAfx (ORCPT
+	id S1752684Ab1JDAkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 20:40:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39124 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab1JDAkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 20:35:53 -0400
-Date: Mon, 3 Oct 2011 17:35:49 -0700
-From: mark gross <markgross@thegnar.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: markgross@thegnar.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
-        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
-        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        linux-pm@lists.linux-foundation.org, khilman@ti.com,
-        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
-Subject: Re: [markgross@thengar.org: Re: [RFC] wake up notifications and
- suspend blocking (aka more wakelock stuff)]
-Message-ID: <20111004003549.GA26888@mgross-G62>
-Reply-To: markgross@thegnar.org
-References: <20111002164849.GE14312@mgross-G62>
- <20111003093226.2b5e9c4d@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003093226.2b5e9c4d@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Oct 2011 20:40:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 4 Oct 2011 09:38:51 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com
+Subject: Re: [PATCH v4 1/8] Basic kernel memory functionality for the Memory
+ Controller
+Message-Id: <20111004093851.7536e505.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1317637123-18306-2-git-send-email-glommer@parallels.com>
+References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
+	<1317637123-18306-2-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 09:32:26AM +0100, Alan Cox wrote:
-> On Sun, 2 Oct 2011 09:48:49 -0700
-> mark gross <markgross@thegnar.org> wrote:
+On Mon,  3 Oct 2011 14:18:36 +0400
+Glauber Costa <glommer@parallels.com> wrote:
+
+> This patch lays down the foundation for the kernel memory component
+> of the Memory Controller.
 > 
-> > Forwarding to bigger group for discussion.
+> As of today, I am only laying down the following files:
 > 
-> Looks clean enough - only question I have is do we need a separate
-> 'suspend block' or can latency do it -suspend is a very very high latency
-> event. I guess the suspend block is clearer in intent than abusing latency
-> but I do wonder if the actual suspend path should also check latency
-> constraints too. If I've asked for 5mS latency then suspend is a wrong
-> choice!
+>  * memory.independent_kmem_limit
+>  * memory.kmem.limit_in_bytes (currently ignored)
+>  * memory.kmem.usage_in_bytes (always zero)
 > 
-I don't think over loading the meaning of cpu_dma_latency would work
-well for this.  If cpu_dma_latency constraint is > 5mS then EFAIL a
-suspend attempt?  feels clunky.
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Paul Menage <paul@paulmenage.org>
+> CC: Greg Thelen <gthelen@google.com>
+> ---
+>  Documentation/cgroups/memory.txt |   30 +++++++++++-
+>  init/Kconfig                     |   11 ++++
+>  mm/memcontrol.c                  |   94 +++++++++++++++++++++++++++++++++++---
+>  3 files changed, 126 insertions(+), 9 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 6f3c598..6f1954a 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -44,8 +44,9 @@ Features:
+>   - oom-killer disable knob and oom-notifier
+>   - Root cgroup has no limit controls.
+>  
+> - Kernel memory and Hugepages are not under control yet. We just manage
+> - pages on LRU. To add more controls, we have to take care of performance.
+> + Hugepages is not under control yet. We just manage pages on LRU. To add more
+> + controls, we have to take care of performance. Kernel memory support is work
+> + in progress, and the current version provides basically functionality.
+>  
+>  Brief summary of control files.
+>  
+> @@ -56,8 +57,11 @@ Brief summary of control files.
+>  				 (See 5.5 for details)
+>   memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+>  				 (See 5.5 for details)
+> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
+> +				 (See 2.7 for details)
+>   memory.limit_in_bytes		 # set/show limit of memory usage
+>   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+>   memory.failcnt			 # show the number of memory usage hits limits
+>   memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+>   memory.max_usage_in_bytes	 # show max memory usage recorded
+> @@ -72,6 +76,9 @@ Brief summary of control files.
+>   memory.oom_control		 # set/show oom controls.
+>   memory.numa_stat		 # show the number of memory usage per numa node
+>  
+> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+> +				   independent of user limits
+> +
+>  1. History
+>  
+>  The memory controller has a long history. A request for comments for the memory
+> @@ -255,6 +262,25 @@ When oom event notifier is registered, event will be delivered.
+>    per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+>    zone->lru_lock, it has no lock of its own.
+>  
+> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
+> +
+> + With the Kernel memory extension, the Memory Controller is able to limit
+> +the amount of kernel memory used by the system. Kernel memory is fundamentally
+> +different than user memory, since it can't be swapped out, which makes it
+> +possible to DoS the system by consuming too much of this precious resource.
+> +Kernel memory limits are not imposed for the root cgroup.
+> +
+> +Memory limits as specified by the standard Memory Controller may or may not
+> +take kernel memory into consideration. This is achieved through the file
+> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
+> +memory to be controlled separately.
+> +
+> +When kernel memory limits are not independent, the limit values set in
+> +memory.kmem files are ignored.
+> +
+> +Currently no soft limit is implemented for kernel memory. It is future work
+> +to trigger slab reclaim when those limits are reached.
+> +
 
-If you use less than then anyone using a constraint (like some wifi
-and audio) would block suspend.  also not so good.  
+Please add some CAUTION like
+==
+"CAUTION: the kmem extetion prevents tasks from moving among cgroups.
+ If a task has kmem accounting in a cgroup, the task cannot be moved
+ until the kmem resource is released. And more, until the resource is
+ fully released, the cgroup cannot be destroyed. So, please consider 
+ your use cases and set kmem extention config carefully".
+==
+
+And add some memo to KCONFIG. This should be warned.
+
+> +config CGROUP_MEM_RES_CTLR_KMEM
+> +	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
+> +	depends on CGROUP_MEM_RES_CTLR && EXPERIMENTAL
+> +	default y
+
+default must be n until you fixes the bug.
 
 
-The poster child for needing this is the USB gadget device with
-associated charging over USB.  Here we can't sleep because we'd have a
-hard time meeting USB spec if we did.  Also, we don't want to sleep
-while charging if charging is under OS control.  (checking temperature
-is tricky while suspended.)
+Thanks,
+-Kame
 
---mark
+
+
+
+
+
+
+
 
