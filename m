@@ -1,132 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933969Ab1JDXmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:42:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63332 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933838Ab1JDXmo (ORCPT
+	id S933956Ab1JDXpX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 19:45:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49881 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933802Ab1JDXpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:42:44 -0400
-Date: Wed, 5 Oct 2011 01:42:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 53/55] rcu: Warn when srcu_read_lock() is
- used in an extended quiescent state
-Message-ID: <20111004234237.GA15836@somewhere.redhat.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-53-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111004210325.GA14165@somewhere.redhat.com>
- <20111004234028.GK2223@linux.vnet.ibm.com>
+	Tue, 4 Oct 2011 19:45:22 -0400
+Date: Tue, 4 Oct 2011 17:44:47 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
+        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
+Message-ID: <20111004234447.GG3009@ponder.secretlab.ca>
+References: <1317410880-24828-1-git-send-email-robherring2@gmail.com>
+ <1317410880-24828-4-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111004234028.GK2223@linux.vnet.ibm.com>
+In-Reply-To: <1317410880-24828-4-git-send-email-robherring2@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 04:40:28PM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 04, 2011 at 11:03:29PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Sep 06, 2011 at 11:00:47AM -0700, Paul E. McKenney wrote:
-> > > Catch SRCU up to the other variants of RCU by making PROVE_RCU
-> > > complain if either srcu_read_lock() or srcu_read_lock_held() are
-> > > used from within dyntick-idle mode.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > ---
-> > >  include/linux/srcu.h |   25 +++++++++++++++----------
-> > >  1 files changed, 15 insertions(+), 10 deletions(-)
-> > > 
-> > > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> > > index 58971e8..fcbaee7 100644
-> > > --- a/include/linux/srcu.h
-> > > +++ b/include/linux/srcu.h
-> > > @@ -28,6 +28,7 @@
-> > >  #define _LINUX_SRCU_H
-> > >  
-> > >  #include <linux/mutex.h>
-> > > +#include <linux/rcupdate.h>
-> > >  
-> > >  struct srcu_struct_array {
-> > >  	int c[2];
-> > > @@ -60,18 +61,10 @@ int __init_srcu_struct(struct srcu_struct *sp, const char *name,
-> > >  	__init_srcu_struct((sp), #sp, &__srcu_key); \
-> > >  })
-> > >  
-> > > -# define srcu_read_acquire(sp) \
-> > > -		lock_acquire(&(sp)->dep_map, 0, 0, 2, 1, NULL, _THIS_IP_)
-> > > -# define srcu_read_release(sp) \
-> > > -		lock_release(&(sp)->dep_map, 1, _THIS_IP_)
-> > > -
-> > >  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> > >  
-> > >  int init_srcu_struct(struct srcu_struct *sp);
-> > >  
-> > > -# define srcu_read_acquire(sp)  do { } while (0)
-> > > -# define srcu_read_release(sp)  do { } while (0)
-> > > -
-> > >  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> > >  
-> > >  void cleanup_srcu_struct(struct srcu_struct *sp);
-> > > @@ -90,11 +83,23 @@ long srcu_batches_completed(struct srcu_struct *sp);
-> > >   * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
-> > >   * this assumes we are in an SRCU read-side critical section unless it can
-> > >   * prove otherwise.
-> > > + *
-> > > + * Note that if the CPU is in an extended quiescent state, for example,
-> > > + * if the CPU is in dyntick-idle mode, then rcu_read_lock_held() returns
-> > > + * false even if the CPU did an rcu_read_lock().  The reason for this is
-> > > + * that RCU ignores CPUs that are in extended quiescent states, so such
-> > > + * a CPU is effectively never in an RCU read-side critical section
-> > > + * regardless of what RCU primitives it invokes.  This state of affairs
-> > > + * is required -- RCU would otherwise need to periodically wake up
-> > > + * dyntick-idle CPUs, which would defeat the whole purpose of dyntick-idle
-> > > + * mode.
-> > >   */
-> > >  static inline int srcu_read_lock_held(struct srcu_struct *sp)
-> > >  {
-> > >  	if (debug_locks)
-> > >  		return lock_is_held(&sp->dep_map);
-> > > +	if (rcu_check_extended_qs())
-> > > +		return 0;
-> > 
-> > Just to warn you, While rebasing this, I'm also moving things around:
+On Fri, Sep 30, 2011 at 02:28:00PM -0500, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Thank you for letting me know, should not be a problem.
+> This adds ARM gic interrupt controller initialization using device tree
+> data.
 > 
-> > 	if (!debug_lock)
-> > 		return 1;
-> > 
-> > 	if (rcu_is_cpu_idle())
-> > 		return 0;
-> > 
-> > 	return lock_is_held(&sp->dep_map);
-> > 
-> > Otherwise we only do the check if lock debugging is disabled,
-> > which is not what we want I think.
+> The initialization function is intended to be called by of_irq_init
+> function like this:
 > 
-> Would it make sense to use this order?
+> const static struct of_device_id irq_match[] = {
+> 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
+> 	{}
+> };
 > 
-> 	if (rcu_is_cpu_idle())
-> 		return 0;
+> static void __init init_irqs(void)
+> {
+> 	of_irq_init(irq_match);
+> }
 > 
-> 	if (!debug_lock)
-> 		return 1;
-> 
-> 	return lock_is_held(&sp->dep_map);
-> 
-> Given the new approach, rcu_is_cpu_idle() works whether or not debug_lock
-> is enabled.
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 
-Yeah why not.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-I'm taking that approach.
+I think this series is pretty much ready to be merged other than the
+comment on patch 1.  It should go through either rmk's patch system or
+the arm-soc tree, but you'll need an ack from tglx first.
 
-Thanks.
+g.
+
+
+> ---
+>  Documentation/devicetree/bindings/arm/gic.txt |   55 ++++++++++++++++++++++
+>  arch/arm/common/gic.c                         |   61 +++++++++++++++++++++++++
+>  arch/arm/include/asm/hardware/gic.h           |    1 +
+>  3 files changed, 117 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> new file mode 100644
+> index 0000000..52916b4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -0,0 +1,55 @@
+> +* ARM Generic Interrupt Controller
+> +
+> +ARM SMP cores are often associated with a GIC, providing per processor
+> +interrupts (PPI), shared processor interrupts (SPI) and software
+> +generated interrupts (SGI).
+> +
+> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
+> +Secondary GICs are cascaded into the upward interrupt controller and do not
+> +have PPIs or SGIs.
+> +
+> +Main node required properties:
+> +
+> +- compatible : should be one of:
+> +	"arm,cortex-a9-gic"
+> +	"arm,arm11mp-gic"
+> +- interrupt-controller : Identifies the node as an interrupt controller
+> +- #interrupt-cells : Specifies the number of cells needed to encode an
+> +  interrupt source.  The type shall be a <u32> and the value shall be 3.
+> +
+> +  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
+> +  interrupts.
+> +
+> +  The 2nd cell contains the interrupt number for the interrupt type.
+> +  SPI interrupts are in the range [0-987].  PPI interrupts are in the
+> +  range [0-15].
+> +
+> +  The 3rd cell is the flags, encoded as follows:
+> +	bits[3:0] trigger type and level flags.
+> +		1 = low-to-high edge triggered
+> +		2 = high-to-low edge triggered
+> +		4 = active high level-sensitive
+> +		8 = active low level-sensitive
+> +	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
+> +	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
+> +	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
+> +
+> +- reg : Specifies base physical address(s) and size of the GIC registers. The
+> +  first region is the GIC distributor register base and size. The 2nd region is
+> +  the GIC cpu interface register base and size.
+> +
+> +Optional
+> +- interrupts	: Interrupt source of the parent interrupt controller. Only
+> +  present on secondary GICs.
+> +
+> +Example:
+> +
+> +	intc: interrupt-controller@fff11000 {
+> +		compatible = "arm,cortex-a9-gic";
+> +		#interrupt-cells = <3>;
+> +		#address-cells = <1>;
+> +		interrupt-controller;
+> +		reg = <0xfff11000 0x1000>,
+> +		      <0xfff10100 0x100>;
+> +	};
+> +
+> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+> index 6fbe1db..3e67970 100644
+> --- a/arch/arm/common/gic.c
+> +++ b/arch/arm/common/gic.c
+> @@ -29,6 +29,9 @@
+>  #include <linux/cpu_pm.h>
+>  #include <linux/cpumask.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/irqdomain.h>
+>  
+>  #include <asm/irq.h>
+> @@ -518,7 +521,33 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_OF
+> +static int gic_irq_domain_dt_translate(struct irq_domain *d,
+> +				       struct device_node *controller,
+> +				       const u32 *intspec, unsigned int intsize,
+> +				       unsigned long *out_hwirq, unsigned int *out_type)
+> +{
+> +	if (d->of_node != controller)
+> +		return -EINVAL;
+> +	if (intsize < 3)
+> +		return -EINVAL;
+> +
+> +	/* Get the interrupt number and add 16 to skip over SGIs */
+> +	*out_hwirq = intspec[1] + 16;
+> +
+> +	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
+> +	if (!intspec[0])
+> +		*out_hwirq += 16;
+> +
+> +	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
+> +	return 0;
+> +}
+> +#endif
+> +
+>  const struct irq_domain_ops gic_irq_domain_ops = {
+> +#ifdef CONFIG_OF
+> +	.dt_translate = gic_irq_domain_dt_translate,
+> +#endif
+>  };
+>  
+>  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+> @@ -606,3 +635,35 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>  	writel_relaxed(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
+>  }
+>  #endif
+> +
+> +#ifdef CONFIG_OF
+> +static int gic_cnt __initdata = 0;
+> +
+> +int __init gic_of_init(struct device_node *node, struct device_node *parent)
+> +{
+> +	void __iomem *cpu_base;
+> +	void __iomem *dist_base;
+> +	int irq;
+> +	struct irq_domain *domain = &gic_data[gic_cnt].domain;
+> +
+> +	if (WARN_ON(!node))
+> +		return -ENODEV;
+> +
+> +	dist_base = of_iomap(node, 0);
+> +	WARN(!dist_base, "unable to map gic dist registers\n");
+> +
+> +	cpu_base = of_iomap(node, 1);
+> +	WARN(!cpu_base, "unable to map gic cpu registers\n");
+> +
+> +	domain->of_node = of_node_get(node);
+> +
+> +	gic_init(gic_cnt, 16, dist_base, cpu_base);
+> +
+> +	if (parent) {
+> +		irq = irq_of_parse_and_map(node, 0);
+> +		gic_cascade_irq(gic_cnt, irq);
+> +	}
+> +	gic_cnt++;
+> +	return 0;
+> +}
+> +#endif
+> diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
+> index ade84a4..1a776a1 100644
+> --- a/arch/arm/include/asm/hardware/gic.h
+> +++ b/arch/arm/include/asm/hardware/gic.h
+> @@ -39,6 +39,7 @@ extern void __iomem *gic_cpu_base_addr;
+>  extern struct irq_chip gic_arch_extn;
+>  
+>  void gic_init(unsigned int, unsigned int, void __iomem *, void __iomem *);
+> +int gic_of_init(struct device_node *node, struct device_node *parent);
+>  void gic_secondary_init(unsigned int);
+>  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+>  void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
+> -- 
+> 1.7.5.4
+> 
