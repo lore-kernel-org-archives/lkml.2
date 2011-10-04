@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab1JDQsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:48:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47318 "EHLO mx1.redhat.com"
+	id S932997Ab1JDQtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:49:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419Ab1JDQo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:44:26 -0400
+	id S1757242Ab1JDQoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:44:23 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Mark Salter <msalter@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH v4 05/24] C6X: build infrastructure
-Date: Tue,  4 Oct 2011 12:43:42 -0400
-Message-Id: <1317746641-26725-6-git-send-email-msalter@redhat.com>
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH v4 13/24] C6X: syscalls
+Date: Tue,  4 Oct 2011 12:43:50 -0400
+Message-Id: <1317746641-26725-14-git-send-email-msalter@redhat.com>
 In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,824 +26,191 @@ Brought up to date by Mark Salter <msalter@redhat.com>
 
 Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Sam Ravnborg <sam@ravnborg.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+[msalter@redhat.com: add include of linux/module.h to sys_c6x.c]
+Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/Kconfig                    |  174 +++++++++++++++++++++++++++++++++++
- arch/c6x/Makefile                   |   60 ++++++++++++
- arch/c6x/boot/Makefile              |   30 ++++++
- arch/c6x/configs/dsk6455_defconfig  |   44 +++++++++
- arch/c6x/configs/evmc6457_defconfig |   41 ++++++++
- arch/c6x/configs/evmc6472_defconfig |   42 +++++++++
- arch/c6x/configs/evmc6474_defconfig |   42 +++++++++
- arch/c6x/include/asm/Kbuild         |   54 +++++++++++
- arch/c6x/kernel/Makefile            |   12 +++
- arch/c6x/kernel/vmlinux.lds.S       |  162 ++++++++++++++++++++++++++++++++
- arch/c6x/lib/Makefile               |    7 ++
- arch/c6x/mm/Makefile                |    5 +
- arch/c6x/platforms/Kconfig          |   16 +++
- arch/c6x/platforms/Makefile         |   12 +++
- 14 files changed, 701 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/Kconfig
- create mode 100644 arch/c6x/Makefile
- create mode 100644 arch/c6x/boot/Makefile
- create mode 100644 arch/c6x/configs/dsk6455_defconfig
- create mode 100644 arch/c6x/configs/evmc6457_defconfig
- create mode 100644 arch/c6x/configs/evmc6472_defconfig
- create mode 100644 arch/c6x/configs/evmc6474_defconfig
- create mode 100644 arch/c6x/include/asm/Kbuild
- create mode 100644 arch/c6x/kernel/Makefile
- create mode 100644 arch/c6x/kernel/vmlinux.lds.S
- create mode 100644 arch/c6x/lib/Makefile
- create mode 100644 arch/c6x/mm/Makefile
- create mode 100644 arch/c6x/platforms/Kconfig
- create mode 100644 arch/c6x/platforms/Makefile
+ arch/c6x/include/asm/syscalls.h |   55 +++++++++++++++++++++++++++++
+ arch/c6x/include/asm/unistd.h   |   26 ++++++++++++++
+ arch/c6x/kernel/sys_c6x.c       |   74 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 155 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/syscalls.h
+ create mode 100644 arch/c6x/include/asm/unistd.h
+ create mode 100644 arch/c6x/kernel/sys_c6x.c
 
-diff --git a/arch/c6x/Kconfig b/arch/c6x/Kconfig
+diff --git a/arch/c6x/include/asm/syscalls.h b/arch/c6x/include/asm/syscalls.h
 new file mode 100644
-index 0000000..26e67f0
+index 0000000..aed53da
 --- /dev/null
-+++ b/arch/c6x/Kconfig
-@@ -0,0 +1,174 @@
-+#
-+# For a description of the syntax of this configuration file,
-+# see Documentation/kbuild/kconfig-language.txt.
-+#
-+
-+config TMS320C6X
-+	def_bool y
-+	select CLKDEV_LOOKUP
-+	select GENERIC_IRQ_SHOW
-+	select HAVE_ARCH_TRACEHOOK
-+	select HAVE_DMA_API_DEBUG
-+	select HAVE_GENERIC_HARDIRQS
-+	select HAVE_MEMBLOCK
-+	select HAVE_SPARSE_IRQ
-+	select OF
-+	select OF_EARLY_FLATTREE
-+
-+config MMU
-+	def_bool n
-+
-+config ZONE_DMA
-+	def_bool y
-+
-+config FPU
-+	def_bool n
-+
-+config HIGHMEM
-+	def_bool n
-+
-+config NUMA
-+	def_bool n
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	def_bool y
-+
-+config RWSEM_XCHGADD_ALGORITHM
-+	def_bool n
-+
-+config GENERIC_CALIBRATE_DELAY
-+	def_bool y
-+
-+config GENERIC_HWEIGHT
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS_BROADCAST
-+	bool
-+
-+config GENERIC_BUG
-+	def_bool y
-+
-+config COMMON_CLKDEV
-+	def_bool y
-+
-+config C6X_BIG_KERNEL
-+	bool "Build a big kernel"
-+	help
-+	  The C6X function call instruction has a limited range of +/- 2MiB.
-+	  This is sufficient for most kernels, but some kernel configurations
-+	  with lots of compiled-in functionality may require a larger range
-+	  for function calls. Use this option to have the compiler generate
-+	  function calls with 32-bit range. This will make the kernel both
-+	  larger and slower.
-+
-+	  If unsure, say N.
-+
-+source "init/Kconfig"
-+
-+# Use the generic interrupt handling code in kernel/irq/
-+
-+source "kernel/Kconfig.freezer"
-+
-+config CMDLINE_BOOL
-+	bool "Default bootloader kernel arguments"
-+
-+config CMDLINE
-+	string "Kernel command line"
-+	depends on CMDLINE_BOOL
-+	default "console=ttyS0,57600"
-+	help
-+	  On some architectures there is currently no way for the boot loader
-+	  to pass arguments to the kernel. For these architectures, you should
-+	  supply some command-line options at build time by entering them
-+	  here.
-+
-+config CMDLINE_FORCE
-+	bool "Force default kernel command string"
-+	depends on CMDLINE_BOOL
-+	default n
-+	help
-+	  Set this to have arguments from the default kernel command string
-+	  override those passed by the boot loader.
-+
-+config CPU_BIG_ENDIAN
-+	bool "Build big-endian kernel"
-+	default n
-+	help
-+	  Say Y if you plan on running a kernel in big-endian mode.
-+	  Note that your board must be properly built and your board
-+	  port must properly enable any big-endian related features
-+	  of your chipset/board/processor.
-+
-+config FORCE_MAX_ZONEORDER
-+	int "Maximum zone order"
-+	default "13"
-+	help
-+	  The kernel memory allocator divides physically contiguous memory
-+	  blocks into "zones", where each zone is a power of two number of
-+	  pages.  This option selects the largest power of two that the kernel
-+	  keeps in the memory allocator.  If you need to allocate very large
-+	  blocks of physically contiguous memory, then you may need to
-+	  increase this value.
-+
-+	  This config option is actually maximum order plus one. For example,
-+	  a value of 11 means that the largest free memory block is 2^10 pages.
-+
-+menu "Processor type and features"
-+
-+source "arch/c6x/platforms/Kconfig"
-+
-+config TMS320C6X_CACHES_ON
-+	bool "L2 cache support"
-+	default y
-+
-+config KERNEL_RAM_BASE_ADDRESS
-+	hex "Virtual address of memory base"
-+	default 0xe0000000 if SOC_TMS320C6455
-+	default 0xe0000000 if SOC_TMS320C6457
-+	default 0xe0000000 if SOC_TMS320C6472
-+	default 0x80000000
-+
-+source "mm/Kconfig"
-+
-+source "kernel/Kconfig.preempt"
-+
-+source "kernel/Kconfig.hz"
-+source "kernel/time/Kconfig"
-+
-+endmenu
-+
-+menu "Executable file formats"
-+
-+source "fs/Kconfig.binfmt"
-+
-+endmenu
-+
-+source "net/Kconfig"
-+
-+source "drivers/Kconfig"
-+
-+source "fs/Kconfig"
-+
-+source "security/Kconfig"
-+
-+source "crypto/Kconfig"
-+
-+source "lib/Kconfig"
-+
-+menu "Kernel hacking"
-+
-+source "lib/Kconfig.debug"
-+
-+config ACCESS_CHECK
-+	bool "Check the user pointer address"
-+	default y
-+	help
-+	  Usually the pointer transfer from user space is checked to see if its
-+	  address is in the kernel space.
-+
-+	  Say N here to disable that check to improve the performance.
-+
-+endmenu
-diff --git a/arch/c6x/Makefile b/arch/c6x/Makefile
-new file mode 100644
-index 0000000..1d08dd0
---- /dev/null
-+++ b/arch/c6x/Makefile
-@@ -0,0 +1,60 @@
-+#
-+# linux/arch/c6x/Makefile
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+
-+cflags-y += -mno-dsbt -msdata=none
-+
-+cflags-$(CONFIG_C6X_BIG_KERNEL) += -mlong-calls
-+
-+CFLAGS_MODULE   += -mlong-calls -mno-dsbt -msdata=none
-+
-+CHECKFLAGS      +=
-+
-+KBUILD_CFLAGS   += $(cflags-y)
-+KBUILD_AFLAGS   += $(cflags-y)
-+
-+ifdef CONFIG_CPU_BIG_ENDIAN
-+KBUILD_CFLAGS   += -mbig-endian
-+KBUILD_AFLAGS   += -mbig-endian
-+LINKFLAGS       += -mbig-endian
-+KBUILD_LDFLAGS  += -mbig-endian
-+LDFLAGS += -EB
-+endif
-+
-+head-y          := arch/c6x/kernel/head.o
-+core-y          += arch/c6x/kernel/ arch/c6x/mm/ arch/c6x/platforms/
-+libs-y          += arch/c6x/lib/
-+
-+# Default to vmlinux.bin, override when needed
-+all: vmlinux.bin
-+
-+boot := arch/$(ARCH)/boot
-+
-+# Are we making a dtbImage.<boardname> target? If so, crack out the boardname
-+DTB:=$(subst dtbImage.,,$(filter dtbImage.%, $(MAKECMDGOALS)))
-+export DTB
-+
-+ifneq ($(DTB),)
-+core-y	+= $(boot)/
-+endif
-+
-+# With make 3.82 we cannot mix normal and wildcard targets
-+
-+vmlinux.bin: vmlinux
-+	$(Q)$(MAKE) $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-+
-+dtbImage.%: vmlinux
-+	$(Q)$(MAKE) $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-+
-+archclean:
-+	$(Q)$(MAKE) $(clean)=$(boot)
-+
-+define archhelp
-+  @echo '  vmlinux.bin     - Binary kernel image (arch/$(ARCH)/boot/vmlinux.bin)'
-+  @echo '  dtbImage.<dt>   - ELF image with $(arch)/boot/dts/<dt>.dts linked in'
-+  @echo '                  - stripped elf with fdt blob'
-+endef
-diff --git a/arch/c6x/boot/Makefile b/arch/c6x/boot/Makefile
-new file mode 100644
-index 0000000..ecca820
---- /dev/null
-+++ b/arch/c6x/boot/Makefile
-@@ -0,0 +1,30 @@
-+#
-+# Makefile for bootable kernel images
-+#
-+
-+OBJCOPYFLAGS_vmlinux.bin := -O binary
-+$(obj)/vmlinux.bin: vmlinux FORCE
-+	$(call if_changed,objcopy)
-+
-+DTC_FLAGS ?= -p 1024
-+
-+ifneq ($(DTB),)
-+obj-y += linked_dtb.o
-+endif
-+
-+$(obj)/%.dtb: $(src)/dts/%.dts FORCE
-+	$(call cmd,dtc)
-+
-+quiet_cmd_cp = CP      $< $@$2
-+	cmd_cp = cat $< >$@$2 || (rm -f $@ && echo false)
-+
-+# Generate builtin.dtb from $(DTB).dtb
-+$(obj)/builtin.dtb: $(obj)/$(DTB).dtb
-+	$(call if_changed,cp)
-+
-+$(obj)/linked_dtb.o: $(obj)/builtin.dtb
-+
-+$(obj)/dtbImage.%: vmlinux
-+	$(call if_changed,objcopy)
-+
-+clean-files := $(obj)/*.dtb
-diff --git a/arch/c6x/configs/dsk6455_defconfig b/arch/c6x/configs/dsk6455_defconfig
-new file mode 100644
-index 0000000..4663487
---- /dev/null
-+++ b/arch/c6x/configs/dsk6455_defconfig
-@@ -0,0 +1,44 @@
-+CONFIG_SOC_TMS320C6455=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_SPARSE_IRQ=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_USER_NS is not set
-+# CONFIG_PID_NS is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_EXPERT=y
-+# CONFIG_FUTEX is not set
-+# CONFIG_SLUB_DEBUG is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_FORCE_LOAD=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_CMDLINE_BOOL=y
-+CONFIG_CMDLINE=""
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=2
-+CONFIG_BLK_DEV_RAM_SIZE=17000
-+CONFIG_MISC_DEVICES=y
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+CONFIG_CRC16=y
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_BUGVERBOSE is not set
-+CONFIG_MTD=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_CFI_AMDSTD=y
-+CONFIG_MTD_PHYSMAP_OF=y
-diff --git a/arch/c6x/configs/evmc6457_defconfig b/arch/c6x/configs/evmc6457_defconfig
-new file mode 100644
-index 0000000..bba40e1
---- /dev/null
-+++ b/arch/c6x/configs/evmc6457_defconfig
-@@ -0,0 +1,41 @@
-+CONFIG_SOC_TMS320C6457=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_SPARSE_IRQ=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_USER_NS is not set
-+# CONFIG_PID_NS is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_EXPERT=y
-+# CONFIG_FUTEX is not set
-+# CONFIG_SLUB_DEBUG is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_FORCE_LOAD=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_CMDLINE_BOOL=y
-+CONFIG_CMDLINE=""
-+CONFIG_BOARD_EVM6457=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=2
-+CONFIG_BLK_DEV_RAM_SIZE=17000
-+CONFIG_MISC_DEVICES=y
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+CONFIG_CRC16=y
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_BUGVERBOSE is not set
-diff --git a/arch/c6x/configs/evmc6472_defconfig b/arch/c6x/configs/evmc6472_defconfig
-new file mode 100644
-index 0000000..8c46155
---- /dev/null
-+++ b/arch/c6x/configs/evmc6472_defconfig
-@@ -0,0 +1,42 @@
-+CONFIG_SOC_TMS320C6472=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_SPARSE_IRQ=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_USER_NS is not set
-+# CONFIG_PID_NS is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_EXPERT=y
-+# CONFIG_FUTEX is not set
-+# CONFIG_SLUB_DEBUG is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_FORCE_LOAD=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_CMDLINE_BOOL=y
-+CONFIG_CMDLINE=""
-+# CONFIG_CMDLINE_FORCE is not set
-+CONFIG_BOARD_EVM6472=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=2
-+CONFIG_BLK_DEV_RAM_SIZE=17000
-+CONFIG_MISC_DEVICES=y
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+CONFIG_CRC16=y
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_BUGVERBOSE is not set
-diff --git a/arch/c6x/configs/evmc6474_defconfig b/arch/c6x/configs/evmc6474_defconfig
-new file mode 100644
-index 0000000..15533f6
---- /dev/null
-+++ b/arch/c6x/configs/evmc6474_defconfig
-@@ -0,0 +1,42 @@
-+CONFIG_SOC_TMS320C6474=y
-+CONFIG_EXPERIMENTAL=y
-+# CONFIG_LOCALVERSION_AUTO is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_SPARSE_IRQ=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_USER_NS is not set
-+# CONFIG_PID_NS is not set
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-+CONFIG_EXPERT=y
-+# CONFIG_FUTEX is not set
-+# CONFIG_SLUB_DEBUG is not set
-+CONFIG_MODULES=y
-+CONFIG_MODULE_FORCE_LOAD=y
-+CONFIG_MODULE_UNLOAD=y
-+CONFIG_MODULE_FORCE_UNLOAD=y
-+CONFIG_CMDLINE_BOOL=y
-+CONFIG_CMDLINE=""
-+# CONFIG_CMDLINE_FORCE is not set
-+CONFIG_BOARD_EVM6474=y
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_BLK_DEV_RAM_COUNT=2
-+CONFIG_BLK_DEV_RAM_SIZE=17000
-+CONFIG_MISC_DEVICES=y
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_USB_SUPPORT is not set
-+# CONFIG_IOMMU_SUPPORT is not set
-+# CONFIG_MISC_FILESYSTEMS is not set
-+CONFIG_CRC16=y
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_BUGVERBOSE is not set
-diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
-new file mode 100644
-index 0000000..13dcf78
---- /dev/null
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -0,0 +1,54 @@
-+include include/asm-generic/Kbuild.asm
-+
-+generic-y += atomic.h
-+generic-y += auxvec.h
-+generic-y += bitsperlong.h
-+generic-y += bug.h
-+generic-y += bugs.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += dma.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += fb.h
-+generic-y += fcntl.h
-+generic-y += futex.h
-+generic-y += hw_irq.h
-+generic-y += io.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += ipcbuf.h
-+generic-y += irq_regs.h
-+generic-y += kdebug.h
-+generic-y += kmap_types.h
-+generic-y += local.h
-+generic-y += mman.h
-+generic-y += mmu_context.h
-+generic-y += msgbuf.h
-+generic-y += param.h
-+generic-y += pci.h
-+generic-y += percpu.h
-+generic-y += pgalloc.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += resource.h
-+generic-y += scatterlist.h
-+generic-y += segment.h
-+generic-y += sembuf.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += stat.h
-+generic-y += statfs.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += tlbflush.h
-+generic-y += topology.h
-+generic-y += types.h
-+generic-y += ucontext.h
-+generic-y += user.h
-+generic-y += vga.h
-diff --git a/arch/c6x/kernel/Makefile b/arch/c6x/kernel/Makefile
-new file mode 100644
-index 0000000..580a515
---- /dev/null
-+++ b/arch/c6x/kernel/Makefile
-@@ -0,0 +1,12 @@
-+#
-+# Makefile for arch/c6x/kernel/
-+#
-+
-+extra-y := head.o vmlinux.lds
-+
-+obj-y := process.o traps.o irq.o signal.o ptrace.o
-+obj-y += setup.o sys_c6x.o time.o devicetree.o
-+obj-y += switch_to.o entry.o vectors.o c6x_ksyms.o
-+obj-y += soc.o dma.o
-+
-+obj-$(CONFIG_MODULES)           += module.o
-diff --git a/arch/c6x/kernel/vmlinux.lds.S b/arch/c6x/kernel/vmlinux.lds.S
-new file mode 100644
-index 0000000..1d81c4c
---- /dev/null
-+++ b/arch/c6x/kernel/vmlinux.lds.S
-@@ -0,0 +1,162 @@
++++ b/arch/c6x/include/asm/syscalls.h
+@@ -0,0 +1,55 @@
 +/*
-+ * ld script for the c6x kernel
++ * Copyright (C) 2011 Texas Instruments Incorporated
++ * Author: Mark Salter <msalter@redhat.com>
 + *
-+ *  Copyright (C) 2010, 2011 Texas Instruments Incorporated
-+ *  Mark Salter <msalter@redhat.com>
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation, version 2.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for
++ * more details.
 + */
-+#include <asm-generic/vmlinux.lds.h>
-+#include <asm/thread_info.h>
-+#include <asm/page.h>
 +
-+ENTRY(_c_int00)
++#ifndef __ASM_C6X_SYSCALLS_H
++#define __ASM_C6X_SYSCALLS_H
 +
-+#if defined(CONFIG_CPU_BIG_ENDIAN)
-+jiffies = jiffies_64 + 4;
-+#else
-+jiffies = jiffies_64;
++#include <linux/compiler.h>
++#include <linux/linkage.h>
++#include <linux/types.h>
++
++/* The array of function pointers for syscalls. */
++extern void *sys_call_table[];
++
++/* The following are trampolines in entry.S to handle 64-bit arguments */
++extern long sys_pread_c6x(unsigned int fd, char __user *buf,
++			  size_t count, off_t pos_low, off_t pos_high);
++extern long sys_pwrite_c6x(unsigned int fd, const char __user *buf,
++			   size_t count, off_t pos_low, off_t pos_high);
++extern long sys_truncate64_c6x(const char __user *path,
++			       off_t length_low, off_t length_high);
++extern long sys_ftruncate64_c6x(unsigned int fd,
++			       off_t length_low, off_t length_high);
++extern long sys_fadvise64_c6x(int fd, u32 offset_lo, u32 offset_hi,
++			      u32 len, int advice);
++extern long sys_fadvise64_64_c6x(int fd, u32 offset_lo, u32 offset_hi,
++				u32 len_lo, u32 len_hi, int advice);
++extern long sys_fallocate_c6x(int fd, int mode,
++			      u32 offset_lo, u32 offset_hi,
++			      u32 len_lo, u32 len_hi);
++extern int sys_cache_sync(unsigned long s, unsigned long e);
++
++struct pt_regs;
++
++extern asmlinkage long sys_c6x_clone(struct pt_regs *regs);
++extern asmlinkage long sys_c6x_execve(const char __user *name,
++				      const char __user *const __user *argv,
++				      const char __user *const __user *envp,
++				      struct pt_regs *regs);
++
++
++#include <asm-generic/syscalls.h>
++
++#endif /* __ASM_C6X_SYSCALLS_H */
+diff --git a/arch/c6x/include/asm/unistd.h b/arch/c6x/include/asm/unistd.h
+new file mode 100644
+index 0000000..6d54ea4
+--- /dev/null
++++ b/arch/c6x/include/asm/unistd.h
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (C) 2011 Texas Instruments Incorporated
++ *
++ * Based on arch/tile version.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.	See the GNU General Public License for
++ *   more details.
++ */
++#if !defined(_ASM_C6X_UNISTD_H) || defined(__SYSCALL)
++#define _ASM_C6X_UNISTD_H
++
++/* Use the standard ABI for syscalls. */
++#include <asm-generic/unistd.h>
++
++/* C6X-specific syscalls. */
++#define __NR_cache_sync	(__NR_arch_specific_syscall + 0)
++__SYSCALL(__NR_cache_sync, sys_cache_sync)
++
++#endif /* _ASM_C6X_UNISTD_H */
+diff --git a/arch/c6x/kernel/sys_c6x.c b/arch/c6x/kernel/sys_c6x.c
+new file mode 100644
+index 0000000..3e9bdfb
+--- /dev/null
++++ b/arch/c6x/kernel/sys_c6x.c
+@@ -0,0 +1,74 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/syscalls.h>
++#include <linux/uaccess.h>
++
++#include <asm/syscalls.h>
++
++#ifdef CONFIG_ACCESS_CHECK
++int _access_ok(unsigned long addr, unsigned long size)
++{
++	if (!size)
++		return 1;
++
++	if (!addr || addr > (0xffffffffUL - (size - 1)))
++		goto _bad_access;
++
++	if (segment_eq(get_fs(), KERNEL_DS))
++		return 1;
++
++	if (memory_start <= addr && (addr + size - 1) < memory_end)
++		return 1;
++
++_bad_access:
++	pr_debug("Bad access attempt: pid[%d] addr[%08lx] size[0x%lx]\n",
++		 current->pid, addr, size);
++	return 0;
++}
++EXPORT_SYMBOL(_access_ok);
 +#endif
 +
-+#define	READONLY_SEGMENT_START	\
-+	. = PAGE_OFFSET;
-+#define	READWRITE_SEGMENT_START	\
-+	. = ALIGN(128);		\
-+	_data_lma = .;
-+
-+SECTIONS
++/* sys_cache_sync -- sync caches over given range */
++asmlinkage int sys_cache_sync(unsigned long s, unsigned long e)
 +{
-+	/*
-+	 * Start kernel read only segment
-+	 */
-+	READONLY_SEGMENT_START
++	L1D_cache_block_writeback_invalidate(s, e);
++	L1P_cache_block_invalidate(s, e);
 +
-+	.vectors :
-+	{
-+		_vectors_start = .;
-+		*(.vectors)
-+		. = ALIGN(0x400);
-+		_vectors_end = .;
-+	}
-+
-+	. = ALIGN(0x1000);
-+	.cmdline :
-+	{
-+		*(.cmdline)
-+	}
-+
-+	/*
-+	 * This section contains data which may be shared with other
-+	 * cores. It needs to be a fixed offset from PAGE_OFFSET
-+	 * regardless of kernel configuration.
-+	 */
-+	.virtio_ipc_dev :
-+	{
-+		*(.virtio_ipc_dev)
-+	}
-+
-+	. = ALIGN(PAGE_SIZE);
-+	.init :
-+	{
-+		_stext = .;
-+		_sinittext = .;
-+		HEAD_TEXT
-+		INIT_TEXT
-+		_einittext = .;
-+	}
-+
-+	__init_begin = _stext;
-+	INIT_DATA_SECTION(16)
-+
-+	PERCPU_SECTION(128)
-+
-+	. = ALIGN(PAGE_SIZE);
-+	__init_end = .;
-+
-+	.text :
-+	{
-+		_text = .;
-+		TEXT_TEXT
-+		SCHED_TEXT
-+		LOCK_TEXT
-+		IRQENTRY_TEXT
-+		KPROBES_TEXT
-+		*(.fixup)
-+		*(.gnu.warning)
-+	}
-+
-+	EXCEPTION_TABLE(16)
-+	NOTES
-+
-+	RO_DATA_SECTION(PAGE_SIZE)
-+	.const :
-+	{
-+		*(.const .const.* .gnu.linkonce.r.*)
-+		*(.switch)
-+	}
-+
-+	. = ALIGN (8) ;
-+	__fdt_blob : AT(ADDR(__fdt_blob) - LOAD_OFFSET)
-+	{
-+		_fdt_start = . ;	/* place for fdt blob */
-+		*(__fdt_blob) ;		/* Any link-placed DTB */
-+		BYTE(0);		/* section always has contents */
-+	        . = _fdt_start + 0x4000;	/* Pad up to 16kbyte */
-+		_fdt_end = . ;
-+	}
-+
-+	_etext = .;
-+
-+	/*
-+	 * Start kernel read-write segment.
-+	 */
-+	READWRITE_SEGMENT_START
-+	_sdata = .;
-+
-+	.fardata : AT(ADDR(.fardata) - LOAD_OFFSET)
-+	{
-+		INIT_TASK_DATA(THREAD_SIZE)
-+		NOSAVE_DATA
-+		PAGE_ALIGNED_DATA(PAGE_SIZE)
-+		CACHELINE_ALIGNED_DATA(128)
-+		READ_MOSTLY_DATA(128)
-+		DATA_DATA
-+		CONSTRUCTORS
-+		*(.data1)
-+		*(.fardata .fardata.*)
-+		*(.data.debug_bpt)
-+	}
-+
-+	.neardata ALIGN(8) : AT(ADDR(.neardata) - LOAD_OFFSET)
-+	{
-+		*(.neardata2 .neardata2.* .gnu.linkonce.s2.*)
-+		*(.neardata .neardata.* .gnu.linkonce.s.*)
-+		. = ALIGN(8);
-+	}
-+
-+	_edata = .;
-+
-+	__bss_start = .;
-+	SBSS(8)
-+	BSS(8)
-+	.far :
-+	{
-+		. = ALIGN(8);
-+		*(.dynfar)
-+		*(.far .far.* .gnu.linkonce.b.*)
-+		. = ALIGN(8);
-+	}
-+	__bss_stop = .;
-+
-+	_end = .;
-+
-+	DWARF_DEBUG
-+
-+	/DISCARD/ :
-+	{
-+		  EXIT_TEXT
-+		  EXIT_DATA
-+		  EXIT_CALL
-+		  *(.discard)
-+		  *(.discard.*)
-+		  *(.interp)
-+	}
++	return 0;
 +}
-diff --git a/arch/c6x/lib/Makefile b/arch/c6x/lib/Makefile
-new file mode 100644
-index 0000000..ffd3c65
---- /dev/null
-+++ b/arch/c6x/lib/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for arch/c6x/lib/
-+#
 +
-+lib-y := divu.o divi.o pop_rts.o push_rts.o remi.o remu.o strasgi.o llshru.o
-+lib-y += llshr.o llshl.o negll.o mpyll.o divremi.o divremu.o
-+lib-y += checksum.o csum_64plus.o memcpy_64plus.o strasgi_64plus.o
-diff --git a/arch/c6x/mm/Makefile b/arch/c6x/mm/Makefile
-new file mode 100644
-index 0000000..136a975
---- /dev/null
-+++ b/arch/c6x/mm/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the linux c6x-specific parts of the memory manager.
-+#
++/* Provide the actual syscall number to call mapping. */
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
-+obj-y := init.o dma-coherent.o
-diff --git a/arch/c6x/platforms/Kconfig b/arch/c6x/platforms/Kconfig
-new file mode 100644
-index 0000000..401ee67
---- /dev/null
-+++ b/arch/c6x/platforms/Kconfig
-@@ -0,0 +1,16 @@
++/*
++ * Use trampolines
++ */
++#define sys_pread64		sys_pread_c6x
++#define sys_pwrite64		sys_pwrite_c6x
++#define sys_truncate64		sys_truncate64_c6x
++#define sys_ftruncate64		sys_ftruncate64_c6x
++#define sys_fadvise64		sys_fadvise64_c6x
++#define sys_fadvise64_64	sys_fadvise64_64_c6x
++#define sys_fallocate		sys_fallocate_c6x
 +
-+config SOC_TMS320C6455
-+	bool "TMS320C6455"
-+	default n
++/* Use sys_mmap_pgoff directly */
++#define sys_mmap2 sys_mmap_pgoff
 +
-+config SOC_TMS320C6457
-+	bool "TMS320C6457"
-+	default n
-+
-+config SOC_TMS320C6472
-+	bool "TMS320C6472"
-+	default n
-+
-+config SOC_TMS320C6474
-+	bool "TMS320C6474"
-+	default n
-diff --git a/arch/c6x/platforms/Makefile b/arch/c6x/platforms/Makefile
-new file mode 100644
-index 0000000..9a95b9b
---- /dev/null
-+++ b/arch/c6x/platforms/Makefile
-@@ -0,0 +1,12 @@
-+#
-+# Makefile for arch/c6x/platforms
-+#
-+# Copyright 2010, 2011 Texas Instruments Incorporated
-+#
-+
-+obj-y = platform.o cache.o megamod-pic.o pll.o plldata.o timer64.o
-+obj-y += dscr.o
-+
-+# SoC objects
-+obj-$(CONFIG_SOC_TMS320C6455)   += emif.o
-+obj-$(CONFIG_SOC_TMS320C6457)   += emif.o
++/*
++ * Note that we can't include <linux/unistd.h> here since the header
++ * guard will defeat us; <asm/unistd.h> checks for __SYSCALL as well.
++ */
++void *sys_call_table[__NR_syscalls] = {
++	[0 ... __NR_syscalls-1] = sys_ni_syscall,
++#include <asm/unistd.h>
++};
 -- 
 1.7.6.2
 
