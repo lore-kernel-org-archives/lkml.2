@@ -1,35 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab1JDKn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 06:43:26 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49355 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755901Ab1JDKnX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 06:43:23 -0400
-Date: Tue, 4 Oct 2011 11:43:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ganesh Karuppur Rajagopalan <ganesh.kr356@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pallav Bose <pallavbose@gmail.com>
-Subject: Re: Queuing multiple task_struct structures?
-Message-ID: <20111004114314.45d8ac5f@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAFXDVL8EhVUo9jom_DGEmbSzjA5bUf0iYzGyh-K3AeytL-=VSw@mail.gmail.com>
-References: <CAFXDVL8EhVUo9jom_DGEmbSzjA5bUf0iYzGyh-K3AeytL-=VSw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756154Ab1JDKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 06:44:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25317 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755895Ab1JDKoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 06:44:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,484,1312182000"; 
+   d="scan'208";a="74283573"
+Date: Tue, 4 Oct 2011 12:47:13 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Balaji T K <balajitk@ti.com>,
+        Hemanth V <hemanthv@ti.com>, Bill Gatliff <bgat@billgatliff.com>
+Subject: Re: [PATCH 22/30] mfd: build twl6030 only on omap2
+Message-ID: <20111004104713.GY4118@sortiz-mobl>
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+ <1317566760-25681-23-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317566760-25681-23-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> thread which uses the ioctl() system call to send a userspace buffer
-> to my block device driver. Once I queue up multiple task_structs, I
-> would like to keep them on the queue until a particular condition is
-> met (i.e., the buffer has been written down to the disk).
+Hi Arnd,
 
-We already have a perfectly usable raw I/O interface set, why not just
-use those ?
+On Sun, Oct 02, 2011 at 04:45:52PM +0200, Arnd Bergmann wrote:
+> We can only have one pwm driver built into the kernel,
+I seem to remember that Bill Gatliff was working on a PWM subsystem that would
+get rid of the current pwm.h ugliness. Do we have any updates on this one ?
 
-Alan
+The patch below looks like a hack to me, trying to work around the current
+lack of such subsystem.
+
+Cheers,
+Samuel.
+
+> so make sure
+> that this one is only available on omap2 to avoid conflicts with
+> pwm drivers of other platforms.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Cc: Balaji T K <balajitk@ti.com>
+> Cc: Hemanth V <hemanthv@ti.com>
+> ---
+>  drivers/mfd/Kconfig |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 48cce35..26bebe8 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -256,8 +256,8 @@ config MFD_TWL4030_AUDIO
+>  	default n
+>  
+>  config TWL6030_PWM
+> -	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
+> -	depends on TWL4030_CORE
+> +	bool "TWL6030 PWM (Pulse Width Modulator) Support"
+> +	depends on TWL4030_CORE && ARCH_OMAP2
+>  	select HAVE_PWM
+>  	default n
+>  	help
+> -- 
+> 1.7.5.4
+> 
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
