@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab1JDHdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:33:08 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47549 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab1JDHdG (ORCPT
+	id S1754874Ab1JDHdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:33:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53797 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab1JDHdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:33:06 -0400
-Date: Tue, 4 Oct 2011 18:32:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ali Bahar <ali@internetdog.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, Greg KH <greg@kroah.com>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20111004183257.fea644e6ca5403a253990604@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Oct_2011_18_32_57_+1100_zGIBzFHjDC/QemtF"
+	Tue, 4 Oct 2011 03:33:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 16/26] ARM: pxa: CPU_PJ4 requires IWMMXT
+Date: Tue, 4 Oct 2011 09:33:38 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Jason Chagas <jason.chagas@marvell.com>, linux-kernel@vger.kernel.org
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <20295619.jOfPxmug8T@wuerfel> <CAMPhdO96WwmPVqVpM2Vpef3wSgfHEf-0tK5VewXn-EGMns2ubA@mail.gmail.com>
+In-Reply-To: <CAMPhdO96WwmPVqVpM2Vpef3wSgfHEf-0tK5VewXn-EGMns2ubA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110040933.38389.arnd@arndb.de>
+X-Provags-ID: V02:K0:B9JgxvGj3f0Y266MP61iKyOay8liL6dg0HAFuhoWeFj
+ rD9ytk9fkdg9WjbrnijTXUw0/R7iL+DKPwskAROkVsCTbX+KnE
+ PhHbiKR8oYcoHfs5li2RNO9khwRgBIgmNfEZr9I0/DM8Wbo8pQ
+ waC2upuL4sj0JrMR9mViMYjDGGgJ3/pD0Bw4Q4BNgcWyFiCUca
+ /Zp3q71Krc58vtMIgfvD3wIYQGqirHt2UxA9QFqM47qBiowe+E
+ cOqtTO8Yfb28g3u9QL6/YxqYXjvXBjFLNzknDowNVN5fSrxIy3
+ 1Qf7m2xTm5GmbJTuqwc1WTHLdXKLShNc53u/8AzyE3FMjOlz5G
+ bF6J+indJvN56Efu6mr8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Oct_2011_18_32_57_+1100_zGIBzFHjDC/QemtF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 04 October 2011, Eric Miao wrote:
+> I think this is true for other xscale CPUs as well, so either we make
+> them unconditionally all at once, or we still leave an option here.
 
-Hi Paul,
+Do all xscale have iwmmxt?
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) produced these errors/warnings:
+> It actually looks quite odd to me that CPU_PJ4 is made special here,
+> what're the real broken builds errors?
 
-drivers/staging/rtl8712/usb_intf.c:172:1: warning: data definition has no t=
-ype or storage class [enabled by default]
-drivers/staging/rtl8712/usb_intf.c:172:1: warning: type defaults to 'int' i=
-n declaration of 'MODULE_DEVICE_TABLE' [-Wimplicit-int]
-drivers/staging/rtl8712/usb_intf.c:172:1: warning: parameter names (without=
- types) in function declaration [enabled by default]
-drivers/staging/rtl8712/usb_intf.c: In function 'r8712u_drv_entry':
-drivers/staging/rtl8712/usb_intf.c:649:9: error: 'THIS_MODULE' undeclared (=
-first use in this function)
-drivers/staging/rtl8712/hal_init.c:66:17: error: expected declaration speci=
-fiers or '...' before string constant
+Yes.
 
-Caused by various commits in the staging tree interacting with the
-module.h split.
+I should probably have provided a longer description of the problem.
+The build error is in arch/arm/kernel/pj4-cp0.c, which calls
+iwmmxt_task_release unconditionally. The code is obviously
+copy-pasted from arch/arm/kernel/xscale-cp0.c, which does much
+of the same, but uses both run-time and compile-time conditionals
+for iwmmxt.
 
-I have added the following patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 4 Oct 2011 18:30:10 +1100
-Subject: [PATCH] staging: r8712u:  include module.h where needed
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/rtl8712/hal_init.c |    1 +
- drivers/staging/rtl8712/usb_intf.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/h=
-al_init.c
-index 1bd9c37..d0029aa 100644
---- a/drivers/staging/rtl8712/hal_init.c
-+++ b/drivers/staging/rtl8712/hal_init.c
-@@ -32,6 +32,7 @@
- #include <linux/device.h>
- #include <linux/usb/ch9.h>
- #include <linux/firmware.h>
-+#include <linux/module.h>
-=20
- #include "osdep_service.h"
- #include "drv_types.h"
-diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/u=
-sb_intf.c
-index 0a2f274..fb2e89c 100644
---- a/drivers/staging/rtl8712/usb_intf.c
-+++ b/drivers/staging/rtl8712/usb_intf.c
-@@ -29,6 +29,7 @@
- #define _HCI_INTF_C_
-=20
- #include <linux/usb.h>
-+#include <linux/module.h>
-=20
- #include "osdep_service.h"
- #include "drv_types.h"
---=20
-1.7.6.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__4_Oct_2011_18_32_57_+1100_zGIBzFHjDC/QemtF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOirapAAoJEECxmPOUX5FEgewP/3vgtWtjpd6Wsbo1u2IZ0ENN
-ZuBoQldicQ9BA54mdhOCjX4TC1Tu4PRBFWOSzUef/KT7/qaYjnHGmmcHoWV+f3pz
-KKUJ9Jzup4pVXhbX9PKpTPWvLtI0xnzIJX2ITPBmotGkgkw8mSJSoTX/YcE+RAc7
-H5qkjbm0uacNudVvJgL9SMrVDDs+Y4K8OMy5BfTCS7mIg4MmzMvF49ELKfmdua56
-MeQQFFPd06Bu/JaRudtxQVVF7lhndeyJ0Ib8i+sX85s1iKk40f8AMoo2GNTUaFup
-FAnzZPJc39WAhwtosF/sCnIkHpo6X80HJeFhcg2/yShWEuXv9BaYKur2eZnxNjKo
-A0fINXoN5q/G3nRNNJtj2R2gE8uRyRFnCuoyhe19kxIrVe5I7ep1iUahHwBILbff
-EGtJp/30uUXgPdb1G30cT6JmttTUGgWWIAArxJJxJp1oI2ud28ZAbPQ5XFKT9Cbb
-HIVAMRL3qE6aq2fav9ssT9uJKPuChHLN9/jDnKFjTPpb05ku5n4iPfZFXPMO0Dg4
-ENichA7F/bgq+/x986JMsnZV7uNZqPr/x1uwz2+L8pG508G/3B9WQYewadNPjsSw
-NBbmV3smlqR0m6BlRne5wQ3pDhDIY9Pir6hGWjiiBQ/aXuhKdSPdUd6MwmnYa71r
-Ks5yhXNzIIXqEPEleti2
-=zG11
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Oct_2011_18_32_57_+1100_zGIBzFHjDC/QemtF--
+	Arnd
