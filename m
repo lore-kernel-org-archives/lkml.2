@@ -1,175 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab1JDQou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:44:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12397 "EHLO mx1.redhat.com"
+	id S932990Ab1JDQow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:44:52 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:52009 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932928Ab1JDQob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932919Ab1JDQob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Oct 2011 12:44:31 -0400
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v4 21/24] C6X: general SoC support
-Date: Tue,  4 Oct 2011 12:43:58 -0400
-Message-Id: <1317746641-26725-22-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
-References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
+Date: Tue, 4 Oct 2011 12:44:30 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jon Mason <mason@myri.com>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+Message-ID: <20111004164430.GH19130@kvack.org>
+References: <1317653420-21404-3-git-send-email-mason@myri.com> <20111003215547.GA3107@myri.com> <20111004144215.GE19130@kvack.org> <1317743522.29415.225.camel@pasglop> <20111004155953.GG19130@kvack.org> <1317745197.29415.244.camel@pasglop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317745197.29415.244.camel@pasglop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides a soc_ops struct which provides hooks for SoC functionality
-which doesn't fit well into other places.
+On Tue, Oct 04, 2011 at 06:19:57PM +0200, Benjamin Herrenschmidt wrote:
+> On Tue, 2011-10-04 at 11:59 -0400, Benjamin LaHaise wrote:
+...
+> > My concern, which I forgot to put in the original message is that allowing 
+> > a bridge to have a large MPS than the endpoints will result in things 
+> > failing when a large write occurs.  Aiui, we don't restrict the size of 
+> > memcpy_toio() type functions, and there are PCIe devices which do not 
+> > perform DMA.  Clamping MPS on the bridge is a requirement of correctness.
+> 
+> Yes, this is a problem if your bridge can generate large writes. Ours
+> can't so this is safe. Our bridges can't write combine beyond 128 bytes.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- arch/c6x/include/asm/soc.h |   35 +++++++++++++++++
- arch/c6x/kernel/soc.c      |   91 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 126 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/soc.h
- create mode 100644 arch/c6x/kernel/soc.c
+> Originally, I had that whole logic implemented in arch specific code,
+> but when Jon started fiddling with MPS/MRRS in generic code, I suggested
+> to have the generic code have the option of doing what I want. Maybe we
+> should remove it completely as a user-visible option and leave it back
+> to platform code only. In any case, it isn't the default.
 
-diff --git a/arch/c6x/include/asm/soc.h b/arch/c6x/include/asm/soc.h
-new file mode 100644
-index 0000000..43f5015
---- /dev/null
-+++ b/arch/c6x/include/asm/soc.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Miscellaneous SoC-specific hooks.
-+ *
-+ * Copyright (C) 2011 Texas Instruments Incorporated
-+ *
-+ * Author: Mark Salter <msalter@redhat.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2. This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
-+#ifndef _ASM_C6X_SOC_H
-+#define _ASM_C6X_SOC_H
-+
-+struct soc_ops {
-+	/* Return active exception event or -1 if none */
-+	int		(*get_exception)(void);
-+
-+	/* Assert an event */
-+	void		(*assert_event)(unsigned int evt);
-+};
-+
-+extern struct soc_ops soc_ops;
-+
-+extern int soc_get_exception(void);
-+extern void soc_assert_event(unsigned int event);
-+extern int soc_mac_addr(unsigned int index, u8 *addr);
-+
-+/*
-+ * for mmio on SoC devices. regs are always same byte order as cpu.
-+ */
-+#define soc_readl(addr)    __raw_readl(addr)
-+#define soc_writel(b, addr) __raw_writel((b), (addr))
-+
-+#endif /* _ASM_C6X_SOC_H */
-diff --git a/arch/c6x/kernel/soc.c b/arch/c6x/kernel/soc.c
-new file mode 100644
-index 0000000..dd45bc3
---- /dev/null
-+++ b/arch/c6x/kernel/soc.c
-@@ -0,0 +1,91 @@
-+/*
-+ *  Miscellaneous SoC-specific hooks.
-+ *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#include <linux/module.h>
-+#include <linux/ctype.h>
-+#include <linux/etherdevice.h>
-+#include <asm/system.h>
-+#include <asm/setup.h>
-+#include <asm/soc.h>
-+
-+struct soc_ops soc_ops;
-+
-+int soc_get_exception(void)
-+{
-+	if (!soc_ops.get_exception)
-+		return -1;
-+	return soc_ops.get_exception();
-+}
-+
-+void soc_assert_event(unsigned int evt)
-+{
-+	if (soc_ops.assert_event)
-+		soc_ops.assert_event(evt);
-+}
-+
-+static u8 cmdline_mac[6];
-+
-+static int __init get_mac_addr_from_cmdline(char *str)
-+{
-+	int count, i, val;
-+
-+	for (count = 0; count < 6 && *str; count++, str += 3) {
-+		if (!isxdigit(str[0]) || !isxdigit(str[1]))
-+			return 0;
-+		if (str[2] != ((count < 5) ? ':' : '\0'))
-+			return 0;
-+
-+		for (i = 0, val = 0; i < 2; i++) {
-+			val = val << 4;
-+			val |= isdigit(str[i]) ?
-+				str[i] - '0' : toupper(str[i]) - 'A' + 10;
-+		}
-+		cmdline_mac[count] = val;
-+	}
-+	return 1;
-+}
-+__setup("emac_addr=", get_mac_addr_from_cmdline);
-+
-+/*
-+ * Setup the MAC address for SoC ethernet devices.
-+ *
-+ * Before calling this function, the ethernet driver will have
-+ * initialized the addr with local-mac-address from the device
-+ * tree (if found). Allow command line to override, but not
-+ * the fused address.
-+ */
-+int soc_mac_addr(unsigned int index, u8 *addr)
-+{
-+	int i, have_dt_mac = 0, have_cmdline_mac = 0, have_fuse_mac = 0;
-+
-+	for (i = 0; i < 6; i++) {
-+		if (cmdline_mac[i])
-+			have_cmdline_mac = 1;
-+		if (c6x_fuse_mac[i])
-+			have_fuse_mac = 1;
-+		if (addr[i])
-+			have_dt_mac = 1;
-+	}
-+
-+	/* cmdline overrides all */
-+	if (have_cmdline_mac)
-+		memcpy(addr, cmdline_mac, 6);
-+	else if (!have_dt_mac) {
-+		if (have_fuse_mac)
-+			memcpy(addr, c6x_fuse_mac, 6);
-+		else
-+			random_ether_addr(addr);
-+	}
-+
-+	/* adjust for specific EMAC device */
-+	addr[5] += index * c6x_num_cores;
-+	return 1;
-+}
-+EXPORT_SYMBOL_GPL(soc_mac_addr);
--- 
-1.7.6.2
+Ah, I see now.  Yes, if that can be put into arch specific code, it makes 
+far more sense since things will work correctly assuming the bridge also 
+limits read completions with data to 128 bytes?
 
+> Our performance guys say that between 128 and 512 or 2048 which is what
+> we face in some cases here, it's worth it. I haven't yet had a chance to
+> verify by myself.
+
+Just to give you an idea of the problems with generating small read 
+read requests: the on-the-wire cost of sending a 1500 byte ethernet packet 
+with 128 byte read requests is the difference between 1x 12-16 byte TLP 
+on the transmit link of the endpoint vs 12x 12-16 byte TLPs (the overhead 
+for a TLP is at least 8 bytes of header and CRC iirc, maybe more for the 
+DLLP flag bytes) or going from 20-24 bytes per tx packet to 256-288 bytes 
+of read requests.  This won't matter much for devices with lots of excess 
+bandwidth, but for PCIe 1x devices (ie common gige chipsets) that really 
+hurts.  It also means that only 2 or 3 packets can have read requests 
+outstanding with the default limit of 32 tags, but hopefully the device 
+supports extended tags.
+
+		-ben
