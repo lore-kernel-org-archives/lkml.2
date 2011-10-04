@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1JDCaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 22:30:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42969 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab1JDCaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 22:30:15 -0400
-Message-ID: <4E8A6FB3.4090909@gmail.com>
-Date: Mon, 03 Oct 2011 21:30:11 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753646Ab1JDCjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 22:39:51 -0400
+Received: from void.printf.net ([89.145.121.20]:52322 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729Ab1JDCju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 22:39:50 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, adrian.hunter@intel.com,
+        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
+        sebras@gmail.com, Ulf.Hansson@stericsson.com,
+        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
+        johan.rudholm@stericsson.com
+Subject: Re: [PATCH v8] mmc : general purpose partition support.
+References: <1317641240-15791-1-git-send-email-linkinjeon@gmail.com>
+Date: Mon, 03 Oct 2011 22:39:22 -0400
+In-Reply-To: <1317641240-15791-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Mon, 3 Oct 2011 20:27:20 +0900")
+Message-ID: <m2vcs5lbtx.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Jeff Garzik <jgarzik@pobox.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] ahci: add DT binding for Calxeda AHCI controller
-References: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 10:10 AM, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Add devicetree match table to ahci platform driver for Calxeda Highbank
-> AHCI controller.
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Jeff Garzik <jgarzik@pobox.com>
-> Cc: linux-ide@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> ---
+Hi,
 
-Any comments on this?
+On Mon, Oct 03 2011, Namjae Jeon wrote:
+> It allows gerneral purpose partitions in MMC Device.
+> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
+> After patching, we can see general purpose partitions like this.
+>> cat /proc/partitions
+>           179 0 847872 mmcblk0
+>           179 192 4096 mmcblk0gp3
+>           179 160 4096 mmcblk0gp2
+>           179 128 4096 mmcblk0gp1
+>           179 96  1052672 mmcblk0gp0
+>           179 64  1024 mmcblk0boot1
+>           179 32  1024 mmcblk0boot0
+>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 
-Rob
+v8 doesn't apply against mmc-next, please resend.  mmc-next has moved to:
+   git://dev.laptop.org/users/cjb/mmc mmc-next
 
->  .../devicetree/bindings/ata/calxeda-sata.txt       |   17 +++++++++++++++++
->  drivers/ata/ahci_platform.c                        |    7 +++++++
->  2 files changed, 24 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/ata/calxeda-sata.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/ata/calxeda-sata.txt b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
-> new file mode 100644
-> index 0000000..79caa56
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
-> @@ -0,0 +1,17 @@
-> +* Calxeda SATA Controller
-> +
-> +SATA nodes are defined to describe on-chip Serial ATA controllers.
-> +Each SATA controller should have its own node.
-> +
-> +Required properties:
-> +- compatible        : compatible list, contains "calxeda,hb-ahci"
-> +- interrupts        : <interrupt mapping for SATA IRQ>
-> +- reg               : <registers mapping>
-> +
-> +Example:
-> +        sata@ffe08000 {
-> +		compatible = "calxeda,hb-ahci";
-> +                reg = <0xffe08000 0x1000>;
-> +                interrupts = <115>;
-> +        };
-> +
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index 6fef1fa..9bfc970 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -171,11 +171,18 @@ static int __devexit ahci_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +static const struct of_device_id ahci_of_match[] = {
-> +	{ .compatible = "calxeda,hb-ahci", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, ahci_of_match);
-> +
->  static struct platform_driver ahci_driver = {
->  	.remove = __devexit_p(ahci_remove),
->  	.driver = {
->  		.name = "ahci",
->  		.owner = THIS_MODULE,
-> +		.of_match_table = ahci_of_match,
->  	},
->  };
->  
+(Thanks for reviewing, Andrei -- please send another ACK after v9 is
+submitted, if you don't mind.)
 
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
