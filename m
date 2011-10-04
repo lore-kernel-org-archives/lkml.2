@@ -1,34 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab1JDWOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 18:14:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47186 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab1JDWOr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 18:14:47 -0400
-Subject: Re: Quick review of -rt RCU-related patches
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.02.1110042322450.18778@ionos>
-References: <20111004174755.GA4762@linux.vnet.ibm.com>
-	 <alpine.LFD.2.02.1110042322450.18778@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 05 Oct 2011 00:13:18 +0200
-Message-ID: <1317766398.32543.39.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3- 
+	id S933535Ab1JDW20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 18:28:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48045 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933180Ab1JDW2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 18:28:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Barry Song <21cnbao@gmail.com>
+Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file
+Date: Wed, 5 Oct 2011 00:30:43 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: Valdis.Kletnieks@vt.edu, Barry Song <Barry.Song@csr.com>,
+        frank.hofmann@tomtom.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com, pavel@ucw.cz,
+        Barry Song <baohua.song@csr.com>, linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com> <59872.1317299401@turing-police.cc.vt.edu> <CAGsJ_4znTLmjd_qhgru_aOZPMEZc=dyXEQTqdsVGKr-GaryQsQ@mail.gmail.com>
+In-Reply-To: <CAGsJ_4znTLmjd_qhgru_aOZPMEZc=dyXEQTqdsVGKr-GaryQsQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110050030.43953.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-05 at 00:05 +0200, Thomas Gleixner wrote:
-> I consider rcu_bh a bandaid for the nasty implict semantics of BH
-> processing and I'm looking really forward to Peters analysis of the
-> modern cpu local BKL constructs at RTLWS. 
+On Thursday, September 29, 2011, Barry Song wrote:
+> hi Valdis,
+> 
+> 2011/9/29  <Valdis.Kletnieks@vt.edu>:
+> > On Thu, 29 Sep 2011 02:29:08 PDT, Barry Song said:
+> >
+> >> This patch adds resumewait kernel param just like rootwait so
+> >> that we have enough time to wait mmc ready. The differene is
+> >> here we wait for resume partition but rootwait waits for rootfs
+> >> partition.
+> >
+> > OK, seems a reasonable idea...
+> >
+> >> kernel/power/hibernate.c |   16 ++++++++++++++++
+> >> 1 files changed, 16 insertions(+), 0 deletions(-)
+> >
+> > We have a __setup() parameter, this patch appears to be missing
+> > a hunk for Documentation/kernel-parameters.txt?
+> >
+> > Fix that issue, and you can stick this on there:
+> >
+> > Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> 
+> thanks. i'll add the document in v2.
 
-You and me both! Oh wait.. :-)
+I can't find the v2.  Have you posted it already?
+
+Rafael
