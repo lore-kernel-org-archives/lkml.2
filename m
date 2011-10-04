@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab1JDHOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:14:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53195 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027Ab1JDHO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:14:29 -0400
-Message-ID: <4E8AB22E.2080007@parallels.com>
-Date: Tue, 4 Oct 2011 11:13:50 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754747Ab1JDHPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:15:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43598 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab1JDHPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 03:15:12 -0400
+Date: Tue, 4 Oct 2011 00:15:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <4E88B5E0.6080503@linux.vnet.ibm.com>
+ <20111002195023.GC31799@mtj.dyndns.org>
+ <4E88C3D4.2020300@linux.vnet.ibm.com>
+ <20111003004051.GD31799@mtj.dyndns.org>
+ <4E894D75.808@linux.vnet.ibm.com>
+ <20111003084754.GB4411@liondog.tnic>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 3/8] foundations of per-cgroup memory pressure controlling.
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-4-git-send-email-glommer@parallels.com> <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003084754.GB4411@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2011 04:57 AM, KAMEZAWA Hiroyuki wrote:
-> On Mon,  3 Oct 2011 14:18:38 +0400
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> This patch converts struct sock fields memory_pressure,
->> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
->> to function pointers, receiving a struct mem_cgroup parameter.
->>
->> enter_memory_pressure is kept the same, since all its callers
->> have socket a context, and the kmem_cgroup can be derived from
->> the socket itself.
->>
->> To keep things working, the patch convert all users of those fields
->> to use acessor functions.
->>
->> In my benchmarks I didn't see a significant performance difference
->> with this patch applied compared to a baseline (around 1 % diff, thus
->> inside error margin).
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: David S. Miller<davem@davemloft.net>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> CC: Eric W. Biederman<ebiederm@xmission.com>
->
-> A nitpick.
->
->
->>   #ifdef CONFIG_INET
->>   struct sock;
->> +struct proto;
->>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->>   void sock_update_memcg(struct sock *sk);
->>   void sock_release_memcg(struct sock *sk);
->> -
->> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
->> +			  int amt, int *parent_failure);
->> +void memcg_sock_mem_free(struct mem_cgroup *mem, struct proto *prot, int amt);
->> +void memcg_sockets_allocated_dec(struct mem_cgroup *mem, struct proto *prot);
->> +void memcg_sockets_allocated_inc(struct mem_cgroup *mem, struct proto *prot);
->>   #else
->> +/* memcontrol includes sockets.h, that includes memcontrol.h ... */
->> +static inline void memcg_sock_mem_alloc(struct mem_cgroup *mem,
->> +					struct proto *prot, int amt,
->> +					int *parent_failure)
->> +{
->> +}
->
-> In these days, at naming memory cgroup pointers, we use "memcg" instead of
-> "mem". So, could you use "memcg" for represeinting memory cgroup ?
->
->
->> +
->> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
->> +			  int amt, int *parent_failure)
->> +{
->> +	mem = parent_mem_cgroup(mem);
->> +	for (; mem != NULL; mem = parent_mem_cgroup(mem)) {
->> +		long alloc;
->> +		long *prot_mem = prot->prot_mem(mem);
->> +		/*
->> +		 * Large nestings are not the common case, and stopping in the
->> +		 * middle would be complicated enough, that we bill it all the
->> +		 * way through the root, and if needed, unbill everything later
->> +		 */
->> +		alloc = atomic_long_add_return(amt,
->> +					       prot->memory_allocated(mem));
->> +		*parent_failure |= (alloc>  prot_mem[2]);
->> +	}
->> +}
->> +EXPORT_SYMBOL(memcg_sock_mem_alloc);
->
-> Hmm. why not using res_counter ? for reusing 'unbill' code ?
->
-> Thanks,
-> -Kame
->
-Well, besides the cost, we'd have atomic_t for !cgroups, and res_counter 
-for cgroups. I think there is value in keeping them the same.
+Hello,
+
+On Mon, Oct 03, 2011 at 10:47:54AM +0200, Borislav Petkov wrote:
+> I think your patch makes sense because re-loading the ucode during
+> a suspend/resume cycle is unnecessary. If one wants to update the
+> microcode, it should happen later when the box is resumed again: you
+> simply put the new microcode image in /lib/firmware/... and on AMD
+> unload/reload the microcode module and on Intel you do either that or
+> use the deprecated microcode_ctl.
+
+I don't think it changes anything for suspend/resume cycles.  They're
+different hooks.  The proposed patch changes actual cpu hotplug paths.
+
+> However, let me test it on a couple of AMD boxes tomorrow to verify.
+> 
+> > At the moment I can't think of any clean solution that solves both these problems - 
+> >   a. The problem of requesting microcode from userspace when it is frozen (which can be individually
+> >      solved by my patch).
+> >   b. The possible need for a revised microcode during CPU online (due to the remote usecase of 
+> >      physically plugging-out and plugging-in a new CPU), when the tasks are frozen.
+> 
+> Yeah, let me remind you guys, we're talking about x86 CPUs here. AFAICT,
+> I don't think that physical unplug is supported by any vendor yet but
+> I'd welcome surprises :-).
+
+I recall hearing about someone experimenting with actual hotplug a
+while ago.  Dunno whether that was production or not tho.  Even if
+not, given the continuing penetration of x86 into highend, I don't
+think it would take too long to see physical CPU hotplug in
+production.  Also, it just is a poor engineering.
+
+Thanks.
+
+--
+tejun
