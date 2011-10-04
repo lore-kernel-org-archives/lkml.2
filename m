@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab1JDFEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 01:04:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18182 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab1JDFEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 01:04:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,483,1312182000"; 
-   d="scan'208";a="74172753"
-Subject: Re: [PATCH] ASoC: Remove needless  codec->dapm.bias_level
- assignment to SND_SOC_BIAS_OFF
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-In-Reply-To: <20111003131832.GL3731@opensource.wolfsonmicro.com>
-References: <1317644236.2724.1.camel@phoenix>
-	 <20111003131832.GL3731@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 10:27:43 +0530
-Message-ID: <1317704263.1573.2206.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753998Ab1JDFLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 01:11:52 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:50549 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886Ab1JDFLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 01:11:51 -0400
+Date: Tue, 4 Oct 2011 01:11:41 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111004051141.GR6684@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+	Jiri Kosina <jkosina@suse.cz>
+References: <4E8655CD.90107@zytor.com>
+ <alpine.LRH.2.00.1110031316260.14853@twin.jikos.cz>
+ <20111003225651.GA10257@leaf>
+ <20111004044914.GP6684@thunk.org>
+ <4E8A910D.6020107@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E8A910D.6020107@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 14:18 +0100, Mark Brown wrote:
-> On Mon, Oct 03, 2011 at 08:17:16PM +0800, Axel Lin wrote:
-> > This assignment is done by the snd_soc_register_codec so there is no need
-> > to redo it in probe function of a codec driver.
-> 
-> Axel, please stop CCing Harsha Priya on patches - you should've
-> noticed that his address bounces by now.
-Hmmm, i can send a patch to update her email id. But for now i dont
-think she will work on kernel
+On Mon, Oct 03, 2011 at 09:52:29PM -0700, H. Peter Anvin wrote:
+> On 10/03/2011 09:49 PM, Ted Ts'o wrote:
+> > 
+> > Note that if your laptop allows incoming ssh connections, and you
+> > logged into master.kernel.org with ssh forwarding enabled, your laptop
+> > may not be safe.  So be very, very careful before you assume that your
+> > laptop is safe.  At least one kernel developer, after he got past the
+> > belief, "surely I could have never had my machine be compromised",
+> > looked carefully and found rootkits on his machines.
+> > 
+> By the way, I'm now pretty convinced that allowing inbound ssh on
+> laptops (which is the default on all the mainline Linux distros as far
+> as I know) is seriously broken... laptops get connected to *extremely*
+> insecure networks on just way too regular a basis.
 
--- 
-~Vinod
++1000
 
+I'll note though that at least some Linux distributions when
+customized by corporate security types tend to disable incoming ssh.
+If your company doesn't, it probably should... 
+
+... and it should definitely raise a firewall and disable NAT and
+incoming ssh if you're connected to the corporate VPN.  I once heard a
+story several years back when someone I knew was staying at a hotel in
+Beaverton, and connected to an open WiFi access point to get internet
+access.  Very shortly there afterwards, he realized he was connected
+behind the Intel corporate firewall, at which point he (not being an
+Intel employee, and conscious of the Business Conduct Guidelines that
+he was require to sign every year) disconnected as quickly as
+possible.
+
+Oops.  :-)
+
+						- Ted
