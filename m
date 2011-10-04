@@ -1,260 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1JDF41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 01:56:27 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:38236 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab1JDF40 (ORCPT
+	id S1753901Ab1JDF6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 01:58:42 -0400
+Received: from mga07.intel.com ([143.182.124.22]:42231 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751533Ab1JDF6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 01:56:26 -0400
-Date: Tue, 4 Oct 2011 06:56:17 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Keith Packard <keithp@keithp.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: i915 kmemleak report
-Message-ID: <20111004055616.GA17545@sucs.org>
+	Tue, 4 Oct 2011 01:58:40 -0400
+Date: Tue, 4 Oct 2011 08:58:28 +0300 (EEST)
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+X-X-Sender: jsakkine@jsakkine-mobl
+To: Casey Schaufler <casey@schaufler-ca.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Smack: domain transition protections (v2)
+In-Reply-To: <1317375975-13427-1-git-send-email-jarkko.sakkinen@intel.com>
+Message-ID: <alpine.DEB.2.02.1110040856570.2131@jsakkine-mobl>
+References: <1317375975-13427-1-git-send-email-jarkko.sakkinen@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I've been finding that kmemleak reports that i915 is leaking gem
-buffers (although it takes about 20 minutes before the supposed leaks
-occur).  The leaks normally occur in batches of 13 and seem to require
-chrome to be running looking at a page like google.com while a
-gnome-terminal is also present. It is important that the screensaver is
-postponed using something like
-watch "xdg-screensaver reset" .
 
-A batch of the leaks are below:
+On Fri, 30 Sep 2011, Jarkko Sakkinen wrote:
 
-unreferenced object 0xe9b1d640 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.634s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe9b1d780 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.634s)
-  hex dump (first 32 bytes):
-    00 00 00 00 40 d6 b1 e9 00 00 00 00 00 00 00 00  ....@...........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xeb0db000 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.634s)
-  hex dump (first 32 bytes):
-    00 00 00 00 80 d7 b1 e9 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d37b40 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.634s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 b0 0d eb 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d37780 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.654s)
-  hex dump (first 32 bytes):
-    00 00 00 00 40 7b d3 e3 00 00 00 00 00 00 00 00  ....@{..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d373c0 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740514 (age 4367.654s)
-  hex dump (first 32 bytes):
-    00 00 00 00 80 77 d3 e3 00 00 00 00 00 00 00 00  .....w..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d37640 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.653s)
-  hex dump (first 32 bytes):
-    00 00 00 00 c0 73 d3 e3 00 00 00 00 00 00 00 00  .....s..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d37a00 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.653s)
-  hex dump (first 32 bytes):
-    00 00 00 00 40 76 d3 e3 00 00 00 00 00 00 00 00  ....@v..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d378c0 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.653s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 7a d3 e3 00 00 00 00 00 00 00 00  .....z..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe3d37500 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.670s)
-  hex dump (first 32 bytes):
-    00 00 00 00 c0 78 d3 e3 00 00 00 00 00 00 00 00  .....x..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe363c3c0 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.670s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 75 d3 e3 00 00 00 00 00 00 00 00  .....u..........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xe363cc80 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294740515 (age 4367.670s)
-  hex dump (first 32 bytes):
-    00 00 00 00 c0 c3 63 e3 00 00 00 00 00 00 00 00  ......c.........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf14dc80 (size 148):
-  comm "Xorg", pid 1398, jiffies 4294753046 (age 4355.140s)
-  hex dump (first 32 bytes):
-    00 00 00 00 80 cc 63 e3 00 00 00 00 00 00 00 00  ......c.........
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<b0553b87>] kmemleak_alloc+0x27/0x50
-    [<b0196435>] kmem_cache_alloc+0xc5/0x180
-    [<b026b264>] idr_pre_get+0x54/0x80
-    [<b030324c>] drm_gem_handle_create+0x3c/0xd0
-    [<b03294f9>] i915_gem_create+0x49/0xa0
-    [<b0329578>] i915_gem_create_ioctl+0x28/0x40
-    [<b0301716>] drm_ioctl+0x1d6/0x470
-    [<b01aa8de>] do_vfs_ioctl+0x7e/0x5a0
-    [<b01aae39>] sys_ioctl+0x39/0x70
-    [<b055ff17>] sysenter_do_call+0x12/0x36
-    [<ffffffff>] 0xffffffff
+> Protections for domain transition:
+>
+> - BPRM unsafe flags
+> - Secureexec
+> - Clear unsafe personality bits.
+> - Clear parent death signal
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+> ---
+> security/smack/smack.h     |    2 +
+> security/smack/smack_lsm.c |   62 ++++++++++++++++++++++++++++++++++++--------
+> 2 files changed, 53 insertions(+), 11 deletions(-)
+>
+> diff --git a/security/smack/smack.h b/security/smack/smack.h
+> index 174d3be..d377099 100644
+> --- a/security/smack/smack.h
+> +++ b/security/smack/smack.h
+> @@ -60,12 +60,14 @@ struct inode_smack {
+> struct task_smack {
+> 	char			*smk_task;	/* label for access control */
+> 	char			*smk_forked;	/* label when forked */
+> +	int			smk_flags;	/* smack task flags */
+> 	struct list_head	smk_rules;	/* per task access rules */
+> 	struct mutex		smk_rules_lock;	/* lock for the rules */
+> };
+>
+> #define	SMK_INODE_INSTANT	0x01	/* inode is instantiated */
+> #define	SMK_INODE_TRANSMUTE	0x02	/* directory is transmuting */
+> +#define	SMK_TASK_TRANSITION	0x01	/* task needs secureexec mode */
+>
+> /*
+>  * A label access rule.
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 2e71c3f..78e0056 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -5,12 +5,13 @@
+>  *
+>  *  Authors:
+>  *	Casey Schaufler <casey@schaufler-ca.com>
+> - *	Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>
+> + *	Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+>  *
+>  *  Copyright (C) 2007 Casey Schaufler <casey@schaufler-ca.com>
+>  *  Copyright (C) 2009 Hewlett-Packard Development Company, L.P.
+>  *                Paul Moore <paul@paul-moore.com>
+>  *  Copyright (C) 2010 Nokia Corporation
+> + *  Copyright (C) 2011 Intel Corporation.
+>  *
+>  *	This program is free software; you can redistribute it and/or modify
+>  *	it under the terms of the GNU General Public License version 2,
+> @@ -441,11 +442,17 @@ static int smack_sb_umount(struct vfsmount *mnt, int flags)
+>  * BPRM hooks
+>  */
+>
+> +/**
+> + * smack_bprm_set_creds - Smack exec that handles the domain transfer.
+> + * @bprm: binprm for exec
+> + *
+> + * Returns 0 on success.
+> + */
+> static int smack_bprm_set_creds(struct linux_binprm *bprm)
+> {
+> -	struct task_smack *tsp = bprm->cred->security;
+> +	struct inode *inode = bprm->file->f_path.dentry->d_inode;
+> +	struct task_smack *bsp = bprm->cred->security;
+> 	struct inode_smack *isp;
+> -	struct dentry *dp;
+> 	int rc;
+>
+> 	rc = cap_bprm_set_creds(bprm);
+> @@ -455,20 +462,51 @@ static int smack_bprm_set_creds(struct linux_binprm *bprm)
+> 	if (bprm->cred_prepared)
+> 		return 0;
+>
+> -	if (bprm->file == NULL || bprm->file->f_dentry == NULL)
+> +	isp = inode->i_security;
+> +	if (isp->smk_task == NULL || isp->smk_task == bsp->smk_task)
+> 		return 0;
+>
+> -	dp = bprm->file->f_dentry;
+> +	if (bprm->unsafe)
+> +		return -EPERM;
+>
+> -	if (dp->d_inode == NULL)
+> -		return 0;
+> +	bsp->smk_task = isp->smk_task;
+> +	bsp->smk_flags = SMK_TASK_TRANSITION;
+> +	bprm->per_clear |= PER_CLEAR_ON_SETID;
+>
+> -	isp = dp->d_inode->i_security;
+> +	return 0;
+> +}
+> +
+> +/**
+> + * smack_bprm_committing_creds - Prepare to install the new credentials
+> + * from bprm.
+> + *
+> + * @bprm: binprm for exec
+> + */
+> +static void smack_bprm_committing_creds(struct linux_binprm *bprm)
+> +{
+> +	struct task_smack *bsp = bprm->cred->security;
+>
+> -	if (isp->smk_task != NULL)
+> -		tsp->smk_task = isp->smk_task;
+> +	if (!(bsp->smk_flags & SMK_TASK_TRANSITION))
+> +		return;
+>
+> -	return 0;
+> +	current->pdeath_signal = 0;
+> +}
+> +
+> +/**
+> + * smack_bprm_secureexec - Return the decision to use secureexec.
+> + * @bprm: binprm for exec
+> + *
+> + * Returns 0 on success.
+> + */
+> +static int smack_bprm_secureexec(struct linux_binprm *bprm)
+> +{
+> +	struct task_smack *tsp = current_security();
+> +	int ret = cap_bprm_secureexec(bprm);
+> +
+> +	if (!ret && (tsp->smk_flags & SMK_TASK_TRANSITION))
+> +		ret = 1;
+> +
+> +	return ret;
+> }
+>
+> /*
+> @@ -3452,6 +3490,8 @@ struct security_operations smack_ops = {
+> 	.sb_umount = 			smack_sb_umount,
+>
+> 	.bprm_set_creds =		smack_bprm_set_creds,
+> +	.bprm_committing_creds =	smack_bprm_committing_creds,
+> +	.bprm_secureexec =		smack_bprm_secureexec,
+>
+> 	.inode_alloc_security = 	smack_inode_alloc_security,
+> 	.inode_free_security = 		smack_inode_free_security,
+> -- 
+> 1.7.4.1
+>
+>
 
--- 
-Sitsofe | http://sucs.org/~sits/
+I'll revise this patch once more. The smk_flags field
+in struct task_smack is not needed for this and neither
+is SMK_TASK_TRANSITION. smk_task != smk_forked is the
+same condition.
+
+/Jarkko
