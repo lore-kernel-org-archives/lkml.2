@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933827Ab1JDVOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:14:48 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:46324 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933642Ab1JDVOs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:14:48 -0400
-Date: Tue, 4 Oct 2011 17:14:46 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kmemleak: Report previously found leaks even after
- an error
-Message-ID: <20111004211446.GA19503@elliptictech.com>
-References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
- <20110929110239.10660.95998.stgit@e102109-lin.cambridge.arm.com>
- <20111004174548.GA16209@elliptictech.com>
- <CAHkRjk58zQF4ZxvH4Ex-sUpe9Wmhvt0xo5Juffq=DrpySE556Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAHkRjk58zQF4ZxvH4Ex-sUpe9Wmhvt0xo5Juffq=DrpySE556Q@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933156Ab1JDVSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:18:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37277 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932558Ab1JDVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 17:18:54 -0400
+Message-ID: <1317763133.20800.4.camel@Joe-Laptop>
+Subject: Re: [RFCv3][PATCH 1/4] replace string_get_size() arrays
+From: Joe Perches <joe@perches.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        James.Bottomley@HansenPartnership.com, hpa@zytor.com
+Date: Tue, 04 Oct 2011 14:18:53 -0700
+In-Reply-To: <1317761466.7842.41.camel@nimitz>
+References: <20111001000856.DD623081@kernel>
+	 <1317497626.22613.1.camel@Joe-Laptop> <1317756942.7842.38.camel@nimitz>
+	 <1317760957.18210.15.camel@Joe-Laptop> <1317761466.7842.41.camel@nimitz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-04 21:50 +0100, Catalin Marinas wrote:
-> On 4 October 2011 18:45, Nick Bowler <nbowler@elliptictech.com> wrote:
-> > Cool, I'll try this out.  Kmemleak rarely stays alive for more than a
-> > few days on my desktop before shutting itself down due to an allocation
-> > failure, so this should be really handy.
+On Tue, 2011-10-04 at 13:51 -0700, Dave Hansen wrote:
+> On Tue, 2011-10-04 at 13:42 -0700, Joe Perches wrote:
+> > > Right, but we're only handling u64.
+> > So the declaration should be:
+> >         static const char byte_units[] = " KMGTPE";
+> I guess that's worth a comment.  But that first character doesn't get
+> used.  There were two alternatives:
+> 	static const char byte_units[] = "_KMGTPE";
+
+or
+	static const char byte_units[] = { 0, 'K', 'M', 'G', 'T', 'P', 'E' };
+
+and use ARRAY_SIZE(byte_units) not strlen(byte_units)
+for array size maximum.
+
+> or something along the lines of:
+> +	static const char byte_units[] = "KMGTPE";
+> ...
+> +	index--;
+> +       /* index=-1 is plain 'B' with no other unit */
+> +       if (index >= 0) {
 > 
-> You can have a look at /proc/slabinfo and meminfo and see if there are
-> any really big leaks. In general the kmemleak objects number is higher
-> than the sum of all the other slab objects (but I haven't done any
-> statistics). Hopefully kmemleak doesn't leak memory :) (I should add
-> some simple checks though).
+> We don't ever _actually_ look at the space (or underscore).  I figured
+> the _ was nicer since it would be _obvious_ if it ever got printed out
+> somehow.  
 
-I don't think the failures that cause kmemleak to shut down in my case
-are actually caused by a memory leak.  The machine is rather old and
-has only 1G of RAM.  I think kmemleak is just failing to allocate during
-a period of real memory pressure.
+shrug.  It's all the same stuff.
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+cheers, Joe
+
