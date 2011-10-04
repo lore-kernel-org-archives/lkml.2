@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1JDI4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 04:56:31 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45005 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755120Ab1JDI4a (ORCPT
+	id S1755393Ab1JDJFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 05:05:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56158 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755199Ab1JDJFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 04:56:30 -0400
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20111003131610.GA26823@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
-	 <20110930165206.GA22048@redhat.com>
-	 <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20111003131610.GA26823@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 09:56:17 +0100
-Message-ID: <1317718577.3375.103.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Oct 2011 05:05:01 -0400
+Date: Tue, 4 Oct 2011 10:04:46 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huajun Li <huajun.li.lee@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
+Message-ID: <20111004090446.GA10071@e102109-lin.cambridge.arm.com>
+References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+ <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
+ <20110929192818.GB10425@mtj.dyndns.org>
+ <20111003152126.GM18195@e102109-lin.cambridge.arm.com>
+ <20111004075915.GE15637@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004075915.GE15637@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 15:16 +0200, Oleg Nesterov wrote:
-> Why do we have? Usually SIGCONT is ignored. But this doesn't matter,
-> SIGCONT acts at the sending time.
+On Tue, Oct 04, 2011 at 08:59:15AM +0100, Tejun Heo wrote:
+> On Mon, Oct 03, 2011 at 04:21:26PM +0100, Catalin Marinas wrote:
+> > The updated patch below adds specific kmemleak API for percpu pointers
+> > so that it only logs one call per allocation rather than the number of
+> > possible cpus (could be split in two, though the patch is relatively
+> > simple):
 > 
-> If SIGCONT is sent - the process must not stop. Since we drop the lock
-> we can't guarantee this.
+> The percpu part looks fine to me but I don't know how kmemleak works
+> to judge whether the kmemleak part is okay or not.  This just avoids
+> false positives from slab and would still require bumping up the early
+> log memory as # of cpus increases, right?
 
-OK, I see, thanks.
+No, there is only one kmemleak call for each __percpu pointer (to the
+specific kmemleak_*_percpu function). The kmemleak expands the percpu
+pointer into corresponding blocks for each cpu but the early log only
+stores a single call.
 
-> > > May be do_signal_stop() does something special? At first flance it doesn't.
-> > > But wait, it does while_each_thread() under ->ctrl_lock, why this is safe?
-> >
-> > Why is it not safe? What scenario are you thinking of where that isn't
-> > safe?
+> For percpu part,
 > 
-> This series doesn't add ->ctrl_lock into copy_process/__unhash_process
-> or I misread the patches. This means we can't trust >thread_group list.
+>   Acked-by: Tejun Heo <tj@kernel.org>
 
-*facepalm*
+Thanks.
 
-Arrrrggghh! This is why I complain about sighand->siglock protecting too
-much, I didn't even _REALISE_ it protected the ->thread_group list.
-Thanks for pointing that out, Oleg!
+> How do you want to route this?  If kmemleak patches get routed through
+> -mm, please feel free to send it to Andrew with Acked-by's added.
 
-> Even this is safe (say, we can rely on rcu), we can't calculate
-> ->group_stop_count correctly. In particular, without ->siglock we can
-> race with exit_signals() which sets PF_EXITING. Note that PF_EXITING
-> check in task_set_jobctl_pending() is important.
-
-Ah, I think it was these lines that confused me into thinking
-->ctrl_lock wasn't required around PF_EXITING,
-
-void exit_signals(struct task_struct *tsk)
-{
-        int group_stop = 0;
-        sigset_t unblocked;
-
-        if (thread_group_empty(tsk) || signal_group_exit(tsk->signal)) {
-                tsk->flags |= PF_EXITING;
-                return;
-        }
-
-But I guess that's safe because either we're the only thread in the
-group or the group is already going to exit?
+I'll push them to -next for now and (depending on how late the merge
+window opens) I can send a pull request to Linus.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Catalin
