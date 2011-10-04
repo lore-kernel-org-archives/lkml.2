@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1JDHdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:33:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53797 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab1JDHdn (ORCPT
+	id S1754914Ab1JDHfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:35:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7356 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab1JDHfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:33:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 16/26] ARM: pxa: CPU_PJ4 requires IWMMXT
-Date: Tue, 4 Oct 2011 09:33:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Jason Chagas <jason.chagas@marvell.com>, linux-kernel@vger.kernel.org
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <20295619.jOfPxmug8T@wuerfel> <CAMPhdO96WwmPVqVpM2Vpef3wSgfHEf-0tK5VewXn-EGMns2ubA@mail.gmail.com>
-In-Reply-To: <CAMPhdO96WwmPVqVpM2Vpef3wSgfHEf-0tK5VewXn-EGMns2ubA@mail.gmail.com>
+	Tue, 4 Oct 2011 03:35:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6488"; a="124414987"
+X-IronPort-AV: E=Sophos;i="4.68,482,1312182000"; 
+   d="scan'208";a="137522323"
+Message-ID: <4E8AB741.9030707@qca.qualcomm.com>
+Date: Tue, 4 Oct 2011 10:35:29 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the moduleh tree
+References: <20111004180333.44f741dc08063a918c9b581f@canb.auug.org.au>
+In-Reply-To: <20111004180333.44f741dc08063a918c9b581f@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110040933.38389.arnd@arndb.de>
-X-Provags-ID: V02:K0:B9JgxvGj3f0Y266MP61iKyOay8liL6dg0HAFuhoWeFj
- rD9ytk9fkdg9WjbrnijTXUw0/R7iL+DKPwskAROkVsCTbX+KnE
- PhHbiKR8oYcoHfs5li2RNO9khwRgBIgmNfEZr9I0/DM8Wbo8pQ
- waC2upuL4sj0JrMR9mViMYjDGGgJ3/pD0Bw4Q4BNgcWyFiCUca
- /Zp3q71Krc58vtMIgfvD3wIYQGqirHt2UxA9QFqM47qBiowe+E
- cOqtTO8Yfb28g3u9QL6/YxqYXjvXBjFLNzknDowNVN5fSrxIy3
- 1Qf7m2xTm5GmbJTuqwc1WTHLdXKLShNc53u/8AzyE3FMjOlz5G
- bF6J+indJvN56Efu6mr8=
+X-Originating-IP: [10.64.139.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 October 2011, Eric Miao wrote:
-> I think this is true for other xscale CPUs as well, so either we make
-> them unconditionally all at once, or we still leave an option here.
+On 10/04/2011 10:03 AM, Stephen Rothwell wrote:
+> After merging the moduleh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/net/wireless/ath/ath6kl/debug.c:237:11: error: 'THIS_MODULE' undeclared here (not in a function)
+> 
+> Caused by commit 9a7308341b71 ("ath6kl: silence "invalid rate" warning")
+> from the wireless tree interacting with the module.h split.
+> 
+> I added this patch:
 
-Do all xscale have iwmmxt?
+John&Paul, how do we handle this patch?
 
-> It actually looks quite odd to me that CPU_PJ4 is made special here,
-> what're the real broken builds errors?
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 4 Oct 2011 18:01:03 +1100
+> Subject: [PATCH] ath6kl: THIS_MODULES needs export.h
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/net/wireless/ath/ath6kl/debug.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
+> index ba3f23d..7879b53 100644
+> --- a/drivers/net/wireless/ath/ath6kl/debug.c
+> +++ b/drivers/net/wireless/ath/ath6kl/debug.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/circ_buf.h>
+>  #include <linux/fs.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/export.h>
+>  
+>  #include "debug.h"
+>  #include "target.h"
 
-Yes.
-
-I should probably have provided a longer description of the problem.
-The build error is in arch/arm/kernel/pj4-cp0.c, which calls
-iwmmxt_task_release unconditionally. The code is obviously
-copy-pasted from arch/arm/kernel/xscale-cp0.c, which does much
-of the same, but uses both run-time and compile-time conditionals
-for iwmmxt.
-
-	Arnd
+Kalle
