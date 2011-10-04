@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1JDIU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 04:20:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60635 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752367Ab1JDIUY (ORCPT
+	id S1755043Ab1JDI2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 04:28:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41879 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399Ab1JDI2V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 04:20:24 -0400
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-From: Matt Fleming <matt@console-pimps.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Mosberger-Tang <davidm@egauge.net>
-In-Reply-To: <alpine.LFD.2.02.1110032345050.1489@ionos>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
-	 <m21uuxirxi.fsf@firstfloor.org>
-	 <1317461738.3375.46.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CA+55aFyscb=PcUDrEUhFbH89+W-KYEKrqKHeNN3dqmZD1GF_Hw@mail.gmail.com>
-	 <1317656613.3375.78.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20111003163559.GA3957@redhat.com>
-	 <1317675520.3375.82.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <alpine.LFD.2.02.1110032345050.1489@ionos>
+	Tue, 4 Oct 2011 04:28:21 -0400
+Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        acme <acme@ghostprotocols.net>
+Date: Tue, 04 Oct 2011 10:27:19 +0200
+In-Reply-To: <20110923122014.GP6063@erda.amd.com>
+References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
+	 <1316778523.9084.17.camel@twins> <20110923122014.GP6063@erda.amd.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 09:20:17 +0100
-Message-ID: <1317716417.3375.91.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317716839.25926.12.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 00:13 +0200, Thomas Gleixner wrote:
+On Fri, 2011-09-23 at 14:20 +0200, Robert Richter wrote:
+> > The only thing I'm not quite sure on is the userspace bits, but those
+> > are in the future work section as well, but possibly Ingo has a strong
+> > opinion here, sadly he doesn't have email atm :/
 > 
-> After staring a bit at your patch I think that you need to tackle that
-> from a different angle.
+> With Lin's patch 'perf: Remove perf_event_attr::type check' we already
+> can sample with perf record.
 > 
-> The main nuisance of sighand->siglock is the exit race protection and
-> that's why we need to take it for evrything and some more.
+> I think we could extend perf report to parse also ibs samples. The
+> only thing we need for it should be the pmu name/type mapping in the
+> perf.data header and the pmu type in the sample. See my comment on
+> Stephane's patch '[PATCH] perf: make perf.data more self-descriptive
+> (v5)'. 
 
-Right.
-
-> In order to distangle the posix-(cpu)-timer and other stuffs
-> protection from that single lock, you need to introduce "independent"
-> locks which basically do the same dance as lock_task_sighand() does
-> and have to be taken in the exit() path in a well defined order before
-> manipulating task->sighand.
-
-Yeah, I've been trying to avoid changing the tsk->sighand stuff (you'll
-notice that lock_task_sighand() still works as before in this patch
-series) because when I've attempted it before it has always resulted in
-much more complicated code (and coming from me, that's saying
-something!).
-
-> That way you still cover the exit races, but you can break up the
-> locking for particular subsystems w/o the need of (much) nesting.
-
-Yeah, that approach seems interesting. I'll have a look at that, thanks!
-
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+OK, so Ingo really really wants to see a little more perf integration
+there. Acme, what's the state of Stephane's patch?
