@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab1JDW20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 18:28:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48045 "EHLO ogre.sisk.pl"
+	id S933576Ab1JDWad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 18:30:33 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48059 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933180Ab1JDW2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 18:28:25 -0400
+	id S933180Ab1JDWab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 18:30:31 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Barry Song <21cnbao@gmail.com>
-Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file
-Date: Wed, 5 Oct 2011 00:30:43 +0200
+Subject: Re: [PATCH v2] PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file
+Date: Wed, 5 Oct 2011 00:32:49 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
-Cc: Valdis.Kletnieks@vt.edu, Barry Song <Barry.Song@csr.com>,
-        frank.hofmann@tomtom.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com, pavel@ucw.cz,
-        Barry Song <baohua.song@csr.com>, linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org
-References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com> <59872.1317299401@turing-police.cc.vt.edu> <CAGsJ_4znTLmjd_qhgru_aOZPMEZc=dyXEQTqdsVGKr-GaryQsQ@mail.gmail.com>
-In-Reply-To: <CAGsJ_4znTLmjd_qhgru_aOZPMEZc=dyXEQTqdsVGKr-GaryQsQ@mail.gmail.com>
+Cc: pavel@ucw.cz, frank.hofmann@tomtom.com, linux-mmc@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Barry Song <baohua.song@csr.com>
+References: <1317309357-3871-1-git-send-email-21cnbao@gmail.com>
+In-Reply-To: <1317309357-3871-1-git-send-email-21cnbao@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110050030.43953.rjw@sisk.pl>
+Message-Id: <201110050032.49837.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday, September 29, 2011, Barry Song wrote:
-> hi Valdis,
+> From: Barry Song <baohua.song@csr.com>
 > 
-> 2011/9/29  <Valdis.Kletnieks@vt.edu>:
-> > On Thu, 29 Sep 2011 02:29:08 PDT, Barry Song said:
-> >
-> >> This patch adds resumewait kernel param just like rootwait so
-> >> that we have enough time to wait mmc ready. The differene is
-> >> here we wait for resume partition but rootwait waits for rootfs
-> >> partition.
-> >
-> > OK, seems a reasonable idea...
-> >
-> >> kernel/power/hibernate.c |   16 ++++++++++++++++
-> >> 1 files changed, 16 insertions(+), 0 deletions(-)
-> >
-> > We have a __setup() parameter, this patch appears to be missing
-> > a hunk for Documentation/kernel-parameters.txt?
-> >
-> > Fix that issue, and you can stick this on there:
-> >
-> > Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> Some devices like mmc are async detected very slow. For example,
+> drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
+> mmc partitions then add disk.
 > 
-> thanks. i'll add the document in v2.
+> we do have wait_for_device_probe and scsi_complete_async_scans
+> before calling swsusp_check, but it is not enough to wait mmc.
+> 
+> This patch adds resumewait kernel param just like rootwait so
+> that we have enough time to wait mmc ready. The differene is
+> here we wait for resume partition but rootwait waits for rootfs
+> partition.
+> 
+> This patch will make swsusp support many embedded products
+> without scsi devices but devices like mmc.
+> 
+> This was tested on one ARM platform with Frank Hofmann's patch.
+> 
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
-I can't find the v2.  Have you posted it already?
+Sorry, I couldn't find the patch previously.
+
+I only have one question.  Namely, are there any systems that would
+use resumewait and wouldn't use rootwait?
 
 Rafael
+
+
+> ---
+>  -v2:
+>  add document for the resumewait kernel parameter
+> 
+>  Documentation/kernel-parameters.txt |    4 ++++
+>  kernel/power/hibernate.c            |   16 ++++++++++++++++
+>  2 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 614d038..2aed0d2 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2237,6 +2237,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			in <PAGE_SIZE> units (needed only for swap files).
+>  			See  Documentation/power/swsusp-and-swap-files.txt
+>  
+> +	resumewait	[HIBERNATION] Wait (indefinitely) for resume device to show up.
+> +			Useful for devices that are detected asynchronously
+> +			(e.g. USB and MMC devices).
+> +
+>  	hibernate=	[HIBERNATION]
+>  		noresume	Don't check if there's a hibernation image
+>  				present during boot.
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 8f7b1db..9f4b4f3 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/reboot.h>
+>  #include <linux/string.h>
+>  #include <linux/device.h>
+> +#include <linux/async.h>
+>  #include <linux/kmod.h>
+>  #include <linux/delay.h>
+>  #include <linux/fs.h>
+> @@ -31,6 +32,7 @@
+>  
+>  static int nocompress = 0;
+>  static int noresume = 0;
+> +static int resume_wait = 0;
+>  static char resume_file[256] = CONFIG_PM_STD_PARTITION;
+>  dev_t swsusp_resume_device;
+>  sector_t swsusp_resume_block;
+> @@ -732,6 +734,13 @@ static int software_resume(void)
+>  		 * to wait for this to finish.
+>  		 */
+>  		wait_for_device_probe();
+> +
+> +		if (resume_wait) {
+> +			while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
+> +				msleep(10);
+> +			async_synchronize_full();
+> +		}
+> +
+>  		/*
+>  		 * We can't depend on SCSI devices being available after loading
+>  		 * one of their modules until scsi_complete_async_scans() is
+> @@ -1060,7 +1069,14 @@ static int __init noresume_setup(char *str)
+>  	return 1;
+>  }
+>  
+> +static int __init resumewait_setup(char *str)
+> +{
+> +	resume_wait = 1;
+> +	return 1;
+> +}
+> +
+>  __setup("noresume", noresume_setup);
+>  __setup("resume_offset=", resume_offset_setup);
+>  __setup("resume=", resume_setup);
+>  __setup("hibernate=", hibernate_setup);
+> +__setup("resumewait", resumewait_setup);
+> 
+
