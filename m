@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933835Ab1JDXQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:16:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35257 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933299Ab1JDXQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:16:04 -0400
-Subject: [PATCH] ASoC: Remove impossible case from wm8994_hw_params
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Oct 2011 07:15:51 +0800
-Message-ID: <1317770151.2547.2.camel@phoenix>
+	id S933805Ab1JDXSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 19:18:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25702 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933299Ab1JDXSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 19:18:04 -0400
+Date: Tue, 4 Oct 2011 19:17:30 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111004231730.GB17089@redhat.com>
+References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi> <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi> <34045.1317760188@turing-police.cc.vt.edu> <20111004223932.GA3460@localhost.pp.htv.fi>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <20111004223932.GA3460@localhost.pp.htv.fi>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We set hw_params callback for wm8994_aif3_dai_ops to wm8994_aif3_hw_params.
-Thus no need to check wm8994-aif3 in wm8994_hw_params.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8994.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index d5b69c0..94a8db2 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2210,7 +2210,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			    struct snd_soc_dai *dai)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	struct wm8994 *control = codec->control_data;
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
- 	int aif1_reg;
- 	int aif2_reg;
-@@ -2253,14 +2252,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			dev_dbg(codec->dev, "AIF2 using split LRCLK\n");
- 		}
- 		break;
--	case 3:
--		switch (control->type) {
--		case WM8958:
--			aif1_reg = WM8958_AIF3_CONTROL_1;
--			break;
--		default:
--			return 0;
--		}
- 	default:
- 		return -EINVAL;
- 	}
--- 
-1.7.4.1
+Hi -
 
+On Wed, Oct 05, 2011 at 01:39:32AM +0300, Adrian Bunk wrote:
 
+> [...]  But the semantics of PGP key signing is that you certify that
+> you verified that a photo ID of that person matches the name on the
+> key.  [...]
 
+But that's begging the question.  The semantics are what you want them
+to be.  Some keysigning parties take this super seriously, and maybe
+with strangers there's some room for this.  But in the end, when *I*
+see a key with someone else's signature on it, there is no proof how
+rigorously they investigated the person.  The "reliable identity" part
+of the web of trust is only one hop deep.
+
+- FChE
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFOi5QKVZbdDOm/ZT0RAtSyAJ4qQB+YSo8Chu/S98f2V5eMAo9J5wCfZqfQ
+NRaSEYFkKoIZK9Zvv04k0RI=
+=D3n1
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
