@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933548Ab1JDTxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:53:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932910Ab1JDTxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:53:07 -0400
-Date: Tue, 4 Oct 2011 15:52:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
-Message-ID: <20111004195206.GG28306@redhat.com>
-References: <20111003134228.090592370@intel.com>
+	id S933557Ab1JDTzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:55:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38956 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933403Ab1JDTzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:55:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003134228.090592370@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [93.172.135.251]
+In-Reply-To: <87botwk4gw.fsf@ti.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+ <1316948337-7924-3-git-send-email-ohad@wizery.com> <87sjni9aql.fsf@ti.com>
+ <CAK=WgbZhz8LcAYZEY3qqRkX4E_wtspWp09Eq9G=5VdpoMMF1FQ@mail.gmail.com> <87botwk4gw.fsf@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 4 Oct 2011 21:54:44 +0200
+Message-ID: <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
+Subject: Re: [RFC 2/5] ARM: OMAP: omap_device: add a method to set iommu
+ private archdata
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Cousson Benoit <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 09:42:28PM +0800, Wu Fengguang wrote:
-> Hi,
-> 
-> This is the minimal IO-less balance_dirty_pages() changes that are expected to
-> be regression free (well, except for NFS).
-> 
->         git://github.com/fengguang/linux.git dirty-throttling-v12
-> 
-> Tests results will be posted in a separate email.
+On Tue, Oct 4, 2011 at 8:15 PM, Kevin Hilman <khilman@ti.com> wrote:
+> The approach is OK with me, but I'm a bit torn about whether or not to
+> merge this since the need for this should go away when converting to DT.
 
-Looks like we are solving two problems.
+I guess it will still take some time until our boards are fully
+functional with DT, so I think we should regard this as an interim
+solution. Without this patch, a huge deal of code consolidation and
+generalization is gated (namely - generic iommu and dma api, and
+everything that depends on it, e.g. rpmsg/remoteproc).
 
-- IO less balance_dirty_pages()
-- Throttling based on ratelimit instead of based on number of dirty pages.
+> Is anyone working on IOMMU DT description?
 
-The second piece is the one which has complicated calculations for
-calculating the global/bdi rates and logic for stablizing the rates etc.
+Unless Benoit is, I'll happily pick this up.
 
-IIUC, second piece is primarily needed for better latencies for writers.
+> I guess if I do merge this, we can also clean this up significantly
+> after all devices are converted to DT.
 
-Will it make sense to break down this work in two patch series. First
-push IO less balance dirty pages and then all the complicated pieces
-of ratelimits.
+Sure.
 
-ratelimit allowed you to come up with sleep time for the process. Without
-that I think you shall have to fall back to what Jan Kar had done, 
-calculation based on number of pages.
+> Unless it has other dependencies on Benoit's further DT patches, you can
+> base this on my for_3.2/omap_device-2 branch which includes Benoit's
+> alloc changes.
 
-Thanks
-Vivek
+Ok, thanks a lot !
+Ohad.
