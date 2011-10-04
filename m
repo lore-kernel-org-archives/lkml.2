@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab1JDPso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:48:44 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1391 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab1JDPsn convert rfc822-to-8bit (ORCPT
+	id S1757387Ab1JDPtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:49:18 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33263 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab1JDPtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:48:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 04 Oct 2011 08:48:35 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>
-Date: Tue, 4 Oct 2011 08:48:33 -0700
-Subject: RE: linux-next: manual merge of the arm-soc tree with the arm tree
-Thread-Topic: linux-next: manual merge of the arm-soc tree with the arm tree
-Thread-Index: AcyCKcOtISl97dPdTKKaObf3kDiw4AAgtO3g
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6F74@HQMAIL01.nvidia.com>
-References: <20111004110831.a4d6d72a9b75a38265c9d6a1@canb.auug.org.au>
-In-Reply-To: <20111004110831.a4d6d72a9b75a38265c9d6a1@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Oct 2011 11:49:17 -0400
 MIME-Version: 1.0
+In-Reply-To: <1317742838.29415.217.camel@pasglop>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+ <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com> <1317742838.29415.217.camel@pasglop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 4 Oct 2011 08:48:55 -0700
+X-Google-Sender-Auth: o_A9GQ2FDA2xlhDZyHfjLGTPvQo
+Message-ID: <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote at Monday, October 03, 2011 6:09 PM:
-> Hi Arnd,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-tegra/board-seaboard.h between commit ea5abbd215b7 ("ARM:
-> 7101/1: arm/tegra: Replace <mach/gpio.h> with <mach/gpio-tegra.h>") from
-> the arm tree and commit a697e694aeb8 ("ARM: Tegra: Seaboard board updates
-> for audio") from the arm-soc tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+On Tue, Oct 4, 2011 at 8:40 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> Hopefully most of these patches only affect the "performance" setting
+> which is no longer the default.
+>
+> But yes, more reviews are always welcome.
 
-Both this and the similar fixup in the other email look fine to me.
+Well, bcrl argues that patches 1-2 of 3 are actively wrong.
 
-For my education, how does this get resolved; presumably neither Russell's
-tree nor arm-soc can take a patch that fixes this right now, so does one of
-the trees get rebased after the merge of the other but before being pulled
-by Linus, or does Linus do this merge fixup when he pulls?
+Quite frankly, my gut feel is that this late in the game, the only
+patch I should apply is 3/3, and even that I wonder about. But that
+seems to *really* disable all the games we do, and that all seem to be
+questionable.
 
-Thanks for cluing me in!
+Comments? Please? I'm going to do an -rc9 today, and after that I'll
+be travelling a lot, so..
 
--- 
-nvpublic
-
+                       Linus
