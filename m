@@ -1,268 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959Ab1JDXmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:42:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36887 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933838Ab1JDXl7 (ORCPT
+	id S933969Ab1JDXmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 19:42:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63332 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933838Ab1JDXmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:41:59 -0400
-Date: Tue, 4 Oct 2011 17:41:23 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
-        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 2/3] ARM: gic: add irq_domain support
-Message-ID: <20111004234123.GF3009@ponder.secretlab.ca>
-References: <1317410880-24828-1-git-send-email-robherring2@gmail.com>
- <1317410880-24828-3-git-send-email-robherring2@gmail.com>
+	Tue, 4 Oct 2011 19:42:44 -0400
+Date: Wed, 5 Oct 2011 01:42:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 53/55] rcu: Warn when srcu_read_lock() is
+ used in an extended quiescent state
+Message-ID: <20111004234237.GA15836@somewhere.redhat.com>
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <1315332049-2604-53-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111004210325.GA14165@somewhere.redhat.com>
+ <20111004234028.GK2223@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317410880-24828-3-git-send-email-robherring2@gmail.com>
+In-Reply-To: <20111004234028.GK2223@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 02:27:59PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, Oct 04, 2011 at 04:40:28PM -0700, Paul E. McKenney wrote:
+> On Tue, Oct 04, 2011 at 11:03:29PM +0200, Frederic Weisbecker wrote:
+> > On Tue, Sep 06, 2011 at 11:00:47AM -0700, Paul E. McKenney wrote:
+> > > Catch SRCU up to the other variants of RCU by making PROVE_RCU
+> > > complain if either srcu_read_lock() or srcu_read_lock_held() are
+> > > used from within dyntick-idle mode.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > ---
+> > >  include/linux/srcu.h |   25 +++++++++++++++----------
+> > >  1 files changed, 15 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> > > index 58971e8..fcbaee7 100644
+> > > --- a/include/linux/srcu.h
+> > > +++ b/include/linux/srcu.h
+> > > @@ -28,6 +28,7 @@
+> > >  #define _LINUX_SRCU_H
+> > >  
+> > >  #include <linux/mutex.h>
+> > > +#include <linux/rcupdate.h>
+> > >  
+> > >  struct srcu_struct_array {
+> > >  	int c[2];
+> > > @@ -60,18 +61,10 @@ int __init_srcu_struct(struct srcu_struct *sp, const char *name,
+> > >  	__init_srcu_struct((sp), #sp, &__srcu_key); \
+> > >  })
+> > >  
+> > > -# define srcu_read_acquire(sp) \
+> > > -		lock_acquire(&(sp)->dep_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+> > > -# define srcu_read_release(sp) \
+> > > -		lock_release(&(sp)->dep_map, 1, _THIS_IP_)
+> > > -
+> > >  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> > >  
+> > >  int init_srcu_struct(struct srcu_struct *sp);
+> > >  
+> > > -# define srcu_read_acquire(sp)  do { } while (0)
+> > > -# define srcu_read_release(sp)  do { } while (0)
+> > > -
+> > >  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+> > >  
+> > >  void cleanup_srcu_struct(struct srcu_struct *sp);
+> > > @@ -90,11 +83,23 @@ long srcu_batches_completed(struct srcu_struct *sp);
+> > >   * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
+> > >   * this assumes we are in an SRCU read-side critical section unless it can
+> > >   * prove otherwise.
+> > > + *
+> > > + * Note that if the CPU is in an extended quiescent state, for example,
+> > > + * if the CPU is in dyntick-idle mode, then rcu_read_lock_held() returns
+> > > + * false even if the CPU did an rcu_read_lock().  The reason for this is
+> > > + * that RCU ignores CPUs that are in extended quiescent states, so such
+> > > + * a CPU is effectively never in an RCU read-side critical section
+> > > + * regardless of what RCU primitives it invokes.  This state of affairs
+> > > + * is required -- RCU would otherwise need to periodically wake up
+> > > + * dyntick-idle CPUs, which would defeat the whole purpose of dyntick-idle
+> > > + * mode.
+> > >   */
+> > >  static inline int srcu_read_lock_held(struct srcu_struct *sp)
+> > >  {
+> > >  	if (debug_locks)
+> > >  		return lock_is_held(&sp->dep_map);
+> > > +	if (rcu_check_extended_qs())
+> > > +		return 0;
+> > 
+> > Just to warn you, While rebasing this, I'm also moving things around:
 > 
-> Convert the gic interrupt controller to use irq domains in preparation
-> for device-tree binding and MULTI_IRQ. This allows for translation between
-> GIC interrupt IDs and Linux irq numbers.
+> Thank you for letting me know, should not be a problem.
 > 
-> The meaning of irq_offset has changed. It now is just the number of skipped
-> GIC interrupt IDs for the controller. It will be 16 for primary GIC and 32
-> for secondary GICs.
+> > 	if (!debug_lock)
+> > 		return 1;
+> > 
+> > 	if (rcu_is_cpu_idle())
+> > 		return 0;
+> > 
+> > 	return lock_is_held(&sp->dep_map);
+> > 
+> > Otherwise we only do the check if lock debugging is disabled,
+> > which is not what we want I think.
 > 
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  arch/arm/common/Kconfig             |    1 +
->  arch/arm/common/gic.c               |   81 ++++++++++++++++++++---------------
->  arch/arm/include/asm/hardware/gic.h |    4 +-
->  3 files changed, 51 insertions(+), 35 deletions(-)
+> Would it make sense to use this order?
 > 
-> diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
-> index 4b71766..74df9ca 100644
-> --- a/arch/arm/common/Kconfig
-> +++ b/arch/arm/common/Kconfig
-> @@ -1,4 +1,5 @@
->  config ARM_GIC
-> +	select IRQ_DOMAIN
->  	bool
->  
->  config ARM_VIC
-> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-> index 8b5be72..6fbe1db 100644
-> --- a/arch/arm/common/gic.c
-> +++ b/arch/arm/common/gic.c
-> @@ -29,6 +29,7 @@
->  #include <linux/cpu_pm.h>
->  #include <linux/cpumask.h>
->  #include <linux/io.h>
-> +#include <linux/irqdomain.h>
->  
->  #include <asm/irq.h>
->  #include <asm/mach/irq.h>
-> @@ -72,8 +73,7 @@ static inline void __iomem *gic_cpu_base(struct irq_data *d)
->  
->  static inline unsigned int gic_irq(struct irq_data *d)
->  {
-> -	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
-> -	return d->irq - gic_data->irq_offset;
-> +	return d->hwirq;
->  }
+> 	if (rcu_is_cpu_idle())
+> 		return 0;
+> 
+> 	if (!debug_lock)
+> 		return 1;
+> 
+> 	return lock_is_held(&sp->dep_map);
+> 
+> Given the new approach, rcu_is_cpu_idle() works whether or not debug_lock
+> is enabled.
 
-Nit: Personally, I'd just drop gic_irq() entirely and reference
-d->hwirq directly.  However, it isn't enough to withhold my a-b.
+Yeah why not.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+I'm taking that approach.
 
->  
->  /*
-> @@ -81,7 +81,7 @@ static inline unsigned int gic_irq(struct irq_data *d)
->   */
->  static void gic_mask_irq(struct irq_data *d)
->  {
-> -	u32 mask = 1 << (d->irq % 32);
-> +	u32 mask = 1 << (gic_irq(d) % 32);
->  
->  	spin_lock(&irq_controller_lock);
->  	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_CLEAR + (gic_irq(d) / 32) * 4);
-> @@ -92,7 +92,7 @@ static void gic_mask_irq(struct irq_data *d)
->  
->  static void gic_unmask_irq(struct irq_data *d)
->  {
-> -	u32 mask = 1 << (d->irq % 32);
-> +	u32 mask = 1 << (gic_irq(d) % 32);
->  
->  	spin_lock(&irq_controller_lock);
->  	if (gic_arch_extn.irq_unmask)
-> @@ -173,7 +173,7 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
->  			    bool force)
->  {
->  	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
-> -	unsigned int shift = (d->irq % 4) * 8;
-> +	unsigned int shift = (gic_irq(d) % 4) * 8;
->  	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
->  	u32 val, mask, bit;
->  
-> @@ -224,7 +224,7 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
->  	if (gic_irq == 1023)
->  		goto out;
->  
-> -	cascade_irq = gic_irq + chip_data->irq_offset;
-> +	cascade_irq = irq_domain_to_irq(&chip_data->domain, gic_irq);
->  	if (unlikely(gic_irq < 32 || gic_irq > 1020 || cascade_irq >= NR_IRQS))
->  		do_bad_IRQ(cascade_irq, desc);
->  	else
-> @@ -256,10 +256,11 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
->  	irq_set_chained_handler(irq, gic_handle_cascade_irq);
->  }
->  
-> -static void __init gic_dist_init(struct gic_chip_data *gic,
-> -	unsigned int irq_start)
-> +static void __init gic_dist_init(struct gic_chip_data *gic)
->  {
-> -	unsigned int gic_irqs, irq_limit, i;
-> +	unsigned int gic_irqs = gic->gic_irqs;
-> +	struct irq_domain *domain = &gic->domain;
-> +	unsigned int i, irq;
->  	u32 cpumask;
->  	void __iomem *base = gic->dist_base;
->  	u32 cpu = 0;
-> @@ -275,17 +276,6 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
->  	writel_relaxed(0, base + GIC_DIST_CTRL);
->  
->  	/*
-> -	 * Find out how many interrupts are supported.
-> -	 * The GIC only supports up to 1020 interrupt sources.
-> -	 */
-> -	gic_irqs = readl_relaxed(base + GIC_DIST_CTR) & 0x1f;
-> -	gic_irqs = (gic_irqs + 1) * 32;
-> -	if (gic_irqs > 1020)
-> -		gic_irqs = 1020;
-> -
-> -	gic->gic_irqs = gic_irqs;
-> -
-> -	/*
->  	 * Set all global interrupts to be level triggered, active low.
->  	 */
->  	for (i = 32; i < gic_irqs; i += 16)
-> @@ -311,19 +301,12 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
->  		writel_relaxed(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
->  
->  	/*
-> -	 * Limit number of interrupts registered to the platform maximum
-> -	 */
-> -	irq_limit = gic->irq_offset + gic_irqs;
-> -	if (WARN_ON(irq_limit > NR_IRQS))
-> -		irq_limit = NR_IRQS;
-> -
-> -	/*
->  	 * Setup the Linux IRQ subsystem.
->  	 */
-> -	for (i = irq_start; i < irq_limit; i++) {
-> -		irq_set_chip_and_handler(i, &gic_chip, handle_fasteoi_irq);
-> -		irq_set_chip_data(i, gic);
-> -		set_irq_flags(i, IRQF_VALID | IRQF_PROBE);
-> +	irq_domain_for_each_irq(domain, i, irq) {
-> +		irq_set_chip_and_handler(irq, &gic_chip, handle_fasteoi_irq);
-> +		irq_set_chip_data(irq, gic);
-> +		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
->  	}
->  
->  	writel_relaxed(1, base + GIC_DIST_CTRL);
-> @@ -535,23 +518,53 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
->  }
->  #endif
->  
-> +const struct irq_domain_ops gic_irq_domain_ops = {
-> +};
-> +
->  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
->  	void __iomem *dist_base, void __iomem *cpu_base)
->  {
->  	struct gic_chip_data *gic;
-> +	struct irq_domain *domain;
-> +	int gic_irqs;
->  
->  	BUG_ON(gic_nr >= MAX_GIC_NR);
->  
->  	gic = &gic_data[gic_nr];
-> +	domain = &gic->domain;
->  	gic->dist_base = dist_base;
->  	gic->cpu_base = cpu_base;
-> -	gic->irq_offset = (irq_start - 1) & ~31;
->  
-> -	if (gic_nr == 0)
-> +	/*
-> +	 * For primary GICs, skip over SGIs.
-> +	 * For secondary GICs, skip over PPIs, too.
-> +	 */
-> +	if (gic_nr == 0) {
->  		gic_cpu_base_addr = cpu_base;
-> +		domain->hwirq_base = 16;
-> +		irq_start = (irq_start & ~31) + 16;
-> +	} else
-> +		domain->hwirq_base = 32;
-> +
-> +	/*
-> +	 * Find out how many interrupts are supported.
-> +	 * The GIC only supports up to 1020 interrupt sources.
-> +	 */
-> +	gic_irqs = readl_relaxed(dist_base + GIC_DIST_CTR) & 0x1f;
-> +	gic_irqs = (gic_irqs + 1) * 32;
-> +	if (gic_irqs > 1020)
-> +		gic_irqs = 1020;
-> +	gic->gic_irqs = gic_irqs;
-> +
-> +	domain->nr_irq = gic_irqs - domain->hwirq_base;
-> +	domain->irq_base = irq_alloc_descs(-1, irq_start, domain->nr_irq,
-> +					   numa_node_id());
-> +	domain->priv = gic;
-> +	domain->ops = &gic_irq_domain_ops;
-> +	irq_domain_add(domain);
->  
->  	gic_chip.flags |= gic_arch_extn.flags;
-> -	gic_dist_init(gic, irq_start);
-> +	gic_dist_init(gic);
->  	gic_cpu_init(gic);
->  	gic_pm_init(gic);
->  }
-> diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
-> index c562705..ade84a4 100644
-> --- a/arch/arm/include/asm/hardware/gic.h
-> +++ b/arch/arm/include/asm/hardware/gic.h
-> @@ -33,6 +33,8 @@
->  #define GIC_DIST_SOFTINT		0xf00
->  
->  #ifndef __ASSEMBLY__
-> +#include <linux/irqdomain.h>
-> +
->  extern void __iomem *gic_cpu_base_addr;
->  extern struct irq_chip gic_arch_extn;
->  
-> @@ -43,7 +45,6 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
->  void gic_enable_ppi(unsigned int);
->  
->  struct gic_chip_data {
-> -	unsigned int irq_offset;
->  	void __iomem *dist_base;
->  	void __iomem *cpu_base;
->  #ifdef CONFIG_CPU_PM
-> @@ -53,6 +54,7 @@ struct gic_chip_data {
->  	u32 __percpu *saved_ppi_enable;
->  	u32 __percpu *saved_ppi_conf;
->  #endif
-> +	struct irq_domain domain;
->  	unsigned int gic_irqs;
->  };
->  #endif
-> -- 
-> 1.7.5.4
-> 
+Thanks.
