@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab1JDVkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:40:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59664 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756228Ab1JDVku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:40:50 -0400
-Message-ID: <4E8B7D3D.9000204@ti.com>
-Date: Tue, 4 Oct 2011 23:40:13 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "Hilman, Kevin" <khilman@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Subject: Re: [RFC 2/5] ARM: OMAP: omap_device: add a method to set iommu private
- archdata
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com> <1316948337-7924-3-git-send-email-ohad@wizery.com> <87sjni9aql.fsf@ti.com> <CAK=WgbZhz8LcAYZEY3qqRkX4E_wtspWp09Eq9G=5VdpoMMF1FQ@mail.gmail.com> <87botwk4gw.fsf@ti.com> <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
-In-Reply-To: <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1757459Ab1JDVn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:43:58 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47438 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757401Ab1JDVn5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 17:43:57 -0400
+Date: Tue, 4 Oct 2011 14:43:53 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+Subject: Re: [RFC PATCH 2/2 -mm] RapidIO: TSI721 Add DMA Engine support
+Message-Id: <20111004144353.18087914.akpm00@gmail.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202291E8D@CORPEXCH1.na.ads.idt.com>
+References: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com>
+	<1317418715-9666-2-git-send-email-alexandre.bounine@idt.com>
+	<20110930151544.31875132.akpm00@gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202291E8D@CORPEXCH1.na.ads.idt.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/2011 9:54 PM, Ohad Ben-Cohen wrote:
-> On Tue, Oct 4, 2011 at 8:15 PM, Kevin Hilman<khilman@ti.com>  wrote:
->> The approach is OK with me, but I'm a bit torn about whether or not to
->> merge this since the need for this should go away when converting to DT.
->
-> I guess it will still take some time until our boards are fully
-> functional with DT, so I think we should regard this as an interim
-> solution. Without this patch, a huge deal of code consolidation and
-> generalization is gated (namely - generic iommu and dma api, and
-> everything that depends on it, e.g. rpmsg/remoteproc).
->
->> Is anyone working on IOMMU DT description?
->
-> Unless Benoit is, I'll happily pick this up.
+On Mon, 3 Oct 2011 10:53:45 -0700
+"Bounine, Alexandre" <Alexandre.Bounine@idt.com> wrote:
 
-Cool, a volunteer... You're in.
+> > > +	memset(bd_ptr, 0, bd_num * sizeof(struct tsi721_dma_desc));
+> > > +
+> > > +	dev_dbg(dev, "DMA descriptors @ %p (phys = %llx)\n",
+> > > +		bd_ptr, (unsigned long long)bd_phys);
+> > > +
+> > > +	/* Allocate space for descriptor status FIFO */
+> > > +	sts_size = (bd_num >= TSI721_DMA_MINSTSSZ) ?
+> > > +					bd_num : TSI721_DMA_MINSTSSZ;
+> > > +	sts_size = roundup_pow_of_two(sts_size);
+> > > +	sts_ptr = dma_alloc_coherent(dev,
+> > > +				     sts_size * sizeof(struct
+> tsi721_dma_sts),
+> > > +				     &sts_phys, GFP_KERNEL);
+> > > +	if (!sts_ptr) {
+> > > +		/* Free space allocated for DMA descriptors */
+> > > +		dma_free_coherent(dev,
+> > > +				  bd_num * sizeof(struct
+> tsi721_dma_desc),
+> > > +				  bd_ptr, bd_phys);
+> > > +		chan->bd_base = NULL;
+> > > +		return -ENOMEM;
+> > > +	}
+> > > +
+> > > +	chan->sts_phys = sts_phys;
+> > > +	chan->sts_base = sts_ptr;
+> > > +	chan->sts_size = sts_size;
+> > > +
+> > > +	memset(sts_ptr, 0, sts_size);
+> > 
+> > You meant
+> 
+> I really need it here. That status block tracks progress by keeping
+> non-zero addresses of processed descriptors.
 
-Thanks,
-Benoit
+Confused.  Are you saying that the use of "sts_size" there was
+intentional?
+
+> > 
+> > --- a/drivers/rapidio/devices/tsi721.c~rapidio-tsi721-add-dma-engine-
+> > support-fix
+> > +++ a/drivers/rapidio/devices/tsi721.c
+> > @@ -1006,7 +1006,7 @@ static int tsi721_bdma_maint_init(struct
+> >  	priv->mdma.sts_base = sts_ptr;
+> >  	priv->mdma.sts_size = sts_size;
+> > 
+> > -	memset(sts_ptr, 0, sts_size);
+> > +	memset(sts_ptr, 0, sts_size * sizeof(struct tsi721_dma_sts));
+> > 
+> >  	dev_dbg(&priv->pdev->dev,
+> >  		"desc status FIFO @ %p (phys = %llx) size=0x%x\n",
+> > 
+> > However that's at least two instances where you wanted a
+> > dma_zalloc_coherent().  How's about we give ourselves one?
+> 
+> Does this mean that I am on hook for it as a "most frequent user"?
+
+No, it can be used all over the place: drivers/net/irda/w83977af_ir.c,
+drivers/scsi/bnx2fc/bnx2fc_tgt.c,
+drivers/net/wireless/rt2x00/rt2x00pci.c,
+drivers/crypto/amcc/crypto4xx_core.c and many nmore.
+
 
