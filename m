@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab1JDQta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:49:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63232 "EHLO mx1.redhat.com"
+	id S933022Ab1JDQtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:49:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53801 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757094Ab1JDQoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:44:22 -0400
+	id S932810Ab1JDQoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:44:21 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Mark Salter <msalter@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v4 06/24] C6X: early boot code
-Date: Tue,  4 Oct 2011 12:43:43 -0400
-Message-Id: <1317746641-26725-7-git-send-email-msalter@redhat.com>
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH v4 09/24] C6X: process management
+Date: Tue,  4 Oct 2011 12:43:46 -0400
+Message-Id: <1317746641-26725-10-git-send-email-msalter@redhat.com>
 In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,125 +24,291 @@ From: Aurelien Jacquiot <a-jacquiot@ti.com>
 Original port to early 2.6 kernel using TI COFF toolchain.
 Brought up to date by Mark Salter <msalter@redhat.com>
 
-This patch provides the early boot code for C6X architecture. There is a
-16 entry vector table which is used to direct reset and interrupt events. The
-vector table entries contain a small amount of code (maximum of 8 opcodes)
-which simply branches to the actual event handling code.
-
-The head.S code simply clears BSS, setups up a few control registers, and calls
-machine_init followed by start_kernel. The machine_init code in setup.c does
-the early flat tree parsing (memory, commandline, etc). At setup_arch time, the
-code does the usual memory setup and minimally scans the devicetree for any
-needed information.
-
 Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
 Signed-off-by: Mark Salter <msalter@redhat.com>
-CC: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/c6x/kernel/head.S    |   84 ++++++++
- arch/c6x/kernel/setup.c   |  498 +++++++++++++++++++++++++++++++++++++++++++++
- arch/c6x/kernel/vectors.S |   81 ++++++++
- 3 files changed, 663 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/kernel/head.S
- create mode 100644 arch/c6x/kernel/setup.c
- create mode 100644 arch/c6x/kernel/vectors.S
+ arch/c6x/include/asm/processor.h   |  132 ++++++++++++++++++
+ arch/c6x/include/asm/thread_info.h |  121 +++++++++++++++++
+ arch/c6x/kernel/process.c          |  263 ++++++++++++++++++++++++++++++++++++
+ arch/c6x/kernel/switch_to.S        |   74 ++++++++++
+ 4 files changed, 590 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/processor.h
+ create mode 100644 arch/c6x/include/asm/thread_info.h
+ create mode 100644 arch/c6x/kernel/process.c
+ create mode 100644 arch/c6x/kernel/switch_to.S
 
-diff --git a/arch/c6x/kernel/head.S b/arch/c6x/kernel/head.S
+diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
 new file mode 100644
-index 0000000..133eab6
+index 0000000..8154c4e
 --- /dev/null
-+++ b/arch/c6x/kernel/head.S
-@@ -0,0 +1,84 @@
-+;
-+;  Port on Texas Instruments TMS320C6x architecture
-+;
-+;  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+;
-+;  This program is free software; you can redistribute it and/or modify
-+;  it under the terms of the GNU General Public License version 2 as
-+;  published by the Free Software Foundation.
-+;
-+#include <linux/linkage.h>
-+#include <linux/of_fdt.h>
-+#include <asm/asm-offsets.h>
++++ b/arch/c6x/include/asm/processor.h
+@@ -0,0 +1,132 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_PROCESSOR_H
++#define _ASM_C6X_PROCESSOR_H
 +
-+	__HEAD
-+ENTRY(_c_int00)
-+	;; Save magic and pointer
-+	MV	.S1	A4,A10
-+	MV	.S2	B4,B10
-+	MVKL	.S2	__bss_start,B5
-+	MVKH	.S2	__bss_start,B5
-+	MVKL	.S2	__bss_stop,B6
-+	MVKH	.S2	__bss_stop,B6
-+	SUB	.L2	B6,B5,B6 ; bss size
++#include <asm/ptrace.h>
++#include <asm/page.h>
++#include <asm/current.h>
 +
-+	;; Set the stack pointer
-+	MVKL	.S2	current_ksp,B0
-+	MVKH	.S2	current_ksp,B0
-+	LDW	.D2T2	*B0,B15
++/*
++ * Default implementation of macro that returns current
++ * instruction pointer ("program counter").
++ */
++#define current_text_addr()			\
++({						\
++	void *__pc;				\
++	asm("mvc .S2 pce1,%0\n" : "=b"(__pc));	\
++	__pc;					\
++})
 +
-+	;; clear bss
-+	SHR	.S2	B6,3,B0	  ; number of dwords to clear
-+	ZERO	.L2	B13
-+	ZERO	.L2	B12
-+bss_loop:
-+	BDEC	.S2	bss_loop,B0
-+	NOP	3
-+	CMPLT	.L2	B0,0,B1
-+ [!B1]	STDW	.D2T2	B13:B12,*B5++[1]
++/*
++ * User space process size. This is mostly meaningless for NOMMU
++ * but some C6X processors may have RAM addresses up to 0xFFFFFFFF.
++ * Since calls like mmap() can return an address or an error, we
++ * have to allow room for error returns when code does something
++ * like:
++ *
++ *       addr = do_mmap(...)
++ *       if ((unsigned long)addr >= TASK_SIZE)
++ *            ... its an error code, not an address ...
++ *
++ * Here, we allow for 4096 error codes which means we really can't
++ * use the last 4K page on systems with RAM extending all the way
++ * to the end of the 32-bit address space.
++ */
++#define TASK_SIZE	0xFFFFF000
 +
-+	NOP	4
-+	AND	.D2	~7,B15,B15
++/*
++ * This decides where the kernel will search for a free chunk of vm
++ * space during mmap's. We won't be using it
++ */
++#define TASK_UNMAPPED_BASE	0
 +
-+	;; Clear GIE and PGIE
-+	MVC	.S2	CSR,B2
-+	CLR	.S2	B2,0,1,B2
-+	MVC	.S2	B2,CSR
-+	MVC	.S2	TSR,B2
-+	CLR	.S2	B2,0,1,B2
-+	MVC	.S2	B2,TSR
-+	MVC	.S2	ITSR,B2
-+	CLR	.S2	B2,0,1,B2
-+	MVC	.S2	B2,ITSR
-+	MVC	.S2	NTSR,B2
-+	CLR	.S2	B2,0,1,B2
-+	MVC	.S2	B2,NTSR
++struct thread_struct {
++	unsigned long long b15_14;
++	unsigned long long a15_14;
++	unsigned long long b13_12;
++	unsigned long long a13_12;
++	unsigned long long b11_10;
++	unsigned long long a11_10;
++	unsigned long long ricl_icl;
++	unsigned long  usp;		/* user stack pointer */
++	unsigned long  pc;		/* kernel pc */
++	unsigned long  wchan;
++};
 +
-+	;; pass DTB pointer to machine_init (or zero if none)
-+	MVKL	.S1	OF_DT_HEADER,A0
-+	MVKH	.S1	OF_DT_HEADER,A0
-+	CMPEQ	.L1	A10,A0,A0
-+  [A0]	MV	.S1X	B10,A4
-+  [!A0] MVK	.S1	0,A4
++#define INIT_THREAD					\
++{							\
++	.usp = 0,					\
++	.wchan = 0,					\
++}
 +
-+#ifdef CONFIG_C6X_BIG_KERNEL
-+	MVKL	.S1	machine_init,A0
-+	MVKH	.S1	machine_init,A0
-+	B	.S2X	A0
-+	ADDKPC  .S2     0f,B3,4
-+0:
++#define INIT_MMAP { \
++	&init_mm, 0, 0, NULL, PAGE_SHARED, VM_READ | VM_WRITE | VM_EXEC, 1, \
++	NULL, NULL }
++
++#define task_pt_regs(task) \
++	((struct pt_regs *)(THREAD_START_SP + task_stack_page(task)) - 1)
++
++#define alloc_kernel_stack()	__get_free_page(GFP_KERNEL)
++#define free_kernel_stack(page) free_page((page))
++
++
++/* Forward declaration, a strange C thing */
++struct task_struct;
++
++extern void start_thread(struct pt_regs *regs, unsigned int pc,
++			 unsigned long usp);
++
++/* Free all resources held by a thread. */
++static inline void release_thread(struct task_struct *dead_task)
++{
++}
++
++/* Prepare to copy thread state - unlazy all lazy status */
++#define prepare_to_copy(tsk)	do { } while (0)
++
++extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
++
++#define copy_segments(tsk, mm)		do { } while (0)
++#define release_segments(mm)		do { } while (0)
++
++/*
++ * saved PC of a blocked thread.
++ */
++#define thread_saved_pc(tsk) (task_pt_regs(tsk)->pc)
++
++/*
++ * saved kernel SP and DP of a blocked thread.
++ */
++#ifdef _BIG_ENDIAN
++#define thread_saved_ksp(tsk) \
++	(*(unsigned long *)&(tsk)->thread.b15_14)
++#define thread_saved_dp(tsk) \
++	(*(((unsigned long *)&(tsk)->thread.b15_14) + 1))
 +#else
-+	CALLP	.S2	machine_init,B3
++#define thread_saved_ksp(tsk) \
++	(*(((unsigned long *)&(tsk)->thread.b15_14) + 1))
++#define thread_saved_dp(tsk) \
++	(*(unsigned long *)&(tsk)->thread.b15_14)
 +#endif
 +
-+	;; Jump to Linux init
-+#ifdef CONFIG_C6X_BIG_KERNEL
-+	MVKL	.S1	start_kernel,A0
-+	MVKH	.S1	start_kernel,A0
-+	B	.S2X	A0
-+#else
-+	B	.S2	start_kernel
-+#endif
-+	NOP	5
-+L1:	BNOP	.S2	L1,5
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
++extern unsigned long get_wchan(struct task_struct *p);
++
++#define KSTK_EIP(tsk)	(task_pt_regs(task)->pc)
++#define	KSTK_ESP(tsk)	(task_pt_regs(task)->sp)
++
++#define cpu_relax()		do { } while (0)
++
++extern const struct seq_operations cpuinfo_op;
++
++#endif /* ASM_C6X_PROCESSOR_H */
+diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
 new file mode 100644
-index 0000000..3c2858f
+index 0000000..fd99148
 --- /dev/null
-+++ b/arch/c6x/kernel/setup.c
-@@ -0,0 +1,498 @@
++++ b/arch/c6x/include/asm/thread_info.h
+@@ -0,0 +1,121 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.3x: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_THREAD_INFO_H
++#define _ASM_C6X_THREAD_INFO_H
++
++#ifdef __KERNEL__
++
++#include <asm/page.h>
++
++#ifdef CONFIG_4KSTACKS
++#define THREAD_SIZE		4096
++#define THREAD_SHIFT		12
++#define THREAD_ORDER		0
++#else
++#define THREAD_SIZE		8192
++#define THREAD_SHIFT		13
++#define THREAD_ORDER		1
++#endif
++
++#define THREAD_START_SP		(THREAD_SIZE - 8)
++
++#ifndef __ASSEMBLY__
++
++typedef struct {
++	unsigned long seg;
++} mm_segment_t;
++
++/*
++ * low level task data.
++ */
++struct thread_info {
++	struct task_struct	*task;		/* main task structure */
++	struct exec_domain	*exec_domain;	/* execution domain */
++	unsigned long		flags;		/* low level flags */
++	int			cpu;		/* cpu we're on */
++	int			preempt_count;	/* 0 = preemptable, <0 = BUG */
++	mm_segment_t		addr_limit;	/* thread address space */
++	struct restart_block	restart_block;
++};
++
++/*
++ * macros/functions for gaining access to the thread information structure
++ *
++ * preempt_count needs to be 1 initially, until the scheduler is functional.
++ */
++#define INIT_THREAD_INFO(tsk)			\
++{						\
++	.task		= &tsk,			\
++	.exec_domain	= &default_exec_domain,	\
++	.flags		= 0,			\
++	.cpu		= 0,			\
++	.preempt_count	= INIT_PREEMPT_COUNT,	\
++	.addr_limit	= KERNEL_DS,		\
++	.restart_block	= {			\
++		.fn = do_no_restart_syscall,	\
++	},					\
++}
++
++#define init_thread_info	(init_thread_union.thread_info)
++#define init_stack		(init_thread_union.stack)
++
++/* get the thread information struct of current task */
++static inline __attribute__((const))
++struct thread_info *current_thread_info(void)
++{
++	struct thread_info *ti;
++	asm volatile (" clr   .s2 B15,0,%1,%0\n"
++		      : "=b" (ti)
++		      : "Iu5" (THREAD_SHIFT - 1));
++	return ti;
++}
++
++#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
++
++/* thread information allocation */
++#ifdef CONFIG_DEBUG_STACK_USAGE
++#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO)
++#else
++#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK)
++#endif
++
++#define alloc_thread_info_node(tsk, node)	\
++	((struct thread_info *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER))
++
++#define free_thread_info(ti)	free_pages((unsigned long) (ti), THREAD_ORDER)
++#define get_thread_info(ti)	get_task_struct((ti)->task)
++#define put_thread_info(ti)	put_task_struct((ti)->task)
++#endif /* __ASSEMBLY__ */
++
++#define	PREEMPT_ACTIVE	0x10000000
++
++/*
++ * thread information flag bit numbers
++ * - pending work-to-be-done flags are in LSW
++ * - other flags in MSW
++ */
++#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
++#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
++#define TIF_SIGPENDING		2	/* signal pending */
++#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
++#define TIF_RESTORE_SIGMASK	4	/* restore signal mask in do_signal() */
++
++#define TIF_POLLING_NRFLAG	16	/* true if polling TIF_NEED_RESCHED */
++#define TIF_MEMDIE		17	/* OOM killer killed process */
++
++#define TIF_WORK_MASK		0x00007FFE /* work on irq/exception return */
++#define TIF_ALLWORK_MASK	0x00007FFF /* work on any return to u-space */
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_C6X_THREAD_INFO_H */
+diff --git a/arch/c6x/kernel/process.c b/arch/c6x/kernel/process.c
+new file mode 100644
+index 0000000..aa65c87
+--- /dev/null
++++ b/arch/c6x/kernel/process.c
+@@ -0,0 +1,263 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
@@ -152,582 +318,340 @@ index 0000000..3c2858f
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
 + */
-+#include <linux/dma-mapping.h>
-+#include <linux/memblock.h>
-+#include <linux/seq_file.h>
-+#include <linux/bootmem.h>
-+#include <linux/clkdev.h>
-+#include <linux/initrd.h>
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/of_fdt.h>
-+#include <linux/string.h>
-+#include <linux/errno.h>
-+#include <linux/cache.h>
-+#include <linux/delay.h>
-+#include <linux/sched.h>
-+#include <linux/clk.h>
-+#include <linux/fs.h>
-+#include <linux/of.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/init_task.h>
++#include <linux/tick.h>
++#include <linux/mqueue.h>
++#include <linux/syscalls.h>
++#include <linux/reboot.h>
 +
++#include <asm/syscalls.h>
 +
-+#include <asm/sections.h>
-+#include <asm/div64.h>
-+#include <asm/setup.h>
-+#include <asm/dscr.h>
-+#include <asm/clock.h>
-+#include <asm/soc.h>
++/* hooks for board specific support */
++void	(*c6x_restart)(void);
++void	(*c6x_halt)(void);
 +
-+static const char *c6x_soc_name;
++extern asmlinkage void ret_from_fork(void);
 +
-+int c6x_num_cores;
-+EXPORT_SYMBOL_GPL(c6x_num_cores);
-+
-+unsigned int c6x_silicon_rev;
-+EXPORT_SYMBOL_GPL(c6x_silicon_rev);
++static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
++static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
 +
 +/*
-+ * Device status register. This holds information
-+ * about device configuration needed by some drivers.
++ * Initial thread structure.
 + */
-+unsigned int c6x_devstat;
-+EXPORT_SYMBOL_GPL(c6x_devstat);
-+
-+/*
-+ * Some SoCs have fuse registers holding a unique MAC
-+ * address. This is parsed out of the device tree with
-+ * the resulting MAC being held here.
-+ */
-+unsigned char c6x_fuse_mac[6];
-+
-+unsigned long memory_start;
-+unsigned long memory_end;
-+
-+unsigned long ram_start;
-+unsigned long ram_end;
-+
-+/* Uncached memory for DMA consistent use (memdma=) */
-+static unsigned long dma_start __initdata;
-+static unsigned long dma_size __initdata;
-+
-+char c6x_command_line[COMMAND_LINE_SIZE];
-+
-+#if defined(CONFIG_CMDLINE_BOOL)
-+static const char default_command_line[COMMAND_LINE_SIZE] __section(.cmdline) =
-+	CONFIG_CMDLINE;
-+#endif
-+
-+struct cpuinfo_c6x {
-+	const char *cpu_name;
-+	const char *cpu_voltage;
-+	const char *mmu;
-+	const char *fpu;
-+	char *cpu_rev;
-+	unsigned int core_id;
-+	char __cpu_rev[5];
++union thread_union init_thread_union __init_task_data =	{
++	INIT_THREAD_INFO(init_task)
 +};
 +
-+static DEFINE_PER_CPU(struct cpuinfo_c6x, cpu_data);
++/*
++ * Initial task structure.
++ */
++struct task_struct init_task = INIT_TASK(init_task);
++EXPORT_SYMBOL(init_task);
 +
-+unsigned int ticks_per_ns_scaled;
-+EXPORT_SYMBOL(ticks_per_ns_scaled);
++/*
++ * power off function, if any
++ */
++void (*pm_power_off)(void);
++EXPORT_SYMBOL(pm_power_off);
 +
-+unsigned int c6x_core_freq;
-+
-+static void __init get_cpuinfo(void)
++static void c6x_idle(void)
 +{
-+	unsigned cpu_id, rev_id, csr;
-+	struct clk *coreclk = clk_get_sys(NULL, "core");
-+	unsigned long core_khz;
-+	u64 tmp;
-+	struct cpuinfo_c6x *p;
-+	struct device_node *node, *np;
++	unsigned long tmp;
 +
-+	p = &per_cpu(cpu_data, smp_processor_id());
++	/*
++	 * Put local_irq_enable and idle in same execute packet
++	 * to make them atomic and avoid race to idle with
++	 * interrupts enabled.
++	 */
++	asm volatile ("   mvc .s2 CSR,%0\n"
++		      "   or  .d2 1,%0,%0\n"
++		      "   mvc .s2 %0,CSR\n"
++		      "|| idle\n"
++		      : "=b"(tmp));
++}
 +
-+	if (!IS_ERR(coreclk))
-+		c6x_core_freq = clk_get_rate(coreclk);
-+	else {
-+		printk(KERN_WARNING
-+		       "Cannot find core clock frequency. Using 700MHz\n");
-+		c6x_core_freq = 700000000;
-+	}
-+
-+	core_khz = c6x_core_freq / 1000;
-+
-+	tmp = (uint64_t)core_khz << C6X_NDELAY_SCALE;
-+	do_div(tmp, 1000000);
-+	ticks_per_ns_scaled = tmp;
-+
-+	csr = get_creg(CSR);
-+	cpu_id = csr >> 24;
-+	rev_id = (csr >> 16) & 0xff;
-+
-+	p->mmu = "none";
-+	p->fpu = "none";
-+	p->cpu_voltage = "unknown";
-+
-+	switch (cpu_id) {
-+	case 0:
-+		p->cpu_name = "C67x";
-+		p->fpu = "yes";
-+		break;
-+	case 2:
-+		p->cpu_name = "C62x";
-+		break;
-+	case 8:
-+		p->cpu_name = "C64x";
-+		break;
-+	case 12:
-+		p->cpu_name = "C64x";
-+		break;
-+	case 16:
-+		p->cpu_name = "C64x+";
-+		p->cpu_voltage = "1.2";
-+		break;
-+	default:
-+		p->cpu_name = "unknown";
-+		break;
-+	}
-+
-+	if (cpu_id < 16) {
-+		switch (rev_id) {
-+		case 0x1:
-+			if (cpu_id > 8) {
-+				p->cpu_rev = "DM640/DM641/DM642/DM643";
-+				p->cpu_voltage = "1.2 - 1.4";
-+			} else {
-+				p->cpu_rev = "C6201";
-+				p->cpu_voltage = "2.5";
++/*
++ * The idle loop for C64x
++ */
++void cpu_idle(void)
++{
++	/* endless idle loop with no priority at all */
++	while (1) {
++		tick_nohz_stop_sched_tick(1);
++		while (1) {
++			local_irq_disable();
++			if (need_resched()) {
++				local_irq_enable();
++				break;
 +			}
-+			break;
-+		case 0x2:
-+			p->cpu_rev = "C6201B/C6202/C6211";
-+			p->cpu_voltage = "1.8";
-+			break;
-+		case 0x3:
-+			p->cpu_rev = "C6202B/C6203/C6204/C6205";
-+			p->cpu_voltage = "1.5";
-+			break;
-+		case 0x201:
-+			p->cpu_rev = "C6701 revision 0 (early CPU)";
-+			p->cpu_voltage = "1.8";
-+			break;
-+		case 0x202:
-+			p->cpu_rev = "C6701/C6711/C6712";
-+			p->cpu_voltage = "1.8";
-+			break;
-+		case 0x801:
-+			p->cpu_rev = "C64x";
-+			p->cpu_voltage = "1.5";
-+			break;
-+		default:
-+			p->cpu_rev = "unknown";
++			c6x_idle(); /* enables local irqs */
 +		}
-+	} else {
-+		p->cpu_rev = p->__cpu_rev;
-+		snprintf(p->__cpu_rev, sizeof(p->__cpu_rev), "0x%x", cpu_id);
++		tick_nohz_restart_sched_tick();
++
++		preempt_enable_no_resched();
++		schedule();
++		preempt_disable();
 +	}
++}
 +
-+	p->core_id = get_coreid();
++static void halt_loop(void)
++{
++	printk(KERN_EMERG "System Halted, OK to turn off power\n");
++	local_irq_disable();
++	while (1)
++		asm volatile("idle\n");
++}
 +
-+	node = of_find_node_by_name(NULL, "cpus");
-+	if (node) {
-+		for_each_child_of_node(node, np)
-+			if (!strcmp("cpu", np->name))
-+				++c6x_num_cores;
-+		of_node_put(node);
-+	}
++void machine_restart(char *__unused)
++{
++	if (c6x_restart)
++		c6x_restart();
++	halt_loop();
++}
 +
-+	node = of_find_node_by_name(NULL, "soc");
-+	if (node) {
-+		if (of_property_read_string(node, "model", &c6x_soc_name))
-+			c6x_soc_name = "unknown";
-+		of_node_put(node);
-+	} else
-+		c6x_soc_name = "unknown";
++void machine_halt(void)
++{
++	if (c6x_halt)
++		c6x_halt();
++	halt_loop();
++}
 +
-+	printk(KERN_INFO "CPU%d: %s rev %s, %s volts, %uMHz\n",
-+	       p->core_id, p->cpu_name, p->cpu_rev,
-+	       p->cpu_voltage, c6x_core_freq / 1000000);
++void machine_power_off(void)
++{
++	if (pm_power_off)
++		pm_power_off();
++	halt_loop();
++}
++
++static void kernel_thread_helper(int dummy, void *arg, int (*fn)(void *))
++{
++	do_exit(fn(arg));
 +}
 +
 +/*
-+ * Early parsing of the command line
++ * Create a kernel thread
 + */
-+static u32 mem_size __initdata;
-+
-+/* "mem=" parsing. */
-+static int __init early_mem(char *p)
++int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags)
 +{
-+	if (!p)
-+		return -EINVAL;
++	struct pt_regs regs;
 +
-+	mem_size = memparse(p, &p);
-+	/* don't remove all of memory when handling "mem={invalid}" */
-+	if (mem_size == 0)
-+		return -EINVAL;
++	/*
++	 * copy_thread sets a4 to zero (child return from fork)
++	 * so we can't just set things up to directly return to
++	 * fn.
++	 */
++	memset(&regs, 0, sizeof(regs));
++	regs.b4 = (unsigned long) arg;
++	regs.a6 = (unsigned long) fn;
++	regs.pc = (unsigned long) kernel_thread_helper;
++	local_save_flags(regs.csr);
++	regs.csr |= 1;
++	regs.tsr = 5; /* Set GEE and GIE in TSR */
 +
-+	return 0;
++	/* Ok, create the new process.. */
++	return do_fork(flags | CLONE_VM | CLONE_UNTRACED, -1, &regs,
++		       0, NULL, NULL);
 +}
-+early_param("mem", early_mem);
++EXPORT_SYMBOL(kernel_thread);
 +
-+/* "memdma=<size>[@<address>]" parsing. */
-+static int __init early_memdma(char *p)
++void flush_thread(void)
 +{
-+	if (!p)
-+		return -EINVAL;
-+
-+	dma_size = memparse(p, &p);
-+	if (*p == '@')
-+		dma_start = memparse(p, &p);
-+
-+	return 0;
 +}
-+early_param("memdma", early_memdma);
 +
-+int __init c6x_add_memory(phys_addr_t start, unsigned long size)
++void exit_thread(void)
 +{
-+	static int ram_found __initdata;
++}
 +
-+	/* We only handle one bank (the one with PAGE_OFFSET) for now */
-+	if (ram_found)
-+		return -EINVAL;
++SYSCALL_DEFINE1(c6x_clone, struct pt_regs *, regs)
++{
++	unsigned long clone_flags;
++	unsigned long newsp;
 +
-+	if (start > PAGE_OFFSET || PAGE_OFFSET >= (start + size))
-+		return 0;
++	/* syscall puts clone_flags in A4 and usp in B4 */
++	clone_flags = regs->orig_a4;
++	if (regs->b4)
++		newsp = regs->b4;
++	else
++		newsp = regs->sp;
 +
-+	ram_start = start;
-+	ram_end = start + size;
++	return do_fork(clone_flags, newsp, regs, 0, (int __user *)regs->a6,
++		       (int __user *)regs->b6);
++}
 +
-+	ram_found = 1;
++/*
++ * Do necessary setup to start up a newly executed thread.
++ */
++void start_thread(struct pt_regs *regs, unsigned int pc, unsigned long usp)
++{
++	/*
++	 * The binfmt loader will setup a "full" stack, but the C6X
++	 * operates an "empty" stack. So we adjust the usp so that
++	 * argc doesn't get destroyed if an interrupt is taken before
++	 * it is read from the stack.
++	 *
++	 * NB: Library startup code needs to match this.
++	 */
++	usp -= 8;
++
++	set_fs(USER_DS);
++	regs->pc  = pc;
++	regs->sp  = usp;
++	regs->tsr |= 0x40; /* set user mode */
++	current->thread.usp = usp;
++}
++
++/*
++ * Copy a new thread context in its stack.
++ */
++int copy_thread(unsigned long clone_flags, unsigned long usp,
++		unsigned long ustk_size,
++		struct task_struct *p, struct pt_regs *regs)
++{
++	struct pt_regs *childregs;
++
++	childregs = task_pt_regs(p);
++
++	*childregs = *regs;
++	childregs->a4 = 0;
++
++	if (usp == -1)
++		/* case of  __kernel_thread: we return to supervisor space */
++		childregs->sp = (unsigned long)(childregs + 1);
++	else
++		/* Otherwise use the given stack */
++		childregs->sp = usp;
++
++	/* Set usp/ksp */
++	p->thread.usp = childregs->sp;
++	/* switch_to uses stack to save/restore 14 callee-saved regs */
++	thread_saved_ksp(p) = (unsigned long)childregs - 8;
++	p->thread.pc = (unsigned int) ret_from_fork;
++	p->thread.wchan	= (unsigned long) ret_from_fork;
++#ifdef __DSBT__
++	{
++		unsigned long dp;
++
++		asm volatile ("mv .S2 b14,%0\n" : "=b"(dp));
++
++		thread_saved_dp(p) = dp;
++		if (usp == -1)
++			childregs->dp = dp;
++	}
++#endif
 +	return 0;
 +}
 +
 +/*
-+ * Do early machine setup and device tree parsing. This is called very
-+ * early on the boot process.
++ * c6x_execve() executes a new program.
 + */
-+notrace void __init machine_init(unsigned long dt_ptr)
++SYSCALL_DEFINE4(c6x_execve, const char __user *, name,
++		const char __user *const __user *, argv,
++		const char __user *const __user *, envp,
++		struct pt_regs *, regs)
 +{
-+	struct boot_param_header *dtb = __va(dt_ptr);
-+	struct boot_param_header *fdt = (struct boot_param_header *)_fdt_start;
++	int error;
++	char *filename;
 +
-+	/* interrupts must be masked */
-+	set_creg(IER, 2);
++	filename = getname(name);
++	error = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		goto out;
 +
-+	/*
-+	 * Set the Interrupt Service Table (IST) to the beginning of the
-+	 * vector table.
-+	 */
-+	set_ist(_vectors_start);
-+
-+	lockdep_init();
-+
-+	/*
-+	 * dtb is passed in from bootloader.
-+	 * fdt is linked in blob.
-+	 */
-+	if (dtb && dtb != fdt)
-+		fdt = dtb;
-+
-+	/* Do some early initialization based on the flat device tree */
-+	early_init_devtree(fdt);
-+
-+	/* parse_early_param needs a boot_command_line */
-+	strlcpy(boot_command_line, c6x_command_line, COMMAND_LINE_SIZE);
-+	parse_early_param();
++	error = do_execve(filename, argv, envp, regs);
++	putname(filename);
++out:
++	return error;
 +}
 +
-+void __init setup_arch(char **cmdline_p)
++unsigned long get_wchan(struct task_struct *p)
 +{
-+	int bootmap_size;
-+	struct memblock_region *reg;
-+
-+	printk(KERN_INFO "Initializing kernel\n");
-+
-+	/* Initialize command line */
-+	*cmdline_p = c6x_command_line;
-+
-+	memblock_init();
-+
-+	memory_end = ram_end;
-+	memory_end &= ~(PAGE_SIZE - 1);
-+
-+	if (mem_size && (PAGE_OFFSET + PAGE_ALIGN(mem_size)) < memory_end)
-+		memory_end = PAGE_OFFSET + PAGE_ALIGN(mem_size);
-+
-+	/* add block that this kernel can use */
-+	memblock_add(PAGE_OFFSET, memory_end - PAGE_OFFSET);
-+
-+	/* reserve kernel text/data/bss */
-+	memblock_reserve(PAGE_OFFSET,
-+			 PAGE_ALIGN((unsigned long)&_end - PAGE_OFFSET));
-+
-+	if (dma_size) {
-+		/* align to cacheability granularity */
-+		dma_size = CACHE_REGION_END(dma_size);
-+
-+		if (!dma_start)
-+			dma_start = memory_end - dma_size;
-+
-+		/* align to cacheability granularity */
-+		dma_start = CACHE_REGION_START(dma_start);
-+
-+		/* reserve DMA memory taken from kernel memory */
-+		if (memblock_is_region_memory(dma_start, dma_size))
-+			memblock_reserve(dma_start, dma_size);
-+	}
-+
-+	memory_start = PAGE_ALIGN((unsigned int) &_end);
-+
-+	printk(KERN_INFO "Memory Start=%08lx, Memory End=%08lx\n",
-+	       memory_start, memory_end);
-+
-+#ifdef CONFIG_BLK_DEV_INITRD
-+	/*
-+	 * Reserve initrd memory if in kernel memory.
-+	 */
-+	if (initrd_start < initrd_end)
-+		if (memblock_is_region_memory(initrd_start,
-+					      initrd_end - initrd_start))
-+			memblock_reserve(initrd_start,
-+					 initrd_end - initrd_start);
-+#endif
-+
-+	init_mm.start_code = (unsigned long) &_stext;
-+	init_mm.end_code   = (unsigned long) &_etext;
-+	init_mm.end_data   = memory_start;
-+	init_mm.brk        = memory_start;
-+
-+	/*
-+	 * Give all the memory to the bootmap allocator,  tell it to put the
-+	 * boot mem_map at the start of memory
-+	 */
-+	bootmap_size = init_bootmem_node(NODE_DATA(0),
-+					 memory_start >> PAGE_SHIFT,
-+					 PAGE_OFFSET >> PAGE_SHIFT,
-+					 memory_end >> PAGE_SHIFT);
-+	memblock_reserve(memory_start, bootmap_size);
-+
-+	memblock_analyze();
-+	unflatten_device_tree();
-+
-+	c6x_cache_init();
-+
-+	/* Set the whole external memory as non-cacheable */
-+	disable_caching(ram_start, ram_end - 1);
-+
-+	/* Set caching of external RAM used by Linux */
-+	for_each_memblock(memory, reg)
-+		enable_caching(CACHE_REGION_START(reg->base),
-+			       CACHE_REGION_START(reg->base + reg->size - 1));
-+
-+#ifdef CONFIG_BLK_DEV_INITRD
-+	/*
-+	 * Enable caching for initrd which falls outside kernel memory.
-+	 */
-+	if (initrd_start < initrd_end) {
-+		if (!memblock_is_region_memory(initrd_start,
-+					       initrd_end - initrd_start))
-+			enable_caching(CACHE_REGION_START(initrd_start),
-+				       CACHE_REGION_START(initrd_end - 1));
-+	}
-+#endif
-+
-+	/*
-+	 * Disable caching for dma coherent memory taken from kernel memory.
-+	 */
-+	if (dma_size && memblock_is_region_memory(dma_start, dma_size))
-+		disable_caching(dma_start,
-+				CACHE_REGION_START(dma_start + dma_size - 1));
-+
-+	/* Initialize the coherent memory allocator */
-+	coherent_mem_init(dma_start, dma_size);
-+
-+	/*
-+	 * Free all memory as a starting point.
-+	 */
-+	free_bootmem(PAGE_OFFSET, memory_end - PAGE_OFFSET);
-+
-+	/*
-+	 * Then reserve memory which is already being used.
-+	 */
-+	for_each_memblock(reserved, reg) {
-+		pr_debug("reserved - 0x%08x-0x%08x\n",
-+			 (u32) reg->base, (u32) reg->size);
-+		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
-+	}
-+
-+	max_low_pfn = PFN_DOWN(memory_end);
-+	min_low_pfn = PFN_UP(memory_start);
-+	max_mapnr = max_low_pfn - min_low_pfn;
-+
-+	/* Get kmalloc into gear */
-+	paging_init();
-+
-+	/*
-+	 * Probe for Device State Configuration Registers.
-+	 * We have to do this early in case timer needs to be enabled
-+	 * through DSCR.
-+	 */
-+	dscr_probe();
-+
-+	/* We do this early for timer and core clock frequency */
-+	c64x_setup_clocks();
-+
-+	/* Get CPU info */
-+	get_cpuinfo();
-+
-+#if defined(CONFIG_VT) && defined(CONFIG_DUMMY_CONSOLE)
-+	conswitchp = &dummy_con;
-+#endif
++	return p->thread.wchan;
 +}
-+
-+#define cpu_to_ptr(n) ((void *)((long)(n)+1))
-+#define ptr_to_cpu(p) ((long)(p) - 1)
-+
-+static int show_cpuinfo(struct seq_file *m, void *v)
-+{
-+	int n = ptr_to_cpu(v);
-+	struct cpuinfo_c6x *p = &per_cpu(cpu_data, n);
-+
-+	if (n == 0) {
-+		seq_printf(m,
-+			   "soc\t\t: %s\n"
-+			   "soc revision\t: 0x%x\n"
-+			   "soc cores\t: %d\n",
-+			   c6x_soc_name, c6x_silicon_rev, c6x_num_cores);
-+	}
-+
-+	seq_printf(m,
-+		   "\n"
-+		   "processor\t: %d\n"
-+		   "cpu\t\t: %s\n"
-+		   "core revision\t: %s\n"
-+		   "core voltage\t: %s\n"
-+		   "core id\t\t: %d\n"
-+		   "mmu\t\t: %s\n"
-+		   "fpu\t\t: %s\n"
-+		   "cpu MHz\t\t: %u\n"
-+		   "bogomips\t: %lu.%02lu\n\n",
-+		   n,
-+		   p->cpu_name, p->cpu_rev, p->cpu_voltage,
-+		   p->core_id, p->mmu, p->fpu,
-+		   (c6x_core_freq + 500000) / 1000000,
-+		   (loops_per_jiffy/(500000/HZ)),
-+		   (loops_per_jiffy/(5000/HZ))%100);
-+
-+	return 0;
-+}
-+
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	return *pos < nr_cpu_ids ? cpu_to_ptr(*pos) : NULL;
-+}
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	++*pos;
-+	return NULL;
-+}
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+}
-+
-+const struct seq_operations cpuinfo_op = {
-+	c_start,
-+	c_stop,
-+	c_next,
-+	show_cpuinfo
-+};
-diff --git a/arch/c6x/kernel/vectors.S b/arch/c6x/kernel/vectors.S
+diff --git a/arch/c6x/kernel/switch_to.S b/arch/c6x/kernel/switch_to.S
 new file mode 100644
-index 0000000..c95c66f
+index 0000000..09177ed
 --- /dev/null
-+++ b/arch/c6x/kernel/vectors.S
-@@ -0,0 +1,81 @@
-+;
-+;  Port on Texas Instruments TMS320C6x architecture
-+;
-+;  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
-+;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+;
-+;  This program is free software; you can redistribute it and/or modify
-+;  it under the terms of the GNU General Public License version 2 as
-+;  published by the Free Software Foundation.
-+;
-+;  This section handles all the interrupt vector routines.
-+;  At RESET the processor sets up the DRAM timing parameters and
-+;  branches to the label _c_int00 which handles initialization for the C code.
-+;
++++ b/arch/c6x/kernel/switch_to.S
+@@ -0,0 +1,74 @@
++/*
++ *  Copyright (C) 2011 Texas Instruments Incorporated
++ *  Author: Mark Salter (msalter@redhat.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
 +
-+#define ALIGNMENT 5
++#include <linux/linkage.h>
++#include <asm/asm-offsets.h>
 +
-+	.macro IRQVEC name, handler
-+	.align ALIGNMENT
-+	.hidden \name
-+	.global \name
-+\name:
-+#ifdef CONFIG_C6X_BIG_KERNEL
-+	STW	.D2T1	A0,*B15--[2]
-+ ||	MVKL	.S1	\handler,A0
-+	MVKH	.S1	\handler,A0
-+	B	.S2X	A0
-+	LDW	.D2T1	*++B15[2],A0
-+	NOP	4
-+	NOP
-+	NOP
-+	.endm
-+#else /* CONFIG_C6X_BIG_KERNEL */
-+	B	.S2	\handler
-+	NOP
-+	NOP
-+	NOP
-+	NOP
-+	NOP
-+	NOP
-+	NOP
-+	.endm
-+#endif /* CONFIG_C6X_BIG_KERNEL */
++#define SP	B15
 +
-+	   .sect ".vectors","ax"
-+	   .align ALIGNMENT
-+	   .global RESET
-+	   .hidden RESET
-+RESET:
-+#ifdef CONFIG_C6X_BIG_KERNEL
-+	   MVKL	.S1	_c_int00,A0		; branch to _c_int00
-+	   MVKH	.S1	_c_int00,A0
-+	   B	.S2X	A0
-+#else
-+	   B	.S2	_c_int00
-+	   NOP
-+	   NOP
++	/*
++	 * void __switch_to(struct thread_info *prev,
++	 *      	    struct thread_info *next,
++	 *		    struct task_struct *tsk) ;
++	 */
++ENTRY(__switch_to)
++	LDDW	.D2T2	*+B4(THREAD_B15_14),B7:B6
++ ||	MV	.L2X	A4,B5	; prev
++ ||	MV	.L1X	B4,A5	; next
++ ||	MVC	.S2	RILC,B1
++
++	STW	.D2T2	B3,*+B5(THREAD_PC)
++ ||	STDW	.D1T1	A13:A12,*+A4(THREAD_A13_12)
++ ||	MVC	.S2	ILC,B0
++
++	LDW	.D2T2	*+B4(THREAD_PC),B3
++ ||	LDDW	.D1T1	*+A5(THREAD_A13_12),A13:A12
++
++	STDW	.D1T1	A11:A10,*+A4(THREAD_A11_10)
++ ||	STDW	.D2T2	B1:B0,*+B5(THREAD_RICL_ICL)
++#ifndef __DSBT__
++ ||	MVKL	.S2	current_ksp,B1
 +#endif
-+	   NOP
-+	   NOP
-+	   NOP
-+	   NOP
-+	   NOP
 +
++	STDW	.D2T2	B15:B14,*+B5(THREAD_B15_14)
++ ||	STDW	.D1T1	A15:A14,*+A4(THREAD_A15_14)
++#ifndef __DSBT__
++ ||	MVKH	.S2	current_ksp,B1
++#endif
 +
-+	   IRQVEC NMI,_nmi_handler		; NMI interrupt
-+	   IRQVEC AINT,_bad_interrupt		; reserved
-+	   IRQVEC MSGINT,_bad_interrupt		; reserved
++	;; Switch to next SP
++	MV	.S2	B7,SP
++#ifdef __DSBT__
++ ||	STW	.D2T2	B7,*+B14(current_ksp)
++#else
++ ||	STW	.D2T2	B7,*B1
++ ||	MV	.L2	B6,B14
++#endif
++ ||	LDDW	.D1T1	*+A5(THREAD_RICL_ICL),A1:A0
 +
-+	   IRQVEC INT4,_int4_handler
-+	   IRQVEC INT5,_int5_handler
-+	   IRQVEC INT6,_int6_handler
-+	   IRQVEC INT7,_int7_handler
-+	   IRQVEC INT8,_int8_handler
-+	   IRQVEC INT9,_int9_handler
-+	   IRQVEC INT10,_int10_handler
-+	   IRQVEC INT11,_int11_handler
-+	   IRQVEC INT12,_int12_handler
-+	   IRQVEC INT13,_int13_handler
-+	   IRQVEC INT14,_int14_handler
-+	   IRQVEC INT15,_int15_handler
++	STDW	.D2T2	B11:B10,*+B5(THREAD_B11_10)
++ ||	LDDW	.D1T1	*+A5(THREAD_A15_14),A15:A14
++
++	STDW	.D2T2	B13:B12,*+B5(THREAD_B13_12)
++ ||	LDDW	.D1T1	*+A5(THREAD_A11_10),A11:A10
++
++	B	.S2	B3		; return in next E1
++ ||	LDDW	.D2T2	*+B4(THREAD_B13_12),B13:B12
++
++	LDDW	.D2T2	*+B4(THREAD_B11_10),B11:B10
++	NOP
++
++	MV	.L2X	A0,B0
++ ||	MV	.S1	A6,A4
++
++	MVC	.S2	B0,ILC
++ ||	MV	.L2X	A1,B1
++
++	MVC	.S2	B1,RILC
++ENDPROC(__switch_to)
 -- 
 1.7.6.2
 
