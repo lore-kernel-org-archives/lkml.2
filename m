@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1JDAzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 20:55:20 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:42264 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab1JDAzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 20:55:18 -0400
-Date: Mon, 3 Oct 2011 17:55:10 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Mingming Cao <cmm@us.ibm.com>, David Miller <davem@davemloft.net>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: [PATCH v4] crc32c: Implement CRC32c with slicing-by-8 algorithm
-Message-ID: <20111004005510.GB12447@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110930192956.4176.29905.stgit@elm3c44.beaverton.ibm.com> <OF54094699.6F5CF2B6-ONC125791C.004C901C-C125791C.004D1A61@transmode.se> <20111003153634.GA12447@tux1.beaverton.ibm.com> <OFA190E2A9.231A7DD6-ONC125791E.006F1765-C125791E.00705758@transmode.se> <20111003203513.GA10346@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003203513.GA10346@gondor.apana.org.au>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752676Ab1JDA5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 20:57:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59148 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752170Ab1JDA5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 20:57:49 -0400
+Message-ID: <1317689868.13927.26.camel@Joe-Laptop>
+Subject: Re: [PATCH 3/9] Staging: comedi: fix printk issue in cb_pcidas.c
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>,
+        devel@driverdev.osuosl.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Date: Mon, 03 Oct 2011 17:57:48 -0700
+In-Reply-To: <4E8A457F.5050106@gmail.com>
+References: <1317388707-1980-1-git-send-email-ravishankar.km@greenturtles.in>
+	 <1317388707-1980-3-git-send-email-ravishankar.km@greenturtles.in>
+	 <4E8A457F.5050106@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 09:35:13PM +0100, Herbert Xu wrote:
-> On Mon, Oct 03, 2011 at 10:27:03PM +0200, Joakim Tjernlund wrote:
-> >
-> > > > Start from Bobs latest patches and add crc32c to lib/crc32.c
-> > >
-> > > If I did that, how should I handle patching in the hardware accelerated version
-> > > on Intel systems?  That switcheroo ability seems to have been Herbert Xu's
-> > > motivation for moving crc32c into crypto/ in the first place:
-> > 
-> > I don't know, I haven't looked at that problem. I suspect it moved because that
-> > was the easiest solution. Having an identical impl. of crc32(only the table values differ)
-> > in crypto compared to the one in lib is not the way forward though.
+On Tue, 2011-10-04 at 10:30 +1100, Ryan Mallon wrote:
+> On 30/09/11 23:18, Ravishankar Karkala Mallikarjunayya wrote:
 > 
-> You can always get crypto/crc32c.c to use call helpers from
-> lib/crc32.c.
+> > This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
+> > 
+> > Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+> > ---
+> >  drivers/staging/comedi/drivers/cb_pcidas.c |   21 +++++++++++++--------
+> >  1 files changed, 13 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+> > index 9dec153..9d16c6c 100644
+> > --- a/drivers/staging/comedi/drivers/cb_pcidas.c
+> > +++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+> > @@ -565,7 +565,8 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+> >  	int index;
+> >  	int i;
+> >  
+> > -	pr_info("comedi%d: cb_pcidas: ", dev->minor);
+> > +	dev_info(&pcidev->dev, "comedi%d: cb_pcidas:\n",
+> > +		dev->minor);
+> 
+> This printk can probably be removed now. It's just noise. Similar in
+> other places too.
 
-So what I think I'm hearing is...
+Looking a bit further at the patch and the function it
+modifies, it converts dev->minor to &pcidev->dev.  In the
+function, pcidev is initialized to NULL a couple of lines
+before the dev_info so this proposed patch is truly broken.
 
-1. Apply Bob's slice-by-8 algorithm patch to regular crc32.
-2. Adapt crc32's build code to generate crc32c as well.
-3. Remove crypto/crc32c.c's implementation and have it wrap the code generated
-   by #2.
-4. Retain the current libcrc32c.  I guess if you don't configure CRYPTO and
-   CRYPTO_CRC32C then it could also just reference the generated crc32c functions
-   directly.
+I've now officially given up looking at comedi printk cleanups.
 
-Is this a satisfactory way to move forward?
+Most of the proposed patches have very high error rates and
+the submitters don't seem to want to improve their submissions
+or lower their error rate significantly.
 
---D
+I could probably fix the whole thing correctly in an afternoon.
+
+I'd add and use comedi_<level> functions that Greg doesn't like
+and until Greg changes his mind, I won't bother.
+
+
