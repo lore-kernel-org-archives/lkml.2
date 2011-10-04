@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab1JDSSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:18:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39237 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932853Ab1JDSSI (ORCPT
+	id S933396Ab1JDSS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:18:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39849 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932853Ab1JDSSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:18:08 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=ccdOYuaMiZkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=omxJxpnKuCwz0Soe36cA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Greg KH <gregkh@suse.de>, quilt-dev <quilt-dev@nongnu.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Kacur <jkacur@redhat.com>, Andreas Gruenbacher <agruen@suse.de>
-Date: Tue, 04 Oct 2011 14:18:05 -0400
-In-Reply-To: <4E8B4BEC.5030708@zytor.com>
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
-	 <20111004180237.GA15087@suse.de> <4E8B4BEC.5030708@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317752287.18063.18.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Tue, 4 Oct 2011 14:18:25 -0400
+Date: Tue, 4 Oct 2011 12:18:18 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jeremy.kerr@canonical.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, paul@pwsan.com, sboyd@quiinc.com,
+        shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
+        arnd.bergmann@linaro.org, linux@arm.linux.org.uk, eric.miao@linaro.org,
+        richard.zhao@linaro.org
+Subject: Re: [PATCH v2 6/7] clk: Add initial WM831x clock driver
+Message-ID: <20111004181818.GD2870@ponder.secretlab.ca>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-7-git-send-email-mturquette@ti.com>
+ <20110925040836.GP24631@ponder.secretlab.ca>
+ <20110926093858.GD2946@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110926093858.GD2946@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 11:09 -0700, H. Peter Anvin wrote:
-> On 10/04/2011 11:02 AM, Greg KH wrote:
-> > On Tue, Oct 04, 2011 at 01:46:34PM -0400, Steven Rostedt wrote:
-> >> +my $pgp = `gpg --simple-sk-checksum -a --detach-sign $pass --output - < $tmpfile`;
-> > 
-> > Try not to use gpg when calling from scripts, use gpgv instead, it
-> > handles things much better, and sets the return value correctly so you
-> > can check it (which I don't think you do here.)
-> > 
+On Mon, Sep 26, 2011 at 10:38:58AM +0100, Mark Brown wrote:
+> On Sat, Sep 24, 2011 at 10:08:36PM -0600, Grant Likely wrote:
+> > On Thu, Sep 22, 2011 at 03:27:01PM -0700, Mike Turquette wrote:
 > 
-> gpgv is only usable to verify contents (equivalent to gpg --verify).
-> For other things you need to use gpg's --status-fd feature, *or*
-> (perhaps better) run gpgv on the output to verify that you actually got
-> a good signature.
+> > > +	ret = platform_driver_register(&wm831x_clk_driver);
+> > > +	if (ret != 0)
+> > > +		pr_err("Failed to register WM831x clock driver: %d\n", ret);
+> > > +
+> > > +	return ret;
+> 
+> > No need for this song-and-dance.  The driver core is pretty well
+> > debugged.  Just use "return platform_driver_register(...);"
+> 
+> No, that's not helpful.  The issue isn't the device probe code itself,
+> the issue is things like module unload not doing what they're supposed
+> to do and leaving the device lying around or something - there's rather
+> more going on than just the plain API call.
 
-Oh! That would probably save me a lot of debugging time to verify it
-directly in the script :)  I've been sending lots of patches to myself
-to see if it showed a valid sig or not, then try to figure out what when
-wrong.
+Then lets fix the core code.  I see this pattern show up again and
+again of extra boilerplate going around
+platform_driver_{register,unregister}().  That says to me that there
+either needs to be a new helper, or the core code needs to be made
+more verbose.
 
-I could write a gpgverifymail.pl, to confirm that the patch that is
-going out is correct.
+In fact, I've been considering adding a macro for
+{platform,i2c,spi,...}_drivers that does all the module boilerplate
+for the common case of only registering a driver at init time.
+Something like:
 
-Yeah, I think another temp file would be the right thing here to fail
-nicely on issues with pgp.
+#define module_platform_driver(__driver) \
+int __driver##_init(void) \
+{ \
+	return platform_driver_register(&(__driver)); \
+} \
+module_init(__driver##_init); \
+void ##__driver##_exit(void) \
+{ \
+	platform_driver_unregister(&(__driver)); \
+} \
+module_exit(##__driver##_exit);
 
-Thanks!
+It's not a lot of code, but I dislike how much boilerplate every
+single driver has to use if it doesn't do anything special.
 
--- Steve
-
-
+g.
