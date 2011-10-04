@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab1JDHoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:44:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52815 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab1JDHoS (ORCPT
+	id S1755077Ab1JDHod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:44:33 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:53848 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165Ab1JDHob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:44:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 26/30] ARM: omap: add board autoselection
-Date: Tue, 4 Oct 2011 09:44:13 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de> <5055144.Y0IUdMEWXQ@wuerfel> <20111003182649.GC6324@atomide.com>
-In-Reply-To: <20111003182649.GC6324@atomide.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110040944.13205.arnd@arndb.de>
-X-Provags-ID: V02:K0:9tMHlZXv+7UCSX49znCi9xRVvUl95fcv5NroHzz6yEk
- FCIQW/iK0gWvmxiooBkVvz33G4i3b8GzEV3hBG+YJwXalIB3lx
- VKl3osw4qLedlHg9heI77F8omTw9bAgZXoLzIMQm5s4w7N0/mo
- WjvndUK9H7FyTpUo0sbXM6BKXCIK1GxMkpsAOtd+Piu3aqSEA7
- ZkkSurVbSN6gBgUdZluvqF/PMQbwq6QQISeIPgI0DPpkFwjWd6
- gvfp0CmP/R94IPY+HWOjDBdwYoNC09Ak08TxWaF9RbkFaQkENJ
- J1p+j9uZrjse+GokLetkL3/sI8yfmiErDK89gqD619YfElb9fq
- Jxr/BWzXlqDQsRGfvlog=
+	Tue, 4 Oct 2011 03:44:31 -0400
+Date: Tue, 4 Oct 2011 18:44:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm00@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20111004184419.80cb1cc4cb47e6bce83bff2d@canb.auug.org.au>
+In-Reply-To: <20110929230226.5fed4095.akpm00@gmail.com>
+References: <20110930153255.6e3a0d6dc7758b7fb5561fc6@canb.auug.org.au>
+	<20110929230226.5fed4095.akpm00@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__4_Oct_2011_18_44_19_+1100_zMMuwhx7YIvjppg1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 October 2011, Tony Lindgren wrote:
-> * Arnd Bergmann <arnd@arndb.de> [111003 02:20]:
-> > On Monday 03 October 2011 11:27:44 Cousson, Benoit wrote:
-> > > >
-> > > > In the long run, I'd hope we can just get rid of these for subarchitectures
-> > > > that support device tree probing and make the device tree based machine
-> > > > description unconditional.
-> > > 
-> > > This is really our goal, we will have soon the board-generic.c for that, 
-> > > someone will just have to migrate these ~30 board files to device tree 
-> > > DTS files 
-> > 
-> > For the purpose of build-time validation using randconfig, there is no
-> > problem in keeping some board files forever, as long as the generic board
-> > file is always built-in.
-> 
-> Yes please leave out the list so we don't need to constantly update it.
-> Let's just always build in MACH_OMAP_GENERIC.
+--Signature=_Tue__4_Oct_2011_18_44_19_+1100_zMMuwhx7YIvjppg1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's what I had initially, but now that board file has become
-omap2-specific and no longer works on omap3-only or omap4-only
-configurations.
+Hi Andrew,
 
-	Arnd
+On Thu, 29 Sep 2011 23:02:26 -0700 Andrew Morton <akpm00@gmail.com> wrote:
+>
+> > Caused by commit 15e19cbbbf2a ("x86: implement strict user copy checks
+> > for x86_64") when built with gcc 4.6.0.  This does not fail when built
+> > with 4.5.2.
+>=20
+> That patch is a PITA.  I've been waiting for some saviour to come along
+> and fix all the warnings it emits before proceeding with it.  As I am
+> apparently saviourless I shall hide that patch from the mm->linux-next
+> drop, so only I get to suffer its effects.
+
+OK, I have dropped that commit from linux-next.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__4_Oct_2011_18_44_19_+1100_zMMuwhx7YIvjppg1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOirlTAAoJEECxmPOUX5FELkIP/14Z3Vr/HvL3LtNnwdf1rW7g
+sbZPWlJAw7yYgLfELTIbuZCHguqfJ02WESGyYHc+RXRFysCf0VTJ98VXCaufiSNu
+Oea3nH/+aq6QubLHIRmO4Q90UD0b3aTy/bUOVJF5ynRahPkKHiDieSolbY69/AN0
+70+6l9yV3dsVJDkH0PpbLENCnl0pRgi3suBkcpQv5iyXSGnJKHBH5Ku6KdjH6cXy
+UGZvjMrhnBAcx4I63ONpfcfbAXFow+PR84e/gtXK+Zy0Rx72CRX/nrQgmJTfPG1k
+F6VNbWBteqd8EbzxTFCIDTgvdjblfDf+eBgNPDijnVa2oWSstP6EHdYG7CPXNvAD
+r2yadXOWdkO/aseMIvZjs/G8pH2iGfIA1+srvNYkVORMGyC/C1NXxoigJ+PUa/3A
+GfH8Dsna7lH6JcXiPL0n2rK2sFxYtCcd1J9j+3s88P9rbcOhJf1RCh30WMI20Zfj
+lNGWc4+p5WxkMtIjsViAZzHTer1Hu9yjo702TATjto1f/SyZ0Qwk8vVSU/RrFklP
+eK6Fkw9ISrc3gIUqqtKhNOEA+Mas7ud7cag/keLXGFJ0+fo0WUWedcjdpBE4+H5s
+GNeHDnUSN1F3bRHz/uvLpv9oKf0f/gKBUImFWeQR9jxiC1VLEiuJ2PgB4vb25uBJ
+BmY5pYkIdKc5lJE76mDR
+=xqD/
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__4_Oct_2011_18_44_19_+1100_zMMuwhx7YIvjppg1--
