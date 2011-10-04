@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1JDC1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 22:27:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38296 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab1JDC1j (ORCPT
+	id S1753608Ab1JDCaQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 22:30:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42969 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab1JDCaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 22:27:39 -0400
-Date: Mon, 3 Oct 2011 23:28:21 -0300
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2011-10-03
-Message-ID: <20111004022821.GA7951@joana>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Mon, 3 Oct 2011 22:30:15 -0400
+Message-ID: <4E8A6FB3.4090909@gmail.com>
+Date: Mon, 03 Oct 2011 21:30:11 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Garzik <jgarzik@pobox.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ahci: add DT binding for Calxeda AHCI controller
+References: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On 09/02/2011 10:10 AM, Rob Herring wrote:
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Add devicetree match table to ahci platform driver for Calxeda Highbank
+> AHCI controller.
+> 
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: Jeff Garzik <jgarzik@pobox.com>
+> Cc: linux-ide@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> ---
 
-Last pull request for 3.2, just a few patches here. The most important ones are
-from Mat Martineau that adds support to handle fragmented skbs in
-bt_sock_stream_recvmsg(). The rest are just fixes and clean ups.
+Any comments on this?
 
-Please pull! Or let me know any problem, thanks.
+Rob
 
-	Gustavo
+>  .../devicetree/bindings/ata/calxeda-sata.txt       |   17 +++++++++++++++++
+>  drivers/ata/ahci_platform.c                        |    7 +++++++
+>  2 files changed, 24 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/ata/calxeda-sata.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/calxeda-sata.txt b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+> new file mode 100644
+> index 0000000..79caa56
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+> @@ -0,0 +1,17 @@
+> +* Calxeda SATA Controller
+> +
+> +SATA nodes are defined to describe on-chip Serial ATA controllers.
+> +Each SATA controller should have its own node.
+> +
+> +Required properties:
+> +- compatible        : compatible list, contains "calxeda,hb-ahci"
+> +- interrupts        : <interrupt mapping for SATA IRQ>
+> +- reg               : <registers mapping>
+> +
+> +Example:
+> +        sata@ffe08000 {
+> +		compatible = "calxeda,hb-ahci";
+> +                reg = <0xffe08000 0x1000>;
+> +                interrupts = <115>;
+> +        };
+> +
+> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> index 6fef1fa..9bfc970 100644
+> --- a/drivers/ata/ahci_platform.c
+> +++ b/drivers/ata/ahci_platform.c
+> @@ -171,11 +171,18 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static const struct of_device_id ahci_of_match[] = {
+> +	{ .compatible = "calxeda,hb-ahci", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, ahci_of_match);
+> +
+>  static struct platform_driver ahci_driver = {
+>  	.remove = __devexit_p(ahci_remove),
+>  	.driver = {
+>  		.name = "ahci",
+>  		.owner = THIS_MODULE,
+> +		.of_match_table = ahci_of_match,
+>  	},
+>  };
+>  
 
-
-The following changes since commit 76ed94be65c8bd80b565865c186dd9f24bb2f23b:
-
-  ath9k_hw: set pci_express capability true for AR9480 (2011-10-03 15:22:42 -0400)
-
-are available in the git repository at:
-  git://github.com/padovan/bluetooth-next.git master
-
-Anderson Lizardo (1):
-      Bluetooth: use recommended LE connection parameters
-
-Andre Guedes (1):
-      Bluetooth: hci_le_adv_report_evt code refactoring
-
-Mat Martineau (3):
-      Bluetooth: Linearize skbs for use in BNEP, CMTP, HIDP, and RFCOMM
-      Bluetooth: Handle fragmented skbs in bt_sock_stream_recvmsg()
-      Bluetooth: Perform L2CAP SDU reassembly without copying data
-
-Oliver Neukum (1):
-      btusb: add device entry for Broadcom SoftSailing
-
-Peter Hurley (1):
-      Bluetooth: Allow ACL packets over USB in HCI_RAW mode
-
-Szymon Janc (1):
-      Bluetooth: Mark not declared l2cap_core functions as static
-
-Waldemar Rymarkiewicz (1):
-      Bluetooth: Fix possible NULL pointer dereference
-
- drivers/bluetooth/btusb.c     |    6 +-
- include/net/bluetooth/l2cap.h |    3 +-
- net/bluetooth/af_bluetooth.c  |   30 +++++-
- net/bluetooth/bnep/core.c     |    5 +-
- net/bluetooth/cmtp/core.c     |    5 +-
- net/bluetooth/hci_conn.c      |   14 +-
- net/bluetooth/hci_event.c     |   20 ++--
- net/bluetooth/hidp/core.c     |   10 ++-
- net/bluetooth/l2cap_core.c    |  255 ++++++++++++++---------------------------
- net/bluetooth/rfcomm/core.c   |    5 +-
- 10 files changed, 157 insertions(+), 196 deletions(-)
