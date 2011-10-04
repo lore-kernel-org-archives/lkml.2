@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366Ab1JDTTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:19:19 -0400
-Received: from claw.goop.org ([74.207.240.146]:56758 "EHLO claw.goop.org"
+	id S933295Ab1JDTTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:19:40 -0400
+Received: from claw.goop.org ([74.207.240.146]:56728 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933172Ab1JDTSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:18:18 -0400
+	id S933149Ab1JDTSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:18:15 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V3 5/8] sparc/jump_label: drop arch_jump_label_text_poke_early()
-Date: Tue,  4 Oct 2011 12:18:06 -0700
-Message-Id: <e29cdbf8bef7d1f2ec1a71063679ba717ba9af4a.1317755691.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V3 1/8] jump_label: use proper atomic_t initializer
+Date: Tue,  4 Oct 2011 12:18:02 -0700
+Message-Id: <0b202e43573ff2fba673ca375a95d757ed9a3f36.1317755691.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
@@ -30,31 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-It is no longer used.
+ATOMIC_INIT() is the proper thing to use.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: David Miller <davem@davemloft.net>
 ---
- arch/sparc/kernel/jump_label.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ include/linux/jump_label.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
-index ea2dafc..971fd43 100644
---- a/arch/sparc/kernel/jump_label.c
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -36,12 +36,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 	put_online_cpus();
- }
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 66f23dc..1213e9d 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -28,9 +28,9 @@ struct module;
+ #ifdef HAVE_JUMP_LABEL
  
--void arch_jump_label_text_poke_early(jump_label_t addr)
--{
--	u32 *insn_p = (u32 *) (unsigned long) addr;
--
--	*insn_p = 0x01000000;
--	flushi(insn_p);
--}
--
+ #ifdef CONFIG_MODULES
+-#define JUMP_LABEL_INIT {{ 0 }, NULL, NULL}
++#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL, NULL}
+ #else
+-#define JUMP_LABEL_INIT {{ 0 }, NULL}
++#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL}
  #endif
+ 
+ static __always_inline bool static_branch(struct jump_label_key *key)
 -- 
 1.7.6.4
 
