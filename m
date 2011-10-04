@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107Ab1JDRiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:38:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40745 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab1JDRiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:38:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=MdJFs1mTFr9T8BztjJC+uT8pLxzLYOf5ovg96Z2DZV+1x3An1DOv6mKsQnT890DY0
-	j/mACjClF+HCFCZeiWBQw==
-MIME-Version: 1.0
-In-Reply-To: <20110929.153259.169108824599752228.davem@davemloft.net>
-References: <1317324162-21621-1-git-send-email-muralira@google.com>
-	<20110929.153259.169108824599752228.davem@davemloft.net>
-Date: Tue, 4 Oct 2011 10:38:06 -0700
-Message-ID: <CAP3iWTTYk7tErsCVdeytdpiu0fo-7B8cNZZk0EpR_rj-VOGi-g@mail.gmail.com>
-Subject: Re: [PATCH] net-proc: expose the tos values in /proc/net/[tcp|udp]
-From: MuraliRaja Muniraju <muralira@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S933110Ab1JDRlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:41:13 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:40259 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932791Ab1JDRlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 13:41:12 -0400
+Date: Tue, 4 Oct 2011 13:41:11 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jon Mason <mason@myri.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+Message-ID: <20111004174111.GI19130@kvack.org>
+References: <1317653420-21404-3-git-send-email-mason@myri.com> <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com> <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com> <1317744493.29415.238.camel@pasglop> <CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com> <1317749439.29415.251.camel@pasglop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317749439.29415.251.camel@pasglop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I shall make the changes by exposing the tos values via the
-netlink as suggested. I had a doubt is I have to modify the
-inet_diag_sockid or export it via a new option. I am considering
-that adding into inet_diag_sockid is better because the latter is a
-bit of a over kill for a single value to be exposed and it also seems
-to be logical fit.
-Can you let me know your thoughts on this.
+On Tue, Oct 04, 2011 at 07:30:39PM +0200, Benjamin Herrenschmidt wrote:
+> Well, thing is, you -already- have the whole "performance" option which
+> is what we are 'arguing' about upstream. Except that the implementation
+> of it that you have in your tree now has very nasty bugs (ie it doesn't
+> do what it's supposed to and really doesn't work).
+> 
+> Patches 1 and 2 fix it to do what it's supposed to.
 
-Thanks,
-Murali
+I'll agree with benh for now since, yes, the performance option is 
+completely broken in just blindly applying settings right now.  It should 
+be revisted and made so that a safe performance setting is supported in 
+the future (possibly via suggestions from arch-specific quirks), since 
+having to configure this makes little sense for the vast majority of 
+users.  Applying 3/3 first would also make the most sense.
 
-On Thu, Sep 29, 2011 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
-> From: Muraliraja Muniraju <muralira@google.com>
-> Date: Thu, 29 Sep 2011 12:22:42 -0700
->
->> From: Murali Raja <muralira@google.com>
->>
->> This patch exports the tos values from the inet_sock struct
->> for tcp and udp into the /proc/net/tcp or /proc/net/udp respectively.
->> This will not pickup per packet tos changes but it will address most
->> of the cases. This is mainly useful as it would decrease reliance on
->> tcpdump and also people without root access will be able to read
->> the values.
->>
->> Signed-off-by: Murali Raja <muralira@google.com>
->
-> You cannot change the layout of these files, they are parsed by userland
-> problems and therefore have a fixed API.
->
-> Netlink based socket dumping provides a proper, backwards compatible,
-> way to extend what is reported, so please consider adding your changes
-> there.
->
+		-ben
 
-
-
--- 
-Thanks,
-Murali
