@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab1JDQvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:51:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932824Ab1JDQoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:44:14 -0400
-From: Mark Salter <msalter@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>
-Subject: [PATCH v4 03/24] add ELF machine define for TI C6X DSPs
-Date: Tue,  4 Oct 2011 12:43:40 -0400
-Message-Id: <1317746641-26725-4-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
-References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
+	id S932940Ab1JDQvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:51:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51035 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824Ab1JDQvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:51:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1317744493.29415.238.camel@pasglop>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+ <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+ <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+ <1317744493.29415.238.camel@pasglop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 4 Oct 2011 09:51:10 -0700
+X-Google-Sender-Auth: 0lBScNHyiALdEGOwsqLFyNFHGc4
+Message-ID: <CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- include/linux/elf-em.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Tue, Oct 4, 2011 at 9:08 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>>
+>> Well, bcrl argues that patches 1-2 of 3 are actively wrong.
+>
+> This is an argument that isn't finished :-)
 
-diff --git a/include/linux/elf-em.h b/include/linux/elf-em.h
-index 18bea78..8e2b7ba 100644
---- a/include/linux/elf-em.h
-+++ b/include/linux/elf-em.h
-@@ -33,6 +33,7 @@
- #define EM_H8_300	46	/* Renesas H8/300,300H,H8S */
- #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
- #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
-+#define EM_TI_C6000	140	/* TI C6X DSPs */
- #define EM_FRV		0x5441	/* Fujitsu FR-V */
- #define EM_AVR32	0x18ad	/* Atmel AVR32 */
- 
--- 
-1.7.6.2
+Oh, I absolutely *hope* it isn't finished, but there's no way I'm
+applying a patch for -rc9 that people are still actively arguing
+whether it's at all valid or not.
 
+Which is why I'm planning on applying 3/3 just to make the whole issue
+irrelevant for 3.1, and then the people who want to test things out
+can apply whatever patches they want and play with the kernel command
+line options to actually enable whatever behavior they are testing.
+
+                       Linus
