@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab1JDTTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:19:40 -0400
-Received: from claw.goop.org ([74.207.240.146]:56728 "EHLO claw.goop.org"
+	id S933175Ab1JDTUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:20:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47680 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933149Ab1JDTSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:18:15 -0400
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V3 1/8] jump_label: use proper atomic_t initializer
-Date: Tue,  4 Oct 2011 12:18:02 -0700
-Message-Id: <0b202e43573ff2fba673ca375a95d757ed9a3f36.1317755691.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
+	id S932916Ab1JDTUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:20:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Date: Tue, 4 Oct 2011 21:23:10 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc8+; KDE/4.6.0; x86_64; ; )
+Cc: "Ted Ts'o" <tytso@mit.edu>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+References: <4E8655CD.90107@zytor.com> <20111004044914.GP6684@thunk.org> <4E8A910D.6020107@zytor.com>
+In-Reply-To: <4E8A910D.6020107@zytor.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110042123.11017.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Tuesday, October 04, 2011, H. Peter Anvin wrote:
+> On 10/03/2011 09:49 PM, Ted Ts'o wrote:
+> > 
+> > Note that if your laptop allows incoming ssh connections, and you
+> > logged into master.kernel.org with ssh forwarding enabled, your laptop
+> > may not be safe.  So be very, very careful before you assume that your
+> > laptop is safe.  At least one kernel developer, after he got past the
+> > belief, "surely I could have never had my machine be compromised",
+> > looked carefully and found rootkits on his machines.
+> > 
+> >        		     	   	       - Ted
+> 
+> By the way, I'm now pretty convinced that allowing inbound ssh on
+> laptops (which is the default on all the mainline Linux distros as far
+> as I know) is seriously broken... laptops get connected to *extremely*
+> insecure networks on just way too regular a basis.
 
-ATOMIC_INIT() is the proper thing to use.
+That's very true.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- include/linux/jump_label.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I'd recommend everyone to run a full nmap scan of his/her laptop
+and to block everything it finds open before using it outside of the home
+network.
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 66f23dc..1213e9d 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -28,9 +28,9 @@ struct module;
- #ifdef HAVE_JUMP_LABEL
- 
- #ifdef CONFIG_MODULES
--#define JUMP_LABEL_INIT {{ 0 }, NULL, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL, NULL}
- #else
--#define JUMP_LABEL_INIT {{ 0 }, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL}
- #endif
- 
- static __always_inline bool static_branch(struct jump_label_key *key)
--- 
-1.7.6.4
-
+Thanks,
+Rafael
