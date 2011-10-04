@@ -1,58 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab1JDTzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:55:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38956 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933403Ab1JDTzG (ORCPT
+	id S933578Ab1JDTzb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:55:31 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:41501 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933403Ab1JDTz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:55:06 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.135.251]
-In-Reply-To: <87botwk4gw.fsf@ti.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
- <1316948337-7924-3-git-send-email-ohad@wizery.com> <87sjni9aql.fsf@ti.com>
- <CAK=WgbZhz8LcAYZEY3qqRkX4E_wtspWp09Eq9G=5VdpoMMF1FQ@mail.gmail.com> <87botwk4gw.fsf@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 4 Oct 2011 21:54:44 +0200
-Message-ID: <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
-Subject: Re: [RFC 2/5] ARM: OMAP: omap_device: add a method to set iommu
- private archdata
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Cousson Benoit <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Oct 2011 15:55:29 -0400
+From: Grant Grundler <grundler@chromium.org>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, allan@asix.com.tw,
+        Grant Grundler <grundler@chromium.org>,
+        "Freddy Xin" <freddy@asix.com.tw>
+Subject: [PATCH 1/3] NET: fix phy init for AX88772 USB ethernet
+Date: Tue,  4 Oct 2011 12:55:16 -0700
+Message-Id: <1317758118-24052-1-git-send-email-grundler@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 4, 2011 at 8:15 PM, Kevin Hilman <khilman@ti.com> wrote:
-> The approach is OK with me, but I'm a bit torn about whether or not to
-> merge this since the need for this should go away when converting to DT.
+Fix phy initialization for AX88772 (USB 2.0 100BT). Failure was
+occasionally DHCP wouldn't work after reboot or suspend/resume cycle.
 
-I guess it will still take some time until our boards are fully
-functional with DT, so I think we should regard this as an interim
-solution. Without this patch, a huge deal of code consolidation and
-generalization is gated (namely - generic iommu and dma api, and
-everything that depends on it, e.g. rpmsg/remoteproc).
+Remove MONITOR_MODE. In this mode, Received packets are not buffered when
+the remote wakeup is enabled.
 
-> Is anyone working on IOMMU DT description?
+Signed-off-by: "Freddy Xin" <freddy@asix.com.tw>
+Signed-off-by: Grant Grundler <grundler@chromium.org>
+Acked-by: Olof Johansson <olofj@chromium.org>
+---
+ drivers/net/usb/asix.c |  116 +++++++++++++++++++++++++----------------------
+ 1 files changed, 62 insertions(+), 54 deletions(-)
 
-Unless Benoit is, I'll happily pick this up.
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index 6998aa6..a035aa9 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -36,7 +36,7 @@
+ #include <linux/usb/usbnet.h>
+ #include <linux/slab.h>
+ 
+-#define DRIVER_VERSION "14-Jun-2006"
++#define DRIVER_VERSION "26-Sep-2011"
+ static const char driver_name [] = "asix";
+ 
+ /* ASIX AX8817X based USB 2.0 Ethernet Devices */
+@@ -677,12 +677,6 @@ asix_get_wol(struct net_device *net, struct ethtool_wolinfo *wolinfo)
+ 	}
+ 	wolinfo->supported = WAKE_PHY | WAKE_MAGIC;
+ 	wolinfo->wolopts = 0;
+-	if (opt & AX_MONITOR_MODE) {
+-		if (opt & AX_MONITOR_LINK)
+-			wolinfo->wolopts |= WAKE_PHY;
+-		if (opt & AX_MONITOR_MAGIC)
+-			wolinfo->wolopts |= WAKE_MAGIC;
+-	}
+ }
+ 
+ static int
+@@ -695,8 +689,6 @@ asix_set_wol(struct net_device *net, struct ethtool_wolinfo *wolinfo)
+ 		opt |= AX_MONITOR_LINK;
+ 	if (wolinfo->wolopts & WAKE_MAGIC)
+ 		opt |= AX_MONITOR_MAGIC;
+-	if (opt != 0)
+-		opt |= AX_MONITOR_MODE;
+ 
+ 	if (asix_write_cmd(dev, AX_CMD_WRITE_MONITOR_MODE,
+ 			      opt, 0, 0, NULL) < 0)
+@@ -967,36 +959,18 @@ static int ax88772_link_reset(struct usbnet *dev)
+ 	return 0;
+ }
+ 
+-static const struct net_device_ops ax88772_netdev_ops = {
+-	.ndo_open		= usbnet_open,
+-	.ndo_stop		= usbnet_stop,
+-	.ndo_start_xmit		= usbnet_start_xmit,
+-	.ndo_tx_timeout		= usbnet_tx_timeout,
+-	.ndo_change_mtu		= usbnet_change_mtu,
+-	.ndo_set_mac_address 	= asix_set_mac_address,
+-	.ndo_validate_addr	= eth_validate_addr,
+-	.ndo_do_ioctl		= asix_ioctl,
+-	.ndo_set_multicast_list = asix_set_multicast,
+-};
+-
+-static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
++static int ax88772_reset(struct usbnet *dev)
+ {
++
+ 	int ret, embd_phy;
+ 	u16 rx_ctl;
+-	struct asix_data *data = (struct asix_data *)&dev->data;
+-	u8 buf[ETH_ALEN];
+-	u32 phyid;
+-
+-	data->eeprom_len = AX88772_EEPROM_LEN;
+-
+-	usbnet_get_endpoints(dev,intf);
+ 
+ 	if ((ret = asix_write_gpio(dev,
+ 			AX_GPIO_RSE | AX_GPIO_GPO_2 | AX_GPIO_GPO2EN, 5)) < 0)
+ 		goto out;
+ 
+-	/* 0x10 is the phy id of the embedded 10/100 ethernet phy */
+ 	embd_phy = ((asix_get_phy_addr(dev) & 0x1f) == 0x10 ? 1 : 0);
++
+ 	if ((ret = asix_write_cmd(dev, AX_CMD_SW_PHY_SELECT,
+ 				embd_phy, 0, 0, NULL)) < 0) {
+ 		dbg("Select PHY #1 failed: %d", ret);
+@@ -1011,6 +985,7 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 		goto out;
+ 
+ 	msleep(150);
++
+ 	if (embd_phy) {
+ 		if ((ret = asix_sw_reset(dev, AX_SWRESET_IPRL)) < 0)
+ 			goto out;
+@@ -1029,25 +1004,6 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	rx_ctl = asix_read_rx_ctl(dev);
+ 	dbg("RX_CTL is 0x%04x setting to 0x0000", rx_ctl);
+ 
+-	/* Get the MAC address */
+-	if ((ret = asix_read_cmd(dev, AX_CMD_READ_NODE_ID,
+-				0, 0, ETH_ALEN, buf)) < 0) {
+-		dbg("Failed to read MAC address: %d", ret);
+-		goto out;
+-	}
+-	memcpy(dev->net->dev_addr, buf, ETH_ALEN);
+-
+-	/* Initialize MII structure */
+-	dev->mii.dev = dev->net;
+-	dev->mii.mdio_read = asix_mdio_read;
+-	dev->mii.mdio_write = asix_mdio_write;
+-	dev->mii.phy_id_mask = 0x1f;
+-	dev->mii.reg_num_mask = 0x1f;
+-	dev->mii.phy_id = asix_get_phy_addr(dev);
+-
+-	phyid = asix_get_phyid(dev);
+-	dbg("PHYID=0x%08x", phyid);
+-
+ 	if ((ret = asix_sw_reset(dev, AX_SWRESET_PRL)) < 0)
+ 		goto out;
+ 
+@@ -1058,9 +1014,6 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ 	msleep(150);
+ 
+-	dev->net->netdev_ops = &ax88772_netdev_ops;
+-	dev->net->ethtool_ops = &ax88772_ethtool_ops;
+-
+ 	asix_mdio_write(dev->net, dev->mii.phy_id, MII_BMCR, BMCR_RESET);
+ 	asix_mdio_write(dev->net, dev->mii.phy_id, MII_ADVERTISE,
+ 			ADVERTISE_ALL | ADVERTISE_CSMA);
+@@ -1086,6 +1039,61 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	rx_ctl = asix_read_medium_status(dev);
+ 	dbg("Medium Status is 0x%04x after all initializations", rx_ctl);
+ 
++	return 0;
++
++out:
++	return ret;
++
++}
++
++static const struct net_device_ops ax88772_netdev_ops = {
++	.ndo_open		= usbnet_open,
++	.ndo_stop		= usbnet_stop,
++	.ndo_start_xmit		= usbnet_start_xmit,
++	.ndo_tx_timeout		= usbnet_tx_timeout,
++	.ndo_change_mtu		= usbnet_change_mtu,
++	.ndo_set_mac_address 	= asix_set_mac_address,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_do_ioctl		= asix_ioctl,
++	.ndo_set_multicast_list = asix_set_multicast,
++};
++
++static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
++{
++	int ret;
++	struct asix_data *data = (struct asix_data *)&dev->data;
++	u8 buf[ETH_ALEN];
++	u32 phyid;
++
++	data->eeprom_len = AX88772_EEPROM_LEN;
++
++	usbnet_get_endpoints(dev,intf);
++
++	/* Get the MAC address */
++	if ((ret = asix_read_cmd(dev, AX_CMD_READ_NODE_ID,
++				0, 0, ETH_ALEN, buf)) < 0) {
++		dbg("Failed to read MAC address: %d", ret);
++		goto out;
++	}
++	memcpy(dev->net->dev_addr, buf, ETH_ALEN);
++
++	/* Initialize MII structure */
++	dev->mii.dev = dev->net;
++	dev->mii.mdio_read = asix_mdio_read;
++	dev->mii.mdio_write = asix_mdio_write;
++	dev->mii.phy_id_mask = 0x1f;
++	dev->mii.reg_num_mask = 0x1f;
++	dev->mii.phy_id = asix_get_phy_addr(dev);
++
++	phyid = asix_get_phyid(dev);
++	dbg("PHYID=0x%08x", phyid);
++
++	dev->net->netdev_ops = &ax88772_netdev_ops;
++	dev->net->ethtool_ops = &ax88772_ethtool_ops;
++
++	if ((ret = ax88772_reset(dev)) < 0)
++		goto out;
++
+ 	/* Asix framing packs multiple eth frames into a 2K usb bulk transfer */
+ 	if (dev->driver_info->flags & FLAG_FRAMING_AX) {
+ 		/* hard_mtu  is still the default - the device does not support
+@@ -1093,7 +1101,6 @@ static int ax88772_bind(struct usbnet *dev, struct usb_interface *intf)
+ 		dev->rx_urb_size = 2048;
+ 	}
+ 	return 0;
+-
+ out:
+ 	return ret;
+ }
+@@ -1427,7 +1434,7 @@ static const struct driver_info ax88772_info = {
+ 	.bind = ax88772_bind,
+ 	.status = asix_status,
+ 	.link_reset = ax88772_link_reset,
+-	.reset = ax88772_link_reset,
++	.reset = ax88772_reset,
+ 	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR,
+ 	.rx_fixup = asix_rx_fixup,
+ 	.tx_fixup = asix_tx_fixup,
+@@ -1585,6 +1592,7 @@ static void __exit asix_exit(void)
+ module_exit(asix_exit);
+ 
+ MODULE_AUTHOR("David Hollis");
++MODULE_VERSION(DRIVER_VERSION);
+ MODULE_DESCRIPTION("ASIX AX8817X based USB 2.0 Ethernet Devices");
+ MODULE_LICENSE("GPL");
+ 
+-- 
+1.7.2.3
 
-> I guess if I do merge this, we can also clean this up significantly
-> after all devices are converted to DT.
-
-Sure.
-
-> Unless it has other dependencies on Benoit's further DT patches, you can
-> base this on my for_3.2/omap_device-2 branch which includes Benoit's
-> alloc changes.
-
-Ok, thanks a lot !
-Ohad.
