@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab1JDJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 05:57:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755498Ab1JDJ5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 05:57:10 -0400
-Date: Tue, 4 Oct 2011 11:56:54 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 8/9] KVM, VMX: Add support for guest/host-only profiling
-Message-ID: <20111004095654.GE30105@redhat.com>
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com>
- <1317649795-18259-9-git-send-email-gleb@redhat.com>
- <4E89CE09.1080808@redhat.com>
- <20111003153619.GA3225@redhat.com>
- <4E8AD1D3.9040402@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8AD1D3.9040402@redhat.com>
+	id S1755703Ab1JDKBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 06:01:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34666 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab1JDKBO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 06:01:14 -0400
+Subject: Re: [PATCH] perf tools: Exit recording if events have non matching
+ sample type
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 04 Oct 2011 12:00:12 +0200
+In-Reply-To: <4E8A8842.9010509@gmail.com>
+References: <20110929230613.GA20083@ghostprotocols.net>
+	  <4E850056.1090101@gmail.com> <1317368359.19415.0.camel@twins>
+	 <4E8A8842.9010509@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317722412.25926.16.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 11:28:51AM +0200, Avi Kivity wrote:
-> On 10/03/2011 05:36 PM, Gleb Natapov wrote:
-> >On Mon, Oct 03, 2011 at 05:00:25PM +0200, Avi Kivity wrote:
-> >>  On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> >>  >Support guest/host-only profiling by switch perf msrs on
-> >>  >a guest entry if needed.
-> >>  >
-> >>  >@@ -6052,6 +6056,26 @@ static void vmx_cancel_injection(struct kvm_vcpu *vcpu)
-> >>  >   	vmcs_write32(VM_ENTRY_INTR_INFO_FIELD, 0);
-> >>  >   }
-> >>  >
-> >>  >+static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
-> >>  >+{
-> >>  >+#ifdef CONFIG_PERF_EVENTS
+On Mon, 2011-10-03 at 22:14 -0600, David Ahern wrote:
+> On 09/30/2011 01:39 AM, Peter Zijlstra wrote:
+> > On Thu, 2011-09-29 at 17:33 -0600, David Ahern wrote:
+> >>> For record that means we need to dump each per-sample_id mmap onto a
+> >>> separate file, i.e. use a directory, etc.
 > >>
-> >>  No need for #ifdef (if you also define perf_guest_get_msrs() when
-> >>  !CONFIG_PERF_EVENTS).
-> >>
-> >Yes, but will compiler be smart enough to remove the code of the
-> >function completely? It will have to figure that vmx->perf_msrs_cnt is
-> >always 0 somehow.
+> >> That seems like a major re-write of perf. 
+> > 
+> > Well we want to go there anyway. A file per cpu stream can be a lot less
+> > overhead than one file for all cpu streams.
+> > 
 > 
-> It won't, but do we care?
+> really it becomes file per cpu stream and per sample type. So a dual
+> socket, quad core with HT means 16 files per sample type. ie., the
+> number of files explodes quick.
 > 
-Dead code, that likely to be inlined, on a hot path.
+> I understand the allure for simplicity during the data collection. Has
+> any thought been given on management of the files in such a scenario?
+> User specifies a directory path instead of a file path - or both to
+> handle backward compatibility?
 
-> >>  >
-> >>  >+
-> >>  >+	perf_guest_get_msrs(vmx->perf_msrs_cnt, vmx->perf_msrs);
-> >>  >+	for (i = 0; i<   vmx->perf_msrs_cnt; i++) {
-> >>  >+		struct perf_guest_switch_msr *msr =&vmx->perf_msrs[i];
-> >>  >+		if (msr->host == msr->guest)
-> >>  >+			clear_atomic_switch_msr(vmx, msr->msr);
-> >>  >+		else
-> >>  >+			add_atomic_switch_msr(vmx, msr->msr, msr->guest,
-> >>  >+					msr->host);
-> >>
-> >>  This generates a lot of VMWRITEs even if nothing changes, just to
-> >>  re-set bits in the VMCS to their existing values.  Need to add
-> >>  something like this:
-> >>
-> >>     if (loaded_vmcs->msr[i].host == msr->host
-> >>  &&  loaded_vmcs->msr[i].guest == msr->guest)
-> >>            continue;
-> >VMWRITE happens only when number of autoloaded MSRs changes (which is
-> >rare), not on each call to add_atomic_switch_msr(). I thought about
-> >optimizing this write too by doing
-> >vmcs_write32(VM_(ENTRY|EXIT)_MSR_LOAD_COUNT, m->nr) only once by
-> >checking that  m->nr changed during vmentry. Can be done later.
-> 
-> For EFER and PERF_CTRL, it's done unconditionally, no?
-For those yes. We do not cache their value currently. Can be added, but
-this is independent optimization. 
-
-> 
-> >>
-> >>  btw, shouldn't the msr autoload list be part of loaded_vmcs as well?
-> >>
-> >Why?
-> 
-> Any caching is only relative to the vmcs (unless we invalidate the
-> cache on vmcs switch).
-Ah, you are talking about not yet existent cache. Then I see why it
-should be in loaded_vmcs for EFER and PERF_CTRL.
-
-> 
-> >>
-> >>  Do we really need a private buffer?  Perhaps perf_guest_get_msrs()
-> >>  can return a perf-internal buffer (but then, we will need to copy it
-> >>  for the optimization above, but that's a separate issue).
-> >>
-> >The buffer will be small, so IMHO private one is not an issue. We can
-> >make it perf internal per cpu buffer I think.
-> >
-> 
-> I think the API is nicer with perf returning a read-only internal
-> buffer; this way there is no kmalloc involved since perf knows its
-> internal limits.
-> 
-Yeah, I am trying it now it it looks nicer.
-
---
-			Gleb.
+I think the idea was a directory and a script to convert old data files
+to the new format. But it was a while ago acme and I talked about this.
