@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab1JDPhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:37:14 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:39291 "EHLO kanga.kvack.org"
+	id S932758Ab1JDPl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:41:26 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60012 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386Ab1JDPhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:37:12 -0400
-Date: Tue, 4 Oct 2011 11:37:12 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Jon Mason <mason@myri.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+	id S932656Ab1JDPlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 11:41:25 -0400
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using
+ "performance" settings
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
-Message-ID: <20111004153711.GF19130@kvack.org>
-References: <1317653420-21404-3-git-send-email-mason@myri.com> <20111003215547.GA3107@myri.com> <20111004144215.GE19130@kvack.org>
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+In-Reply-To: <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+	 <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Oct 2011 17:40:38 +0200
+Message-ID: <1317742838.29415.217.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111004144215.GE19130@kvack.org>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 10:42:15AM -0400, Benjamin LaHaise wrote:
-> On Mon, Oct 03, 2011 at 04:55:48PM -0500, Jon Mason wrote:
-> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > 
-> > When configuring the PCIe settings for "performance", we allow parents
-> > to have a larger Max Payload Size than children and rely on children
-> > Max Read Request Size to not be larger than their own MPS to avoid
-> > having the host bridge generate responses they can't cope with.
+On Mon, 2011-10-03 at 13:56 -0700, Linus Torvalds wrote:
+> On Mon, Oct 3, 2011 at 7:50 AM, Jon Mason <mason@myri.com> wrote:
+> >
+> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Acked-by: Jon Mason <mason@myri.com>
 > 
-> I'm pretty sure that simply will not work, and is an incorrect understanding 
-> of how PCIe bridges and devices interact with regards to transaction size 
-> limits.  Here's why: I am actually implementing a PCIe nic on an FPGA at 
-> present, and have just been in the process of tuning how memory read 
-> requests are issued and processed.  It is perfectly valid for a PCIe 
-> endpoint to issue a read request for an entire 4KB block (assuming it 
-> respects the no 4KB boundary crossings rule), even when the MPS setting 
-> is only 64 or 128 bytes.  However, the root complex or PCIe bridge *must 
-> not* exceed the Maximum Payload Size for any completions with data or 
-> posted writes.  Multiple completions are okay and expected for read 
-> requests.  If the MPS on the bridge is set to a larger value than 
-> what all of the endpoints connected to it, the bridge or root complex will 
-> happily send read completions exceeding the endpoint's MPS.  This can and 
-> will lead to failure on the parts of endpoints.
+> You need to sign off on this one too, since you're passing it on.
+> 
+> Also, I'd *really* like some more acks/reviews on the series. Anybody?
 
-Just to clarify, my main concern is that restricting the size of read 
-requests will impact performance negatively, for things like network tx.  
-Issuing small reads for network tx made a huge impact on transmit 
-performance, while also constraining rx performance in a full duplex 
-scenario.  It also leaves the door open to incorrect behaviour in the 
-cast of posted writes (think of memcpy_toio()) since the write MPS is 
-incorrect.
+Hopefully most of these patches only affect the "performance" setting
+which is no longer the default.
 
-		-ben
+But yes, more reviews are always welcome.
+
+Cheers,
+Ben.
+
+>                     Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
