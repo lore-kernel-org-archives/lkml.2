@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab1JDPKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:10:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38449 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab1JDPKs convert rfc822-to-8bit (ORCPT
+	id S932679Ab1JDPOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:14:18 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:45428 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932427Ab1JDPOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:10:48 -0400
-Subject: Re: lockdep recursive locking detected (rcu_kthread / __cache_free)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, penberg@kernel.org, mpm@selenic.com,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
-Date: Tue, 04 Oct 2011 17:09:50 +0200
-In-Reply-To: <alpine.DEB.2.00.1110040948230.8522@router.home>
-References: <20111003175322.GA26122@sucs.org>
-	  <20111003203139.GH2403@linux.vnet.ibm.com>
-	  <alpine.DEB.2.00.1110031540560.11713@router.home>
-	  <20111003214739.GK2403@linux.vnet.ibm.com>
-	  <alpine.DEB.2.00.1110040916330.8522@router.home>
-	 <1317739225.32543.9.camel@twins>
-	 <alpine.DEB.2.00.1110040948230.8522@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317740991.32543.19.camel@twins>
-Mime-Version: 1.0
+	Tue, 4 Oct 2011 11:14:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E8B24BE.8060102@cam.ac.uk>
+Date: Tue, 04 Oct 2011 16:22:38 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the moduleh tree with the  tree
+References: <20111004175724.b253f03270f1067531e5d95d@canb.auug.org.au>
+In-Reply-To: <20111004175724.b253f03270f1067531e5d95d@canb.auug.org.au>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 09:50 -0500, Christoph Lameter wrote:
-> On Tue, 4 Oct 2011, Peter Zijlstra wrote:
+On 10/04/11 07:57, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> > It could of course be I got confused and broke stuff instead, could
-> > someone who knows slab (I guess that's either Pekka, Christoph or David)
-> > stare at those patches?
+> Today's linux-next merge of the moduleh tree got a conflict in
+> drivers/staging/iio/industrialio-ring.c between commit 14555b14455f
+> ("staging:iio: replacing term ring with buffer in the IIO core") from the
+> staging tree and commit 4903058fe223 ("staging: Add export.h for
+> THIS_MODULE/EXPORT_SYMBOL to drivers/staging users") from the moduleh
+> tree.
 > 
-> Why is the loop in init_lock_keys only running over kmalloc caches and not
-> over all slab caches?
+> The former renamed the file modified by the latter.  The new file is
+> drivers/staging/iio/industrialio-buffer.c and will need to include
+> export.h.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 4 Oct 2011 17:48:56 +1100
+> Subject: [PATCH] staging: Add export.h for EXPORT_SYMBOL to
+>  drivers/staging/iio/industrialio-buffer.c
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-A little digging brings us to: 056c62418cc639bf2fe962c6a6ee56054b838bc7
-which seems to have introduced that.
+Sorry Paul, I fear this going to keep happening.  Is there
+a minimal set of patches Greg could pull into staging-next
+to avoid more similar issues?
+(assuming it isn't already all sorted out!)
+> ---
+>  drivers/staging/iio/industrialio-buffer.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/industrialio-buffer.c b/drivers/staging/iio/industrialio-buffer.c
+> index 4ce101a..628aa69 100644
+> --- a/drivers/staging/iio/industrialio-buffer.c
+> +++ b/drivers/staging/iio/industrialio-buffer.c
+> @@ -14,6 +14,7 @@
+>   * - Alternative access techniques?
+>   */
+>  #include <linux/kernel.h>
+> +#include <linux/export.h>
+>  #include <linux/device.h>
+>  #include <linux/fs.h>
+>  #include <linux/cdev.h>
 
->  It seems that this has to be especially applied to
-> regular slab caches because those are the ones that mostly have off slab
-> structures. So modify init_lock_keys to run over all slab caches?
-
-That sounds about right, worth a try. Also over new caches, the above
-reverenced commit removes a hook from kmem_cache_init() which we really
-need I suppose.
-
-I'll try and compose a patch if nobody beats me to it, but need to run
-an errand first.
