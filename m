@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203Ab1JDTSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:18:22 -0400
+	id S933305Ab1JDTSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:18:44 -0400
 Received: from claw.goop.org ([74.207.240.146]:56758 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932539Ab1JDTSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:18:20 -0400
+	id S932908Ab1JDTSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:18:21 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V3 6/8] jump_label: add arch_jump_label_transform_static() to optimise non-live code updates
-Date: Tue,  4 Oct 2011 12:18:07 -0700
-Message-Id: <d2218e435a2f5649210edb41b9ba5ccdbd0b8fd6.1317755691.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V3 8/8] x86/jump_label: add arch_jump_label_transform_static()
+Date: Tue,  4 Oct 2011 12:18:09 -0700
+Message-Id: <a41a06725b61aa91dcd5606e18a159d3b44cf6ba.1317755691.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
@@ -30,65 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-When updating a newly loaded module, the code is definitely not yet
-executing on any processor, so it can be updated with no need for any
-heavyweight synchronization.
-
-This patch adds arch_jump_label_static() which is implemented as
-arch_jump_label_transform() by default, but architectures can override
-it if it avoids, say, a call to stop_machine().
+This allows jump-label entries to be cheaply updated on code which is
+not yet live.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/jump_label.h |    2 ++
- kernel/jump_label.c        |   14 +++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletions(-)
+ arch/x86/kernel/jump_label.c |   20 +++++++++++++++++---
+ 1 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 12e804e..56594e4 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -45,6 +45,8 @@ extern void jump_label_lock(void);
- extern void jump_label_unlock(void);
- extern void arch_jump_label_transform(struct jump_entry *entry,
- 				      enum jump_label_type type);
-+extern void arch_jump_label_transform_static(struct jump_entry *entry,
-+					     enum jump_label_type type);
- extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_inc(struct jump_label_key *key);
- extern void jump_label_dec(struct jump_label_key *key);
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 059202d5..f0a9bef 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -104,6 +104,18 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
- 	return 0;
- }
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index 2ad0298..ea9d5f2f 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -24,8 +24,9 @@ union jump_code_union {
+ 	} __attribute__((packed));
+ };
  
-+/* 
-+ * Update code which is definitely not currently executing.
-+ * Architectures which need heavyweight synchronization to modify
-+ * running code can override this to make the non-live update case
-+ * cheaper.
-+ */
-+void __weak arch_jump_label_transform_static(struct jump_entry *entry,
-+					    enum jump_label_type type)
-+{
-+	arch_jump_label_transform(entry, type);	
+-void arch_jump_label_transform(struct jump_entry *entry,
+-			       enum jump_label_type type)
++static void __jump_label_transform(struct jump_entry *entry,
++				   enum jump_label_type type,
++				   void *(*poker)(void *, const void *, size_t))
+ {
+ 	union jump_code_union code;
+ 
+@@ -35,11 +36,24 @@ void arch_jump_label_transform(struct jump_entry *entry,
+ 				(entry->code + JUMP_LABEL_NOP_SIZE);
+ 	} else
+ 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
++
++	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
 +}
 +
- static void __jump_label_update(struct jump_label_key *key,
- 				struct jump_entry *entry,
- 				struct jump_entry *stop, int enable)
-@@ -208,7 +220,7 @@ void jump_label_apply_nops(struct module *mod)
- 		return;
- 
- 	for (iter = iter_start; iter < iter_stop; iter++)
--		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
-+		arch_jump_label_transform_static(iter, JUMP_LABEL_DISABLE);
++void arch_jump_label_transform(struct jump_entry *entry,
++			       enum jump_label_type type)
++{
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
++	__jump_label_transform(entry, type, text_poke_smp);
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
  }
  
- static int jump_label_add_module(struct module *mod)
++void arch_jump_label_transform_static(struct jump_entry *entry,
++				      enum jump_label_type type)
++{
++	__jump_label_transform(entry, type, text_poke_early);
++}
++
+ #endif
 -- 
 1.7.6.4
 
