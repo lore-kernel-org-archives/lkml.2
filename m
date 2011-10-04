@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab1JDA5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 20:57:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59148 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752170Ab1JDA5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 20:57:49 -0400
-Message-ID: <1317689868.13927.26.camel@Joe-Laptop>
-Subject: Re: [PATCH 3/9] Staging: comedi: fix printk issue in cb_pcidas.c
-From: Joe Perches <joe@perches.com>
-To: Ryan Mallon <rmallon@gmail.com>, Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>,
-        devel@driverdev.osuosl.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org
-Date: Mon, 03 Oct 2011 17:57:48 -0700
-In-Reply-To: <4E8A457F.5050106@gmail.com>
-References: <1317388707-1980-1-git-send-email-ravishankar.km@greenturtles.in>
-	 <1317388707-1980-3-git-send-email-ravishankar.km@greenturtles.in>
-	 <4E8A457F.5050106@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
+	id S1752874Ab1JDA6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 20:58:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41882 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab1JDA6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 20:58:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 4 Oct 2011 09:57:15 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com
+Subject: Re: [PATCH v4 3/8] foundations of per-cgroup memory pressure
+ controlling.
+Message-Id: <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1317637123-18306-4-git-send-email-glommer@parallels.com>
+References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
+	<1317637123-18306-4-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 10:30 +1100, Ryan Mallon wrote:
-> On 30/09/11 23:18, Ravishankar Karkala Mallikarjunayya wrote:
+On Mon,  3 Oct 2011 14:18:38 +0400
+Glauber Costa <glommer@parallels.com> wrote:
+
+> This patch converts struct sock fields memory_pressure,
+> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
+> to function pointers, receiving a struct mem_cgroup parameter.
 > 
-> > This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
-> > 
-> > Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
-> > ---
-> >  drivers/staging/comedi/drivers/cb_pcidas.c |   21 +++++++++++++--------
-> >  1 files changed, 13 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-> > index 9dec153..9d16c6c 100644
-> > --- a/drivers/staging/comedi/drivers/cb_pcidas.c
-> > +++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-> > @@ -565,7 +565,8 @@ static int cb_pcidas_attach(struct comedi_device *dev,
-> >  	int index;
-> >  	int i;
-> >  
-> > -	pr_info("comedi%d: cb_pcidas: ", dev->minor);
-> > +	dev_info(&pcidev->dev, "comedi%d: cb_pcidas:\n",
-> > +		dev->minor);
+> enter_memory_pressure is kept the same, since all its callers
+> have socket a context, and the kmem_cgroup can be derived from
+> the socket itself.
 > 
-> This printk can probably be removed now. It's just noise. Similar in
-> other places too.
+> To keep things working, the patch convert all users of those fields
+> to use acessor functions.
+> 
+> In my benchmarks I didn't see a significant performance difference
+> with this patch applied compared to a baseline (around 1 % diff, thus
+> inside error margin).
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
 
-Looking a bit further at the patch and the function it
-modifies, it converts dev->minor to &pcidev->dev.  In the
-function, pcidev is initialized to NULL a couple of lines
-before the dev_info so this proposed patch is truly broken.
+A nitpick.
 
-I've now officially given up looking at comedi printk cleanups.
+ 
+>  #ifdef CONFIG_INET
+>  struct sock;
+> +struct proto;
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>  void sock_update_memcg(struct sock *sk);
+>  void sock_release_memcg(struct sock *sk);
+> -
+> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
+> +			  int amt, int *parent_failure);
+> +void memcg_sock_mem_free(struct mem_cgroup *mem, struct proto *prot, int amt);
+> +void memcg_sockets_allocated_dec(struct mem_cgroup *mem, struct proto *prot);
+> +void memcg_sockets_allocated_inc(struct mem_cgroup *mem, struct proto *prot);
+>  #else
+> +/* memcontrol includes sockets.h, that includes memcontrol.h ... */
+> +static inline void memcg_sock_mem_alloc(struct mem_cgroup *mem,
+> +					struct proto *prot, int amt,
+> +					int *parent_failure)
+> +{
+> +}
 
-Most of the proposed patches have very high error rates and
-the submitters don't seem to want to improve their submissions
-or lower their error rate significantly.
+In these days, at naming memory cgroup pointers, we use "memcg" instead of
+"mem". So, could you use "memcg" for represeinting memory cgroup ?
 
-I could probably fix the whole thing correctly in an afternoon.
 
-I'd add and use comedi_<level> functions that Greg doesn't like
-and until Greg changes his mind, I won't bother.
+> +
+> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
+> +			  int amt, int *parent_failure)
+> +{
+> +	mem = parent_mem_cgroup(mem);
+> +	for (; mem != NULL; mem = parent_mem_cgroup(mem)) {
+> +		long alloc;
+> +		long *prot_mem = prot->prot_mem(mem);
+> +		/*
+> +		 * Large nestings are not the common case, and stopping in the
+> +		 * middle would be complicated enough, that we bill it all the
+> +		 * way through the root, and if needed, unbill everything later
+> +		 */
+> +		alloc = atomic_long_add_return(amt,
+> +					       prot->memory_allocated(mem));
+> +		*parent_failure |= (alloc > prot_mem[2]);
+> +	}
+> +}
+> +EXPORT_SYMBOL(memcg_sock_mem_alloc);
 
+Hmm. why not using res_counter ? for reusing 'unbill' code ?
+
+Thanks,
+-Kame
 
