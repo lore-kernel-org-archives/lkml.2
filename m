@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1JDHfj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:35:39 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:7356 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab1JDHfh (ORCPT
+	id S1754962Ab1JDHhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:37:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52306 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab1JDHhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:35:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6488"; a="124414987"
-X-IronPort-AV: E=Sophos;i="4.68,482,1312182000"; 
-   d="scan'208";a="137522323"
-Message-ID: <4E8AB741.9030707@qca.qualcomm.com>
-Date: Tue, 4 Oct 2011 10:35:29 +0300
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Tue, 4 Oct 2011 03:37:53 -0400
+Date: Tue, 4 Oct 2011 00:37:49 -0700
+From: Tejun Heo <htejun@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Matt Fleming <matt@console-pimps.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org
+Subject: Re: [RFC][PATCH 0/5] Signal scalability series
+Message-ID: <20111004073749.GD15637@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
+ <20110930165206.GA22048@redhat.com>
+ <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20110930235625.GD2658@mtj.dyndns.org>
+ <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com>
+ <1317474209.12973.15.camel@twins>
+ <20111003013855.GG31799@mtj.dyndns.org>
+ <alpine.LFD.2.02.1110031544340.1489@ionos>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-References: <20111004180333.44f741dc08063a918c9b581f@canb.auug.org.au>
-In-Reply-To: <20111004180333.44f741dc08063a918c9b581f@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.64.139.57]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1110031544340.1489@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2011 10:03 AM, Stephen Rothwell wrote:
-> After merging the moduleh tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/net/wireless/ath/ath6kl/debug.c:237:11: error: 'THIS_MODULE' undeclared here (not in a function)
-> 
-> Caused by commit 9a7308341b71 ("ath6kl: silence "invalid rate" warning")
-> from the wireless tree interacting with the module.h split.
-> 
-> I added this patch:
+Hello,
 
-John&Paul, how do we handle this patch?
-
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 4 Oct 2011 18:01:03 +1100
-> Subject: [PATCH] ath6kl: THIS_MODULES needs export.h
+On Mon, Oct 03, 2011 at 03:56:26PM +0200, Thomas Gleixner wrote:
+> > Signal delivery is O(#threads)?  Delivery of fatal signal is of course
+> > but where do we walk all threads during non-fatal signal deliveries?
+> > What am I missing?
 > 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/net/wireless/ath/ath6kl/debug.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
-> index ba3f23d..7879b53 100644
-> --- a/drivers/net/wireless/ath/ath6kl/debug.c
-> +++ b/drivers/net/wireless/ath/ath6kl/debug.c
-> @@ -19,6 +19,7 @@
->  #include <linux/circ_buf.h>
->  #include <linux/fs.h>
->  #include <linux/vmalloc.h>
-> +#include <linux/export.h>
->  
->  #include "debug.h"
->  #include "target.h"
+> Delivery of any process wide signal can result in an O(thread) walk to
+> find a valid target. That's true for user space originated and kernel
+> space originated (e.g. posix timers) signals.
 
-Kalle
+Ooh, right.  Wakeup currently does linear scan of threads, but this is
+mostly a separate issue.  As Peter suggested, tracking wakeup target
+probably is one sane way to solve this.
+
+Do you think siglock would still be a problem even after O(N) problem
+is solved?  Maybe that would lessen contention enough such that the
+locking scope wouldn't matter anymore?  Unless breaking up of the
+locks results in nice separate hot domains, being finer-grained
+doesn't mean much after all.
+
+Thank you.
+
+-- 
+tejun
