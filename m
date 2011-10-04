@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab1JDTFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:05:00 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:35568 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab1JDTE7 (ORCPT
+	id S933453Ab1JDTHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:07:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54960 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932820Ab1JDTHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:04:59 -0400
-Date: Tue, 4 Oct 2011 21:04:40 +0200
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: James Morris <jmorris@namei.org>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, Greg KH <greg@kroah.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [RFC v2.1 0/6] evm: digital signature verification extension
-Message-ID: <20111004190440.GB23212@gondor.apana.org.au>
-References: <cover.1315921427.git.dmitry.kasatkin@intel.com> <1316525069.3189.4.camel@localhost.localdomain> <CALLzPKbPM-7Z4UphWvZUFxT9vF8XJSWyeUGTkLaM7--2A6y7eA@mail.gmail.com> <alpine.LRH.2.00.1109270914480.4126@tundra.namei.org> <CALLzPKa=DuhmTZ7enLH6LNKA1mimC9OJZoaCJrprrHJwg=mRdQ@mail.gmail.com> <20110929001424.GA17356@gondor.apana.org.au> <alpine.LRH.2.00.1109291042290.21622@tundra.namei.org>
+	Tue, 4 Oct 2011 15:07:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Aurelien Jacquiot <a-jacquiot@ti.com>
+Subject: Re: [PATCH v4 18/24] C6X: ptrace support
+Date: Tue, 04 Oct 2011 21:07:35 +0200
+Message-ID: <1475428.fWsLAPd2BQ@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317746641-26725-19-git-send-email-msalter@redhat.com>
+References: <1317746641-26725-1-git-send-email-msalter@redhat.com> <1317746641-26725-19-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1109291042290.21622@tundra.namei.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:FlfF8PRkY+hzLNjtq1x5Eu5h/iL76GMCpDjfI+AANL5
+ XJVCTBVUP/sBwBuI0GUqNz1FUnJG7klL93nLk3HGbBROvvYsU6
+ d4SqfKYnzRIUKV9Asc8nP/voXg0noB3wcA5g1h/tLNKd+4d929
+ TJmjsFr3DyGLjG2WLRFh8rclQRvi2ANkHan9pu1heyDA+VBYD5
+ tN9WfIw2eI3KCYW+U9tiLMYb0jB9PGw/EiSIiFResojSJKa+xx
+ xXKUcMfjBBqjJnQUgnokPePmP5bMkNbiUdXBcstb+XhALg8gYe
+ wzC1oKEUMClhX8ILMDE65dphyangggHRGeW3aOQqTtw5WSN1bg
+ mNSrPAqSZRG1Gzb0IOTU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 10:42:46AM +1000, James Morris wrote:
-> On Thu, 29 Sep 2011, Herbert Xu wrote:
+On Tuesday 04 October 2011 12:43:55 Mark Salter wrote:
+> From: Aurelien Jacquiot <a-jacquiot@ti.com>
 > 
-> > Well if James is OK with adding the user for this then I'm fine
-> > with adding the necessary infrastructure.
+> Original port to early 2.6 kernel using TI COFF toolchain.
+> Brought up to date by Mark Salter <msalter@redhat.com>
 > 
-> Are you happy with the API?
+> Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
 
-As there is only one user, we can add whatever we want and fix
-it later, as long as the crypto part is exposed to user-space.
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Acked-by: Arnd Bergmann <arnd@arndb.de>
