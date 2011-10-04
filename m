@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab1JDMaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 08:30:30 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:57455 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab1JDMa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 08:30:29 -0400
+	id S1756742Ab1JDMfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 08:35:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12584 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab1JDMfk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 08:35:40 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=AnnBIoutNvdwNM2ZACwvFsAbGXTi4YyRa7uzuTKv8jE67fbGVwjrWAN0e4jOx8aLy
+	aT7sGAL0DxsKHjiUn2bFQ==
 MIME-Version: 1.0
-Message-Id: <111004213028X3.21235@mail.play-mail.info>
-Date: Tue, 4 Oct 2011 21:30:28 +0900
-From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?44KG44GG44GT44Gn44GZ44CC6LyJ44Gb44Gf44Ki44OJ44Os44K544Gr44GK6L+U5LqL44KS44GP44Gg44GV44GE44G+44Gb44KT44GL77yf?=
+In-Reply-To: <m2hb42ki5a.fsf@firstfloor.org>
+References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
+	<1316778523.9084.17.camel@twins>
+	<20110923122014.GP6063@erda.amd.com>
+	<m2hb42ki5a.fsf@firstfloor.org>
+Date: Tue, 4 Oct 2011 14:35:38 +0200
+Message-ID: <CABPqkBRPvKxkyH6tVK1AQDBTbyrE3Cy0wjz64qaE2p0dzPRYig@mail.gmail.com>
+Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p94CUeht021680
 
-今送ってるアドレスは見ることが出来ないので
-lkasdhflkashflkahsldkfh@yahoo.co.jp
-↑このメールアドレスにお返事がいただけませんか？
-この送ってるメールももう使えなくなりますし
-上のアドレスだったらもうしばらくは変わる事もありませんから。
+On Sat, Sep 24, 2011 at 12:28 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Robert Richter <robert.richter@amd.com> writes:
+> >
+> > I think we could extend perf report to parse also ibs samples. The
+> > only thing we need for it should be the pmu name/type mapping in the
+> > perf.data header and the pmu type in the sample. See my comment on
+> > Stephane's patch '[PATCH] perf: make perf.data more self-descriptive
+> > (v5)'.
+>
+> I would like to have a similar user tool for Intel PEBS data.
+>
+> I have some hacks currently to dump more data from the PEBS record and
+> it's useful for some situations. I was actually thinking of adapting
+> Robert's tool, but integrating it into other tools is fine too.
+>
+There is Lin Ming's patch to expose PEBS Load Latency information.
+I will post a patch to export more of the machine state later on.
 
-
-実際こうやって何度もメールを送られても
-私のことを思い出してくださってないなら
-ハッキリ言って迷惑ですよね。すみません。
-
-ただ、一度お返事いただいて
-あの時どんなお話をしていたかとかやり取りが出来たら
-きっと私のこと思い出してもらえると思っているんです。
-
-だからどうしても私と直接やり取りが出来る術が欲しくて
-こうやってメールを送っています。
-
-もしどうしても思い出せないならば
-それはもう仕方が無いことなので
-思い出せないと言われても構いません。
-
-今みたいに無言のままよりは
-ずっとショックも少ないですから…。
-
-ひとまずこのアドレスにメールをいただけますか？
-お待ちしていますね。
-
-lkasdhflkashflkahsldkfh@yahoo.co.jp
-
-
-
- ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> Sometimes a "perf print-samples" to print individual samples
+> would be useful too  (it's already possible with -R, but very unfriendly
+> without post processing)
+>
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
