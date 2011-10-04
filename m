@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1JDVn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:43:58 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:47438 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757401Ab1JDVn5 (ORCPT
+	id S933269Ab1JDWBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 18:01:16 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65259 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933049Ab1JDWBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:43:57 -0400
-Date: Tue, 4 Oct 2011 14:43:53 -0700
+	Tue, 4 Oct 2011 18:01:15 -0400
+Date: Tue, 4 Oct 2011 15:01:11 -0700
 From: Andrew Morton <akpm00@gmail.com>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: Re: [RFC PATCH 2/2 -mm] RapidIO: TSI721 Add DMA Engine support
-Message-Id: <20111004144353.18087914.akpm00@gmail.com>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202291E8D@CORPEXCH1.na.ads.idt.com>
-References: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com>
-	<1317418715-9666-2-git-send-email-alexandre.bounine@idt.com>
-	<20110930151544.31875132.akpm00@gmail.com>
-	<0CE8B6BE3C4AD74AB97D9D29BD24E55202291E8D@CORPEXCH1.na.ads.idt.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Containers <containers@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
+Message-Id: <20111004150111.e9337268.akpm00@gmail.com>
+In-Reply-To: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,68 +29,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Oct 2011 10:53:45 -0700
-"Bounine, Alexandre" <Alexandre.Bounine@idt.com> wrote:
+On Mon,  3 Oct 2011 21:07:02 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> > > +	memset(bd_ptr, 0, bd_num * sizeof(struct tsi721_dma_desc));
-> > > +
-> > > +	dev_dbg(dev, "DMA descriptors @ %p (phys = %llx)\n",
-> > > +		bd_ptr, (unsigned long long)bd_phys);
-> > > +
-> > > +	/* Allocate space for descriptor status FIFO */
-> > > +	sts_size = (bd_num >= TSI721_DMA_MINSTSSZ) ?
-> > > +					bd_num : TSI721_DMA_MINSTSSZ;
-> > > +	sts_size = roundup_pow_of_two(sts_size);
-> > > +	sts_ptr = dma_alloc_coherent(dev,
-> > > +				     sts_size * sizeof(struct
-> tsi721_dma_sts),
-> > > +				     &sts_phys, GFP_KERNEL);
-> > > +	if (!sts_ptr) {
-> > > +		/* Free space allocated for DMA descriptors */
-> > > +		dma_free_coherent(dev,
-> > > +				  bd_num * sizeof(struct
-> tsi721_dma_desc),
-> > > +				  bd_ptr, bd_phys);
-> > > +		chan->bd_base = NULL;
-> > > +		return -ENOMEM;
-> > > +	}
-> > > +
-> > > +	chan->sts_phys = sts_phys;
-> > > +	chan->sts_base = sts_ptr;
-> > > +	chan->sts_size = sts_size;
-> > > +
-> > > +	memset(sts_ptr, 0, sts_size);
-> > 
-> > You meant
+> Hi Andrew,
 > 
-> I really need it here. That status block tracks progress by keeping
-> non-zero addresses of processed descriptors.
+> This contains minor changes, mostly documentation and changelog
+> updates, off-case build fix, and a code optimization in
+> res_counter_common_ancestor().
 
-Confused.  Are you saying that the use of "sts_size" there was
-intentional?
+I'd normally duck a patch series like this when we're at -rc8 and ask
+for it to be resent late in -rc1.  But I was feeling frisky so I
+grabbed this lot for a bit of testing and will sit on it until -rc1.
 
-> > 
-> > --- a/drivers/rapidio/devices/tsi721.c~rapidio-tsi721-add-dma-engine-
-> > support-fix
-> > +++ a/drivers/rapidio/devices/tsi721.c
-> > @@ -1006,7 +1006,7 @@ static int tsi721_bdma_maint_init(struct
-> >  	priv->mdma.sts_base = sts_ptr;
-> >  	priv->mdma.sts_size = sts_size;
-> > 
-> > -	memset(sts_ptr, 0, sts_size);
-> > +	memset(sts_ptr, 0, sts_size * sizeof(struct tsi721_dma_sts));
-> > 
-> >  	dev_dbg(&priv->pdev->dev,
-> >  		"desc status FIFO @ %p (phys = %llx) size=0x%x\n",
-> > 
-> > However that's at least two instances where you wanted a
-> > dma_zalloc_coherent().  How's about we give ourselves one?
-> 
-> Does this mean that I am on hook for it as a "most frequent user"?
+I'm still not convinced that the kernel has a burning need for a "task
+counter subsystem".  Someone convince me that we should merge this!
 
-No, it can be used all over the place: drivers/net/irda/w83977af_ir.c,
-drivers/scsi/bnx2fc/bnx2fc_tgt.c,
-drivers/net/wireless/rt2x00/rt2x00pci.c,
-drivers/crypto/amcc/crypto4xx_core.c and many nmore.
+> It's hard to put some statistic numbers while testing this feature
+> given that the result is rather binary: we launch a forkbomb and
+> either we stop and kill it or the system become unresponsive.
+>     
+> Meanwhile, one can find a testsuite at this address:
+> https://tglx.de/~fweisbec/task_counter_test.tar.gz
 
+I do think that we should merge tests like this into the main tree.  So
+I can do "cd tests ; make ; ./run-tests".  The first step is for some hero
+to propose the (simple!) framework and to drop a first test in there.
+
+> It performs several checks to ensure the interface and the behaviour
+> are reliable after common events like moving tasks around over cgroups
+> in a hierarchy, forking inside, etc.. It also launches a forkbomb,
+> tries to stop and kill it. So beware, don't run it on a system that
+> is doing serious things.
+
+Good stuff, that.  Then, when people propose additions or fix bugs, I can
+whine at them for not updating the test suite.
+
+> Ensure you have CGROUP_TASK_COUNTER set
+> before, or it may compress the Ten Plagues in your MBR and
+> inflate the whole after your next reboot.
+
+That problem would need to be fixed.  Either probe for the feature
+up-front, or don't build the test at all if CONFIG_CGROUP_TASK_COUNTER=n.
 
