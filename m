@@ -1,134 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab1JDQrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:47:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50771 "EHLO mx1.redhat.com"
+	id S933029Ab1JDQrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:47:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45379 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932907Ab1JDQo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932905Ab1JDQo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Oct 2011 12:44:29 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>
-Subject: [PATCH v4 22/24] C6X: EMIF - External Memory Interface
-Date: Tue,  4 Oct 2011 12:43:59 -0400
-Message-Id: <1317746641-26725-23-git-send-email-msalter@redhat.com>
+Cc: linux-arch@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        Mark Salter <msalter@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v4 17/24] C6X: loadable module support
+Date: Tue,  4 Oct 2011 12:43:54 -0400
+Message-Id: <1317746641-26725-18-git-send-email-msalter@redhat.com>
 In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several SoC parts provide a simple bridge to support external memory mapped
-devices. This code probes the device tree for an EMIF node and sets up the
-bridge registers if such a node is found. Beyond initial set up, there is no
-further need to access the bridge control registers. External devices on the
-bus are accessed through their MMIO registers using suitable drivers. The
-bridge hardware does provide for timeout and other error interrupts, but these
-are not yet supported.
+From: Aurelien Jacquiot <a-jacquiot@ti.com>
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
+Original port to early 2.6 kernel using TI COFF toolchain.
+Brought up to date by Mark Salter <msalter@redhat.com>
+
 Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mark Salter <msalter@redhat.com>
+CC: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/c6x/platforms/emif.c |   88 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 88 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/platforms/emif.c
+ arch/c6x/include/asm/module.h |   33 +++++++++++
+ arch/c6x/kernel/c6x_ksyms.c   |   66 ++++++++++++++++++++++
+ arch/c6x/kernel/module.c      |  123 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 222 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/module.h
+ create mode 100644 arch/c6x/kernel/c6x_ksyms.c
+ create mode 100644 arch/c6x/kernel/module.c
 
-diff --git a/arch/c6x/platforms/emif.c b/arch/c6x/platforms/emif.c
+diff --git a/arch/c6x/include/asm/module.h b/arch/c6x/include/asm/module.h
 new file mode 100644
-index 0000000..6a0d4ff
+index 0000000..a453f97
 --- /dev/null
-+++ b/arch/c6x/platforms/emif.c
-@@ -0,0 +1,88 @@
++++ b/arch/c6x/include/asm/module.h
+@@ -0,0 +1,33 @@
 +/*
-+ *  External Memory Interface
++ *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
++ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.34 by: Mark Salter (msalter@redhat.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+#include <asm/soc.h>
-+#include <asm/dscr.h>
++#ifndef _ASM_C6X_MODULE_H
++#define _ASM_C6X_MODULE_H
 +
-+#define NUM_EMIFA_CHIP_ENABLES 4
-+
-+struct emifa_regs {
-+	u32	midr;
-+	u32	stat;
-+	u32	reserved1[6];
-+	u32	bprio;
-+	u32	reserved2[23];
-+	u32	ce_config;
-+	u32	cecfg[NUM_EMIFA_CHIP_ENABLES];
-+	u32	reserved3[4];
-+	u32	awcc;
-+	u32	reserved4[7];
-+	u32	intraw;
-+	u32	intmsk;
-+	u32	intmskset;
-+	u32	intmskclr;
-+};
-+
-+static struct of_device_id emifa_match[] __initdata = {
-+	{ .compatible = "ti,c64x+emifa"	},
-+	{}
-+};
++#define Elf_Shdr	Elf32_Shdr
++#define Elf_Sym		Elf32_Sym
++#define Elf_Ehdr	Elf32_Ehdr
++#define Elf_Addr	Elf32_Addr
++#define Elf_Word	Elf32_Word
 +
 +/*
-+ * Parse device tree for existence of an EMIF (External Memory Interface)
-+ * and initialize it if found.
++ * This file contains the C6x architecture specific module code.
 + */
-+static int __init c6x_emifa_init(void)
++struct mod_arch_specific {
++};
++
++struct loaded_sections {
++	unsigned int new_vaddr;
++	unsigned int loaded;
++};
++
++#endif /* _ASM_C6X_MODULE_H */
+diff --git a/arch/c6x/kernel/c6x_ksyms.c b/arch/c6x/kernel/c6x_ksyms.c
+new file mode 100644
+index 0000000..0ba3e0b
+--- /dev/null
++++ b/arch/c6x/kernel/c6x_ksyms.c
+@@ -0,0 +1,66 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++#include <linux/module.h>
++#include <asm/checksum.h>
++#include <linux/io.h>
++
++/*
++ * libgcc functions - used internally by the compiler...
++ */
++extern int __c6xabi_divi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_divi);
++
++extern unsigned __c6xabi_divu(unsigned	dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_divu);
++
++extern int __c6xabi_remi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_remi);
++
++extern unsigned __c6xabi_remu(unsigned	dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_remu);
++
++extern int __c6xabi_divremi(int dividend, int divisor);
++EXPORT_SYMBOL(__c6xabi_divremi);
++
++extern unsigned __c6xabi_divremu(unsigned  dividend, unsigned divisor);
++EXPORT_SYMBOL(__c6xabi_divremu);
++
++extern unsigned long long __c6xabi_mpyll(unsigned long long src1,
++					 unsigned long long src2);
++EXPORT_SYMBOL(__c6xabi_mpyll);
++
++extern long long __c6xabi_negll(long long src);
++EXPORT_SYMBOL(__c6xabi_negll);
++
++extern unsigned long long __c6xabi_llshl(unsigned long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshl);
++
++extern long long __c6xabi_llshr(long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshr);
++
++extern unsigned long long __c6xabi_llshru(unsigned long long src1, uint src2);
++EXPORT_SYMBOL(__c6xabi_llshru);
++
++extern void __c6xabi_strasgi(int *dst, const int *src, unsigned cnt);
++EXPORT_SYMBOL(__c6xabi_strasgi);
++
++extern void __c6xabi_push_rts(void);
++EXPORT_SYMBOL(__c6xabi_push_rts);
++
++extern void __c6xabi_pop_rts(void);
++EXPORT_SYMBOL(__c6xabi_pop_rts);
++
++extern void __c6xabi_strasgi_64plus(int *dst, const int *src, unsigned cnt);
++EXPORT_SYMBOL(__c6xabi_strasgi_64plus);
++
++/* lib functions */
++EXPORT_SYMBOL(memcpy);
+diff --git a/arch/c6x/kernel/module.c b/arch/c6x/kernel/module.c
+new file mode 100644
+index 0000000..5fc03f1
+--- /dev/null
++++ b/arch/c6x/kernel/module.c
+@@ -0,0 +1,123 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2005, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Thomas Charleux (thomas.charleux@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++#include <linux/moduleloader.h>
++#include <linux/elf.h>
++#include <linux/vmalloc.h>
++#include <linux/kernel.h>
++
++static inline int fixup_pcr(u32 *ip, Elf32_Addr dest, u32 maskbits, int shift)
 +{
-+	struct emifa_regs __iomem *regs;
-+	struct device_node *node;
-+	const __be32 *p;
-+	u32 val;
-+	int i, len, err;
++	u32 opcode;
++	long ep = (long)ip & ~31;
++	long delta = ((long)dest - ep) >> 2;
++	long mask = (1 << maskbits) - 1;
 +
-+	node = of_find_matching_node(NULL, emifa_match);
-+	if (!node)
++	if ((delta >> (maskbits - 1)) == 0 ||
++	    (delta >> (maskbits - 1)) == -1) {
++		opcode = *ip;
++		opcode &= ~(mask << shift);
++		opcode |= ((delta & mask) << shift);
++		*ip = opcode;
++
++		pr_debug("REL PCR_S%d[%p] dest[%p] opcode[%08x]\n",
++			 maskbits, ip, (void *)dest, opcode);
++
 +		return 0;
++	}
++	pr_err("PCR_S%d reloc %p -> %p out of range!\n",
++	       maskbits, ip, (void *)dest);
 +
-+	regs = of_iomap(node, 0);
-+	if (!regs)
-+		return 0;
++	return -1;
++}
 +
-+	/* look for a dscr-based enable for emifa pin buffers */
-+	err = of_property_read_u32_array(node, "ti,dscr-dev-enable", &val, 1);
-+	if (!err)
-+		dscr_set_devstate(val, DSCR_DEVSTATE_ENABLED);
++/*
++ * apply a RELA relocation
++ */
++int apply_relocate_add(Elf32_Shdr *sechdrs,
++		       const char *strtab,
++		       unsigned int symindex,
++		       unsigned int relsec,
++		       struct module *me)
++{
++	Elf32_Rela *rel = (void *) sechdrs[relsec].sh_addr;
++	Elf_Sym *sym;
++	u32 *location, opcode;
++	unsigned int i;
++	Elf32_Addr v;
++	Elf_Addr offset = 0;
 +
-+	/* set up the chip enables */
-+	p = of_get_property(node, "ti,emifa-ce-config", &len);
-+	if (p) {
-+		len /= sizeof(u32);
-+		if (len > NUM_EMIFA_CHIP_ENABLES)
-+			len = NUM_EMIFA_CHIP_ENABLES;
-+		for (i = 0; i <= len; i++)
-+			soc_writel(be32_to_cpup(&p[i]), &regs->cecfg[i]);
++	pr_debug("Applying relocate section %u to %u with offset 0x%x\n",
++		 relsec, sechdrs[relsec].sh_info, offset);
++
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
++		/* This is where to make the change */
++		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			+ rel[i].r_offset - offset;
++
++		/* This is the symbol it is referring to.  Note that all
++		   undefined symbols have been resolved.  */
++		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
++			+ ELF32_R_SYM(rel[i].r_info);
++
++		/* this is the adjustment to be made */
++		v = sym->st_value + rel[i].r_addend;
++
++		switch (ELF32_R_TYPE(rel[i].r_info)) {
++		case R_C6000_ABS32:
++			pr_debug("RELA ABS32: [%p] = 0x%x\n", location, v);
++			*location = v;
++			break;
++		case R_C6000_ABS16:
++			pr_debug("RELA ABS16: [%p] = 0x%x\n", location, v);
++			*(u16 *)location = v;
++			break;
++		case R_C6000_ABS8:
++			pr_debug("RELA ABS8: [%p] = 0x%x\n", location, v);
++			*(u8 *)location = v;
++			break;
++		case R_C6000_ABS_L16:
++			opcode = *location;
++			opcode &= ~0x7fff80;
++			opcode |= ((v & 0xffff) << 7);
++			pr_debug("RELA ABS_L16[%p] v[0x%x] opcode[0x%x]\n",
++				 location, v, opcode);
++			*location = opcode;
++			break;
++		case R_C6000_ABS_H16:
++			opcode = *location;
++			opcode &= ~0x7fff80;
++			opcode |= ((v >> 9) & 0x7fff80);
++			pr_debug("RELA ABS_H16[%p] v[0x%x] opcode[0x%x]\n",
++				 location, v, opcode);
++			*location = opcode;
++			break;
++		case R_C6000_PCR_S21:
++			if (fixup_pcr(location, v, 21, 7))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S12:
++			if (fixup_pcr(location, v, 12, 16))
++				return -ENOEXEC;
++			break;
++		case R_C6000_PCR_S10:
++			if (fixup_pcr(location, v, 10, 13))
++				return -ENOEXEC;
++			break;
++		default:
++			pr_err("module %s: Unknown RELA relocation: %u\n",
++			       me->name, ELF32_R_TYPE(rel[i].r_info));
++			return -ENOEXEC;
++		}
 +	}
 +
-+	err = of_property_read_u32_array(node, "ti,emifa-burst-priority", &val, 1);
-+	if (!err)
-+		soc_writel(val, &regs->bprio);
-+
-+	err = of_property_read_u32_array(node, "ti,emifa-async-wait-control", &val, 1);
-+	if (!err)
-+		soc_writel(val, &regs->awcc);
-+
-+	iounmap(regs);
-+	of_node_put(node);
 +	return 0;
 +}
-+pure_initcall(c6x_emifa_init);
 -- 
 1.7.6.2
 
