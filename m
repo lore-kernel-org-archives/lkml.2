@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933313Ab1JDSE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:04:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57747 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969Ab1JDSE2 (ORCPT
+	id S933341Ab1JDSEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:04:44 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58067 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932969Ab1JDSEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:04:28 -0400
-Date: Tue, 4 Oct 2011 20:04:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
+	Tue, 4 Oct 2011 14:04:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Mark Salter <msalter@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Aurelien Jacquiot <a-jacquiot@ti.com>
-Subject: Re: [PATCH v4 11/24] C6X: time management
-In-Reply-To: <1317746641-26725-12-git-send-email-msalter@redhat.com>
-Message-ID: <alpine.LFD.2.02.1110042004080.18778@ionos>
-References: <1317746641-26725-1-git-send-email-msalter@redhat.com> <1317746641-26725-12-git-send-email-msalter@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Subject: Re: [PATCH v4 20/24] C6X: library code
+Date: Tue, 04 Oct 2011 20:04:31 +0200
+Message-ID: <32951781.DjTRC6D6h8@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317746641-26725-21-git-send-email-msalter@redhat.com>
+References: <1317746641-26725-1-git-send-email-msalter@redhat.com> <1317746641-26725-21-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:v1IvopHUyMkiyk2R8IFOlPQceAArR71dF1/b9xnhb0I
+ w84Tpoad9HXMLZ70GHiKHFUd5vCKyIZsUKwmhiJwiZFDzcpLKe
+ WXrguwQFcqcJ+Z6j3UIk40T5do7Mbj9WEdt4ZiJIzrcHmGwqLg
+ /SmFHU1CmrfEt56xeiiL7zbKhdb9gKaeYOyOZvFyiJI3l9+2ZZ
+ hYayzLMxP9HN7fTcRNRjvTZMAMgkdMvKEe9GJnGklnuR+UKp7t
+ qOvmQtC/dkq1sdssicggReHGuojmzvCpBB2HNwR/f9O78Ye/3h
+ r4mry53ckza1Ex3I3dv8TWfRIpmXqKPloycR9I97UOUHCXpxy8
+ Mj7yubvmi5TMJm/yA7Z4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Oct 2011, Mark Salter wrote:
-
+On Tuesday 04 October 2011 12:43:57 Mark Salter wrote:
 > From: Aurelien Jacquiot <a-jacquiot@ti.com>
 > 
 > Original port to early 2.6 kernel using TI COFF toolchain.
@@ -35,5 +40,6 @@ On Tue, 4 Oct 2011, Mark Salter wrote:
 > 
 > Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
 > Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
