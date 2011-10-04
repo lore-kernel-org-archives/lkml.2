@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1JDA10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 20:27:26 -0400
-Received: from shutemov.name ([188.40.19.243]:54281 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab1JDA1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 20:27:25 -0400
-Date: Tue, 4 Oct 2011 03:27:24 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 04/10] cgroups: New cancel_attach_task subsystem callback
-Message-ID: <20111004002724.GD6727@shutemov.name>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
- <1317668832-10784-5-git-send-email-fweisbec@gmail.com>
+	id S1752594Ab1JDAfy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Oct 2011 20:35:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55199 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab1JDAfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Oct 2011 20:35:53 -0400
+Date: Mon, 3 Oct 2011 17:35:49 -0700
+From: mark gross <markgross@thegnar.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: markgross@thegnar.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
+        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
+Subject: Re: [markgross@thengar.org: Re: [RFC] wake up notifications and
+ suspend blocking (aka more wakelock stuff)]
+Message-ID: <20111004003549.GA26888@mgross-G62>
+Reply-To: markgross@thegnar.org
+References: <20111002164849.GE14312@mgross-G62>
+ <20111003093226.2b5e9c4d@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317668832-10784-5-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <20111003093226.2b5e9c4d@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 09:07:06PM +0200, Frederic Weisbecker wrote:
-> To cancel a process attachment on a subsystem, we only call the
-> cancel_attach() callback once on the leader but we have no
-> way to cancel the attachment individually for each member of
-> the process group.
+On Mon, Oct 03, 2011 at 09:32:26AM +0100, Alan Cox wrote:
+> On Sun, 2 Oct 2011 09:48:49 -0700
+> mark gross <markgross@thegnar.org> wrote:
 > 
-> This is going to be needed for the max number of tasks susbystem
-> that is coming.
+> > Forwarding to bigger group for discussion.
 > 
-> To prepare for this integration, call a new cancel_attach_task()
-> callback on each task of the group until we reach the member that
-> failed to attach.
+> Looks clean enough - only question I have is do we need a separate
+> 'suspend block' or can latency do it -suspend is a very very high latency
+> event. I guess the suspend block is clearer in intent than abusing latency
+> but I do wonder if the actual suspend path should also check latency
+> constraints too. If I've asked for 5mS latency then suspend is a wrong
+> choice!
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Acked-by: Paul Menage <paul@paulmenage.org>
+I don't think over loading the meaning of cpu_dma_latency would work
+well for this.  If cpu_dma_latency constraint is > 5mS then EFAIL a
+suspend attempt?  feels clunky.
 
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+If you use less than then anyone using a constraint (like some wifi
+and audio) would block suspend.  also not so good.  
 
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Aditya Kali <adityakali@google.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: Tim Hockin <thockin@hockin.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Containers <containers@lists.linux-foundation.org>
-> ---
->  Documentation/cgroups/cgroups.txt |    7 +++++++
->  include/linux/cgroup.h            |    2 ++
->  kernel/cgroup.c                   |   24 ++++++++++++++++++++----
->  3 files changed, 29 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-> index 0621e93..3bc1dc9 100644
-> --- a/Documentation/cgroups/cgroups.txt
-> +++ b/Documentation/cgroups/cgroups.txt
-> @@ -623,6 +623,13 @@ function, so that the subsystem can implement a rollback. If not, not necessary.
->  This will be called only about subsystems whose can_attach() operation have
->  succeeded.
->  
-> +void cancel_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> +(cgroup_mutex held by caller)
-> +
-> +As cancel_attach, but for operations that must be cancelled once per
-> +task that wanted to be attached. This typically revert the effect of
-> +can_attach_task().
-> +
->  void pre_attach(struct cgroup *cgrp);
->  (cgroup_mutex held by caller)
->  
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index ed34eb8..b62cf5e 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -472,6 +472,8 @@ struct cgroup_subsys {
->  			       struct task_struct *tsk);
->  	void (*cancel_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
->  			      struct task_struct *tsk);
-> +	void (*cancel_attach_task)(struct cgroup *cgrp,
-> +				   struct task_struct *tsk);
->  	void (*pre_attach)(struct cgroup *cgrp);
->  	void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp,
->  			    struct task_struct *tsk);
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index fafebdb..709baef 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1883,6 +1883,9 @@ out:
->  				 * remaining subsystems.
->  				 */
->  				break;
-> +
-> +			if (ss->cancel_attach_task)
-> +				ss->cancel_attach_task(cgrp, tsk);
->  			if (ss->cancel_attach)
->  				ss->cancel_attach(ss, cgrp, tsk);
->  		}
-> @@ -1992,7 +1995,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  {
->  	int retval, i, group_size;
->  	struct cgroup_subsys *ss, *failed_ss = NULL;
-> -	bool cancel_failed_ss = false;
-> +	struct task_struct *failed_task = NULL;
->  	/* guaranteed to be initialized later, but the compiler needs this */
->  	struct cgroup *oldcgrp = NULL;
->  	struct css_set *oldcg;
-> @@ -2081,7 +2084,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  							     oldcgrp, tsk);
->  				if (retval) {
->  					failed_ss = ss;
-> -					cancel_failed_ss = true;
-> +					failed_task = tsk;
->  					goto out_cancel_attach;
->  				}
->  			}
-> @@ -2146,8 +2149,11 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  				if (ss->attach_task)
->  					ss->attach_task(cgrp, oldcgrp, tsk);
->  			}
-> +		} else if (retval == -ESRCH) {
-> +			if (ss->cancel_attach_task)
-> +				ss->cancel_attach_task(cgrp, tsk);
->  		} else {
-> -			BUG_ON(retval != -ESRCH);
-> +			BUG_ON(1);
->  		}
->  	}
->  	/* nothing is sensitive to fork() after this point. */
-> @@ -2179,8 +2185,18 @@ out_cancel_attach:
->  	/* same deal as in cgroup_attach_task */
->  	if (retval) {
->  		for_each_subsys(root, ss) {
-> +			if (ss->cancel_attach_task && (ss != failed_ss ||
-> +						       failed_task)) {
-> +				for (i = 0; i < group_size; i++) {
-> +					tsk = flex_array_get_ptr(group, i);
-> +					if (tsk == failed_task)
-> +						break;
-> +					ss->cancel_attach_task(cgrp, tsk);
-> +				}
-> +			}
-> +
->  			if (ss == failed_ss) {
-> -				if (cancel_failed_ss && ss->cancel_attach)
-> +				if (failed_task && ss->cancel_attach)
->  					ss->cancel_attach(ss, cgrp, leader);
->  				break;
->  			}
-> -- 
-> 1.7.5.4
-> 
 
--- 
- Kirill A. Shutemov
+The poster child for needing this is the USB gadget device with
+associated charging over USB.  Here we can't sleep because we'd have a
+hard time meeting USB spec if we did.  Also, we don't want to sleep
+while charging if charging is under OS control.  (checking temperature
+is tricky while suspended.)
+
+--mark
+
