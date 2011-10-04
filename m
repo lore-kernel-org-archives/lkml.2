@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab1JDVSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:18:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37277 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932558Ab1JDVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:18:54 -0400
-Message-ID: <1317763133.20800.4.camel@Joe-Laptop>
-Subject: Re: [RFCv3][PATCH 1/4] replace string_get_size() arrays
-From: Joe Perches <joe@perches.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        James.Bottomley@HansenPartnership.com, hpa@zytor.com
-Date: Tue, 04 Oct 2011 14:18:53 -0700
-In-Reply-To: <1317761466.7842.41.camel@nimitz>
-References: <20111001000856.DD623081@kernel>
-	 <1317497626.22613.1.camel@Joe-Laptop> <1317756942.7842.38.camel@nimitz>
-	 <1317760957.18210.15.camel@Joe-Laptop> <1317761466.7842.41.camel@nimitz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933261Ab1JDVWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:22:55 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:51888 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932867Ab1JDVWy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 17:22:54 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: Move hyperv out of the drivers/staging/ directory
+Thread-Topic: Move hyperv out of the drivers/staging/ directory
+Thread-Index: AQHMgsz6RKrGNTwArES7b9WKFRPV/ZVsrYjA
+Date: Tue, 4 Oct 2011 21:22:52 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081EBAB7@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
+ <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110922173618.GA5624@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004170415.GA1320@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20111004193414.GA15672@suse.de>
+In-Reply-To: <20111004193414.GA15672@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 13:51 -0700, Dave Hansen wrote:
-> On Tue, 2011-10-04 at 13:42 -0700, Joe Perches wrote:
-> > > Right, but we're only handling u64.
-> > So the declaration should be:
-> >         static const char byte_units[] = " KMGTPE";
-> I guess that's worth a comment.  But that first character doesn't get
-> used.  There were two alternatives:
-> 	static const char byte_units[] = "_KMGTPE";
 
-or
-	static const char byte_units[] = { 0, 'K', 'M', 'G', 'T', 'P', 'E' };
 
-and use ARRAY_SIZE(byte_units) not strlen(byte_units)
-for array size maximum.
-
-> or something along the lines of:
-> +	static const char byte_units[] = "KMGTPE";
-> ...
-> +	index--;
-> +       /* index=-1 is plain 'B' with no other unit */
-> +       if (index >= 0) {
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, October 04, 2011 3:34 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Move hyperv out of the drivers/staging/ directory
 > 
-> We don't ever _actually_ look at the space (or underscore).  I figured
-> the _ was nicer since it would be _obvious_ if it ever got printed out
-> somehow.  
+> KY, how about the following patch?
 
-shrug.  It's all the same stuff.
+Looks good Greg. This morning Thomas informed me that he has checked in
+my patch to integrate the time source driver with the Hyper-V detection code.
+Thomas indicated that this patch has been applied to the tip already. How will this
+be reflected in the staging tree?
+ 
+> 
+> Any objection from the virt developers about this?
+> 
+> KY, I'd like to get your signed-off-by before committing this, care to
+> test this out and pass it around the other hyperv developers and then
+> sign off on it?  Then I will be glad to commit this to my tree.
 
-cheers, Joe
+I have started the test cycle; I will let you know shortly what we discover.
 
+Regards,
+
+K. Y
