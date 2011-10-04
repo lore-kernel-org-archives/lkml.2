@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933419Ab1JDScn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:32:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34702 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932752Ab1JDScm (ORCPT
+	id S933422Ab1JDSfa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:35:30 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:34385 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932988Ab1JDSf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:32:42 -0400
-Date: Tue, 4 Oct 2011 12:32:32 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Igor Grinberg <grinberg@compulab.co.il>, Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] mmc: sdhci-tegra: Add #ifdef CONFIG_OF guard for
- of_find_property
-Message-ID: <20111004183232.GF2870@ponder.secretlab.ca>
-References: <1317614852.30838.1.camel@phoenix>
- <4E897318.3090004@compulab.co.il>
- <74CDBE0F657A3D45AFBB94109FB122FF173A2C6C97@HQMAIL01.nvidia.com>
+	Tue, 4 Oct 2011 14:35:28 -0400
+Date: Wed, 5 Oct 2011 00:05:16 +0530
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111004183516.GB8021@manju-desktop>
+References: <20110922184614.25419.84606.stgit@ponder>
+ <20111004145148.GA8021@manju-desktop>
+ <CACxGe6tXEx1A+ZuBTUdi8jjfx_hOCaX6eSpUOOhNH9us+Mnczg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6C97@HQMAIL01.nvidia.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6tXEx1A+ZuBTUdi8jjfx_hOCaX6eSpUOOhNH9us+Mnczg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 08:59:45AM -0700, Stephen Warren wrote:
-> Igor Grinberg wrote at Monday, October 03, 2011 2:32 AM:
-> > Hi Axel,
-> > 
-> > On 10/03/11 06:07, Axel Lin wrote:
-> > > I got below build error with "make tegra_defconfig;make"
-> > > Add #ifdef CONFIG_OF guard for of_find_property to fix below build error:
-> > >
-> > >   CC      drivers/mmc/host/sdhci-tegra.o
-> > > drivers/mmc/host/sdhci-tegra.c: In function 'sdhci_tegra_dt_parse_pdata':
-> > > drivers/mmc/host/sdhci-tegra.c:157: error: implicit declaration of function 'of_find_property'
-> ...
-> > > diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-> ...
-> > > @@ -154,8 +154,11 @@ static struct tegra_sdhci_platform_data * __devinit sdhci_tegra_dt_parse_pdata(
-> > >  	plat->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
-> > >  	plat->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
-> > >  	plat->power_gpio = of_get_named_gpio(np, "power-gpios", 0);
-> > > +
-> > > +#ifdef CONFIG_OF
-> > >  	if (of_find_property(np, "support-8bit", NULL))
-> > >  		plat->is_8bit = 1;
-> > > +#endif
-> > 
-> > Shouldn't we add a stub for the of_find_property() method to include/linux/of.h
-> > instead of adding more ifdefs?
-> > Or may be use of_get_property() method instead?
+On Tue, Oct 04, 2011 at 09:58:10AM -0600, Grant Likely wrote:
+> On Tue, Oct 4, 2011 at 8:51 AM, G, Manjunath Kondaiah <manjugk@ti.com> wrote:
+> > On Thu, Sep 22, 2011 at 12:51:23PM -0600, Grant Likely wrote:
+> >> Hi Manjunath,
+> >>
+> >> Here's the current state of the patch.  The major think that needs to
+> >> be done is to convert it to use a separate workqueue as described in
+> >> the TODO above.  It also needs some users adapted to it.  One of the
+> >> gpio drivers would work; preferably one of the newer drivers that
+> >> doesn't have a lot of drivers depending on the early_initcall()
+> >> behaviour yet.
+> >
+> > I have tested this patch on omap3 beagle board by making:
+> > 1. omap-gpio driver init as late_initcall instead of postcore_initcall
+> > 2. mmc driver probe will request gpio through gpio_request and gpio driver
+> > returns -EDEFER_PROBE which in turn makes mmc driver to request deferral probe.
+> > 3. When deferral probe gets activated, it scans driver entries and it will not
+> > find any match for mmc driver probe.
 > 
-> I submitted a patch to add a stub of_find_property a little while back.
-> Per https://lkml.org/lkml/2011/9/22/301, Grant applied it already. I'm
-> not sure why it hasn't shown up in linux-next, since Grant's repo wasn't
-> affected by the kernel.org downtime.
-> 
-> Sorry for the breakage.
+> Looks like drivers/mmc/host/omap.c is using platform_driver_probe()
+> instead of platform_driver_register().  Add the probe hook to the
+> platform_driver structure and change it to call
+> platform_driver_register() and it should work.  Don't forget to change
+> mmc_omap_probe from __init to __devinit.
 
-That's because I forgot to push out the tree.  :-(  Sorry.  I've just
-fixed it now.
+Yes. After changing it into platform_driver_register, I can see mmc probe is
+getting completed from deferred probe list. But, MMC upper layer will check 
+probe and it waits for ever since probe_count is not getting incremented.
 
-g.
+Log:
 
+[    1.807830] platform omap_hsmmc.0: Driver omap_hsmmc requests probe deferral
+
+...
+
+[    1.948760] omap_device: omap_gpio.0: new worst case activate latency 0:30517
+[    1.959259] OMAP GPIO hardware version 2.5
+
+...
+
+[    2.000488] platform omap_hsmmc.0: Retrying from deferred list
+[    2.008026] omap_device: omap_hsmmc.0: new worst case activate latency 0:244140
+[    2.020080] input: gpio-keys as /devices/platform/gpio-keys/input/input1
+[    2.035827] omap_hsmmc omap_hsmmc.0: Probe success...
+[    2.042083] twl_rtc twl_rtc: setting system clock to 2000-01-01 01:06:35 UTC
+(946688795)
+[    2.056030] Waiting for root device /dev/mmcblk0p2...
+[    2.061492] driver_probe_done: probe_count = 0
+[    2.168518] driver_probe_done: probe_count = 0
+[    2.277832] driver_probe_done: probe_count = 0
+[    2.387207] driver_probe_done: probe_count = 0
+[    2.496582] driver_probe_done: probe_count = 0
+
+Waits for ever in init/do_mount.c:
+	if ((ROOT_DEV == 0) && root_wait) {
+		printk(KERN_INFO "Waiting for root device %s...\n",
+			saved_root_name);
+		while (driver_probe_done() != 0 ||
+			(ROOT_DEV = name_to_dev_t(saved_root_name)) == 0)
+			msleep(100);
+		async_synchronize_full();
+	}
+
+-Manjunath
