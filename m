@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab1JDPex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:34:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54601 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab1JDPev convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:34:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1110041007070.1954-100000@iolanthe.rowland.org>
-References: <CADDb1s0ZnHzM72sDnFmRrM=GFJtxj5JkYUSPo6GdyQ_=7L2m9A@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110041007070.1954-100000@iolanthe.rowland.org>
-Date: Tue, 4 Oct 2011 21:04:49 +0530
-Message-ID: <CADDb1s0taBR2=xpKE5rLJTWJBMbXijS8b_GEA-MbZvWKFDFvYg@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_Re=3A_Re=3A_BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD?=
-	=?windows-1252?Q?=92s_in_scsiglue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5F?=
-	=?windows-1252?Q?type=29?=
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932741Ab1JDPhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:37:14 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:39291 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932386Ab1JDPhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 11:37:12 -0400
+Date: Tue, 4 Oct 2011 11:37:12 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Jon Mason <mason@myri.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+Message-ID: <20111004153711.GF19130@kvack.org>
+References: <1317653420-21404-3-git-send-email-mason@myri.com> <20111003215547.GA3107@myri.com> <20111004144215.GE19130@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004144215.GE19130@kvack.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 4, 2011 at 7:40 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 4 Oct 2011, Amit Sahrawat wrote:
->
->> Not able to get tools which can show the Caching Information when
->> connected USB device to Windows 7(Except one option which allows for
->> optimizing Performance by enabling/disabling Cache - But that option
->> is available for all the Mass storage device) - Please let me know if
->> there is option to view this.
->
-> I have no idea.
->
->> So, I have collected USB analyzer logs for Device after connected to
->> Windows 7.  Please find the attached logs.
->
-> It would be more informative if your logs did not show the initial
-> connection, but did show what happens when you write a small file to
-> the drive and then go through the "Safely Remove Hardware" procedure.
->
-> The real question is whether or not Windows sends a SYNCHRONIZE CACHE
-> command to the drive.
-ok, I will try this out and provide the results tomorrow early morning.
->
-> Alan Stern
->
->
-Thanks & Regards,
-Amit Sahrawat
+On Tue, Oct 04, 2011 at 10:42:15AM -0400, Benjamin LaHaise wrote:
+> On Mon, Oct 03, 2011 at 04:55:48PM -0500, Jon Mason wrote:
+> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > 
+> > When configuring the PCIe settings for "performance", we allow parents
+> > to have a larger Max Payload Size than children and rely on children
+> > Max Read Request Size to not be larger than their own MPS to avoid
+> > having the host bridge generate responses they can't cope with.
+> 
+> I'm pretty sure that simply will not work, and is an incorrect understanding 
+> of how PCIe bridges and devices interact with regards to transaction size 
+> limits.  Here's why: I am actually implementing a PCIe nic on an FPGA at 
+> present, and have just been in the process of tuning how memory read 
+> requests are issued and processed.  It is perfectly valid for a PCIe 
+> endpoint to issue a read request for an entire 4KB block (assuming it 
+> respects the no 4KB boundary crossings rule), even when the MPS setting 
+> is only 64 or 128 bytes.  However, the root complex or PCIe bridge *must 
+> not* exceed the Maximum Payload Size for any completions with data or 
+> posted writes.  Multiple completions are okay and expected for read 
+> requests.  If the MPS on the bridge is set to a larger value than 
+> what all of the endpoints connected to it, the bridge or root complex will 
+> happily send read completions exceeding the endpoint's MPS.  This can and 
+> will lead to failure on the parts of endpoints.
+
+Just to clarify, my main concern is that restricting the size of read 
+requests will impact performance negatively, for things like network tx.  
+Issuing small reads for network tx made a huge impact on transmit 
+performance, while also constraining rx performance in a full duplex 
+scenario.  It also leaves the door open to incorrect behaviour in the 
+cast of posted writes (think of memcpy_toio()) since the write MPS is 
+incorrect.
+
+		-ben
