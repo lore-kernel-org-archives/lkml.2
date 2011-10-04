@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1JDJL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 05:11:27 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48826 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755194Ab1JDJLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 05:11:25 -0400
-Message-ID: <4E8ACD6E.3090208@parallels.com>
-Date: Tue, 4 Oct 2011 13:10:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755445Ab1JDJNT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 05:13:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40989 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab1JDJNS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 05:13:18 -0400
+Date: Tue, 4 Oct 2011 02:13:14 -0700
+From: Tejun Heo <htejun@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huajun Li <huajun.li.lee@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/4] kmemleak: Handle percpu memory allocation
+Message-ID: <20111004091314.GF15637@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
+ <20110929110228.10660.87600.stgit@e102109-lin.cambridge.arm.com>
+ <20110929192818.GB10425@mtj.dyndns.org>
+ <20111003152126.GM18195@e102109-lin.cambridge.arm.com>
+ <20111004075915.GE15637@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20111004090446.GA10071@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 7/8] Display current tcp memory allocation in kmem
- cgroup
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-8-git-send-email-glommer@parallels.com> <20111003121446.GD29312@shutemov.name> <4E89A846.1010200@parallels.com> <20111003122511.GA29982@shutemov.name> <4E89AA01.3000803@parallels.com> <20111003123620.GA30018@shutemov.name>
-In-Reply-To: <20111003123620.GA30018@shutemov.name>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004090446.GA10071@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 04:36 PM, Kirill A. Shutemov wrote:
-> On Mon, Oct 03, 2011 at 04:26:41PM +0400, Glauber Costa wrote:
->> On 10/03/2011 04:25 PM, Kirill A. Shutemov wrote:
->>> On Mon, Oct 03, 2011 at 04:19:18PM +0400, Glauber Costa wrote:
->>>> On 10/03/2011 04:14 PM, Kirill A. Shutemov wrote:
->>>>> On Mon, Oct 03, 2011 at 02:18:42PM +0400, Glauber Costa wrote:
->>>>>> This patch introduces kmem.tcp_current_memory file, living in the
->>>>>> kmem_cgroup filesystem. It is a simple read-only file that displays the
->>>>>> amount of kernel memory currently consumed by the cgroup.
->>>>>>
->>>>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>>>>> CC: David S. Miller<davem@davemloft.net>
->>>>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->>>>>> CC: Eric W. Biederman<ebiederm@xmission.com>
->>>>>> ---
->>>>>>     Documentation/cgroups/memory.txt |    1 +
->>>>>>     mm/memcontrol.c                  |   11 +++++++++++
->>>>>>     2 files changed, 12 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->>>>>> index 1ffde3e..f5a539d 100644
->>>>>> --- a/Documentation/cgroups/memory.txt
->>>>>> +++ b/Documentation/cgroups/memory.txt
->>>>>> @@ -79,6 +79,7 @@ Brief summary of control files.
->>>>>>      memory.independent_kmem_limit	 # select whether or not kernel memory limits are
->>>>>>     				   independent of user limits
->>>>>>      memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
->>>>>> + memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
->>>>>
->>>>> Both are in pages, right?
->>>>> Shouldn't it be scaled to bytes and named uniform with other memcg file?
->>>>> memory.kmem.tcp.limit_in_bytes/usage_in_bytes.
->>>>>
->>>> You are absolutely correct.
->>>> Since the internal tcp comparison works, I just ended up never noticing
->>>> this.
->>>
->>> Should we have failcnt and max_usage_in_bytes for tcp as well?
->>>
->>
->> Well, we get a fail count from the tracer anyway, so I don't really see
->> a need for that. I see value in having it for the slab allocation
->> itself, but since this only controls the memory pressure framework, I
->> think we can live without it.
->>
->> That said, this is not a strong opinion. I can add it if you'd prefer.
->
-> It's good for userspace to have the same set of files for all domains:
->   - memory;
->   - memory.memsw;
->   - memory.kmem;
->   - memory.kmem.tcp;
->   - etc.
-> Userspace can reuse code for handling them in this case.
->
-Ok. Back on this.
+Hello,
 
-Not all domains have all files anyway.
+On Tue, Oct 04, 2011 at 10:04:46AM +0100, Catalin Marinas wrote:
+> > The percpu part looks fine to me but I don't know how kmemleak works
+> > to judge whether the kmemleak part is okay or not.  This just avoids
+> > false positives from slab and would still require bumping up the early
+> > log memory as # of cpus increases, right?
+> 
+> No, there is only one kmemleak call for each __percpu pointer (to the
+> specific kmemleak_*_percpu function). The kmemleak expands the percpu
+> pointer into corresponding blocks for each cpu but the early log only
+> stores a single call.
 
-max_usage seems to be a property of the main memcg, not of its domains.
-failcnt is present on memsw, and on that only. The problem here, is that 
-this can fail ( and usually will ) in codepaths outside the memory
-controller. (see net/core/sock.c:__sk_mem_schedule)
+Hmmm... but the following definitely seems O(#PCPU_ALLOCS * #CPUS)?
+What am I missing?
 
-Also, max_usage makes sense for kernel memory as a whole, but I don't 
-think it makes sense here as we're only controlling a specific pressure 
-condition.
++/*
++ * Log an early allocated block and populate the stack trace.
++ */
++static void early_alloc_percpu(struct early_log *log)
++{
++       unsigned int cpu;
++       const void __percpu *ptr = log->ptr;
++
++       for_each_possible_cpu(cpu) {
++               log->ptr = per_cpu_ptr(ptr, cpu);
++               early_alloc(log);
++       }
++}
 
-So in a nutshell: I'd like to leave this alone, and add 
-kmem.max_usage_in_bytes and kmem.failcnt to the to soon-to-land-here 
-slab accounting patches. (Where the actual allocation happens)
+Thanks.
+
+-- 
+tejun
