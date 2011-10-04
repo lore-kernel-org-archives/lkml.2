@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab1JDRdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:33:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756701Ab1JDRdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:33:54 -0400
-Date: Tue, 4 Oct 2011 19:29:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111004172938.GB3489@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com> <20111003131610.GA26823@redhat.com> <1317718577.3375.103.camel@mfleming-mobl1.ger.corp.intel.com>
+	id S933042Ab1JDRgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:36:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60371 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab1JDRgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 13:36:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317718577.3375.103.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1317749439.29415.251.camel@pasglop>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+ <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+ <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+ <1317744493.29415.238.camel@pasglop> <CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com>
+ <1317749439.29415.251.camel@pasglop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 4 Oct 2011 10:36:32 -0700
+X-Google-Sender-Auth: ufP0-8KgkgWdWPknJjX2gixlkJY
+Message-ID: <CA+55aFyOcb2y1QVaTNssWFU+nCee8RSs9-wZ-ARnFWcF5MdGSA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04, Matt Fleming wrote:
+On Tue, Oct 4, 2011 at 10:30 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
 >
-> Ah, I think it was these lines that confused me into thinking
-> ->ctrl_lock wasn't required around PF_EXITING,
->
-> void exit_signals(struct task_struct *tsk)
-> {
->         int group_stop = 0;
->         sigset_t unblocked;
->
->         if (thread_group_empty(tsk) || signal_group_exit(tsk->signal)) {
->                 tsk->flags |= PF_EXITING;
->                 return;
->         }
->
-> But I guess that's safe because either we're the only thread in the
-> group or the group is already going to exit?
+> Patches 1 and 2 fix it to do what it's supposed to.
 
-Yes. Except s/exit/exit or exec/.
+Maybe.
 
-And this reminds me... This is not exactly right. I do not mean
-this particular function, but the whole logic. An execing process
-can miss SIGSTOP. Or the coredumping signal.
+Or maybe not.
 
-Oleg.
+We just don't the hell know, do we?
 
+And -rc9 is not when we are supposed to make these kinds of changes.
+
+                              Linus
