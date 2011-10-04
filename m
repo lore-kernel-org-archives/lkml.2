@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab1JDPxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:53:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62519 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757242Ab1JDPxN convert rfc822-to-8bit (ORCPT
+	id S1757436Ab1JDP5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:57:06 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32647 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701Ab1JDP5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:53:13 -0400
+	Tue, 4 Oct 2011 11:57:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=W8AOOjt8gqlc+HZaJqBW7UOZ5zMbUho02ePiE0KXnvtZILSX2j2B+OmCbjrZw+Nsj
+	JY8dydY4INdEKWBEwm3WA==
 MIME-Version: 1.0
-In-Reply-To: <87d3edllum.fsf@ti.com>
-References: <20110922184614.25419.84606.stgit@ponder> <87d3edllum.fsf@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 4 Oct 2011 09:52:52 -0600
-X-Google-Sender-Auth: f_KvibMLH1c8qZU_qj_49oS_8nQ
-Message-ID: <CACxGe6vHJUD4rVFixo0SU954x+28496v4-MDST3C+fkDetxojg@mail.gmail.com>
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+ <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+ <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 4 Oct 2011 09:56:37 -0600
+Message-ID: <CAErSpo4XUp82t+BUU0gzUaOZG6Po8+EM4kDMRNB7D2VNy-z0MA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 3, 2011 at 5:02 PM, Kevin Hilman <khilman@ti.com> wrote:
-> Grant Likely <grant.likely@secretlab.ca> writes:
->
->> Allow drivers to report at probe time that they cannot get all the resources
->> required by the device, and should be retried at a later time.
+On Tue, Oct 4, 2011 at 9:48 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Oct 4, 2011 at 8:40 AM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
 >>
->> This should completely solve the problem of getting devices
->> initialized in the right order.  Right now this is mostly handled by
->> mucking about with initcall ordering which is a complete hack, and
->> doesn't even remotely handle the case where device drivers are in
->> modules.  This approach completely sidesteps the issues by allowing
->> driver registration to occur in any order, and any driver can request
->> to be retried after a few more other drivers get probed.
+>> Hopefully most of these patches only affect the "performance" setting
+>> which is no longer the default.
+>>
+>> But yes, more reviews are always welcome.
 >
-> This is great work, thanks!
+> Well, bcrl argues that patches 1-2 of 3 are actively wrong.
 >
-> For the TODO list:
->
-> While the proposed patch should solve probe order dependencies, I don't
-> think it will solve the suspend/resume ordering dependencies, which are
-> typically the same.
->
-> Currenly suspend/resume order is based on the order devices are *added*
-> (device_add() -> device_pm_add() -> device added to dpm_list), so
-> unfortunately, deferring probe isn't going to affect suspend/resume
-> ordering.
->
-> Extending this to also address suspend/resume ordering by also changing
-> when the device is added to the dpm_list (or possibly creating another
-> list) should probably be explored as well.
+> Quite frankly, my gut feel is that this late in the game, the only
+> patch I should apply is 3/3, and even that I wonder about. But that
+> seems to *really* disable all the games we do, and that all seem to be
+> questionable.
 
-Hmm, yes, I think this is worth exploring.  It doesn't help with
-runtime pm dependencies, but it has the potential to make PM just work
-if the list order is updated each time a device is successfully bound
-to a driver.  Manjunath, can you investigate what it would take to do
-this? (after getting the core deferral patch finalized; I don't want
-to block that work)?
+The current state (with none of these three applied) is that we do
+change MPS configuration in some cases and there is an unsolved
+regression (Avi's e1000e problem) and bcrl's concern.
 
-g.
+In my opinion, we need to turn off all MPS fiddling by default for rc9
+with something like the following.  This is part of 3/3, which I think
+should have been split into two pieces -- this one and the "also add"
+part.
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index d369316..5db5986 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -77,7 +77,7 @@ unsigned long pci_cardbus_mem_size = DEFAULT_CARDBUS_MEM_SIZE;
+ unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+ unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
+
+-enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_SAFE;
++enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_TUNE_OFF;
+
+ /*
+ * The default CLS is used if arch didn't set CLS explicitly and not
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index a919db2..4829424 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1451,12 +1451,24 @@ static int pcie_bus_configure_set(struct
+pci_dev *dev, void *data)
+ */
+ void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
+ {
+       if (!pci_is_pcie(bus->self))
+               return;
+
++       if (pcie_bus_config == PCIE_BUS_TUNE_OFF)
++               return;
