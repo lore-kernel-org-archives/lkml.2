@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933625Ab1JDUGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 16:06:00 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:54529 "EHLO e1.ny.us.ibm.com"
+	id S933651Ab1JDUMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 16:12:12 -0400
+Received: from depni.sinp.msu.ru ([213.131.7.21]:35780 "EHLO depni.sinp.msu.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933403Ab1JDUF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 16:05:57 -0400
-Subject: Re: [PATCH] dw_apb_timer: constify clocksource name
-From: john stultz <johnstul@us.ibm.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110823125644.GL2796@pulham.picochip.com>
-References: <1311608077-4759-1-git-send-email-jamie@jamieiles.com>
-	 <20110823125644.GL2796@pulham.picochip.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 12:57:25 -0700
-Message-ID: <1317758245.3112.935.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11100420-6078-0000-0000-000001762FE6
+	id S933571Ab1JDUMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 16:12:09 -0400
+X-Greylist: delayed 1357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Oct 2011 16:12:09 EDT
+From: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Joe Perches <joe@perches.com>, starlight@binnacle.cx,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <stephen.hemminger@vyatta.com>
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
+	<alpine.DEB.2.00.1110041358500.12199@router.home>
+	<1317757118.3580.24.camel@Joe-Laptop>
+	<alpine.DEB.2.00.1110041442020.15871@router.home>
+	<874nzo35bu.fsf@depni.sinp.msu.ru>
+	<alpine.DEB.2.00.1110041501130.16183@router.home>
+Date: Wed, 05 Oct 2011 00:12:06 +0400
+In-Reply-To: <alpine.DEB.2.00.1110041501130.16183@router.home> (Christoph
+	Lameter's message of "Tue, 4 Oct 2011 15:03:38 -0500 (CDT)")
+Message-ID: <87zkhg1ppl.fsf@depni.sinp.msu.ru>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 13:56 +0100, Jamie Iles wrote:
-> On Mon, Jul 25, 2011 at 04:34:37PM +0100, Jamie Iles wrote:
-> > The clocksource name should be const for correctness.
-> > 
-> > Cc: John Stultz <johnstul@us.ibm.com>
-> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> 
-> ping?
 
-Terribly sorry this got so far back on my queue. I've applied it in my
-tree and will push it for 3.2
+BFS FAQ writes:
 
-thanks
--john
+> NUMA aware?
+>
+> It is NOT NUMA aware in the sense that it does any fancy shit on NUMA, but
+> it will work on NUMA hardware just fine. Only the really big NUMA hardware
+> is likely to suffer in performance, and this is theoretically only, since
+> no one has that sort of hardware to prove it to me, but it seems almost
+> certain. 
+This part of FAQ entry was written before 0.300, (i.e. more than 2 years ago)
 
+
+> v0.300 onwards have NUMA enhancements.
+And this was added after. =)
+
+As of now, BFS scheduling is NUMA-aware. (see resched_best_mask())
