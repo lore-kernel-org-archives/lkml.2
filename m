@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab1JDDtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Oct 2011 23:49:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64021 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab1JDDtf convert rfc822-to-8bit (ORCPT
+	id S1751394Ab1JDEGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 00:06:37 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:43003 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab1JDEGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Oct 2011 23:49:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <m2vcs5lbtx.fsf@bob.laptop.org>
-References: <1317641240-15791-1-git-send-email-linkinjeon@gmail.com>
-	<m2vcs5lbtx.fsf@bob.laptop.org>
-Date: Tue, 4 Oct 2011 12:49:28 +0900
-Message-ID: <CAKYAXd_YKrDWC-XOyqYPgtBjbVQz6B+x8J5N1iJv9=4bwRk+tA@mail.gmail.com>
-Subject: Re: [PATCH v8] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
-        sebras@gmail.com, Ulf.Hansson@stericsson.com,
-        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
-        johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Oct 2011 00:06:35 -0400
+Date: Tue, 4 Oct 2011 15:06:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the omap_dss2 tree with the arm-soc
+ tree
+Message-Id: <20111004150628.4c4aa1595977f3d5165215f3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/4 Chris Ball <cjb@laptop.org>:
-> Hi,
->
-> On Mon, Oct 03 2011, Namjae Jeon wrote:
->> It allows gerneral purpose partitions in MMC Device.
->> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure suggested by Andrei Warkentin.
->> After patching, we can see general purpose partitions like this.
->>> cat /proc/partitions
->>           179 0 847872 mmcblk0
->>           179 192 4096 mmcblk0gp3
->>           179 160 4096 mmcblk0gp2
->>           179 128 4096 mmcblk0gp1
->>           179 96  1052672 mmcblk0gp0
->>           179 64  1024 mmcblk0boot1
->>           179 32  1024 mmcblk0boot0
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->
-> v8 doesn't apply against mmc-next, please resend.  mmc-next has moved to:
->   git://dev.laptop.org/users/cjb/mmc mmc-next
->
-> (Thanks for reviewing, Andrei -- please send another ACK after v9 is
-> submitted, if you don't mind.)
-Hi. Chris.
-I will resend patch again after rebase from moved mmc-next.
-Thanks.
->
-> - Chris.
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
->
+Hi Tomi,
+
+Today's linux-next merge of the omap_dss2 tree got a conflict in
+arch/arm/mach-omap2/board-rx51.c between commit 8f5b5a41ebc7 ("ARM: OMAP:
+Introduce SoC specific early_init") from the arm-soc tree and commit
+cc9347352509 ("OMAP: RX51: Remove unused old omapfb stuff") from the
+omap_dss2 tree.
+
+Just context changes.  I fixed it up (I think - see below) and can carry
+the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-omap2/board-rx51.c
+index e2e958a,9e7dde6..0000000
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@@ -79,29 -79,15 +79,6 @@@ static struct cpuidle_params rx51_cpuid
+  	{7505 + 15274, 484329, 1},
+  };
+  
+- static struct omap_lcd_config rx51_lcd_config = {
+- 	.ctrl_name	= "internal",
+- };
+- 
+- static struct omap_fbmem_config rx51_fbmem0_config = {
+- 	.size = 752 * 1024,
+- };
+- 
+- static struct omap_fbmem_config rx51_fbmem1_config = {
+- 	.size = 752 * 1024,
+- };
+- 
+- static struct omap_fbmem_config rx51_fbmem2_config = {
+- 	.size = 752 * 1024,
+- };
+- 
+- static struct omap_board_config_kernel rx51_config[] = {
+- 	{ OMAP_TAG_FBMEM,	&rx51_fbmem0_config },
+- 	{ OMAP_TAG_FBMEM,	&rx51_fbmem1_config },
+- 	{ OMAP_TAG_FBMEM,	&rx51_fbmem2_config },
+- 	{ OMAP_TAG_LCD,		&rx51_lcd_config },
+- };
+- 
+ -static void __init rx51_init_early(void)
+ -{
+ -	struct omap_sdrc_params *sdrc_params;
+ -
+ -	omap2_init_common_infrastructure();
+ -	sdrc_params = nokia_get_sdram_timings();
+ -	omap2_init_common_devices(sdrc_params, sdrc_params);
+ -}
+ -
+  extern void __init rx51_peripherals_init(void);
+  
+  #ifdef CONFIG_OMAP_MUX
+@@@ -118,17 -104,9 +95,15 @@@ static struct omap_musb_board_data musb
+  
+  static void __init rx51_init(void)
+  {
+ +	struct omap_sdrc_params *sdrc_params;
+ +
+  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+- 	omap_board_config = rx51_config;
+- 	omap_board_config_size = ARRAY_SIZE(rx51_config);
+  	omap3_pm_init_cpuidle(rx51_cpuidle_params);
+  	omap_serial_init();
+ +
+ +	sdrc_params = nokia_get_sdram_timings();
+ +	omap_sdrc_init(sdrc_params, sdrc_params);
+ +
+  	usb_musb_init(&musb_board_data);
+  	rx51_peripherals_init();
+  
