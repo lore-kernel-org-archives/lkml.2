@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169Ab1JDTSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:18:16 -0400
-Received: from claw.goop.org ([74.207.240.146]:56728 "EHLO claw.goop.org"
+	id S933145Ab1JDTSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:18:14 -0400
+Received: from claw.goop.org ([74.207.240.146]:56713 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932539Ab1JDTSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:18:15 -0400
+	id S932539Ab1JDTSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:18:13 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -15,10 +15,14 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         the arch/x86 maintainers <x86@kernel.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC V3 3/8] jump_label: if a key has already been initialized, don't nop it out
-Date: Tue,  4 Oct 2011 12:18:04 -0700
-Message-Id: <6e43e15076e959d0f5ae7180bec2a197a05524e9.1317755691.git.jeremy.fitzhardinge@citrix.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH RFC V3 2/8] stop_machine: make stop_machine safe and efficient to call early
+Date: Tue,  4 Oct 2011 12:18:03 -0700
+Message-Id: <619c66d6da63aa086e2eac017e7aed216cc8ddc3.1317755691.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
@@ -30,79 +34,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If a key has been enabled before jump_label_init() is called, don't
-nop it out.
+Make stop_machine() safe to call early in boot, before stop_machine()
+has been set up, by simply calling the callback function directly if
+there's only one CPU online.
 
-This removes arch_jump_label_text_poke_early() (which can only nop
-out a site) and uses arch_jump_label_transform() instead.
+[ Fixes from AKPM:
+   - add comment
+   - local_irq_flags, not save_flags
+   - also call hard_irq_disable() for systems which need it
+
+  Tejun suggested using an explicit flag rather than just looking at
+  the online cpu count. ]
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/jump_label.h |    3 +--
- kernel/jump_label.c        |   20 ++++++++------------
- 2 files changed, 9 insertions(+), 14 deletions(-)
+ kernel/stop_machine.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 1213e9d..12e804e 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -44,8 +44,7 @@ extern struct jump_entry __stop___jump_table[];
- extern void jump_label_lock(void);
- extern void jump_label_unlock(void);
- extern void arch_jump_label_transform(struct jump_entry *entry,
--				 enum jump_label_type type);
--extern void arch_jump_label_text_poke_early(jump_label_t addr);
-+				      enum jump_label_type type);
- extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_inc(struct jump_label_key *key);
- extern void jump_label_dec(struct jump_label_key *key);
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index a8ce450..059202d5 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -121,13 +121,6 @@ static void __jump_label_update(struct jump_label_key *key,
- 	}
- }
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index ba5070c..d3f960a 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -41,6 +41,7 @@ struct cpu_stopper {
+ };
  
--/*
-- * Not all archs need this.
-- */
--void __weak arch_jump_label_text_poke_early(jump_label_t addr)
--{
--}
--
- static __init int jump_label_init(void)
+ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++static bool stop_machine_initialized = false;
+ 
+ static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
  {
- 	struct jump_entry *iter_start = __start___jump_table;
-@@ -139,12 +132,15 @@ static __init int jump_label_init(void)
- 	jump_label_sort_entries(iter_start, iter_stop);
+@@ -386,6 +387,8 @@ static int __init cpu_stop_init(void)
+ 	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
+ 	register_cpu_notifier(&cpu_stop_cpu_notifier);
  
- 	for (iter = iter_start; iter < iter_stop; iter++) {
--		arch_jump_label_text_poke_early(iter->code);
--		if (iter->key == (jump_label_t)(unsigned long)key)
-+		struct jump_label_key *iterk;
++	stop_machine_initialized = true;
 +
-+		iterk = (struct jump_label_key *)(unsigned long)iter->key;
-+		arch_jump_label_transform(iter, jump_label_enabled(iterk) ?
-+					  JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
-+		if (iterk == key)
- 			continue;
- 
--		key = (struct jump_label_key *)(unsigned long)iter->key;
--		atomic_set(&key->enabled, 0);
-+		key = iterk;
- 		key->entries = iter;
- #ifdef CONFIG_MODULES
- 		key->next = NULL;
-@@ -212,7 +208,7 @@ void jump_label_apply_nops(struct module *mod)
- 		return;
- 
- 	for (iter = iter_start; iter < iter_stop; iter++)
--		arch_jump_label_text_poke_early(iter->code);
-+		arch_jump_label_transform(iter, JUMP_LABEL_DISABLE);
+ 	return 0;
  }
+ early_initcall(cpu_stop_init);
+@@ -485,6 +488,25 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
+ 					    .num_threads = num_online_cpus(),
+ 					    .active_cpus = cpus };
  
- static int jump_label_add_module(struct module *mod)
++	if (!stop_machine_initialized) {
++		/*
++		 * Handle the case where stop_machine() is called
++		 * early in boot before stop_machine() has been
++		 * initialized.
++		 */
++ 		unsigned long flags;
++		int ret;
++
++		WARN_ON_ONCE(smdata.num_threads != 1);
++
++		local_irq_save(flags);
++		hard_irq_disable();
++		ret = (*fn)(data);
++		local_irq_restore(flags);
++
++		return ret;
++	}
++
+ 	/* Set the initial state and stop all online cpus. */
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
 -- 
 1.7.6.4
 
