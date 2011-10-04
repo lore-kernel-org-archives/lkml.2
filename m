@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab1JDNSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 09:18:06 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42415 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756712Ab1JDNSF (ORCPT
+	id S1757007Ab1JDNTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 09:19:47 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54898 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756713Ab1JDNTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 09:18:05 -0400
-Date: Tue, 4 Oct 2011 15:18:00 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
-Message-ID: <20111004131800.GD14482@one.firstfloor.org>
-References: <1316597423-25723-1-git-send-email-robert.richter@amd.com> <1316778523.9084.17.camel@twins> <20110923122014.GP6063@erda.amd.com> <m2hb42ki5a.fsf@firstfloor.org> <CABPqkBRPvKxkyH6tVK1AQDBTbyrE3Cy0wjz64qaE2p0dzPRYig@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRPvKxkyH6tVK1AQDBTbyrE3Cy0wjz64qaE2p0dzPRYig@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 4 Oct 2011 09:19:46 -0400
+Message-ID: <4E8B07EA.4020307@linux.vnet.ibm.com>
+Date: Tue, 04 Oct 2011 18:49:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, len.brown@intel.com,
+        mingo@elte.hu, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, linux-pm@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CPU hotplug, freezer: Fix bugs in CPU hotplug call path
+References: <4E88BF33.10407@linux.vnet.ibm.com> <1317636215.12973.16.camel@twins>
+In-Reply-To: <1317636215.12973.16.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There is Lin Ming's patch to expose PEBS Load Latency information.
-> I will post a patch to export more of the machine state later on.
+On 10/03/2011 03:33 PM, Peter Zijlstra wrote:
+> On Mon, 2011-10-03 at 01:14 +0530, Srivatsa S. Bhat wrote:
+>> +static atomic_t tasks_frozen = ATOMIC_INIT(0);
+>> +
+>> +void set_tasks_frozen_flag(void)
+>> +{
+>> +       atomic_set(&tasks_frozen, 1);
+>> +}
+>> +
+>> +void clear_tasks_frozen_flag(void)
+>> +{
+>> +       atomic_set(&tasks_frozen, 0);
+>> +}
+>> +
+>> +int tasks_are_frozen(void)
+>> +{
+>> +       int ret;
+>> +       ret = atomic_read(&tasks_frozen);
+>> +       return ret;
+>> +} 
+> 
+> What's the point of using atomic_t here? Neither set nor read are
+> actually atomic ops.
+> 
 
-I have some patches to expose LBR and raw PEBS (similar to Robert's 
-IBS patches, just for PEBS). But the user code still needs more work for that.
-
--Andi
+Hi Peter,
+Thank you for the review. I'll send version 2 of the patch with
+the changes incorporated.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
