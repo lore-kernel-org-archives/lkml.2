@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933360Ab1JDSRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:17:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54679 "EHLO mx2.suse.de"
+	id S933376Ab1JDSR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:17:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10288 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932853Ab1JDSRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:17:36 -0400
-Date: Tue, 4 Oct 2011 11:02:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: quilt-dev <quilt-dev@nongnu.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Kacur <jkacur@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andreas Gruenbacher <agruen@suse.de>
-Subject: Re: [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-Message-ID: <20111004180237.GA15087@suse.de>
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+	id S932853Ab1JDSR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 14:17:56 -0400
+Date: Tue, 4 Oct 2011 20:13:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Matt Fleming <matt@console-pimps.org>, Tejun Heo <htejun@gmail.com>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH 0/5] Signal scalability series
+Message-ID: <20111004181357.GA6822@redhat.com>
+References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com> <20110930235625.GD2658@mtj.dyndns.org> <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com> <1317474209.12973.15.camel@twins> <20111003130701.GB25952@redhat.com> <1317655320.20367.25.camel@twins> <20111004171437.GA3489@redhat.com> <CA+55aFza+fvdC4UY+JAQ61zip3t3Zxm2zUPAzv3Oqux2L66cDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317750395.18063.11.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFza+fvdC4UY+JAQ61zip3t3Zxm2zUPAzv3Oqux2L66cDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 01:46:34PM -0400, Steven Rostedt wrote:
-> +my $pgp = `gpg --simple-sk-checksum -a --detach-sign $pass --output - < $tmpfile`;
+On 10/04, Linus Torvalds wrote:
+>
+> On Tue, Oct 4, 2011 at 10:14 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Whatever we do with the locking, this can't remove O(nr_threads),
+> > although read_lock() could help to reduce the contention.
+>
+> Read locks often make things worse.
 
-Try not to use gpg when calling from scripts, use gpgv instead, it
-handles things much better, and sets the return value correctly so you
-can check it (which I don't think you do here.)
+Yes, yes, I see, thanks.
 
-Now if only someone can get quilt working properly for git's "split"
- subject: lines, I would be very happy...
+I meant that probably "more concurrency" was the reason for rwlock
+this series adds.
 
-thanks,
+Oleg.
 
-greg k-h
