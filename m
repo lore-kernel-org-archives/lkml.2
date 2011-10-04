@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932984Ab1JDQrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:47:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932914Ab1JDQoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932915Ab1JDQoa (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Oct 2011 12:44:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757275Ab1JDQoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:44:24 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, Aurelien Jacquiot <a-jacquiot@ti.com>,
         Mark Salter <msalter@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v4 18/24] C6X: ptrace support
-Date: Tue,  4 Oct 2011 12:43:55 -0400
-Message-Id: <1317746641-26725-19-git-send-email-msalter@redhat.com>
+Subject: [PATCH v4 08/24] C6X: memory management and DMA support
+Date: Tue,  4 Oct 2011 12:43:45 -0400
+Message-Id: <1317746641-26725-9-git-send-email-msalter@redhat.com>
 In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,388 +24,548 @@ From: Aurelien Jacquiot <a-jacquiot@ti.com>
 Original port to early 2.6 kernel using TI COFF toolchain.
 Brought up to date by Mark Salter <msalter@redhat.com>
 
+The C6X architecture currently lacks an MMU so memory management is relatively
+simple. There is no bus snooping between L2 and main memory but coherent DMA
+memory is supported by making regions of main memory uncached. If such a region
+is desired, it can be specified on the commandline with a "memdma=" argument.
+
 Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
 Signed-off-by: Mark Salter <msalter@redhat.com>
 CC: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/c6x/include/asm/ptrace.h |  174 ++++++++++++++++++++++++++++++++++++++
- arch/c6x/kernel/ptrace.c      |  187 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 361 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/ptrace.h
- create mode 100644 arch/c6x/kernel/ptrace.c
+ arch/c6x/include/asm/dma-mapping.h |   91 +++++++++++++++++++++
+ arch/c6x/kernel/dma.c              |  153 ++++++++++++++++++++++++++++++++++++
+ arch/c6x/mm/dma-coherent.c         |  143 +++++++++++++++++++++++++++++++++
+ arch/c6x/mm/init.c                 |  113 ++++++++++++++++++++++++++
+ 4 files changed, 500 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/dma-mapping.h
+ create mode 100644 arch/c6x/kernel/dma.c
+ create mode 100644 arch/c6x/mm/dma-coherent.c
+ create mode 100644 arch/c6x/mm/init.c
 
-diff --git a/arch/c6x/include/asm/ptrace.h b/arch/c6x/include/asm/ptrace.h
+diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..21e8d79
+index 0000000..03579fd
 --- /dev/null
-+++ b/arch/c6x/include/asm/ptrace.h
-@@ -0,0 +1,174 @@
-+/*
-+ *  Copyright (C) 2004, 2006, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PTRACE_H
-+#define _ASM_C6X_PTRACE_H
-+
-+#define BKPT_OPCODE	0x56454314	/* illegal opcode */
-+
-+#ifdef _BIG_ENDIAN
-+#define PT_LO(odd, even)  odd
-+#define PT_HI(odd, even)  even
-+#else
-+#define PT_LO(odd, even)  even
-+#define PT_HI(odd, even)  odd
-+#endif
-+
-+#define PT_A4_ORG  PT_LO(1, 0)
-+#define PT_TSR	   PT_HI(1, 0)
-+#define PT_ILC	   PT_LO(3, 2)
-+#define PT_RILC    PT_HI(3, 2)
-+#define PT_CSR	   PT_LO(5, 4)
-+#define PT_PC	   PT_HI(5, 4)
-+#define PT_B16	   PT_LO(7, 6)
-+#define PT_B17	   PT_HI(7, 6)
-+#define PT_B18	   PT_LO(9, 8)
-+#define PT_B19	   PT_HI(9, 8)
-+#define PT_B20	   PT_LO(11, 10)
-+#define PT_B21	   PT_HI(11, 10)
-+#define PT_B22	   PT_LO(13, 12)
-+#define PT_B23	   PT_HI(13, 12)
-+#define PT_B24	   PT_LO(15, 14)
-+#define PT_B25	   PT_HI(15, 14)
-+#define PT_B26	   PT_LO(17, 16)
-+#define PT_B27	   PT_HI(17, 16)
-+#define PT_B28	   PT_LO(19, 18)
-+#define PT_B29	   PT_HI(19, 18)
-+#define PT_B30	   PT_LO(21, 20)
-+#define PT_B31	   PT_HI(21, 20)
-+#define PT_B0	   PT_LO(23, 22)
-+#define PT_B1	   PT_HI(23, 22)
-+#define PT_B2	   PT_LO(25, 24)
-+#define PT_B3	   PT_HI(25, 24)
-+#define PT_B4	   PT_LO(27, 26)
-+#define PT_B5	   PT_HI(27, 26)
-+#define PT_B6	   PT_LO(29, 28)
-+#define PT_B7	   PT_HI(29, 28)
-+#define PT_B8	   PT_LO(31, 30)
-+#define PT_B9	   PT_HI(31, 30)
-+#define PT_B10	   PT_LO(33, 32)
-+#define PT_B11	   PT_HI(33, 32)
-+#define PT_B12	   PT_LO(35, 34)
-+#define PT_B13	   PT_HI(35, 34)
-+#define PT_A16	   PT_LO(37, 36)
-+#define PT_A17	   PT_HI(37, 36)
-+#define PT_A18	   PT_LO(39, 38)
-+#define PT_A19	   PT_HI(39, 38)
-+#define PT_A20	   PT_LO(41, 40)
-+#define PT_A21	   PT_HI(41, 40)
-+#define PT_A22	   PT_LO(43, 42)
-+#define PT_A23	   PT_HI(43, 42)
-+#define PT_A24	   PT_LO(45, 44)
-+#define PT_A25	   PT_HI(45, 44)
-+#define PT_A26	   PT_LO(47, 46)
-+#define PT_A27	   PT_HI(47, 46)
-+#define PT_A28	   PT_LO(49, 48)
-+#define PT_A29	   PT_HI(49, 48)
-+#define PT_A30	   PT_LO(51, 50)
-+#define PT_A31	   PT_HI(51, 50)
-+#define PT_A0	   PT_LO(53, 52)
-+#define PT_A1	   PT_HI(53, 52)
-+#define PT_A2	   PT_LO(55, 54)
-+#define PT_A3	   PT_HI(55, 54)
-+#define PT_A4	   PT_LO(57, 56)
-+#define PT_A5	   PT_HI(57, 56)
-+#define PT_A6	   PT_LO(59, 58)
-+#define PT_A7	   PT_HI(59, 58)
-+#define PT_A8	   PT_LO(61, 60)
-+#define PT_A9	   PT_HI(61, 60)
-+#define PT_A10	   PT_LO(63, 62)
-+#define PT_A11	   PT_HI(63, 62)
-+#define PT_A12	   PT_LO(65, 64)
-+#define PT_A13	   PT_HI(65, 64)
-+#define PT_A14	   PT_LO(67, 66)
-+#define PT_A15	   PT_HI(67, 66)
-+#define PT_B14	   PT_LO(69, 68)
-+#define PT_B15	   PT_HI(69, 68)
-+
-+#define NR_PTREGS  70
-+
-+#define PT_DP	   PT_B14  /* Data Segment Pointer (B14) */
-+#define PT_SP	   PT_B15  /* Stack Pointer (B15)  */
-+
-+#ifndef __ASSEMBLY__
-+
-+#ifdef _BIG_ENDIAN
-+#define REG_PAIR(odd, even) unsigned long odd; unsigned long even
-+#else
-+#define REG_PAIR(odd, even) unsigned long even; unsigned long odd
-+#endif
-+
-+/*
-+ * this struct defines the way the registers are stored on the
-+ * stack during a system call. fields defined with REG_PAIR
-+ * are saved and restored using double-word memory operations
-+ * which means the word ordering of the pair depends on endianess.
-+ */
-+struct pt_regs {
-+	REG_PAIR(tsr, orig_a4);
-+	REG_PAIR(rilc, ilc);
-+	REG_PAIR(pc, csr);
-+
-+	REG_PAIR(b17, b16);
-+	REG_PAIR(b19, b18);
-+	REG_PAIR(b21, b20);
-+	REG_PAIR(b23, b22);
-+	REG_PAIR(b25, b24);
-+	REG_PAIR(b27, b26);
-+	REG_PAIR(b29, b28);
-+	REG_PAIR(b31, b30);
-+
-+	REG_PAIR(b1, b0);
-+	REG_PAIR(b3, b2);
-+	REG_PAIR(b5, b4);
-+	REG_PAIR(b7, b6);
-+	REG_PAIR(b9, b8);
-+	REG_PAIR(b11, b10);
-+	REG_PAIR(b13, b12);
-+
-+	REG_PAIR(a17, a16);
-+	REG_PAIR(a19, a18);
-+	REG_PAIR(a21, a20);
-+	REG_PAIR(a23, a22);
-+	REG_PAIR(a25, a24);
-+	REG_PAIR(a27, a26);
-+	REG_PAIR(a29, a28);
-+	REG_PAIR(a31, a30);
-+
-+	REG_PAIR(a1, a0);
-+	REG_PAIR(a3, a2);
-+	REG_PAIR(a5, a4);
-+	REG_PAIR(a7, a6);
-+	REG_PAIR(a9, a8);
-+	REG_PAIR(a11, a10);
-+	REG_PAIR(a13, a12);
-+
-+	REG_PAIR(a15, a14);
-+	REG_PAIR(sp, dp);
-+};
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/linkage.h>
-+
-+#define user_mode(regs)	((((regs)->tsr) & 0x40) != 0)
-+
-+#define instruction_pointer(regs) ((regs)->pc)
-+#define profile_pc(regs) instruction_pointer(regs)
-+#define user_stack_pointer(regs) ((regs)->sp)
-+
-+extern void show_regs(struct pt_regs *);
-+
-+extern asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs);
-+extern asmlinkage void syscall_trace_exit(struct pt_regs *regs);
-+
-+#endif /* __KERNEL__ */
-+#endif /* __ASSEMBLY__ */
-+#endif /* _ASM_C6X_PTRACE_H */
-diff --git a/arch/c6x/kernel/ptrace.c b/arch/c6x/kernel/ptrace.c
-new file mode 100644
-index 0000000..3c494e8
---- /dev/null
-+++ b/arch/c6x/kernel/ptrace.c
-@@ -0,0 +1,187 @@
++++ b/arch/c6x/include/asm/dma-mapping.h
+@@ -0,0 +1,91 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot <aurelien.jacquiot@ti.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
++ *
 + */
-+#include <linux/ptrace.h>
-+#include <linux/tracehook.h>
-+#include <linux/regset.h>
-+#include <linux/elf.h>
++#ifndef _ASM_C6X_DMA_MAPPING_H
++#define _ASM_C6X_DMA_MAPPING_H
 +
-+#include <asm/cacheflush.h>
++#include <linux/dma-debug.h>
++#include <asm-generic/dma-coherent.h>
 +
-+#define PT_REG_SIZE	  (sizeof(struct pt_regs))
++#define dma_supported(d, m)	1
 +
-+/*
-+ * Called by kernel/ptrace.c when detaching.
-+ */
-+void ptrace_disable(struct task_struct *child)
++static inline int dma_set_mask(struct device *dev, u64 dma_mask)
 +{
-+	/* nothing to do */
-+}
++	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
++		return -EIO;
 +
-+/*
-+ * Get a register number from live pt_regs for the specified task.
-+ */
-+static inline long get_reg(struct task_struct *task, int regno)
-+{
-+	long *addr = (long *)task_pt_regs(task);
-+
-+	if (regno == PT_TSR || regno == PT_CSR)
-+		return 0;
-+
-+	return addr[regno];
-+}
-+
-+/*
-+ * Write contents of register REGNO in task TASK.
-+ */
-+static inline int put_reg(struct task_struct *task,
-+			  int regno,
-+			  unsigned long data)
-+{
-+	unsigned long *addr = (unsigned long *)task_pt_regs(task);
-+
-+	if (regno != PT_TSR && regno != PT_CSR)
-+		addr[regno] = data;
++	*dev->dma_mask = dma_mask;
 +
 +	return 0;
 +}
 +
-+/* regset get/set implementations */
-+
-+static int gpr_get(struct task_struct *target,
-+		   const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	struct pt_regs *regs = task_pt_regs(target);
-+
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				   regs,
-+				   0, sizeof(*regs));
-+}
-+
-+static int gpr_set(struct task_struct *target,
-+		   const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
-+{
-+	int ret;
-+	struct pt_regs *regs = task_pt_regs(target);
-+
-+	/* Don't copyin TSR or CSR */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs,
-+				 0, PT_TSR * sizeof(long));
-+	if (ret)
-+		return ret;
-+
-+	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+					PT_TSR * sizeof(long),
-+					(PT_TSR + 1) * sizeof(long));
-+	if (ret)
-+		return ret;
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs,
-+				 (PT_TSR + 1) * sizeof(long),
-+				 PT_CSR * sizeof(long));
-+	if (ret)
-+		return ret;
-+
-+	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+					PT_CSR * sizeof(long),
-+					(PT_CSR + 1) * sizeof(long));
-+	if (ret)
-+		return ret;
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 &regs,
-+				 (PT_CSR + 1) * sizeof(long), -1);
-+	return ret;
-+}
-+
-+enum c6x_regset {
-+	REGSET_GPR,
-+};
-+
-+static const struct user_regset c6x_regsets[] = {
-+	[REGSET_GPR] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = ELF_NGREG,
-+		.size = sizeof(u32),
-+		.align = sizeof(u32),
-+		.get = gpr_get,
-+		.set = gpr_set
-+	},
-+};
-+
-+static const struct user_regset_view user_c6x_native_view = {
-+	.name		= "tic6x",
-+	.e_machine	= EM_TI_C6000,
-+	.regsets	= c6x_regsets,
-+	.n		= ARRAY_SIZE(c6x_regsets),
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+	return &user_c6x_native_view;
-+}
-+
 +/*
-+ * Perform ptrace request
++ * DMA errors are defined by all-bits-set in the DMA address.
 + */
-+long arch_ptrace(struct task_struct *child, long request,
-+		 unsigned long addr, unsigned long data)
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
 +{
-+	int ret = 0;
++	return dma_addr == ~0;
++}
 +
-+	switch (request) {
-+		/*
-+		 * write the word at location addr.
-+		 */
-+	case PTRACE_POKETEXT:
-+		ret = generic_ptrace_pokedata(child, addr, data);
-+		if (ret == 0 && request == PTRACE_POKETEXT)
-+			flush_icache_range(addr, addr + 4);
++extern dma_addr_t dma_map_single(struct device *dev, void *cpu_addr,
++				 size_t size, enum dma_data_direction dir);
++
++extern void dma_unmap_single(struct device *dev, dma_addr_t handle,
++			     size_t size, enum dma_data_direction dir);
++
++extern int dma_map_sg(struct device *dev, struct scatterlist *sglist,
++		      int nents, enum dma_data_direction direction);
++
++extern void dma_unmap_sg(struct device *dev, struct scatterlist *sglist,
++			 int nents, enum dma_data_direction direction);
++
++static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
++				      unsigned long offset, size_t size,
++				      enum dma_data_direction dir)
++{
++	dma_addr_t handle;
++
++	handle = dma_map_single(dev, page_address(page) + offset, size, dir);
++
++	debug_dma_map_page(dev, page, offset, size, dir, handle, false);
++
++	return handle;
++}
++
++static inline void dma_unmap_page(struct device *dev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++	dma_unmap_single(dev, handle, size, dir);
++
++	debug_dma_unmap_page(dev, handle, size, dir, false);
++}
++
++extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t handle,
++				    size_t size, enum dma_data_direction dir);
++
++extern void dma_sync_single_for_device(struct device *dev, dma_addr_t handle,
++				       size_t size,
++				       enum dma_data_direction dir);
++
++extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
++				int nents, enum dma_data_direction dir);
++
++extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++				   int nents, enum dma_data_direction dir);
++
++extern void coherent_mem_init(u32 start, u32 size);
++extern void *dma_alloc_coherent(struct device *, size_t, dma_addr_t *, gfp_t);
++extern void dma_free_coherent(struct device *, size_t, void *, dma_addr_t);
++
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent((d), (s), (h), (f))
++#define dma_free_noncoherent(d, s, v, h)  dma_free_coherent((d), (s), (v), (h))
++
++#endif	/* _ASM_C6X_DMA_MAPPING_H */
+diff --git a/arch/c6x/kernel/dma.c b/arch/c6x/kernel/dma.c
+new file mode 100644
+index 0000000..ab7b12d
+--- /dev/null
++++ b/arch/c6x/kernel/dma.c
+@@ -0,0 +1,153 @@
++/*
++ *  Copyright (C) 2011 Texas Instruments Incorporated
++ *  Author: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/module.h>
++#include <linux/dma-mapping.h>
++#include <linux/mm.h>
++#include <linux/mm_types.h>
++#include <linux/scatterlist.h>
++
++#include <asm/cacheflush.h>
++
++static void c6x_dma_sync(dma_addr_t handle, size_t size,
++			 enum dma_data_direction dir)
++{
++	unsigned long paddr = handle;
++
++	BUG_ON(!valid_dma_direction(dir));
++
++	switch (dir) {
++	case DMA_FROM_DEVICE:
++		L2_cache_block_invalidate(paddr, paddr + size);
++		break;
++	case DMA_TO_DEVICE:
++		L2_cache_block_writeback(paddr, paddr + size);
++		break;
++	case DMA_BIDIRECTIONAL:
++		L2_cache_block_writeback_invalidate(paddr, paddr + size);
 +		break;
 +	default:
-+		ret = ptrace_request(child, request, addr, data);
 +		break;
 +	}
++}
 +
-+	return ret;
++dma_addr_t dma_map_single(struct device *dev, void *ptr, size_t size,
++			  enum dma_data_direction dir)
++{
++	dma_addr_t addr = virt_to_phys(ptr);
++
++	c6x_dma_sync(addr, size, dir);
++
++	debug_dma_map_page(dev, virt_to_page(ptr),
++			   (unsigned long)ptr & ~PAGE_MASK, size,
++			   dir, addr, true);
++	return addr;
++}
++EXPORT_SYMBOL(dma_map_single);
++
++
++void dma_unmap_single(struct device *dev, dma_addr_t handle,
++		      size_t size, enum dma_data_direction dir)
++{
++	c6x_dma_sync(handle, size, dir);
++
++	debug_dma_unmap_page(dev, handle, size, dir, true);
++}
++EXPORT_SYMBOL(dma_unmap_single);
++
++
++int dma_map_sg(struct device *dev, struct scatterlist *sglist,
++	       int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		sg->dma_address = dma_map_single(dev, sg_virt(sg), sg->length,
++						 dir);
++
++	debug_dma_map_sg(dev, sglist, nents, nents, dir);
++
++	return nents;
++}
++EXPORT_SYMBOL(dma_map_sg);
++
++
++void dma_unmap_sg(struct device *dev, struct scatterlist *sglist,
++		  int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_unmap_single(dev, sg_dma_address(sg), sg->length, dir);
++
++	debug_dma_unmap_sg(dev, sglist,	nents, dir);
++}
++EXPORT_SYMBOL(dma_unmap_sg);
++
++void dma_sync_single_for_cpu(struct device *dev, dma_addr_t handle,
++			     size_t size, enum dma_data_direction dir)
++{
++	c6x_dma_sync(handle, size, dir);
++
++	debug_dma_sync_single_for_cpu(dev, handle, size, dir);
++}
++EXPORT_SYMBOL(dma_sync_single_for_cpu);
++
++
++void dma_sync_single_for_device(struct device *dev, dma_addr_t handle,
++				size_t size, enum dma_data_direction dir)
++{
++	c6x_dma_sync(handle, size, dir);
++
++	debug_dma_sync_single_for_device(dev, handle, size, dir);
++}
++EXPORT_SYMBOL(dma_sync_single_for_device);
++
++
++void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sglist,
++			 int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_sync_single_for_cpu(dev, sg_dma_address(sg),
++					sg->length, dir);
++
++	debug_dma_sync_sg_for_cpu(dev, sglist, nents, dir);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_cpu);
++
++
++void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sglist,
++			    int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_sync_single_for_device(dev, sg_dma_address(sg),
++					   sg->length, dir);
++
++	debug_dma_sync_sg_for_device(dev, sglist, nents, dir);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_device);
++
++
++/* Number of entries preallocated for DMA-API debugging */
++#define PREALLOC_DMA_DEBUG_ENTRIES (1 << 16)
++
++static int __init dma_init(void)
++{
++	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
++
++	return 0;
++}
++fs_initcall(dma_init);
+diff --git a/arch/c6x/mm/dma-coherent.c b/arch/c6x/mm/dma-coherent.c
+new file mode 100644
+index 0000000..4187e51
+--- /dev/null
++++ b/arch/c6x/mm/dma-coherent.c
+@@ -0,0 +1,143 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot <aurelien.jacquiot@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  DMA uncached mapping support.
++ *
++ *  Using code pulled from ARM
++ *  Copyright (C) 2000-2004 Russell King
++ *
++ */
++#include <linux/slab.h>
++#include <linux/bitmap.h>
++#include <linux/bitops.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/dma-mapping.h>
++#include <linux/memblock.h>
++
++#include <asm/page.h>
++
++/*
++ * DMA coherent memory management, can be redefined using the memdma=
++ * kernel command line
++ */
++
++/* none by default */
++static phys_addr_t dma_base;
++static u32 dma_size;
++static u32 dma_pages;
++
++static unsigned long *dma_bitmap;
++
++/* bitmap lock */
++static DEFINE_SPINLOCK(dma_lock);
++
++/*
++ * Return a DMA coherent and contiguous memory chunk from the DMA memory
++ */
++static inline u32 __alloc_dma_pages(int order)
++{
++	unsigned long flags;
++	u32 pos;
++
++	spin_lock_irqsave(&dma_lock, flags);
++	pos = bitmap_find_free_region(dma_bitmap, dma_pages, order);
++	spin_unlock_irqrestore(&dma_lock, flags);
++
++	return dma_base + (pos << PAGE_SHIFT);
++}
++
++static void __free_dma_pages(u32 addr, int order)
++{
++	unsigned long flags;
++	u32 pos = (addr - dma_base) >> PAGE_SHIFT;
++
++	if (addr < dma_base || (pos + (1 << order)) >= dma_pages) {
++		printk(KERN_ERR "%s: freeing outside range.\n", __func__);
++		BUG();
++	}
++
++	spin_lock_irqsave(&dma_lock, flags);
++	bitmap_release_region(dma_bitmap, pos, order);
++	spin_unlock_irqrestore(&dma_lock, flags);
 +}
 +
 +/*
-+ * handle tracing of system call entry
-+ * - return the revised system call number or ULONG_MAX to cause ENOSYS
++ * Allocate DMA coherent memory space and return both the kernel
++ * virtual and DMA address for that space.
 + */
-+asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs)
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *handle, gfp_t gfp)
 +{
-+	if (tracehook_report_syscall_entry(regs))
-+		/* tracing decided this syscall should not happen, so
-+		 * We'll return a bogus call number to get an ENOSYS
-+		 * error, but leave the original number in
-+		 * regs->orig_a4
-+		 */
-+		return ULONG_MAX;
++	u32 paddr;
++	int order;
 +
-+	return regs->b0;
++	if (!dma_size || !size)
++		return NULL;
++
++	order = get_count_order(((size - 1) >> PAGE_SHIFT) + 1);
++
++	paddr = __alloc_dma_pages(order);
++
++	if (handle)
++		*handle = paddr;
++
++	if (!paddr)
++		return NULL;
++
++	return phys_to_virt(paddr);
 +}
++EXPORT_SYMBOL(dma_alloc_coherent);
 +
 +/*
-+ * handle tracing of system call exit
++ * Free DMA coherent memory as defined by the above mapping.
 + */
-+asmlinkage void syscall_trace_exit(struct pt_regs *regs)
++void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
++		       dma_addr_t dma_handle)
 +{
-+	tracehook_report_syscall_exit(regs, 0);
++	int order;
++
++	if (!dma_size || !size)
++		return;
++
++	order = get_count_order(((size - 1) >> PAGE_SHIFT) + 1);
++
++	__free_dma_pages(virt_to_phys(vaddr), order);
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++/*
++ * Initialise the coherent DMA memory allocator using the given uncached region.
++ */
++void __init coherent_mem_init(phys_addr_t start, u32 size)
++{
++	phys_addr_t bitmap_phys;
++
++	if (!size)
++		return;
++
++	printk(KERN_INFO
++	       "Coherent memory (DMA) region start=0x%x size=0x%x\n",
++	       start, size);
++
++	dma_base = start;
++	dma_size = size;
++
++	/* allocate bitmap */
++	dma_pages = dma_size >> PAGE_SHIFT;
++	if (dma_size & (PAGE_SIZE - 1))
++		++dma_pages;
++
++	bitmap_phys = memblock_alloc(BITS_TO_LONGS(dma_pages) * sizeof(long),
++				     sizeof(long));
++
++	dma_bitmap = phys_to_virt(bitmap_phys);
++	memset(dma_bitmap, 0, dma_pages * PAGE_SIZE);
++}
+diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
+new file mode 100644
+index 0000000..89395f0
+--- /dev/null
++++ b/arch/c6x/mm/init.c
+@@ -0,0 +1,113 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/mm.h>
++#include <linux/swap.h>
++#include <linux/module.h>
++#include <linux/bootmem.h>
++#ifdef CONFIG_BLK_DEV_RAM
++#include <linux/blkdev.h>
++#endif
++#include <linux/initrd.h>
++
++#include <asm/sections.h>
++
++/*
++ * ZERO_PAGE is a special page that is used for zero-initialized
++ * data and COW.
++ */
++unsigned long empty_zero_page;
++EXPORT_SYMBOL(empty_zero_page);
++
++/*
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses  of available kernel virtual memory.
++ */
++void __init paging_init(void)
++{
++	struct pglist_data *pgdat = NODE_DATA(0);
++	unsigned long zones_size[MAX_NR_ZONES] = {0, };
++
++	empty_zero_page      = (unsigned long) alloc_bootmem_pages(PAGE_SIZE);
++	memset((void *)empty_zero_page, 0, PAGE_SIZE);
++
++	/*
++	 * Set up user data space
++	 */
++	set_fs(KERNEL_DS);
++
++	/*
++	 * Define zones
++	 */
++	zones_size[ZONE_NORMAL] = (memory_end - PAGE_OFFSET) >> PAGE_SHIFT;
++	pgdat->node_zones[ZONE_NORMAL].zone_start_pfn =
++		__pa(PAGE_OFFSET) >> PAGE_SHIFT;
++
++	free_area_init(zones_size);
++}
++
++void __init mem_init(void)
++{
++	int codek, datak;
++	unsigned long tmp;
++	unsigned long len = memory_end - memory_start;
++
++	high_memory = (void *)(memory_end & PAGE_MASK);
++
++	/* this will put all memory onto the freelists */
++	totalram_pages = free_all_bootmem();
++
++	codek = (_etext - _stext) >> 10;
++	datak = (_end - _sdata) >> 10;
++
++	tmp = nr_free_pages() << PAGE_SHIFT;
++	printk(KERN_INFO "Memory: %luk/%luk RAM (%dk kernel code, %dk data)\n",
++	       tmp >> 10, len >> 10, codek, datak);
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	int pages = 0;
++	for (; start < end; start += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(start));
++		init_page_count(virt_to_page(start));
++		free_page(start);
++		totalram_pages++;
++		pages++;
++	}
++	printk(KERN_INFO "Freeing initrd memory: %luk freed\n",
++	       (pages * PAGE_SIZE) >> 10);
++}
++#endif
++
++void __init free_initmem(void)
++{
++	unsigned long addr;
++
++	/*
++	 * The following code should be cool even if these sections
++	 * are not page aligned.
++	 */
++	addr = PAGE_ALIGN((unsigned long)(__init_begin));
++
++	/* next to check that the page we free is not a partial page */
++	for (; addr + PAGE_SIZE < (unsigned long)(__init_end);
++	     addr += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(addr));
++		init_page_count(virt_to_page(addr));
++		free_page(addr);
++		totalram_pages++;
++	}
++	printk(KERN_INFO "Freeing unused kernel memory: %dK freed\n",
++	       (int) ((addr - PAGE_ALIGN((long) &__init_begin)) >> 10));
 +}
 -- 
 1.7.6.2
