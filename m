@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab1JDQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:17:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42435 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932275Ab1JDQRI (ORCPT
+	id S932728Ab1JDQRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:17:55 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35005 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab1JDQRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:17:08 -0400
+	Tue, 4 Oct 2011 12:17:54 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: cjb@laptop.org, linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com,
         Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
         per.forlin@stericsson.com, johan.rudholm@stericsson.com,
         Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] mmc : general purpose partition support.
-Date: Wed,  5 Oct 2011 01:16:46 +0900
-Message-Id: <1317745006-6290-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v9] mmc : general purpose partition support.
+Date: Wed,  5 Oct 2011 01:17:37 +0900
+Message-Id: <1317745057-6328-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
