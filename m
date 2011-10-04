@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab1JDSYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:24:48 -0400
-Received: from hades.mikemestnik.net ([184.106.158.151]:33130 "EHLO
-	hades.mikemestnik.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932752Ab1JDSYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:24:47 -0400
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Oct 2011 14:24:47 EDT
-Message-ID: <4E8B4CFE.5040508@mikemestnik.net>
-Date: Tue, 04 Oct 2011 13:14:22 -0500
-From: Mike Mestnik <cheako@mikemestnik.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S933378Ab1JDS0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:26:07 -0400
+Received: from void.printf.net ([89.145.121.20]:57904 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932752Ab1JDS0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 14:26:05 -0400
+From: Chris Ball <cjb@laptop.org>
+To: "S\, Venkatraman" <svenkatr@ti.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, awarkentin@vmware.com,
+        adrian.hunter@intel.com, linus.walleij@linaro.org,
+        james_p_freyensee@linux.intel.com, sebras@gmail.com,
+        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
+        per.forlin@stericsson.com, johan.rudholm@stericsson.com
+Subject: Re: [PATCH v10] mmc : general purpose partition support.
+References: <1317750317-4489-1-git-send-email-linkinjeon@gmail.com>
+	<CANfBPZ_aet5iF2zQ6zaqX0cjVB4LUnq6wLcHh2t_WNst3zXKAA@mail.gmail.com>
+Date: Tue, 04 Oct 2011 14:25:46 -0400
+In-Reply-To: <CANfBPZ_aet5iF2zQ6zaqX0cjVB4LUnq6wLcHh2t_WNst3zXKAA@mail.gmail.com>
+	(Venkatraman S.'s message of "Tue, 4 Oct 2011 23:49:13 +0530")
+Message-ID: <m2y5x0k40l.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [optical drive auto-load] [patch request] Add debugging messages
- to optical drive auto-loadtray.
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-  There is an application hammering the first optical drive and I'd like
-to discover it's pid and perhaps the name of it's executable.  The
-application triggers the drive's auto-loadtray and causes this lovely
-feature to become unusable. :(
+Hi,
 
-https://bugs.launchpad.net/linux/+bug/283316/comments/181
+On Tue, Oct 04 2011, S, Venkatraman wrote:
+> Stupid question - This will affect all MMC instances, right ? Doesn't
+> this constitute a ABI breakage for user space scripts ?
 
-I'd like a patch that I could use for testing that would indicate the
-application(by pid or path) that causes any of the drives
-auto-load/eject features.  These events should be rare enough on every
-system to always be logged at an information level.
+As I understand it, these partitions were simply not accessible before
+this patch:  we're not renaming mmcblkNpY to anything else, we're adding
+support for mmcblkNgpY partitions, which are part of the "MMC General
+Purpose Partition" spec, and are partitioned separately and not
+currently available to userspace.
 
-Please CC me in responses.
+So, I don't see what would constitute breakage.  Does that clear it up?
 
-On a related note the drives I have require a delay(about 7 seconds)
-from the time the tray is indicated as loaded to when the drive is ready
-to process read requests.  This causes mount to fail, I've used 'eject
--t $drv; sleep 7; mount $drv;' to counteract this.
+Thanks,
 
-The drive is Brand: LG Type: BlueRay Name: Super Multi Blue Model: CH08
-
-arcadia:~# hdparm -i /dev/sr0
-
-/dev/sr0:
-
- Model=HL-DT-ST BDDVDRW CH08LS10, FwRev=2.00, SerialNo=H94993B4515
- Config={ Fixed Removeable DTR<=5Mbs DTR>10Mbs nonMagnetic }
- RawCHS=0/0/0, TrkSize=0, SectSize=0, ECCbytes=0
- BuffType=unknown, BuffSize=unknown, MaxMultSect=0
- (maybe): CurCHS=0/0/0, CurSects=0, LBA=yes, LBAsects=0
- IORDY=on/off, tPIO={min:120,w/IORDY:120}, tDMA={min:120,rec:120}
- PIO modes:  pio0 pio3 pio4
- DMA modes:  mdma0 mdma1 mdma2
- UDMA modes: udma0 udma1 udma2 udma3 udma4 udma5 *udma6
- AdvancedPM=no
- Drive conforms to: Unspecified:  ATA/ATAPI-4,5,6,7
-
- * signifies the current active mode
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
