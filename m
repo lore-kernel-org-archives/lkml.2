@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab1JDR4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:56:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933203Ab1JDR4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:56:35 -0400
-Date: Tue, 4 Oct 2011 19:52:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Matt Fleming <matt@console-pimps.org>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111004175235.GD3489@redhat.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org> <20110930165206.GA22048@redhat.com> <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com> <20110930235625.GD2658@mtj.dyndns.org> <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com> <1317474209.12973.15.camel@twins> <20111003130701.GB25952@redhat.com> <1317655320.20367.25.camel@twins> <20111004171437.GA3489@redhat.com>
+	id S933307Ab1JDR7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:59:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55882 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932832Ab1JDR7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 13:59:51 -0400
+Date: Tue, 4 Oct 2011 10:55:20 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] tty/serial: atmel_serial: add device tree support
+Message-ID: <20111004165520.GB10919@ponder.secretlab.ca>
+References: <1317635502-9430-1-git-send-email-nicolas.ferre@atmel.com>
+ <4E8A6858.6020700@gmail.com>
+ <4E8AC171.4020706@atmel.com>
+ <4E8B054B.3060506@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111004171437.GA3489@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E8B054B.3060506@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04, Oleg Nesterov wrote:
->
-> On 10/03, Peter Zijlstra wrote:
-> >
-> > Right, so the thing Thomas and I have been promoting for a while now is
-> > to update a signal target vector on every signal mask update. Mask
-> > updates should be the slow path. This would leave us with a ready target
-> > in O(1).
->
-> Yes. This is the "obvious" solution ;) Now that we have
-> set_current_blocked() this is simple. Except, of course, this blows
-> signal_struct and set_current_blocked() can't rely on TIF_SIGPENDING.
-> But we can probably add TIF_YOU_ARE_LISTED_IN_CURR_TARGET_ARRAY.
+On Tue, Oct 04, 2011 at 08:08:27AM -0500, Rob Herring wrote:
+> Nicolas,
+> 
+> On 10/04/2011 03:18 AM, Nicolas Ferre wrote:
+> > On 10/04/2011 03:58 AM, Rob Herring :
+> >> On 10/03/2011 04:51 AM, Nicolas Ferre wrote:
+> >>> +Optional properties:
+> >>> +- atmel,use-dma-rx: use of PDC or DMA for receiving data
+> >>> +- atmel,use-dma-tx: use of PDC or DMA for transmitting data
+> >>
+> >> Is this an internal DMA or separate DMA controller? If the latter, these
+> >> should be phandles to a DMA channel/request.
+> > 
+> > Well, for now it relies on PDC (looks like an internal DMA). There is no
+> > notion of channel/request so I think it is appropriate to keep it like this.
+> > 
+> 
+> Okay. Although, this is a bit of Linux creeping into DT. DT should
+> describe the h/w. You should really be describing whether the h/w
+> supports DMA or not rather than whether you want to use DMA or not.
+> Since DMA support is really tied to the SOC rather than board, you could
+> just use the compatible string to distinguish platforms that support DMA
+> or not. So what is determining this setting? Is it purely user choice?
 
-Forgot to mention... Unblocking becomes "nontrivial" too. But almost
-all these changes are local to set_current_blocked().
+It is okay for a binding to still requires config properties like this
+to state if the DMA can be used, even if compatible is enough to
+distinquish.  However, you're right to bring it up.  It is a design
+choice that should be made thoughtfully.
 
-Oleg.
-
+g.
