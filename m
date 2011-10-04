@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046Ab1JDGO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 02:14:26 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:59124 "EHLO
+	id S1754109Ab1JDGOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 02:14:55 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:53771 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab1JDGOY (ORCPT
+	with ESMTP id S1751563Ab1JDGOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 02:14:24 -0400
-Date: Tue, 4 Oct 2011 17:14:15 +1100
+	Tue, 4 Oct 2011 02:14:54 -0400
+Date: Tue, 4 Oct 2011 17:14:49 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: linux-next: manual merge of the staging tree with the block tree
-Message-Id: <20111004171415.db52e4eb5c913afeba0a3bee@canb.auug.org.au>
+        Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the staging tree with the net and
+ wireless trees
+Message-Id: <20111004171449.de5c45332510a453cc3ff879@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Oct_2011_17_14_15_+1100_Klqg0K1B1gETGnQ="
+ boundary="Signature=_Tue__4_Oct_2011_17_14_49_+1100_OOHQJAq5upA9nka+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Oct_2011_17_14_15_+1100_Klqg0K1B1gETGnQ=
+--Signature=_Tue__4_Oct_2011_17_14_49_+1100_OOHQJAq5upA9nka+
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -33,61 +34,38 @@ Content-Transfer-Encoding: quoted-printable
 Hi Greg,
 
 Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/zram/zram_drv.c between commit 5a7bbad27a41 ("block:
-remove support for bio remapping from ->make_request") from the block
-tree and commit 0900beae178a ("staging: zram: fix zram locking") from the
-staging tree.
+drivers/staging/brcm80211/brcmsmac/mac80211_if.c between commit
+37a41b4affa3 ("mac80211: add ieee80211_vif param to tsf functions") from
+the net tree, commit 8a3a3c85e44d ("mac80211: pass vif param to conf_tx()
+callback") from the wireless tree and several commits from the staging
+tree.
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
+I fixed it up (just removed the forward declarions that were changed by
+the former commits) and can carry the fix as necessary.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc drivers/staging/zram/zram_drv.c
-index 02589ca,b9926ee..0000000
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@@ -572,9 -573,18 +573,17 @@@ static void zram_make_request(struct re
-  	}
- =20
-  	__zram_make_request(zram, bio, bio_data_dir(bio));
-+ 	up_read(&zram->init_lock);
-+=20
- -	return 0;
-++	return;
-+=20
-+ error_unlock:
-+ 	up_read(&zram->init_lock);
-+ error:
-+ 	bio_io_error(bio);
- -	return 0;
-  }
- =20
-- void zram_reset_device(struct zram *zram)
-+ void __zram_reset_device(struct zram *zram)
-  {
-  	size_t index;
- =20
-
---Signature=_Tue__4_Oct_2011_17_14_15_+1100_Klqg0K1B1gETGnQ=
+--Signature=_Tue__4_Oct_2011_17_14_49_+1100_OOHQJAq5upA9nka+
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOiqQ3AAoJEECxmPOUX5FEukwP/R8Rjn74C8CWGsv0FPVe7uJ0
-pfzwpfaQl6xSvBZA7ZF+m6HLsfw/98DE8ffu6tnq+H1aa/C6+vkH4Sxe7/pHVrGc
-9yfuS0TCTpTxTmBZ74J7TcZfzeild/IQ6ZhsRfDRYS0r0F6tWf4A7Q6hrvotSAey
-DTIBDPYqnTpC+SUp/WS9i/cuHw21ZnEI51ldoBjSq7xB4PAKiCCNW8U2xEZOvxBu
-PzoMX7lHCTj2BMhdauuO63PhywcWQlwX29tyjsgHJP1yFJWTv75zgRrX4k5hXPoM
-9s4dr/zpzZZxHk77Pb3Qht2Ub/uNfnkqfZz85sn76mIQyQRaHBBJKCMhnlts+xNL
-QY8PNQ91OaHLLuZD4bhN246Wc9VoIehHXfrFH3HxmjTMj6eV6TH4a6wJ+0EStr4N
-86RNFNEs6B/9xg0tlQjNLQkZk8xuZhQLqMH/G5PtvV2u/fKifJTEvNFBW3kO8BKm
-FESCMkFw9p9w0uUxO9HvBSr02eWQpojclmTa0pY8G3c9WeFx0UUcMs3ew73UrWO7
-e9uZuvdCjZ3QrXy2OF2Ar57sPRpcfmRA4yyumdx1cEY8U7+qgkQpj53IvQMY8Dhq
-BLU6c7uQxh/i1hDlb229SZgii13lxUgojzagYp5JWu4IQcqMIE8cBtTn+QXn6i5J
-w/+hLTiGwGCzYXqi/C0h
-=og2j
+iQIcBAEBCAAGBQJOiqRZAAoJEECxmPOUX5FErKoP/AmwS5HyNOfvBp/EEXOv9dye
+QCfuTa8O3zOyCbVruJ5RLPQeOJt+EU/oiHoBiTR7YTIDJjRC649laW9zRSwcOd7h
+TX2I1pfaLLRChpOoSbqUiTo8UalP6DPRKEpDlmHhcHTfq1/mASwqNE9ynVOcJVqm
+IjD4gefpSR9TUp2y1EzRaeHh4w614zHCmjsEXCXxCC9lStfpncVAdk8NVOhDVhSP
+uU44vgkE9BtwdqOZR7H4JjNaCXLQlYmsPp5LO+c6P5ElupOa+W1D2UWe0HCL/93T
+/BLQF8TVMzCzekVKUhqls+5sWaFLpGYLrs4LByl4QYK4zNxZgM587/Xo/zXkQSni
+3YdaBq2veYQIYe0mavEHMCMzKofAYHo7PPiZYy5y3/6boULu9DECoN3xSXH0/y+n
+JEqoTKYZ9MWlGXC6GEbfgJBf+4+jlZBMctC4QOOhfIjqEjksrDIo9K6cb9XG+xEr
+vbWckn2jXi01x7LSvuE5Mx1xqLKj0pU5q1tKGwJhyGslyH9NpvUESye4aiQwmJdH
+TkciZBB5aAjkd5/juy7Sd9elQWg4tTElBA36vQOWtvoC7JPksiW9DcvpHX4RZ+9q
+XCtVvWcKAk+s1rjKMKf8aDfqVj7p5oxZXV4P3LsrEJr/UXbO2/wZLIBmb1CwH4hT
++A1eFsop0Xhk7kXuw2Mm
+=ThXa
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__4_Oct_2011_17_14_15_+1100_Klqg0K1B1gETGnQ=--
+--Signature=_Tue__4_Oct_2011_17_14_49_+1100_OOHQJAq5upA9nka+--
