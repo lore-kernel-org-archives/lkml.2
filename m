@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1JDNVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 09:21:54 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:51889 "EHLO e4.ny.us.ibm.com"
+	id S1757225Ab1JDN0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 09:26:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53320 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756986Ab1JDNVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 09:21:53 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: greg@kroah.com
-Cc: gregkh@suse.de, cascardo@holoscopio.com, dan.magenheimer@oracle.com,
-        rdunlap@xenotime.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com,
-        rcj@linux.vnet.ibm.com, Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] staging: zcache: reduce tmem bucket lock contention
-Date: Tue,  4 Oct 2011 08:21:32 -0500
-Message-Id: <1317734492-22165-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20111003230632.GA12719@kroah.com>
-References: <20111003230632.GA12719@kroah.com>
+	id S1755994Ab1JDN0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 09:26:02 -0400
+Date: Tue, 4 Oct 2011 15:25:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111004132558.GA3148@gere.osrc.amd.com>
+References: <4E88B5E0.6080503@linux.vnet.ibm.com>
+ <20111002195023.GC31799@mtj.dyndns.org>
+ <4E88C3D4.2020300@linux.vnet.ibm.com>
+ <20111003004051.GD31799@mtj.dyndns.org>
+ <4E894D75.808@linux.vnet.ibm.com>
+ <20111003084754.GB4411@liondog.tnic>
+ <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmem uses hash buckets each with their own rbtree and lock to
-quickly lookup tmem objects.  tmem has TMEM_HASH_BUCKETS (256)
-buckets per pool.  However, because of the way the tmem_oid is
-generated for frontswap pages, only 16 unique tmem_oids are being
-generated, resulting in only 16 of the 256 buckets being used.
-This cause high lock contention for the per bucket locks.
+On Tue, Oct 04, 2011 at 12:15:08AM -0700, Tejun Heo wrote:
+> On Mon, Oct 03, 2011 at 10:47:54AM +0200, Borislav Petkov wrote:
+> > I think your patch makes sense because re-loading the ucode during
+> > a suspend/resume cycle is unnecessary. If one wants to update the
+> > microcode, it should happen later when the box is resumed again: you
+> > simply put the new microcode image in /lib/firmware/... and on AMD
+> > unload/reload the microcode module and on Intel you do either that or
+> > use the deprecated microcode_ctl.
+> 
+> I don't think it changes anything for suspend/resume cycles.  They're
+> different hooks.  The proposed patch changes actual cpu hotplug paths.
 
-This patch changes SWIZ_BITS to include more bits of the offset.
-The result is that all 256 hash buckets are potentially used resulting in a
-95% drop in hash bucket lock contention.
+Well, we're offlining the CPUs through the same hotplug path when
+suspending and since currently the microcode core unnecessarily
+re-requests the ucode image from userspace on resume, I still think the
+patch makes sense. Especially if Srivatsa does suspend/resume and CPU
+hotplugging simultaneously in a test and upon onlining a CPU, he manages
+of doing request_firmware on a frozen userspace.
 
-Based on v3.1-rc7
+Srivatsa, is my understanding correct?
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/staging/zcache/zcache-main.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 462fbc2..b4b692f 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1798,8 +1798,10 @@ static int zcache_frontswap_poolid = -1;
- /*
-  * Swizzling increases objects per swaptype, increasing tmem concurrency
-  * for heavy swaploads.  Later, larger nr_cpus -> larger SWIZ_BITS
-+ * Setting SWIZ_BITS to 27 basically reconstructs the swap entry from
-+ * frontswap_get_page()
-  */
--#define SWIZ_BITS		4
-+#define SWIZ_BITS		27
- #define SWIZ_MASK		((1 << SWIZ_BITS) - 1)
- #define _oswiz(_type, _ind)	((_type << SWIZ_BITS) | (_ind & SWIZ_MASK))
- #define iswiz(_ind)		(_ind >> SWIZ_BITS)
 -- 
-1.7.4.1
-
+Regards/Gruss,
+Boris.
