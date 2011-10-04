@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1JDHLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:11:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:37550 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab1JDHLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:11:24 -0400
-Date: Tue, 4 Oct 2011 18:11:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Kalle Valo <kvalo@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20111004181110.bf890fe2c8a87dee048bcee4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Oct_2011_18_11_10_+1100_qKxIT=nomBfFstRd"
+	id S1754700Ab1JDHOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:14:30 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53195 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab1JDHO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 03:14:29 -0400
+Message-ID: <4E8AB22E.2080007@parallels.com>
+Date: Tue, 4 Oct 2011 11:13:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>
+Subject: Re: [PATCH v4 3/8] foundations of per-cgroup memory pressure controlling.
+References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-4-git-send-email-glommer@parallels.com> <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111004095715.479da44d.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Oct_2011_18_11_10_+1100_qKxIT=nomBfFstRd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Paul,
-
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-drivers/net/wireless/ath/ath6kl/cfg80211.c:25:26: error: expected ')' befor=
-e 'uint'
-
-Caused by commit 6bbc7c35ed0f ("ath6kl: Allow enabling of P2P support")
-from the wireless tree interacting with the module.h split.
-
-I added the following patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 4 Oct 2011 18:07:51 +1100
-Subject: [PATCH] ath6kl: module_param needs the inclusion of moduleparam.h
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/wireless/ath/ath6kl/cfg80211.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wirel=
-ess/ath/ath6kl/cfg80211.c
-index 8d9fbd4..c201445 100644
---- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
-+++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
-@@ -14,6 +14,8 @@
-  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  */
-=20
-+#include <linux/moduleparam.h>
-+
- #include "core.h"
- #include "cfg80211.h"
- #include "debug.h"
---=20
-1.7.6.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__4_Oct_2011_18_11_10_+1100_qKxIT=nomBfFstRd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOirGOAAoJEECxmPOUX5FEXzsP/igjOsVViZifEsWlSH+IkCZ/
-18f7R6gK/MuFeHTkC4HTq8EcCYAr0rYPx+th0n4yxcDICPzyz90yxE5/BfEjukIa
-W6W1ZxONoJVvJkErCcdz41F9XqfSL5xgPfMDxIaazSom+DD1E5+QycIdQNpkURDm
-EQi5mm0Ds1zcsaRKXaMBYFzvKOf1vWE8sApXIBJLO0BBB8oghbLrX2X6wetFrDfw
-n8nn7+q4WgTSy0MrrrahKLGd6qgmVU1QmLFVSMW8E5nd1SxLO6xqQeiWhIi90AzW
-QGPgDzmudauYPDTt5M+cDoWLbPmICjAXeuUgl4hvA2PsM2faOE8NoQuZtJ62K1Jx
-KHX+czAy879Ab09E7sd01dxrMjpD8DOnm8zHexTw4PZ4X3gW8q/FuU11xhuuxQvQ
-YBuNbgYLMWJlQ8n6ftQUIbZCkSt1lDREKvx7LvHrIsF2/6jYd5Ab/sQ8CpFEl8iM
-yPslniM3DSvv8QCKCL8NLI0lUbBTuiDP0xa+MlC7gdv6+E2x/r2GU77JvuW+PAjB
-d+qPW67TcmpYeJDhiwOGB1FP/GVdJRQ3GGCKUIWPb2RnajKwpL6GU+qR/dVvgNy8
-RjQqE9gqkg7uFHl6xvss5pr1gQUrgDshDLfL/xEct/fXadThUyfo6lGzjGenJZzy
-XQZEXCyeDUa6aVT8RlU/
-=q4vu
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Oct_2011_18_11_10_+1100_qKxIT=nomBfFstRd--
+On 10/04/2011 04:57 AM, KAMEZAWA Hiroyuki wrote:
+> On Mon,  3 Oct 2011 14:18:38 +0400
+> Glauber Costa<glommer@parallels.com>  wrote:
+>
+>> This patch converts struct sock fields memory_pressure,
+>> memory_allocated, sockets_allocated, and sysctl_mem (now prot_mem)
+>> to function pointers, receiving a struct mem_cgroup parameter.
+>>
+>> enter_memory_pressure is kept the same, since all its callers
+>> have socket a context, and the kmem_cgroup can be derived from
+>> the socket itself.
+>>
+>> To keep things working, the patch convert all users of those fields
+>> to use acessor functions.
+>>
+>> In my benchmarks I didn't see a significant performance difference
+>> with this patch applied compared to a baseline (around 1 % diff, thus
+>> inside error margin).
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: David S. Miller<davem@davemloft.net>
+>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Eric W. Biederman<ebiederm@xmission.com>
+>
+> A nitpick.
+>
+>
+>>   #ifdef CONFIG_INET
+>>   struct sock;
+>> +struct proto;
+>>   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>>   void sock_update_memcg(struct sock *sk);
+>>   void sock_release_memcg(struct sock *sk);
+>> -
+>> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
+>> +			  int amt, int *parent_failure);
+>> +void memcg_sock_mem_free(struct mem_cgroup *mem, struct proto *prot, int amt);
+>> +void memcg_sockets_allocated_dec(struct mem_cgroup *mem, struct proto *prot);
+>> +void memcg_sockets_allocated_inc(struct mem_cgroup *mem, struct proto *prot);
+>>   #else
+>> +/* memcontrol includes sockets.h, that includes memcontrol.h ... */
+>> +static inline void memcg_sock_mem_alloc(struct mem_cgroup *mem,
+>> +					struct proto *prot, int amt,
+>> +					int *parent_failure)
+>> +{
+>> +}
+>
+> In these days, at naming memory cgroup pointers, we use "memcg" instead of
+> "mem". So, could you use "memcg" for represeinting memory cgroup ?
+>
+>
+>> +
+>> +void memcg_sock_mem_alloc(struct mem_cgroup *mem, struct proto *prot,
+>> +			  int amt, int *parent_failure)
+>> +{
+>> +	mem = parent_mem_cgroup(mem);
+>> +	for (; mem != NULL; mem = parent_mem_cgroup(mem)) {
+>> +		long alloc;
+>> +		long *prot_mem = prot->prot_mem(mem);
+>> +		/*
+>> +		 * Large nestings are not the common case, and stopping in the
+>> +		 * middle would be complicated enough, that we bill it all the
+>> +		 * way through the root, and if needed, unbill everything later
+>> +		 */
+>> +		alloc = atomic_long_add_return(amt,
+>> +					       prot->memory_allocated(mem));
+>> +		*parent_failure |= (alloc>  prot_mem[2]);
+>> +	}
+>> +}
+>> +EXPORT_SYMBOL(memcg_sock_mem_alloc);
+>
+> Hmm. why not using res_counter ? for reusing 'unbill' code ?
+>
+> Thanks,
+> -Kame
+>
+Well, besides the cost, we'd have atomic_t for !cgroups, and res_counter 
+for cgroups. I think there is value in keeping them the same.
