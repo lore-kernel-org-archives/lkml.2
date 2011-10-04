@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab1JDN6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 09:58:07 -0400
-Received: from smtp4.epfl.ch ([128.178.224.218]:37572 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756569Ab1JDN6F convert rfc822-to-8bit (ORCPT
+	id S1757269Ab1JDN76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 09:59:58 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:56723 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756652Ab1JDN75 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 09:58:05 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Oct 2011 09:58:04 EDT
-From: Philippe =?utf-8?q?R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>
-Organization: EPFL - STI - LSRO1
-To: Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCHv5 14/19] arm: imx: Start using struct usb_otg
-Date: Tue, 4 Oct 2011 15:51:19 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.40.4-5.fc15.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Chen <peter.chen@freescale.com>,
-        "Lin Tony-B19295" <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com> <20111003130409.GA2487@xps8300> <CAOMZO5DwDiBa_Ksow5bt02S_zMMEn4uB_hz-5KS+dyNiZA88sQ@mail.gmail.com>
-In-Reply-To: <CAOMZO5DwDiBa_Ksow5bt02S_zMMEn4uB_hz-5KS+dyNiZA88sQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Tue, 4 Oct 2011 09:59:57 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: Hyper-V TODO file
+Thread-Topic: Hyper-V TODO file
+Thread-Index: AQHMeUqH30ei4wp9K0mbEHnyw+BQsZVZpNPggAB6NQCAEiac4A==
+Date: Tue, 4 Oct 2011 13:59:56 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
+ <20110922170450.GA4490@suse.de>
+ <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110922173618.GA5624@suse.de>
+In-Reply-To: <20110922173618.GA5624@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201110041551.20254.philippe.retornaz@epfl.ch>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
 
-Le lundi 3 octobre 2011 15:29:44, Fabio Estevam a écrit :
-> On Mon, Oct 3, 2011 at 10:04 AM, Heikki Krogerus
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Thursday, September 22, 2011 1:36 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: Hyper-V TODO file
 > 
-> <heikki.krogerus@linux.intel.com> wrote:
-> > Hi Sascha,
-> > 
-> > On Mon, Sep 26, 2011 at 02:21:27PM +0300, Heikki Krogerus wrote:
-> >> Use struct usb_otg members with OTG specific functions instead
-> >> of usb_phy members.
-> >> 
-> >> Includes fixes from Sascha Hauer.
-> >> 
-> >> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> >> Acked-by: Igor Grinberg <grinberg@compulab.co.il>
-> >> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> > 
-> > Have you had time to check it these work?
+> On Thu, Sep 22, 2011 at 05:20:59PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@suse.de]
+> > > Sent: Thursday, September 22, 2011 1:05 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org
+> > > Subject: Re: Hyper-V TODO file
+> > >
+> > > On Thu, Sep 22, 2011 at 09:17:20AM -0700, K. Y. Srinivasan wrote:
+> > > >
+> > > > Greg,
+> > > >
+> > > > With your last checkin of the patches for Hyper-V, I have addressed all of
+> > > > the issues you had raised as part of the vmbus audit. Should I send you a
+> > > > patch to update the TODO file to reflect this. Let me know.
+> > >
+> > > Yes, please send patches.
+> >
+> > Thanks Greg. In addition to the patch to update the TODO file, do you want me
+> to
+> > send you patches for moving the vmbus and util driver out of staging as well.
 > 
-> Adding Philippe who has access to the mx31moboard-devboard and maybe
-> could run a test?
+> No, I'll do that if we agree that it is ready to do so.
 
-On which tree should I test thoses patches ? 3.0 does not apply.
+Greg, sometime back you checked in the changes to the TODO file reflecting
+that there are no outstanding vmbus related issues. What is the process now
+for getting the vmbus (and util) drivers out of staging. Let me know if there is 
+something I can do to help this along.  As you know, we had posted the network 
+driver for public review a while ago (several months ago) and we have addressed 
+all the review comments we got. Any guidance on what we should do next would be
+greatly appreciated.
 
-Thanks
+Regards,
 
-Philippe
+K. Y
+
