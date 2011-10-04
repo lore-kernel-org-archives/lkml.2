@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932891Ab1JDQ7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:59:04 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46420 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932341Ab1JDQ7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:59:00 -0400
-Subject: [PATCH 1/4] SUNRPC: rpcbind clients internals virtualization
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Tue, 04 Oct 2011 20:58:58 +0300
-Message-ID: <20111004165858.6638.76932.stgit@localhost6.localdomain6>
-In-Reply-To: <20111004165637.6638.57399.stgit@localhost6.localdomain6>
-References: <20111004165637.6638.57399.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S933052Ab1JDQ7R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:59:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38326 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab1JDQ7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:59:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1110041731390.29734@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1110041731390.29734@skynet.skynet.ie>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 4 Oct 2011 09:58:53 -0700
+X-Google-Sender-Auth: 0wauSRzPvICSvOE6kaTvibRe6xc
+Message-ID: <CA+55aFwc-KQSZfciq87nXgGXvXwx95z1HSVKVprc=tajJOd20g@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Dave Airlie <airlied@linux.ie>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves static rpcbind internals to sunrpc part of network namespace
-context. This will allow to create rcpbind clients per network namespace.
+On Tue, Oct 4, 2011 at 9:34 AM, Dave Airlie <airlied@linux.ie> wrote:
+>
+> all radeon fixes, one nasty startup crash and/or memory corruption on one
+> family of radeon hd6450s resulted in a patch to stop setting a bunch of
+> regs in the drivers and let the BIOS set them correctly, displayport
+> regression fix, and some off-by-one in the cursor code around the corners
+> of the screens.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Has this been tested with suspend/resume on a lot of machines?
 
----
- net/sunrpc/netns.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+In general, the registers that get set on boot correctly absolutely do
+*not* get set on resume.
 
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index d013bf2..83eede3 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -9,6 +9,11 @@ struct cache_detail;
- struct sunrpc_net {
- 	struct proc_dir_entry *proc_net_rpc;
- 	struct cache_detail *ip_map_cache;
-+
-+	struct rpc_clnt *rpcb_local_clnt;
-+	struct rpc_clnt *rpcb_local_clnt4;
-+	spinlock_t rpcb_clnt_lock;
-+	unsigned int rpcb_users;
- };
- 
- extern int sunrpc_net_id;
+So the registers that you now no longer set at boot-time should almost
+certainly still be saved and restored across suspend/resume. I don't
+know the code well enough to read the diffs, but a quick grep seems to
+show that when you removed the boot-time setup, you also removed the
+resume-time setup (well, at least MC_SHARED_CHREMAP doesn't seem to be
+used anywhere any more: it may be that it's saved-restores in some
+kind of "loop over all registers" that wouldn't have triggered the
+grep).
 
+I pulled, but please verify that whole thing.
+
+                              Linus
