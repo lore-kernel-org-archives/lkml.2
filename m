@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab1JDOHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 10:07:32 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55677 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab1JDOHb (ORCPT
+	id S932189Ab1JDOKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 10:10:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41195 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757031Ab1JDOKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 10:07:31 -0400
-Subject: ASoC: wm8994: Is the rate_reg for wm8994-aif2 correct?
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Oct 2011 22:07:18 +0800
-Message-ID: <1317737239.6419.6.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Oct 2011 10:10:31 -0400
+Date: Tue, 4 Oct 2011 10:10:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, <linux-usb@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: =?windows-1252?Q?Re=3A_Re=3A_BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD=92s?=
+ =?windows-1252?Q?_in_scsiglue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5Ftype?=
+ =?windows-1252?Q?=29?=
+In-Reply-To: <CADDb1s0ZnHzM72sDnFmRrM=GFJtxj5JkYUSPo6GdyQ_=7L2m9A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1110041007070.1954-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Mark,
-While reading wm8994.c, it seems the correct rate_reg for wm8994-aif2
-should be WM8994_AIF2_RATE.
-I cannot find wm8994 datasheet, could you help checking it?
+On Tue, 4 Oct 2011, Amit Sahrawat wrote:
 
-Thanks,
-Axel
+> Not able to get tools which can show the Caching Information when
+> connected USB device to Windows 7(Except one option which allows for
+> optimizing Performance by enabling/disabling Cache - But that option
+> is available for all the Mass storage device) - Please let me know if
+> there is option to view this.
 
->From 5b4cb1e9eae945dfe473139a80d16da6f2fee622 Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 4 Oct 2011 22:00:01 +0800
-Subject: [PATCH] ASoC: wm8994: Fix setting rate_reg for wm8994-aif2
+I have no idea.
 
-For wm8994-aif2, the rate_reg should be WM8994_AIF2_RATE.
+> So, I have collected USB analyzer logs for Device after connected to
+> Windows 7.  Please find the attached logs.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8994.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It would be more informative if your logs did not show the initial
+connection, but did show what happens when you write a small file to
+the drive and then go through the "Safely Remove Hardware" procedure.
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 4225e1f..d5b69c0 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2421,7 +2421,7 @@ static void wm8994_aif_shutdown(struct snd_pcm_substream *substream,
- 		rate_reg = WM8994_AIF1_RATE;
- 		break;
- 	case 2:
--		rate_reg = WM8994_AIF1_RATE;
-+		rate_reg = WM8994_AIF2_RATE;
- 		break;
- 	default:
- 		break;
--- 
-1.7.4.1
+The real question is whether or not Windows sends a SYNCHRONIZE CACHE 
+command to the drive.
 
-
+Alan Stern
 
