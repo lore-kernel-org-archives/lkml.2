@@ -1,226 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab1JDXpX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:45:23 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49881 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933802Ab1JDXpW (ORCPT
+	id S933976Ab1JDXqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 19:46:11 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37314 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933860Ab1JDXqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:45:22 -0400
-Date: Tue, 4 Oct 2011 17:44:47 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, jamie@jamieiles.com, b-cousson@ti.com,
-        shawn.guo@linaro.org, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ARM: gic: add OF based initialization
-Message-ID: <20111004234447.GG3009@ponder.secretlab.ca>
-References: <1317410880-24828-1-git-send-email-robherring2@gmail.com>
- <1317410880-24828-4-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317410880-24828-4-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 4 Oct 2011 19:46:09 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Sam Ravnborg <sam@ravnborg.org>,
+        gthelen@google.com, tartler@cs.fau.de,
+        Dmitry Fink <Dmitry.Fink@palm.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Eric B Munson <ebmunson@us.ibm.com>,
+        Bruce Ashfield <Bruce.Ashfield@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH] kconfig: Add merge_config.sh script
+Date: Tue,  4 Oct 2011 16:45:19 -0700
+Message-Id: <1317771919-18774-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+x-cbid: 11100423-2398-0000-0000-000000B836C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 02:28:00PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> This adds ARM gic interrupt controller initialization using device tree
-> data.
-> 
-> The initialization function is intended to be called by of_irq_init
-> function like this:
-> 
-> const static struct of_device_id irq_match[] = {
-> 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
-> 	{}
-> };
-> 
-> static void __init init_irqs(void)
-> {
-> 	of_irq_init(irq_match);
-> }
-> 
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+After noticing almost every distro has their own method of managing
+config fragments, I went looking at some best practices, and wanted
+to try to consolidate some of the different approaches so this fairly
+simple infrastructure can be shared (and new distros/build systems
+don't have to implement yet another config fragment merge script).
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+This script is most influenced by the Windriver tools used in
+the Yocto Project, reusing some portions found there.
 
-I think this series is pretty much ready to be merged other than the
-comment on patch 1.  It should go through either rmk's patch system or
-the arm-soc tree, but you'll need an ack from tglx first.
+This script merges multiple config fragments, warning on any
+overrided values. It then sets any unspecified values to their
+default, then finally checks to make sure no specified value was
+dropped due to unsatisfied dependencies.
 
-g.
+I'm sure this implementation won't work for everyone, and I expect
+it will need to evolve to adapt for various use cases. But I think
+its a reasonable starting point.
 
+v2:
+  * Reworked to use alldefconfig instead of the proposed
+olddefconfig as suggested by Sam Ravnborg.
 
-> ---
->  Documentation/devicetree/bindings/arm/gic.txt |   55 ++++++++++++++++++++++
->  arch/arm/common/gic.c                         |   61 +++++++++++++++++++++++++
->  arch/arm/include/asm/hardware/gic.h           |    1 +
->  3 files changed, 117 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/gic.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
-> new file mode 100644
-> index 0000000..52916b4
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/gic.txt
-> @@ -0,0 +1,55 @@
-> +* ARM Generic Interrupt Controller
-> +
-> +ARM SMP cores are often associated with a GIC, providing per processor
-> +interrupts (PPI), shared processor interrupts (SPI) and software
-> +generated interrupts (SGI).
-> +
-> +Primary GIC is attached directly to the CPU and typically has PPIs and SGIs.
-> +Secondary GICs are cascaded into the upward interrupt controller and do not
-> +have PPIs or SGIs.
-> +
-> +Main node required properties:
-> +
-> +- compatible : should be one of:
-> +	"arm,cortex-a9-gic"
-> +	"arm,arm11mp-gic"
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +- #interrupt-cells : Specifies the number of cells needed to encode an
-> +  interrupt source.  The type shall be a <u32> and the value shall be 3.
-> +
-> +  The 1st cell is the interrupt type; 0 for SPI interrupts, 1 for PPI
-> +  interrupts.
-> +
-> +  The 2nd cell contains the interrupt number for the interrupt type.
-> +  SPI interrupts are in the range [0-987].  PPI interrupts are in the
-> +  range [0-15].
-> +
-> +  The 3rd cell is the flags, encoded as follows:
-> +	bits[3:0] trigger type and level flags.
-> +		1 = low-to-high edge triggered
-> +		2 = high-to-low edge triggered
-> +		4 = active high level-sensitive
-> +		8 = active low level-sensitive
-> +	bits[15:8] PPI interrupt cpu mask.  Each bit corresponds to each of
-> +	the 8 possible cpus attached to the GIC.  A bit set to '1' indicated
-> +	the interrupt is wired to that CPU.  Only valid for PPI interrupts.
-> +
-> +- reg : Specifies base physical address(s) and size of the GIC registers. The
-> +  first region is the GIC distributor register base and size. The 2nd region is
-> +  the GIC cpu interface register base and size.
-> +
-> +Optional
-> +- interrupts	: Interrupt source of the parent interrupt controller. Only
-> +  present on secondary GICs.
-> +
-> +Example:
-> +
-> +	intc: interrupt-controller@fff11000 {
-> +		compatible = "arm,cortex-a9-gic";
-> +		#interrupt-cells = <3>;
-> +		#address-cells = <1>;
-> +		interrupt-controller;
-> +		reg = <0xfff11000 0x1000>,
-> +		      <0xfff10100 0x100>;
-> +	};
-> +
-> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-> index 6fbe1db..3e67970 100644
-> --- a/arch/arm/common/gic.c
-> +++ b/arch/arm/common/gic.c
-> @@ -29,6 +29,9 @@
->  #include <linux/cpu_pm.h>
->  #include <linux/cpumask.h>
->  #include <linux/io.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
->  #include <linux/irqdomain.h>
->  
->  #include <asm/irq.h>
-> @@ -518,7 +521,33 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
->  }
->  #endif
->  
-> +#ifdef CONFIG_OF
-> +static int gic_irq_domain_dt_translate(struct irq_domain *d,
-> +				       struct device_node *controller,
-> +				       const u32 *intspec, unsigned int intsize,
-> +				       unsigned long *out_hwirq, unsigned int *out_type)
-> +{
-> +	if (d->of_node != controller)
-> +		return -EINVAL;
-> +	if (intsize < 3)
-> +		return -EINVAL;
-> +
-> +	/* Get the interrupt number and add 16 to skip over SGIs */
-> +	*out_hwirq = intspec[1] + 16;
-> +
-> +	/* For SPIs, we need to add 16 more to get the GIC irq ID number */
-> +	if (!intspec[0])
-> +		*out_hwirq += 16;
-> +
-> +	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
-> +	return 0;
-> +}
-> +#endif
-> +
->  const struct irq_domain_ops gic_irq_domain_ops = {
-> +#ifdef CONFIG_OF
-> +	.dt_translate = gic_irq_domain_dt_translate,
-> +#endif
->  };
->  
->  void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
-> @@ -606,3 +635,35 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	writel_relaxed(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
->  }
->  #endif
-> +
-> +#ifdef CONFIG_OF
-> +static int gic_cnt __initdata = 0;
-> +
-> +int __init gic_of_init(struct device_node *node, struct device_node *parent)
-> +{
-> +	void __iomem *cpu_base;
-> +	void __iomem *dist_base;
-> +	int irq;
-> +	struct irq_domain *domain = &gic_data[gic_cnt].domain;
-> +
-> +	if (WARN_ON(!node))
-> +		return -ENODEV;
-> +
-> +	dist_base = of_iomap(node, 0);
-> +	WARN(!dist_base, "unable to map gic dist registers\n");
-> +
-> +	cpu_base = of_iomap(node, 1);
-> +	WARN(!cpu_base, "unable to map gic cpu registers\n");
-> +
-> +	domain->of_node = of_node_get(node);
-> +
-> +	gic_init(gic_cnt, 16, dist_base, cpu_base);
-> +
-> +	if (parent) {
-> +		irq = irq_of_parse_and_map(node, 0);
-> +		gic_cascade_irq(gic_cnt, irq);
-> +	}
-> +	gic_cnt++;
-> +	return 0;
-> +}
-> +#endif
-> diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
-> index ade84a4..1a776a1 100644
-> --- a/arch/arm/include/asm/hardware/gic.h
-> +++ b/arch/arm/include/asm/hardware/gic.h
-> @@ -39,6 +39,7 @@ extern void __iomem *gic_cpu_base_addr;
->  extern struct irq_chip gic_arch_extn;
->  
->  void gic_init(unsigned int, unsigned int, void __iomem *, void __iomem *);
-> +int gic_of_init(struct device_node *node, struct device_node *parent);
->  void gic_secondary_init(unsigned int);
->  void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
->  void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
-> -- 
-> 1.7.5.4
-> 
+v3:
+  * Script improvements from Dmitri.
+  * allnoconfig option from Darren
+  * pre-make exit option from Darren
+  * lots of other fixes/cleanups from Darren.
+  * Fix final check to not compain about config values in comments
+
+Please let me know if you have any comments or thoughts!
+
+CC: Sam Ravnborg <sam@ravnborg.org>
+CC: gthelen@google.com
+CC: tartler@cs.fau.de
+CC: Dmitry Fink <Dmitry.Fink@palm.com>
+CC: Darren Hart <dvhart@linux.intel.com>
+CC: Eric B Munson <ebmunson@us.ibm.com>
+CC: Bruce Ashfield <Bruce.Ashfield@windriver.com>
+CC: Michal Marek <mmarek@suse.cz>
+CC: linux-kbuild@vger.kernel.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ scripts/kconfig/merge_config.sh |  117 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 117 insertions(+), 0 deletions(-)
+ create mode 100755 scripts/kconfig/merge_config.sh
+
+diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
+new file mode 100755
+index 0000000..890276b
+--- /dev/null
++++ b/scripts/kconfig/merge_config.sh
+@@ -0,0 +1,117 @@
++#!/bin/sh
++#  merge_config.sh - Takes a list of config fragment values, and merges
++#  them one by one. Provides warnings on overridden values, and specified
++#  values that did not make it to the resulting .config file (due to missed
++#  dependencies or config symbol removal).
++#
++#  Portions reused from kconf_check and generate_cfg:
++#  http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/kconf_check
++#  http://git.yoctoproject.org/cgit/cgit.cgi/yocto-kernel-tools/tree/tools/generate_cfg
++#
++#  Copyright (c) 2009-2010 Wind River Systems, Inc.
++#  Copyright 2011 Linaro
++#
++#  This program is free software; you can redistribute it and/or modify
++#  it under the terms of the GNU General Public License version 2 as
++#  published by the Free Software Foundation.
++#
++#  This program is distributed in the hope that it will be useful,
++#  but WITHOUT ANY WARRANTY; without even the implied warranty of
++#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++#  See the GNU General Public License for more details.
++
++clean_up() {
++       rm -f $TMP_FILE
++       exit
++}
++trap clean_up SIGHUP SIGINT SIGTERM
++
++usage() {
++	echo "Usage: $0 [OPTIONS] [CONFIG [...]]"
++	echo "  -h    display this help text"
++	echo "  -m    only merge the fragments, do not execute the make command"
++	echo "  -n    use allnoconfig instead of alldefconfig"
++}
++
++MAKE=true
++ALLTARGET=alldefconfig
++
++while true; do
++	case $1 in
++	"-n")
++		ALLTARGET=allnoconfig
++		shift
++		continue
++		;;
++	"-m")
++		MAKE=false
++		shift
++		continue
++		;;
++	"-h")
++		usage
++		exit
++		;;
++	*)
++		break
++		;;
++	esac
++done
++
++
++
++MERGE_LIST=$*
++SED_CONFIG_EXP="s/^\(# \)\{0,1\}\(CONFIG_[a-zA-Z0-9_]*\)[= ].*/\2/p"
++TMP_FILE=$(mktemp ./.tmp.config.XXXXXXXXXX)
++
++# Merge files, printing warnings on overrided values
++for MERGE_FILE in $MERGE_LIST ; do
++	echo "Merging $MERGE_FILE"
++	CFG_LIST=$(sed -n "$SED_CONFIG_EXP" $MERGE_FILE)
++
++	for CFG in $CFG_LIST ; do
++		grep -q -w $CFG $TMP_FILE
++		if [ $? -eq 0 ] ; then
++			PREV_VAL=$(grep -w $CFG $TMP_FILE)
++			NEW_VAL=$(grep -w $CFG $MERGE_FILE)
++			if [ "x$PREV_VAL" != "x$NEW_VAL" ] ; then
++			echo Value of $CFG is redefined by fragment $MERGE_FILE:
++			echo Previous  value: $PREV_VAL
++			echo New value:       $NEW_VAL
++			echo
++			fi
++			sed -i "/$CFG[ =]/d" $TMP_FILE
++		fi
++	done
++	cat $MERGE_FILE >> $TMP_FILE
++done
++
++if [ "$MAKE" = "false" ]; then
++	cp $TMP_FILE .config
++	echo "#"
++	echo "# merged configuration written to .config (needs make)"
++	echo "#"
++	clean_up
++	exit
++fi
++
++# Use the merged file as the starting point for:
++# alldefconfig: Fills in any missing symbols with Kconfig default
++# allnoconfig: Fills in any missing symbols with # CONFIG_* is not set
++make KCONFIG_ALLCONFIG=$TMP_FILE $ALLTARGET
++
++
++# Check all specified config values took (might have missed-dependency issues)
++for CFG in $(sed -n "$SED_CONFIG_EXP" $TMP_FILE); do
++
++	REQUESTED_VAL=$(sed -n "$SED_CONFIG_EXP" $TMP_FILE | grep -w -e "$CFG")
++	ACTUAL_VAL=$(sed -n "$SED_CONFIG_EXP" .config | grep -w -e "$CFG")
++	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
++		echo "Value requested for $CFG not in final .config"
++		echo "Requested value:  $REQUESTED_VAL"
++		echo "Actual value:     $ACTUAL_VAL"
++		echo ""
++	fi
++done
++
++clean_up
+-- 
+1.7.3.2.146.gca209
+
