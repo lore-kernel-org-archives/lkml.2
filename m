@@ -1,53 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab1JDQoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:44:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44607 "EHLO mx1.redhat.com"
+	id S932859Ab1JDQoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:44:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1197 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932808Ab1JDQoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932522Ab1JDQoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Oct 2011 12:44:13 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>
-Subject: [PATCH v4 01/24] fix default __strnlen_user macro
-Date: Tue,  4 Oct 2011 12:43:38 -0400
-Message-Id: <1317746641-26725-2-git-send-email-msalter@redhat.com>
-In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
-References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
+Subject: [PATCH v4 00/24] C6X: New architecture
+Date: Tue,  4 Oct 2011 12:43:37 -0400
+Message-Id: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing __strnlen_user macro simply resolved to strnlen. However, the
-count returned by strnlen_user should include the NULL byte. This patch
-fixes the __strnlen_user macro to include the NULL byte in the count.
+Here is v4 of the C6X architecture patch series. Patches are
+available in 'for-linux-next' branch at:
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- include/asm-generic/uaccess.h |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+    http://linux-c6x.org/git/projects/linux-c6x-upstreaming.git
 
-diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
-index ac68c99..9788568 100644
---- a/include/asm-generic/uaccess.h
-+++ b/include/asm-generic/uaccess.h
-@@ -289,9 +289,14 @@ strncpy_from_user(char *dst, const char __user *src, long count)
-  * Return 0 on exception, a value greater than N if too long
-  */
- #ifndef __strnlen_user
--#define __strnlen_user strnlen
-+#define __strnlen_user(s, n) (strnlen((s), (n)) + 1)
- #endif
- 
-+/*
-+ * Unlike strnlen, strnlen_user includes the nul terminator in
-+ * its returned count. Callers should check for a returned value
-+ * greater than N as an indication the string is too long.
-+ */
- static inline long strnlen_user(const char __user *src, long n)
- {
- 	if (!access_ok(VERIFY_READ, src, 1))
+A prebuilt GNU toolchain can be found at:
+
+    http://www.codesourcery.com/sgpp/lite/c6000/portal/release1882
+
+Changes from the previous (v3) patchset are:
+
+  * Removed board-specific config options
+
+  * Implemented suggested cleanups to interrupt code
+
+  * Added support for periodic mode and shutdown mode to timer code
+
+  * Added HAVE_ARCH_TRACEHOOK support so generic ptrace can handle
+    PTRACE_GETREGS/SETREGS
+
+  * Add optimized asm/swab.h
+
+  * Cleaned up asm/unaligned.h
+
+  * Fixed cache handling in dma api
+
+  * Allow device tree MAC address to override fused address 
+
+  * Changed some exported symbols to EXPORT_SYMBOL_GPL
+
+  * Removed dtb-install tool and instead link DTB into kernel
+
+  * Use of_platform_populate and run it at core_initcall time
+
+  * Make use of generic asm/checksum.h
+
+  * Cleaned up compile warnings.
+
+Aurelien Jacquiot (14):
+  C6X: build infrastructure
+  C6X: early boot code
+  C6X: memory management and DMA support
+  C6X: process management
+  C6X: signal management
+  C6X: time management
+  C6X: interrupt handling
+  C6X: syscalls
+  C6X: build infrastructure
+  C6X: cache control
+  C6X: loadable module support
+  C6X: ptrace support
+  C6X: headers
+  C6X: library code
+
+Mark Salter (10):
+  fix default __strnlen_user macro
+  fixed generic page.h for non-zero PAGE_OFFSET
+  add ELF machine define for TI C6X DSPs
+  add missing __iomem to generic iounmap declaration
+  C6X: devicetree support
+  C6X: clocks
+  C6X: general SoC support
+  C6X: EMIF - External Memory Interface
+  C6X: DSCR - Device State Configuration Registers
+  C6X: MAINTAINERS
+
+ Documentation/devicetree/bindings/c6x/clocks.txt   |   40 +
+ Documentation/devicetree/bindings/c6x/dscr.txt     |  127 +++
+ Documentation/devicetree/bindings/c6x/emifa.txt    |   62 ++
+ .../devicetree/bindings/c6x/interrupt.txt          |  104 +++
+ Documentation/devicetree/bindings/c6x/soc.txt      |   28 +
+ Documentation/devicetree/bindings/c6x/timer64.txt  |   26 +
+ MAINTAINERS                                        |    8 +
+ arch/c6x/Kconfig                                   |  174 +++++
+ arch/c6x/Makefile                                  |   60 ++
+ arch/c6x/boot/Makefile                             |   30 +
+ arch/c6x/boot/dts/dsk6455.dts                      |   62 ++
+ arch/c6x/boot/dts/evmc6457.dts                     |   48 ++
+ arch/c6x/boot/dts/evmc6472.dts                     |   73 ++
+ arch/c6x/boot/dts/evmc6474.dts                     |   58 ++
+ arch/c6x/boot/dts/tms320c6455.dtsi                 |   96 +++
+ arch/c6x/boot/dts/tms320c6457.dtsi                 |   68 ++
+ arch/c6x/boot/dts/tms320c6472.dtsi                 |  134 ++++
+ arch/c6x/boot/dts/tms320c6474.dtsi                 |   89 +++
+ arch/c6x/boot/linked_dtb.S                         |    2 +
+ arch/c6x/configs/dsk6455_defconfig                 |   44 ++
+ arch/c6x/configs/evmc6457_defconfig                |   41 +
+ arch/c6x/configs/evmc6472_defconfig                |   42 +
+ arch/c6x/configs/evmc6474_defconfig                |   42 +
+ arch/c6x/include/asm/Kbuild                        |   54 ++
+ arch/c6x/include/asm/asm-offsets.h                 |    1 +
+ arch/c6x/include/asm/bitops.h                      |  105 +++
+ arch/c6x/include/asm/byteorder.h                   |   12 +
+ arch/c6x/include/asm/cache.h                       |   90 +++
+ arch/c6x/include/asm/cacheflush.h                  |   65 ++
+ arch/c6x/include/asm/checksum.h                    |   34 +
+ arch/c6x/include/asm/clkdev.h                      |   22 +
+ arch/c6x/include/asm/clock.h                       |  148 ++++
+ arch/c6x/include/asm/delay.h                       |   67 ++
+ arch/c6x/include/asm/dma-mapping.h                 |   91 +++
+ arch/c6x/include/asm/dscr.h                        |   34 +
+ arch/c6x/include/asm/elf.h                         |  113 +++
+ arch/c6x/include/asm/ftrace.h                      |    6 +
+ arch/c6x/include/asm/hardirq.h                     |   20 +
+ arch/c6x/include/asm/irq.h                         |  302 ++++++++
+ arch/c6x/include/asm/irqflags.h                    |   72 ++
+ arch/c6x/include/asm/linkage.h                     |   30 +
+ arch/c6x/include/asm/megamod-pic.h                 |    9 +
+ arch/c6x/include/asm/memblock.h                    |    4 +
+ arch/c6x/include/asm/mmu.h                         |   18 +
+ arch/c6x/include/asm/module.h                      |   33 +
+ arch/c6x/include/asm/mutex.h                       |    6 +
+ arch/c6x/include/asm/page.h                        |   11 +
+ arch/c6x/include/asm/pgtable.h                     |   81 ++
+ arch/c6x/include/asm/processor.h                   |  132 ++++
+ arch/c6x/include/asm/procinfo.h                    |   28 +
+ arch/c6x/include/asm/prom.h                        |    1 +
+ arch/c6x/include/asm/ptrace.h                      |  174 +++++
+ arch/c6x/include/asm/sections.h                    |   12 +
+ arch/c6x/include/asm/setup.h                       |   32 +
+ arch/c6x/include/asm/sigcontext.h                  |   80 ++
+ arch/c6x/include/asm/signal.h                      |   17 +
+ arch/c6x/include/asm/soc.h                         |   35 +
+ arch/c6x/include/asm/string.h                      |   21 +
+ arch/c6x/include/asm/swab.h                        |   54 ++
+ arch/c6x/include/asm/syscall.h                     |  123 +++
+ arch/c6x/include/asm/syscalls.h                    |   55 ++
+ arch/c6x/include/asm/system.h                      |  168 ++++
+ arch/c6x/include/asm/thread_info.h                 |  121 +++
+ arch/c6x/include/asm/timer64.h                     |    6 +
+ arch/c6x/include/asm/timex.h                       |   33 +
+ arch/c6x/include/asm/tlb.h                         |    8 +
+ arch/c6x/include/asm/traps.h                       |   36 +
+ arch/c6x/include/asm/uaccess.h                     |  107 +++
+ arch/c6x/include/asm/unaligned.h                   |  170 +++++
+ arch/c6x/include/asm/unistd.h                      |   26 +
+ arch/c6x/kernel/Makefile                           |   12 +
+ arch/c6x/kernel/asm-offsets.c                      |  123 +++
+ arch/c6x/kernel/c6x_ksyms.c                        |   66 ++
+ arch/c6x/kernel/devicetree.c                       |   53 ++
+ arch/c6x/kernel/dma.c                              |  153 ++++
+ arch/c6x/kernel/entry.S                            |  803 ++++++++++++++++++++
+ arch/c6x/kernel/head.S                             |   84 ++
+ arch/c6x/kernel/irq.c                              |  728 ++++++++++++++++++
+ arch/c6x/kernel/module.c                           |  123 +++
+ arch/c6x/kernel/process.c                          |  263 +++++++
+ arch/c6x/kernel/ptrace.c                           |  187 +++++
+ arch/c6x/kernel/setup.c                            |  498 ++++++++++++
+ arch/c6x/kernel/signal.c                           |  377 +++++++++
+ arch/c6x/kernel/soc.c                              |   91 +++
+ arch/c6x/kernel/switch_to.S                        |   74 ++
+ arch/c6x/kernel/sys_c6x.c                          |   74 ++
+ arch/c6x/kernel/time.c                             |   65 ++
+ arch/c6x/kernel/traps.c                            |  423 ++++++++++
+ arch/c6x/kernel/vectors.S                          |   81 ++
+ arch/c6x/kernel/vmlinux.lds.S                      |  162 ++++
+ arch/c6x/lib/Makefile                              |    7 +
+ arch/c6x/lib/checksum.c                            |   36 +
+ arch/c6x/lib/csum_64plus.S                         |  419 ++++++++++
+ arch/c6x/lib/divi.S                                |   53 ++
+ arch/c6x/lib/divremi.S                             |   46 ++
+ arch/c6x/lib/divremu.S                             |   87 +++
+ arch/c6x/lib/divu.S                                |   98 +++
+ arch/c6x/lib/llshl.S                               |   37 +
+ arch/c6x/lib/llshr.S                               |   38 +
+ arch/c6x/lib/llshru.S                              |   38 +
+ arch/c6x/lib/memcpy_64plus.S                       |   46 ++
+ arch/c6x/lib/mpyll.S                               |   49 ++
+ arch/c6x/lib/negll.S                               |   31 +
+ arch/c6x/lib/pop_rts.S                             |   32 +
+ arch/c6x/lib/push_rts.S                            |   31 +
+ arch/c6x/lib/remi.S                                |   64 ++
+ arch/c6x/lib/remu.S                                |   82 ++
+ arch/c6x/lib/strasgi.S                             |   89 +++
+ arch/c6x/lib/strasgi_64plus.S                      |   39 +
+ arch/c6x/mm/Makefile                               |    5 +
+ arch/c6x/mm/dma-coherent.c                         |  143 ++++
+ arch/c6x/mm/init.c                                 |  113 +++
+ arch/c6x/platforms/Kconfig                         |   16 +
+ arch/c6x/platforms/Makefile                        |   12 +
+ arch/c6x/platforms/cache.c                         |  445 +++++++++++
+ arch/c6x/platforms/dscr.c                          |  598 +++++++++++++++
+ arch/c6x/platforms/emif.c                          |   88 +++
+ arch/c6x/platforms/megamod-pic.c                   |  349 +++++++++
+ arch/c6x/platforms/platform.c                      |   17 +
+ arch/c6x/platforms/pll.c                           |  444 +++++++++++
+ arch/c6x/platforms/plldata.c                       |  404 ++++++++++
+ arch/c6x/platforms/timer64.c                       |  236 ++++++
+ include/asm-generic/io.h                           |    2 +-
+ include/asm-generic/page.h                         |   10 +-
+ include/asm-generic/uaccess.h                      |    7 +-
+ include/linux/elf-em.h                             |    1 +
+ 126 files changed, 12972 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/c6x/clocks.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/dscr.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/emifa.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/interrupt.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/soc.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/timer64.txt
+ create mode 100644 arch/c6x/Kconfig
+ create mode 100644 arch/c6x/Makefile
+ create mode 100644 arch/c6x/boot/Makefile
+ create mode 100644 arch/c6x/boot/dts/dsk6455.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6457.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6472.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6474.dts
+ create mode 100644 arch/c6x/boot/dts/tms320c6455.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6457.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6472.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6474.dtsi
+ create mode 100644 arch/c6x/boot/linked_dtb.S
+ create mode 100644 arch/c6x/configs/dsk6455_defconfig
+ create mode 100644 arch/c6x/configs/evmc6457_defconfig
+ create mode 100644 arch/c6x/configs/evmc6472_defconfig
+ create mode 100644 arch/c6x/configs/evmc6474_defconfig
+ create mode 100644 arch/c6x/include/asm/Kbuild
+ create mode 100644 arch/c6x/include/asm/asm-offsets.h
+ create mode 100644 arch/c6x/include/asm/bitops.h
+ create mode 100644 arch/c6x/include/asm/byteorder.h
+ create mode 100644 arch/c6x/include/asm/cache.h
+ create mode 100644 arch/c6x/include/asm/cacheflush.h
+ create mode 100644 arch/c6x/include/asm/checksum.h
+ create mode 100644 arch/c6x/include/asm/clkdev.h
+ create mode 100644 arch/c6x/include/asm/clock.h
+ create mode 100644 arch/c6x/include/asm/delay.h
+ create mode 100644 arch/c6x/include/asm/dma-mapping.h
+ create mode 100644 arch/c6x/include/asm/dscr.h
+ create mode 100644 arch/c6x/include/asm/elf.h
+ create mode 100644 arch/c6x/include/asm/ftrace.h
+ create mode 100644 arch/c6x/include/asm/hardirq.h
+ create mode 100644 arch/c6x/include/asm/irq.h
+ create mode 100644 arch/c6x/include/asm/irqflags.h
+ create mode 100644 arch/c6x/include/asm/linkage.h
+ create mode 100644 arch/c6x/include/asm/megamod-pic.h
+ create mode 100644 arch/c6x/include/asm/memblock.h
+ create mode 100644 arch/c6x/include/asm/mmu.h
+ create mode 100644 arch/c6x/include/asm/module.h
+ create mode 100644 arch/c6x/include/asm/mutex.h
+ create mode 100644 arch/c6x/include/asm/page.h
+ create mode 100644 arch/c6x/include/asm/pgtable.h
+ create mode 100644 arch/c6x/include/asm/processor.h
+ create mode 100644 arch/c6x/include/asm/procinfo.h
+ create mode 100644 arch/c6x/include/asm/prom.h
+ create mode 100644 arch/c6x/include/asm/ptrace.h
+ create mode 100644 arch/c6x/include/asm/sections.h
+ create mode 100644 arch/c6x/include/asm/setup.h
+ create mode 100644 arch/c6x/include/asm/sigcontext.h
+ create mode 100644 arch/c6x/include/asm/signal.h
+ create mode 100644 arch/c6x/include/asm/soc.h
+ create mode 100644 arch/c6x/include/asm/string.h
+ create mode 100644 arch/c6x/include/asm/swab.h
+ create mode 100644 arch/c6x/include/asm/syscall.h
+ create mode 100644 arch/c6x/include/asm/syscalls.h
+ create mode 100644 arch/c6x/include/asm/system.h
+ create mode 100644 arch/c6x/include/asm/thread_info.h
+ create mode 100644 arch/c6x/include/asm/timer64.h
+ create mode 100644 arch/c6x/include/asm/timex.h
+ create mode 100644 arch/c6x/include/asm/tlb.h
+ create mode 100644 arch/c6x/include/asm/traps.h
+ create mode 100644 arch/c6x/include/asm/uaccess.h
+ create mode 100644 arch/c6x/include/asm/unaligned.h
+ create mode 100644 arch/c6x/include/asm/unistd.h
+ create mode 100644 arch/c6x/kernel/Makefile
+ create mode 100644 arch/c6x/kernel/asm-offsets.c
+ create mode 100644 arch/c6x/kernel/c6x_ksyms.c
+ create mode 100644 arch/c6x/kernel/devicetree.c
+ create mode 100644 arch/c6x/kernel/dma.c
+ create mode 100644 arch/c6x/kernel/entry.S
+ create mode 100644 arch/c6x/kernel/head.S
+ create mode 100644 arch/c6x/kernel/irq.c
+ create mode 100644 arch/c6x/kernel/module.c
+ create mode 100644 arch/c6x/kernel/process.c
+ create mode 100644 arch/c6x/kernel/ptrace.c
+ create mode 100644 arch/c6x/kernel/setup.c
+ create mode 100644 arch/c6x/kernel/signal.c
+ create mode 100644 arch/c6x/kernel/soc.c
+ create mode 100644 arch/c6x/kernel/switch_to.S
+ create mode 100644 arch/c6x/kernel/sys_c6x.c
+ create mode 100644 arch/c6x/kernel/time.c
+ create mode 100644 arch/c6x/kernel/traps.c
+ create mode 100644 arch/c6x/kernel/vectors.S
+ create mode 100644 arch/c6x/kernel/vmlinux.lds.S
+ create mode 100644 arch/c6x/lib/Makefile
+ create mode 100644 arch/c6x/lib/checksum.c
+ create mode 100644 arch/c6x/lib/csum_64plus.S
+ create mode 100644 arch/c6x/lib/divi.S
+ create mode 100644 arch/c6x/lib/divremi.S
+ create mode 100644 arch/c6x/lib/divremu.S
+ create mode 100644 arch/c6x/lib/divu.S
+ create mode 100644 arch/c6x/lib/llshl.S
+ create mode 100644 arch/c6x/lib/llshr.S
+ create mode 100644 arch/c6x/lib/llshru.S
+ create mode 100644 arch/c6x/lib/memcpy_64plus.S
+ create mode 100644 arch/c6x/lib/mpyll.S
+ create mode 100644 arch/c6x/lib/negll.S
+ create mode 100644 arch/c6x/lib/pop_rts.S
+ create mode 100644 arch/c6x/lib/push_rts.S
+ create mode 100644 arch/c6x/lib/remi.S
+ create mode 100644 arch/c6x/lib/remu.S
+ create mode 100644 arch/c6x/lib/strasgi.S
+ create mode 100644 arch/c6x/lib/strasgi_64plus.S
+ create mode 100644 arch/c6x/mm/Makefile
+ create mode 100644 arch/c6x/mm/dma-coherent.c
+ create mode 100644 arch/c6x/mm/init.c
+ create mode 100644 arch/c6x/platforms/Kconfig
+ create mode 100644 arch/c6x/platforms/Makefile
+ create mode 100644 arch/c6x/platforms/cache.c
+ create mode 100644 arch/c6x/platforms/dscr.c
+ create mode 100644 arch/c6x/platforms/emif.c
+ create mode 100644 arch/c6x/platforms/megamod-pic.c
+ create mode 100644 arch/c6x/platforms/platform.c
+ create mode 100644 arch/c6x/platforms/pll.c
+ create mode 100644 arch/c6x/platforms/plldata.c
+ create mode 100644 arch/c6x/platforms/timer64.c
+
 -- 
 1.7.6.2
 
