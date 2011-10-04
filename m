@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab1JDHPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:15:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43598 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab1JDHPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:15:12 -0400
-Date: Tue, 4 Oct 2011 00:15:08 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <4E88B5E0.6080503@linux.vnet.ibm.com>
- <20111002195023.GC31799@mtj.dyndns.org>
- <4E88C3D4.2020300@linux.vnet.ibm.com>
- <20111003004051.GD31799@mtj.dyndns.org>
- <4E894D75.808@linux.vnet.ibm.com>
- <20111003084754.GB4411@liondog.tnic>
+	id S1754806Ab1JDHPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:15:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37673 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab1JDHPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 03:15:17 -0400
+Date: Tue, 4 Oct 2011 09:15:15 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel.org status: establishing a PGP web of trust
+In-Reply-To: <4E8A910D.6020107@zytor.com>
+Message-ID: <alpine.LNX.2.00.1110040912550.31654@pobox.suse.cz>
+References: <4E8655CD.90107@zytor.com> <alpine.LRH.2.00.1110031316260.14853@twin.jikos.cz> <20111003225651.GA10257@leaf> <20111004044914.GP6684@thunk.org> <4E8A910D.6020107@zytor.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003084754.GB4411@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 3 Oct 2011, H. Peter Anvin wrote:
 
-On Mon, Oct 03, 2011 at 10:47:54AM +0200, Borislav Petkov wrote:
-> I think your patch makes sense because re-loading the ucode during
-> a suspend/resume cycle is unnecessary. If one wants to update the
-> microcode, it should happen later when the box is resumed again: you
-> simply put the new microcode image in /lib/firmware/... and on AMD
-> unload/reload the microcode module and on Intel you do either that or
-> use the deprecated microcode_ctl.
+> By the way, I'm now pretty convinced that allowing inbound ssh on
+> laptops (which is the default on all the mainline Linux distros as far
+> as I know) is seriously broken... laptops get connected to *extremely*
+> insecure networks on just way too regular a basis.
 
-I don't think it changes anything for suspend/resume cycles.  They're
-different hooks.  The proposed patch changes actual cpu hotplug paths.
+Well, not all mainline Linux distributions do this. opensuse, to name one 
+example, by default does not start sshd (and there have been quite some 
+flames when this has been introduced :) ).
 
-> However, let me test it on a couple of AMD boxes tomorrow to verify.
-> 
-> > At the moment I can't think of any clean solution that solves both these problems - 
-> >   a. The problem of requesting microcode from userspace when it is frozen (which can be individually
-> >      solved by my patch).
-> >   b. The possible need for a revised microcode during CPU online (due to the remote usecase of 
-> >      physically plugging-out and plugging-in a new CPU), when the tasks are frozen.
-> 
-> Yeah, let me remind you guys, we're talking about x86 CPUs here. AFAICT,
-> I don't think that physical unplug is supported by any vendor yet but
-> I'd welcome surprises :-).
-
-I recall hearing about someone experimenting with actual hotplug a
-while ago.  Dunno whether that was production or not tho.  Even if
-not, given the continuing penetration of x86 into highend, I don't
-think it would take too long to see physical CPU hotplug in
-production.  Also, it just is a poor engineering.
-
-Thanks.
-
---
-tejun
+-- 
+Jiri Kosina
+SUSE Labs
