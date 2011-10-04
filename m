@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797Ab1JDVGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 17:06:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49213 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933618Ab1JDVGk (ORCPT
+	id S933810Ab1JDVKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 17:10:20 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43873 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933618Ab1JDVKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 17:06:40 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regcache: Use bsearch() to search the register defaults
-Date: Tue,  4 Oct 2011 22:06:36 +0100
-Message-Id: <1317762396-1248-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	Tue, 4 Oct 2011 17:10:19 -0400
+Date: Tue, 4 Oct 2011 14:10:16 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        container ML <containers@lists.linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Miao Xie <miaox@cn.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <htejun@gmail.com>,
+        stable@kernel.org
+Subject: Re: [BUGFIX] cgroup: create a workqueue for cgroup
+Message-Id: <20111004141016.af26219d.akpm00@gmail.com>
+In-Reply-To: <20111003141911.b4ee7bca.nishimura@mxp.nes.nec.co.jp>
+References: <20110930165452.19c0fdf4.nishimura@mxp.nes.nec.co.jp>
+	<20110930153049.6719a14e.akpm00@gmail.com>
+	<20111003092244.bcfde141.nishimura@mxp.nes.nec.co.jp>
+	<20111003141911.b4ee7bca.nishimura@mxp.nes.nec.co.jp>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than open coding a binary search use the standard bsearch() using
-the comparison function we're already using for sort() on insert. This
-fixes a lockup I was observing due to iterating on min <= max rather
-than min < max when we fail to look up.
+On Mon, 3 Oct 2011 14:19:11 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regcache.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+> On Mon, 3 Oct 2011 09:22:44 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> 
+> > On Fri, 30 Sep 2011 15:30:49 -0700
+> > Andrew Morton <akpm00@gmail.com> wrote:
+> > 
+> > > On Fri, 30 Sep 2011 16:54:52 +0900
+> > > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > > 
+> > > > In commit:f90d4118, cpuset_wq, a separate workqueue for cpuset, was introduced
+> > > > to avoid a dead lock against cgroup_mutex between async_rebuild_sched_domains()
+> > > > and cgroup_tasks_write().
+> > > > 
+> > > > But check_for_release() has a similar problem:
+> > > > 
+> > > >   check_for_release()
+> > > >     schedule_work(release_agent_work)
+> > > >       cgroup_release_agent()
+> > > >         mutex_lock(&cgroup_mutex)
+> > > > 
+> > > > And I actually see a lockup which seems to be caused by this problem
+> > > > on 2.6.32-131.0.15.el6.x86_64.
+> > > 
+> > > Are you sure the bug is still present in current kernels?  Perhaps
+> > > Tejun's workqueue changes magically made it go away.
+> > > 
+> > Not yet, but I'll check it.
+> > 
+> As you said, I cannot repricate this issue on 3.1-rc8. But I've verified
+> it happens on 2.6.32.46 and this patch fixes it, so I think this patch is
+> necessary for stable at least.
+> 
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index 18ab5b3..bf82783 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -13,6 +13,7 @@
- #include <linux/slab.h>
- #include <linux/export.h>
- #include <trace/events/regmap.h>
-+#include <linux/bsearch.h>
- #include <linux/sort.h>
- 
- #include "internal.h"
-@@ -356,25 +357,7 @@ unsigned int regcache_get_val(const void *base, unsigned int idx,
- 	return -1;
- }
- 
--int regcache_lookup_reg(struct regmap *map, unsigned int reg)
--{
--	unsigned int min, max, index;
--
--	min = 0;
--	max = map->num_reg_defaults - 1;
--	do {
--		index = (min + max) / 2;
--		if (map->reg_defaults[index].reg == reg)
--			return index;
--		if (map->reg_defaults[index].reg < reg)
--			min = index + 1;
--		else
--			max = index;
--	} while (min <= max);
--	return -1;
--}
--
--static int regcache_insert_cmp(const void *a, const void *b)
-+static int regcache_default_cmp(const void *a, const void *b)
- {
- 	const struct reg_default *_a = a;
- 	const struct reg_default *_b = b;
-@@ -382,6 +365,23 @@ static int regcache_insert_cmp(const void *a, const void *b)
- 	return _a->reg - _b->reg;
- }
- 
-+int regcache_lookup_reg(struct regmap *map, unsigned int reg)
-+{
-+	struct reg_default key;
-+	struct reg_default *r;
-+
-+	key.reg = reg;
-+	key.def = 0;
-+
-+	r = bsearch(&key, map->reg_defaults, map->num_reg_defaults,
-+		    sizeof(struct reg_default), regcache_default_cmp);
-+
-+	if (r)
-+		return r - map->reg_defaults;
-+	else
-+		return -1;
-+}
-+
- int regcache_insert_reg(struct regmap *map, unsigned int reg,
- 			unsigned int val)
- {
-@@ -397,6 +397,6 @@ int regcache_insert_reg(struct regmap *map, unsigned int reg,
- 	map->reg_defaults[map->num_reg_defaults - 1].reg = reg;
- 	map->reg_defaults[map->num_reg_defaults - 1].def = val;
- 	sort(map->reg_defaults, map->num_reg_defaults,
--	     sizeof(struct reg_default), regcache_insert_cmp, NULL);
-+	     sizeof(struct reg_default), regcache_default_cmp, NULL);
- 	return 0;
- }
--- 
-1.7.6.3
+Getting the fix into -stable is a problem.
 
+Firstly, the -stable maintainers only really take backports of fixes
+which are already in mainline.  So to fix this bug one would need to
+identify which upstream fix(es) did the work, and backport those.
+
+Secondly, I'm not sure that kernels as old as 2.6.32.x are still being
+maintained at kernel.org, at least.
+
+So I'm not sure what to suggest.  Perhaps send the fix directly to
+distro kernel maintainers?
