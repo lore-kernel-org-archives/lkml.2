@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab1JDP56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 11:57:58 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38682 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756701Ab1JDP55 (ORCPT
+	id S932783Ab1JDP6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 11:58:24 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38110 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932751Ab1JDP6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 11:57:57 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/vLPOpn9YtvtlNqByMVr/v
-Date: Tue, 4 Oct 2011 08:57:52 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 26/30] ARM: omap: add board autoselection
-Message-ID: <20111004155752.GT6324@atomide.com>
-References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
- <5055144.Y0IUdMEWXQ@wuerfel>
- <20111003182649.GC6324@atomide.com>
- <201110040944.13205.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201110040944.13205.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 4 Oct 2011 11:58:23 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 2/4] [TRIVIAL] ftrace/kprobes: Fix an warning typo
+In-Reply-To: Your message of "Tue, 04 Oct 2011 19:44:49 +0900."
+             <20111004104449.14591.16995.stgit@fedora15>
+From: Valdis.Kletnieks@vt.edu
+References: <20111004104438.14591.6553.stgit@fedora15>
+            <20111004104449.14591.16995.stgit@fedora15>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1317743883_10919P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 04 Oct 2011 11:58:03 -0400
+Message-ID: <14310.1317743883@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4E8B2D0D.007C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Arnd Bergmann <arnd@arndb.de> [111004 00:10]:
-> On Monday 03 October 2011, Tony Lindgren wrote:
-> > * Arnd Bergmann <arnd@arndb.de> [111003 02:20]:
-> > > On Monday 03 October 2011 11:27:44 Cousson, Benoit wrote:
-> > > > >
-> > > > > In the long run, I'd hope we can just get rid of these for subarchitectures
-> > > > > that support device tree probing and make the device tree based machine
-> > > > > description unconditional.
-> > > > 
-> > > > This is really our goal, we will have soon the board-generic.c for that, 
-> > > > someone will just have to migrate these ~30 board files to device tree 
-> > > > DTS files 
-> > > 
-> > > For the purpose of build-time validation using randconfig, there is no
-> > > problem in keeping some board files forever, as long as the generic board
-> > > file is always built-in.
-> > 
-> > Yes please leave out the list so we don't need to constantly update it.
-> > Let's just always build in MACH_OMAP_GENERIC.
-> 
-> That's what I had initially, but now that board file has become
-> omap2-specific and no longer works on omap3-only or omap4-only
-> configurations.
+--==_Exmh_1317743883_10919P
+Content-Type: text/plain; charset=us-ascii
 
-Will send a pull request for basic DT bootstrap support from Benoit
-that fixes that. So maybe let's sort that out first, then always
-select it?
+On Tue, 04 Oct 2011 19:44:49 +0900, Masami Hiramatsu said:
+> Add a space between words.
 
-Regards,
+>  		if (ret == -ENOENT && trace_probe_is_on_module(tp)) {
+> -			pr_warning("This probe might be able to register after"
+> +			pr_warning("This probe might be able to register after "
+>  				   "target module is loaded. Continue.\n");
 
-Tony
+Better would be to make it all one line.  Keeping a string together trumps the
+80-column rule.
+
+
+--==_Exmh_1317743883_10919P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOiy0LcC3lWbTT17ARAsXDAJ9oAZhEg1gK8QVYem/7V/208WLyFgCg18wo
+zak/bU7wYGedQ3k+yBPQSys=
+=IMad
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317743883_10919P--
+
