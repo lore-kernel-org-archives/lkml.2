@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab1JDJci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 05:32:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64466 "EHLO mx1.redhat.com"
+	id S1755614Ab1JDJiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 05:38:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45653 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab1JDJch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 05:32:37 -0400
-Message-ID: <4E8AD293.8070905@redhat.com>
-Date: Tue, 04 Oct 2011 11:32:03 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1755319Ab1JDJiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 05:38:01 -0400
+Date: Tue, 4 Oct 2011 11:37:59 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andrew Morton <akpm00@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kmod: prevent kmod_loop_msg overflow in
+ __request_module()
+In-Reply-To: <87zkhhhap3.fsf@rustcorp.com.au>
+Message-ID: <alpine.LNX.2.00.1110041135340.31654@pobox.suse.cz>
+References: <alpine.LNX.2.00.1109291749000.24692@pobox.suse.cz> <20110929143129.e7c3c7e2.akpm00@gmail.com> <alpine.LNX.2.00.1109292337030.24692@pobox.suse.cz> <87zkhhhap3.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH 7/9] KVM, VMX: add support for switching of PERF_GLOBAL_CTRL
-References: <1317649795-18259-1-git-send-email-gleb@redhat.com> <1317649795-18259-8-git-send-email-gleb@redhat.com>
-In-Reply-To: <1317649795-18259-8-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 03:49 PM, Gleb Natapov wrote:
-> Some cpus have special support for switching PERF_GLOBAL_CTRL msr.
-> Add logic to detect if such support exists and works properly and extend
-> msr switching code to use it if available. Also extend number of generic
-> msr switching entries to 8.
->
->
->   static DECLARE_BITMAP(vmx_vpid_bitmap, VMX_NR_VPIDS);
->   static DEFINE_SPINLOCK(vmx_vpid_lock);
-> @@ -1195,10 +1196,29 @@ static void clear_atomic_switch_msr(struct vcpu_vmx *vmx, unsigned msr)
->   {
->   	unsigned i;
->   	struct msr_autoload *m =&vmx->msr_autoload;
-> +	u32 entry_load, exit_load;
-> +	bool done = false;
->
-> -	if (msr == MSR_EFER&&  cpu_has_load_ia32_efer) {
-> -		vmcs_clear_bits(VM_ENTRY_CONTROLS, VM_ENTRY_LOAD_IA32_EFER);
-> -		vmcs_clear_bits(VM_EXIT_CONTROLS, VM_EXIT_LOAD_IA32_EFER);
-> +	switch (msr) {
-> +	case MSR_EFER:
-> +		if (cpu_has_load_ia32_efer) {
-> +			entry_load = VM_ENTRY_LOAD_IA32_EFER;
-> +			exit_load = VM_EXIT_LOAD_IA32_EFER;
-> +			done = true;
-> +		}
-> +		break;
-> +	case MSR_CORE_PERF_GLOBAL_CTRL:
-> +		if (cpu_has_load_perf_global_ctrl) {
-> +			entry_load = VM_ENTRY_LOAD_IA32_PERF_GLOBAL_CTRL;
-> +			exit_load = VM_EXIT_LOAD_IA32_PERF_GLOBAL_CTRL;
-> +			done = true;
-> +		}
-> +		break;
-> +	}
-> +
-> +	if (done) {
-> +		vmcs_clear_bits(VM_ENTRY_CONTROLS, entry_load);
-> +		vmcs_clear_bits(VM_EXIT_CONTROLS, exit_load);
->   		return;
->   	}
->
->
+On Tue, 4 Oct 2011, Rusty Russell wrote:
 
-This is ugly.  How about
+> > > Well, it will take two billion passes through here to cause the
+> > > overflow.  I really hope you found this problem by inspection!
+> > 
+> > Unfortunately not, it was more painful experience than code reading :)
+> 
+> Cool!
+> 
+> Changing it to unsigned would have helped too.  
 
-    if (msr == MSR_EFER && cpu_has_load_ia32_efer) {
-        clear_atomic_switch_msr_special(VM_ENTRY_LOAD_IA32_EFER, 
-VM_EXIT_LOAD_IA32_EFER);
-        return;
-    }
-
-avoids the fake 'done' variable.
+Still woudln't have helped much in cases of __request_module() being 
+called incredibly quickly in an infinite loop. Changing it to unsigned 
+will cause the messages being printed in bunches of five, but the effect 
+will be the same -- the log being infinitely filled by the printk()s. 
+Computers can do infinite loops really quickly today :)
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jiri Kosina
+SUSE Labs
