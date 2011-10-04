@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592Ab1JDUCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 16:02:00 -0400
-Received: from exprod6og107.obsmtp.com ([64.18.1.208]:52608 "HELO
-	exprod6og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933524Ab1JDUB7 convert rfc822-to-8bit (ORCPT
+	id S933606Ab1JDUDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 16:03:44 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:20815 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933550Ab1JDUDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 16:01:59 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Oct 2011 16:01:59 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 4 Oct 2011 16:03:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 5wI3UgsVM1ku7mR6mOnRhu5xXy1ZGKJDPmw_QUeQCY7kCFC
+ iwJVSZXSgC6PUWJVpCtHxSXOGX.g09_mJ1XZ5cf.yhyEI6AWWmVAGQpLZnH4
+ Pdgn4Hha1LrSDZmjKYAy47Mck6qs5pu_WFiCG2fqjwPNXbdyU.rAa7CQsm7S
+ lfKrNENlprtdXMhq5DRxmlrEzIOpyDRO65OfpfH_5Rbop4oEhOz7SC2M10Jv
+ 8t6f6L0Gr.cSa1S_TNJvI0hQmROn6TehW3l0g.h1aiJlGkODoJLeLDgfo5c0
+ Nu7r4ieaYdqlnfA7uKmwSTDZEMtSRxFam0GNx4KxTeIPCc5MYIbLDjL1Eoq0
+ 9s_hv_c95qHpKqbNZCPuXr_.PSunHbsISAuDMsmffoA0ifl70EQalwPz5B9N
+ m8SE43lRIR0FK44d902AVp7s0HdzBqoh.ZGOe
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 4 Oct 2011 15:03:38 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+cc: Joe Perches <joe@perches.com>, starlight@binnacle.cx,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <stephen.hemminger@vyatta.com>
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+In-Reply-To: <874nzo35bu.fsf@depni.sinp.msu.ru>
+Message-ID: <alpine.DEB.2.00.1110041501130.16183@router.home>
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx> <alpine.DEB.2.00.1110041358500.12199@router.home> <1317757118.3580.24.camel@Joe-Laptop> <alpine.DEB.2.00.1110041442020.15871@router.home> <874nzo35bu.fsf@depni.sinp.msu.ru>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
-Date: Tue, 4 Oct 2011 15:54:50 -0400
-Message-ID: <D3F292ADF945FB49B35E96C94C2061B91400C5F6@nsmail.netscout.com>
-In-Reply-To: <6.2.5.6.2.20111002110545.03a82460@binnacle.cx>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
-Thread-Index: AcyBGLfQ3eq3+PsLTXuSd0Pmkqrv3ABtYrTA
-References: <6.2.5.6.2.20111001215241.03a7ed48@binnacle.cx> <1317540066.3802.32.camel@edumazet-laptop> <6.2.5.6.2.20111002110545.03a82460@binnacle.cx>
-From: "Loke, Chetan" <Chetan.Loke@netscout.com>
-To: <starlight@binnacle.cx>, "Eric Dumazet" <eric.dumazet@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, "netdev" <netdev@vger.kernel.org>,
-        "Willy Tarreau" <w@1wt.eu>, "Peter Zijlstra" <a.p.zijlstra@chello.nl>
-X-OriginalArrivalTime: 04 Oct 2011 19:54:50.0639 (UTC) FILETIME=[7A2B21F0:01CC82CF]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18424.004
-X-TM-AS-Result: No--2.540100-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sometimes I think it might be nice to run without
-> an OS at all :-)
-> 
-> We are looking at various kernel bypass approaches
-> for receiving packets and it's in my mind that
-> one of these may get us to running on newer
-> kernels without giving up performance.
-> 
+On Tue, 4 Oct 2011, Serge Belyshev wrote:
 
-If permissible in your environment, try running PACKET:tpacket_v3.
+>
+> Christoph Lameter <cl@gentwo.org> writes:
+> > No. BFS has no NUMA support.
+>
+> BFS has NUMA support since v0.300, 1st oct. 2009.
 
-Also, I always wondered about the following in the output of:
+>From the BFS FAQ (lack of NUMA support causes additional memory latencies,
+the high end business server these days have NUMA):
 
-net/ptype
-dada          edsa_rcv+0x0/0x246
-001b          dsa_rcv+0x0/0x225
+NUMA aware?
 
-and so when I'm fine tuning apps in virtual environments I nuke the
-above during kernel compilation.
+It is NOT NUMA aware in the sense that it does any fancy shit on NUMA, but
+it will work on NUMA hardware just fine. Only the really big NUMA hardware
+is likely to suffer in performance, and this is theoretically only, since
+no one has that sort of hardware to prove it to me, but it seems almost
+certain. v0.300 onwards have NUMA enhancements.
 
-
-Chetan Loke
