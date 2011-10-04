@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393Ab1JDS3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:29:42 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39308 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932752Ab1JDS3k (ORCPT
+	id S933419Ab1JDScn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:32:43 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34702 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932752Ab1JDScm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:29:40 -0400
-Date: Tue, 4 Oct 2011 12:27:11 -0600
+	Tue, 4 Oct 2011 14:32:42 -0400
+Date: Tue, 4 Oct 2011 12:32:32 -0600
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        "Taneja, Archit" <archit@ti.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "R, Sricharan" <r.sricharan@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] OMAP2PLUS: DSS: Ensure DSS works correctly if display
- is enabled in bootloader
-Message-ID: <20111004182711.GE2870@ponder.secretlab.ca>
-References: <1315811306-11001-1-git-send-email-archit@ti.com>
- <alpine.DEB.2.00.1110022237171.4611@utopia.booyaka.com>
- <1317630070.2026.27.camel@deskari>
- <4E898468.2060508@ti.com>
- <alpine.DEB.2.00.1110031126090.4611@utopia.booyaka.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>, Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH] mmc: sdhci-tegra: Add #ifdef CONFIG_OF guard for
+ of_find_property
+Message-ID: <20111004183232.GF2870@ponder.secretlab.ca>
+References: <1317614852.30838.1.camel@phoenix>
+ <4E897318.3090004@compulab.co.il>
+ <74CDBE0F657A3D45AFBB94109FB122FF173A2C6C97@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1110031126090.4611@utopia.booyaka.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173A2C6C97@HQMAIL01.nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 11:34:34AM -0600, Paul Walmsley wrote:
-> + devicetree-discuss, lkml
-> 
-> On Mon, 3 Oct 2011, Cousson, Benoit wrote:
-> 
-> > But at that time, device tree was not there...
-> > Now, the whole dev_attr stuff will be replaced because device tree is able to
-> > provide the driver any kind of custom information that can be retrieved
-> > directly from the driver without having to use a pdata in between. So I'm not
-> > sure it worth spending too much time on that feature stuff.
+On Mon, Oct 03, 2011 at 08:59:45AM -0700, Stephen Warren wrote:
+> Igor Grinberg wrote at Monday, October 03, 2011 2:32 AM:
+> > Hi Axel,
 > > 
-> > As an example here is the ongoing GPIO DT migration:
-> > http://www.mail-archive.com/linux-omap@vger.kernel.org/msg56505.html
+> > On 10/03/11 06:07, Axel Lin wrote:
+> > > I got below build error with "make tegra_defconfig;make"
+> > > Add #ifdef CONFIG_OF guard for of_find_property to fix below build error:
+> > >
+> > >   CC      drivers/mmc/host/sdhci-tegra.o
+> > > drivers/mmc/host/sdhci-tegra.c: In function 'sdhci_tegra_dt_parse_pdata':
+> > > drivers/mmc/host/sdhci-tegra.c:157: error: implicit declaration of function 'of_find_property'
+> ...
+> > > diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+> ...
+> > > @@ -154,8 +154,11 @@ static struct tegra_sdhci_platform_data * __devinit sdhci_tegra_dt_parse_pdata(
+> > >  	plat->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
+> > >  	plat->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
+> > >  	plat->power_gpio = of_get_named_gpio(np, "power-gpios", 0);
+> > > +
+> > > +#ifdef CONFIG_OF
+> > >  	if (of_find_property(np, "support-8bit", NULL))
+> > >  		plat->is_8bit = 1;
+> > > +#endif
 > > 
-> > 3.2 will have the basic DT support using hwmod as a backend, but the idea is
-> > that for 3.3, we start removing some information from hwmod to rely on device
-> > tree only.
+> > Shouldn't we add a stub for the of_find_property() method to include/linux/of.h
+> > instead of adding more ifdefs?
+> > Or may be use of_get_property() method instead?
 > 
-> One comment here though -- and I will make this comment on the original 
-> series too -- is that we should avoid adding direct DT dependencies into 
-> the driver.
+> I submitted a patch to add a stub of_find_property a little while back.
+> Per https://lkml.org/lkml/2011/9/22/301, Grant applied it already. I'm
+> not sure why it hasn't shown up in linux-next, since Grant's repo wasn't
+> affected by the kernel.org downtime.
 > 
-> Specifically, these of_get_property() and of_property*() calls in the 
-> driver aren't right.
-> 
-> We need some way of doing this that is completely independent from the 
-> device data format.  Some way that does not care whether the input data is 
-> coming from DT, platform_data, ACPI, or whatever the new flavor of the 
-> year will be next year.  Or we need to declare that these of_*() calls are 
-> not DT-specific, and define them as hooks that the device data format code 
-> can handle as it pleases.
+> Sorry for the breakage.
 
-Generally, I agree.  For example, I've been thinking of either
-modifying or creating bus_type-agnostic variants of the
-platform_get_*() hooks so that the driver can get the data it needs
-without knowing what the data source is.  (Actually, it already works
-that way for platform_devices and DT, but that is only because the DT
-code populates the resource table when the device is created).
-
-This works best for well understood things like GPIOs, IRQs, memory
-ranges, and the like.  It doesn't really work very well for data
-specific to the device.
+That's because I forgot to push out the tree.  :-(  Sorry.  I've just
+fixed it now.
 
 g.
 
