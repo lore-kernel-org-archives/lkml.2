@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1JDFog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 01:44:36 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:54070 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab1JDFof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 01:44:35 -0400
-Message-ID: <4E8A9D04.7060002@parallels.com>
-Date: Tue, 4 Oct 2011 09:43:32 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>
-Subject: Re: [PATCH v4 4/8] per-cgroup tcp buffers control
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com> <1317637123-18306-5-git-send-email-glommer@parallels.com> <20111004101633.6b44201d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111004101633.6b44201d.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1753980Ab1JDFuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 01:50:37 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:40117 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab1JDFuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 01:50:35 -0400
+Date: Tue, 4 Oct 2011 16:50:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the usb tree with the arm-soc tree
+Message-Id: <20111004165030.ab90295677251fc80bf843a2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2011 05:16 AM, KAMEZAWA Hiroyuki wrote:
-> It seems memcg->tcp.tcp_memory_pressure has no locks and not atomic.
->
-> no problematic race ?
->
-> Thanks,
-> -Kame
-Well,
+Hi Greg,
 
-prior to this patch, it was a global variable. And nobody complained so 
-far...
+Today's linux-next merge of the usb tree got a conflict in
+arch/arm/mach-omap2/Makefile between commit f41caddbe73f ("omap2+: Use
+Kconfig symbol in Makefile instead of obj-y") from the arm-soc tree and
+commitb 3c3dc22366b ("usb: musb: fix build breakage") from the usb tree.
 
-My impression is that the only thing that really needs to be atomic is
-the memory accounting, which is already. If we miss a memory pressure 
-condition entry, we'll get to it next time.
+I fixed it up (I think, see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/mach-omap2/Makefile
+index 8bd389d,7317a2b..0000000
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@@ -218,21 -229,24 +218,17 @@@ obj-$(CONFIG_MACH_OMAP_ZOOM3)		+= board
+  					   board-zoom-debugboard.o
+  obj-$(CONFIG_MACH_OMAP_3630SDP)		+= board-3630sdp.o \
+  					   board-zoom-peripherals.o \
+ -					   board-zoom-display.o \
+ -					   board-flash.o \
+ -					   hsmmc.o
+ -obj-$(CONFIG_MACH_CM_T35)		+= board-cm-t35.o \
+ -					   hsmmc.o
+ +					   board-zoom-display.o
+ +obj-$(CONFIG_MACH_CM_T35)		+= board-cm-t35.o
+  obj-$(CONFIG_MACH_CM_T3517)		+= board-cm-t3517.o
+ -obj-$(CONFIG_MACH_IGEP0020)		+= board-igep0020.o \
+ -					   hsmmc.o
+ -obj-$(CONFIG_MACH_OMAP3_TOUCHBOOK)	+= board-omap3touchbook.o \
+ -					   hsmmc.o
+ -obj-$(CONFIG_MACH_OMAP_4430SDP)		+= board-4430sdp.o \
+ -					   hsmmc.o
+ -obj-$(CONFIG_MACH_OMAP4_PANDA)		+= board-omap4panda.o \
+ -					   hsmmc.o
+ +obj-$(CONFIG_MACH_IGEP0020)		+= board-igep0020.o
+ +obj-$(CONFIG_MACH_OMAP3_TOUCHBOOK)	+= board-omap3touchbook.o
+- obj-$(CONFIG_MACH_OMAP_4430SDP)		+= board-4430sdp.o \
+- 					   omap_phy_internal.o
+- obj-$(CONFIG_MACH_OMAP4_PANDA)		+= board-omap4panda.o \
+- 					   omap_phy_internal.o
+++obj-$(CONFIG_MACH_OMAP_4430SDP)		+= board-4430sdp.o
+++obj-$(CONFIG_MACH_OMAP4_PANDA)		+= board-omap4panda.o
+ +
+- obj-$(CONFIG_MACH_PCM049)		+= board-omap4pcm049.o \
+- 					   omap_phy_internal.o
+++obj-$(CONFIG_MACH_PCM049)		+= board-omap4pcm049.o
+  
+- obj-$(CONFIG_MACH_OMAP3517EVM)		+= board-am3517evm.o \
+- 					   omap_phy_internal.o
++ obj-$(CONFIG_MACH_OMAP3517EVM)		+= board-am3517evm.o
+  
+  obj-$(CONFIG_MACH_CRANEBOARD)		+= board-am3517crane.o
+  
