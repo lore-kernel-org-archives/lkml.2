@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab1JDHhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 03:37:54 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52306 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780Ab1JDHhx (ORCPT
+	id S1755046Ab1JDHk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 03:40:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53106 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab1JDHk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 03:37:53 -0400
-Date: Tue, 4 Oct 2011 00:37:49 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Matt Fleming <matt@console-pimps.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: [RFC][PATCH 0/5] Signal scalability series
-Message-ID: <20111004073749.GD15637@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1317395577-14091-1-git-send-email-matt@console-pimps.org>
- <20110930165206.GA22048@redhat.com>
- <1317412823.3375.34.camel@mfleming-mobl1.ger.corp.intel.com>
- <20110930235625.GD2658@mtj.dyndns.org>
- <1317464192.3375.57.camel@mfleming-mobl1.ger.corp.intel.com>
- <1317474209.12973.15.camel@twins>
- <20111003013855.GG31799@mtj.dyndns.org>
- <alpine.LFD.2.02.1110031544340.1489@ionos>
+	Tue, 4 Oct 2011 03:40:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+Date: Tue, 4 Oct 2011 09:40:12 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, stable@kernel.org
+References: <20111004112623.aa04e959d29cb19af8053739@canb.auug.org.au>
+In-Reply-To: <20111004112623.aa04e959d29cb19af8053739@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110031544340.1489@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110040940.12876.arnd@arndb.de>
+X-Provags-ID: V02:K0:lOlxhU5bWJn1MroiItX8JLuGrvQz7/GZjPY5yYEimyG
+ 3Y7PB8nYqyu3DoYF2i58haS42r3LCTu9ytvt73Ib2yPNrYtiEZ
+ Mi4gsf4ML4mXlJnoCKXmGnYE+T7aedZKgMPdbC2XlpeQFSrNCr
+ 7kUsRaNDYNtxG23y4R6XHgimACeBLvidOt7gVNPHtpm4lM6M1l
+ Zz5jNkMN5VZzZDatnmybuuT9rLly3UAPXc/6DpuahJAbDQf3Fb
+ Pt+6SiomX2ebBHIE4ZkL9PL0UoheaEoRu5DRkYKoB5KuEri3r5
+ buv/NrtSvpNB4zRfjYWUNiOCg0LbHfx1qetmZNvrYUAEk5at3T
+ KuVVtRQKFa9Y/ykc22Us=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Oct 03, 2011 at 03:56:26PM +0200, Thomas Gleixner wrote:
-> > Signal delivery is O(#threads)?  Delivery of fatal signal is of course
-> > but where do we walk all threads during non-fatal signal deliveries?
-> > What am I missing?
+On Tuesday 04 October 2011, Stephen Rothwell wrote:
+> After merging the arm-soc tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> Delivery of any process wide signal can result in an O(thread) walk to
-> find a valid target. That's true for user space originated and kernel
-> space originated (e.g. posix timers) signals.
+> ERROR: "clk_enable" [drivers/misc/atmel_pwm.ko] undefined!
+> ERROR: "clk_disable" [drivers/misc/atmel_pwm.ko] undefined!
+> ERROR: "clk_put" [drivers/misc/atmel_pwm.ko] undefined!
+> ERROR: "clk_get_rate" [drivers/misc/atmel_pwm.ko] undefined!
+> ERROR: "clk_get" [drivers/misc/atmel_pwm.ko] undefined!
+> 
+> Caused by commit 9dccc010c816 ("ARM: at91: remove dependency for Atmel
+> PWM driver selector in Kconfig").
+> 
+> I have used the arm-soc tree from next-20110930 for today.
 
-Ooh, right.  Wakeup currently does linear scan of threads, but this is
-mostly a separate issue.  As Peter suggested, tracking wakeup target
-probably is one sane way to solve this.
+Ah, thanks for tracking this down. I actually noticed the same
+problem on an ARM build but did not realize it was from one of
+the patches I had jut put in there myself.
 
-Do you think siglock would still be a problem even after O(N) problem
-is solved?  Maybe that would lessen contention enough such that the
-locking scope wouldn't matter anymore?  Unless breaking up of the
-locks results in nice separate hot domains, being finer-grained
-doesn't mean much after all.
+I'm really glad I didn't send this to Linus cc:stable yet then.
+Nicolas, in my randconfig branch, I've fixed this by adding
 
-Thank you.
+	depends on HAVE_CLK
 
--- 
-tejun
+which I think is the right solution. I'll replace your patch
+with one that does this if you don't mind.
+
+I'd also remove the stable tag for this patch, because it can
+have unintended side-effects on other architectures.
+
+	Arnd
