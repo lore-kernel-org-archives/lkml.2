@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab1JDXaC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:30:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39064 "EHLO mx2.suse.de"
+	id S933866Ab1JDXbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 19:31:25 -0400
+Received: from claw.goop.org ([74.207.240.146]:57293 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933677Ab1JDXaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:30:00 -0400
-Date: Wed, 5 Oct 2011 01:29:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca
-Subject: Re: [PATCH] ext3/balloc.c: local functions should be static
-Message-ID: <20111004232958.GA21205@quack.suse.cz>
-References: <201109231355.52431.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109231355.52431.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933677Ab1JDXbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 19:31:24 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH RFC V4 02/11] x86/ticketlock: don't inline _spin_unlock when using paravirt spinlocks
+Date: Tue,  4 Oct 2011 16:31:08 -0700
+Message-Id: <b6d44e8e22a3ccf6fca1ea574b72f988aa327009.1317763862.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <cover.1317762058.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1317762058.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1317763862.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1317763862.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-09-11 13:55:52, H Hartley Sweeten wrote:
-> This quites the sparse noise:
-> 
-> warning: symbol 'ext3_trim_all_free' was not declared. Should it be static?
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-  Thanks, merged into my tree.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-								Honza
-> 
-> ---
-> 
-> diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-> index 6386d76..8e62ec5 100644
-> --- a/fs/ext3/balloc.c
-> +++ b/fs/ext3/balloc.c
-> @@ -1924,9 +1924,10 @@ unsigned long ext3_bg_num_gdb(struct super_block *sb, int group)
->   * reaches any used block. Then issue a TRIM command on this extent and free
->   * the extent in the block bitmap. This is done until whole group is scanned.
->   */
-> -ext3_grpblk_t ext3_trim_all_free(struct super_block *sb, unsigned int group,
-> -				ext3_grpblk_t start, ext3_grpblk_t max,
-> -				ext3_grpblk_t minblocks)
-> +static ext3_grpblk_t ext3_trim_all_free(struct super_block *sb,
-> +					unsigned int group,
-> +					ext3_grpblk_t start, ext3_grpblk_t max,
-> +					ext3_grpblk_t minblocks)
->  {
->  	handle_t *handle;
->  	ext3_grpblk_t next, free_blocks, bit, freed, count = 0;
+The code size expands somewhat, and its probably better to just call
+a function rather than inline it.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/Kconfig     |    3 +++
+ kernel/Kconfig.locks |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6a47bb2..1f03f82 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -585,6 +585,9 @@ config PARAVIRT_SPINLOCKS
+ 
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config ARCH_NOINLINE_SPIN_UNLOCK
++       def_bool PARAVIRT_SPINLOCKS
++
+ config PARAVIRT_CLOCK
+ 	bool
+ 
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 5068e2a..584637b 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -125,7 +125,7 @@ config INLINE_SPIN_LOCK_IRQSAVE
+ 		 ARCH_INLINE_SPIN_LOCK_IRQSAVE
+ 
+ config INLINE_SPIN_UNLOCK
+-	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK)
++	def_bool !DEBUG_SPINLOCK && (!PREEMPT || ARCH_INLINE_SPIN_UNLOCK) && !ARCH_NOINLINE_SPIN_UNLOCK
+ 
+ config INLINE_SPIN_UNLOCK_BH
+ 	def_bool !DEBUG_SPINLOCK && ARCH_INLINE_SPIN_UNLOCK_BH
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.6.4
+
