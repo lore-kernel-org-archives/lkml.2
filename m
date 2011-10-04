@@ -1,83 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933394Ab1JDTcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:32:48 -0400
-Received: from home.keithp.com ([63.227.221.253]:58783 "EHLO keithp.com"
+	id S933449Ab1JDTcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:32:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:56859 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932752Ab1JDTcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:32:47 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Alex Davis <alex14641@yahoo.com>,
-        "terraluna977\@gmail.com" <terraluna977@gmail.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
-In-Reply-To: <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com>
-References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com> <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 04 Oct 2011 12:32:43 -0700
-Message-ID: <yun1uuslfhg.fsf@aiko.keithp.com>
+	id S932752Ab1JDTcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 15:32:53 -0400
+Message-ID: <4E8B5F61.6@goop.org>
+Date: Tue, 04 Oct 2011 12:32:49 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+To: Ingo Molnar <mingo@elte.hu>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH / GIT PULL] x86: more spinlock/asm tidyups
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Mon, 3 Oct 2011 14:10:10 -0700 (PDT), Alex Davis <alex14641@yahoo.com> w=
-rote:
+This patch adds a helper for atomic adds in arch/x86/asm/cmpxchg.h, and
+uses them in spinlock.h rather than the open-coded asms.
 
-> The following patch fixed my backlight issues:
->=20
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/in=
-tel_panel.c
-> index a9e0c7b..6f56676 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -262,8 +262,6 @@ void intel_panel_disable_backlight(struct drm_device =
-*dev)
-> =C2=A0=C2=A0=C2=A0=C2=A0 =C2=A0=C2=A0=C2=A0 dev_priv->backlight_level =3D=
- intel_panel_get_backlight(dev);
-> =C2=A0=C2=A0=C2=A0=C2=A0 =C2=A0=C2=A0=C2=A0 dev_priv->backlight_enabled =
-=3D false;
-> =C2=A0=C2=A0=C2=A0=C2=A0 }
-> -
-> -=C2=A0=C2=A0=C2=A0 intel_panel_set_backlight(dev, 0);
-> =C2=A0}
-> =C2=A0
-> =C2=A0void intel_panel_enable_backlight(struct drm_device *dev)
->=20
-> I've been using it since yesterday morning with no issues.
+It also unifies the two exchange-type instructions (xchg and xadd) so
+they share the same core.
 
-Matthew -- if we cannot resolve this backlight issue, we're going to
-need to disable the new backlight code for 3.1. Do you want to try and
-fix it? Or should we bail for now?
+Thanks,
+    J
 
-=2D-=20
-keith.packard@intel.com
+The following changes since commit 695d16f7870847c304a8cb9555572b07a541d4ee:
 
---=-=-=
-Content-Type: application/pgp-signature
+  Merge branch 'upstream/ticketlock-cleanup' of git://github.com/jsgf/linux-xen into x86/spinlocks (2011-09-28 08:57:10 +0200)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+are available in the git repository at:
 
-iQIVAwUBTotfWzYtFsjWk68qAQhlUxAA22H834alTbn6CuVEH+40/KusNprsrpL8
-20ZOHu9v0OA1lBgSbeLsxTP7qZe7PaHQnlNaXUS9lc5sr42pv3Gq+nq7I5Txeqix
-icGkCgTbBW3S1MYBMVGwmeCWegyYHmzKzhM68KoGwD9pOD9XRA9fW10A9xfsb3Oh
-B5D1YFR88qRFDP359wVteMo8X28vmKmhNltiV/SjOIExjdjLktxXsCN4owbnSzaZ
-2FbFwucJdLmle2GpM4ukLqOP3Wb/Y7O/yza4qLjPxWIRsqGwavATvaOcmK+eXdcy
-mFTBIwnH2p7sr4196FvNxvBxoCe3+NmS0r/UynX2G2dJShp/hDO20zfmbXav5E5/
-CgwVSLmW9P0rr2FpE07GXoyZHwmePATi3j3X5HESzy/0FeaKfElQSdoik4bTZfbw
-zQIDL96Jgtz69Iyxu4uCvhZoUfhg6Yln0wW5/cC9bWm6Cd5ccwtacsgX7PueBgOD
-dc2fRJPhAhZns5wNPn7jMypVQD44rN4T8jNmQ9yMZMOxidWxP2vqdUFDAOf+Phoe
-W/ZpKyqAwb8uT5lms1XFkH0GpmRcreQ2dIvfLTw9cNnz17W9M7r/hGh8r79m3g8g
-Ym5aL28fSXJWHkc0Ho9j8aA72BHpBHUwie9ZWr1LNiaeIZWYeDl8ywQ4xQV5Pf7w
-Kx271yZPLPM=
-=au/W
------END PGP SIGNATURE-----
---=-=-=--
+  git://github.com/jsgf/linux-xen upstream/ticketlock-cleanup
+
+Jeremy Fitzhardinge (2):
+      x86/cmpxchg: add a locked add() helper
+      x86: consolidate xchg and xadd macros
+
+ arch/x86/include/asm/cmpxchg.h  |  140 +++++++++++++++++++-------------------
+ arch/x86/include/asm/spinlock.h |   15 +----
+ 2 files changed, 71 insertions(+), 84 deletions(-)
+
+diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+index 5d3acdf..5488e10 100644
+--- a/arch/x86/include/asm/cmpxchg.h
++++ b/arch/x86/include/asm/cmpxchg.h
+@@ -14,6 +14,8 @@ extern void __cmpxchg_wrong_size(void)
+ 	__compiletime_error("Bad argument size for cmpxchg");
+ extern void __xadd_wrong_size(void)
+ 	__compiletime_error("Bad argument size for xadd");
++extern void __add_wrong_size(void)
++	__compiletime_error("Bad argument size for add");
+ 
+ /*
+  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
+@@ -31,60 +33,47 @@ extern void __xadd_wrong_size(void)
+ #define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
+ #endif
+ 
++/* 
++ * An exchange-type operation, which takes a value and a pointer, and
++ * returns a the old value.
++ */
++#define __xchg_op(ptr, arg, op, lock)					\
++	({								\
++	        __typeof__ (*(ptr)) __ret = (arg);			\
++		switch (sizeof(*(ptr))) {				\
++		case __X86_CASE_B:					\
++			asm volatile (lock #op "b %b0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_W:					\
++			asm volatile (lock #op "w %w0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_L:					\
++			asm volatile (lock #op "l %0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_Q:					\
++			asm volatile (lock #op "q %q0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		default:						\
++			__ ## op ## _wrong_size();			\
++		}							\
++		__ret;							\
++	})
++
+ /*
+  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+  * Since this is generally used to protect other memory information, we
+  * use "asm volatile" and "memory" clobbers to prevent gcc from moving
+  * information around.
+  */
+-#define __xchg(x, ptr, size)						\
+-({									\
+-	__typeof(*(ptr)) __x = (x);					\
+-	switch (size) {							\
+-	case __X86_CASE_B:						\
+-	{								\
+-		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
+-		asm volatile("xchgb %0,%1"				\
+-			     : "=q" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_W:						\
+-	{								\
+-		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
+-		asm volatile("xchgw %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_L:						\
+-	{								\
+-		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+-		asm volatile("xchgl %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_Q:						\
+-	{								\
+-		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+-		asm volatile("xchgq %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	default:							\
+-		__xchg_wrong_size();					\
+-	}								\
+-	__x;								\
+-})
+-
+-#define xchg(ptr, v)							\
+-	__xchg((v), (ptr), sizeof(*ptr))
++#define xchg(ptr, v)	__xchg_op((ptr), (v), xchg, "")
+ 
+ /*
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+@@ -165,46 +154,57 @@ extern void __xadd_wrong_size(void)
+ 	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
+ #endif
+ 
+-#define __xadd(ptr, inc, lock)						\
++/*
++ * xadd() adds "inc" to "*ptr" and atomically returns the previous
++ * value of "*ptr".
++ *
++ * xadd() is locked when multiple CPUs are online
++ * xadd_sync() is always locked
++ * xadd_local() is never locked
++ */
++#define __xadd(ptr, inc, lock)	__xchg_op((ptr), (inc), xadd, lock)
++#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
++#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
++#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
++
++#define __add(ptr, inc, lock)						\
+ 	({								\
+ 	        __typeof__ (*(ptr)) __ret = (inc);			\
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+-			asm volatile (lock "xaddb %b0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addb %b1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
+-			asm volatile (lock "xaddw %w0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addw %w1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_L:					\
+-			asm volatile (lock "xaddl %0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addl %1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_Q:					\
+-			asm volatile (lock "xaddq %q0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addq %1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		default:						\
+-			__xadd_wrong_size();				\
++			__add_wrong_size();				\
+ 		}							\
+ 		__ret;							\
+ 	})
+ 
+ /*
+- * xadd() adds "inc" to "*ptr" and atomically returns the previous
+- * value of "*ptr".
++ * add_*() adds "inc" to "*ptr"
+  *
+- * xadd() is locked when multiple CPUs are online
+- * xadd_sync() is always locked
+- * xadd_local() is never locked
++ * __add() takes a lock prefix
++ * add_smp() is locked when multiple CPUs are online
++ * add_sync() is always locked
+  */
+-#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
+-#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
+-#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
++#define add_smp(ptr, inc)	__add((ptr), (inc), LOCK_PREFIX)
++#define add_sync(ptr, inc)	__add((ptr), (inc), "lock; ")
+ 
+ #endif	/* ASM_X86_CMPXCHG_H */
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 972c260..a82c2bf 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -79,23 +79,10 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+ }
+ 
+-#if (NR_CPUS < 256)
+ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ {
+-	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
+-		     : "+m" (lock->head_tail)
+-		     :
+-		     : "memory", "cc");
++	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
+ }
+-#else
+-static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+-{
+-	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
+-		     : "+m" (lock->head_tail)
+-		     :
+-		     : "memory", "cc");
+-}
+-#endif
+ 
+ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+ {
+
+
