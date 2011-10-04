@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab1JDTVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 15:21:21 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:34299 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932916Ab1JDTVU (ORCPT
+	id S933178Ab1JDTXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 15:23:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53812 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932916Ab1JDTXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 15:21:20 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, quilt-dev <quilt-dev@nongnu.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Kacur <jkacur@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andreas Gruenbacher <agruen@suse.de>
-Subject: Re: [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-In-Reply-To: Your message of "Tue, 04 Oct 2011 20:59:55 +0200."
-             <1317754795.32543.32.camel@twins>
-From: Valdis.Kletnieks@vt.edu
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
-            <1317754795.32543.32.camel@twins>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317756054_10919P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 04 Oct 2011 15:20:54 -0400
-Message-ID: <23749.1317756054@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4E8B5C99.01FD,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Tue, 4 Oct 2011 15:23:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Aurelien Jacquiot <a-jacquiot@ti.com>
+Subject: Re: [PATCH v4 21/24] C6X: general SoC support
+Date: Tue, 04 Oct 2011 21:23:06 +0200
+Message-ID: <1591836.h3shdl2SaF@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <1317746641-26725-22-git-send-email-msalter@redhat.com>
+References: <1317746641-26725-1-git-send-email-msalter@redhat.com> <1317746641-26725-22-git-send-email-msalter@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:o4xTpT2TagqL4CBE+9jV18xU/LiD3W/7kUxO241pFp0
+ UpFWoBL9yWsl0LiRTcZQk40EFYqcO4PgKl8vSIYdLQ0tyxKoQ3
+ AYtqdMObH3vIBsUwwpjcfyuAHLGNkekXHtyDOAm1B89L7FwbNg
+ EYEDSD07yf6tgU4BI/OyEC1af6m9cO2VicbumB/GptoB+0U0fa
+ XQHgAiP1ov0RMW5RnpL3Ynwvtw0dTUf+JBtFJU9pk9eZ/ZeelO
+ Wtvgb90iO0gRF7bQhl6Swj3Rx2iQAv4BLybhxRhxTiSiUka1cJ
+ nvu+7cGQhx4UF7dDbDW8dhOQCAUllM12T9+b753C3p6UrclgM4
+ s5dcPMllMWtAOBhI4gmA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317756054_10919P
-Content-Type: text/plain; charset=us-ascii
+On Tuesday 04 October 2011 12:43:58 Mark Salter wrote:
+> This patch provides a soc_ops struct which provides hooks for SoC functionality
+> which doesn't fit well into other places.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> Signed-off-by: Aurelien Jacquiot <a-jacquiot@ti.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
 
-On Tue, 04 Oct 2011 20:59:55 +0200, Peter Zijlstra said:
-
-> How about another option that also allows you to pick they key used for
-> signing things?
-
-Are there many people that will be signing with a key other than their default key?
-Or is a 'default-key' entry in ~/.gnupg/gpg.conf sufficient?
-
-
---==_Exmh_1317756054_10919P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOi1yWcC3lWbTT17ARAge0AKDfJfNI2nZ85awsHdOjTTcOqwRr7gCeOd2l
-Fpr3g+ElA1ZWs6LE3wtXuHM=
-=yOdD
------END PGP SIGNATURE-----
-
---==_Exmh_1317756054_10919P--
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
