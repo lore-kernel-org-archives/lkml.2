@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab1JDN76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 09:59:58 -0400
-Received: from mail2.microsoft.com ([131.107.115.215]:56723 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756652Ab1JDN75 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 09:59:57 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: Hyper-V TODO file
-Thread-Topic: Hyper-V TODO file
-Thread-Index: AQHMeUqH30ei4wp9K0mbEHnyw+BQsZVZpNPggAB6NQCAEiac4A==
-Date: Tue, 4 Oct 2011 13:59:56 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
- <20110922170450.GA4490@suse.de>
- <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
-In-Reply-To: <20110922173618.GA5624@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757141Ab1JDOE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 10:04:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756575Ab1JDOE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 10:04:58 -0400
+Date: Tue, 4 Oct 2011 10:04:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111004140437.GA28306@redhat.com>
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003073203.GA22694@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, September 22, 2011 1:36 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: Hyper-V TODO file
+On Mon, Oct 03, 2011 at 01:02:03PM +0530, K.Prasad wrote:
+> There are certain types of crashes induced by faulty hardware in which
+> capturing crashing kernel's memory (through kdump) makes no sense (or sometimes
+> dangerous).
 > 
-> On Thu, Sep 22, 2011 at 05:20:59PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Thursday, September 22, 2011 1:05 PM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org
-> > > Subject: Re: Hyper-V TODO file
-> > >
-> > > On Thu, Sep 22, 2011 at 09:17:20AM -0700, K. Y. Srinivasan wrote:
-> > > >
-> > > > Greg,
-> > > >
-> > > > With your last checkin of the patches for Hyper-V, I have addressed all of
-> > > > the issues you had raised as part of the vmbus audit. Should I send you a
-> > > > patch to update the TODO file to reflect this. Let me know.
-> > >
-> > > Yes, please send patches.
-> >
-> > Thanks Greg. In addition to the patch to update the TODO file, do you want me
-> to
-> > send you patches for moving the vmbus and util driver out of staging as well.
-> 
-> No, I'll do that if we agree that it is ready to do so.
+> A case in point, is unrecoverable memory errors (resulting in fatal machine
+> check exceptions) in which reading from the faulty memory location from the
+> kexec'ed kernel will cause double fault and system reset (leaving no
+> information for the user).
 
-Greg, sometime back you checked in the changes to the TODO file reflecting
-that there are no outstanding vmbus related issues. What is the process now
-for getting the vmbus (and util) drivers out of staging. Let me know if there is 
-something I can do to help this along.  As you know, we had posted the network 
-driver for public review a while ago (several months ago) and we have addressed 
-all the review comments we got. Any guidance on what we should do next would be
-greatly appreciated.
+Prasad,
 
-Regards,
+I am just trying to remember what was wrong with Andi's approach of
+disable MCE while copying the dump?
 
-K. Y
-
+Thanks
+Vivek
