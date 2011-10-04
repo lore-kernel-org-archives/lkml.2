@@ -1,171 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1JDN23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 09:28:29 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50846 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab1JDN22 (ORCPT
+	id S1757217Ab1JDNcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 09:32:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48386 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757129Ab1JDNcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 09:28:28 -0400
-Message-ID: <4E8B09F3.4080800@linux.vnet.ibm.com>
-Date: Tue, 04 Oct 2011 18:58:19 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Tue, 4 Oct 2011 09:32:33 -0400
+Date: Tue, 4 Oct 2011 17:31:26 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Guillaume Chazarain <guichaz@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        kernel-hardening@lists.openwall.com, Andrew Morton <akpm00@gmail.com>
+Subject: Re: taskstats root only breaking iotop
+Message-ID: <20111004133125.GA11257@albatros>
+References: <CAA879TP_uNBd871yVFy1_dk_-5siOwtK8xM_D8MzYqJW2vFnUA@mail.gmail.com>
+ <CA+55aFxBp0GjPujpt=JYWLC3mjBeSiCn8=jfpPxJHo4bTejhDA@mail.gmail.com>
+ <CAA879TPzmVh4yR5n4Mfd8D6ERpvAFipeMXr1QBr3fwQMdvnRzw@mail.gmail.com>
+ <CA+55aFyci1PB9Y_BSqWnQKSSfcCrbJud+q1Z8Cdquo7hXJZaMw@mail.gmail.com>
+ <CAA879TMgMm4u6kDFahXqCHAFyvDc_hTt+Q93tdSdHKnAcUaMTw@mail.gmail.com>
+ <20111002105457.GA5598@albatros>
+ <20111003123158.GA28898@localhost.pp.htv.fi>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, pavel@ucw.cz, len.brown@intel.com,
-        mingo@elte.hu, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        lucas.demarchi@profusion.mobi, linux-pm@lists.linux-foundation.org,
-        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] CPU hotplug, freezer: Fix bugs in CPU hotplug call
- path
-References: <4E88BF33.10407@linux.vnet.ibm.com> <1317636215.12973.16.camel@twins> <4E8B07EA.4020307@linux.vnet.ibm.com>
-In-Reply-To: <4E8B07EA.4020307@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003123158.GA28898@localhost.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the CPU hotplug infrastructure to offline/online CPUs,
-the cpu_up() and cpu_down() functions are used, which internally
-call _cpu_up() and _cpu_down() with the second argument *always*
-set to 0. The second argument is "tasks_frozen", which should be
-correctly set to 1 when tasks have been frozen, even when the freezing
-of tasks may be due to an event unrelated to CPU hotplug, such as
-a suspend operation in progress, in which case the freezer subsystem
-freezes all the freezable tasks.
+On Mon, Oct 03, 2011 at 15:31 +0300, Adrian Bunk wrote:
+> On Sun, Oct 02, 2011 at 02:54:57PM +0400, Vasiliy Kulikov wrote:
+> > (cc'ed kernel-hardening)
+> > 
+> > On Sun, Oct 02, 2011 at 12:22 +0200, Guillaume Chazarain wrote:
+> > > On Sun, Oct 2, 2011 at 2:20 AM, Linus Torvalds
+> > > <torvalds@linux-foundation.org> wrote:
+> > > > So I don't see why you ask for it. What could possibly be a valid use-case?
+> > > 
+> > > Right, kbyte granularity is enough.
+> > 
+> > It is not enough.  In some border cases an attacker may still learn
+> > private information given the counters with _arbitrary_ granularity:
+> > 
+> > http://www.openwall.com/lists/oss-security/2011/06/29/9
+> 
+> If you request a CVE for that, shouldn't there also be a CVE for
+> /proc/<pid>/cmdline being readable by all users?
+> 
+> I'd expect "ps -ef" to be more likely to give private information to an 
+> attacker than counters with kbyte granularity, or am I wrong on that?
 
-Not giving the correct value for the 'tasks_frozen' argument can potentially
-lead to a lot of issues since this will send wrong notifications via the
-notifier mechanism leading to the execution of inappropriate code
-by the callbacks registered for the notifiers. That is, instead of
-CPU_ONLINE_FROZEN and CPU_DEAD_FROZEN notifications, it results in
-CPU_ONLINE and CPU_DEAD notifications to be sent all the time,
-irrespective of the actual state of the system (i.e., whether tasks
-are frozen or not).
-To give an example that CPU hotplug notifications that only differ with
-respect to the task frozen status might actually trigger different actions
-in the callbacks, the x86 microcode update driver has a callback registered
-for CPU hotplug events, which takes different actions based on whether
-a CPU_DEAD or a CPU_DEAD_FROZEN notification is received.
+I agree that world-readable cmdline can be a privacy issue in some
+cases.  I tried to push a patch introducing procfs mount option to
+restrict /proc/PID/ to PID owner to address the issue (as world-readable
+cmdline and other files are already used by plenty of programs and
+unconditionally breaking backward compatibility is not good, a
+configuration mechanism is needed), but it didn't receive positive
+feedback.  A more detailed explanation from Solar Designer:
 
-This patch introduces a flag to indicate whether the tasks are frozen are not
-(by any event) and modifies cpu_up() and cpu_down() functions to check the
-value of this flag and accordingly call _cpu_up() and _cpu_down()
-respectively by supplying the correct value as the second argument based
-on the state of the system. This in turn means that the correct notifications
-are sent, thus ensuring that all the registered callbacks do the right thing.
+http://www.openwall.com/lists/kernel-hardening/2011/06/20/5
 
-v2: * Removed the atomic_t declaration of tasks_frozen flag and the
-      atomic_[set|read] functions since they were unnecessary.
-    * Updated the changelog to give an example scenario where things could go
-      wrong due to the bug in the CPU hotplug call path.
+Andrew Morton complained that it is too specific to our needs and one
+might want to define more fine granted procfs security model:
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+http://www.openwall.com/lists/kernel-hardening/2011/06/21/3
 
- kernel/cpu.c           |    5 +++--
- kernel/power/process.c |   23 ++++++++++++++++++++++-
- 2 files changed, 25 insertions(+), 3 deletions(-)
+I've tried to address it and defined per-file policy:
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 1effc8b..3a37d8b 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -51,6 +51,10 @@ extern void refrigerator(void);
- extern int freeze_processes(void);
- extern void thaw_processes(void);
- 
-+extern void set_tasks_frozen_flag(void);
-+extern void clear_tasks_frozen_flag(void);
-+extern int tasks_are_frozen(void);
-+
- static inline int try_to_freeze(void)
- {
- 	if (freezing(current)) {
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 12b7458..e889ffd 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -15,6 +15,7 @@
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
- #include <linux/gfp.h>
-+#include <linux/freezer.h>
- 
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -280,7 +281,7 @@ int __ref cpu_down(unsigned int cpu)
- 		goto out;
- 	}
- 
--	err = _cpu_down(cpu, 0);
-+	err = _cpu_down(cpu, tasks_are_frozen());
- 
- out:
- 	cpu_maps_update_done();
-@@ -373,7 +374,7 @@ int __cpuinit cpu_up(unsigned int cpu)
- 		goto out;
- 	}
- 
--	err = _cpu_up(cpu, 0);
-+	err = _cpu_up(cpu, tasks_are_frozen());
- 
- out:
- 	cpu_maps_update_done();
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 0cf3a27..687f6fa 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -17,11 +17,30 @@
- #include <linux/delay.h>
- #include <linux/workqueue.h>
- 
--/* 
-+/*
-  * Timeout for stopping processes
-  */
- #define TIMEOUT	(20 * HZ)
- 
-+static int tasks_frozen;
-+
-+void set_tasks_frozen_flag(void)
-+{
-+	tasks_frozen = 1;
-+	smp_mb();
-+}
-+
-+void clear_tasks_frozen_flag(void)
-+{
-+	tasks_frozen = 0;
-+	smp_mb();
-+}
-+
-+int tasks_are_frozen(void)
-+{
-+	return tasks_frozen;
-+}
-+
- static inline int freezable(struct task_struct * p)
- {
- 	if ((p == current) ||
-@@ -151,6 +170,7 @@ int freeze_processes(void)
- 	error = try_to_freeze_tasks(false);
- 	if (error)
- 		goto Exit;
-+	set_tasks_frozen_flag();
- 	printk("done.");
- 
- 	oom_killer_disable();
-@@ -190,6 +210,7 @@ void thaw_processes(void)
- 	thaw_tasks(true);
- 	thaw_tasks(false);
- 	schedule();
-+	clear_tasks_frozen_flag();
- 	printk("done.\n");
- }
- 
+http://www.openwall.com/lists/kernel-hardening/2011/08/10/12
 
+No comments so far :(
 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
