@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab1JDQmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 12:42:06 -0400
-Received: from void.printf.net ([89.145.121.20]:52940 "EHLO void.printf.net"
+	id S932896Ab1JDQoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 12:44:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2101 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932522Ab1JDQmE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 12:42:04 -0400
-From: Chris Ball <cjb@laptop.org>
-To: NamJae Jeon <linkinjeon@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, adrian.hunter@intel.com,
-        linus.walleij@linaro.org, james_p_freyensee@linux.intel.com,
-        sebras@gmail.com, Ulf.Hansson@stericsson.com,
-        stefan.xk.nilsson@stericsson.com, per.forlin@stericsson.com,
-        johan.rudholm@stericsson.com
-Subject: Re: [PATCH v9] mmc : general purpose partition support.
-References: <1317745057-6328-1-git-send-email-linkinjeon@gmail.com>
-	<m2botwloeq.fsf@bob.laptop.org>
-	<CAKYAXd_OhouoyExiWJCzkDSTUUB4cXafLjRPbHwMYgQ6dhsr9A@mail.gmail.com>
-Date: Tue, 04 Oct 2011 12:41:47 -0400
-In-Reply-To: <CAKYAXd_OhouoyExiWJCzkDSTUUB4cXafLjRPbHwMYgQ6dhsr9A@mail.gmail.com>
-	(NamJae Jeon's message of "Wed, 5 Oct 2011 01:36:26 +0900")
-Message-ID: <m27h4klnec.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S932810Ab1JDQoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 12:44:14 -0400
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, Mark Salter <msalter@redhat.com>
+Subject: [PATCH v4 02/24] fixed generic page.h for non-zero PAGE_OFFSET
+Date: Tue,  4 Oct 2011 12:43:39 -0400
+Message-Id: <1317746641-26725-3-git-send-email-msalter@redhat.com>
+In-Reply-To: <1317746641-26725-1-git-send-email-msalter@redhat.com>
+References: <1317746641-26725-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+asm-generic/page.h had several problems when used with a non-zero PAGE_OFFSET.
+This patch adds a default ARCH_PFN_OFFSET and fixes the __va, __pa, and
+pfn_valid macros to work with non-zero PAGE_OFFSETs.
 
-On Tue, Oct 04 2011, NamJae Jeon wrote:
->> Still doesn't apply here.  Are you sure you're on the "mmc-next" branch
->> of the repository?
->
-> I receive mmc-next you inform like this.
->
-> git clone git://dev.laptop.org/users/cjb/mmc
->
-> What I did wrong ?
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/page.h |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-You need to type "git checkout mmc-next" afterwards to switch to the
-mmc-next branch.
-
-Thanks,
-
-- Chris.
+diff --git a/include/asm-generic/page.h b/include/asm-generic/page.h
+index 351889d..37d1fe2 100644
+--- a/include/asm-generic/page.h
++++ b/include/asm-generic/page.h
+@@ -71,10 +71,14 @@ extern unsigned long memory_end;
+ #define PAGE_OFFSET		(0)
+ #endif
+ 
++#ifndef ARCH_PFN_OFFSET
++#define ARCH_PFN_OFFSET		(PAGE_OFFSET >> PAGE_SHIFT)
++#endif
++
+ #ifndef __ASSEMBLY__
+ 
+-#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
+-#define __pa(x) ((unsigned long) (x) - PAGE_OFFSET)
++#define __va(x) ((void *)((unsigned long) (x)))
++#define __pa(x) ((unsigned long) (x))
+ 
+ #define virt_to_pfn(kaddr)	(__pa(kaddr) >> PAGE_SHIFT)
+ #define pfn_to_virt(pfn)	__va((pfn) << PAGE_SHIFT)
+@@ -86,7 +90,7 @@ extern unsigned long memory_end;
+ #define page_to_phys(page)      ((dma_addr_t)page_to_pfn(page) << PAGE_SHIFT)
+ #endif
+ 
+-#define pfn_valid(pfn)		((pfn) < max_mapnr)
++#define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET && ((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
+ 
+ #define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
+ 				((void *)(kaddr) < (void *)memory_end))
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+1.7.6.2
+
