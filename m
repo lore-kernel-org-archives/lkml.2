@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab1JDExP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 00:53:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58937 "EHLO mail.zytor.com"
+	id S1753950Ab1JDFEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 01:04:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18182 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab1JDExO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 00:53:14 -0400
-Message-ID: <4E8A910D.6020107@zytor.com>
-Date: Mon, 03 Oct 2011 21:52:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Josh Triplett <josh@joshtriplett.org>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <alpine.LRH.2.00.1110031316260.14853@twin.jikos.cz> <20111003225651.GA10257@leaf> <20111004044914.GP6684@thunk.org>
-In-Reply-To: <20111004044914.GP6684@thunk.org>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752193Ab1JDFEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 01:04:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,483,1312182000"; 
+   d="scan'208";a="74172753"
+Subject: Re: [PATCH] ASoC: Remove needless  codec->dapm.bias_level
+ assignment to SND_SOC_BIAS_OFF
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+In-Reply-To: <20111003131832.GL3731@opensource.wolfsonmicro.com>
+References: <1317644236.2724.1.camel@phoenix>
+	 <20111003131832.GL3731@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Oct 2011 10:27:43 +0530
+Message-ID: <1317704263.1573.2206.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2011 09:49 PM, Ted Ts'o wrote:
+On Mon, 2011-10-03 at 14:18 +0100, Mark Brown wrote:
+> On Mon, Oct 03, 2011 at 08:17:16PM +0800, Axel Lin wrote:
+> > This assignment is done by the snd_soc_register_codec so there is no need
+> > to redo it in probe function of a codec driver.
 > 
-> Note that if your laptop allows incoming ssh connections, and you
-> logged into master.kernel.org with ssh forwarding enabled, your laptop
-> may not be safe.  So be very, very careful before you assume that your
-> laptop is safe.  At least one kernel developer, after he got past the
-> belief, "surely I could have never had my machine be compromised",
-> looked carefully and found rootkits on his machines.
-> 
->        		     	   	       - Ted
+> Axel, please stop CCing Harsha Priya on patches - you should've
+> noticed that his address bounces by now.
+Hmmm, i can send a patch to update her email id. But for now i dont
+think she will work on kernel
 
-By the way, I'm now pretty convinced that allowing inbound ssh on
-laptops (which is the default on all the mainline Linux distros as far
-as I know) is seriously broken... laptops get connected to *extremely*
-insecure networks on just way too regular a basis.
+-- 
+~Vinod
 
-	-hpa
