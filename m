@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756Ab1JDUut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 16:50:49 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54174 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933671Ab1JDUus convert rfc822-to-8bit (ORCPT
+	id S933759Ab1JDUwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 16:52:22 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36837 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933506Ab1JDUwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 16:50:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111004174548.GA16209@elliptictech.com>
-References: <20110929105940.10660.76130.stgit@e102109-lin.cambridge.arm.com>
- <20110929110239.10660.95998.stgit@e102109-lin.cambridge.arm.com> <20111004174548.GA16209@elliptictech.com>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Tue, 4 Oct 2011 21:50:26 +0100
-X-Google-Sender-Auth: wvmIB7iHPAaPaAOHjaLE8cwTayc
-Message-ID: <CAHkRjk58zQF4ZxvH4Ex-sUpe9Wmhvt0xo5Juffq=DrpySE556Q@mail.gmail.com>
-Subject: Re: [PATCH 4/4] kmemleak: Report previously found leaks even after an error
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 4 Oct 2011 16:52:21 -0400
+Subject: Re: [RFCv3][PATCH 1/4] replace string_get_size() arrays
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        James.Bottomley@HansenPartnership.com, hpa@zytor.com
+In-Reply-To: <1317760957.18210.15.camel@Joe-Laptop>
+References: <20111001000856.DD623081@kernel>
+	 <1317497626.22613.1.camel@Joe-Laptop> <1317756942.7842.38.camel@nimitz>
+	 <1317760957.18210.15.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 04 Oct 2011 13:51:06 -0700
+Message-ID: <1317761466.7842.41.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 11100420-2398-0000-0000-000000B766AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 October 2011 18:45, Nick Bowler <nbowler@elliptictech.com> wrote:
-> On 2011-09-29 12:02 +0100, Catalin Marinas wrote:
->> If an error fatal to kmemleak (like memory allocation failure) happens,
->> kmemleak disables itself but it also removes the access to any
->> previously found memory leaks. This patch allows read-only access to the
->> kmemleak debugfs interface but disables any other action.
->>
->> Repored-by: Nick Bowler <nbowler@elliptictech.com>
->
-> Reported-by: ...
+On Tue, 2011-10-04 at 13:42 -0700, Joe Perches wrote:
+> > Right, but we're only handling u64.
+> 
+> So the declaration should be:
+> 
+>         static const char byte_units[] = " KMGTPE";
 
-I was wondering why you were not automatically cc'ed.
+I guess that's worth a comment.  But that first character doesn't get
+used.  There were two alternatives:
 
->> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
->
-> Cool, I'll try this out.  Kmemleak rarely stays alive for more than a
-> few days on my desktop before shutting itself down due to an allocation
-> failure, so this should be really handy.
+	static const char byte_units[] = "_KMGTPE";
 
-You can have a look at /proc/slabinfo and meminfo and see if there are
-any really big leaks. In general the kmemleak objects number is higher
-than the sum of all the other slab objects (but I haven't done any
-statistics). Hopefully kmemleak doesn't leak memory :) (I should add
-some simple checks though).
+or something along the lines of:
 
--- 
-Catalin
++	static const char byte_units[] = "KMGTPE";
+...
++	index--;
++       /* index=-1 is plain 'B' with no other unit */
++       if (index >= 0) {
+
+We don't ever _actually_ look at the space (or underscore).  I figured
+the _ was nicer since it would be _obvious_ if it ever got printed out
+somehow.  
+
+-- Dave
+
