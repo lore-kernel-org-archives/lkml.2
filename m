@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933710Ab1JDU3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 16:29:10 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54476 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933114Ab1JDU3J (ORCPT
+	id S933716Ab1JDUaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 16:30:35 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56643 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933114Ab1JDUae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 16:29:09 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Cousson Benoit <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Subject: Re: [RFC 2/5] ARM: OMAP: omap_device: add a method to set iommu private archdata
-Organization: Texas Instruments, Inc.
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
-	<1316948337-7924-3-git-send-email-ohad@wizery.com>
-	<87sjni9aql.fsf@ti.com>
-	<CAK=WgbZhz8LcAYZEY3qqRkX4E_wtspWp09Eq9G=5VdpoMMF1FQ@mail.gmail.com>
-	<87botwk4gw.fsf@ti.com>
-	<CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
-Date: Tue, 04 Oct 2011 13:29:03 -0700
-In-Reply-To: <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
-	(Ohad Ben-Cohen's message of "Tue, 4 Oct 2011 21:54:44 +0200")
-Message-ID: <87mxdga4c0.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 4 Oct 2011 16:30:34 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Adrian Bunk <bunk@stusta.de>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+In-Reply-To: Your message of "Mon, 03 Oct 2011 21:04:41 +0300."
+             <20111003180441.GD3072@localhost.pp.htv.fi>
+From: Valdis.Kletnieks@vt.edu
+References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi> <y0mobxyjazi.fsf@fche.csb>
+            <20111003180441.GD3072@localhost.pp.htv.fi>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1317760188_10919P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 04 Oct 2011 16:29:48 -0400
+Message-ID: <34045.1317760188@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4E8B6CBF.0092,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad Ben-Cohen <ohad@wizery.com> writes:
+--==_Exmh_1317760188_10919P
+Content-Type: text/plain; charset=us-ascii
 
-> On Tue, Oct 4, 2011 at 8:15 PM, Kevin Hilman <khilman@ti.com> wrote:
->> The approach is OK with me, but I'm a bit torn about whether or not to
->> merge this since the need for this should go away when converting to DT.
+On Mon, 03 Oct 2011 21:04:41 +0300, Adrian Bunk said:
+> On Mon, Oct 03, 2011 at 12:28:17PM -0400, Frank Ch. Eigler wrote:
+
+> > What is the threat that this passport checking is intended to cure?
+> > That someone else might have been impersonating Rafael for years,
+> > sending patches, chatting in email and over the phone, and attending
+> > conferences?
 >
-> I guess it will still take some time until our boards are fully
-> functional with DT, so I think we should regard this as an interim
-> solution. Without this patch, a huge deal of code consolidation and
-> generalization is gated (namely - generic iommu and dma api, and
-> everything that depends on it, e.g. rpmsg/remoteproc).
->
->> Is anyone working on IOMMU DT description?
->
-> Unless Benoit is, I'll happily pick this up.
+> Key signing is an identity check.
 
-tag.  you're it.
+That's dodging the issue. Somehow, I don't see Andrew Morton asking Linus to
+sign his key, and Linus saying "How do I know you're the *real* Andrew Morton?"
+And Andrew is a clever guy, if he was a fake Andrew, I'm sure he'd have gotten
+a fake ID that would be good enough to fool Linus, who is also a clever guy but
+I'm not aware of any special background he has in forgery detection. ;)
 
->> I guess if I do merge this, we can also clean this up significantly
->> after all devices are converted to DT.
->
-> Sure.
+The more important point is that as far as the linux-kernel community is
+concerned, the guy we've all seen show up at conferences and present stuff all
+these times *is* Andrew Morton, even if his real name is George Q. Smith and
+he's been on the run for the last 27 years for an embarassing incident
+involving an ostrich, the mayor's daughter, and 17 gallons of mineral oil in
+the atrium of the museum. ;)
 
-OK, as long as I have some confidence that this is going in the right
-direction (and having you on the job is a good sign!)  I'm willing to
-merge something like this as an interim solution.
+The ID check is  to connect an actual person to the claimed key, and primarily
+intended for key signing parties and the like, where people *don't* know each
+other very well. I think there's something like 5 people on the linux-kernel
+list who actually know me in real life, because I don't travel much and I'm
+rather in the boonies.  If I asked anybody *else* who I'd not met before to
+sign my key, yes, I'd expect them to check my ID, to ensure I wasn't somebody
+trying to pull a fast one at the keysigning party.
 
-Kevin
+> > If so, perhaps the impostor is of more value to the
+> > project than the Real Rafael.
+> 
+> Pseudonymous contributions to the kernel are not allowed.
 
->> Unless it has other dependencies on Benoit's further DT patches, you can
->> base this on my for_3.2/omap_device-2 branch which includes Benoit's
->> alloc changes.
->
-> Ok, thanks a lot !
-> Ohad.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+See above - whoever Andrew Morton *really* is, his contributions are hardly
+pseudonymous.
+
+
+--==_Exmh_1317760188_10919P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOi2y8cC3lWbTT17ARAuzBAJ0b8yart0YKRHcG44UZ0Yn/4KyamQCdHO6c
+JOpVRfEeoq3QMM0jhQOB7IE=
+=i/Fd
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317760188_10919P--
+
