@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab1JDROS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 13:14:18 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35855 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204Ab1JDROR (ORCPT
+	id S933024Ab1JDRQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 13:16:16 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:21916
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932204Ab1JDRQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 13:14:17 -0400
-Date: Tue, 4 Oct 2011 19:14:15 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111004171415.GB3915@gere.osrc.amd.com>
-References: <4E88B5E0.6080503@linux.vnet.ibm.com>
- <20111002195023.GC31799@mtj.dyndns.org>
- <4E88C3D4.2020300@linux.vnet.ibm.com>
- <20111003004051.GD31799@mtj.dyndns.org>
- <4E894D75.808@linux.vnet.ibm.com>
- <20111003084754.GB4411@liondog.tnic>
- <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
- <4E8B06E0.2090501@linux.vnet.ibm.com>
- <20111004134653.GC3148@gere.osrc.amd.com>
+	Tue, 4 Oct 2011 13:16:14 -0400
+X-SpamScore: 9
+X-BigFish: VPS9(zz98dKc55bszz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LSJXAV-02-FO3-02
+X-M-MSG: 
+Date: Tue, 4 Oct 2011 19:16:03 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        acme <acme@ghostprotocols.net>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
+Message-ID: <20111004171603.GI21506@erda.amd.com>
+References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
+ <1316778523.9084.17.camel@twins>
+ <20110923122014.GP6063@erda.amd.com>
+ <1317716839.25926.12.camel@twins>
+ <20111004085409.GA18566@elte.hu>
+ <m2botwlnfk.fsf@firstfloor.org>
+ <1317746709.32543.23.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111004134653.GC3148@gere.osrc.amd.com>
+In-Reply-To: <1317746709.32543.23.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 03:46:53PM +0200, Borislav Petkov wrote:
-> On Tue, Oct 04, 2011 at 06:45:12PM +0530, Srivatsa S. Bhat wrote:
-> > I would like to propose a modified solution to the problem:
-> > 
-> > Taking a CPU offline:
-> > * Upon a CPU_DEAD notification, just like the code originally did, we free
-> >   the kernel's copy of the microcode and invalidate it. So no changes here.
-> >  
-> > Bringing a CPU online:
-> > * When a CPU_ONLINE or CPU_ONLINE_FROZEN notification is received, 
-> >   a. If the userspace is not frozen, we request microcode from userspace and
-> >      apply it to the cpu.
-> > 
-> >   b. However if we find that the userspace is frozen at that moment, we defer
-> >      applying microcode now and register a callback function to be executed
-> >      immediately when the userspace gets thawed. This callback function would
-> >      request microcode from userspace and apply it to the cpu.
-> 
-> No need for that if we can drop the whole re-requesting of ucode on
-> CPU_ONLINE* (see my other mail). Let me run some tests before though.
+On 04.10.11 12:45:09, Peter Zijlstra wrote:
+> I would much prefer perf {ibs,pebs} commands implemented in C, so that
+> normal people can change/improve them too.
 
-Ok, it looks good. I had one issue with what happens when there's no
-ucode image but the ucode driver is a bit-hmm... and that case actually
-magically works.
+Would a perf {ibs,pebs} be an ascii dump or so? Then I just would
+better extend perf-report (-D option) to support decoding of raw
+samples from dynamically pmus. Something like:
 
-So you can have my Acked- and Tested-by:'s for the AMD side - you still
-need to test it on Intel with both microcode_ctl and the module un- and
-loading so that you make sure you're not introducing regressions, if you
-haven't done so yet, of course.
+# perf report -D
+[...]
+. ... raw event: size 88 bytes
+.  0000:  01 00 00 00 02 00 58 00 6d 11 00 00 6d 11 00 00  ......X.m...m...
+.  0010:  00 80 86 b7 00 00 00 00 00 10 01 00 00 00 00 00  ................
+.  0020:  00 00 00 00 00 00 00 00 2f 6c 69 62 2f 6c 69 62  ......../lib/lib
+.  0030:  7a 2e 73 6f 2e 31 2e 32 2e 33 00 00 00 00 00 00  z.so.1.2.3......
+.  0040:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+.  0050:  00 00 00 00 00 00 00 00                          ........
+.  # IBS sample (ibs_fetch):
+.  # IbsFetchCtl          = 0x0000000000000000
+.  #   IbsFetchMaxCnt=0
+.  #   IbsFetchCnt=0
+.  #   IbsFetchLat=0
+.  #   IbsFetchEn=0
+.  #   IbsFetchVal=0
+.  #   IbsFetchComp=0
+.  #   IbsIcMiss=0
+.  #   IbsPhyAddrValid=0
+.  #   IbsL1TlbPgSz=0
+.  #   IbsL1TlbMiss=0
+.  #   IbsL2TlbMiss=0
+.  #   IbsRandEn=0
+.  # IbsFetchLinAd        = 0x00000000813e8b80
+.  #   IbsFetchLinAd=0xffffffff813e8b80
+.  # IbsFetchPhysAd       = 0x00000000013e8b80
+.  #   IbsFetchPhysAd=0x13e8b80
+[...]
 
-Thanks.
+(Data decoding not correct in this example.)
+
+This wouln't require architecture specific commands.
+
+-Robert
 
 -- 
-Regards/Gruss,
-Boris.
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
