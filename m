@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab1JDSBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 14:01:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45786 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab1JDSBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 14:01:17 -0400
-Date: Tue, 4 Oct 2011 10:52:26 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
-        linux-serial@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] tty/serial: atmel_serial: add device tree support
-Message-ID: <20111004165226.GA10919@ponder.secretlab.ca>
-References: <1317635502-9430-1-git-send-email-nicolas.ferre@atmel.com>
- <4E8A6858.6020700@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8A6858.6020700@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933326Ab1JDSCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 14:02:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14270 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932922Ab1JDSCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 14:02:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,486,1312182000"; 
+   d="scan'208";a="70245981"
+Subject: Re: [patch v2 1/2] sched: Use resched IPI to kick off the nohz idle
+ balance
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Tue, 04 Oct 2011 11:03:32 -0700
+In-Reply-To: <1317719121.25926.15.camel@twins>
+References: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
+	 <1317719121.25926.15.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317751412.11592.170.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 08:58:48PM -0500, Rob Herring wrote:
-> On 10/03/2011 04:51 AM, Nicolas Ferre wrote:
-> >  static int __devinit atmel_serial_probe(struct platform_device *pdev)
-> >  {
-> >  	struct atmel_uart_port *port;
-> > +	struct device_node *np = pdev->dev.of_node;
-> >  	struct atmel_uart_data *pdata = pdev->dev.platform_data;
-> >  	void *data;
-> >  	int ret;
-> >  
-> >  	BUILD_BUG_ON(ATMEL_SERIAL_RINGSIZE & (ATMEL_SERIAL_RINGSIZE - 1));
-> >  
-> > -	port = &atmel_ports[pdata->num];
-> > +	if (np) {
-> > +		ret = of_alias_get_id(np, "serial");
-> > +		if (ret < 0)
-> > +			goto err;
+On Tue, 2011-10-04 at 02:05 -0700, Peter Zijlstra wrote:
+> On Mon, 2011-10-03 at 15:09 -0700, Suresh Siddha wrote:
+> > +               smp_mb();
+> > +               /*
+> > +                * Use smp_send_reschedule() instead of resched_cpu().
+> > +                * This way we generate a sched IPI on the target cpu which
+> > +                * is idle. And the softirq performing nohz idle load balance
+> > +                * will be run before returning from the IPI.
+> > +                */
+> > +               smp_send_reschedule(ilb_cpu); 
 > 
-> I'll defer to Grant on this. There aren't any other drivers using this.
-> 
+> Now the only thing missing is where the matching barrier is, does
+> receiving an interrupt imply a mb? If so that wants mentioning
+> somewhere, otherwise people will wonder how we can ever read the right
+> value.
 
-This is the correct thing to do.
+This is similar to resched_task()? Isn't it?
 
-One note however; I prefer driver to *not* require an alias to be
-present.  By all means, use an alias if it is available, but the
-driver should auto-enumerate if it is not.  There is a patch that
-makes of_alias_get_id() do this for you, but it hasn't been mainlined
-yet and it is still a bit in flux.  There will be something that takes
-care of this for you, but be aware that the function name may change.
+I am expecting the interrupt handlers will be already having the
+necessary memory barriers, if the arch requires it.
 
-In the mean time, this patch is okay.
+thanks,
+suresh
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-g.
