@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab1JEVNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:13:22 -0400
-Received: from www17.your-server.de ([213.133.104.17]:60312 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab1JEVNV (ORCPT
+	id S1758102Ab1JEVPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:15:51 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:33338 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab1JEVPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:13:21 -0400
-Subject: Re: [PATCH] Support compat_ioctl get/set termios_locked
-From: Thomas Meyer <thomas@m3y3r.de>
-To: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 05 Oct 2011 23:13:13 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	Wed, 5 Oct 2011 17:15:50 -0400
+Message-ID: <4E8CC8FA.2090100@linux.vnet.ibm.com>
+Date: Thu, 06 Oct 2011 02:45:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        Tejun Heo <tj@kernel.org>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+References: <20111002195023.GC31799@mtj.dyndns.org> <20111005072102.GA11172@aftab> <4E8C1A74.5090601@linux.vnet.ibm.com> <201110052226.58373.rjw@sisk.pl>
+In-Reply-To: <201110052226.58373.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1317849199.1733.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+x-cbid: 11100512-3568-0000-0000-00000077CEF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3a8e16c473be2e44b063a7a9072b16ce6fa13353 Mon Sep 17 00:00:00 2001
-From: Thomas Meyer <thomas@m3y3r.de>
-Date: Sat, 24 Sep 2011 10:36:39 +0200
-Subject: [PATCH] Support compat_ioctl get/set termios_locked
+On 10/06/2011 01:56 AM, Rafael J. Wysocki wrote:
+> 
+> OK, can you please repost the patch with Borislav's Acked-by and Tested-by
+> and add some more Intel people to the CC list?
+> 
 
-When running a Fedora 15 (x86) on an x86_64 kernel, in the boot process
-plymouthd complains about those two missing ioctls:
-[    2.581783] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005457){t:'T';sz:0} arg(ffb6a5d0) on /dev/tty1
-[    2.581803] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005456){t:'T';sz:0} arg(ffb6a680) on /dev/tty1
+Sure, I'll do that. Thank you.
+But are we not going to consider a cleaner/correct solution such as the
+one proposed here:
+http://permalink.gmane.org/gmane.linux.kernel/1199494
 
-both ioctl functions work on the 'struct termios' resp. 'struct termios2',
-which has the same size (36 bytes resp. 44 bytes) on x86 and x86_64,
-so it's just a matter of converting the pointer from userland.
+Well, honestly I don't mean to be stubborn, but somehow, knowing that
+there are issues with my patch doesn't make me feel very comfortable
+going with it, especially when there is another approach, which I
+believe can fix the issue properly, without undesirable side-effects.
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-Sorry, I did forget to set the retval from n_tty_compat_ioctl_helper().
+I agree that the issues are mostly some corner cases, so if you want a
+quick fix for now, I guess we can go with this patch and then later on
+follow-up with a proper solution to this whole problem.
 
- drivers/tty/tty_io.c    |    2 ++
- drivers/tty/tty_ioctl.c |   17 +++++++++++++++++
- include/linux/tty.h     |    2 ++
- 3 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 4f1fc81..e68c6303 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2716,6 +2716,8 @@ static long tty_compat_ioctl(struct file *file, unsigned int cmd,
- 	ld = tty_ldisc_ref_wait(tty);
- 	if (ld->ops->compat_ioctl)
- 		retval = ld->ops->compat_ioctl(tty, file, cmd, arg);
-+	else
-+		retval = n_tty_compat_ioctl_helper(tty, file, cmd, arg);
- 	tty_ldisc_deref(ld);
- 
- 	return retval;
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 53f2442..9314d93 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -19,6 +19,7 @@
- #include <linux/module.h>
- #include <linux/bitops.h>
- #include <linux/mutex.h>
-+#include <linux/compat.h>
- 
- #include <asm/io.h>
- #include <asm/uaccess.h>
-@@ -1179,3 +1180,19 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
- 	}
- }
- EXPORT_SYMBOL(n_tty_ioctl_helper);
-+
-+#ifdef CONFIG_COMPAT
-+long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
-+					unsigned int cmd, unsigned long arg)
-+{
-+	switch (cmd) {
-+	case TIOCGLCKTRMIOS:
-+	case TIOCSLCKTRMIOS:
-+		return tty_mode_ioctl(tty, file, cmd, (unsigned long) compat_ptr(arg));
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+}
-+EXPORT_SYMBOL(n_tty_compat_ioctl_helper);
-+#endif
-+
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 5f2ede8..ddac668 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -581,6 +581,8 @@ extern int __init tty_init(void);
- /* tty_ioctl.c */
- extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
- 		       unsigned int cmd, unsigned long arg);
-+extern long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
-+		       unsigned int cmd, unsigned long arg);
- 
- /* serial.c */
- 
 -- 
-1.7.6.4
-
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
 
