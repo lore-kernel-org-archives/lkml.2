@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab1JEHdR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:33:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58030 "EHLO mail.skyhub.de"
+	id S1757947Ab1JEHfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:35:17 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:52073 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab1JEHdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:33:16 -0400
-Date: Wed, 5 Oct 2011 09:33:13 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        crash-utility@redhat.com, kexec@lists.infradead.org,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111005073313.GB13478@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"K.Prasad" <prasad@linux.vnet.ibm.com>,
-	Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-	crash-utility@redhat.com, kexec@lists.infradead.org,
-	Andi Kleen <andi@firstfloor.org>,
-	"Luck, Tony" <tony.luck@intel.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-	tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004140437.GA28306@redhat.com>
- <20111005071844.GB2235@in.ibm.com>
+	id S1752624Ab1JEHfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 03:35:16 -0400
+Message-ID: <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de>
+In-Reply-To: <20111005055046.GD32077@elgon.mountain>
+References: <20111005055046.GD32077@elgon.mountain>
+Date: Wed, 5 Oct 2011 09:35:13 +0200
+Subject: Re: [patch] [SCSI] aacraid: use lower snprintf() limit
+From: "Rolf Eike Beer" <eike-kernel@sf-tec.de>
+To: "Dan Carpenter" <dan.carpenter@oracle.com>
+Cc: "Adaptec OEM Raid Solutions" <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <jbottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111005071844.GB2235@in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 12:48:44PM +0530, K.Prasad wrote:
-> On Tue, Oct 04, 2011 at 10:04:37AM -0400, Vivek Goyal wrote:
-> > On Mon, Oct 03, 2011 at 01:02:03PM +0530, K.Prasad wrote:
-> > > There are certain types of crashes induced by faulty hardware in which
-> > > capturing crashing kernel's memory (through kdump) makes no sense (or sometimes
-> > > dangerous).
-> > > 
-> > > A case in point, is unrecoverable memory errors (resulting in fatal machine
-> > > check exceptions) in which reading from the faulty memory location from the
-> > > kexec'ed kernel will cause double fault and system reset (leaving no
-> > > information for the user).
-> > 
-> > Prasad,
-> > 
-> > I am just trying to remember what was wrong with Andi's approach of
-> > disable MCE while copying the dump?
-> >
-> 
-> Hi Vivek,
-> 	The behaviour upon a read operation on an UC memory location is
-> undefined and so we want to avoid it (previously discussed here:
-> http://article.gmane.org/gmane.linux.kernel/1146799). When we disable
-> MCE and copy the dump, we will invariably read the faulty memory
-> location.
+> This is just a cleanup, to silence static checker warnings.  It
+> doesn't change how the code works.
+>
+> buf[] can either be BUF_SIZE if this is called from sysfs, or it can
+> be 16 if it's called from aac_get_adapter_info() via
+> aac_get_serial_number().  We use the smaller limit here.
+>
+> sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo) is 12 so there
+> is actually no chance of hitting either limit.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>
+> diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+> index 3382475..ea8d96e 100644
+> --- a/drivers/scsi/aacraid/linit.c
+> +++ b/drivers/scsi/aacraid/linit.c
+> @@ -894,15 +894,20 @@ static ssize_t aac_show_serial_number(struct device
+> *device,
+>  	int len = 0;
+>
+>  	if (le32_to_cpu(dev->adapter_info.serial[0]) != 0xBAD0)
+> -		len = snprintf(buf, PAGE_SIZE, "%06X\n",
+> +		len = snprintf(buf, 16, "%06X\n",
+>  		  le32_to_cpu(dev->adapter_info.serial[0]));
+>  	if (len &&
+>  	  !memcmp(&dev->supplement_adapter_info.MfgPcbaSerialNo[
+>  	    sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo)-len],
+>  	  buf, len-1))
+> -		len = snprintf(buf, PAGE_SIZE, "%.*s\n",
+> +		len = snprintf(buf, 16, "%.*s\n",
+>  		  (int)sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo),
+>  		  dev->supplement_adapter_info.MfgPcbaSerialNo);
+> +
+> +
 
-Right, from the message above:
+One newline too much.
 
-"- To disable MCE exceptions as done by the patches cited above. However
-  the result of a read operation on corrupted memory is unknown and the
-  system behaviour is undefined. We're unsure if this is a safe thing to
-  do."
+> +	if (len > 16)
+> +		len = 16;
 
-Can you elaborate more on that? Are we talking poisoned memory here or
-undetected and uncorrectable memory errors?
+max()?
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Eike
