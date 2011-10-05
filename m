@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934952Ab1JEQZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:25:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57180 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934476Ab1JEQZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:25:23 -0400
-Date: Wed, 5 Oct 2011 18:25:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "K.Prasad" <prasad@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "crash-utility@redhat.com" <crash-utility@redhat.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "anderson@redhat.com" <anderson@redhat.com>,
-        "tachibana@mxm.nes.nec.co.jp" <tachibana@mxm.nes.nec.co.jp>,
-        "oomichi@mxs.nes.nec.co.jp" <oomichi@mxs.nes.nec.co.jp>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111005162520.GC18592@gere.osrc.amd.com>
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004143012.GB28306@redhat.com>
- <20111005074116.GC2235@in.ibm.com>
- <20111005154011.GD30146@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301EE62D58D@orsmsx505.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EE62D58D@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934965Ab1JEQ0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:26:09 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:37597 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934476Ab1JEQ0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 12:26:06 -0400
+Date: Wed, 5 Oct 2011 09:26:00 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using
+ "performance" settings
+Message-ID: <20111005092600.36d505b2@jbarnes-desktop>
+In-Reply-To: <CA+55aFwoeC+X=XWWJ7HFUfz6tZmJW6PMmkGcRM5otLbyGt587Q@mail.gmail.com>
+References: <1317653420-21404-3-git-send-email-mason@myri.com>
+	<CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
+	<1317742838.29415.217.camel@pasglop>
+	<CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
+	<1317744493.29415.238.camel@pasglop>
+	<CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com>
+	<1317749439.29415.251.camel@pasglop>
+	<CA+55aFyOcb2y1QVaTNssWFU+nCee8RSs9-wZ-ARnFWcF5MdGSA@mail.gmail.com>
+	<1317798113.29415.270.camel@pasglop>
+	<CA+55aFwoeC+X=XWWJ7HFUfz6tZmJW6PMmkGcRM5otLbyGt587Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 08:58:53AM -0700, Luck, Tony wrote:
-> > > The plan is to pass-down the list of poisoned memory pages to the second
-> > > kernel using an elf-note so that these pages are left untouched during
-> > > dump capture. I'm working on an implementation of the same and should
-> > > have patches soon.
+On Wed, 5 Oct 2011 07:49:24 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Wed, Oct 5, 2011 at 12:01 AM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
 > >
-> > I would say let us first figure out what happens while reading a poisoned
-> > page and is this a problem before working on a solution.
+> >> We just don't the hell know, do we?
+> >
+> > Well, we do with some confidence :-) Or rather what we do know is what
+> > you have today in your tree is broken.
 > 
-> If the page is poisoned because of a real uncorrectable error in memory
-> (reported as SRAO machine check today, or by SRAR real-soon-now). Then
-> accessing the page from the processor while taking a memory dump will
-> result in a machine check.
+> You're missing the point.
 > 
-> Note that a large memory system that had been running for a long time
-> may have built up a small stash of these land-mine pages - and we need
-> to worry about them even in the case where the panic is not machine
-> check related (in fact especially in this case ... we are in a case
-> where we actually do want the dump to diagnose the cause of the panic,
-> and we don't want to risk losing the crash dump because we aborted when
-> touching a page that the OS had safely avoided for days/weeks/months).
-> 
-> So passing a list of poisoned pages from the old kernel to the new kernel
-> is a good idea - and is independent of the cause of the crash (except that
-> in the fatal machine check case due to memory error the list is guaranteed
-> to be non-empty).
-> 
-> Passing some crash signature data - so the new kernel/dump-tools can make
-> a choice whether to even try to take a full dump is also interesting (but
-> independent from the bad page list).
+> Repeat after me: late -rc series is not when we test these kinds of things.
 
-Good point,
+Yeah I think Ben just wants the convenience of having the non-default
+code paths fixed when 3.1 comes out; but I agree we shouldn't be poking
+around at all at this point.
 
-this would probably advocate for the solution of disabling of detection
-of at least certain MCEs like DRAM UCs and then, even if you manage
-to dump core successfully, how can you be sure that the memory image
-doesn't contain some corrupted data? So yes, some sort of error
-and corresponding address collection is needed for later image
-"preparation".
+Hopefully I'll get my kernel.org tree back up and running this week so
+I can queue up the various fixes for the merge window.  I'll do another
+scan and ask people to send directly to you for the 2 or 3 things we
+still have open for 3.1.
 
-Hmm, this just got interesting.
-
+Thanks,
 -- 
-Regards/Gruss,
-Boris.
+Jesse Barnes, Intel Open Source Technology Center
