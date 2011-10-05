@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933704Ab1JEIo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 04:44:29 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:48182 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab1JEIo2 (ORCPT
+	id S934069Ab1JEIqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:46:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44238 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903Ab1JEIqe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 04:44:28 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E8C1AE6.5000701@cam.ac.uk>
-Date: Wed, 05 Oct 2011 09:52:54 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: IIO (+ more general?) Error condition handling (e.g. wire fell
- out errors)
-References: <4E858F5A.5000901@cam.ac.uk> <20110930104707.0645afda@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110930104707.0645afda@lxorguk.ukuu.org.uk>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Oct 2011 04:46:34 -0400
+Subject: Re: linux-next: build failure after merge of the tip tree
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Date: Wed, 05 Oct 2011 10:46:13 +0200
+In-Reply-To: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
+References: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317804373.6766.0.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the slow reply!
->> 3) Consider these out of band (from the out of band event data)
->> and look at other options for reporting them.
+On Wed, 2011-10-05 at 17:25 +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Treat it like a socket/pipe perhaps - if it "goes down" then report it as
-> having hung up and deliver a SIGPIPE or similar and with an appropriate
-> error code for those catching it (-EIO ?)
-I guess that will work.  Feels a little clunky, but such is life.
+> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
 > 
-> That generally gets noticed.
+> net/rds/ib_rdma.c: In function 'rds_ib_reuse_fmr':
+> net/rds/ib_rdma.c:272:2: error: implicit declaration of function 'llist_del_first' [-Werror=implicit-function-declaration]
+> net/rds/ib_rdma.c:272:6: warning: assignment makes pointer from integer without a cast [enabled by default]
+> net/rds/ib_rdma.c: In function 'rds_ib_flush_mr_pool':
+> net/rds/ib_rdma.c:671:4: error: implicit declaration of function 'llist_add_batch' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
 > 
->> Is there anything general out there for reporting hardware failures
->> that would be appropriate?  Sometime these conditions are the sort
->> of thing that should cause a siren to go off.
->> They might be sensor failure
-> 
-> There are two things here - one is making sure the app notices (where we
-> have equivalent handling in other interfaces) the other is what to do
-> about it. We don't have a general framework for reporting system
-> component failure. That's something that ought to get fixed generally to
-> report everything from "that new nasty smell was formerly your hard disk"
-> to a sensor fail.
-It does seem like that would be useful. 
-> 
->> (p.s. I hope no one is using the current driver for trains, though
->> that might explain British trains...)
-> 
-> Tssh... there is Linux on UK trains, but it's usually driving annoying
-> announcement/video systems.
-:) Good thing their are no 'this runs Linux' badges on the speakers.
-I've nothing against them using Linux, just the driver in question which
-is currently 'interesting'.
+> Caused by commit 1230db8e1543 ("llist: Make some llist functions inline")
+> interacting with commit 1bc144b62524 ("net, rds, Replace xlist in
+> net/rds/xlist.h with llist") from the net tree.  The former commit
+> removes the declarations of llist_del_first() and llist_add_batch() with
+> no explanation (and probably by accident since the definitions still
+> exist).
 
-Thanks,
-
-Jonathan
-
+Ugh yes, my bad. Ingo objected to inlining all those functions and I
+then screwed up. There are no users of those two functions in my tree.
