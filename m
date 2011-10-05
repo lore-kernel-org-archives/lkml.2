@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934252Ab1JEJvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 05:51:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25533 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933732Ab1JEJvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 05:51:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,490,1312182000"; 
-   d="scan'208";a="74832393"
-Date: Wed, 5 Oct 2011 12:51:14 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Fabio Estevam <festevam@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Subject: Re: [PATCHv5 14/19] arm: imx: Start using struct usb_otg
-Message-ID: <20111005095114.GB7594@xps8300>
-References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
- <20111003130409.GA2487@xps8300>
- <CAOMZO5DwDiBa_Ksow5bt02S_zMMEn4uB_hz-5KS+dyNiZA88sQ@mail.gmail.com>
- <201110041905.59247.philippe.retornaz@epfl.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201110041905.59247.philippe.retornaz@epfl.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934028Ab1JEJx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 05:53:29 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35498 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab1JEJx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 05:53:27 -0400
+From: Rabin Vincent <rabin@rab.in>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Will Drewry <wad@chromium.org>
+Subject: [PATCH] block: fix UUID string buffer length
+Date: Wed,  5 Oct 2011 15:22:44 +0530
+Message-Id: <1317808364-21081-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 07:05:58PM +0200, Philippe Rétornaz wrote:
-> Tested on mx31moboard-marxbot, works fine (ie, nothing changed).
+The UUID string buffer is several bytes shorter than what is actually
+required, because the space for the hyphens hasn't been taken into
+account.  Fix it, while also making it a regular char[] rather than a
+u8[] to make it clear what we're storing here.
 
-Thanks Philippe. I assume we can add:
+Cc: Will Drewry <wad@chromium.org>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ block/genhd.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Tested-by: Philippe Rétornaz <philippe.retornaz@epfl.ch>
-
-Sascha, I still would like you to test these, as you found the issues
-in the v4.
-
-Thanks,
-
+diff --git a/block/genhd.c b/block/genhd.c
+index 8dfa21e..fa955b5 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -736,7 +736,7 @@ void __init printk_all_partitions(void)
+ 		struct hd_struct *part;
+ 		char name_buf[BDEVNAME_SIZE];
+ 		char devt_buf[BDEVT_SIZE];
+-		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
++		char uuid[sizeof("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")];
+ 
+ 		/*
+ 		 * Don't show empty devices or things that have been
+@@ -755,7 +755,7 @@ void __init printk_all_partitions(void)
+ 		while ((part = disk_part_iter_next(&piter))) {
+ 			bool is_part0 = part == &disk->part0;
+ 
+-			uuid[0] = 0;
++			uuid[0] = '\0';
+ 			if (part->info)
+ 				part_unpack_uuid(part->info->uuid, uuid);
+ 
 -- 
-heikki
+1.7.5.4
+
