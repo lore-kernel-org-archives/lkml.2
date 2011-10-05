@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab1JEVjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:39:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41812 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932446Ab1JEVjK (ORCPT
+	id S935256Ab1JEVk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:40:56 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33247 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab1JEVkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:39:10 -0400
-Date: Wed, 5 Oct 2011 14:39:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] mm, arch: Complete pagefault_disable abstraction
-Message-Id: <20111005143907.09283b14.akpm@linux-foundation.org>
-In-Reply-To: <1317820169.6766.20.camel@twins>
-References: <1317820169.6766.20.camel@twins>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Oct 2011 17:40:55 -0400
+Date: Thu, 6 Oct 2011 00:40:47 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm00@gmail.com>
+Subject: [3.1 patch] x86: default to vsyscall=native
+Message-ID: <20111005214047.GE14406@localhost.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Oct 2011 15:09:29 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+After upgrading a kernel the existing userspace should just work
+(assuming it did work before ;-) ), but when I upgraded my kernel
+from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
 
-> Currently we already have pagefault_{disable,enable}() but they're
-> nothing more than a glorified preempt_{disable,enable}().
+dmesg said:
+  linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
+  linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
 
-That's not very accurate or useful.  Unlike preempt_disable(),
-pagefault_disable() will raise the preempt count when CONFIG_PREEMPT=n.
+Looking throught the changelog I ended up at commit 3ae36655
+("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
+
+Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to 
+vsyscall=native.
+
+That sounds reasonable to me, and fixes the problem for me.
+
+Signed-off-by: Adrian Bunk <bunk@kernel.org>
+Acked-by: Andrew Lutomirski <luto@mit.edu>
+---
+ Documentation/kernel-parameters.txt |    7 ++++---
+ arch/x86/kernel/vsyscall_64.c       |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 854ed5ca..d6e6724 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2706,10 +2706,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			functions are at fixed addresses, they make nice
+ 			targets for exploits that can control RIP.
+ 
+-			emulate     [default] Vsyscalls turn into traps and are
+-			            emulated reasonably safely.
++			emulate     Vsyscalls turn into traps and are emulated
++			            reasonably safely.
+ 
+-			native      Vsyscalls are native syscall instructions.
++			native      [default] Vsyscalls are native syscall
++			            instructions.
+ 			            This is a little bit faster than trapping
+ 			            and makes a few dynamic recompilers work
+ 			            better than they would in emulation mode.
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 18ae83d..b56c65de 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -56,7 +56,7 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
+ 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
+ };
+ 
+-static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
++static enum { EMULATE, NATIVE, NONE } vsyscall_mode = NATIVE;
+ 
+ static int __init vsyscall_setup(char *str)
+ {
+-- 
+1.7.6.3
+
