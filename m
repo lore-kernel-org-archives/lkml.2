@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934132Ab1JEGZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 02:25:41 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:50497 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933898Ab1JEGZj (ORCPT
+	id S1757815Ab1JEG3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:29:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56870 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab1JEG3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 02:25:39 -0400
-Date: Wed, 5 Oct 2011 17:25:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>
-Subject: linux-next: build failure after merge of the tip tree
-Message-Id: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej"
+	Wed, 5 Oct 2011 02:29:50 -0400
+Date: Tue, 4 Oct 2011 23:29:44 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.1-rc9
+Message-ID: <20111005062944.GA31646@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej
-Content-Type: text/plain; charset=US-ASCII
+
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+Hi Linus,
 
-After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+Please pull from:
 
-net/rds/ib_rdma.c: In function 'rds_ib_reuse_fmr':
-net/rds/ib_rdma.c:272:2: error: implicit declaration of function 'llist_del=
-_first' [-Werror=3Dimplicit-function-declaration]
-net/rds/ib_rdma.c:272:6: warning: assignment makes pointer from integer wit=
-hout a cast [enabled by default]
-net/rds/ib_rdma.c: In function 'rds_ib_flush_mr_pool':
-net/rds/ib_rdma.c:671:4: error: implicit declaration of function 'llist_add=
-_batch' [-Werror=3Dimplicit-function-declaration]
-cc1: some warnings being treated as errors
+	git://github.com/dtor/input.git for-linus
 
-Caused by commit 1230db8e1543 ("llist: Make some llist functions inline")
-interacting with commit 1bc144b62524 ("net, rds, Replace xlist in
-net/rds/xlist.h with llist") from the net tree.  The former commit
-removes the declarations of llist_del_first() and llist_add_batch() with
-no explanation (and probably by accident since the definitions still
-exist).
+to receive a fixup to wacom driver.
 
-I have added the following patch for today:
+Changelog:
+---------
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 5 Oct 2011 17:16:29 +1100
-Subject: [PATCH] llist: add back llist_add_batch and llist_del_first
+Jason Gerecke (1):
+      Input: wacom - revert "Cintiq 21UX2 does not have menu strips"
 
-Commit 1230db8e1543 ("llist: Make some llist functions inline") appears
-to have deleted the definitions by accident.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/llist.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Diffstat:
+--------
 
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-index 837fb4a..7287734 100644
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -178,4 +178,10 @@ static inline struct llist_node *llist_del_all(struct =
-llist_head *head)
- {
- 	return xchg(&head->first, NULL);
- }
-+
-+extern bool llist_add_batch(struct llist_node *new_first,
-+			    struct llist_node *new_last,
-+			    struct llist_head *head);
-+extern struct llist_node *llist_del_first(struct llist_head *head);
-+
- #endif /* LLIST_H */
---=20
-1.7.6.3
+ drivers/input/tablet/wacom_wac.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Dmitry
 
---Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej
+
+--n8g4imXOkfNTN/H1
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOi/hYAAoJEECxmPOUX5FELywQAI8tJ8VUghyoz32qfScneYBq
-jYdGZUms02M/9XnBjKNL369+wMqR/VDoQclZ2m0F0E86Rl6FbtI0FSkqHpqJHEgV
-jnCak5BYUTUzsb6dy8dbHTC05xa8To7TU+Tc7eQDrG8WLq+zzrrRcH4VQuJw3bwc
-Zxf33tdkYi6tFwg+m/1LWT6e3dLVzOUQ9/ZBQbFst1+gZRnvkpddQyGNtlFPL3D+
-UahsaDF51NHAOuQMx8vK4rtQV7p+kHrEvHqLCZMksehGDVKf5nvGaG8htDnA0kVq
-sHtpNIm7PyCmJTtiEBKl+X0A/g1gx4zsVS9bhKHaEJhm28nuMjWpcwdTFAo9VwjL
-/IjSDWJd1ltVSh+gs0bMkdXGjMx7tIXrkI6TFVIBRe5SB5dUOCoPN400Xqx4hzYE
-UGe9I/4K/DWsY38sQHMZhD4atLr/6M3VBrDH1E7BbiqrCdH/w+N+3BYiNCoeypS/
-uJ9m+yWRmq+kGOHVpVOkv/9qpjCc1AH4Sq3ogTKDNmWacDAzEGE/rfmtoMxLErrM
-FRMRV5K0c4IxmyXuRXze1TEfuu7iQ3CVi7kugMbpEulv6RcUyEfHjLkVD8m4Qwp9
-IoTum3Low1gbX3/MEoK0IYdEdHa18mUewL2xdQX39udF03HCN4nUMy3lv2QFgFLi
-YaYiZNoJ1f3zovlsSJf3
-=5oyD
+iQIcBAEBAgAGBQJOi/lXAAoJEH70+W8r6ZYqA9EP/RPOHA8Al6+mtacHFGp4KSm/
+ZHAjKCE1qjb1+aFm1UL4VFWe9g5b1khwRFK5CsgIOR2/04zqA2iOQ0Wdrk4s5PKy
+uv3/lP5gIBAdUzAF8ew54IV7hpzV3ABUl7yGaaLBJjRL1srCcdOVH9FEqgAXm5RG
+/lTYi7E83Aw2wDah/xAqaXyx3JdNmG5sTOKcbkAo+8zx+nKfOpXgB/biLSokBjdu
+KSJeGO7lBSGxttQ/aq6Tybwdr1Q1ORb+uYVS1/Bpvi6AgFNrYHcOTP9qS9/DpOuW
+REf40yDfSivgrd1qZlB0VTtbfxULBNyn1+3nA2POsD2+Op2lxFISgZDXm1TFsPKa
+KXl+mldRUhWyzrcbwi2ETo6t9MtvF8H92hhYV33anKUxSHPyFhfH0cyWDgHSgdzq
+T62/AB7ORYnv773sJZAsGUMiUZnADkQVRq4lXXcb8VpCBBNGLtXaCQjO5rinkS+y
+lfb6CR/v41WXJO4x29OO8GCUdd+LtqgMG/8goxb3GpjJPxM4vbiu9sMgoyhxATRG
+7j3bYCkIziKnAWoAfAwVcL2WsogIXa453waLdtdKzyPF+SHeKG9RsrI2cwJDU9ML
+lIn7Fo/Eb8yezEbE7DDGL10hB5wwB6nBvDpEQfFLbKF/qQ6P4VCwtprmv8pW9QUE
+yf2HXSXLMuJAyG1Sb6Tf
+=QJ/y
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej--
+--n8g4imXOkfNTN/H1--
