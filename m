@@ -1,37 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934882Ab1JEPW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:22:56 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38866 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934453Ab1JEPWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:22:55 -0400
-Subject: Re: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, James.Bottomley@hansenpartnership.com,
-        hpa@zytor.com
-In-Reply-To: <1317798564.3099.12.camel@edumazet-laptop>
-References: <20111001000856.DD623081@kernel>
-	 <20111001000900.BD9248B8@kernel>
-	 <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com>
-	 <1317798564.3099.12.camel@edumazet-laptop>
+	id S1758001Ab1JEPZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:25:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37063 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757554Ab1JEPZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:25:10 -0400
+Subject: [GIT PULL] SCSI fixes for 3.1-rc9
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Oct 2011 08:22:35 -0700
-Message-ID: <1317828155.7842.73.camel@nimitz>
+Date: Wed, 05 Oct 2011 08:25:05 -0700
+Message-ID: <1317828305.7238.5.camel@dabdike>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-05 at 09:09 +0200, Eric Dumazet wrote:
-> By the way, "pagesize=4KiB" are just noise if you ask me, thats the
-> default PAGE_SIZE. This also breaks old scripts :)
+This is two oops fixes.  However, the oopses are unlikely to trigger
+(although once you know how to do it, the libsas one is easy).
 
-How does it break old scripts?
+The head sha1 is
 
--- Dave
+commit a73914c35b05d80f8ce78288e10056c91090b666
+
+The fix is available here:
+
+git://bedivere.hansenpartnership.com/git/scsi-rc-fixes-2.6.git
+
+The short changelog is:
+
+Mark Salyzyn (1):
+      libsas: fix panic when single phy is disabled on a wide port
+
+Roland Dreier (1):
+      qla2xxx: Fix crash in qla2x00_abort_all_cmds() on unload
+
+And the diffstat:
+
+ drivers/scsi/libsas/sas_expander.c |   10 ++++++----
+ drivers/scsi/qla2xxx/qla_os.c      |    9 +++++----
+ 2 files changed, 11 insertions(+), 8 deletions(-)
+
+Full diff is below
+
+James
+
+---
+
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index c9e3dc0..16ad97d 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -1769,10 +1769,12 @@ static void sas_unregister_devs_sas_addr(struct domain_device *parent,
+ 		sas_disable_routing(parent, phy->attached_sas_addr);
+ 	}
+ 	memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
+-	sas_port_delete_phy(phy->port, phy->phy);
+-	if (phy->port->num_phys == 0)
+-		sas_port_delete(phy->port);
+-	phy->port = NULL;
++	if (phy->port) {
++		sas_port_delete_phy(phy->port, phy->phy);
++		if (phy->port->num_phys == 0)
++			sas_port_delete(phy->port);
++		phy->port = NULL;
++	}
+ }
+ 
+ static int sas_discover_bfs_by_root_level(struct domain_device *root,
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index 4cace3f..1e69527 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -1328,10 +1328,9 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
+ 					qla2x00_sp_compl(ha, sp);
+ 				} else {
+ 					ctx = sp->ctx;
+-					if (ctx->type == SRB_LOGIN_CMD ||
+-					    ctx->type == SRB_LOGOUT_CMD) {
+-						ctx->u.iocb_cmd->free(sp);
+-					} else {
++					if (ctx->type == SRB_ELS_CMD_RPT ||
++					    ctx->type == SRB_ELS_CMD_HST ||
++					    ctx->type == SRB_CT_CMD) {
+ 						struct fc_bsg_job *bsg_job =
+ 						    ctx->u.bsg_job;
+ 						if (bsg_job->request->msgcode
+@@ -1343,6 +1342,8 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
+ 						kfree(sp->ctx);
+ 						mempool_free(sp,
+ 							ha->srb_mempool);
++					} else {
++						ctx->u.iocb_cmd->free(sp);
+ 					}
+ 				}
+ 			}
+
 
