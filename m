@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934753Ab1JEOiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 10:38:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934392Ab1JEOiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 10:38:17 -0400
-Date: Wed, 5 Oct 2011 16:38:04 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-cc: Kyungmin Park <kmpark@infradead.org>, Lukas Czerner <lczerner@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-In-Reply-To: <874o0xlb9p.fsf@devron.myhome.or.jp>
-Message-ID: <alpine.LFD.2.00.1110051636220.4423@dhcp-27-109.brq.redhat.com>
-References: <20110328103431.GA22323@july> <201103301620.50263.arnd@arndb.de> <AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com> <201103301706.36214.arnd@arndb.de> <BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com> <87wrhgk8lp.fsf@devron.myhome.or.jp>
- <BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com> <87r57ok3fp.fsf@devron.myhome.or.jp> <BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com> <87mxick0zj.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
- <874o4kjtsy.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com> <87y61wic4h.fsf@devron.myhome.or.jp> <alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com> <87sjs4i93w.fsf@devron.myhome.or.jp>
- <alpine.LFD.2.00.1105241520260.4028@dhcp-27-109.brq.redhat.com> <87oc2si3l7.fsf@devron.myhome.or.jp> <CAH9JG2UDKD-tZPo-OiQmiheNvPqPE2o_cTEbc9M9Uu02HB6hcw@mail.gmail.com> <874o0xlb9p.fsf@devron.myhome.or.jp>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S934783Ab1JEOlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 10:41:40 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36708 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934392Ab1JEOlj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 10:41:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1317808364-21081-1-git-send-email-rabin@rab.in>
+References: <1317808364-21081-1-git-send-email-rabin@rab.in>
+Date: Wed, 5 Oct 2011 09:41:36 -0500
+Message-ID: <CABqD9hYw3qcMpcjyEtvstYD-WRB=QkVPS5S0MBbah=veZv9E6A@mail.gmail.com>
+Subject: Re: [PATCH] block: fix UUID string buffer length
+From: Will Drewry <wad@chromium.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011, OGAWA Hirofumi wrote:
+On Wed, Oct 5, 2011 at 4:52 AM, Rabin Vincent <rabin@rab.in> wrote:
+> The UUID string buffer is several bytes shorter than what is actually
+> required, because the space for the hyphens hasn't been taken into
+> account.  Fix it, while also making it a regular char[] rather than a
+> u8[] to make it clear what we're storing here.
+>
+> Cc: Will Drewry <wad@chromium.org>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 
-> Kyungmin Park <kmpark@infradead.org> writes:
-> 
-> > Hi Ogawa,
-> 
-> Hi,
-> 
-> > Do you still object to merge batched discard support on fat?
-> >
-> > If the current batched discard concept doesn't changed, it can't merge it?
-> 
-> I'm not blaming "concept". I'm saying current implements (and due to
-> current interface confusion) is confusing and makes userland hard to use it.
-> 
-> I really think I explained all my concerns and current implement
-> confusion.
-> 
-> Last time I checked, those implementations had even the different error
-> code at EOF. How can I say your implement will work without knowing
-> right implement?
-> 
-> Again, it is reason, and I'm not blaming "concept" or your implement
-> itself.
-> 
-> Thanks.
-
-Please see test #260 in xfstests, which was recently added to check for
-common mistakes in FITRIM argument handling.
+You're absolutely right. It should match the sizeof used by sprintf's
+calculation of the uuid string.
+( http://lxr.linux.no/linux+v3.0.4/lib/vsprintf.c#L759 ).  The type
+change is also entirely appropriate (even given the prototype of
+part_unpack_uuid).
 
 Thanks!
--Lukas
+
+Reviewed-by: Will Drewry <wad@chromium.org>
+
+> ---
+>  block/genhd.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/block/genhd.c b/block/genhd.c
+> index 8dfa21e..fa955b5 100644
+> --- a/block/genhd.c
+> +++ b/block/genhd.c
+> @@ -736,7 +736,7 @@ void __init printk_all_partitions(void)
+>                struct hd_struct *part;
+>                char name_buf[BDEVNAME_SIZE];
+>                char devt_buf[BDEVT_SIZE];
+> -               u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
+> +               char uuid[sizeof("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")];
+>
+>                /*
+>                 * Don't show empty devices or things that have been
+> @@ -755,7 +755,7 @@ void __init printk_all_partitions(void)
+>                while ((part = disk_part_iter_next(&piter))) {
+>                        bool is_part0 = part == &disk->part0;
+>
+> -                       uuid[0] = 0;
+> +                       uuid[0] = '\0';
+>                        if (part->info)
+>                                part_unpack_uuid(part->info->uuid, uuid);
+>
+> --
+> 1.7.5.4
+>
+>
