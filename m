@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934816Ab1JEO7D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 10:59:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757832Ab1JEO7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 10:59:00 -0400
-Date: Wed, 5 Oct 2011 16:59:42 -0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] virtio-net: Prevent NULL dereference
-Message-ID: <20111005185942.GB15444@redhat.com>
-References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
- <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
- <20111003184037.GA22427@redhat.com>
- <1317822614.3676.0.camel@lappy>
+	id S934823Ab1JEPDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:03:10 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:34708 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757822Ab1JEPDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:03:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0QhOteQVM1mv3luAZbxLkYp5SwQk8QblZwNhshbSi.Kl5H5
+ tj1II0o.HnPTNFraqG2zq7GMIdwVndvH7P.zbPby_Mq3wXwA4tBmSvM7cykj
+ 7c7LWrjstfQ4e2BSeZeG7l48A_gP8lBm5W09t54s4TKAfwIyfzdkS3pxE2BR
+ WM57Dz6xgjaKXV7RTv0nzlJ67ASJBFwqokxQbRPfG.DClWT9rydjBtmLmCaI
+ PsbG8OC_ucN7hhdLF1crajRlbDGwf2q5ZKxm8ZdcWS8ft7dqdbwdTWx2yCvX
+ TftDjCBsQdtxNx9Ur_fNh85mzf7.Q2ngblmNBlwY_GjfRUNbwIYXlTDyF3H9
+ 78xFl0cgiK89uBNTlO5Wce7HN4Lqa5lN5LH_hANLK63N9rcuT4jYdlHRoYYI
+ sReLQeo9nh3PEvGvT9goy3No-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 5 Oct 2011 09:26:24 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: starlight@binnacle.cx, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+In-Reply-To: <1317820942.6766.26.camel@twins>
+Message-ID: <alpine.DEB.2.00.1110050915160.30467@router.home>
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>  <alpine.DEB.2.00.1110041358500.12199@router.home> <1317820942.6766.26.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317822614.3676.0.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 03:50:14PM +0200, Sasha Levin wrote:
-> On Mon, 2011-10-03 at 20:40 +0200, Michael S. Tsirkin wrote:
-> > On Wed, Sep 28, 2011 at 05:40:55PM +0300, Sasha Levin wrote:
-> > > This patch prevents a NULL dereference when the user has passed a length
-> > > longer than an actual buffer to virtio-net.
-> > > 
-> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > > Cc: virtualization@lists.linux-foundation.org
-> > > Cc: netdev@vger.kernel.org
-> > > Cc: kvm@vger.kernel.org
-> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > > ---
-> > >  drivers/net/virtio_net.c |   12 +++++++++++-
-> > >  1 files changed, 11 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > index bde0dec..4a53d2a 100644
-> > > --- a/drivers/net/virtio_net.c
-> > > +++ b/drivers/net/virtio_net.c
-> > > @@ -208,12 +208,22 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
-> > >  		return NULL;
-> > >  	}
-> > >  
-> > > -	while (len) {
-> > > +	while (len && page) {
-> > >  		set_skb_frag(skb, page, offset, &len);
-> > >  		page = (struct page *)page->private;
-> > >  		offset = 0;
-> > >  	}
-> > >  
-> > > +	/*
-> > > +	 * This is the case where we ran out of pages in our linked list, but
-> > > +	 * supposedly have more data to read.
-> > 
-> > Again, let's clarify that this only happens with broken devices.
-> 
-> I think that the code within the if() makes it clear that it isn't the
-> regular path.
+On Wed, 5 Oct 2011, Peter Zijlstra wrote:
 
-It doesn't make it clear that this never happens in absence of bugs.
+> Clearly none of the tests being ran on a regular basis, by for instance
+> the Intel regression team, covers your needs. Start by fixing that.
 
-> -- 
-> 
-> Sasha.
+The most commonly run, the aged old tests contained in the AIM9 suite,
+have consistently shown these regressions over long years and they have
+been brought up repeatedly in numerous discussions. This is pervasive
+thoughout the OS hotpaths. Just look at how the page fault latencies
+change over time. Take a modern machine and then run successively older
+kernel versions on it. You will see performance getting better and
+latencies becoming smaller.
+
+> Also, for latency, we've got ftrace and a latencytracer, provide traces
+> that illustrate your fail.
+
+We would need a backport of both to a kernel version that works with
+reasonable latencies so that we can figure out what caused these
+regressions for this particular case. Disabling network and kernel
+features usually gives you better performance but there are a lot of
+things in the hot paths these days that can not be disabled.
