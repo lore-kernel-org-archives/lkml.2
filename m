@@ -1,76 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934479Ab1JEL5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 07:57:25 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54423 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934221Ab1JEL5Y (ORCPT
+	id S934492Ab1JEL5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 07:57:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41979 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934221Ab1JEL5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 07:57:24 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Borislav Petkov <bp@alien8.de>
-Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, crash-utility@redhat.com,
-        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        anderson@redhat.com, tachibana@mxm.nes.nec.co.jp,
-        oomichi@mxs.nes.nec.co.jp
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type NT_NOCOREDUMP to capture slimdump
-In-Reply-To: Your message of "Wed, 05 Oct 2011 09:31:11 +0200."
-             <20111005073111.GA13478@liondog.tnic>
-From: Valdis.Kletnieks@vt.edu
-References: <20111003070735.GJ2223@in.ibm.com> <20111003073203.GA22694@in.ibm.com> <m162k64c7w.fsf@fess.ebiederm.org> <20111003120336.GK2223@in.ibm.com> <20111004063440.GB5723@liondog.tnic> <20111005070728.GA2235@in.ibm.com>
-            <20111005073111.GA13478@liondog.tnic>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317815746_4646P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 05 Oct 2011 07:55:46 -0400
-Message-ID: <26571.1317815746@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4E8C45C9.00F3,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 5 Oct 2011 07:57:34 -0400
+From: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Ivan Kuten <ivan.kuten@promwad.com>,
+        Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
+Subject: [PATCH] RTC: Add driver for NXP PCF8523 RTC chip
+Date: Wed,  5 Oct 2011 14:57:03 +0300
+Message-Id: <1317815823-27297-1-git-send-email-yauhen.kharuzhy@promwad.com>
+X-Mailer: git-send-email 1.7.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317815746_4646P
-Content-Type: text/plain; charset=us-ascii
+This driver is based on PCF8563 driver and supports only base functions
+now: read/write date & time.
 
-On Wed, 05 Oct 2011 09:31:11 +0200, Borislav Petkov said:
-> On Wed, Oct 05, 2011 at 12:37:28PM +0530, K.Prasad wrote:
+Signed-off-by: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
+---
+ drivers/rtc/Kconfig       |    9 ++
+ drivers/rtc/Makefile      |    1 +
+ drivers/rtc/rtc-pcf8523.c |  246 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 256 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-pcf8523.c
 
-> > True. Like stated by me earlier, there could be two possible outcomes
-> > from capturing memory dump in such cases - they're either dangerous or
-> > doesn't make sense.
->
-> Why, in the second example the only corruption is to the L2 cache so
-> your memory image is intact. Why wouldn't you want to capture a memory
-> dump then? It is business as usual in that case.
-
-I'll bite.  What's the use case for bothering to capture a memory dump when
-you're looking at an MCE that indicates L2 cache corruption?  What additional
-useful information could you possibly get from the dump?
-
-
---==_Exmh_1317815746_4646P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOjEXCcC3lWbTT17ARAj9nAJsGN0yVYafcSY24KTP44oUK2wJbngCgqOxB
-B8QxThIPMkyi8LSxEv6vQsY=
-=RFHN
------END PGP SIGNATURE-----
-
---==_Exmh_1317815746_4646P--
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 5a538fc..ace0259a 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -249,6 +249,15 @@ config RTC_DRV_X1205
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-x1205.
+ 
++config RTC_DRV_PCF8523
++	tristate "NXP PCF8523"
++	help
++	  If you say yes here you get support for the
++	  NXP PCF8523 RTC chip.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-pcf8523.
++
+ config RTC_DRV_PCF8563
+ 	tristate "Philips PCF8563/Epson RTC8564"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 6e69823..7812730 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -71,6 +71,7 @@ obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
+ obj-$(CONFIG_RTC_DRV_NUC900)	+= rtc-nuc900.o
+ obj-$(CONFIG_RTC_DRV_OMAP)	+= rtc-omap.o
+ obj-$(CONFIG_RTC_DRV_PCAP)	+= rtc-pcap.o
++obj-$(CONFIG_RTC_DRV_PCF8523)	+= rtc-pcf8523.o
+ obj-$(CONFIG_RTC_DRV_PCF8563)	+= rtc-pcf8563.o
+ obj-$(CONFIG_RTC_DRV_PCF8583)	+= rtc-pcf8583.o
+ obj-$(CONFIG_RTC_DRV_PCF2123)	+= rtc-pcf2123.o
+diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+new file mode 100644
+index 0000000..06a6679
+--- /dev/null
++++ b/drivers/rtc/rtc-pcf8523.c
+@@ -0,0 +1,246 @@
++/*
++ * An I2C driver for the NXP PCF8523 RTC
++ * Copyright 2011 Promwad Innovation Company
++ *
++ * Author: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
++ *	Promwad Innovation Company, http://promwad.com/
++ *
++ * based on the pcf8563 driver
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/i2c.h>
++#include <linux/bcd.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++
++#define DRV_VERSION		"1.0"
++
++#define PCF8523_REG_CTL1	0x00 /* control and status registers */
++#define PCF8523_REG_CTL2	0x01
++#define PCF8523_REG_CTL3	0x02
++
++#define PCF8523_REG_SC		0x03 /* datetime */
++#define PCF8523_REG_MN		0x04
++#define PCF8523_REG_HR		0x05
++#define PCF8523_REG_DM		0x06
++#define PCF8523_REG_DW		0x07
++#define PCF8523_REG_MO		0x08
++#define PCF8523_REG_YR		0x09
++
++#define PCF8523_REG_AMN		0x0A /* alarm */
++#define PCF8523_REG_AHR		0x0B
++#define PCF8523_REG_ADM		0x0C
++#define PCF8523_REG_ADW		0x0D
++
++#define PCF8523_REG_CLKO	0x0F /* clock out */
++#define PCF8523_REG_TMRAC	0x10 /* timer control */
++#define PCF8523_REG_TMRA	0x11 /* timer */
++#define PCF8523_REG_TMRBC	0x12 /* timer control */
++#define PCF8523_REG_TMRB	0x13 /* timer */
++
++#define PCF8523_CTL3_BLF	(1 << 2)
++
++static struct i2c_driver pcf8523_driver;
++
++/*
++ * In the routines that deal directly with the pcf8523 hardware, we use
++ * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.
++ */
++static int pcf8523_get_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	struct pcf8523 *pcf8523 = i2c_get_clientdata(client);
++	unsigned char buf[14] = { PCF8523_REG_CTL1 };
++
++	struct i2c_msg msgs[] = {
++		{ client->addr, 0, 1, buf },	/* setup read ptr */
++		{ client->addr, I2C_M_RD, 14, buf },	/* read status + date */
++	};
++
++	/* read registers */
++	if ((i2c_transfer(client->adapter, msgs, 2)) != 2) {
++		dev_err(&client->dev, "%s: read error\n", __func__);
++		return -EIO;
++	}
++
++	if (buf[PCF8523_REG_CTL3] & PCF8523_CTL3_BLF)
++		dev_info(&client->dev,
++			"low voltage detected, date/time is not reliable.\n");
++
++	dev_dbg(&client->dev,
++		"%s: raw data is ctl1=%02x, ctl2=%02x, ctl3=%02x, "
++		"sec=%02x, min=%02x, hr=%02x, "
++		"mday=%02x, wday=%02x, mon=%02x, year=%02x\n",
++		__func__,
++		buf[0], buf[1], buf[2], buf[3],
++		buf[4], buf[5], buf[6], buf[7],
++		buf[8], buf[9]);
++
++
++	tm->tm_sec = bcd2bin(buf[PCF8523_REG_SC] & 0x7F);
++	tm->tm_min = bcd2bin(buf[PCF8523_REG_MN] & 0x7F);
++	tm->tm_hour = bcd2bin(buf[PCF8523_REG_HR] & 0x3F); /* rtc hr 0-23 */
++	tm->tm_mday = bcd2bin(buf[PCF8523_REG_DM] & 0x3F);
++	tm->tm_wday = buf[PCF8523_REG_DW] & 0x07;
++	tm->tm_mon = bcd2bin(buf[PCF8523_REG_MO] & 0x1F) - 1; /* rtc mn 1-12 */
++	tm->tm_year = bcd2bin(buf[PCF8523_REG_YR]);
++	if (tm->tm_year < 70)
++		tm->tm_year += 100;	/* assume we are in 1970...2069 */
++
++	dev_dbg(&client->dev, "%s: tm is secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	/* the clock can give out invalid datetime, but we cannot return
++	 * -EINVAL otherwise hwclock will refuse to set the time on bootup.
++	 */
++	if (rtc_valid_tm(tm) < 0)
++		dev_err(&client->dev, "retrieved date/time is not valid.\n");
++
++	return 0;
++}
++
++static int pcf8523_set_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	struct pcf8523 *pcf8523 = i2c_get_clientdata(client);
++	int i, err;
++	unsigned char buf[10];
++
++	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	/* hours, minutes and seconds */
++	buf[PCF8523_REG_SC] = bin2bcd(tm->tm_sec);
++	buf[PCF8523_REG_MN] = bin2bcd(tm->tm_min);
++	buf[PCF8523_REG_HR] = bin2bcd(tm->tm_hour);
++
++	buf[PCF8523_REG_DM] = bin2bcd(tm->tm_mday);
++
++	/* month, 1 - 12 */
++	buf[PCF8523_REG_MO] = bin2bcd(tm->tm_mon + 1);
++
++	/* year and century */
++	buf[PCF8523_REG_YR] = bin2bcd(tm->tm_year % 100);
++
++	buf[PCF8523_REG_DW] = tm->tm_wday & 0x07;
++
++	/* write register's data */
++	for (i = 0; i < 7; i++) {
++		unsigned char data[2] = { PCF8523_REG_SC + i,
++						buf[PCF8523_REG_SC + i] };
++
++		err = i2c_master_send(client, data, sizeof(data));
++		if (err != sizeof(data)) {
++			dev_err(&client->dev,
++				"%s: err=%d addr=%02x, data=%02x\n",
++				__func__, err, data[0], data[1]);
++			return -EIO;
++		}
++	};
++
++	return 0;
++}
++
++static int pcf8523_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	return pcf8523_get_datetime(to_i2c_client(dev), tm);
++}
++
++static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	return pcf8523_set_datetime(to_i2c_client(dev), tm);
++}
++
++static const struct rtc_class_ops pcf8523_rtc_ops = {
++	.read_time	= pcf8523_rtc_read_time,
++	.set_time	= pcf8523_rtc_set_time,
++};
++
++static int pcf8523_probe(struct i2c_client *client,
++				const struct i2c_device_id *id)
++{
++	struct pcf8523 *pcf8523;
++
++	int err = 0;
++
++	dev_dbg(&client->dev, "%s\n", __func__);
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -ENODEV;
++
++	pcf8523 = kzalloc(sizeof(struct pcf8523), GFP_KERNEL);
++	if (!pcf8523)
++		return -ENOMEM;
++
++	dev_info(&client->dev, "chip found, driver version " DRV_VERSION "\n");
++
++	i2c_set_clientdata(client, pcf8523);
++
++	pcf8523->rtc = rtc_device_register(pcf8523_driver.driver.name,
++				&client->dev, &pcf8523_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(pcf8523->rtc)) {
++		err = PTR_ERR(pcf8523->rtc);
++		goto exit_kfree;
++	}
++
++	return 0;
++
++exit_kfree:
++	kfree(pcf8523);
++
++	return err;
++}
++
++static int pcf8523_remove(struct i2c_client *client)
++{
++	struct pcf8523 *pcf8523 = i2c_get_clientdata(client);
++
++	if (pcf8523->rtc)
++		rtc_device_unregister(pcf8523->rtc);
++
++	kfree(pcf8523);
++
++	return 0;
++}
++
++static const struct i2c_device_id pcf8523_id[] = {
++	{ "pcf8523", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pcf8523_id);
++
++static struct i2c_driver pcf8523_driver = {
++	.driver		= {
++		.name	= "rtc-pcf8523",
++	},
++	.probe		= pcf8523_probe,
++	.remove		= pcf8523_remove,
++	.id_table	= pcf8523_id,
++};
++
++static int __init pcf8523_init(void)
++{
++	return i2c_add_driver(&pcf8523_driver);
++}
++
++static void __exit pcf8523_exit(void)
++{
++	i2c_del_driver(&pcf8523_driver);
++}
++
++MODULE_AUTHOR("Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>");
++MODULE_DESCRIPTION("NXP PCF8523");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
++
++module_init(pcf8523_init);
++module_exit(pcf8523_exit);
+-- 
+1.7.6.3
 
