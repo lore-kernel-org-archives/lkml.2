@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab1JEVZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:25:31 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:49110 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab1JEVZa (ORCPT
+	id S934592Ab1JEV17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:27:59 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:53392 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab1JEV16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:25:30 -0400
-Date: Thu, 6 Oct 2011 00:25:26 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Greg KH <gregkh@suse.de>
-Cc: "Ted Ts'o" <tytso@mit.edu>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111005212526.GD14406@localhost.pp.htv.fi>
-References: <y0mobxyjazi.fsf@fche.csb>
- <20111003180441.GD3072@localhost.pp.htv.fi>
- <34045.1317760188@turing-police.cc.vt.edu>
- <20111004223932.GA3460@localhost.pp.htv.fi>
- <20111004231730.GB17089@redhat.com>
- <20111005075438.GA29441@localhost.pp.htv.fi>
- <20111005170616.GD4297@thunk.org>
- <20111005192349.GA14406@localhost.pp.htv.fi>
- <20111005195024.GB14406@localhost.pp.htv.fi>
- <20111005200944.GB12876@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111005200944.GB12876@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Oct 2011 17:27:58 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 17:27:58 EDT
+Message-Id: <201110052112.p95LCi4U007468@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 5 Oct 2011 17:09:29 -0400
+Subject: [PATCH] tile: revert change from <asm/atomic.h> to <linux/atomic.h> in asm files
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 05 Oct 2011 21:12:47.0244 (UTC) FILETIME=[880E2CC0:01CC83A3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 01:09:44PM -0700, Greg KH wrote:
-> On Wed, Oct 05, 2011 at 10:50:24PM +0300, Adrian Bunk wrote:
-> > [1] I did check what Greg recommended in his email, but I'm not gonna 
-> >     wipe my complete installation (including wiping /home) unless 
-> >     someone can point at something indicating that there's a break-in
-> >     at my machine.
-> 
-> What would you consider "proof" of a break-in on your machine that would
-> cause you to be willing to reinstall it?
+The 32-bit TILEPro support uses some #defines in <asm/atomic_32.h>
+for atomic support routines in assembly.  To make this more explicit,
+I've turned those includes into includes of <asm/atomic_32.h>, which
+should hopefully make it clear that they shouldn't be bombed into
+<linux/atomic.h> in any cleanups.
 
-There is no clear definition.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/intvec_32.S  |    2 +-
+ arch/tile/lib/atomic_asm_32.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Had debsums told me that /bin/bash was modified I would have been quite 
-convinced.
-
-Externally observed suspicious behavior of my machine I could not explain.
-
-Or many other things - after all I am a person with some basic 
-understanding of security and how computers work.
-
-When I am convinced there was a break-in on my machine, I also have to 
-assume that all important and not so important accounts I have anywhere 
-(from unbelievably many Bugzilla accounts to machines where I have root
-access) are also compromised, and have to act accordingly.
-
-It is possible to convince me that there was likely a break-in on my 
-machine, but I am not assuming the worst case automatically, and for 
-going through that horror of assuming it happened I need to see 
-something clearly pointing at my machine.
-
-> greg k-h
-
-cu
-Adrian
-
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index fc94607..aecc8ed 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -21,7 +21,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/thread_info.h>
+ #include <asm/irqflags.h>
+-#include <linux/atomic.h>
++#include <asm/atomic_32.h>
+ #include <asm/asm-offsets.h>
+ #include <hv/hypervisor.h>
+ #include <arch/abi.h>
+diff --git a/arch/tile/lib/atomic_asm_32.S b/arch/tile/lib/atomic_asm_32.S
+index 1f75a2a..3063804 100644
+--- a/arch/tile/lib/atomic_asm_32.S
++++ b/arch/tile/lib/atomic_asm_32.S
+@@ -70,7 +70,7 @@
+  */
+ 
+ #include <linux/linkage.h>
+-#include <linux/atomic.h>
++#include <asm/atomic_32.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ 
 -- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
+1.6.5.2
 
