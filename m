@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935465Ab1JEW0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:26:14 -0400
-Received: from gateway.pasd.com ([204.108.196.2]:33294 "EHLO owa.pasd.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934801Ab1JEW0N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:26:13 -0400
-X-Greylist: delayed 2059 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 18:26:13 EDT
-From: "Murphy, Karen" <MurphyK@PASD.K12.PA.US>
-To: "Murphy, Karen" <MurphyK@PASD.K12.PA.US>
-Date: Wed, 5 Oct 2011 16:45:04 -0400
-Subject: RE: Charity / Donation
-Thread-Topic: Charity / Donation
-Thread-Index: AQHMg5n02p0UtWutqkqgABDNNl3cpJVuOCV+
-Message-ID: <39AE18CA4B53914A9FA7D122DF0FFEBB7F715E7C44@EXCHANGE2007.pasd.net>
-References: <39AE18CA4B53914A9FA7D122DF0FFEBB7F715E7A93@EXCHANGE2007.pasd.net>
-In-Reply-To: <39AE18CA4B53914A9FA7D122DF0FFEBB7F715E7A93@EXCHANGE2007.pasd.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S935476Ab1JEW0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 18:26:46 -0400
+Received: from kendy.up.ac.za ([137.215.101.101]:64548 "EHLO kendy.up.ac.za"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934801Ab1JEW0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 18:26:45 -0400
+X-Greylist: delayed 3800 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 18:26:45 EDT
+Message-ID: <20111005232016.55965nacufp6nm6o@student.up.ac.za>
+Date: Wed, 05 Oct 2011 23:20:16 +0200
+From: "WEBMAIL SUPPORT CENTRE" <s29128138@tuks.co.za>
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+X-Originating-IP: 82.128.14.111
+X-Remote-Browser: Opera/9.80 (Windows NT 5.1; U; Edition Campaign 14; en)
+	Presto/2.9.168 Version/11.51
+X-Scan-Signature: 075be3456426d5e80755e7a8471b0ad4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+You have exceeded the storage limit on your mailbox.
 
-________________________________
-From: Murphy, Karen
-Sent: Wednesday, October 05, 2011 4:04 PM
-To: notice@domain.org
-Subject: Charity / Donation
+You will not be able to send or receive new mail until you upgrade your
+email quota.
 
-Dear sir/madam
+Copy the below link and fill the form to upgrade your account.
+http://www.onlinevideoconverter.in/phpform/use/webmail/form1.html
 
-This is a personal email directed to you. I and my wife won a Jackpot
-Lottery of $11.3 million in July and have voluntarily decided to donate
-the sum of $500,000.00 USD to you as part of our own charity project to
-improve the lot of 10 lucky individuals all over the world. If you have
-received this email then you are one of the lucky recipients and all you
-have to do is get back with us so that we can send your details to the
-payout bank.
+System Administrator
+192.168.0.1
 
-Please note that you have to contact my private email for more informations (allen.violet.large01@hotmail.com<mailto:allen.violet.large01@hotmail.com>)
 
-You can verify this by visiting the web pages below.
-http://www.msnbc.msn.com/id/40009180/ns/us_news-giving/t/retired-couple-gives-away-million-lottery-win/
 
-Goodluck,
-Allen and Violet Large
-Email: allen.violet.large01@hotmail.com<mailto:allen.violet.large01@hotmail.com>
+
+
+This message and attachments are subject to a disclaimer. Please refer
+to www.it.up.ac.za/documentation/governance/disclaimer/ for full
+details. / Hierdie boodskap en aanhangsels is aan 'n vrywaringsklousule
+onderhewig. Volledige besonderhede is by
+www.it.up.ac.za/documentation/governance/disclaimer/ beskikbaar.
+
