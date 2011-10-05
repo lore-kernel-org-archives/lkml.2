@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1JEUbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:31:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755906Ab1JEUbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:31:34 -0400
-Date: Wed, 5 Oct 2011 16:31:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] RFC: ->make_request support for virtio-blk
-Message-ID: <20111005203116.GM30146@redhat.com>
-References: <20111005195403.407628164@bombadil.infradead.org>
+	id S1757994Ab1JEUcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:32:36 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:55911 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301Ab1JEUcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 16:32:35 -0400
+Message-ID: <4E8CBEDC.4010502@linux.vnet.ibm.com>
+Date: Thu, 06 Oct 2011 02:02:28 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111005195403.407628164@bombadil.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Tuttle <ttuttle@chromium.org>
+CC: linux-kernel@vger.kernel.org, Marco Stornelli <marco.stornelli@gmail.com>
+Subject: Re: [PATCH] ramoops: scripts/ramoops.c for extracting oopses
+References: <20111005182503.GA6142@google.com>
+In-Reply-To: <20111005182503.GA6142@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 03:54:03PM -0400, Christoph Hellwig wrote:
-> This patchset allows the virtio-blk driver to support much higher IOP
-> rates which can be driven out of modern PCI-e flash devices.  At this
-> point it really is just a RFC due to various issues.
-> 
+Hi,
 
-So you no longer believe that request queue overhead can be brought
-down to mangeable levels for these fast devices. And instead go for
-bio based drivers and give up on merging and implement own FLUSH/FUA
-machinery.
+On 10/05/2011 11:55 PM, Thomas Tuttle wrote:
+> +static int print_records(int record)
+> +{
+> +	unsigned long mem_address, mem_size, record_size, num_records;
+> +	FILE *mem;
+> +	int i;
+> +	int ret = 0;
+> +
+> +	read_long(RAMOOPS_PARAM "mem_address", &mem_address);
+> +	read_long(RAMOOPS_PARAM "mem_size",    &mem_size);
+> +	read_long(RAMOOPS_PARAM "record_size", &record_size);
+> +	num_records = mem_size / record_size;
+> +
+> +	if (record != REC_LIST &&
+> +	    (record < 0 || (unsigned long)record >= num_records)) {
+> +		fprintf(stderr, "%s: record number %d out of range [0, %ld)\n",
+> +			progn, record, num_records);
+> +		return 1;
+> +	}
+> +
+> +	buf = malloc(record_size);
 
-Not that I am advocating for continuing with request based driver. Just
-curious..
+Since buf is not declared, this fails program compilation.
 
-Thanks
-Vivek
+> +	if (!buf) {
+> +		fprintf(stderr, "%s: failed to allocate record buffer\n",
+> +			progn);
+> +		return 1;
+> +	}
+> +
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
