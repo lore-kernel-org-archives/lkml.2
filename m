@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935443Ab1JEWOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:14:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46570 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755530Ab1JEWOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:14:44 -0400
-Date: Thu, 6 Oct 2011 00:14:42 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] udf : add readpages support for udf.
-Message-ID: <20111005221442.GL23467@quack.suse.cz>
-References: <1317618179-22176-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317618179-22176-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758042Ab1JEWUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 18:20:00 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41584 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932246Ab1JEWUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 18:20:00 -0400
+Message-ID: <1317853198.3095.19.camel@Joe-Laptop>
+Subject: Re: [PATCH 1/2 v3] udf : enable error print in udf_read_tagged().
+From: Joe Perches <joe@perches.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 05 Oct 2011 15:19:58 -0700
+In-Reply-To: <20111005220813.GK23467@quack.suse.cz>
+References: <1317650037-4648-1-git-send-email-linkinjeon@gmail.com>
+	 <20111005220813.GK23467@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 03-10-11 14:02:59, Namjae Jeon wrote:
-> Using mpage_readpages instead of multiple calls to udf_readpage to reduce the CPU utilization and make performance higher.
-  Thanks. I've merged this patch.
+On Thu, 2011-10-06 at 00:08 +0200, Jan Kara wrote:
+> Hello,
+> 
+> On Mon 03-10-11 22:53:57, Namjae Jeon wrote:
+> > While reading metadata, if a problem occurs, Print out only one of the
+> > five case.(It also does not show a checksum properly.) Because currently
+> > it have been disable by undef udf_debug.  If there is a problem with
+> > scratched disc or loader, the user needs to know which error happened.
+> > And I use pr_fmt instead of printk by joe's suggestion. I try to modify
+> > totally it to pr_fmt also.
 
-									Honza
-> 
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/udf/inode.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index 58665ce..81f9ce1 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -37,6 +37,7 @@
->  #include <linux/writeback.h>
->  #include <linux/slab.h>
->  #include <linux/crc-itu-t.h>
-> +#include <linux/mpage.h>
->  
->  #include "udf_i.h"
->  #include "udf_sb.h"
-> @@ -104,7 +105,13 @@ static int udf_writepage(struct page *page, struct writeback_control *wbc)
->  
->  static int udf_readpage(struct file *file, struct page *page)
->  {
-> -	return block_read_full_page(page, udf_get_block);
-> +	return mpage_readpage(page, udf_get_block);
-> +}
-> +
-> +static int udf_readpages(struct file *file, struct address_space *mapping,
-> +			struct list_head *pages, unsigned nr_pages)
-> +{
-> +	return mpage_readpages(mapping, pages, nr_pages, udf_get_block);
->  }
->  
->  static int udf_write_begin(struct file *file, struct address_space *mapping,
-> @@ -139,6 +146,7 @@ static sector_t udf_bmap(struct address_space *mapping, sector_t block)
->  
->  const struct address_space_operations udf_aops = {
->  	.readpage	= udf_readpage,
-> +	.readpages	= udf_readpages,
->  	.writepage	= udf_writepage,
->  	.write_begin		= udf_write_begin,
->  	.write_end		= generic_write_end,
-> -- 
-> 1.7.4.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>   Thanks for the patch. I'm willing to take the patch since it's an
+> improvement but what would be even nicer is to have error reporting like in
+> ext3 / ext4. We would have functions udf_info, udf_warn, udf_err which
+> also print sb->s_id with each error so that user can better identify on
+> which filesystem error happened.
+
+Modifying the follow-on patch I sent would be pretty trivial.
+
+
