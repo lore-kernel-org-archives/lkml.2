@@ -1,139 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934146Ab1JEJFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 05:05:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36081 "EHLO
+	id S934134Ab1JEJKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 05:10:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36089 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933622Ab1JEJFk convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932903Ab1JEJKh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 05:05:40 -0400
-Subject: Re: [PATCH 05/10] Make total_forks per-cgroup
+	Wed, 5 Oct 2011 05:10:37 -0400
+Subject: Re: [PATCH 08/10] provide a version of cpuacct statistics inside
+ cpu cgroup
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Glauber Costa <glommer@parallels.com>
 Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
         daniel.lezcano@free.fr, jbottomley@parallels.com,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 05 Oct 2011 11:05:35 +0200
-In-Reply-To: <1317583287-18300-6-git-send-email-glommer@parallels.com>
+        Balbir Singh <bsingharora@gmail.com>
+Date: Wed, 05 Oct 2011 11:10:25 +0200
+In-Reply-To: <1317583287-18300-9-git-send-email-glommer@parallels.com>
 References: <1317583287-18300-1-git-send-email-glommer@parallels.com>
-	 <1317583287-18300-6-git-send-email-glommer@parallels.com>
+	 <1317583287-18300-9-git-send-email-glommer@parallels.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317805535.6766.6.camel@twins>
+Message-ID: <1317805825.6766.7.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, 2011-10-02 at 23:21 +0400, Glauber Costa wrote:
-> This patch counts the total number of forks per-cgroup.
-> The information is propagated to the parent, so the total
-> number of forks in the system, is the parent cgroup's one.
-> 
-> To achieve that, total_forks is made per-cpu. There is no
-> particular reason to do that, but by doing this, we are
-> able to bundle it inside the cpustat structure already
-> present.
+> +       for_each_online_cpu(cpu) {
+> +               struct kernel_stat *kstat = per_cpu_ptr(tg->cpustat, cpu);
+> +               val += kstat->cpustat[USER];
+> +               val += kstat->cpustat[NICE];
+> +       } 
 
-I think fweisbec is also doing something with forks and cgroups.
+by using online_cpu, you fail to sum whatever data was accrued on
+unplugged cpus, is that a problem?
 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> ---
->  include/linux/kernel_stat.h |    1 +
->  include/linux/sched.h       |    1 +
->  kernel/fork.c               |    7 ++-----
->  kernel/sched.c              |    9 ++++++++-
->  4 files changed, 12 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-> index 71a69a0..9fb0dda 100644
-> --- a/include/linux/kernel_stat.h
-> +++ b/include/linux/kernel_stat.h
-> @@ -29,6 +29,7 @@ enum cpu_usage_stat {
->  	GUEST_NICE,
->  	IDLE_BASE,
->  	IOWAIT_BASE,
-> +	TOTAL_FORKS,
->  	NR_STATS,
->  };
->  
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 64c5ba5..4ba9dde 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2716,6 +2716,7 @@ struct cgroup;
->  struct cftype;
->  int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->  			 struct seq_file *p);
-> +void task_group_new_fork(struct task_struct *p);
->  #endif /* __KERNEL__ */
->  
->  #endif
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 8e6b6f4..ec2b729 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -76,10 +76,6 @@
->  
->  #include <trace/events/sched.h>
->  
-> -/*
-> - * Protected counters by write_lock_irq(&tasklist_lock)
-> - */
-> -unsigned long total_forks;	/* Handle normal Linux uptimes. */
->  int nr_threads;			/* The idle threads do not count.. */
->  
->  int max_threads;		/* tunable limit on nr_threads */
-> @@ -1372,7 +1368,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  		nr_threads++;
->  	}
->  
-> -	total_forks++;
-> +	task_group_new_fork(p);
-> +
->  	spin_unlock(&current->sighand->siglock);
->  	write_unlock_irq(&tasklist_lock);
->  	proc_fork_connector(p);
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 89d2248..5a8181e 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -691,6 +691,11 @@ static inline void task_group_account_field(struct task_struct *p,
->  }
->  #endif /* CONFIG_CGROUP_SCHED */
->  
-> +void task_group_new_fork(struct task_struct *p)
-> +{
-> +	task_group_account_field(p, 1, TOTAL_FORKS);
-> +}
-> +
->  static void update_rq_clock_task(struct rq *rq, s64 delta);
->  
->  static void update_rq_clock(struct rq *rq)
-> @@ -9161,6 +9166,7 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->  	u64 guest, guest_nice;
->  	u64 sum = 0;
->  	u64 sum_softirq = 0;
-> +	u64 total_forks = 0;
->  	unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
->  	struct timespec boottime;
->  #ifdef CONFIG_CGROUP_SCHED
-> @@ -9201,6 +9207,7 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->  		steal += kstat->cpustat[STEAL];
->  		guest += kstat->cpustat[GUEST];
->  		guest_nice += kstat->cpustat[GUEST_NICE];
-> +		total_forks += kstat->cpustat[TOTAL_FORKS];
->  		sum += kstat_cpu_irqs_sum(i);
->  		sum += arch_irq_stat_cpu(i);
->  
-> @@ -9272,7 +9279,7 @@ int cpu_cgroup_proc_stat(struct cgroup *cgrp, struct cftype *cft,
->  	seq_printf(p,
->  		"\nctxt %llu\n"
->  		"btime %lu\n"
-> -		"processes %lu\n"
-> +		"processes %llu\n"
->  		"procs_running %lu\n"
->  		"procs_blocked %lu\n",
->  		nr_context_switches(),
 
