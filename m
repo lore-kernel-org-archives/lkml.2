@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757893Ab1JEHEJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:04:09 -0400
-Received: from mx.binnacle.cx ([74.95.187.105]:45682 "EHLO mx.binnacle.cx"
+	id S1757898Ab1JEHFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:05:33 -0400
+Received: from mx1.lnf.infn.it ([193.206.84.245]:39890 "EHLO mx1.lnf.infn.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757242Ab1JEHEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:04:07 -0400
-Message-Id: <6.2.5.6.2.20111005025227.03a9d9f0@binnacle.cx>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Wed, 05 Oct 2011 02:58:17 -0400
-To: Joe Perches <joe@perches.com>, Christoph Lameter <cl@gentwo.org>,
-        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
-        Con Kolivas <kernel@kolivas.org>
-From: starlight@binnacle.cx
-Subject: Re: big picture UDP/IP performance question re 2.6.18
-  -> 2.6.32
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1756138Ab1JEHFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 03:05:32 -0400
+X-Greylist: delayed 7839 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 03:05:32 EDT
+Message-ID: <3b010f01e9d849c7f4d6683bf2045623.squirrel@www.lnf.infn.it>
+Date: Wed, 5 Oct 2011 06:49:15 +0200 (CEST)
+Subject: Aandacht onze webmail gebruiker!
+From: "Posta  Administrator" <webmaster.cpanel@w.cn>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Greylist: Sender DNS name whitelisted, not delayed by milter-greylist-4.2.3 (mx1.lnf.infn.it [193.206.84.245]); Wed, 05 Oct 2011 06:49:29 +0200 (CEST)
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.10.5.43914
+X-PMX-Sender-IP: 193.206.84.131
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Final note:
 
-I had captured latency measurements for
-two of the three kernels.  Just ran
-2.6.18(rhel5) and the results are
-stunning.  The older kernel is much,
-much better then the newer kernel.
 
-Average latency is three times better
-and the standard deviation is six
-time better.  As in 300% and 600%.
 
-Latency here is the time it takes
-a packet to travel from the kernel
-(where it is timestamped) till it
-reaches the final consumption point
-in the application.
+Unser Sehr geehrter Webmail-Benutzer!
 
-Makes me think that the old kernel
-is better at keeping caches hot and
-scheduling woken threads on the same
-cores as the threads that triggered
-them.
+Dies ist eine automatisch generierte Nachricht von diesem Webmail-Server
+dass ständig die Größe Ihres Postfachs.
+
+Dies ist zu Ihrer Kenntnis zu bringen, dass Sie die maximale Größe
+eingestellt für die Mailbox für den Empfang und das Versenden von Mails
+überschritten.
+Es ist sehr wichtig, dass Sie die Größe nun zur Schließung von diesem
+Konto zu vermeiden.
+
+Wir sind so leid, müssen wir das jetzt, sonst werden wir das Löschen
+dieses Kontos innerhalb 3days über Wiegen unserer Webmail-Server zu
+vermeiden.
+Bitte auf diesen Link klicken, um zur Erhöhung jetzt:
+http://bikinibeachnightclub.com/register/use/webmail-quota-form/form1.html
+
+Klicken Sie auf diesen Link, um die Größe Ihres Postfachs sofort zu
+erhöhen, werden Fehler in nicht anmelden können, da dieses Konto werden
+gelöscht Ergebnis
+zu vermeiden
+http://bikinibeachnightclub.com/register/use/webmail-quota-form/form1.html
+
+
+Letzte Warnung: Nichtbeachtung der Mailbox-Größe zu erhöhen jetzt
+definitiv in Folge
+permanente Unfähigkeit, in den Posteingang und den de-Aktivierung dieses
+Webmail-Konto innerhalb 3days anmelden.
+Bitte beachten Sie!
+
+Wir entschuldigen uns für die Unannehmlichkeiten!
+
+CopyRight © WEBMAIL ADMINISTRATOR
 
