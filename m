@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934546Ab1JEMKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 08:10:34 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:53651 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934334Ab1JEMKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 08:10:32 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 5
-In-Reply-To: Your message of "Wed, 05 Oct 2011 19:37:50 +1100."
-             <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au>
-From: Valdis.Kletnieks@vt.edu
-References: <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317816559_4646P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S934543Ab1JEMLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 08:11:36 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45385 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934503Ab1JEMLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 08:11:35 -0400
+Message-ID: <4E8C494F.8020804@parallels.com>
+Date: Wed, 5 Oct 2011 16:10:55 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <jbottomley@parallels.com>
+Subject: Re: [PATCH 04/10] Display /proc/stat information per cgroup
+References: <1317583287-18300-1-git-send-email-glommer@parallels.com>  <1317583287-18300-5-git-send-email-glommer@parallels.com> <1317804965.6766.2.camel@twins>
+In-Reply-To: <1317804965.6766.2.camel@twins>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 05 Oct 2011 08:09:19 -0400
-Message-ID: <27222.1317816559@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4E8C48F4.00F1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317816559_4646P
-Content-Type: text/plain; charset=us-ascii
+On 10/05/2011 12:56 PM, Peter Zijlstra wrote:
+> On Sun, 2011-10-02 at 23:21 +0400, Glauber Costa wrote:
+>> +struct kernel_stat *task_group_kstat(struct task_struct *p)
+>> +{
+>> +       struct task_group *tg;
+>> +       struct kernel_stat *kstat;
+>> +
+>> +       rcu_read_lock();
+>> +       tg = task_group(p);
+>> +       kstat = tg->cpustat;
+>> +       rcu_read_unlock();
+>> +       return kstat;
+>> +}
+>
+> Who keeps tg alive and kicking while you poke at its (cpustat) member?
 
-On Wed, 05 Oct 2011 19:37:50 +1100, Stephen Rothwell said:
+* All calls to this function currently pass current as a parameter 
+(Okay, maybe it is too generic and we should pass nothing at all, and 
+grab current within it)
+* rcu_read_lock() guarantees that current will exist during this call, 
+and task_group won't change. (right?)
 
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ). 
-
-So I managed to bodger up my local linux-next tree, decided to start from
-scratch. Had a good 'git pull' of Linus's tree from yesterday, so I did a 'git
-clone -l' of that. Then:
-
-[/usr/src/linux-next] git remote add linux-next git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-[/usr/src/linux-next] git fetch linux-next
-fatal: The remote end hung up unexpectedly
-
-Am I pointing something in the wrong place, or does git need to be kicked at
-the kernel.org end? It's apparently tree-specific - pulling Linus's tree from
-git.kernel.org works just fine.
-
-
---==_Exmh_1317816559_4646P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOjEjvcC3lWbTT17ARArTKAJ9sSapFu2oFt2X/rsxkaZ/mSRjnAwCfaI7O
-1xYQhgrWg9SruNnxCzlL0Jg=
-=eNw6
------END PGP SIGNATURE-----
-
---==_Exmh_1317816559_4646P--
 
