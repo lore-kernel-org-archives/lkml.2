@@ -1,344 +1,639 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934381Ab1JEKxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 06:53:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29064 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934263Ab1JEKxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 06:53:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,490,1312182000"; 
-   d="scan'208";a="70501940"
-Message-ID: <4E8C370E.7080806@intel.com>
-Date: Wed, 05 Oct 2011 13:53:02 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: NamJae Jeon <linkinjeon@gmail.com>
-CC: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, linus.walleij@linaro.org,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
-        per.forlin@stericsson.com, johan.rudholm@stericsson.com
-Subject: Re: [PATCH v10] mmc : general purpose partition support.
-References: <1317750317-4489-1-git-send-email-linkinjeon@gmail.com> <4E8C1F98.9070909@intel.com> <CAKYAXd-9+_1TBniszQir+krF1fRqzBMiAAX9PgzaW+odps0EDg@mail.gmail.com>
-In-Reply-To: <CAKYAXd-9+_1TBniszQir+krF1fRqzBMiAAX9PgzaW+odps0EDg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S934394Ab1JEKxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 06:53:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52852 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934263Ab1JEKxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 06:53:20 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.46+drm33.19
+Date: Wed,  5 Oct 2011 12:53:15 +0200
+Message-Id: <1317811995-10332-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/11 13:21, NamJae Jeon wrote:
-> 2011/10/5 Adrian Hunter<adrian.hunter@intel.com>:
->> On 04/10/11 20:45, Namjae Jeon wrote:
->>>
->>> It allows gerneral purpose partitions in MMC Device.
->>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure
->>> suggested by Andrei Warkentin.
->>> After patching, we can see general purpose partitions like this.
->>>>
->>>> cat /proc/partitions
->>>
->>>            179 0 847872 mmcblk0
->>>            179 192 4096 mmcblk0gp3
->>>            179 160 4096 mmcblk0gp2
->>>            179 128 4096 mmcblk0gp1
->>>            179 96  1052672 mmcblk0gp0
->>>            179 64  1024 mmcblk0boot1
->>>            179 32  1024 mmcblk0boot0
->>>
->>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
->>> ---
->>>   drivers/mmc/card/block.c |   34 +++++++++++++++++------------
->>>   drivers/mmc/core/mmc.c   |   52
->>> ++++++++++++++++++++++++++++++++++++++++++---
->>>   include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
->>>   include/linux/mmc/mmc.h  |    5 +++-
->>>   4 files changed, 105 insertions(+), 20 deletions(-)
->>>
->>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>> index 782d5f8..fb6f1e9 100644
->>> --- a/drivers/mmc/card/block.c
->>> +++ b/drivers/mmc/card/block.c
->>> @@ -1470,26 +1470,32 @@ static int mmc_blk_alloc_part(struct mmc_card
->>> *card,
->>>         return 0;
->>>   }
->>>
->>> +/* MMC Physical partition consist of two boot partitions and
->>> + * up to four general purpose partitions.
->>> + * For each partitions enabled in EXT_CSD
->>> + * The block device will allocated to provide access to the partition.
->>> + */
->>> +
->>>   static int mmc_blk_alloc_parts(struct mmc_card *card, struct mmc_blk_data
->>> *md)
->>>   {
->>> -       int ret = 0;
->>> +       int idx, ret = 0;
->>>
->>>         if (!mmc_card_mmc(card))
->>>                 return 0;
->>>
->>> -       if (card->ext_csd.boot_size&&
->>>   mmc_boot_partition_access(card->host)) {
->>> -               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_BOOT0,
->>> -                                        card->ext_csd.boot_size>>    9,
->>> -                                        true,
->>> -                                        "boot0");
->>> -               if (ret)
->>> -                       return ret;
->>> -               ret = mmc_blk_alloc_part(card, md,
->>> EXT_CSD_PART_CONFIG_ACC_BOOT1,
->>> -                                        card->ext_csd.boot_size>>    9,
->>> -                                        true,
->>> -                                        "boot1");
->>> -               if (ret)
->>> -                       return ret;
->>> +       for (idx = 0; idx<    card->nr_parts; idx++) {
->>> +               if ((idx == 0 || idx == 1)&&
->>> +                       !mmc_boot_partition_access(card->host))
->>> +                       continue;
->>
->> Seems a bit fragile.  What if someone decided to put the gp
->> partitions before the boot partitions.  What about:
-> There are the default two boot partition in mmc spec. I think that
-> this case can not be happened.
-> And boot partition size of EXT CSD is read-only.
-> Can you explain which is case put to gp partitions before the boot partition ?
+I am announcing the release of the 2.6.32.46+drm33.19 longterm tree.
 
-Relying on the partition order in the partition array is fragile.
-You cannot predict how someone may want to change it in the future,
-and that person will not expect that certain positions have certain meaning.
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
->
->>
->>                 if (mmc_is_boot_partition(&part[idx])&&
->>                     !mmc_boot_partition_access(card->host)
->>                         continue;
->>
->> And:
->>
->> int mmc_is_boot_partition(struct mmc_part *part)
->> {
->>         return part->part_cfg>= EXT_CSD_PART_CONFIG_ACC_BOOT0&&
->>                part->part_cfg<= EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>                                  MMC_NUM_BOOT_PARTITION;
->> }
->>
->>> +               if (card->part[idx].size) {
->>> +                       ret = mmc_blk_alloc_part(card, md,
->>> +                               card->part[idx].part_cfg,
->>> +                               card->part[idx].size>>    9,
->>> +                               card->part[idx].force_ro,
->>> +                               card->part[idx].name);
->>> +                       if (ret)
->>> +                               return ret;
->>> +               }
->>>         }
->>>
->>>         return ret;
->>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>> index c632b1f..2f458a0 100644
->>> --- a/drivers/mmc/core/mmc.c
->>> +++ b/drivers/mmc/core/mmc.c
->>> @@ -239,7 +239,9 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8
->>> **new_ext_csd)
->>>    */
->>>   static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->>>   {
->>> -       int err = 0;
->>> +       int err = 0, idx;
->>> +       unsigned int part_size;
->>> +       u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
->>>
->>>         BUG_ON(!card);
->>>
->>> @@ -340,7 +342,14 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8
->>> *ext_csd)
->>>                  * There are two boot regions of equal size, defined in
->>>                  * multiples of 128K.
->>>                  */
->>> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>   17;
->>> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
->>> +                       for (idx = 0; idx<    MMC_NUM_BOOT_PARTITION; idx++)
->>> {
->>> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>   17;
->>> +                               mmc_part_add(card, part_size,
->>> +                                       EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>> idx,
->>> +                                       "boot%d", idx, true);
->>> +                       }
->>> +               }
->>>         }
->>>
->>>         card->ext_csd.raw_hc_erase_gap_size =
->>> @@ -362,9 +371,9 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8
->>> *ext_csd)
->>>                 card->ext_csd.raw_partition_support =
->>> ext_csd[EXT_CSD_PARTITION_SUPPORT];
->>>                 if ((ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x2)&&
->>>                 (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE]&    0x1)) {
->>> -                       u8 hc_erase_grp_sz =
->>> +                       hc_erase_grp_sz =
->>>                                 ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>> -                       u8 hc_wp_grp_sz =
->>> +                       hc_wp_grp_sz =
->>>                                 ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>
->>>                         card->ext_csd.enhanced_area_en = 1;
->>> @@ -393,6 +402,41 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8
->>> *ext_csd)
->>>                         card->ext_csd.enhanced_area_offset = -EINVAL;
->>>                         card->ext_csd.enhanced_area_size = -EINVAL;
->>>                 }
->>> +
->>> +               /*
->>> +                * General purpose partition feature support --
->>> +                * If ext_csd have the size of general purpose partitions,
->>> +                * set size, part_cfg, partition name in mmc_part.
->>> +                */
->>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&
->>> +                       EXT_CSD_PART_SUPPORT_PART_EN) {
->>> +                       if (card->ext_csd.enhanced_area_en != 1) {
->>> +                               hc_erase_grp_sz =
->>> +
->>> ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>> +                               hc_wp_grp_sz =
->>> +                                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>> +
->>> +                               card->ext_csd.enhanced_area_en = 1;
->>> +                       }
->>> +
->>> +                       for (idx = 0; idx<    MMC_NUM_GP_PARTITION; idx++) {
->>> +                               if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx *
->>> 3]&&
->>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 +
->>> 1]&&
->>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 +
->>> 2])
->>> +                                       continue;
->>> +                               part_size =
->>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 +
->>> 2]
->>> +<<    16) +
->>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 +
->>> 1]
->>> +<<    8) +
->>> +                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
->>> +                               part_size *= (size_t)(hc_erase_grp_sz *
->>> +                                       hc_wp_grp_sz);
->>> +                               mmc_part_add(card, part_size<<    19,
->>> +                                       EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
->>> +                                       "gp%d", idx, false);
->>> +                       }
->>> +               }
->>>                 card->ext_csd.sec_trim_mult =
->>>                         ext_csd[EXT_CSD_SEC_TRIM_MULT];
->>>                 card->ext_csd.sec_erase_mult =
->>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>> index 5294ddf..0522627 100644
->>> --- a/include/linux/mmc/card.h
->>> +++ b/include/linux/mmc/card.h
->>> @@ -12,6 +12,7 @@
->>>
->>>   #include<linux/mmc/core.h>
->>>   #include<linux/mod_devicetable.h>
->>> +#include<linux/genhd.h>
->>>
->>>   struct mmc_cid {
->>>         unsigned int            manfid;
->>> @@ -64,7 +65,6 @@ struct mmc_ext_csd {
->>>         bool                    enhanced_area_en;       /* enable bit */
->>>         unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>         unsigned int            enhanced_area_size;     /* Units: KB */
->>> -       unsigned int            boot_size;              /* in bytes */
->>>         u8                      raw_partition_support;  /* 160 */
->>>         u8                      raw_erased_mem_count;   /* 181 */
->>>         u8                      raw_ext_csd_structure;  /* 194 */
->>> @@ -158,6 +158,23 @@ struct sdio_func_tuple;
->>>
->>>   #define SDIO_MAX_FUNCS                7
->>>
->>> +/* The number of MMC physical partitions
->>> + * It consist of boot partitions(2), general purpose partitions(4) in MMC
->>> v4.4
->>> + */
->>> +#define MMC_NUM_BOOT_PARTITION 2
->>> +#define MMC_NUM_GP_PARTITION   4
->>> +#define MMC_NUM_PHY_PARTITION  6
->>> +
->>> +/*
->>> + * MMC Physical partitions
->>> + */
->>> +struct mmc_part {
->>> +       unsigned int    size;   /* partition size (in bytes) */
->>> +       unsigned int    part_cfg;       /* it used to part_type */
->>> +       char    name[DISK_NAME_LEN];
->>> +       bool    force_ro;       /* to make boot parts RO by default */
->>> +};
->>> +
->>>   /*
->>>    * MMC device
->>>    */
->>> @@ -219,9 +236,24 @@ struct mmc_card {
->>>         unsigned int            sd_bus_speed;   /* Bus Speed Mode set for
->>> the card */
->>>
->>>         struct dentry           *debugfs_root;
->>> +       struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
->>> partitions */
->>> +       unsigned int    nr_parts;
->>>   };
->>>
->>>   /*
->>> + * This function fill contents in mmc_part.
->>> + */
->>> +static inline void mmc_part_add(struct mmc_card *card, unsigned int size,
->>> +                       unsigned int part_cfg, char *name, int idx, bool
->>> ro)
->>> +{
->>> +       card->part[card->nr_parts].size = size;
->>> +       card->part[card->nr_parts].part_cfg = part_cfg;
->>> +       sprintf(card->part[card->nr_parts].name, name, idx);
->>> +       card->part[card->nr_parts].force_ro = ro;
->>> +       card->nr_parts++;
->>> +}
->>> +
->>> +/*
->>>    *  The world is not perfect and supplies us with broken mmc/sdio
->>> devices.
->>>    *  For at least some of these bugs we need a work-around.
->>>    */
->>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>> index 50af227..ea558eb 100644
->>> --- a/include/linux/mmc/mmc.h
->>> +++ b/include/linux/mmc/mmc.h
->>> @@ -270,6 +270,7 @@ struct _mmc_csd {
->>>    * EXT_CSD fields
->>>    */
->>>
->>> +#define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
->>>   #define EXT_CSD_PARTITION_ATTRIBUTE   156     /* R/W */
->>>   #define EXT_CSD_PARTITION_SUPPORT     160     /* RO */
->>>   #define EXT_CSD_RST_N_FUNCTION                162     /* R/W */
->>> @@ -313,7 +314,9 @@ struct _mmc_csd {
->>>
->>>   #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
->>>   #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
->>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
->>> +#define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
->>> +
->>> +#define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
->>>
->>>   #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
->>>   #define EXT_CSD_CMD_SET_SECURE                (1<<1)
->>
->>
+This release contains patches from upstream 2.6.32.46, but dropped any patches
+to the DRM subsystem.
 
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+or
+  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
+
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
+or
+  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
+
+-Stefan
+
+------
+
+* USB: xhci: fix OS want to own HC
+* USB: assign instead of equal in usbtmc.c
+* USB: usb-storage: unusual_devs entry for ARM V2M motherboard.
+* USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
+* atm: br2864: sent packets truncated in VC routed mode
+* hwmon: (ibmaem) add missing kfree
+* ALSA: snd-usb-caiaq: Correct offset fields of outbound iso_frame_desc
+* mm: fix wrong vmap address calculations with odd NR_CPUS values
+* perf tools: do not look at ./config for configuration
+* fs/partitions/efi.c: corrupted GUID partition tables can cause kernel oops
+* befs: Validate length of long symbolic links.
+* ALSA: snd_usb_caiaq: track submitted output urbs
+* ALSA: ac97: Add HP Compaq dc5100 SFF(PT003AW) to Headphone Jack Sense whitelist
+* futex: Fix regression with read only mappings
+* x86-32, vdso: On system call restart after SYSENTER, use int $0x80
+* x86, UV: Remove UV delay in starting slave cpus
+* fuse: check size of FUSE_NOTIFY_INVAL_ENTRY message
+* igb: Fix lack of flush after register write and before delay
+* Linux 2.6.32.46
+
+ Makefile                           |    2 +-
+ arch/x86/kernel/apic/x2apic_uv_x.c |    1 -
+ arch/x86/vdso/vdso32/sysenter.S    |    2 +-
+ drivers/hwmon/ibmaem.c             |   15 ++++++---
+ drivers/net/igb/e1000_82575.c      |    1 +
+ drivers/usb/class/usbtmc.c         |    2 +-
+ drivers/usb/host/pci-quirks.c      |    2 +-
+ drivers/usb/serial/qcserial.c      |    1 +
+ drivers/usb/storage/unusual_devs.h |   10 ++++++
+ fs/befs/linuxvfs.c                 |   23 +++++++++------
+ fs/fuse/dev.c                      |    4 ++
+ fs/partitions/efi.c                |    9 ++++++
+ kernel/futex.c                     |   54 ++++++++++++++++++++++++++++--------
+ mm/vmalloc.c                       |    7 ++--
+ net/atm/br2684.c                   |    2 -
+ sound/pci/ac97/ac97_patch.c        |    1 +
+ sound/usb/caiaq/audio.c            |   37 ++++++++++++++++++++----
+ sound/usb/caiaq/device.h           |    1 +
+ tools/perf/util/config.c           |    7 ----
+ 19 files changed, 132 insertions(+), 49 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 182249a..cff7033 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .45+drm33.19
++EXTRAVERSION = .46+drm33.19
+ NAME = Man-Eating Seals of Antiquity
+
+ # *DOCUMENTATION*
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index c7ee9c9..95b0712 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -117,7 +117,6 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
+ 	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
+ 	    APIC_DM_INIT;
+ 	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
+-	mdelay(10);
+
+ 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
+ 	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+diff --git a/arch/x86/vdso/vdso32/sysenter.S b/arch/x86/vdso/vdso32/sysenter.S
+index e2800af..e354bce 100644
+--- a/arch/x86/vdso/vdso32/sysenter.S
++++ b/arch/x86/vdso/vdso32/sysenter.S
+@@ -43,7 +43,7 @@ __kernel_vsyscall:
+ 	.space 7,0x90
+
+ 	/* 14: System call restart point is here! (SYSENTER_RETURN-2) */
+-	jmp .Lenter_kernel
++	int $0x80
+ 	/* 16: System call normal return point is here! */
+ VDSO32_SYSENTER_RETURN:	/* Symbol used by sysenter.c via vdso32-syms.h */
+ 	pop %ebp
+diff --git a/drivers/hwmon/ibmaem.c b/drivers/hwmon/ibmaem.c
+index 405d3fb..a818105 100644
+--- a/drivers/hwmon/ibmaem.c
++++ b/drivers/hwmon/ibmaem.c
+@@ -429,13 +429,15 @@ static int aem_read_sensor(struct aem_data *data, u8 elt, u8 reg,
+ 	aem_send_message(ipmi);
+
+ 	res = wait_for_completion_timeout(&ipmi->read_complete, IPMI_TIMEOUT);
+-	if (!res)
+-		return -ETIMEDOUT;
++	if (!res) {
++		res = -ETIMEDOUT;
++		goto out;
++	}
+
+ 	if (ipmi->rx_result || ipmi->rx_msg_len != rs_size ||
+ 	    memcmp(&rs_resp->id, &system_x_id, sizeof(system_x_id))) {
+-		kfree(rs_resp);
+-		return -ENOENT;
++		res = -ENOENT;
++		goto out;
+ 	}
+
+ 	switch (size) {
+@@ -460,8 +462,11 @@ static int aem_read_sensor(struct aem_data *data, u8 elt, u8 reg,
+ 		break;
+ 	}
+ 	}
++	res = 0;
+
+-	return 0;
++out:
++	kfree(rs_resp);
++	return res;
+ }
+
+ /* Update AEM energy registers */
+diff --git a/drivers/net/igb/e1000_82575.c b/drivers/net/igb/e1000_82575.c
+index 33352ff..d617f2d 100644
+--- a/drivers/net/igb/e1000_82575.c
++++ b/drivers/net/igb/e1000_82575.c
+@@ -941,6 +941,7 @@ static s32 igb_setup_copper_link_82575(struct e1000_hw *hw)
+ 	ctrl |= E1000_CTRL_SLU;
+ 	ctrl &= ~(E1000_CTRL_FRCSPD | E1000_CTRL_FRCDPX);
+ 	wr32(E1000_CTRL, ctrl);
++	wrfl();
+
+ 	ret_val = igb_setup_serdes_link_82575(hw);
+ 	if (ret_val)
+diff --git a/drivers/usb/class/usbtmc.c b/drivers/usb/class/usbtmc.c
+index d9461c9..ae1ffbc 100644
+--- a/drivers/usb/class/usbtmc.c
++++ b/drivers/usb/class/usbtmc.c
+@@ -267,7 +267,7 @@ usbtmc_abort_bulk_in_status:
+ 				dev_err(dev, "usb_bulk_msg returned %d\n", rv);
+ 				goto exit;
+ 			}
+-		} while ((actual = max_size) &&
++		} while ((actual == max_size) &&
+ 			 (n < USBTMC_MAX_READS_TO_CLEAR_BULK_IN));
+
+ 	if (actual == max_size) {
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index bcf7a88..eae8b18 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -444,7 +444,7 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
+
+ 	/* If the BIOS owns the HC, signal that the OS wants it, and wait */
+ 	if (val & XHCI_HC_BIOS_OWNED) {
+-		writel(val & XHCI_HC_OS_OWNED, base + ext_cap_offset);
++		writel(val | XHCI_HC_OS_OWNED, base + ext_cap_offset);
+
+ 		/* Wait for 5 seconds with 10 microsecond polling interval */
+ 		timeout = handshake(base + ext_cap_offset, XHCI_HC_BIOS_OWNED,
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 8ab4ab2..d469673 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -43,6 +43,7 @@ static struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
++	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 6ca33f2..4453f12 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1977,6 +1977,16 @@ UNUSUAL_DEV(  0x4146, 0xba01, 0x0100, 0x0100,
+ 		"Micro Mini 1GB",
+ 		US_SC_DEVICE, US_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
+
++/*
++ * Nick Bowler <nbowler@elliptictech.com>
++ * SCSI stack spams (otherwise harmless) error messages.
++ */
++UNUSUAL_DEV(  0xc251, 0x4003, 0x0100, 0x0100,
++		"Keil Software, Inc.",
++		"V2M MotherBoard",
++		US_SC_DEVICE, US_PR_DEVICE, NULL,
++		US_FL_NOT_LOCKABLE),
++
+ /* Reported by Andrew Simmons <andrew.simmons@gmail.com> */
+ UNUSUAL_DEV(  0xed06, 0x4500, 0x0001, 0x0001,
+ 		"DataStor",
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index 34ddda8..9158c07 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -469,17 +469,22 @@ befs_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 		befs_data_stream *data = &befs_ino->i_data.ds;
+ 		befs_off_t len = data->size;
+
+-		befs_debug(sb, "Follow long symlink");
+-
+-		link = kmalloc(len, GFP_NOFS);
+-		if (!link) {
+-			link = ERR_PTR(-ENOMEM);
+-		} else if (befs_read_lsymlink(sb, data, link, len) != len) {
+-			kfree(link);
+-			befs_error(sb, "Failed to read entire long symlink");
++		if (len == 0) {
++			befs_error(sb, "Long symlink with illegal length");
+ 			link = ERR_PTR(-EIO);
+ 		} else {
+-			link[len - 1] = '\0';
++			befs_debug(sb, "Follow long symlink");
++
++			link = kmalloc(len, GFP_NOFS);
++			if (!link) {
++				link = ERR_PTR(-ENOMEM);
++			} else if (befs_read_lsymlink(sb, data, link, len) != len) {
++				kfree(link);
++				befs_error(sb, "Failed to read entire long symlink");
++				link = ERR_PTR(-EIO);
++			} else {
++				link[len - 1] = '\0';
++			}
+ 		}
+ 	} else {
+ 		link = befs_ino->i_data.symlink;
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 650546f..1facb39 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -899,6 +899,10 @@ static int fuse_notify_inval_entry(struct fuse_conn *fc, unsigned int size,
+ 	if (outarg.namelen > FUSE_NAME_MAX)
+ 		goto err;
+
++	err = -EINVAL;
++	if (size != sizeof(outarg) + outarg.namelen + 1)
++		goto err;
++
+ 	name.name = buf;
+ 	name.len = outarg.namelen;
+ 	err = fuse_copy_one(cs, buf, outarg.namelen + 1);
+diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
+index 2aac776..6ab70f4 100644
+--- a/fs/partitions/efi.c
++++ b/fs/partitions/efi.c
+@@ -311,6 +311,15 @@ is_gpt_valid(struct block_device *bdev, u64 lba,
+ 		goto fail;
+ 	}
+
++	/* Check the GUID Partition Table header size */
++	if (le32_to_cpu((*gpt)->header_size) >
++			bdev_logical_block_size(bdev)) {
++		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
++			le32_to_cpu((*gpt)->header_size),
++			bdev_logical_block_size(bdev));
++		goto fail;
++	}
++
+ 	/* Check the GUID Partition Table CRC */
+ 	origcrc = le32_to_cpu((*gpt)->header_crc32);
+ 	(*gpt)->header_crc32 = 0;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 09dbee2..fb98c9f 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -203,6 +203,8 @@ static void drop_futex_key_refs(union futex_key *key)
+  * @uaddr:	virtual address of the futex
+  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+  * @key:	address where result is stored.
++ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
++ *              VERIFY_WRITE)
+  *
+  * Returns a negative error code or 0
+  * The key words are stored in *key on success.
+@@ -214,12 +216,12 @@ static void drop_futex_key_refs(union futex_key *key)
+  * lock_page() might sleep, the caller should not hold a spinlock.
+  */
+ static int
+-get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
++get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+ {
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page;
+-	int err;
++	int err, ro = 0;
+
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -247,14 +249,31 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+
+ again:
+ 	err = get_user_pages_fast(address, 1, 1, &page);
++	/*
++	 * If write access is not required (eg. FUTEX_WAIT), try
++	 * and get read-only access.
++	 */
++	if (err == -EFAULT && rw == VERIFY_READ) {
++		err = get_user_pages_fast(address, 1, 0, &page);
++		ro = 1;
++	}
+ 	if (err < 0)
+ 		return err;
++	else
++		err = 0;
+
+ 	page = compound_head(page);
+ 	lock_page(page);
+ 	if (!page->mapping) {
+ 		unlock_page(page);
+ 		put_page(page);
++		/*
++		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
++		* trying to find one. RW mapping would have COW'd (and thus
++		* have a mapping) so this page is RO and won't ever change.
++		*/
++		if ((page == ZERO_PAGE(address)))
++			return -EFAULT;
+ 		goto again;
+ 	}
+
+@@ -266,6 +285,15 @@ again:
+ 	 * the object not the particular process.
+ 	 */
+ 	if (PageAnon(page)) {
++		/*
++		 * A RO anonymous page will never change and thus doesn't make
++		 * sense for futex operations.
++		 */
++		if (ro) {
++			err = -EFAULT;
++			goto out;
++		}
++
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+@@ -277,9 +305,10 @@ again:
+
+ 	get_futex_key_refs(key);
+
++out:
+ 	unlock_page(page);
+ 	put_page(page);
+-	return 0;
++	return err;
+ }
+
+ static inline
+@@ -880,7 +909,7 @@ static int futex_wake(u32 __user *uaddr, int fshared, int nr_wake, u32 bitset)
+ 	if (!bitset)
+ 		return -EINVAL;
+
+-	ret = get_futex_key(uaddr, fshared, &key);
++	ret = get_futex_key(uaddr, fshared, &key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+
+@@ -926,10 +955,10 @@ futex_wake_op(u32 __user *uaddr1, int fshared, u32 __user *uaddr2,
+ 	int ret, op_ret;
+
+ retry:
+-	ret = get_futex_key(uaddr1, fshared, &key1);
++	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+
+@@ -1188,10 +1217,11 @@ retry:
+ 		pi_state = NULL;
+ 	}
+
+-	ret = get_futex_key(uaddr1, fshared, &key1);
++	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2,
++			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+
+@@ -1746,7 +1776,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, int fshared,
+ 	 */
+ retry:
+ 	q->key = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr, fshared, &q->key);
++	ret = get_futex_key(uaddr, fshared, &q->key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+
+@@ -1912,7 +1942,7 @@ static int futex_lock_pi(u32 __user *uaddr, int fshared,
+ 	q.requeue_pi_key = NULL;
+ retry:
+ 	q.key = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr, fshared, &q.key);
++	ret = get_futex_key(uaddr, fshared, &q.key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+
+@@ -2031,7 +2061,7 @@ retry:
+ 	if ((uval & FUTEX_TID_MASK) != task_pid_vnr(current))
+ 		return -EPERM;
+
+-	ret = get_futex_key(uaddr, fshared, &key);
++	ret = get_futex_key(uaddr, fshared, &key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+
+@@ -2223,7 +2253,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	rt_waiter.task = NULL;
+
+ 	key2 = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 680dcbb..7221e9e 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -671,9 +671,10 @@ static void free_unmap_vmap_area_addr(unsigned long addr)
+ #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
+ #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
+ #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
+-#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
+-					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
+-						VMALLOC_PAGES / NR_CPUS / 16))
++#define VMAP_BBMAP_BITS		\
++		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
++		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
++			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
+
+ #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
+
+diff --git a/net/atm/br2684.c b/net/atm/br2684.c
+index c9230c3..be1c1d2 100644
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -208,8 +208,6 @@ static int br2684_xmit_vcc(struct sk_buff *skb, struct net_device *dev,
+ 		if (brdev->payload == p_bridged) {
+ 			skb_push(skb, 2);
+ 			memset(skb->data, 0, 2);
+-		} else { /* p_routed */
+-			skb_pull(skb, ETH_HLEN);
+ 		}
+ 	}
+ 	skb_debug(skb);
+diff --git a/sound/pci/ac97/ac97_patch.c b/sound/pci/ac97/ac97_patch.c
+index e7efcef..eeb2e23 100644
+--- a/sound/pci/ac97/ac97_patch.c
++++ b/sound/pci/ac97/ac97_patch.c
+@@ -1915,6 +1915,7 @@ static unsigned int ad1981_jacks_whitelist[] = {
+ 	0x103c0944, /* HP nc6220 */
+ 	0x103c0934, /* HP nc8220 */
+ 	0x103c006d, /* HP nx9105 */
++	0x103c300d, /* HP Compaq dc5100 SFF(PT003AW) */
+ 	0x17340088, /* FSC Scenic-W */
+ 	0 /* end */
+ };
+diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
+index 007b4bf..e89017a 100644
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -138,8 +138,12 @@ static void stream_stop(struct snd_usb_caiaqdev *dev)
+
+ 	for (i = 0; i < N_URBS; i++) {
+ 		usb_kill_urb(dev->data_urbs_in[i]);
+-		usb_kill_urb(dev->data_urbs_out[i]);
++
++		if (test_bit(i, &dev->outurb_active_mask))
++			usb_kill_urb(dev->data_urbs_out[i]);
+ 	}
++
++	dev->outurb_active_mask = 0;
+ }
+
+ static int snd_usb_caiaq_substream_open(struct snd_pcm_substream *substream)
+@@ -466,8 +470,9 @@ static void read_completed(struct urb *urb)
+ {
+ 	struct snd_usb_caiaq_cb_info *info = urb->context;
+ 	struct snd_usb_caiaqdev *dev;
+-	struct urb *out;
+-	int frame, len, send_it = 0, outframe = 0;
++	struct urb *out = NULL;
++	int i, frame, len, send_it = 0, outframe = 0;
++	size_t offset = 0;
+
+ 	if (urb->status || !info)
+ 		return;
+@@ -477,7 +482,17 @@ static void read_completed(struct urb *urb)
+ 	if (!dev->streaming)
+ 		return;
+
+-	out = dev->data_urbs_out[info->index];
++	/* find an unused output urb that is unused */
++	for (i = 0; i < N_URBS; i++)
++		if (test_and_set_bit(i, &dev->outurb_active_mask) == 0) {
++			out = dev->data_urbs_out[i];
++			break;
++		}
++
++	if (!out) {
++		log("Unable to find an output urb to use\n");
++		goto requeue;
++	}
+
+ 	/* read the recently received packet and send back one which has
+ 	 * the same layout */
+@@ -488,7 +503,8 @@ static void read_completed(struct urb *urb)
+ 		len = urb->iso_frame_desc[outframe].actual_length;
+ 		out->iso_frame_desc[outframe].length = len;
+ 		out->iso_frame_desc[outframe].actual_length = 0;
+-		out->iso_frame_desc[outframe].offset = BYTES_PER_FRAME * frame;
++		out->iso_frame_desc[outframe].offset = offset;
++		offset += len;
+
+ 		if (len > 0) {
+ 			spin_lock(&dev->spinlock);
+@@ -504,11 +520,15 @@ static void read_completed(struct urb *urb)
+ 	}
+
+ 	if (send_it) {
+-		out->number_of_packets = FRAMES_PER_URB;
++		out->number_of_packets = outframe;
+ 		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
++	} else {
++		struct snd_usb_caiaq_cb_info *oinfo = out->context;
++		clear_bit(oinfo->index, &dev->outurb_active_mask);
+ 	}
+
++requeue:
+ 	/* re-submit inbound urb */
+ 	for (frame = 0; frame < FRAMES_PER_URB; frame++) {
+ 		urb->iso_frame_desc[frame].offset = BYTES_PER_FRAME * frame;
+@@ -530,6 +550,8 @@ static void write_completed(struct urb *urb)
+ 		dev->output_running = 1;
+ 		wake_up(&dev->prepare_wait_queue);
+ 	}
++
++	clear_bit(info->index, &dev->outurb_active_mask);
+ }
+
+ static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
+@@ -680,6 +702,9 @@ int snd_usb_caiaq_audio_init(struct snd_usb_caiaqdev *dev)
+ 	if (!dev->data_cb_info)
+ 		return -ENOMEM;
+
++	dev->outurb_active_mask = 0;
++	BUILD_BUG_ON(N_URBS > (sizeof(dev->outurb_active_mask) * 8));
++
+ 	for (i = 0; i < N_URBS; i++) {
+ 		dev->data_cb_info[i].dev = dev;
+ 		dev->data_cb_info[i].index = i;
+diff --git a/sound/usb/caiaq/device.h b/sound/usb/caiaq/device.h
+index 44e3edf..94c0c36 100644
+--- a/sound/usb/caiaq/device.h
++++ b/sound/usb/caiaq/device.h
+@@ -92,6 +92,7 @@ struct snd_usb_caiaqdev {
+ 	int input_panic, output_panic, warned;
+ 	char *audio_in_buf, *audio_out_buf;
+ 	unsigned int samplerates, bpp;
++	unsigned long outurb_active_mask;
+
+ 	struct snd_pcm_substream *sub_playback[MAX_STREAMS];
+ 	struct snd_pcm_substream *sub_capture[MAX_STREAMS];
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 8784649..1720d01 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -416,7 +416,6 @@ int perf_config_global(void)
+ int perf_config(config_fn_t fn, void *data)
+ {
+ 	int ret = 0, found = 0;
+-	char *repo_config = NULL;
+ 	const char *home = NULL;
+
+ 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
+@@ -438,12 +437,6 @@ int perf_config(config_fn_t fn, void *data)
+ 		free(user_config);
+ 	}
+
+-	repo_config = perf_pathdup("config");
+-	if (!access(repo_config, R_OK)) {
+-		ret += perf_config_from_file(fn, repo_config, data);
+-		found += 1;
+-	}
+-	free(repo_config);
+ 	if (found == 0)
+ 		return -1;
+ 	return ret;
