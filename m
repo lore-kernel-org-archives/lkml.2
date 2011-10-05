@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935517Ab1JEW7K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:59:10 -0400
-Received: from mx1.lnf.infn.it ([193.206.84.245]:48137 "EHLO mx1.lnf.infn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935484Ab1JEW7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:59:09 -0400
-Message-ID: <8629e09c032ce070e1718afecaeb1461.squirrel@www.lnf.infn.it>
-Date: Thu, 6 Oct 2011 00:54:53 +0200 (CEST)
-Subject: Aandacht onze webmail gebruiker!
-From: "Posta  Administrator" <webmaster.cpanel@w.cn>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Greylist: Sender DNS name whitelisted, not delayed by milter-greylist-4.2.3 (mx1.lnf.infn.it [193.206.84.245]); Thu, 06 Oct 2011 00:55:07 +0200 (CEST)
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.10.5.223914
-X-PMX-Sender-IP: 193.206.84.131
-To: unlisted-recipients:; (no To-header on input)
+	id S935527Ab1JEXBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 19:01:36 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:41220 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935484Ab1JEXBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 19:01:34 -0400
+Date: Thu, 6 Oct 2011 10:01:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: new location for writeback-for-next
+Message-Id: <20111006100125.c73e2de988eab6c14773ef6e@canb.auug.org.au>
+In-Reply-To: <20111005151546.GA5472@localhost>
+References: <20111005151546.GA5472@localhost>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Oct_2011_10_01_25_+1100_0Ga/ZR.8M2mtB/Gf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__6_Oct_2011_10_01_25_+1100_0Ga/ZR.8M2mtB/Gf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
+On Wed, 5 Oct 2011 23:15:46 +0800 Wu Fengguang <fengguang.wu@intel.com> wro=
+te:
+>
+> Since the kernel.org git tree is still not accessible, would you pull
+> from this tree instead of the old writeback.git?
+>=20
+>         git://github.com/fengguang/linux.git  writeback-for-next
 
-Unser Sehr geehrter Webmail-Benutzer!
+I have switched to that from today.
 
-Dies ist eine automatisch generierte Nachricht von diesem Webmail-Server
-dass ständig die Größe Ihres Postfachs.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Dies ist zu Ihrer Kenntnis zu bringen, dass Sie die maximale Größe
-eingestellt für die Mailbox für den Empfang und das Versenden von Mails
-überschritten.
-Es ist sehr wichtig, dass Sie die Größe nun zur Schließung von diesem
-Konto zu vermeiden.
+--Signature=_Thu__6_Oct_2011_10_01_25_+1100_0Ga/ZR.8M2mtB/Gf
+Content-Type: application/pgp-signature
 
-Wir sind so leid, müssen wir das jetzt, sonst werden wir das Löschen
-dieses Kontos innerhalb 3days über Wiegen unserer Webmail-Server zu
-vermeiden.
-Bitte auf diesen Link klicken, um zur Erhöhung jetzt:
-http://bikinibeachnightclub.com/register/use/webmail-quota-form/form1.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Klicken Sie auf diesen Link, um die Größe Ihres Postfachs sofort zu
-erhöhen, werden Fehler in nicht anmelden können, da dieses Konto werden
-gelöscht Ergebnis
-zu vermeiden
-http://bikinibeachnightclub.com/register/use/webmail-quota-form/form1.html
+iQIcBAEBCAAGBQJOjOHFAAoJEECxmPOUX5FE+J4QAJfHVzrO+1/Pa5XG0EoTbzUn
+QWxEGuu56SVeAmffdydRCX106GVAV6sc4wi53fgi8H1CymwjvuD5VYlySbJLLkU5
+TAlHh5DSn3C+0SKUXNahJyGdvNXeHM6SeMGVX0rr75JFXtX2ikB7lt+sUza4gDK7
+n+nvf0MKjNNV4mx+Bwjp3Cd+oOcClSxJLoWi3QLNNob69oDgqvtnrbzgUk/cndTa
+zv3OmqIYM5gFZzBmj5h/d4pa3CtV6wZxyWZ2jy44GJ7zdKgzyHrLlj+7aCIYXW9X
+79Lhm7lpkFOAjw/Hy+lDZ4h/auVZvgwJE/et9jUzMgKrzthUSvsF6wguSq/VNZ3s
+pwzuPUarkYYIaHYj05/o+Ztd5Dx3/onNA3UP4E9v1HxTbLK7ozitrPTzsvWq1/l5
+Obqc5h1Lz56+287ub0HnFRNAbKOipyb2YIwSSDa7DDdBufAfe1Lg1RdcCyL2oSgj
+oFIJ7f46XOLG3Y72nyj62dVACjiEhlE6DDzp6wat9Tas26FrBeExnwrhhLvdIzYV
+m+Chg23oOFjVp8yqiUi9GoEmKucp1er9t1Y40HF9ZRGp0ghcylCyeliGa0dPrtwD
+zX++sgRzkvpOyNieAYS5ndCUzup2+JlOCMb/UTsD27cj0eTt18unnVuO68dV2Nqo
+M+ytRhTSSgjl0k3ShUd5
+=nt7Y
+-----END PGP SIGNATURE-----
 
-
-Letzte Warnung: Nichtbeachtung der Mailbox-Größe zu erhöhen jetzt
-definitiv in Folge
-permanente Unfähigkeit, in den Posteingang und den de-Aktivierung dieses
-Webmail-Konto innerhalb 3days anmelden.
-Bitte beachten Sie!
-
-Wir entschuldigen uns für die Unannehmlichkeiten!
-
-CopyRight © WEBMAIL ADMINISTRATOR
-
+--Signature=_Thu__6_Oct_2011_10_01_25_+1100_0Ga/ZR.8M2mtB/Gf--
