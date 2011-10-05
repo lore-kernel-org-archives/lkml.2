@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935181Ab1JERtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 13:49:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:32169 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935024Ab1JERtK (ORCPT
+	id S935151Ab1JERwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 13:52:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53010 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293Ab1JERwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 13:49:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=TlXBZmkJKjP0+Bu9PDGak67tyuwwXAeQ+UGVBoXC0PNxztiHcDLlmsBznU2vy1gZY
-	0qxa6GsRGMLsnBcVvnqbQ==
-From: Miche Baker-Harvey <miche@google.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Miche Baker-Harvey <miche@google.com>
-Subject: [PATCH] hvc_console: display printk messages on console.
-Date: Wed,  5 Oct 2011 10:48:51 -0700
-Message-Id: <1317836931-17534-1-git-send-email-miche@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Wed, 5 Oct 2011 13:52:40 -0400
+Date: Wed, 5 Oct 2011 11:52:35 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 3/3] gpio-ml-ioh: Fix suspend/resume issue
+Message-ID: <20111005175235.GC4205@ponder.secretlab.ca>
+References: <1312517062-5582-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <1312517062-5582-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+ <20111004160731.GA9084@ponder.secretlab.ca>
+ <4E8BB327.50306@dsn.lapis-semi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E8BB327.50306@dsn.lapis-semi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk only works for "registered consoles."  Currently, the hvc_console
-code calls register_console() from hvc_instantiate(), but that's only
-used in the early console case.  In hvc_alloc(), register_console() was
-not called.
+On Wed, Oct 05, 2011 at 10:30:15AM +0900, Tomoya MORINAGA wrote:
+> Hi Grant,
+> 
+> (2011/10/05 1:07), Grant Likely wrote:
+> >On Fri, Aug 05, 2011 at 01:04:22PM +0900, Tomoya MORINAGA wrote:
+> >Can this one be merged without 1/3 and 2/3?  Patch 2 looks like a
+> >feature instead of a bug fix.
+> >
+> 
+> Is the above true ?
+> I think,
+> 1/3 is a bug fix.
+> 2/3 and 3/3 are feature.
 
-Add a call to register_console() in hvc_alloc(), set up the index in
-the hvc_console, and set up the necessary vtermnos[] and cons_op[]
-entries so that printk functions work.
+Considering that the title of 3/3 is "Fix suspend/resume issue", you
+can understand my confusion.  I'm not talking about 1/3 because it
+looks like a trivial cleanup (not a bug fix).
 
-Signed-off-by: Miche Baker-Harvey <miche@google.com>
+> Do you mean you will merge only patch for a bug fix ?
+> What will you do feature patch ?
 
----
+I'll merge them regardless, I just need to know which branch to merge
+them in.  If patch 3 is a bug fix independent of patches 1 & 2, then
+I'll put it in spi/merge and ask Linus to pull right away.  Otherwise
+I'll put it in spi/next along with patches 1 & 2.
 
-However, I'm not sure how this is supposed to be working, and not at all
-sure how this should tie in with command line selection of the console,
-or if there are other related issues I may have missed.  I'd really
-appreciate your comments.
----
- drivers/tty/hvc/hvc_console.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index e9cba13..6add6cd 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -790,7 +790,7 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 	 * find index to use:
- 	 * see if this vterm id matches one registered for console.
- 	 */
--	for (i=0; i < MAX_NR_HVC_CONSOLES; i++)
-+	for (i = 0; i < MAX_NR_HVC_CONSOLES; i++)
- 		if (vtermnos[i] == hp->vtermno &&
- 		    cons_ops[i] == hp->ops)
- 			break;
-@@ -800,9 +800,13 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 		i = ++last_hvc;
- 
- 	hp->index = i;
-+	hvc_console.index = i;
-+	vtermnos[i] = vtermno;
-+	cons_ops[i] = ops;
- 
- 	list_add_tail(&(hp->next), &hvc_structs);
- 	spin_unlock(&hvc_structs_lock);
-+	register_console(&hvc_console);
- 
- 	return hp;
- }
-@@ -813,6 +817,7 @@ int hvc_remove(struct hvc_struct *hp)
- 	unsigned long flags;
- 	struct tty_struct *tty;
- 
-+	unregister_console(&hvc_console);
- 	spin_lock_irqsave(&hp->lock, flags);
- 	tty = tty_kref_get(hp->tty);
- 
--- 
-1.7.3.1
+g.
 
