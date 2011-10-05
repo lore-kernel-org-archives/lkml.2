@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935254Ab1JETvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 15:51:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60080 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933233Ab1JETvN convert rfc822-to-8bit (ORCPT
+	id S935261Ab1JETyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 15:54:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21832 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934819Ab1JETyW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 15:51:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317835442.7238.8.camel@dabdike>
-References: <CADDb1s0ZnHzM72sDnFmRrM=GFJtxj5JkYUSPo6GdyQ_=7L2m9A@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110041007070.1954-100000@iolanthe.rowland.org>
-	<CADDb1s0taBR2=xpKE5rLJTWJBMbXijS8b_GEA-MbZvWKFDFvYg@mail.gmail.com>
-	<CADDb1s3sPxpfNi-OD=QvVT+JWO9kUeTAmb8ZGyN0YCuBKWd4rg@mail.gmail.com>
-	<CADDb1s3FN4Ft2yXs-L8LfhoJEDP+KhSCrG8GGbOUgn_GXEr0yA@mail.gmail.com>
-	<1317835442.7238.8.camel@dabdike>
-Date: Thu, 6 Oct 2011 01:21:11 +0530
-Message-ID: <CADDb1s031VX65+G-Uq-12y4qWq98-OS6DKz7mUCo=8AQkVQVTQ@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_Re=3A_Re=3A_BUG_in_kernel=3A_Wrong_Handling_of_USB_HDD?=
-	=?windows-1252?Q?=92s_in_scsiglue=28slave=5Fconfigure=29_and_scsi=2Fsd=28sd=5Fread=5Fcache=5F?=
-	=?windows-1252?Q?type=29?=
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Oct 2011 15:54:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="59378281"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 5 Oct 2011 12:53:17 -0700
+Subject: RE: [PATCH 3/8] x86, i387.c: thread xstate is initialized only on
+ BSP once
+Thread-Topic: [PATCH 3/8] x86, i387.c: thread xstate is initialized only on
+ BSP once
+Thread-Index: AcyDj6SpfOcWmSK6QnSBfBjtSsEOYwABic1Q
+Message-ID: <493994B35A117E4F832F97C4719C4C040136F7CC59@orsmsx505.amr.corp.intel.com>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
+ <1317832759-10223-4-git-send-email-fenghua.yu@intel.com>
+ <alpine.LFD.2.02.1110052048290.18778@ionos>
+In-Reply-To: <alpine.LFD.2.02.1110052048290.18778@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 5, 2011 at 10:54 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Wed, 2011-10-05 at 22:29 +0530, Amit Sahrawat wrote:
->> Can anyone suggest what is the way ahead to detect the presence of
->> Write Cache in these kind of USB HDD and proceed accordingly by
->> assigning proper flushing method.
->> Please share some opinions on this.
->
-> We're a bit out of ideas.  We've already established that we do exactly
-> what windows does in this situation, which is usually what we aim for.
-> Realistically, if the disks lie how do we know when not to believe them?
-I never knew this could turn out to be an issue with such history. But
-atleast debugging helped in diagnosis.
->
-> The best we could probably offer is an interface to turn on the WCE bit
-> in software (technically, you can do this today
-> in /scsi/class/scsi_disk/<disk>/cache_type, it's just that it will try
-> to commit the change as a MODE_SELECT which will presumably fail).
-Thanks James, is this related with SCSI command MODE_SELECT? and this
-is to be passed when there is some failure?
-or simply doing an "echo <value>" to
-/scsi/class/scsi_disk/<disk>/cache_type? can you please elaborate a
-little
->
-> James
->
-Thanks & Regards,
-Amit Sahrawat
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Wednesday, October 05, 2011 11:50 AM
+> To: Yu, Fenghua
+> Cc: Ingo Molnar; H Peter Anvin; Zwane Mwaikambo; Luck, Tony; Mallick,
+> Asit K; Siddha, Suresh B; Len Brown; linux-kernel
+> Subject: Re: [PATCH 3/8] x86, i387.c: thread xstate is initialized only
+> on BSP once
+> 
+> On Wed, 5 Oct 2011, Fenghua Yu wrote:
+> 
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > init_thread_xstate() is only called on BSP once to avoid to override
+> > xstate_size.
+> >
+> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> > ---
+> >  arch/x86/kernel/i387.c |    9 ++++++++-
+> >  1 files changed, 8 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> > index 739d859..de2b48a 100644
+> > --- a/arch/x86/kernel/i387.c
+> > +++ b/arch/x86/kernel/i387.c
+> > @@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
+> >  {
+> >  	unsigned long cr0;
+> >  	unsigned long cr4_mask = 0;
+> > +	static int once;
+> >
+> >  	if (cpu_has_fxsr)
+> >  		cr4_mask |= X86_CR4_OSFXSR;
+> > @@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
+> >  		cr0 |= X86_CR0_EM;
+> >  	write_cr0(cr0);
+> >
+> > -	if (!smp_processor_id())
+> > +	/*
+> > +	 * init_thread_xstate is only called on BSP once to avoid to
+> override
+> > +	 * xstate_size.
+> > +	 */
+> > +	if (!smp_processor_id() && once) {
+> 
+> Brilliant change. Makes sure that init_thread_xstate() is NEVER
+> called. Was this crap tested at all?
+
+Ooh, "once" should be initialized as 1.
+
+The code passes stress test with CPU0 online/offline, though...xstate_size will be re-initialized/overriden in xstate_enable_boot_cpu() later. So not calling init_thread_xstate() doesn't cause problem in my situation (where HAVE_HWFP=1).
+
+Anyway, this patch is wrong. I'll fix it in next version.
+
+Thanks.
+
+-Fenghua
