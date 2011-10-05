@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933879Ab1JESXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:23:32 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:46515 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab1JESXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:23:30 -0400
-Date: Wed, 5 Oct 2011 13:06:16 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Adrian Bunk <bunk@stusta.de>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, Valdis.Kletnieks@vt.edu,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111005170616.GD4297@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Adrian Bunk <bunk@stusta.de>,
-	"Frank Ch. Eigler" <fche@redhat.com>, Valdis.Kletnieks@vt.edu,
-	"H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Greg KH <gregkh@suse.de>
-References: <4E87B885.50005@zytor.com>
- <201110021354.57995.rjw@sisk.pl>
- <4E88A537.4010008@zytor.com>
- <20111003093239.GB25136@localhost.pp.htv.fi>
- <y0mobxyjazi.fsf@fche.csb>
- <20111003180441.GD3072@localhost.pp.htv.fi>
- <34045.1317760188@turing-police.cc.vt.edu>
- <20111004223932.GA3460@localhost.pp.htv.fi>
- <20111004231730.GB17089@redhat.com>
- <20111005075438.GA29441@localhost.pp.htv.fi>
+	id S934172Ab1JESYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:24:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932215Ab1JESYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 14:24:23 -0400
+Date: Wed, 5 Oct 2011 14:24:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Huang Ying <ying.huang@intel.com>, Will Drewry <wad@chromium.org>,
+        Rabin Vincent <rabin@rab.in>, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alternate PATCH] block: fix UUID string buffer length
+Message-ID: <20111005182411.GL30146@redhat.com>
+References: <1317808364-21081-1-git-send-email-rabin@rab.in>
+ <CABqD9hYw3qcMpcjyEtvstYD-WRB=QkVPS5S0MBbah=veZv9E6A@mail.gmail.com>
+ <1317833310.1782.33.camel@Joe-Laptop>
+ <20111005181131.GK30146@redhat.com>
+ <1317838695.1782.43.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111005075438.GA29441@localhost.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1317838695.1782.43.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 10:54:39AM +0300, Adrian Bunk wrote:
+On Wed, Oct 05, 2011 at 11:18:15AM -0700, Joe Perches wrote:
+> On Wed, 2011-10-05 at 14:11 -0400, Vivek Goyal wrote:
+> > On Wed, Oct 05, 2011 at 09:48:30AM -0700, Joe Perches wrote:
+> > > The UUID string buffer is several bytes shorter than what is actually
+> > > required.  Fix it and remove the used once inline part_unpack_uuid,
+> > > use snprintf and printf extension %pU directly.
+> > > 
+> > > Based-on-a-patch-by: Rabin Vincent <rabin@rab.in>
+> > > cc: Will Drewry <wad@chromium.org>
+> > > Signed-off-by: Joe Perches <joe@perches.com>
+> > > ---
+> > >  block/genhd.c         |    8 +++++---
+> > >  include/linux/genhd.h |    6 ------
+> > >  2 files changed, 5 insertions(+), 9 deletions(-)
+> > > 
+> > > diff --git a/block/genhd.c b/block/genhd.c
+> > > index e2f6790..427c955 100644
+> > > --- a/block/genhd.c
+> > > +++ b/block/genhd.c
+> > > @@ -735,7 +735,7 @@ void __init printk_all_partitions(void)
+> > >  		struct hd_struct *part;
+> > >  		char name_buf[BDEVNAME_SIZE];
+> > >  		char devt_buf[BDEVT_SIZE];
+> > > -		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
+> > > +		char uuid[sizeof("12345678-1234-1234-1234-123456789012")];
+> > 
+> > will following look better.
+> > 
+> > char uuid [PARTITION_META_INFO_UUIDLTH * 2 + 5]
+> > 
+> > 4 bytes for hyphen and 1 for NULL.
 > 
-> What policy is now used at kernel.org now is exactly the question
-> I asked in [1], and where I'm still waiting for an answer from hpa.
-> 
-> Other organizations like Debian have a clear and public policy on 
-> what is required for the user identification part for uploading to
-> the archive [2], and I expect the same for kernel.org.
+> Perhaps include/linux/uuid.h could be extended to provide
+> some #defines for the various UUID lengths.
 
-Peter has already said "are you prepared to swear in court".
-Government issued ID is one way (although any US high school student
-knows how easy it is to get fake ID); personal knowledge of someone's
-speach patterns plus common history generated by years of talking to
-that person at conferences and/or concalls, is another way.
+That would be best. So that everybody uses a common define.
 
-When I bootstrapped Linus's key, he and I talked on the phone, and I
-knew him well enough by our conversation my recognizing his speach
-patterns that I was prepared to certify his key even though I've never
-seen his government ID.  That being said, I also know and trust Jim
-Zemlin well enough to know trust that the person employed by the Linux
-Foundation had his ID and right to work checked per US employment law,
-and and that the person I talked to was the same person who is
-employed by the Linux Foundation.  Realistically, I'm far more sure of
-Linus's identity than I would be of some random Debian developer who
-got his key signed after some quick impromptu verification of what
-appeared to be a governement-issued ID at some conference.  :-)
-
-						- Ted
+Thanks
+Vivek
