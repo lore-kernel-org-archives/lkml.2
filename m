@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935569Ab1JEXhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 19:37:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48140 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934986Ab1JEXhU convert rfc822-to-8bit (ORCPT
+	id S935575Ab1JEXkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 19:40:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64935 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934986Ab1JEXkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 19:37:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
-References: <20111003090846.GA25136@localhost.pp.htv.fi> <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
- <20111003173359.GA3072@localhost.pp.htv.fi> <CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
- <CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com>
- <20111005223055.GG14406@localhost.pp.htv.fi> <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 5 Oct 2011 16:36:59 -0700
-X-Google-Sender-Auth: ouDLs7acN1sRplJEKa-Kffh5b98
-Message-ID: <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-To: Adrian Bunk <bunk@stusta.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Oct 2011 19:40:07 -0400
+Subject: [PATCH RESEND] ASoC: Remove impossible case from wm8994_hw_params
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Oct 2011 07:39:59 +0800
+Message-ID: <1317857999.6291.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 5, 2011 at 3:46 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Wed, Oct 5, 2011 at 3:30 PM, Adrian Bunk <bunk@stusta.de> wrote:
->> On Thu, Oct 06, 2011 at 12:22:34AM +0200, richard -rw- weinberger wrote:
->>> On Thu, Oct 6, 2011 at 12:13 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> > On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
->>> >> On Mon, Oct 03, 2011 at 06:04:53AM -0700, Andrew Lutomirski wrote:
->>> >>> On Mon, Oct 3, 2011 at 2:08 AM, Adrian Bunk <bunk@stusta.de> wrote:
->>> >>> > After upgrading a kernel the existing userspace should just work
->>> >>> > (assuming it did work before ;-) ), but when I upgraded my kernel
->>> >>> > from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
->>> >>> >
->>> >>> > dmesg said:
->>> >>> >  linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
->>> >>> >  linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
->>> >>> >
->>> >>> > Looking throught the changelog I ended up at commit 3ae36655
->>> >>> > ("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
->>> >>> >
->>> >>> > Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to
->>> >>> > vsyscall=native.
->>> >>> >
->>> >>> > That sounds reasonable to me, and fixes the problem for me.
->>> >>>
->>> >>> At this point in the -rc cycle, this sounds fine.
->>> >>>
->>> >>> That being said, I'd like to fix it for real for 3.2.  This particular
->>> >>> failure is suspicious -- the "vsyscall fault" message means that
->>> >>> sys_gettimeofday returned EFAULT, which means that the old (3.0 and
->>> >>> before) vgettimeofday should *also* have segfaulted.
->>> >>
->>> >> This 2.6.30.1 UML kernel binary from 2009 worked for me for all host
->>> >> kernels from 2.6.30 to 3.0, and with 3.1.0-rc8 and vsyscall=native
->>> >> it also seems to run nicely.
->>> >>
->>> >> Looking deeper into "a UML instance didn't come up properly",
->>> >> the problem is that it comes up in a strange (readonly) state.
->>> >>
->>> >> There are "Using makefile-style concurrent boot in runlevel S."
->>> >> and "Using makefile-style concurrent boot in runlevel 2." in the
->>> >> logs with a Debian userspace, but no output from the init scripts
->>> >> in these broken bootups (normal messages are in non-broken bootups).
->>> >>
->>> >> Perhaps the two the messages I see in dmesg on the host are from the
->>> >> processes running rcS and rc2 failing early?
->>> >>
->>> >> In a working startup with a Debian userspace, I'm getting during rcS
->>> >>  Setting the system clock.
->>> >>  Cannot access the Hardware Clock via any known method.
->>> >>  Use the --debug option to see the details of our search for an access method.
->>> >>  Unable to set System Clock to: Mon Oct 3 17:01:35 UTC 2011 ... (warning).
->>> >>
->>> >>> We do have a bit
->>> >>> of a bug in that the new code doesn't report si_addr properly, but
->>> >>> that sounds unlikely as a culprit.  Did you try with the offending
->>> >>> commit reverted (i.e. fce8dc0)?  I bet that it also fails there.
->>> >>
->>> >> fce8dc0 is "x86-64: Wire up getcpu syscall", is that really the one you
->>> >> want me to revert?
->>> >>
->>> >>> What's the .config for your UML binary?  I'd like to see if I can
->>> >>> reproduce this.
->>> >>
->>> >> It's attached.
->>> >>
->>> >
->>> > I can't reproduce it.  What distro is running inside the UML instance?
->>>
->>> Same here.
->>> Adrian, is the UML kernel crashing before executing init?
->>
->> As I wrote:
->>  Looking deeper into "a UML instance didn't come up properly",
->>  the problem is that it comes up in a strange (readonly) state.
->>
->> The UML kernel is running happily without crashing, and as I wrote my
->> guess about my problems is:
->>  Perhaps the two the messages I see in dmesg on the host are from the
->>  processes running rcS and rc2 failing early?
->>
->>> We definitely need more information...
->>
->> I gave the information that was requested. plus my observations.
->>
->> What more information exactly do you need from me?
->
-> None :)  I just reproduced the problem with Debian Squeeze.  Lenny works fine.
+We set hw_params callback for wm8994_aif3_dai_ops to wm8994_aif3_hw_params.
+Thus no need to check wm8994-aif3 in wm8994_hw_params.
 
-This is strange.  The problem appears to be in startpar.  That same
-exact Debian image works fine on KVM running 3.1-rc8 (with
-vsyscall=emulate) and on 2.6.40 (i.e. Fedora 15's kernel).  If I set
-print-fatal-signals=1 I don't see a fatal signal in startpar.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8994.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-Richard, is it possible that UML 2.6.30.1 generates a bogus
-vgettimeofday and recovers successfully on older kernels because the
-resulting SIGSEGV had a valid sigcontext?  I can try hacking the
-"vsyscall fault" path to generate full sigcontext and info.  This
-seems rather unlikely, though.
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index 16542de..68e769e 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2235,7 +2235,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
+ 			    struct snd_soc_dai *dai)
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+-	struct wm8994 *control = codec->control_data;
+ 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+ 	int aif1_reg;
+ 	int aif2_reg;
+@@ -2278,15 +2277,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
+ 			dev_dbg(codec->dev, "AIF2 using split LRCLK\n");
+ 		}
+ 		break;
+-	case 3:
+-		switch (control->type) {
+-		case WM1811:
+-		case WM8958:
+-			aif1_reg = WM8958_AIF3_CONTROL_1;
+-			break;
+-		default:
+-			return 0;
+-		}
+ 	default:
+ 		return -EINVAL;
+ 	}
+-- 
+1.7.4.1
 
---Andy
+
+
