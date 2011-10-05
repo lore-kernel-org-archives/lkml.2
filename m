@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934622Ab1JEMdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 08:33:53 -0400
-Received: from lucidpixels.com ([72.73.18.11]:60097 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934243Ab1JEMdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 08:33:52 -0400
-Date: Wed, 5 Oct 2011 08:33:52 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-wireless@vger.kernel.org
-Subject: 3.1-rc8: carl open src driver bug
-Message-ID: <alpine.DEB.2.02.1110050832340.17961@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S934630Ab1JEMgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 08:36:36 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:51452 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934243Ab1JEMge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 08:36:34 -0400
+Date: Wed, 5 Oct 2011 23:36:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 5
+Message-Id: <20111005233625.a5a6e83e53a338c7b4e205ff@canb.auug.org.au>
+In-Reply-To: <27222.1317816559@turing-police.cc.vt.edu>
+References: <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au>
+	<27222.1317816559@turing-police.cc.vt.edu>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Oct_2011_23_36_25_+1100_hfj=muv/6rMzRwZd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Wed__5_Oct_2011_23_36_25_+1100_hfj=muv/6rMzRwZd
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-3.1-rc8:
+Hi,
 
-[420204.241294] ieee80211 phy0: invalid plcp cck rate (0).
-[420204.723179] ------------[ cut here ]------------
-[420204.723205] WARNING: at drivers/net/wireless/ath/carl9170/tx.c:351 carl9170_tx_status+0x431/0x440 [carl9170]()
-[420204.723211] Hardware name: X7SPA-HF
-[420204.723214] Modules linked in: aes_generic rt2800usb rt2800lib rt2x00usb rt2x00lib carl9170 mac80211 ath cfg80211 uvcvideo videodev i2c_i801
-[420204.723239] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc8 #1
-[420204.723244] Call Trace:
-[420204.723248]  <IRQ>  [<ffffffff8103036c>] ? warn_slowpath_common+0x7c/0xc0
-[420204.723271]  [<ffffffffa0148fd1>] ? carl9170_tx_status+0x431/0x440 [carl9170]
-[420204.723281]  [<ffffffffa0149359>] ? __carl9170_tx_process_status+0x109/0x220 [carl9170]
-[420204.723292]  [<ffffffff8109f16d>] ? dma_pool_free+0x1d/0xf0
-[420204.723302]  [<ffffffffa01496ee>] ? carl9170_tx_process_status+0x3e/0x80 [carl9170]
-[420204.723311]  [<ffffffffa014a922>] ? carl9170_handle_command_response+0x382/0x500 [carl9170]
-[420204.723321]  [<ffffffffa014acfd>] ? __carl9170_rx+0x25d/0x820 [carl9170]
-[420204.723330]  [<ffffffff813bceb8>] ? ehci_work+0x448/0xa80
-[420204.723340]  [<ffffffffa014b343>] ? carl9170_rx_stream+0x83/0x3b0 [carl9170]
-[420204.723349]  [<ffffffffa0143248>] ? carl9170_usb_tasklet+0x98/0xc0 [carl9170]
-[420204.723358]  [<ffffffff810352ca>] ? tasklet_hi_action+0x5a/0xc0
-[420204.723366]  [<ffffffff810359c0>] ? __do_softirq+0x90/0x120
-[420204.723375]  [<ffffffff814df66c>] ? call_softirq+0x1c/0x26
-[420204.723383]  [<ffffffff81003a5d>] ? do_softirq+0x4d/0x80
-[420204.723390]  [<ffffffff8100391d>] ? do_IRQ+0x5d/0xd0
-[420204.723397]  [<ffffffff814dddab>] ? common_interrupt+0x6b/0x6b
-[420204.723401]  <EOI>  [<ffffffff81008fe1>] ? mwait_idle+0x51/0x70
-[420204.723414]  [<ffffffff81000776>] ? cpu_idle+0x96/0xb0
-[420204.723420] ---[ end trace ca84150962b52c2e ]---
-[420227.442291] ieee80211 phy0: invalid plcp cck rate (0).
-[420899.453559] ieee80211 phy0: invalid plcp cck rate (0).
+On Wed, 05 Oct 2011 08:09:19 -0400 Valdis.Kletnieks@vt.edu wrote:
+>
+> On Wed, 05 Oct 2011 19:37:50 +1100, Stephen Rothwell said:
+>=20
+> > I have created today's linux-next tree at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).=20
+>=20
+> So I managed to bodger up my local linux-next tree, decided to start from
+> scratch. Had a good 'git pull' of Linus's tree from yesterday, so I did a=
+ 'git
+> clone -l' of that. Then:
+>=20
+> [/usr/src/linux-next] git remote add linux-next git://git.kernel.org/pub/=
+scm/linux/kernel/git/next/linux-next.git
+> [/usr/src/linux-next] git fetch linux-next
+> fatal: The remote end hung up unexpectedly
+>=20
+> Am I pointing something in the wrong place, or does git need to be kicked=
+ at
+> the kernel.org end? It's apparently tree-specific - pulling Linus's tree =
+from
+> git.kernel.org works just fine.
 
-Justin.
+Yeah, linux-next is not back on git.kernel.org yet.  See the note at the
+top of the email you quoted above:
 
+"The linux-next tree is now available from
+git://github.com/sfrothwell/linux-next.git as a temporary measure while
+the kernel.org servers are unavailable."
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__5_Oct_2011_23_36_25_+1100_hfj=muv/6rMzRwZd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOjE9JAAoJEECxmPOUX5FErYsP/2ltW4rdpTi+v3fbltPMRhtX
+PLbwCoCIoaI+YmOU+jobnvknRl/RLEhFL9VHxAIbrYrLoikVkgdx0DYpoXDjNcrW
+uOobgyWyVEufiEJG9zJ8zCDGyvX1E/iz5AsPF2IHynCCQ5fKI5M2+pwwyML1sIl8
+td1SrZR8JKY0SaHHMr9DI1nIkBIXqBWWJD/QgD+Nw+VNS51pNssI1EsLKt2hPI3K
+uQSCmzo4wtFQ6i5+hClK4O2kSlzbS7HGFgDK3GuPYbrP96xfEVQv3ZW9wgJwRxXz
+TMEUtxU59gZIhTuqMJe/u393N3QettNFWU0/ZAE369vcWPr7SvAdTX8OTKtYUWN6
+Xgj0iEuoOaR5aJiyw2Lfraaioyuxys5Sa2HI+CuzZ6ifr+9tfTqRTfuf9pu0ss0V
+dv0uXiq5bBmBgLhjf2veTFXRtf9j5gBQuEgRvf/PVROM74XEI4xX0BAS3EBpC47c
+sIyEpdKNKNIhflnS4pmOVNL2Ay0aWP9FYWMy9dLI0mwZuXuJ6OdpWNhNSL92GZML
+twqhy2/HxOgFd5wOa+4LEEGHMv8DBtazFWgsd1eY6fxwVosSzKdbWfGJ4IXuWSiJ
+Js1fCA+w2sIjnnXlV+j9Uw4STuFSI6cGvw1WI5wtrOLfIK0D5ISfYj3sOi8nxaYg
+VB2KiwOLHCwAQNK9eN+f
+=NTWq
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Oct_2011_23_36_25_+1100_hfj=muv/6rMzRwZd--
