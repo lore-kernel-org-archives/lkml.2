@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1JEIYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 04:24:01 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:40609 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab1JEIYA (ORCPT
+	id S933292Ab1JEIYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:24:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36655 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab1JEIYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 04:24:00 -0400
-Date: Wed, 5 Oct 2011 19:23:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20111005192353.f6171e1a747fc7eda143c2bb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Wed, 5 Oct 2011 04:24:31 -0400
+Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
+From: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: quilt-dev@nongnu.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        John Kacur <jkacur@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 05 Oct 2011 10:23:49 +0200
+In-Reply-To: <20111005065309.GA6676@suse.de>
+References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+	 <20111004180237.GA15087@suse.de>
+	 <1317752148.18063.16.camel@gandalf.stny.rr.com>
+	 <20111004182615.GA16224@suse.de>
+	 <1317753468.18063.19.camel@gandalf.stny.rr.com>
+	 <1317779312.1662.37.camel@schurl.linbit> <20111005065309.GA6676@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317803067.1623.4.camel@schurl.linbit>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Oct_2011_19_23_53_+1100_SyoM.6qZLqrNuab."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Oct_2011_19_23_53_+1100_SyoM.6qZLqrNuab.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-10-04 at 23:53 -0700, Greg KH wrote:
+> "now" meaning which version of quilt?  I still see this on 0.48 if that
+> matters.
 
-Hi all,
+In the repository (master branch).
 
-After merging the final tree, today's linux-next build (powerpc allyesconfi=
-g)
-failed like this:
+> > > > Oh, then there's the issue of quilt not handling ',' in a Signed-off-by
+> > > > line as a valid email address name, but I've been living with that one
+> > > > for years...
+> > 
+> > That's not even valid in email addresses.  The proper way would be to
+> > double-quote the "display name" which probably contains the comma, but
+> > then quilt's edmail script still won't understand it.  Is this a real
+> > problem?
+> 
+> Yes, quoting is the correct thing to do, but that does not usually
+> happen in "Signed-off-by:" lines in kernel patches.
+> 
+> Actually, I think this is even a problem when the name is quoted
+> properly, I've had to fix that up in patches by hand.
 
-kernel/cgroup_task_counter.c: In function 'task_counter_create':
-kernel/cgroup_task_counter.c:60:3: error: implicit declaration of function =
-'ERR_PTR' [-Werror=3Dimplicit-function-declaration]
-kernel/cgroup_task_counter.c:60:3: warning: return makes pointer from integ=
-er without a cast [enabled by default]
+Yes, proper quoting currently isn't enough.
 
-Caused by commit 7d8662e11b18 ("cgroups: add a task counter subsystem")
-from the akpm tree.
+> And yes, this is a problem, I run into at least 1-2 patches per stable
+> kernel release with this issue.  I looked into fixing it and somehow the
+> email parsing logic was wierd and I couldn't figure out how to resolve
+> it.
 
-I added the following patch for today:
+Okay, I'll have another look ...
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 5 Oct 2011 19:20:15 +1100
-Subject: [PATCH] cgroups: ERR_PTR needs err.h
+Andreas
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- kernel/cgroup_task_counter.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/cgroup_task_counter.c b/kernel/cgroup_task_counter.c
-index 2374905..201d8e3 100644
---- a/kernel/cgroup_task_counter.c
-+++ b/kernel/cgroup_task_counter.c
-@@ -11,6 +11,7 @@
- #include <linux/cgroup.h>
- #include <linux/slab.h>
- #include <linux/res_counter.h>
-+#include <linux/err.h>
-=20
-=20
- struct task_counter {
---=20
-1.7.6.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__5_Oct_2011_19_23_53_+1100_SyoM.6qZLqrNuab.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOjBQZAAoJEECxmPOUX5FEj3cP/jTbjndcgukAUpvCp/sAJgq5
-EMYiGULSyufn3bH1yZuhbWCtD0QmXD7mKhgvpYx04FLC5fuuPjOS9EU4S5LRjtqT
-txvACRR3TkAxlEU50L6M6VVBOYRC9seyFFaQP2BIZP/3J1kGs+8NBMDYBWcZWevw
-c/e7nIbc5/O+f7zV48GU1+3pGe90kRx9+qnmobiFy6QGTl2Kx/Tke+2nOQ37Bm5Y
-/f8u84DNdZIlpugNPKnkFk9Zd0fiAjRwm1NiltZS0XZPrnajrIlcx6XZvWMZrH8L
-aapPl8Jww/9lKmcwA8uDVtkWdmaYKTnXsxcwMD9OXcFUzle9WPP1RLVRkQJoGQvx
-qmxz5rcEszFZyeBZ4QG2AC8PEOj9+2fkCPXWN5Cu9yh5+Hzmi2XZ2ufzqf6dtUUA
-RMCIKW1RtctwZekyjClicWJCggKjzZ72nVCZk0pvbwOhZZtRV4//50fsTYPHrg8u
-6XP4acmI9CNHWCSrGwqP+v7+kHHms/PtXoV/zul2rzModvYQqaUvvFxKRaygh+DF
-RZbCIebdYOAjSqqm+Lm+4K7ji4IkwCu4NtsdUAr9s3IXjxD5stqvg8sPJ7MHOPZu
-OAdkAozIag53NKpX+HyEwRSMUIQSzYLKvTbLIIz79n9h0UGrHG+eaM58hXohwswx
-YqGl9O8bUhvQHujeymG5
-=6da/
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Oct_2011_19_23_53_+1100_SyoM.6qZLqrNuab.--
