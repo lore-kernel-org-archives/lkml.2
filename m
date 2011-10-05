@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934519Ab1JEMKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 08:10:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934417Ab1JEMKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 08:10:01 -0400
-Message-ID: <4E8C48F9.2070707@redhat.com>
-Date: Wed, 05 Oct 2011 14:09:29 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Jon Mason <jdmason@kudzu.us>
-CC: Jon Mason <mason@myri.com>, Sven Schnelle <svens@stackframe.org>,
-        Simon Kirby <sim@hostway.ca>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: Workaround for Intel MPS errata
-References: <4E82017C.3010304@redhat.com> <CAPoiz9w4LyTkmAACHQYR5GSJ+TmN7ePJSb-UuRQ7EjY=QYVn5Q@mail.gmail.com> <4E8215B6.1020108@redhat.com> <20110930001633.GA11436@myri.com> <4E882E34.8040409@redhat.com> <20111003045823.GA13222@myri.com> <4E898A69.8060306@redhat.com> <20111003151158.GA21955@myri.com> <4E8AD5F4.7000201@redhat.com> <4E8B04D8.5010107@redhat.com> <20111005034636.GA8618@kudzu.us>
-In-Reply-To: <20111005034636.GA8618@kudzu.us>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934546Ab1JEMKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 08:10:34 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:53651 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934334Ab1JEMKc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 08:10:32 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 5
+In-Reply-To: Your message of "Wed, 05 Oct 2011 19:37:50 +1100."
+             <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au>
+From: Valdis.Kletnieks@vt.edu
+References: <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1317816559_4646P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 05 Oct 2011 08:09:19 -0400
+Message-ID: <27222.1317816559@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.4E8C48F4.00F1,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2011 05:46 AM, Jon Mason wrote:
-> Hey Avi,
-> I believe this will fix the issue (assuming the errata is the issue in
-> the first place).  You'll need to apply the patch on top of Linus'
-> latest code and re-enable the MPS tuning (as it is now off by
-> default).  This can be done by adding "pci=pcie_bus_safe" to your boot
-> args.
->
-> After thinking about it some more, a PCI quark is the correct way of
-> doing things.  We must always disable read completion coalescing due
-> to the possibility of hotplugging a device with a MPS of 256B.  Also,
-> I believe everyone will think this is much cleaner.
+--==_Exmh_1317816559_4646P
+Content-Type: text/plain; charset=us-ascii
 
-Agree.
+On Wed, 05 Oct 2011 19:37:50 +1100, Stephen Rothwell said:
 
-> Let me know how it goes and thanks again for testing this for me.
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ). 
 
-Works perfectly now.  Thanks.
+So I managed to bodger up my local linux-next tree, decided to start from
+scratch. Had a good 'git pull' of Linus's tree from yesterday, so I did a 'git
+clone -l' of that. Then:
 
--- 
-error compiling committee.c: too many arguments to function
+[/usr/src/linux-next] git remote add linux-next git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+[/usr/src/linux-next] git fetch linux-next
+fatal: The remote end hung up unexpectedly
+
+Am I pointing something in the wrong place, or does git need to be kicked at
+the kernel.org end? It's apparently tree-specific - pulling Linus's tree from
+git.kernel.org works just fine.
+
+
+--==_Exmh_1317816559_4646P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOjEjvcC3lWbTT17ARArTKAJ9sSapFu2oFt2X/rsxkaZ/mSRjnAwCfaI7O
+1xYQhgrWg9SruNnxCzlL0Jg=
+=eNw6
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1317816559_4646P--
 
