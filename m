@@ -1,126 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab1JEBli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 21:41:38 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:43878 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab1JEBlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 21:41:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6489"; a="124837652"
-Message-ID: <4E8BB5D0.3090508@codeaurora.org>
-Date: Tue, 04 Oct 2011 18:41:36 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1757827Ab1JEBms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 21:42:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10733 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757810Ab1JEBmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 21:42:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,488,1312182000"; 
+   d="scan'208";a="58872853"
+Date: Wed, 5 Oct 2011 09:42:42 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
+Message-ID: <20111005014242.GA10237@localhost>
+References: <20111003134228.090592370@intel.com>
+ <20111003135902.GA16518@localhost>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: "Turquette, Mike" <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>, paul@pwsan.com,
-        linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
-        patches@linaro.org, broonie@opensource.wolfsonmicro.com,
-        magnus.damm@gmail.com, linux-kernel@vger.kernel.org,
-        eric.miao@linaro.org, linux@arm.linux.org.uk,
-        Jamie Iles <jamie@jamieiles.com>, arnd.bergmann@linaro.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com> <1316730422-20027-5-git-send-email-mturquette@ti.com> <4E80C564.3050004@gmail.com> <20110926184024.GB9194@gallagher> <4E80CE28.9030103@gmail.com> <20110926193733.GC9194@gallagher> <CAJOA=zMA8q-acr=BGWrpC9iLSR3E8Y0ybH4sZ=FOn54zQ7TJKw@mail.gmail.com> <4E810AFA.9040004@gmail.com>
-In-Reply-To: <4E810AFA.9040004@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111003135902.GA16518@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2011 04:30 PM, Rob Herring wrote:
-> On 09/26/2011 05:37 PM, Turquette, Mike wrote:
->> On Mon, Sep 26, 2011 at 12:37 PM, Jamie Iles<jamie@jamieiles.com>  wrote:
->>> On Mon, Sep 26, 2011 at 02:10:32PM -0500, Rob Herring wrote:
->>>> On 09/26/2011 01:40 PM, Jamie Iles wrote:
->>>>> On Mon, Sep 26, 2011 at 01:33:08PM -0500, Rob Herring wrote:
->>>>>>> +static void clk_gate_set_bit(struct clk_hw *clk)
->>>>>>> +{
->>>>>>> + struct clk_gate *gate = to_clk_gate(clk);
->>>>>>> + u32 reg;
->>>>>>> +
->>>>>>> + reg = __raw_readl(gate->reg);
->>>>>>> + reg |= BIT(gate->bit_idx);
->>>>>>> + __raw_writel(reg, gate->reg);
->>>>>>
->>>>>> Don't these read-mod-writes need a spinlock around it?
->>>>>>
->>>>>> It's possible to have an enable bits and dividers in the same register.
->>>>>> If you did a set_rate and while doing an enable/disable, there would be
->>>>>> a problem. Also, it may be 2 different clocks in the same register, so
->>>>>> the spinlock needs to be shared and not per clock.
->>>>>
->>>>> Well the prepare lock will be held here and I believe that would be
->>>>> sufficient.
->>>>
->>>> No, the enable spinlock is protecting enable/disable. But set_rate is
->>>> protected by the prepare mutex. So you clearly don't need locking if you
->>>> have a register of only 1 bit enables. If you have a register accessed
->>>> by both enable/disable and prepare/unprepare/set_rate, then you need
->>>> some protection.
->>>
->>> OK fair point, but I would guess that if you had a clock like this then
->>> you probably wouldn't use this simple gated clock would you?  (speaking
->>> from my world where we have quite simple clocks ;-))
->>
->> I think it is a safe assumption that if a register controls both
->> enable/disable and some programmable divider then,
->>
->> 1) those controls are probably for the same clock
->> 2) that clock won't be using the cookie-cutter gated-clock
->> implementation anyways
->
-> By definition of simple gated clock, the other bits have to be for
-> another clock. The restriction is that all the other bits can only be
-> clock gate bits.
->
->>
->> Rob, do you feel these assumptions are OK and locking can remain the
->> same in this patch?
->
-> Perhaps it is rare enough that it is not worth it use generic code in
-> this case. If so, the documentation should be clear about this
-> constraint. It is not something anyone will have hit before because
-> everyone used a single global lock. Now with the api being split between
-> 2 locks, this adds a new complexity.
+> As far as I can tell from the current test results,
+> the writeback performance mostly stays on par with vanilla 3.1 kernel
+> except for -14% regression on average for NFS, which can be cut down
+> to -7% by limiting the commit size.
 
-I kinda agree with Rob on this. There are very few, if any, such simple 
-clocks on MSM chips. It's very easy to a SoC clock developer to 
-accidentally use these simple clocks without realizing the point that 
-Rob brings up.
+I find that the overall NFS throughput can be improved by 42% when
+doing the NFS writeback wait queue and limiting the commit size.
 
-> I think the simple gated clock code should be usable for any clock
-> controlled by a single bit in a 32-bit register independent of other
-> things in that register.
+      3.1.0-rc8-ioless6+  3.1.0-rc8-nfs-wq-smooth+  
+------------------------  ------------------------  
+                   22.43       +79.2%        40.20  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
+                   28.21       +11.9%        31.58  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
+                   29.21       +54.0%        44.98  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
+                   14.12       +31.0%        18.50  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
+                   29.44        +2.1%        30.06  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
+                    9.09      +231.0%        30.07  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
+                   25.68       +88.6%        48.43  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
+                   41.06       +14.9%        47.16  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
+                   39.13       +26.7%        49.56  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
+                  238.38       +42.9%       340.54  TOTAL
 
-To take care of the scenario Rob bring up, the prepare/unprepare and 
-enable/disable code will have to grab a per-tree register-lock before 
-accessing any registers. The prepare/unprepare code should obviously be 
-written to hold this register-lock for as small of a duration as 
-possible. For example, if the prepare code is doing voltage increase, 
-the register-lock should be grabber _after_ the voltage is increased. At 
-least, this is approximately how the MSM clock code can be mapped onto 
-this generic framework.
+The theoretic explanation could be, one smooths out the NFS write
+requests and the other smooths out the NFS commits, hence yielding
+better utilized network/disk pipeline.
 
-I think we should just go ahead and implement the per-tree register lock 
-so that the generic clock implementations are more useful. The lock will 
-really be held only for a very short time and hence shouldn't matter 
-that there is a single lock for all the clocks in a tree.
+As a result, the -14% regression can be turned around into 23% speedup
+comparing to vanilla kernel:
 
-Thomas,
+      3.1.0-rc4-vanilla+  3.1.0-rc8-nfs-wq-smooth+
+------------------------  ------------------------
+                   20.89       +92.5%        40.20  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
+                   39.43       -19.9%        31.58  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
+                   26.60       +69.1%        44.98  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
+                   12.70       +45.7%        18.50  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
+                   27.41        +9.7%        30.06  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
+                   26.52       +13.4%        30.07  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
+                   40.70       +19.0%        48.43  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
+                   45.28        +4.2%        47.16  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
+                   35.74       +38.7%        49.56  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
+                  275.28       +23.7%       340.54  TOTAL
 
-Did you get a chance to send out your patches with support for per-tree 
-locking? I would really like to see that as part of the first patch 
-series that gets pulled in.
+
+The tests don't cover disk arrays on the server side, however it does
+test various combinations of memory:bandwidth ratio.
 
 Thanks,
-Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Fengguang
