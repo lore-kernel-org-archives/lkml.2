@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab1JESrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:47:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34202 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab1JESrt (ORCPT
+	id S934334Ab1JESty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:49:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53575 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933573Ab1JEStx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:47:49 -0400
-Date: Wed, 5 Oct 2011 20:47:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fenghua Yu <fenghua.yu@intel.com>
-cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        Zwane Mwaikambo <zwane@arm.linux.org.uk>,
-        Tony Luck <tony.luck@intel.com>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] x86, apic.c: Disable irq0 if CPU enables ARAT for
- local apic timer
-In-Reply-To: <1317832759-10223-2-git-send-email-fenghua.yu@intel.com>
-Message-ID: <alpine.LFD.2.02.1110052045430.18778@ionos>
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-2-git-send-email-fenghua.yu@intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 5 Oct 2011 14:49:53 -0400
+Date: Wed, 5 Oct 2011 20:49:50 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: rtc-mc13xxx: Staticize mc13xxx_rtc_idtable
+Message-ID: <20111005184950.GQ6949@pengutronix.de>
+References: <1317825827.5849.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1317825827.5849.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Oct 2011, Fenghua Yu wrote:
+On Wed, Oct 05, 2011 at 10:43:47PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+I have that change in my tree, too, in a combo commit that still needs
+splitting and mailing out.
 
-> From: Fenghua Yu <fenghua.yu@intel.com>
-> 
-> irq0 won't generate any interrupt after local apic timers is enabled and ARAT
-> is enabled. Disable irq0 in this case. Thus irq0 won't block BSP offline.
+Thanks and Acked-by: me.
+Uwe
 
-Why would it do so ?
- 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 > ---
->  arch/x86/kernel/apic/apic.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+>  drivers/rtc/rtc-mc13xxx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 52fa563..8813acf 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -506,6 +506,7 @@ static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
->  static void __cpuinit setup_APIC_timer(void)
->  {
->  	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
-> +	int cpu = smp_processor_id();
+> diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
+> index 9d0c3b4..546f685 100644
+> --- a/drivers/rtc/rtc-mc13xxx.c
+> +++ b/drivers/rtc/rtc-mc13xxx.c
+> @@ -399,7 +399,7 @@ static int __exit mc13xxx_rtc_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
 >  
->  	if (this_cpu_has(X86_FEATURE_ARAT)) {
->  		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
-> @@ -517,6 +518,10 @@ static void __cpuinit setup_APIC_timer(void)
->  	levt->cpumask = cpumask_of(smp_processor_id());
->  
->  	clockevents_register_device(levt);
-> +
-> +	/* irq0 won't be used any more if CPU supports ARAT feature. */
-> +	if (cpu == 0 && this_cpu_has(X86_FEATURE_ARAT))
-> +		disable_irq(0);
+> -const struct platform_device_id mc13xxx_rtc_idtable[] = {
+> +static const struct platform_device_id mc13xxx_rtc_idtable[] = {
+>  	{
+>  		.name = "mc13783-rtc",
+>  	}, {
 
-This is completely wrong. If we want to shut that interrupt down, then
-we do it in the clockevents set mode functions of PIT or HPET and not
-at some random place in the apic timer code.
-
-Thanks,
-
-	tglx
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
