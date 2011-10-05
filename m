@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab1JDX4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 19:56:15 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:38143 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933837Ab1JDX4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 19:56:13 -0400
-Date: Tue, 4 Oct 2011 16:56:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Quick review of -rt RCU-related patches
-Message-ID: <20111004235607.GM2223@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111004174755.GA4762@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1110042322450.18778@ionos>
- <20111004231504.GG2223@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1110050120250.18778@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1110050120250.18778@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11100423-6078-0000-0000-000001773C2F
+	id S933990Ab1JEAbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 20:31:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47514 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933640Ab1JEAbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 20:31:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 5 Oct 2011 09:29:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org
+Subject: Re: [PATCH v5 0/8] per-cgroup tcp buffer pressure settings
+Message-Id: <20111005092954.718a0c29.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1317730680-24352-1-git-send-email-glommer@parallels.com>
+References: <1317730680-24352-1-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 01:27:15AM +0200, Thomas Gleixner wrote:
-> On Tue, 4 Oct 2011, Paul E. McKenney wrote:
-> > On Wed, Oct 05, 2011 at 12:05:47AM +0200, Thomas Gleixner wrote:
-> > > > 	This means that might_sleep() will never complain about
-> > > > 	blocking in an RCU read-side critical section.  I guess that
-> > > > 	this is necessary, though it would be better to have some
-> > > > 	way to complain for general sleeping (e.g., waiting on
-> > > > 	network receive) as opposed to blocking on a lock that is
-> > > > 	subject to priority inheritance.
-> > > 
-> > > Well, there's always a remaining problem. We need that stuff fully
-> > > preemptible on rt. Any ideas ?
-> > 
-> > Not yet.  We would have to classify context switches into two groups:
-> > 
-> > 1.	Preemptions or blocking waiting for sleeping spinlocks.
-> > 
-> > 2.	Everything else.
-> > 
-> > Given that classification, it would be straightforward: prohibit
-> > group #2 context switches while in RCU-preempt read-side critical
-> > sections.  I know, easy for me to say!  ;-)
-> 
-> Well, you know the preemtible regions of RT, it basically boils down
-> to #1 - except that it differs a bit from vanilla that locks and bh
-> stuff does not prevent preemption.
-> 
-> If RCU can deal with that, then #2 is a non issue :)
+On Tue,  4 Oct 2011 16:17:52 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Ah!  I thought you were asking for something that checked for people
-violating -rt's rules for context switches within RCU-preempt read-side
-critical sections.
-
-> > > > rcu-disable-the-rcu-bh-stuff-for-rt.patch
-> > > > 
-> > > > 	This implements RCU-bh in terms of RCU-preempt, but disables
-> > > > 	BH around the resulting RCU-preempt read-side critical section.
-> > > > 	May be vulnerable to network-based denial-of-service attacks,
-> > > > 	which could OOM a system with this patch.
-> > > > 
-> > > > 	The implementation of rcu_read_lock_bh_held() is weak, but OK.	In
-> > > > 	an ideal world, it would also complain if not local_bh_disable().
-> > > 
-> > > Well, I dropped that after our IRC conversation, but we still need to
-> > > have some extra debugging for RT to diagnose situations where we break
-> > > those rcu_bh assumptions. That _bh rcu stuff should have never been
-> > > there, we'd rather should drop the softirq processing back to
-> > > ksoftirqd in such an overload case (in mainline) and voluntary
-> > > schedule away from ksoftirqd until the situation is resolved.
-> > > 
-> > > I consider rcu_bh a bandaid for the nasty implict semantics of BH
-> > > processing and I'm looking really forward to Peters analysis of the
-> > > modern cpu local BKL constructs at RTLWS.
-> > > 
-> > > The patch stemmed from an earlier discussion about getting rid of
-> > > those special rcu_bh semantics even in mainline for the sake of not
-> > > making a special case for a completely over(ab)used construct which
-> > > originates from the historically grown softirq behaviour. I think that
-> > > keeping the special cased rcu_bh stuff around is just taking any
-> > > incentive away from moving that whole softirq processing into a
-> > > scheduler controllable environment (i.e. threaded interrupts). 
-> > 
-> > Between -rt and the guys pushing packets, I can tell that this is going
-> > to be a fun one.  ;-)
+> [[ v3: merge Kirill's suggestions, + a destroy-related bugfix ]]
+> [[ v4: Fix a bug with non-mounted cgroups + disallow task movement ]]
+> [[ v5: Compile bug with modular ipv6 + tcp files in bytes ]]
 > 
-> We'll see. At some point they'll find out that a thread context will
-> make their life easier simply because the locking maze can be
-> distangled. That's why I'm ranting at the special "foster _bh" rcu
-> abominations, which keep them thinking that going down that road is
-> actually a good thing.
+> Kame, Kirill,
 > 
-> > I will see if I can come up with a way to make that patch safe to
-> > apply.  Might not be all that hard.
+> I am submitting this again merging most of your comments. I've decided to
+> leave some of them out:
+>  * I am not using res_counters for allocated_memory. Besides being more
+>    expensive than what we need, to make it work in a nice way, we'd have
+>    to change the !cgroup code, including other protocols than tcp. Also,
+>    
+>  * I am not using failcnt and max_usage_in_bytes for it. I believe the value
+>    of those lies more in the allocation than in the pressure control. Besides,
+>    fail conditions lie mostly outside of the memory cgroup's control. (Actually,
+>    a soft_limit makes a lot of sense, and I do plan to introduce it in a follow
+>    up series)
 > 
-> :)
+> If you agree with the above, and there are any other pressing issues, let me
+> know and I will address them ASAP. Otherwise, let's discuss it. I'm always open.
+> 
 
-Easier now that "git clone" works for me once more.  Re-installed my
-system, but my notes from doing it last time were incomplete.  They
-are better now.  ;-)
+I'm not familar with reuqirements of users. So, I appreciate your choices.
+What I adivse you here is taking a deep breath. Making new version every day
+is not good for reviewing process ;)
+(It's now -rc8 and merge will not be so quick, anyway.)
 
-							Thanx, Paul
+At this stage, my concern is view of interfaces and documenation, and future plans.
+
+Let me give  a try explanation by myself. (Correct me ;)
+I added some questions but I'm sorry you've already answered.
+
+New interfaces are 5 files. All files exists only for non-root memory cgroup.
+
+1. memory.independent_kmem_limit
+2. memory.kmem.usage_in_bytes
+3. memory.kmem.limit_in_bytes
+4. memory.kmem.tcp.limit_in_bytes
+5. memory.kmem.tcp.usage_in_bytes
+
+* memory.independent_kmem_limit
+ If 1, kmem_limit_in_bytes/kmem_usage_in_bytes works.
+ If 0, kmem_limit_in_bytes/kmem_usage_in_bytes doesn't work and all kmem
+    usages are controlled under memory.limit_in_bytes.
+
+Question:
+ - What happens when parent/chidlren cgroup has different indepedent_kmem_limit ?
+ - What happens at creating a new cgroup with use_hierarchy==1.
+
+* memory.kmem_limit_in_bytes/memory.kmem.tcp.limit_in_bytes
+
+ Both files works independently for _Now_. And memory.kmem_usage_in_bytes and
+ memory.kmem_tcp.usage_in_bytes has no relationships.
+
+ In future plan, kmem.usage_in_bytes should includes tcp.kmem_usage_in_bytes.
+ And kmem.limit_in_bytes should be the limiation of sum of all kmem.xxxx.limit_in_bytes.
+
+Question:
+ - Why this integration is difficult ?
+   Can't tcp-limit-code borrows some amount of charges in batch from kmem_limit 
+   and use it ?
+ 
+ - Don't you need a stat file to indicate "tcp memory pressure works!" ?
+   It can be obtained already ?
+
+Thanks,
+-Kame
 
