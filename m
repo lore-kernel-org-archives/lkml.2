@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934780Ab1JENiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 09:38:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50350 "EHLO mx1.redhat.com"
+	id S934785Ab1JENtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 09:49:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934670Ab1JENiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 09:38:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
-References: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> 
-To: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Wed, 05 Oct 2011 14:37:10 +0100
-Message-ID: <1736.1317821830@redhat.com>
+	id S934271Ab1JENtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 09:49:17 -0400
+Message-ID: <4E8C604A.5090606@redhat.com>
+Date: Wed, 05 Oct 2011 15:48:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joerg.roedel@amd.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH v2 0/9] perf support for x86 guest/host-only bits
+References: <1317816084-18026-1-git-send-email-gleb@redhat.com>
+In-Reply-To: <1317816084-18026-1-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Moseley <moseleymark@gmail.com> wrote:
+On 10/05/2011 02:01 PM, Gleb Natapov wrote:
+> This patch series consists of Joerg series named "perf support for amd
+> guest/host-only bits v2" [1] rebased to 3.1.0-rc7 and in addition,
+> support for intel cpus for the same functionality.
+>
 
-> [ 7719.996883] FS-Cache: Assertion failed
-> [ 7719.996886] 3 == 5 is false
-> [ 7719.996906] ------------[ cut here ]------------
-> [ 7720.006139] kernel BUG at fs/fscache/operation.c:408!
-> [ 7720.006751] invalid opcode: 0000 [#1] SMP
-> [ 7720.006751] CPU 7
+Looks good to me.  Peter, Ingo, if it works for you as well, please 
+merge 1-6 into a branch on tip that I can pull and apply the rest on top of.
 
-Ummm... what's at line 408 for you?  It doesn't seem to be the same as what
-I've got.
+-- 
+error compiling committee.c: too many arguments to function
 
-Do you have all my patches applied?
-
-David
