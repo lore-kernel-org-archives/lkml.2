@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab1JEU1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:27:15 -0400
-Received: from smtp209.alice.it ([82.57.200.105]:41818 "EHLO smtp209.alice.it"
+	id S932355Ab1JEU3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:29:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15491 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755092Ab1JEU1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:27:14 -0400
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 16:27:13 EDT
-Date: Wed, 5 Oct 2011 22:21:43 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [sparse stuff] bug in lp3944_led_set_brightness()
-Message-Id: <20111005222143.665f7a7e922dbb2b2541007a@studenti.unina.it>
-In-Reply-To: <20111005093248.GA6792@mwanda>
-References: <20111005093248.GA6792@mwanda>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__5_Oct_2011_22_21_43_+0200_UAbZ2PtMPzAVTnJ0"
+	id S1755906Ab1JEU3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 16:29:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="60285117"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 5 Oct 2011 13:29:12 -0700
+Subject: RE: [PATCH 0/8] Online/offline BSP on x86
+Thread-Topic: [PATCH 0/8] Online/offline BSP on x86
+Thread-Index: AcyDlQcBvn7Cb3EgTLqEQGLNLi11SQACFF6w
+Message-ID: <493994B35A117E4F832F97C4719C4C040136F7CCBD@orsmsx505.amr.corp.intel.com>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
+	 <1317842195.6766.40.camel@twins>
+	 <493994B35A117E4F832F97C4719C4C040136F7CC16@orsmsx505.amr.corp.intel.com>
+ <1317842884.6766.45.camel@twins>
+In-Reply-To: <1317842884.6766.45.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p95KTK0k029798
 
---Signature=_Wed__5_Oct_2011_22_21_43_+0200_UAbZ2PtMPzAVTnJ0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 5 Oct 2011 12:32:48 +0300
-Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-> Hi Antonio,
->=20
-> I was going through some Sparse warnings and this one seems pretty
-> valid.
->=20
-> drivers/leds/leds-lp3944.c +292 23:
-> 	warning: mixing different enum types
->=20
->    284  static void lp3944_led_set_brightness(struct led_classdev *led_cd=
-ev,
->    285                                        enum led_brightness brightn=
-ess)
->    286  {
->    287          struct lp3944_led_data *led =3D ldev_to_led(led_cdev);
->    288 =20
->    289          dev_dbg(&led->client->dev, "%s: %s, %d\n",
->    290                  __func__, led_cdev->name, brightness);
->    291 =20
->    292          led->status =3D brightness;
->                 ^^^^^^^^^^^^^^^^^^^^^^^^
->    293          schedule_work(&led->work);
->    294  }
->
->
-> led->status should be values between 0-3.  brightness is 0, 127 and
-> 255.
->=20
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Wednesday, October 05, 2011 12:28 PM
+> To: Yu, Fenghua
+> Cc: Ingo Molnar; Thomas Gleixner; H Peter Anvin; Luck, Tony; Mallick,
+> Asit K; Siddha, Suresh B; Brown, Len; linux-kernel
+> Subject: RE: [PATCH 0/8] Online/offline BSP on x86
+> 
+> On Wed, 2011-10-05 at 12:22 -0700, Yu, Fenghua wrote:
+> >
+> > > -----Original Message-----
+> > > From: Peter Zijlstra [mailto:peterz@infradead.org]
+> > > Sent: Wednesday, October 05, 2011 12:17 PM
+> > > To: Yu, Fenghua
+> > > Cc: Ingo Molnar; Thomas Gleixner; H Peter Anvin; Zwane Mwaikambo;
+> Luck,
+> > > Tony; Mallick, Asit K; Siddha, Suresh B; Len Brown; linux-kernel
+> > > Subject: Re: [PATCH 0/8] Online/offline BSP on x86
+> > >
+> > > On Wed, 2011-10-05 at 09:39 -0700, Fenghua Yu wrote:
+> > > >
+> > > > BSP or CPU0 has been the last obstacle to CPU hotplug on x86.
+> This
+> > > patch set
+> > > > implements BSP online and offline and removes this obstacle to
+> CPU
+> > > hotplug.
+> > >
+> > > Are you talking about physical cpu hotplug on x86? And you need to
+> > > offline the BSP so you can replace socket0 ?
+> >
+> >
+> > This patch set is for BSP online/offline.
+> 
+> Yes, I got that part. Why do you care?
 
-Hi Dan, thanks for reporting that.
+I can think of two reasons for bsp offline/online:
 
-AFAICS this is not a problem _in_practice_ as lp3944_led_set_brightness
-() is called by the leds framework with brightness values already
-limited by max_brightness, so it is always 0 or 1 in our case. The
-sparse warning is not pretty tho, so I guess we can safely get rid of it
-anyways with:
+1. RAS needs the feature. If socket0 needs to be hotplugged for any reason (any thread on socket0 is bad, shared cache issue, uncore issue, etc), CPU0 is required to be offlined.
 
-	led->status =3D !!brightness;
+2. CPU0 is symmetrical to other CPU's. There is no specific reason why it shouldn't be offlined except BIOS requirements.
 
-keeping track of LP3944_LED_STATUS_OFF and LP3944_LED_STATUS_ON only in
-lp3944_led_set_brightness() is OK, as the handling of DIM (blinking)
-mode[s] is in lp3944_led_set_blink().
+Thanks.
 
-I am following up with a patch in that direction tomorrow, after a test
-on the actual hardware.
-
-This is the rationale behind the current code if it is of any interest:
-in the development phase of the driver I was abusing brightness =3D {2,3}
-to trigger the hardware blinking function, but then I set the
-max_brightness to 1 and so this abusing mechanism became inactive and I
-must have forgotten about it.
-
-Thanks again.
-
-Regards,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__5_Oct_2011_22_21_43_+0200_UAbZ2PtMPzAVTnJ0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6MvFcACgkQ5xr2akVTsAG+dgCePLwURZVQQ80ecCgNCghS2COh
-e4oAn271qcGbrrY7yir7YCTnqgAQL0n1
-=YVgE
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Oct_2011_22_21_43_+0200_UAbZ2PtMPzAVTnJ0--
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
