@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935256Ab1JEVk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:40:56 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33247 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab1JEVkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:40:55 -0400
-Date: Thu, 6 Oct 2011 00:40:47 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm00@gmail.com>
-Subject: [3.1 patch] x86: default to vsyscall=native
-Message-ID: <20111005214047.GE14406@localhost.pp.htv.fi>
+	id S935330Ab1JEVnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:43:04 -0400
+Received: from home.keithp.com ([63.227.221.253]:41794 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756259Ab1JEVnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 17:43:03 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Alex Davis <alex14641@yahoo.com>,
+        "terraluna977\@gmail.com" <terraluna977@gmail.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+In-Reply-To: <1317849643.25371.YahooMailNeo@web130122.mail.mud.yahoo.com>
+References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com> <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com> <yun1uuslfhg.fsf@aiko.keithp.com> <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com> <yun4nznmbxk.fsf@aiko.keithp.com> <1317849643.25371.YahooMailNeo@web130122.mail.mud.yahoo.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 05 Oct 2011 14:42:59 -0700
+Message-ID: <yuny5wzktcs.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After upgrading a kernel the existing userspace should just work
-(assuming it did work before ;-) ), but when I upgraded my kernel
-from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-dmesg said:
-  linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
-  linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
+On Wed, 5 Oct 2011 14:20:43 -0700 (PDT), Alex Davis <alex14641@yahoo.com> w=
+rote:
 
-Looking throught the changelog I ended up at commit 3ae36655
-("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
+> The patch I sent in a previous message in this thread makes it work corre=
+ctly.
+> If I added an explanation and a 'Signed-by' line, could someone pick it u=
+p?
 
-Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to 
-vsyscall=native.
+It would almost certainly break some other machine. We could, of course,
+use a quirk to make your machine work, but that's something of a
+last-resort as it won't fix any other machines.
 
-That sounds reasonable to me, and fixes the problem for me.
+> Yes, but I have no backlight control: the screen is too bright to look at=
+ comfortably.
 
-Signed-off-by: Adrian Bunk <bunk@kernel.org>
-Acked-by: Andrew Lutomirski <luto@mit.edu>
----
- Documentation/kernel-parameters.txt |    7 ++++---
- arch/x86/kernel/vsyscall_64.c       |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+Ok, so the new native backlight driver works, but conflicts with your
+previous backlight driver (whatever that was). Adding support for the
+native backlight driver (Matthew's patch) and disabling the old
+backlight mechanisms makes everything better. Right?
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 854ed5ca..d6e6724 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2706,10 +2706,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			functions are at fixed addresses, they make nice
- 			targets for exploits that can control RIP.
- 
--			emulate     [default] Vsyscalls turn into traps and are
--			            emulated reasonably safely.
-+			emulate     Vsyscalls turn into traps and are emulated
-+			            reasonably safely.
- 
--			native      Vsyscalls are native syscall instructions.
-+			native      [default] Vsyscalls are native syscall
-+			            instructions.
- 			            This is a little bit faster than trapping
- 			            and makes a few dynamic recompilers work
- 			            better than they would in emulation mode.
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 18ae83d..b56c65de 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -56,7 +56,7 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- };
- 
--static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
-+static enum { EMULATE, NATIVE, NONE } vsyscall_mode = NATIVE;
- 
- static int __init vsyscall_setup(char *str)
- {
--- 
-1.7.6.3
+=2D-=20
+keith.packard@intel.com
 
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTozPYzYtFsjWk68qAQj2Qw//YcWK8hj6w0ovc5qb1fuiA0qnmSmD0snK
+BsPMZbtMaza9W0WYAlZS79NQ7Tk1dZCt392gNMcZibARVe56NUYqV+MrH/OIkrUI
+h9cXjDDI4YeQguR3zg9Dzoi4dFPvAOKGtVziPS2YqzZcCgl8ZuGMk/go+lmxLrFf
+wsRRYjJiz75M4XzcoZYXnQ0v8l4ZEb0kLbUc7k8yqPLq/wWBfjtpFohUzCWhNjeI
+Q1wJ2XUEgjdzQoEOv5zht1iJbu7/35DwBUSzMiwQia8FPLYOBvxRp09rcag3Q/P2
+clsqzVV0L2Ahrj9iQh6UH2aTn0hYsw4Y1qin6aqeHYA402pqWsxXBjzohrN3eNrG
+gvN3TJ3+G3o69o4oayzKDKDTSwm30CoMwUXuzaiwo+WY0OoDAZ6BDkpK2s+XLV6X
+g5B52hmQPmDiq8NYl3gdvorUK2liuQ9MHjVELj0zuFBCFeB/h0opgD5lF43obyH9
+39/UOXC1yPQj21qhieSMOrQTNDBWkv/9LE/i0Iee8nTofU5mkfILt/+QOrHM83MD
+pm74rOsqTOqLoj0Jqb2DQEyVuElzN7Kk7mLGqth94uDFLnwr8E849x61+jsZU8uv
++VNYxKD55GXuM5wq25JfuAegzMwF6OZ1BLdHgk3W2QpEXGba3yOyJhFlG5k+WQD4
+a2Cavr/0upU=
+=otPj
+-----END PGP SIGNATURE-----
+--=-=-=--
