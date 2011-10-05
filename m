@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935390Ab1JEUNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:13:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41274 "EHLO mx2.suse.de"
+	id S935305Ab1JEUQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:16:28 -0400
+Received: from home.keithp.com ([63.227.221.253]:35409 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935233Ab1JEUNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:13:09 -0400
-Date: Wed, 5 Oct 2011 13:12:44 -0700
-From: Greg KH <gregkh@suse.de>
-To: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
-Cc: quilt-dev@nongnu.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        John Kacur <jkacur@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-Message-ID: <20111005201244.GA13027@suse.de>
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
- <20111004180237.GA15087@suse.de>
- <1317752148.18063.16.camel@gandalf.stny.rr.com>
- <20111004182615.GA16224@suse.de>
- <1317753468.18063.19.camel@gandalf.stny.rr.com>
- <1317779312.1662.37.camel@schurl.linbit>
- <20111005065309.GA6676@suse.de>
- <1317813674.1623.10.camel@schurl.linbit>
+	id S934686Ab1JEUQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 16:16:27 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Alex Davis <alex14641@yahoo.com>,
+        "terraluna977\@gmail.com" <terraluna977@gmail.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+In-Reply-To: <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com>
+References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com> <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com> <yun1uuslfhg.fsf@aiko.keithp.com> <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 05 Oct 2011 13:16:23 -0700
+Message-ID: <yun4nznmbxk.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317813674.1623.10.camel@schurl.linbit>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 01:21:07PM +0200, Andreas Gruenbacher wrote:
-> On Wed, 2011-10-05 at 10:23 +0200, Andreas Gruenbacher wrote:
-> > On Tue, 2011-10-04 at 23:53 -0700, Greg KH wrote:
-> > > Yes, quoting is the correct thing to do, but that does not usually
-> > > happen in "Signed-off-by:" lines in kernel patches.
-> > > 
-> > > Actually, I think this is even a problem when the name is quoted
-> > > properly, I've had to fix that up in patches by hand.
-> > 
-> > Yes, proper quoting currently isn't enough.
-> >
-> > > And yes, this is a problem, I run into at least 1-2 patches per stable
-> > > kernel release with this issue.  I looked into fixing it and somehow the
-> > > email parsing logic was wierd and I couldn't figure out how to resolve
-> > > it.
-> > 
-> > Okay, I'll have another look ...
-> 
-> I've tried to address this as follows now:
-> 
-> commit f3e7822028616014f933b99d05f42fc028f8d12c
-> Author: Andreas Gruenbacher <agruen@linbit.com>
-> Date:   Wed Oct 5 12:57:48 2011 +0200
-> 
->     quilt mail: Allow commas in Signed-off-by and Acked-by lines
->     
->     The standard quilt_mail_patch_filter() in quilt mail tries to extract email
->     addresses from Signed-off-by and Acked-by lines.  It adds Cc headers with those
->     addresses.
->     
->     Signed-off-by and Acked-by lines sometimes contain commas as part of the
->     address.  When put in recipient headers (To, Cc, Bcc), the commas are
->     interpreted as separators, which breaks things.
->     
->     Try to recognize this case and add the appropriate quotes.  For example, the
->     email address in ``Signed-off-by: Gruenbacher, Andreas <agruen@linbit.com>'' is
->     now extracted as ``"Gruenbacher, Andreas" <agruen@linbit.com>''.
->     
->     Note that quilt_mail_patch_filter() can be overridden in .quiltrc; you may need
->     to update your .quiltrc.
-> 
-> commit c6750845136ff21eb13bc99ec7a6e1689100a13a
-> Author: Andreas Gruenbacher <agruen@linbit.com>
-> Date:   Wed Oct 5 12:08:05 2011 +0200
-> 
->     quilt mail: Support double quoted special characters in email adresses
->     
->     Addresses like "Gruenbacher, Andreas" <agruen@linbit.com> will work now.
-> 
-> 
-> Please give it a shot.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for doing this.  I can't seem to find the git tree for quilt at
-the moment, any pointers to where it is?
+On Wed, 5 Oct 2011 12:59:40 -0700 (PDT), Alex Davis <alex14641@yahoo.com> w=
+rote:
 
-greg k-h
+> By 'disable', do you mean revert? If so, I would the like chance to submi=
+t a patch that adds a boot parameter=20
+> for the driver to disable the backlight by default, e.g: i915_disable_bl.=
+ Once the issues are sorted, the
+> parameter could be removed.
+
+If your machine used to work (with 3.0) and does not work with 3.1-rc,
+then we need to fix the driver so that, with no configuration changes,
+your machine continues to work. Preventing regressions is our primary
+responsibility when changing the drivers.
+
+Does reverting Matthew's backlight patch fix a regression on your machine?
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBToy7FzYtFsjWk68qAQjQ9hAAkJDGR5ZAQqWFDdpuYApxuaKfr+5v88eh
+BY6NlEY3pwHI9moWZORFqNKs0IOazQUgke1veqdBDmk8tZTdq8z7uHyys41gZbo2
+m55zQ9J9rtZs17nHeS59Es/fuM7p3VSqUhQhqucbIY3SvtLXPgzKDwWb4TIQjglg
+IEQSHFn2bdpyGmcvi/6FFzcz+gbiUBDkdildVt3r4oyZ26NAeKTzSbn1gtn62I+V
++LTCatBuNBYrDQrtEulWFeGXVL1CVMnTzZmaUsXGNu2FahrII3VnDz+4RVRxA8Di
+TSdZLznNe4zD8OYXLsN6PE38JtFPmgFpPJGYN06JTLbd4E5QVpKszoGfK8OvdHKv
+KRCEGMRPKLGmOhvflWxkGvNtOrAfjnhLyUMC3KQmCOTJ4fuRNsmLum6EcmN5oUBR
+5qf07YZWgLqLv5Lr3HDCbWmSoQ+l5sQSArm0bJUmc0BBZdEP4jCzgbO1HNSsTboJ
+y98FyysLNozU/5VU/WAZzLd7hhyzoZAZzDmezO8jPip3S/AWdN+z2VpGnHIT4y6B
+d9jBphM3wAtnmyV5vrDJD9Ago4zAQ4uwJOVo+Yt6kBOaC0qqEy0uwZVcrC9uucMv
+cAWOcuGUetLL47GW3uITwZOeKgzZ3EUeQrj5iSYF/L2BMy1UZs+L+EYI8VZC6rtM
+LwnElkco/DI=
+=RFcd
+-----END PGP SIGNATURE-----
+--=-=-=--
