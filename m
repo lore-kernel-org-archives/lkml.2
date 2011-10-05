@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab1JEFts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 01:49:48 -0400
-Received: from fep20.mx.upcmail.net ([62.179.121.40]:59977 "EHLO
-	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932862Ab1JEFtr (ORCPT
+	id S933889Ab1JEFu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 01:50:56 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42683 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932862Ab1JEFuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 01:49:47 -0400
-X-SourceIP: 121.245.133.131
-X-Authenticated-Sender: hymax@chello.nl
-Reply-To: <drawsupdate222@qatar.io>
-From: "COCA COLA 2011" <a.kumar@ncl.res.in>
-Subject: 
-Date: Wed, 5 Oct 2011 11:19:35 +0530
+	Wed, 5 Oct 2011 01:50:55 -0400
+Date: Wed, 5 Oct 2011 08:50:46 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] [SCSI] aacraid: use lower snprintf() limit
+Message-ID: <20111005055046.GD32077@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_001F_01C2A9A6.19485D02"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111005054943.QXOM1579.viefep20-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=jqrf5qXv5urL2URZ3a9OklEvUdrM81ZtB3GWlHLPCVk= c=1 sm=0 a=8EU9Q7FnrCoA:10 a=g7suYPoNhLgA:10 a=1U3JOZu5GBEdGYPV8BYA:9 a=Ft8UYL4EG9YA:10 a=XVfht3aBBUtrZPzMzncA:9 a=yAJl9DJjjL8A:10 a=LFYWT4zcRpGS8mOd:21 a=_w2mBiEpNL6TsWTr:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E8BF03D.001A:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+This is just a cleanup, to silence static checker warnings.  It
+doesn't change how the code works.
 
-------=_NextPart_000_001F_01C2A9A6.19485D02
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+buf[] can either be BUF_SIZE if this is called from sysfs, or it can
+be 16 if it's called from aac_get_adapter_info() via
+aac_get_serial_number().  We use the smaller limit here.
 
-DOWNLOAD ATTACHTMENT
+sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo) is 12 so there
+is actually no chance of hitting either limit.
 
-------=_NextPart_000_001F_01C2A9A6.19485D02
-Content-Type: application/octet-stream;
-	name="COCA COLA2.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="COCA COLA2.rtf"
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjB7XGZvbnR0Ymx7XGYwXGZu
-aWxcZmNoYXJzZXQwIENhbGlicmk7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVk
-aXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxwYXJkXHNhMjAwXHNs
-Mjc2XHNsbXVsdDFcbGFuZzlcZjBcZnMyMiBZb3UgaGF2ZSBiZWVuIHNlbGVj
-dGVkIGluIHRoZSBvbi1nb2luZyBDT0NBIENPTEEgYXdhcmQgaGVsZCB0aGlz
-ICBPY3RvYmVyXHBhcg0KMjAxMS5XZSB0aGUgUHJvbW8gQm9hcmQgYXJlIHBs
-ZWFzZWQgdG8gaW5mb3JtIHlvdSB0aGF0IHlvdSBhbG9uZ3NpZGUgZm91cig0
-KVxwYXINCm90aGVybHVja3kgd2lubmVycyBoYXZlIGJlZW4gYXBwcm92ZWQg
-Zm9yIGEgcGF5bWVudCBvZiAxLDAwMCAwMDBHQlAgKE9uZVxwYXINCk1pbGxp
-b24gUG91bmRzIFN0ZXJsaW5nKS5ccGFyDQpJZiB5b3UgZGlkIHJlY2VpdmUg
-dGhpcyBlbWFpbCwgaXQgbWVhbnMgeW91IGFyZSBvbmUgb2YgdGhlIGZpdmUo
-NSlsdWNreVxwYXINCndpbm5lcnMuXHBhcg0KXHBhcg0KKkNMQUlNUyBQUk9D
-RVNTSU5HIE9GRklDRVI6XHBhcg0KKk5hbWU6TXIgVE9NTVkgUk9HRVJccGFy
-DQpFbWFpbDogZHJhd3N1cGRhdGUyMjJAcWF0YXIuaW9ccGFyDQpccGFyDQpZ
-b3UgYXJlIGFsc28gYWR2aXNlZCB0byBwcm92aWRlIGhpbSB3aXRoIHRoZSB1
-bmRlciBsaXN0ZWQgaW5mb3JtYXRpb25ccGFyDQphcyBzb29uIGFzIHBvc3Np
-YmxlOlxwYXINClxwYXINCipOQU1FIElOIEZVTEw6XHBhcg0KKkRFTElWRVJZ
-IEFERFJFU1M6XHBhcg0KKlNFWDpccGFyDQoqQUdFOlxwYXINCipDT1VOVFJZ
-OlxwYXINCipOQVRJT05BTElUWTpccGFyDQoqT0NDVVBBVElPTjpccGFyDQoq
-TU9CSUxFIE5VTUJFUjpccGFyDQpFTUFJTCBJRDpccGFyDQpccGFyDQpXZSBh
-cmUgZ2xhZCB0byBoYXZlIHlvdSBhcyBvbmUgb2Ygb3VyIGx1Y2tseSB3aW5u
-ZXJzLlxwYXINCn0NCgA=
-
-------=_NextPart_000_001F_01C2A9A6.19485D02--
+diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+index 3382475..ea8d96e 100644
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -894,15 +894,20 @@ static ssize_t aac_show_serial_number(struct device *device,
+ 	int len = 0;
+ 
+ 	if (le32_to_cpu(dev->adapter_info.serial[0]) != 0xBAD0)
+-		len = snprintf(buf, PAGE_SIZE, "%06X\n",
++		len = snprintf(buf, 16, "%06X\n",
+ 		  le32_to_cpu(dev->adapter_info.serial[0]));
+ 	if (len &&
+ 	  !memcmp(&dev->supplement_adapter_info.MfgPcbaSerialNo[
+ 	    sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo)-len],
+ 	  buf, len-1))
+-		len = snprintf(buf, PAGE_SIZE, "%.*s\n",
++		len = snprintf(buf, 16, "%.*s\n",
+ 		  (int)sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo),
+ 		  dev->supplement_adapter_info.MfgPcbaSerialNo);
++
++
++	if (len > 16)
++		len = 16;
++
+ 	return len;
+ }
+ 
