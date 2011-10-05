@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab1JEVHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:07:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56443 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872Ab1JEVHl (ORCPT
+	id S1758091Ab1JEVNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:13:22 -0400
+Received: from www17.your-server.de ([213.133.104.17]:60312 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab1JEVNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:07:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317801296.12133.0.camel@phoenix>
-References: <1317801296.12133.0.camel@phoenix>
-Date: Wed, 5 Oct 2011 23:07:39 +0200
-X-Google-Sender-Auth: Jp-BAg68D90scdviLqWlxyZc6GM
-Message-ID: <CAKnu2Mozhki9Cgst12HH=aqxFOnt3T4EbLm7eZyzTf_i_U0vQA@mail.gmail.com>
-Subject: Re: [PATCH] leds: leds-lm3530: Add __devexit_p at necessary place
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Oct 2011 17:13:21 -0400
+Subject: Re: [PATCH] Support compat_ioctl get/set termios_locked
+From: Thomas Meyer <thomas@m3y3r.de>
+To: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Oct 2011 23:13:13 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317849199.1733.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/5 Axel Lin <axel.lin@gmail.com>:
+>From 3a8e16c473be2e44b063a7a9072b16ce6fa13353 Mon Sep 17 00:00:00 2001
+From: Thomas Meyer <thomas@m3y3r.de>
+Date: Sat, 24 Sep 2011 10:36:39 +0200
+Subject: [PATCH] Support compat_ioctl get/set termios_locked
 
-> According to the comments in include/linux/init.h:
->
-> "Pointers to __devexit functions must use __devexit_p(function_name), the
-> wrapper will insert either the function_name or NULL, depending on the config
-> options."
->
-> We have __devexit annotation for lm3530_remove(), thus add __devexit_p at
-> necessary place.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+When running a Fedora 15 (x86) on an x86_64 kernel, in the boot process
+plymouthd complains about those two missing ioctls:
+[    2.581783] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005457){t:'T';sz:0} arg(ffb6a5d0) on /dev/tty1
+[    2.581803] ioctl32(plymouthd:186): Unknown cmd fd(10) cmd(00005456){t:'T';sz:0} arg(ffb6a680) on /dev/tty1
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+both ioctl functions work on the 'struct termios' resp. 'struct termios2',
+which has the same size (36 bytes resp. 44 bytes) on x86 and x86_64,
+so it's just a matter of converting the pointer from userland.
 
-Thanks Axel,
-Linus Walleij
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+Sorry, I did forget to set the retval from n_tty_compat_ioctl_helper().
+
+ drivers/tty/tty_io.c    |    2 ++
+ drivers/tty/tty_ioctl.c |   17 +++++++++++++++++
+ include/linux/tty.h     |    2 ++
+ 3 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 4f1fc81..e68c6303 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2716,6 +2716,8 @@ static long tty_compat_ioctl(struct file *file, unsigned int cmd,
+ 	ld = tty_ldisc_ref_wait(tty);
+ 	if (ld->ops->compat_ioctl)
+ 		retval = ld->ops->compat_ioctl(tty, file, cmd, arg);
++	else
++		retval = n_tty_compat_ioctl_helper(tty, file, cmd, arg);
+ 	tty_ldisc_deref(ld);
+ 
+ 	return retval;
+diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+index 53f2442..9314d93 100644
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
++#include <linux/compat.h>
+ 
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+@@ -1179,3 +1180,19 @@ int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 	}
+ }
+ EXPORT_SYMBOL(n_tty_ioctl_helper);
++
++#ifdef CONFIG_COMPAT
++long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
++					unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++	case TIOCGLCKTRMIOS:
++	case TIOCSLCKTRMIOS:
++		return tty_mode_ioctl(tty, file, cmd, (unsigned long) compat_ptr(arg));
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++EXPORT_SYMBOL(n_tty_compat_ioctl_helper);
++#endif
++
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 5f2ede8..ddac668 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -581,6 +581,8 @@ extern int __init tty_init(void);
+ /* tty_ioctl.c */
+ extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 		       unsigned int cmd, unsigned long arg);
++extern long n_tty_compat_ioctl_helper(struct tty_struct *tty, struct file *file,
++		       unsigned int cmd, unsigned long arg);
+ 
+ /* serial.c */
+ 
+-- 
+1.7.6.4
+
+
