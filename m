@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935066Ab1JEQvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:51:16 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60228 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935004Ab1JEQvP (ORCPT
+	id S935058Ab1JEQxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:53:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62273 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934962Ab1JEQxp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:51:15 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] mfd/dbx500-prcmu: refactor request_clock() functions
-Date: Wed, 5 Oct 2011 18:50:58 +0200
-Message-ID: <1317833458-747-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Wed, 5 Oct 2011 12:53:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <4E8C88A1.4090308@gmail.com>
+References: <4E8C88A1.4090308@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 5 Oct 2011 10:53:23 -0600
+X-Google-Sender-Auth: p_lCVMJBbjzzT3PUE18fKJogRrY
+Message-ID: <CACxGe6siwgLK0PA3Xtfkzyz4opf-ox4Vid0PQY7EUQMw_3DtMw@mail.gmail.com>
+Subject: Re: [PULL] Devicetree for 3.2
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Wed, Oct 5, 2011 at 10:41 AM, Rob Herring <robherring2@gmail.com> wrote:
+> Grant,
+>
+> Please pull for 3.2. These commits don't have any dependencies and are
+> not dependencies for me, so they don't need to go in thru arm-soc.
+>
+> Rob
+>
+> The following changes since commit 976d167615b64e14bc1491ca51d424e2ba9a5e84:
+>
+>  Linux 3.1-rc9 (2011-10-04 18:11:50 -0700)
+>
+> are available in the git repository at:
+>  git://git.jdl.com/software/linux-3.0.git for-grant
+>
+> Rob Herring (4):
+>      MAINTAINERS: update devicetree maintainers
+>      of/irq: of_irq_find_parent: check for parent equal to child
+>      devicetree: Add ARM pl061 gpio controller binding doc
+>      devicetree: Add ARM pl022 spi controller binding doc
 
-This refactors the mfd/dbx500-prcmu drivers to use a switch()
-statement rather than nested if/else-construction.
+Pulled thanks.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-Patch created in response to Samuel Ortiz' review comment
-on the patch named "mfd/db8500-prcmu: add accessors for PLL
-and SGA clock"
----
- drivers/mfd/db5500-prcmu.c |   21 ++++++++++++---------
- drivers/mfd/db8500-prcmu.c |   19 +++++++++++--------
- 2 files changed, 23 insertions(+), 17 deletions(-)
+Nit: the of_irq_find_parent patch really should have my acked-by, and
+I had hoped to get Ben's too.  (though I did only say "looks good"
+without explicitly write an a-b in my reply, so did leave ambiguity).
+We *might* end up having to revert that one if it causes problems in
+powerpc-land.
 
-diff --git a/drivers/mfd/db5500-prcmu.c b/drivers/mfd/db5500-prcmu.c
-index 47fd0e9..f2c79b2 100644
---- a/drivers/mfd/db5500-prcmu.c
-+++ b/drivers/mfd/db5500-prcmu.c
-@@ -588,20 +588,23 @@ unlock_and_return:
-  */
- int db5500_prcmu_request_clock(u8 clock, bool enable)
- {
--	if (clock < PRCMU_NUM_REG_CLOCKS)
--		return request_reg_clock(clock, enable);
--	else if (clock == PRCMU_TIMCLK)
-+	switch(clock) {
-+	case PRCMU_TIMCLK:
- 		return request_timclk(enable);
--	else if (clock == PRCMU_PLLSOC0)
-+	case PRCMU_PLLSOC0:
- 		return request_pll(DB5500_PLL_SOC0, enable);
--	else if (clock == PRCMU_PLLSOC1)
-+	case PRCMU_PLLSOC1:
- 		return request_pll(DB5500_PLL_SOC1, enable);
--	else if (clock == PRCMU_PLLDDR)
-+	case PRCMU_PLLDDR:
- 		return request_pll(DB5500_PLL_DDR, enable);
--	else if (clock == PRCMU_SYSCLK)
-+	case PRCMU_SYSCLK:
- 		return request_sysclk(enable);
--	else
--		return -EINVAL;
-+	default:
-+		break;
-+	}
-+	if (clock < PRCMU_NUM_REG_CLOCKS)
-+		return request_reg_clock(clock, enable);
-+	return -EINVAL;
- }
- 
- /* This function should only be called while mb0_transfer.lock is held. */
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 98da431..e996d11 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -1433,18 +1433,21 @@ static int request_sga_clock(u8 clock, bool enable)
-  */
- int db8500_prcmu_request_clock(u8 clock, bool enable)
- {
--	if (clock == PRCMU_SGACLK)
-+	switch(clock) {
-+	case PRCMU_SGACLK:
- 		return request_sga_clock(clock, enable);
--	else if (clock < PRCMU_NUM_REG_CLOCKS)
--		return request_reg_clock(clock, enable);
--	else if (clock == PRCMU_TIMCLK)
-+	case PRCMU_TIMCLK:
- 		return request_timclk(enable);
--	else if (clock == PRCMU_SYSCLK)
-+	case PRCMU_SYSCLK:
- 		return request_sysclk(enable);
--	else if (clock == PRCMU_PLLSOC1)
-+	case PRCMU_PLLSOC1:
- 		return request_pll(clock, enable);
--	else
--		return -EINVAL;
-+	default:
-+		break;
-+	}
-+	if (clock < PRCMU_NUM_REG_CLOCKS)
-+		return request_reg_clock(clock, enable);
-+	return -EINVAL;
- }
- 
- int db8500_prcmu_config_esram0_deep_sleep(u8 state)
+g.
+
+>
+>  .../devicetree/bindings/gpio/pl061-gpio.txt        |   10 ++++++++++
+>  .../devicetree/bindings/spi/spi_pl022.txt          |   12 ++++++++++++
+>  MAINTAINERS                                        |    2 ++
+>  drivers/of/irq.c                                   |   14 +++++++-------
+>  4 files changed, 31 insertions(+), 7 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/pl061-gpio.txt
+>  create mode 100644 Documentation/devicetree/bindings/spi/spi_pl022.txt
+>
+
+
+
 -- 
-1.7.3.2
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
