@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab1JESFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:05:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46930 "EHLO mx1.redhat.com"
+	id S933229Ab1JESJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:09:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44784 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab1JESFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:05:54 -0400
-Date: Wed, 5 Oct 2011 20:01:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
-	thread is singlestepping.
-Message-ID: <20111005180139.GA5704@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com> <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com>
+	id S932812Ab1JESJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 14:09:23 -0400
+Date: Wed, 5 Oct 2011 14:09:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Anderson <anderson@redhat.com>
+Cc: Tony Luck <tony.luck@intel.com>, "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111005180900.GJ30146@redhat.com>
+References: <20111005172912.GI30146@redhat.com>
+ <67cddd75-90d7-49b8-83ff-c677101b37b3@zmail05.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110927131213.GE3685@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <67cddd75-90d7-49b8-83ff-c677101b37b3@zmail05.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar, I am still reading this series, need more time to read this
-patch, but:
+On Wed, Oct 05, 2011 at 02:00:09PM -0400, Dave Anderson wrote:
+> 
+> 
+> ----- Original Message -----
+> > On Wed, Oct 05, 2011 at 07:20:37PM +0200, Borislav Petkov wrote:
+> > > On Wed, Oct 05, 2011 at 01:10:07PM -0400, Vivek Goyal wrote:
+> > > > On Wed, Oct 05, 2011 at 08:58:53AM -0700, Luck, Tony wrote:
+> > > > > > > The plan is to pass-down the list of poisoned memory pages
+> > > > > > > to the second
+> > > > > > > kernel using an elf-note so that these pages are left
+> > > > > > > untouched during
+> > > > > > > dump capture. I'm working on an implementation of the same
+> > > > > > > and should
+> > > > > > > have patches soon.
+> > > > > >
+> > > > > > I would say let us first figure out what happens while
+> > > > > > reading a poisoned
+> > > > > > page and is this a problem before working on a solution.
+> > > > > 
+> > > > > If the page is poisoned because of a real uncorrectable error
+> > > > > in memory
+> > > > > (reported as SRAO machine check today, or by SRAR
+> > > > > real-soon-now). Then
+> > > > > accessing the page from the processor while taking a memory
+> > > > > dump will
+> > > > > result in a machine check.
+> > > > > 
+> > > > > Note that a large memory system that had been running for a
+> > > > > long time
+> > > > > may have built up a small stash of these land-mine pages - and
+> > > > > we need
+> > > > > to worry about them even in the case where the panic is not
+> > > > > machine
+> > > > > check related (in fact especially in this case ... we are in a
+> > > > > case
+> > > > > where we actually do want the dump to diagnose the cause of the
+> > > > > panic,
+> > > > > and we don't want to risk losing the crash dump because we
+> > > > > aborted when
+> > > > > touching a page that the OS had safely avoided for
+> > > > > days/weeks/months).
+> > > > > 
+> > > > > So passing a list of poisoned pages from the old kernel to the
+> > > > > new kernel
+> > > > > is a good idea - and is independent of the cause of the crash
+> > > > > (except that
+> > > > > in the fatal machine check case due to memory error the list is
+> > > > > guaranteed
+> > > > > to be non-empty).
+> > > > 
+> > > > Whre is this poisoned page info stored? In struct page? If yes, then
+> > > > user space can walk through it and make sure not to touch poisoned pages.
+> > > > Anyway user space filtering utility "makedumpfile" walks through struct
+> > > > pages to filter out the pages. It should be able to filter out
+> > > > poisoned pages unconditionally. So there should be no need for kernel
+> > > > to export a list of these pages.
+> > > 
+> > > Does this utility work on a vmcore dump? If so, Tony refers to the
+> > > creation of the vmcore itself from the memory used by the first
+> > > kernel.
+> > 
+> > No, this utitlity can directly work on /proc/vmcore where first kernel's
+> > image is still in memory and not on disk.
+> > 
+> > > If there are poisoned pages, merely accessing that portion of DRAM
+> > > containing the poisoned data would cause further MCEs in the freshly
+> > > booted kernel so you won't be able to finish creating the dump.
+> > 
+> > As long as you can get to your struct page arrays, one should be able
+> > to filter out poisoned pages without saving the whole dump.
+> 
+> It's still going to require a minimal kernel change because the
+> PG_hwpoison flag's bit number differs depending upon the kernel
+> configuration, if it exists at all.  An additional vmcoreinfo item
+> probably...
+> 
 
-On 09/27, Srikar Dronamraju wrote:
->
-> I did a rethink and implemented this patch a little differently using
-> block_all_signals, unblock_all_signals. This wouldnt need the
-> #ifdeffery + no changes in kernel/signal.c
+Yes, that kind of information we can export along with other info
+in vmcoreinfo.
 
-No, Please don't. block_all_signals() must be killed. This interface
-simply do not work. At all. It is buggy as hell. I guess I should ping
-David Airlie again.
-
-Oleg.
-
+Thanks
+Vivek
