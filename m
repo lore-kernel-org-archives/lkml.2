@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934793Ab1JENuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 09:50:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47315 "EHLO mx1.redhat.com"
+	id S1757835Ab1JEN4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 09:56:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11180 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934271Ab1JENux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 09:50:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1736.1317821830@redhat.com>
-References: <1736.1317821830@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> 
-Cc: dhowells@redhat.com,
-        Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Wed, 05 Oct 2011 14:49:54 +0100
-Message-ID: <2416.1317822594@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1755276Ab1JEN4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 09:56:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,491,1312182000"; 
+   d="scan'208";a="59037748"
+Date: Wed, 5 Oct 2011 21:56:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
+Message-ID: <20111005135615.GA16438@localhost>
+References: <20111003134228.090592370@intel.com>
+ <20111004195206.GG28306@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004195206.GG28306@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
-
-> > [ 7719.996883] FS-Cache: Assertion failed
-> > [ 7719.996886] 3 == 5 is false
-> > [ 7719.996906] ------------[ cut here ]------------
-> > [ 7720.006139] kernel BUG at fs/fscache/operation.c:408!
-> > [ 7720.006751] invalid opcode: 0000 [#1] SMP
-> > [ 7720.006751] CPU 7
+On Wed, Oct 05, 2011 at 03:52:06AM +0800, Vivek Goyal wrote:
+> On Mon, Oct 03, 2011 at 09:42:28PM +0800, Wu Fengguang wrote:
+> > Hi,
+> > 
+> > This is the minimal IO-less balance_dirty_pages() changes that are expected to
+> > be regression free (well, except for NFS).
+> > 
+> >         git://github.com/fengguang/linux.git dirty-throttling-v12
+> > 
+> > Tests results will be posted in a separate email.
 > 
-> Ummm... what's at line 408 for you?  It doesn't seem to be the same as what
-> I've got.
+> Looks like we are solving two problems.
 > 
-> Do you have all my patches applied?
+> - IO less balance_dirty_pages()
+> - Throttling based on ratelimit instead of based on number of dirty pages.
+> 
+> The second piece is the one which has complicated calculations for
+> calculating the global/bdi rates and logic for stablizing the rates etc.
+> 
+> IIUC, second piece is primarily needed for better latencies for writers.
 
-Never mind.  I've got a patch applied that I haven't sent out yet.
+Well, yes. The bdi->dirty_ratelimit estimation turns out to be the
+most confusing part of the patchset... Other than the complexities,
+the algorithm does work pretty well in the tests (except for small
+memory cases, in which case its estimation accuracy no longer matters).
 
-David
+Note that the bdi->dirty_ratelimit thing, even when goes wrong, is
+very unlikely to cause large regressions. The known regressions mostly
+originate from the nature of IO-less.
+
+> Will it make sense to break down this work in two patch series. First
+> push IO less balance dirty pages and then all the complicated pieces
+> of ratelimits.
+> 
+> ratelimit allowed you to come up with sleep time for the process. Without
+> that I think you shall have to fall back to what Jan Kar had done, 
+> calculation based on number of pages.
+
+If dropping all the smoothness considerations, the minimal
+implementation would be close to this patch:
+
+        [PATCH 05/35] writeback: IO-less balance_dirty_pages()
+        http://www.spinics.net/lists/linux-mm/msg12880.html
+
+However the experiences were, it may lead to much worse latencies than
+the vanilla one in JBOD cases. This is because vanilla kernel has the
+option to break out of the loop when written enough pages, however the
+IO-less balance_dirty_pages() will just wait until the dirty pages
+drop below the (rushed high) bdi threshold, which could take long time.
+
+Another question is, the IO-less balance_dirty_pages() is basically
+
+        on every N pages dirtied, sleep for M jiffies
+
+In current patchset, we get the desired N with formula
+
+        N = bdi->dirty_ratelimit / desired_M
+
+When dirty_ratelimit is not available, it would be a problem to
+estimate the adequate N that works well for various workloads.
+
+And to avoid regressions, patches 8,9,10,11 (maybe updated form) will
+still be necessary. And a complete rerun of all the test cases and to
+fix up any possible new regressions.
+
+Overall it may cost too much (if possible at all, considering the two
+problems listed above) to try out the above steps. The main intention
+being "whether we can introduce the dirty_ratelimit complexities later".
+Considering that the complexity itself is not likely causing problems
+other than lose of smoothness, it looks beneficial to test the ready
+made code earlier in production environments, rather than to take lots
+of efforts to strip them out and test new code, only to add them back
+in some future release.
+
+Thanks,
+Fengguang
