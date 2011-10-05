@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934707Ab1JENS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 09:18:58 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43692 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934680Ab1JENS5 (ORCPT
+	id S934739Ab1JENWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 09:22:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54475 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934680Ab1JENWq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 09:18:57 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 5
-In-Reply-To: Your message of "Wed, 05 Oct 2011 23:36:25 +1100."
-             <20111005233625.a5a6e83e53a338c7b4e205ff@canb.auug.org.au>
-From: Valdis.Kletnieks@vt.edu
-References: <20111005193750.78af4ac777e9b69230d62375@canb.auug.org.au> <27222.1317816559@turing-police.cc.vt.edu>
-            <20111005233625.a5a6e83e53a338c7b4e205ff@canb.auug.org.au>
+	Wed, 5 Oct 2011 09:22:46 -0400
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: starlight@binnacle.cx, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, Ingo Molnar <mingo@elte.hu>
+Date: Wed, 05 Oct 2011 15:22:22 +0200
+In-Reply-To: <alpine.DEB.2.00.1110041358500.12199@router.home>
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
+	 <alpine.DEB.2.00.1110041358500.12199@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317820942.6766.26.camel@twins>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1317820667_4646P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 05 Oct 2011 09:17:47 -0400
-Message-ID: <29826.1317820667@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4E8C58FE.004B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1317820667_4646P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 05 Oct 2011 23:36:25 +1100, Stephen Rothwell said:
-
-> Yeah, linux-next is not back on git.kernel.org yet.  See the note at the
-> top of the email you quoted above:
+On Tue, 2011-10-04 at 14:16 -0500, Christoph Lameter wrote:
 > 
-> "The linux-next tree is now available from
-> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> the kernel.org servers are unavailable."
+> We had similar experiences. Basically latency constantly gets screwed up
+> by the new fancy features being added to the scheduler and network
+> subsystem (most notorious is the new "fair" scheduler, 2.6.23 made a big
+> step down). The kernel has a fairly constant regression in terms of
+> latency release after release. Only the new and more efficient processors
+> periodically provide some compensation (and some isolated patches to
+> actually improve things get in but these are usually watered down one or
+> two releases after those improvements have been made). 
 
--ENOCAFFEINE - I saw the git://git.kernel.org and thought "Oh good, Stephen is
-back up and running on kernel.org again".
+I suppose all this testing and feedback we receive from you really helps
+us keep the performance levels you want.. Oh wait, that's 0.
 
-The spectacularly unhelpful behavior of git didn't help matters any.
-If it had printed out "no such tree here" or similar rather than just
-hanging up, I'd probably have gone back and re-read the mail...
+Clearly none of the tests being ran on a regular basis, by for instance
+the Intel regression team, covers your needs. Start by fixing that.
 
-
---==_Exmh_1317820667_4646P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOjFj6cC3lWbTT17ARAji0AJ45jwvr3a/3GynllmgZta5/QlY0LACglhWQ
-2PjC3p7ow438HUMyUR+NUMI=
-=RoW6
------END PGP SIGNATURE-----
-
---==_Exmh_1317820667_4646P--
-
+Also, for latency, we've got ftrace and a latencytracer, provide traces
+that illustrate your fail.
