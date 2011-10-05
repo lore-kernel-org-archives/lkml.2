@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935135Ab1JERJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 13:09:24 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:38618 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S935070Ab1JERJW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 13:09:22 -0400
-Message-ID: <4E8C8F3D.8040605@xenotime.net>
-Date: Wed, 05 Oct 2011 10:09:17 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S935142Ab1JERKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 13:10:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935064Ab1JERKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 13:10:36 -0400
+Date: Wed, 5 Oct 2011 13:10:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "crash-utility@redhat.com" <crash-utility@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "anderson@redhat.com" <anderson@redhat.com>,
+        "tachibana@mxm.nes.nec.co.jp" <tachibana@mxm.nes.nec.co.jp>,
+        "oomichi@mxs.nes.nec.co.jp" <oomichi@mxs.nes.nec.co.jp>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111005171007.GF30146@redhat.com>
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <20111004143012.GB28306@redhat.com>
+ <20111005074116.GC2235@in.ibm.com>
+ <20111005154011.GD30146@redhat.com>
+ <987664A83D2D224EAE907B061CE93D5301EE62D58D@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, rmody@brocade.com,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        huangj@brocade.com, adapter_linux_open_src_team@brocade.com,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [net-next 1/1] bna: Multiple Definition and Interface Setup Fix
-References: <1317781880-26515-1-git-send-email-rmody@brocade.com>	<20111004.232713.1345786533613742751.davem@davemloft.net> <20111005192601.fa947a78b188f4a021042a5e@canb.auug.org.au>
-In-Reply-To: <20111005192601.fa947a78b188f4a021042a5e@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EE62D58D@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/11 01:26, Stephen Rothwell wrote:
-> On Tue, 04 Oct 2011 23:27:13 -0400 (EDT) David Miller <davem@davemloft.net> wrote:
->>
->> From: Rasesh Mody <rmody@brocade.com>
->> Date: Tue, 4 Oct 2011 19:31:20 -0700
->>
->>> drivers/net/built-in.o: In function `bfa_ioc_ct2_poweron':
->>> (.text+0xcdc90): multiple definition of `bfa_ioc_ct2_poweron'
->>> drivers/scsi/built-in.o:(.text+0x17f9a0): first defined here
->>>
->>> This patch renames bfa_ioc_ct2_poweron() to bfa_nw_ioc_ct2_poweron() to avoid
->>> multiple definition with Brocade scsi driver. It also modifies asic specific
->>> interface setup to allocate MSIX resources at power on in case of 1860 HW with
->>> no asic block and warns if the asic gen is neither BFI_ASIC_GEN_CT nor
->>> BFI_ASIC_GEN_CT2.
->>>
->>> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
->>> Signed-off-by: Rasesh Mody <rmody@brocade.com>
->>
->> Applied, thanks.
+On Wed, Oct 05, 2011 at 08:58:53AM -0700, Luck, Tony wrote:
+> > > The plan is to pass-down the list of poisoned memory pages to the second
+> > > kernel using an elf-note so that these pages are left untouched during
+> > > dump capture. I'm working on an implementation of the same and should
+> > > have patches soon.
+> >
+> > I would say let us first figure out what happens while reading a poisoned
+> > page and is this a problem before working on a solution.
+> 
+> If the page is poisoned because of a real uncorrectable error in memory
+> (reported as SRAO machine check today, or by SRAR real-soon-now). Then
+> accessing the page from the processor while taking a memory dump will
+> result in a machine check.
+> 
+> Note that a large memory system that had been running for a long time
+> may have built up a small stash of these land-mine pages - and we need
+> to worry about them even in the case where the panic is not machine
+> check related (in fact especially in this case ... we are in a case
+> where we actually do want the dump to diagnose the cause of the panic,
+> and we don't want to risk losing the crash dump because we aborted when
+> touching a page that the OS had safely avoided for days/weeks/months).
+> 
+> So passing a list of poisoned pages from the old kernel to the new kernel
+> is a good idea - and is independent of the cause of the crash (except that
+> in the fatal machine check case due to memory error the list is guaranteed
+> to be non-empty).
 
-Thanks for the patch.
+Whre is this poisoned page info stored? In struct page? If yes, then
+user space can walk through it and make sure not to touch poisoned pages.
+Anyway user space filtering utility "makedumpfile" walks through struct
+pages to filter out the pages. It should be able to filter out 
+poisoned pages unconditionally. So there should be no need for kernel
+to export a list of these pages.
 
-> I also manually applied this to linux-next today.
-
-We could also stand to have this patch applied to linux-next since
-it doesn't seem to be merged anywhere else yet: (for drivers/media/video)
-
-http://marc.info/?l=linux-next&m=131741851601754&w=2
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks
+Vivek
