@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757716Ab1JEEoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 00:44:21 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:32482 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755439Ab1JEEoU (ORCPT
+	id S1757801Ab1JEEo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 00:44:28 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20387 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757724Ab1JEEo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 00:44:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwBACbdi06WZd+d/2dsb2JhbAAMNoRtlFKRUwRSNQImAnKtSJFBgS2EY4ETBKU/
-Subject: [PATCH 2/4] atm: solos-pci: Remove annoying line of debugging
-From: Nathan Williams <nathan@traverse.com.au>
-To: netdev@vger.kernel.org
-Cc: linux-atm-general@lists.sourceforge.net,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Oct 2011 15:44:17 +1100
-Message-ID: <1317789857.2424.86.camel@dualcore.traverse>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 5 Oct 2011 00:44:26 -0400
+From: "Tomoya MORINAGA" <Tomoya.Morinaga@dsn.rohm.co.jp>
+To: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
+        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>,
+        "'Tomoya MORINAGA'" <morinaga526@dsn.okisemi.com>, <stable@kernel.org>
+References: <CACxGe6uPnXm4Ehk0Bwss_B48j3oUtE1L8SSTyCE6nC2b9K0hhA@mail.gmail.com>
+Subject: RE: [GIT PULL] spi driver bug fixes
+Date: Wed, 5 Oct 2011 13:44:21 +0900
+Message-ID: <95F40BC8A9814963B7347EF0C1B3B50B@hacdom.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcyCsMZR2LDv2e8USFSSRa+Z117XVgAaDwVw
+In-Reply-To: <CACxGe6uPnXm4Ehk0Bwss_B48j3oUtE1L8SSTyCE6nC2b9K0hhA@mail.gmail.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"len: %d" isn't particularly useful for anyone and confuses users.
+On Wednesday, October 05, 2011 1:15 AM, Grant Likely wrote:
+> Tomoya, are these applicable for the stable tree?
+Yes, these are applicable for the stable.
 
-Signed-off-by: Nathan Williams <nathan@traverse.com.au>
----
- drivers/atm/solos-pci.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+------
+Tomoya
+ROHM Co., Ltd.
 
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 5d1d076..bd01aa3 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -452,7 +452,6 @@ static ssize_t console_show(struct device *dev, struct device_attribute *attr,
- 
- 	len = skb->len;
- 	memcpy(buf, skb->data, len);
--	dev_dbg(&card->dev->dev, "len: %d\n", len);
- 
- 	kfree_skb(skb);
- 	return len;
--- 
-1.7.2.5
+-----Original Message-----
+From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+Sent: Wednesday, October 05, 2011 1:15 AM
+To: Linus Torvalds; Linux Kernel Mailing List; spi-devel-general@lists.sourceforge.net; Tomoya
+MORINAGA; stable@kernel.org
+Subject: [GIT PULL] spi driver bug fixes
+
+Hi Linus,
+
+Here are some bug fixes for the topcliff spi driver.
+
+Tomoya, are these applicable for the stable tree?
+
+The following changes since commit 0f86267b79bc6e357b8606077c7f70239045ea9c:
+
+  Merge branch 'hwmon-for-linus' of git://github.com/groeck/linux
+(2011-10-03 12:54:56 -0700)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 spi/merge
+
+Tomoya MORINAGA (5):
+      spi-topcliff-pch: add tx-memory clear after complete transmitting
+      spi-topcliff-pch: Fix SSN Control issue
+      spi-topcliff-pch: Fix CPU read complete condition issue
+      spi-topcliff-pch: Add recovery processing in case FIFO overrun error occurs
+      spi-topcliff-pch: Fix overrun issue
+
+ drivers/spi/spi-topcliff-pch.c |   93 ++++++++++++++++++++++++++++------------
+ 1 files changed, 66 insertions(+), 27 deletions(-)
 
 
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
 
