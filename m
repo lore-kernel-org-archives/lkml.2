@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab1JEBsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 21:48:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58649 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757633Ab1JEBsg (ORCPT
+	id S933882Ab1JEBzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 21:55:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56667 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757618Ab1JEBzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 21:48:36 -0400
-Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-From: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: quilt-dev@nongnu.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        John Kacur <jkacur@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 05 Oct 2011 03:48:26 +0200
-In-Reply-To: <1317753468.18063.19.camel@gandalf.stny.rr.com>
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
-	 <20111004180237.GA15087@suse.de>
-	 <1317752148.18063.16.camel@gandalf.stny.rr.com>
-	 <20111004182615.GA16224@suse.de>
-	 <1317753468.18063.19.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317779312.1662.37.camel@schurl.linbit>
+	Tue, 4 Oct 2011 21:55:48 -0400
+Date: Tue, 4 Oct 2011 18:57:18 -0700
+From: Andrew Morton <akpm00@gmail.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [RFC PATCH 2/2 -mm] RapidIO: TSI721 Add DMA Engine support
+Message-Id: <20111004185718.a5806a7e.akpm00@gmail.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552022D6319@CORPEXCH1.na.ads.idt.com>
+References: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com>
+	<1317418715-9666-2-git-send-email-alexandre.bounine@idt.com>
+	<20110930151544.31875132.akpm00@gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E55202291E8D@CORPEXCH1.na.ads.idt.com>
+	<20111004144353.18087914.akpm00@gmail.com>
+	<0CE8B6BE3C4AD74AB97D9D29BD24E552022D6319@CORPEXCH1.na.ads.idt.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-04 at 14:37 -0400, Steven Rostedt wrote:
-> On Tue, 2011-10-04 at 11:26 -0700, Greg KH wrote:
+On Tue, 4 Oct 2011 18:38:09 -0700 "Bounine, Alexandre" <Alexandre.Bounine@idt.com> wrote:
+
+> > No, it can be used all over the place: drivers/net/irda/w83977af_ir.c,
+> > drivers/scsi/bnx2fc/bnx2fc_tgt.c,
+> > drivers/net/wireless/rt2x00/rt2x00pci.c,
+> > drivers/crypto/amcc/crypto4xx_core.c and many nmore.
 > 
-> > > What are git's "split" subject: lines?
-> > 
-> > Do the following:
-> >  $ git show --pretty=email 21d17dd2a377ba894f26989915eb3c6e427a3656
-> > 
-> > and look at how the Subject line is formatted:
-> > 	Subject: [PATCH] ASoC: Fix setting update bits for WM8753_LADC and
-> > 	 WM8753_RADC
-> > 
-> > Which is legal for email subject lines.  But quilt can't handle this and
-> > ends up thinking the data after the Subject: line is part of the patch
-> > text body and messes stuff up when doing 'quilt mail' later.
+> In this case I will happily use dma_zalloc_coherent() as soon as
+> it is available
 
-Aah, all this email parsing code is so ugly.  I think it works now
-though.
+geeze, which of us is more lazy?
 
-> > Oh, then there's the issue of quilt not handling ',' in a Signed-off-by
-> > line as a valid email address name, but I've been living with that one
-> > for years...
+Here we go...
 
-That's not even valid in email addresses.  The proper way would be to
-double-quote the "display name" which probably contains the comma, but
-then quilt's edmail script still won't understand it.  Is this a real
-problem?
 
-Andreas
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: include/linux/dma-mapping.h: add dma_zalloc_coherent()
+
+Lots of driver code does a dma_alloc_coherent() and then zeroes out the
+memory with a memset.  Make it easy for them.
+
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: include-linux-dma-mappingh-add-dma_zalloc_coherent
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ Documentation/DMA-API.txt   |    7 +++++++
+ include/linux/dma-mapping.h |   10 ++++++++++
+ 2 files changed, 17 insertions(+)
+
+diff -puN include/linux/dma-mapping.h~include-linux-dma-mappingh-add-dma_zalloc_coherent include/linux/dma-mapping.h
+--- a/include/linux/dma-mapping.h~include-linux-dma-mappingh-add-dma_zalloc_coherent
++++ a/include/linux/dma-mapping.h
+@@ -1,6 +1,7 @@
+ #ifndef _LINUX_DMA_MAPPING_H
+ #define _LINUX_DMA_MAPPING_H
+ 
++#include <linux/string.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/dma-attrs.h>
+@@ -117,6 +118,15 @@ static inline int dma_set_seg_boundary(s
+ 		return -EIO;
+ }
+ 
++static inline void *dma_zalloc_coherent(struct device *dev, size_t size,
++					dma_addr_t *dma_handle, gfp_t flag)
++{
++	void *ret = dma_alloc_coherent(dev, size, dma_handle, flag);
++	if (ret)
++		memset(ret, 0, size);
++	return ret;
++}
++
+ #ifdef CONFIG_HAS_DMA
+ static inline int dma_get_cache_alignment(void)
+ {
+diff -puN Documentation/DMA-API.txt~include-linux-dma-mappingh-add-dma_zalloc_coherent Documentation/DMA-API.txt
+--- a/Documentation/DMA-API.txt~include-linux-dma-mappingh-add-dma_zalloc_coherent
++++ a/Documentation/DMA-API.txt
+@@ -50,6 +50,13 @@ specify the GFP_ flags (see kmalloc) for
+ implementation may choose to ignore flags that affect the location of
+ the returned memory, like GFP_DMA).
+ 
++void *
++dma_zalloc_coherent(struct device *dev, size_t size,
++			     dma_addr_t *dma_handle, gfp_t flag)
++
++Wraps dma_alloc_coherent() and also zeroes the returned memory if the
++allocation attempt succeeded.
++
+ void
+ dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
+ 			   dma_addr_t dma_handle)
+_
 
