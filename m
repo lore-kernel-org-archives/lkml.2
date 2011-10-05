@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934842Ab1JEPHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:07:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52602 "EHLO mx2.suse.de"
+	id S1758008Ab1JEPMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:12:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6415 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934472Ab1JEPHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:07:36 -0400
-Message-ID: <4E8C72B6.9030603@suse.cz>
-Date: Wed, 05 Oct 2011 17:07:34 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
+	id S1757904Ab1JEPMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:12:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,491,1312182000"; 
+   d="scan'208";a="70580979"
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, starlight@binnacle.cx,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
+	<alpine.DEB.2.00.1110041358500.12199@router.home>
+	<1317820942.6766.26.camel@twins>
+	<alpine.DEB.2.00.1110050915160.30467@router.home>
+Date: Wed, 05 Oct 2011 08:12:44 -0700
+In-Reply-To: <alpine.DEB.2.00.1110050915160.30467@router.home> (Christoph
+	Lameter's message of "Wed, 5 Oct 2011 09:26:24 -0500 (CDT)")
+Message-ID: <m2mxdf4glv.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Sanjeev Premi <premi@ti.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: fix warnings due to unused return values
-References: <1316691396-25447-1-git-send-email-premi@ti.com>
-In-Reply-To: <1316691396-25447-1-git-send-email-premi@ti.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.9.2011 13:36, Sanjeev Premi wrote:
-> The return value of wattrset() is being ignored in the
-> code and newer compilers complain about this e.g.
-> 
-> HOSTCC  scripts/kconfig/lxdialog/checklist.o
-> scripts/kconfig/lxdialog/checklist.c: In function print_item:
-> scripts/kconfig/lxdialog/checklist.c:40: warning: value computed is not used
-> scripts/kconfig/lxdialog/checklist.c:46: warning: value computed is not used
-> 
-> Let the compiler know that ignore is intentional.
-> 
-> Signed-off-by: Sanjeev Premi <premi@ti.com>
-> ---
-> 
->   The patch was created against the last pull from git.kernel.org
->   The 'pull' from github is taking more than few hours...
-> 
->   Based on the time stamps at this url, I believe the patch should
->   apply cleanly:
->    https://github.com/torvalds/linux/tree/master/scripts/kconfig/lxdialog
+Christoph Lameter <cl@gentwo.org> writes:
 
-The latest kconfig tree is at http://repo.or.cz/w/linux-kbuild.git,
-branch kconfig. You can pull it by
+> On Wed, 5 Oct 2011, Peter Zijlstra wrote:
+>
+>> Clearly none of the tests being ran on a regular basis, by for instance
+>> the Intel regression team, covers your needs. Start by fixing that.
+>
+> The most commonly run, the aged old tests contained in the AIM9 suite,
+> have consistently shown these regressions over long years and they have
+> been brought up repeatedly in numerous discussions. This is pervasive
+> thoughout the OS hotpaths. Just look at how the page fault latencies
+> change over time. Take a modern machine and then run successively older
+> kernel versions on it. You will see performance getting better and
+> latencies becoming smaller.
 
-$ git fetch git://repo.or.cz/linux-kbuild.git kconfig:kconfig
+One of the reason the Intel tests fix problems is that Alex and Tim
+and others look into them and track down regressions. If you see
+a new problem during your testing you should do the same.
+This actually helps.
 
-> diff --git a/scripts/kconfig/lxdialog/checklist.c b/scripts/kconfig/lxdialog/checklist.c
-> index a2eb80f..8407849 100644
-> --- a/scripts/kconfig/lxdialog/checklist.c
-> +++ b/scripts/kconfig/lxdialog/checklist.c
-> @@ -37,20 +37,20 @@ static void print_item(WINDOW * win, int choice, int selected)
->  	list_item[list_width - item_x] = '\0';
->  
->  	/* Clear 'residue' of last item */
-> -	wattrset(win, dlg.menubox.atr);
-> +	(void)wattrset(win, dlg.menubox.atr);
->  	wmove(win, choice, 0);
->  	for (i = 0; i < list_width; i++)
->  		waddch(win, ' ');
->  
->  	wmove(win, choice, check_x);
-> -	wattrset(win, selected ? dlg.check_selected.atr
-> +	(void)wattrset(win, selected ? dlg.check_selected.atr
+It doesn't need to be a full analysis/patch, even just posting some detailed
+information on a new regression is useful.
 
-Uhm, not pretty. What ncurses version are you using? Can you post the
-output of make V=1 menuconfig? It seems like wattrset is defined as a
-macro instead of a function call. FWIW, it does not print any warnings
-here with
+For example one tool I found useful is to just enable the function
+graph tracer and look at the latencies of functions in that path
+during the test. 
 
-$ rpm -qf /usr/include/ncurses
-ncurses-devel-5.8-2.6.x86_64
-and
-gcc version 4.6.1 20110801 [gcc-4_6-branch revision 177033] (SUSE Linux)
+If something changes dramatically it's relatively easy to point to.
 
-on openSUSE Factory.
+So for example if you see context switch changing it should not 
+be that difficult to do such a trace and at least point to the guilty
+functions and post a mail.
 
-Michal
+>> Also, for latency, we've got ftrace and a latencytracer, provide traces
+>> that illustrate your fail.
+>
+> We would need a backport of both to a kernel version that works with
+> reasonable latencies so that we can figure out what caused these
+> regressions for this particular case. Disabling network and kernel
+> features usually gives you better performance but there are a lot of
+> things in the hot paths these days that can not be disabled.
+
+Please do function traces and point fingers at slow things in hotpath.
+The more the merrier. Post a list of a shame!
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
