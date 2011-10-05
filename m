@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab1JEHJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:09:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48211 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab1JEHJb (ORCPT
+	id S1757906Ab1JEHSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:18:52 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55948 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab1JEHSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:09:31 -0400
-Subject: Re: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, James.Bottomley@hansenpartnership.com,
-        hpa@zytor.com
-In-Reply-To: <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com>
-References: <20111001000856.DD623081@kernel>
-	 <20111001000900.BD9248B8@kernel>
-	 <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Oct 2011 09:09:24 +0200
-Message-ID: <1317798564.3099.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 5 Oct 2011 03:18:51 -0400
+Date: Wed, 5 Oct 2011 12:48:44 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111005071844.GB2235@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <20111004140437.GA28306@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004140437.GA28306@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 04 octobre 2011 à 23:50 -0700, David Rientjes a écrit :
-
-> This would be great if all the /proc/pid/numa_maps consumers were human, 
-> but unfortuantely that's not the case.  
+On Tue, Oct 04, 2011 at 10:04:37AM -0400, Vivek Goyal wrote:
+> On Mon, Oct 03, 2011 at 01:02:03PM +0530, K.Prasad wrote:
+> > There are certain types of crashes induced by faulty hardware in which
+> > capturing crashing kernel's memory (through kdump) makes no sense (or sometimes
+> > dangerous).
+> > 
+> > A case in point, is unrecoverable memory errors (resulting in fatal machine
+> > check exceptions) in which reading from the faulty memory location from the
+> > kexec'ed kernel will cause double fault and system reset (leaving no
+> > information for the user).
 > 
-> I understand that this patchset was probably the result of me asking for 
-> the pagesize= to be specified in each line and using pagesize=4K and 
-> pagesize=2M as examples, but that exact usage is probably not what we 
-> want.
+> Prasad,
 > 
-> As long as there are scripts that go through and read this information 
-> (we have some internally), expressing them with differing units just makes 
-> it more difficult to parse.  I'd rather them just be the byte count.
-> 
-> That way, 1G pages would just show pagesize=1073741824.  I don't think 
-> that's too long and is much easier to parse systematically.
-> 
+> I am just trying to remember what was wrong with Andi's approach of
+> disable MCE while copying the dump?
+>
 
-Hmm... Thats sounds strange.
+Hi Vivek,
+	The behaviour upon a read operation on an UC memory location is
+undefined and so we want to avoid it (previously discussed here:
+http://article.gmane.org/gmane.linux.kernel/1146799). When we disable
+MCE and copy the dump, we will invariably read the faulty memory
+location.
 
-Are you saying you cant change your scripts [But you'll have to anyway
-to parse pagesize=] ?
-
-I routinely use "cat /proc/xxx/numa_maps", and am stuck when a kernel
-displays nothing (it happened on some debian released kernels)
-
-Seeing pagesize=1GB is slightly better for human, and not that hard to
-parse for a program.
-
-By the way, "pagesize=4KiB" are just noise if you ask me, thats the
-default PAGE_SIZE. This also breaks old scripts :)
-
-
-
+Thanks,
+K.Prasad
+ 
