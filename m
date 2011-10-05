@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934809Ab1JEOtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 10:49:47 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57448 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab1JEOtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 10:49:45 -0400
+	id S1757989Ab1JEO6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 10:58:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757832Ab1JEO6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 10:58:23 -0400
+Date: Wed, 5 Oct 2011 16:59:04 -0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] virtio-net: Verify page list size before fitting
+ into  skb
+Message-ID: <20111005185904.GA15444@redhat.com>
+References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+ <20111003190416.GC22427@redhat.com>
+ <1317822654.3676.1.camel@lappy>
 MIME-Version: 1.0
-In-Reply-To: <1317798113.29415.270.camel@pasglop>
-References: <1317653420-21404-3-git-send-email-mason@myri.com>
- <CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
- <1317742838.29415.217.camel@pasglop> <CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
- <1317744493.29415.238.camel@pasglop> <CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com>
- <1317749439.29415.251.camel@pasglop> <CA+55aFyOcb2y1QVaTNssWFU+nCee8RSs9-wZ-ARnFWcF5MdGSA@mail.gmail.com>
- <1317798113.29415.270.camel@pasglop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Oct 2011 07:49:24 -0700
-X-Google-Sender-Auth: 1H6NnItrtdU1vC0GVyH5-ztAMEY
-Message-ID: <CA+55aFwoeC+X=XWWJ7HFUfz6tZmJW6PMmkGcRM5otLbyGt587Q@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using "performance" settings
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317822654.3676.1.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 5, 2011 at 12:01 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
->
->> We just don't the hell know, do we?
->
-> Well, we do with some confidence :-) Or rather what we do know is what
-> you have today in your tree is broken.
+On Wed, Oct 05, 2011 at 03:50:54PM +0200, Sasha Levin wrote:
+> On Mon, 2011-10-03 at 21:04 +0200, Michael S. Tsirkin wrote:
+> > On Wed, Sep 28, 2011 at 05:40:54PM +0300, Sasha Levin wrote:
+> > > This patch verifies that the length of a buffer stored in a linked list
+> > > of pages is small enough to fit into a skb.
+> > > 
+> > > If the size is larger than a max size of a skb, it means that we shouldn't
+> > > go ahead building skbs anyway since we won't be able to send the buffer as
+> > > the user requested.
+> > > 
+> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > Cc: virtualization@lists.linux-foundation.org
+> > > Cc: netdev@vger.kernel.org
+> > > Cc: kvm@vger.kernel.org
+> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > > ---
+> > >  drivers/net/virtio_net.c |   13 +++++++++++++
+> > >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > index 0c7321c..bde0dec 100644
+> > > --- a/drivers/net/virtio_net.c
+> > > +++ b/drivers/net/virtio_net.c
+> > > @@ -195,6 +195,19 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+> > >  	len -= copy;
+> > >  	offset += copy;
+> > >  
+> > > +	/*
+> > > +	 * Verify that we can indeed put this data into a skb.
+> > > +	 * This is here to handle cases when the device erroneously
+> > > +	 * tries to receive more than is possible. This is usually
+> > > +	 * the case of a broken device.
+> > > +	 */
+> > > +	if (unlikely(len > MAX_SKB_FRAGS * PAGE_SIZE)) {
+> > > +		if (net_ratelimit())
+> > > +			pr_debug("%s: too much data\n", skb->dev->name);
+> > > +		dev_kfree_skb(skb);
+> > > +		return NULL;
+> > > +	}
+> > > +
+> > 
+> > BTW, receive_mergeable does
+> >                         pr_debug("%s: packet too long\n", skb->dev->name);
+> >                         skb->dev->stats.rx_length_errors++;
+> > 
+> > which makes sense.
+> 
+> Do you think we should increase rx_length_errors here as well?
 
-You're missing the point.
+this is all debugging tool for devices/drivers, right?
+so maybe not worth the noise.
 
-Repeat after me: late -rc series is not when we test these kinds of things.
-
-This point in time is when we *revert* commits that are broken. We fix
-them if there is absolutely no question about the fix, but that simply
-isn't true here. Even if the patches "improve" something, there is no
-way I hell that I believe that we suddenly don't need to worry about
-MPS any more.
-
-How hard is this to just understand? It's not about "we can improve
-things". It's about "it's f*%!ing late in the rc series, we're not
-dicking around any more!".
-
-So quite frankly, if you don't like the code now, send me a revert for
-all the mess. BUT DON'T ARGUE FOR CHANGES THAT AREN'T 100% ROCK SOLID.
-
-So the current situation is that MPS is simply *disabled*. All the
-crap code simply doesn't matter at all, because nobody will run it.
-Arguing that it is "broken" is stupid, because the only people that
-that brokenness would ever matter for are the people like you who are
-testing things out - not actual users.
-
-Comprende?
-
-Think of it like a stable kernel. We don't mess around with things
-that don't matter and nobody will hit. We don't do "development" in
-the late -rc, and yet that is what the MPS patches in question have
-been doing.
-
-IT IS TOO LATE FOR CRAP LIKE THAT. WE TURNED IT OFF.
-
-                       Linus
+> -- 
+> 
+> Sasha.
