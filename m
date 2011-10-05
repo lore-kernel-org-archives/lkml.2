@@ -1,143 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab1JEHwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:52:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34329 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757895Ab1JEHwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:52:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,490,1312182000"; 
-   d="scan'208";a="70462434"
-Message-ID: <4E8C0CA7.2020907@intel.com>
-Date: Wed, 05 Oct 2011 10:52:07 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1757984Ab1JEHyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:54:44 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:46104 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab1JEHyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 03:54:43 -0400
+Date: Wed, 5 Oct 2011 10:54:39 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111005075438.GA29441@localhost.pp.htv.fi>
+References: <201110020304.28288.rjw@sisk.pl>
+ <4E87B885.50005@zytor.com>
+ <201110021354.57995.rjw@sisk.pl>
+ <4E88A537.4010008@zytor.com>
+ <20111003093239.GB25136@localhost.pp.htv.fi>
+ <y0mobxyjazi.fsf@fche.csb>
+ <20111003180441.GD3072@localhost.pp.htv.fi>
+ <34045.1317760188@turing-police.cc.vt.edu>
+ <20111004223932.GA3460@localhost.pp.htv.fi>
+ <20111004231730.GB17089@redhat.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] gpio: langwell: ensure alternate function is cleared
-References: <1317641767-2942-1-git-send-email-adrian.hunter@intel.com> <20111004183710.GG2870@ponder.secretlab.ca>
-In-Reply-To: <20111004183710.GG2870@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111004231730.GB17089@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/11 21:37, Grant Likely wrote:
-> On Mon, Oct 03, 2011 at 02:36:07PM +0300, Adrian Hunter wrote:
->> Alternate function must be zero for the pin to act as
->> a GPIO.
->>
->> Signed-off-by: Adrian Hunter<adrian.hunter@intel.com>
->> Signed-off-by: Alan Cox<alan@linux.intel.com>
->> ---
->>   drivers/gpio/gpio-langwell.c |   27 +++++++++++++++++++++++++++
->>   1 files changed, 27 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
->> index d2eb57c..00692e8 100644
->> --- a/drivers/gpio/gpio-langwell.c
->> +++ b/drivers/gpio/gpio-langwell.c
->> @@ -59,6 +59,7 @@ enum GPIO_REG {
->>   	GRER,		/* rising edge detect */
->>   	GFER,		/* falling edge detect */
->>   	GEDR,		/* edge detect result */
->> +	GAFR,		/* alt function */
->>   };
->>
->>   struct lnw_gpio {
->> @@ -81,6 +82,31 @@ static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
->>   	return ptr;
->>   }
->>
->> +static void __iomem *gpio_reg_2bit(struct gpio_chip *chip, unsigned offset,
->> +				   enum GPIO_REG reg_type)
->> +{
->> +	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
->> +	unsigned nreg = chip->ngpio / 32;
->> +	u8 reg = offset / 16;
->> +	void __iomem *ptr;
->> +
->> +	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
->
-> This looks wrong.  It looks to me like the __iomem annotation should
-> be added to ->reg_base.
->
-> Otherwise, the patch looks okay.
->
+On Tue, Oct 04, 2011 at 07:17:30PM -0400, Frank Ch. Eigler wrote:
+> Hi -
+> 
+> On Wed, Oct 05, 2011 at 01:39:32AM +0300, Adrian Bunk wrote:
+> 
+> > [...]  But the semantics of PGP key signing is that you certify that
+> > you verified that a photo ID of that person matches the name on the
+> > key.  [...]
+> 
+> But that's begging the question.  The semantics are what you want them
+> to be.  Some keysigning parties take this super seriously, and maybe
+> with strangers there's some room for this.  But in the end, when *I*
+> see a key with someone else's signature on it, there is no proof how
+> rigorously they investigated the person.  The "reliable identity" part
+> of the web of trust is only one hop deep.
 
-Deserves a separate patch...
+That is a rigid policy, but not the only one.
 
-From: Adrian Hunter <adrian.hunter@intel.com>
-Date: Wed, 5 Oct 2011 10:29:27 +0300
-Subject: [PATCH] gpio: langwell: declare reg_base as __iomem
+And it has practical limitations - "Key must be signed
+by H. Peter Anvin" might be a consequence for kernel.org.
 
-reg_base is __iomem so add that to the declaration
-and fix up assignment casts and types.
+What policy is now used at kernel.org now is exactly the question
+I asked in [1], and where I'm still waiting for an answer from hpa.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
-  drivers/gpio/gpio-langwell.c |   12 ++++++------
-  1 files changed, 6 insertions(+), 6 deletions(-)
+Other organizations like Debian have a clear and public policy on 
+what is required for the user identification part for uploading to
+the archive [2], and I expect the same for kernel.org.
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index 00692e8..b7465e5 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -64,7 +64,7 @@ enum GPIO_REG {
+> - FChE
 
-  struct lnw_gpio {
-  	struct gpio_chip		chip;
--	void				*reg_base;
-+	void __iomem			*reg_base;
-  	spinlock_t			lock;
-  	unsigned			irq_base;
-  	struct pci_dev			*pdev;
-@@ -78,7 +78,7 @@ static void __iomem *gpio_reg(struct gpio_chip *chip, 
-unsigned offset,
-  	u8 reg = offset / 32;
-  	void __iomem *ptr;
+cu
+Adrian
 
--	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
-+	ptr = lnw->reg_base + reg_type * nreg * 4 + reg * 4;
-  	return ptr;
-  }
+[1] https://lkml.org/lkml/2011/10/3/362
+[2] http://www.debian.org/devel/join/nm-step2
 
-@@ -90,7 +90,7 @@ static void __iomem *gpio_reg_2bit(struct gpio_chip 
-*chip, unsigned offset,
-  	u8 reg = offset / 16;
-  	void __iomem *ptr;
-
--	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
-+	ptr = lnw->reg_base + reg_type * nreg * 4 + reg * 4;
-  	return ptr;
-  }
-
-@@ -299,7 +299,7 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
-  static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
-  			const struct pci_device_id *id)
-  {
--	void *base;
-+	void __iomem *base;
-  	int i;
-  	resource_size_t start, len;
-  	struct lnw_gpio *lnw;
-@@ -324,8 +324,8 @@ static int __devinit lnw_gpio_probe(struct pci_dev 
-*pdev,
-  		dev_err(&pdev->dev, "error mapping bar1\n");
-  		goto err3;
-  	}
--	irq_base = *(u32 *)base;
--	gpio_base = *((u32 *)base + 1);
-+	irq_base = *(__force u32 *)base;
-+	gpio_base = *((__force u32 *)base + 1);
-  	/* release the IO mapping, since we already get the info from bar1 */
-  	iounmap(base);
-  	/* get the register base from bar0 */
 -- 
-1.7.6
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
 
