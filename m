@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab1JEU6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:58:55 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:57690 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846Ab1JEU6y (ORCPT
+	id S1758099Ab1JEVCE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:02:04 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57736 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757872Ab1JEVCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:58:54 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4E8CC500.50308@ise.pw.edu.pl>
-Date: Wed, 05 Oct 2011 22:58:40 +0200
-From: =?UTF-8?B?V29qY2llY2ggWmFib8WCb3RueQ==?= <wzab@ise.pw.edu.pl>
-Reply-To: wzab@ise.pw.edu.pl
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Icedove/3.1.13
-MIME-Version: 1.0
-To: "vger.kernel.org, " <linux-kernel@vger.kernel.org>
-Subject: Re: Error in kernel 3.0.4 for at91 - atmel_tcb.1 is not detected
- in tc_probe, fix provided
-References: <4E8CB644.8060003@ise.pw.edu.pl>
-In-Reply-To: <4E8CB644.8060003@ise.pw.edu.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 5 Oct 2011 17:02:01 -0400
+Date: Wed, 5 Oct 2011 14:01:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: viro@zeniv.linux.org.uk, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [RFCv4 PATCH 0/6]: add poll_requested_events() function
+Message-Id: <20111005140156.70ed0329.akpm@linux-foundation.org>
+In-Reply-To: <201110050947.09488.hverkuil@xs4all.nl>
+References: <1317282252-8290-1-git-send-email-hverkuil@xs4all.nl>
+	<201110050947.09488.hverkuil@xs4all.nl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry in my previous post the links were corrupted. Now the corrected version.
+On Wed, 5 Oct 2011 09:47:09 +0200
+Hans Verkuil <hverkuil@xs4all.nl> wrote:
 
-Hi,
+> On Thursday 29 September 2011 09:44:06 Hans Verkuil wrote:
+> > This is the fourth version of this patch series, incorporating the comments
+> > from Andrew Morton: I've split up the multiple-assignment line and added a
+> > comment explaining the purpose of the new function in poll.h.
+> > 
+> > It's also rebased to the current staging/for_v3.2 branch of the linux-media
+> > tree.
+> > 
+> > There are no other changes compared to the RFCv3 patches.
+> > 
+> > I'd very much like to get an Acked-by (or additional comments) from Al or
+> > Andrew! This patch series really should go into v3.2 which is getting
+> > close.
+> > 
+> > Normally I would have posted this v4 3 weeks ago, but due to Real Life
+> > interference in the past few weeks I was unable to. But I'm back, and this
+> > is currently the highest priority for me.
+> 
+> This is becoming annoying. Andrew, Al, can one of you please Ack this patch or 
+> review it? We *really* need this enhancement for our v4l drivers. I've been 
+> asking for an ack (or review) for ages and for the most part I got radio 
+> silence. Jon Corbet has already reviewed the code in early July (!), so I 
+> don't see why this is taking so long.
+> 
+> Mauro needs an ack from one of you before he can merge it.
+> 
 
-I've ported my driver, which uses the atmel_tcb.1 block as PWM source (in AT91SAM9260).
-The code worked perfectly in kernel.2.6.29.3, but now during the initialization I get the following error:
-
-atmel_tcb: probe of atmel_tcb.1 failed with error -22
-
-I have added printk invocations in the tc_probe routine, and I've found, that the problem occures, when tc_probe attempts to get clock for atmel_tcb.1 (In this line: 
-http://lxr.linux.no/linux+v3.0.4/drivers/misc/atmel_tclib.c#L125 )
-
-The atmel_tcb.0 is correctly used as clocksource:
-tcb_clksrc: tc0 at 12.916 MHz
-
-I have found, that the tc_probe always looks for "t0_clk", "t1_clk" and "t2_clk", and
-function at91_add_device_tc performs the following operations:
-
-( http://lxr.linux.no/linux+v2.6.29.3/arch/arm/mach-at91/at91sam9260_devices.c#L599 )
-static void __init at91_add_device_tc(void)
-{
-/* this chip has a separate clock and irq for each TC channel */
-at91_clock_associate("tc0_clk", &at91sam9260_tcb0_device.dev, "t0_clk");
-at91_clock_associate("tc1_clk", &at91sam9260_tcb0_device.dev, "t1_clk");
-at91_clock_associate("tc2_clk", &at91sam9260_tcb0_device.dev, "t2_clk");
-platform_device_register(&at91sam9260_tcb0_device);
-at91_clock_associate("tc3_clk", &at91sam9260_tcb1_device.dev, "t0_clk");
-at91_clock_associate("tc4_clk", &at91sam9260_tcb1_device.dev, "t1_clk");
-at91_clock_associate("tc5_clk", &at91sam9260_tcb1_device.dev, "t2_clk");
-platform_device_register(&at91sam9260_tcb1_device);
-}
-
-While the code mapping the clock names in 3.0.4 has the following form:
-
-(see: http://lxr.linux.no/#linux+v3.0.4/arch/arm/mach-at91/at91sam9260.c#L234 )
-static struct clk_lookup periph_clocks_lookups[] = {
-CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
-CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
-CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tc0_clk),
-CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.0", &tc1_clk),
-CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.0", &tc2_clk),
-CLKDEV_CON_DEV_ID("t3_clk", "atmel_tcb.1", &tc3_clk),
-CLKDEV_CON_DEV_ID("t4_clk", "atmel_tcb.1", &tc4_clk),
-CLKDEV_CON_DEV_ID("t5_clk", "atmel_tcb.1", &tc5_clk),
-CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc_clk),
-};
-
-To assure correct detection and operation of atmel_tcb.1, I had to change the above
-code as shown below:
-
-static struct clk_lookup periph_clocks_lookups[] = {
-CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
-CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
-CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tc0_clk),
-CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.0", &tc1_clk),
-CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.0", &tc2_clk),
-CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.1", &tc3_clk),
-CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.1", &tc4_clk),
-CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.1", &tc5_clk),
-CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc_clk),
-};
-
--- 
-Regards,
-Wojciech M. Zabolotny
-
-
+It looks OK to me, but obviously it would be better if Al were to go
+through it also.  If he doesn't then there isn't a lot we can do about
+it - I suggest that you proceed with the plan to merge it into -rc1.
