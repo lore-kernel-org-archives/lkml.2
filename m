@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935261Ab1JETyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 15:54:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21832 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934819Ab1JETyW convert rfc822-to-8bit (ORCPT
+	id S935294Ab1JETzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 15:55:43 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55659
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934819Ab1JETzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 15:54:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="59378281"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 5 Oct 2011 12:53:17 -0700
-Subject: RE: [PATCH 3/8] x86, i387.c: thread xstate is initialized only on
- BSP once
-Thread-Topic: [PATCH 3/8] x86, i387.c: thread xstate is initialized only on
- BSP once
-Thread-Index: AcyDj6SpfOcWmSK6QnSBfBjtSsEOYwABic1Q
-Message-ID: <493994B35A117E4F832F97C4719C4C040136F7CC59@orsmsx505.amr.corp.intel.com>
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
- <1317832759-10223-4-git-send-email-fenghua.yu@intel.com>
- <alpine.LFD.2.02.1110052048290.18778@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110052048290.18778@ionos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 5 Oct 2011 15:55:40 -0400
+Message-Id: <20111005195530.167191887@bombadil.infradead.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 05 Oct 2011 15:54:06 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Chris Wright <chrisw@sous-sol.org>, Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] virtio-blk: remove the unused list of pending requests
+References: <20111005195403.407628164@bombadil.infradead.org>
+Content-Disposition: inline; filename=virtio-blk-remove-list
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Wednesday, October 05, 2011 11:50 AM
-> To: Yu, Fenghua
-> Cc: Ingo Molnar; H Peter Anvin; Zwane Mwaikambo; Luck, Tony; Mallick,
-> Asit K; Siddha, Suresh B; Len Brown; linux-kernel
-> Subject: Re: [PATCH 3/8] x86, i387.c: thread xstate is initialized only
-> on BSP once
-> 
-> On Wed, 5 Oct 2011, Fenghua Yu wrote:
-> 
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > init_thread_xstate() is only called on BSP once to avoid to override
-> > xstate_size.
-> >
-> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> > ---
-> >  arch/x86/kernel/i387.c |    9 ++++++++-
-> >  1 files changed, 8 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> > index 739d859..de2b48a 100644
-> > --- a/arch/x86/kernel/i387.c
-> > +++ b/arch/x86/kernel/i387.c
-> > @@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
-> >  {
-> >  	unsigned long cr0;
-> >  	unsigned long cr4_mask = 0;
-> > +	static int once;
-> >
-> >  	if (cpu_has_fxsr)
-> >  		cr4_mask |= X86_CR4_OSFXSR;
-> > @@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
-> >  		cr0 |= X86_CR0_EM;
-> >  	write_cr0(cr0);
-> >
-> > -	if (!smp_processor_id())
-> > +	/*
-> > +	 * init_thread_xstate is only called on BSP once to avoid to
-> override
-> > +	 * xstate_size.
-> > +	 */
-> > +	if (!smp_processor_id() && once) {
-> 
-> Brilliant change. Makes sure that init_thread_xstate() is NEVER
-> called. Was this crap tested at all?
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Ooh, "once" should be initialized as 1.
+Index: linux-2.6/drivers/block/virtio_blk.c
+===================================================================
+--- linux-2.6.orig/drivers/block/virtio_blk.c	2011-10-03 19:55:29.061215040 +0200
++++ linux-2.6/drivers/block/virtio_blk.c	2011-10-03 19:55:54.196412176 +0200
+@@ -24,9 +24,6 @@ struct virtio_blk
+ 	/* The disk structure for the kernel. */
+ 	struct gendisk *disk;
+ 
+-	/* Request tracking. */
+-	struct list_head reqs;
+-
+ 	mempool_t *pool;
+ 
+ 	/* Process context for config space updates */
+@@ -41,7 +38,6 @@ struct virtio_blk
+ 
+ struct virtblk_req
+ {
+-	struct list_head list;
+ 	struct request *req;
+ 	struct virtio_blk_outhdr out_hdr;
+ 	struct virtio_scsi_inhdr in_hdr;
+@@ -85,7 +81,6 @@ static void blk_done(struct virtqueue *v
+ 		}
+ 
+ 		__blk_end_request_all(vbr->req, error);
+-		list_del(&vbr->list);
+ 		mempool_free(vbr, vblk->pool);
+ 	}
+ 	/* In case queue is stopped waiting for more buffers. */
+@@ -170,7 +165,6 @@ static bool do_req(struct request_queue
+ 		return false;
+ 	}
+ 
+-	list_add_tail(&vbr->list, &vblk->reqs);
+ 	return true;
+ }
+ 
+@@ -368,7 +362,6 @@ static int __devinit virtblk_probe(struc
+ 		goto out;
+ 	}
+ 
+-	INIT_LIST_HEAD(&vblk->reqs);
+ 	spin_lock_init(&vblk->lock);
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+@@ -526,9 +519,6 @@ static void __devexit virtblk_remove(str
+ 
+ 	flush_work(&vblk->config_work);
+ 
+-	/* Nothing should be pending. */
+-	BUG_ON(!list_empty(&vblk->reqs));
+-
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
 
-The code passes stress test with CPU0 online/offline, though...xstate_size will be re-initialized/overriden in xstate_enable_boot_cpu() later. So not calling init_thread_xstate() doesn't cause problem in my situation (where HAVE_HWFP=1).
-
-Anyway, this patch is wrong. I'll fix it in next version.
-
-Thanks.
-
--Fenghua
