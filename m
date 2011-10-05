@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934137Ab1JEGsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 02:48:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64124 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933732Ab1JEGsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 02:48:06 -0400
-Date: Wed, 5 Oct 2011 08:48:23 -0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Krishna Kumar <krkumar2@in.ibm.com>
-Cc: rusty@rustcorp.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC] [PATCH] virtio: Dont add "config" to list for
- !per_vq_vector
-Message-ID: <20111005104822.GC5587@redhat.com>
-References: <20111005053859.5825.1089.sendpatchset@krkumar2.in.ibm.com>
+	id S934003Ab1JEGuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:50:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5540 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933127Ab1JEGuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 02:50:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=VmEMP7xaZ2uN8lKMGAaNON7JGzMROunPyVJIAyxbxa0GbB7pmZcWnw/+AfpyRYx4m
+	swf7HfrdPimJ4lyANu/Hg==
+Date: Tue, 4 Oct 2011 23:50:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        James.Bottomley@hansenpartnership.com, hpa@zytor.com
+Subject: Re: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
+In-Reply-To: <20111001000900.BD9248B8@kernel>
+Message-ID: <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com>
+References: <20111001000856.DD623081@kernel> <20111001000900.BD9248B8@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111005053859.5825.1089.sendpatchset@krkumar2.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 11:08:59AM +0530, Krishna Kumar wrote:
-> For the MSI but non-per_vq_vector case, the config/change vq
-> also gets added to the list of vqs that need to process the
-> MSI interrupt. This is not needed as config has it's own
-> handler (vp_config_changed). In any case, vring_interrupt()
-> finds nothing needs to be done on this vq.
-> 
-> I tested this patch by testing the "Fallback:" and "Finally
-> fall back" cases in vp_find_vqs(). Please review.
-> 
-> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+On Fri, 30 Sep 2011, Dave Hansen wrote:
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-(note: this is not a bugfix so not 3.1 material).
+> 
+> The output of /proc/$pid/numa_maps is in terms of number of pages
+> like anon=22 or dirty=54.  Here's some output:
+> 
+> 7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
+> 7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
+> 7fff8d425000 default stack anon=50 dirty=50 N0=50
+> 
+> Looks like we have a stack and a couple of anonymous hugetlbfs
+> areas page which both use the same amount of memory.  They don't.
+> 
+> The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
+> anon_hugepage uses 2MB pages and takes up ~100MB of space while
+> the stack uses normal 4k pages.  You can go over to smaps to
+> figure out what the page size _really_ is with KernelPageSize
+> or MMUPageSize.  But, I think this is a pretty nasty and
+> counterintuitive interface as it stands.
+> 
+> The following patch adds a pagesize= field.  Note that this only
+> shows the kernel's notion of page size.  For transparent
+> hugepages, it still shows the base page size.  Here's some real
+> output.  Note the anon_hugepage in there.
+> 
+> # cat /proc/`pidof memknobs`/numa_maps
+> 00400000 default file=/root/memknobs pagesize=4KiB dirty=3 active=2 N0=3
+> 00602000 default file=/root/memknobs pagesize=4KiB anon=1 dirty=1 N0=1
+> 00603000 default file=/root/memknobs pagesize=4KiB anon=1 dirty=1 N0=1
+> 00604000 default heap pagesize=4KiB anon=6 dirty=6 N0=6
+> 7f6766216000 default file=/lib/libc-2.9.so pagesize=4KiB mapped=98 mapmax=25 active=97 N0=98
+> 7f676637e000 default file=/lib/libc-2.9.so
+> 7f676657e000 default file=/lib/libc-2.9.so pagesize=4KiB anon=4 dirty=4 N0=4
+> 7f6766582000 default file=/lib/libc-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
+> 7f6766583000 default pagesize=4KiB anon=3 dirty=3 N0=3
+> 7f6766588000 default file=/lib/ld-2.9.so pagesize=4KiB mapped=25 mapmax=24 N0=25
+> 7f676679d000 default pagesize=4KiB anon=2 dirty=2 N0=2
+> 7f67667a3000 default pagesize=4KiB anon=4 dirty=4 N0=4
+> 7f67667a7000 default file=/lib/ld-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
+> 7f67667a8000 default file=/lib/ld-2.9.so pagesize=4KiB anon=1 dirty=1 N0=1
+> 7f6766800000 default file=/anon_hugepage\040(deleted) pagesize=2MiB anon=10 dirty=10 N0=10
+> 7fff5b948000 default stack pagesize=4KiB anon=2 dirty=2 N0=2
+> 7fff5b96d000 default
+> 
 
+This would be great if all the /proc/pid/numa_maps consumers were human, 
+but unfortuantely that's not the case.  
+
+I understand that this patchset was probably the result of me asking for 
+the pagesize= to be specified in each line and using pagesize=4K and 
+pagesize=2M as examples, but that exact usage is probably not what we 
+want.
+
+As long as there are scripts that go through and read this information 
+(we have some internally), expressing them with differing units just makes 
+it more difficult to parse.  I'd rather them just be the byte count.
+
+That way, 1G pages would just show pagesize=1073741824.  I don't think 
+that's too long and is much easier to parse systematically.
+
+> Signed-off-by: Dave Haneen <dave@linux.vnet.ibm.com>
 > ---
->  drivers/virtio/virtio_pci.c |   10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
 > 
-> diff -ruNp org/drivers/virtio/virtio_pci.c new/drivers/virtio/virtio_pci.c
-> --- org/drivers/virtio/virtio_pci.c	2011-10-03 09:10:11.000000000 +0530
-> +++ new/drivers/virtio/virtio_pci.c	2011-10-04 19:16:34.000000000 +0530
-> @@ -415,9 +415,13 @@ static struct virtqueue *setup_vq(struct
->  		}
->  	}
+>  linux-2.6.git-dave/fs/proc/task_mmu.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff -puN fs/proc/task_mmu.c~show-page-size fs/proc/task_mmu.c
+> --- linux-2.6.git/fs/proc/task_mmu.c~show-page-size	2011-09-30 16:41:06.125953955 -0700
+> +++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-09-30 16:41:06.133953941 -0700
+> @@ -1044,6 +1044,11 @@ static int show_numa_map(struct seq_file
+>  	if (!md->pages)
+>  		goto out;
 >  
-> -	spin_lock_irqsave(&vp_dev->lock, flags);
-> -	list_add(&info->node, &vp_dev->virtqueues);
-> -	spin_unlock_irqrestore(&vp_dev->lock, flags);
-> +	if (callback) {
-> +		spin_lock_irqsave(&vp_dev->lock, flags);
-> +		list_add(&info->node, &vp_dev->virtqueues);
-> +		spin_unlock_irqrestore(&vp_dev->lock, flags);
-> +	} else {
-> +		INIT_LIST_HEAD(&info->node);
-> +	}
+> +	/* Only interesting for hugetlbfs pages.
+> +	 * Transparent hugepages are still pagesize=4k */
+
+Strange comment style (and may not be 4K if thp is extended beyond x86).
+
+> +	seq_puts(m, " pagesize=");
+> +	seq_print_pow2(m, vma_kernel_pagesize(vma));
+> +
+>  	if (md->anon)
+>  		seq_printf(m, " anon=%lu", md->anon);
 >  
->  	return vq;
-
-Some further enhancement suggestions for this shared case:
-- we don't really need a lock, do we? and how about replacing vq list
-  with an array?
-- vring_interrupt calls
-        if (!more_used(vq))
-  outside any lock.
-  This looks scary - don't we need a read barrier somewhere?
-
-
--- 
-MST
