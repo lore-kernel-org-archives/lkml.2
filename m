@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab1JEHCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:02:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44438 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab1JEHCK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:02:10 -0400
+	id S1757848Ab1JEHCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:02:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51990 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757242Ab1JEHCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 03:02:18 -0400
+Date: Tue, 4 Oct 2011 23:53:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
+Cc: quilt-dev@nongnu.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        John Kacur <jkacur@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
+Message-ID: <20111005065309.GA6676@suse.de>
+References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+ <20111004180237.GA15087@suse.de>
+ <1317752148.18063.16.camel@gandalf.stny.rr.com>
+ <20111004182615.GA16224@suse.de>
+ <1317753468.18063.19.camel@gandalf.stny.rr.com>
+ <1317779312.1662.37.camel@schurl.linbit>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.135.251]
-In-Reply-To: <87mxdga4c0.fsf@ti.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
- <1316948337-7924-3-git-send-email-ohad@wizery.com> <87sjni9aql.fsf@ti.com>
- <CAK=WgbZhz8LcAYZEY3qqRkX4E_wtspWp09Eq9G=5VdpoMMF1FQ@mail.gmail.com>
- <87botwk4gw.fsf@ti.com> <CAK=WgbYaEPBUz_J11+f+W+G9uUG3E6aQ-5=X9bj2nRhij-w-Sw@mail.gmail.com>
- <87mxdga4c0.fsf@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 5 Oct 2011 09:01:47 +0200
-Message-ID: <CAK=WgbZ4d78ErB+e9OkyN30+zf5ZWJF02dTLgeioT32po=bFqw@mail.gmail.com>
-Subject: Re: [RFC 2/5] ARM: OMAP: omap_device: add a method to set iommu
- private archdata
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Cousson Benoit <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317779312.1662.37.camel@schurl.linbit>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 4, 2011 at 10:29 PM, Kevin Hilman <khilman@ti.com> wrote:
-> tag.  you're it.
+On Wed, Oct 05, 2011 at 03:48:26AM +0200, Andreas Gruenbacher wrote:
+> On Tue, 2011-10-04 at 14:37 -0400, Steven Rostedt wrote:
+> > On Tue, 2011-10-04 at 11:26 -0700, Greg KH wrote:
+> > 
+> > > > What are git's "split" subject: lines?
+> > > 
+> > > Do the following:
+> > >  $ git show --pretty=email 21d17dd2a377ba894f26989915eb3c6e427a3656
+> > > 
+> > > and look at how the Subject line is formatted:
+> > > 	Subject: [PATCH] ASoC: Fix setting update bits for WM8753_LADC and
+> > > 	 WM8753_RADC
+> > > 
+> > > Which is legal for email subject lines.  But quilt can't handle this and
+> > > ends up thinking the data after the Subject: line is part of the patch
+> > > text body and messes stuff up when doing 'quilt mail' later.
+> 
+> Aah, all this email parsing code is so ugly.  I think it works now
+> though.
 
-Consider it done :)
+"now" meaning which version of quilt?  I still see this on 0.48 if that
+matters.
 
-> OK, as long as I have some confidence that this is going in the right
-> direction (and having you on the job is a good sign!)  I'm willing to
-> merge something like this as an interim solution.
+> > > Oh, then there's the issue of quilt not handling ',' in a Signed-off-by
+> > > line as a valid email address name, but I've been living with that one
+> > > for years...
+> 
+> That's not even valid in email addresses.  The proper way would be to
+> double-quote the "display name" which probably contains the comma, but
+> then quilt's edmail script still won't understand it.  Is this a real
+> problem?
 
-Thanks a lot!
-Ohad.
+Yes, quoting is the correct thing to do, but that does not usually
+happen in "Signed-off-by:" lines in kernel patches.
+
+Actually, I think this is even a problem when the name is quoted
+properly, I've had to fix that up in patches by hand.
+
+And yes, this is a problem, I run into at least 1-2 patches per stable
+kernel release with this issue.  I looked into fixing it and somehow the
+email parsing logic was wierd and I couldn't figure out how to resolve
+it.
+
+thanks,
+
+greg k-h
