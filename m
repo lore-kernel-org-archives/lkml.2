@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab1JEHVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:21:08 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54714 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab1JEHVG (ORCPT
+	id S932846Ab1JEHYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:24:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19124 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755813Ab1JEHYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:21:06 -0400
-Date: Wed, 5 Oct 2011 09:21:02 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111005072102.GA11172@aftab>
-References: <20111002195023.GC31799@mtj.dyndns.org>
- <4E88C3D4.2020300@linux.vnet.ibm.com>
- <20111003004051.GD31799@mtj.dyndns.org>
- <4E894D75.808@linux.vnet.ibm.com>
- <20111003084754.GB4411@liondog.tnic>
- <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com>
- <4E8B06E0.2090501@linux.vnet.ibm.com>
- <20111004134653.GC3148@gere.osrc.amd.com>
- <20111004171415.GB3915@gere.osrc.amd.com>
- <4E8B7326.6000606@linux.vnet.ibm.com>
+	Wed, 5 Oct 2011 03:24:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=qVDIGNDRmbskrMHwFobYB2gHaMhjjO7RH+WgtsnZfIgOAew8HFfOSa8ZobNVprshC
+	6mswayBmkK5g2VkhGqEMQ==
+Date: Wed, 5 Oct 2011 00:23:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, James.Bottomley@hansenpartnership.com,
+        hpa@zytor.com
+Subject: Re: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
+In-Reply-To: <1317798564.3099.12.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1110050012490.18906@chino.kir.corp.google.com>
+References: <20111001000856.DD623081@kernel> <20111001000900.BD9248B8@kernel> <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com> <1317798564.3099.12.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8B7326.6000606@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 04:57:10PM -0400, Srivatsa S. Bhat wrote:
-> 1. Since we never invalidate the microcode once we get it from userspace, it
->    also means that we will never be able to update the microcode for that cpu
->    ever again! (since we will continue to reuse the same old microcode over and
->    over again on every cpu online operation for that cpu).
->    This restriction introduced by my patch seems bad, isn't it?
+On Wed, 5 Oct 2011, Eric Dumazet wrote:
 
-Well, if you have a new microcode image, you are supposed to place it
-under /lib/firmware/.. or where the kernel has been configured to find
-it and then reload the microcode module.
-
-> 2. Suppose we have a 16 cpu machine and we boot it with only 8 cpus (ie., we online
->    only 8 of the 16 cpus while booting). So it means that the kernel gets a copy
->    of the microcode for each of these 8 cpus, but not for the ones that were not
->    onlined while booting.
->    [Let us assume that cpu number 10 was one among the 8 cpus that were not onlined
->     while booting].
+> > This would be great if all the /proc/pid/numa_maps consumers were human, 
+> > but unfortuantely that's not the case.  
+> > 
+> > I understand that this patchset was probably the result of me asking for 
+> > the pagesize= to be specified in each line and using pagesize=4K and 
+> > pagesize=2M as examples, but that exact usage is probably not what we 
+> > want.
+> > 
+> > As long as there are scripts that go through and read this information 
+> > (we have some internally), expressing them with differing units just makes 
+> > it more difficult to parse.  I'd rather them just be the byte count.
+> > 
+> > That way, 1G pages would just show pagesize=1073741824.  I don't think 
+> > that's too long and is much easier to parse systematically.
+> > 
 > 
->    Later on, let's say we start our cpu hotplug + suspend/resume tests simultaneously.
->    Now consider this possible scenario:
->    
->    * Userspace is not frozen
->    * We initiate a cpu online operation on cpu 10. At the same time, since suspend
->      is in progress, lets say the freezing begins.
->    * Just before cpu 10 could be brought up online, userspace gets frozen.
->    * Now while bringing up cpu 10, due to the CPU_ONLINE_FROZEN notification, the
->      microcode core tries to apply the microcode to the cpu. But unfortunately, it
->      doesn't have the microcode! (because this cpu is coming up for the first time
->      and hence we never got its microcode from userspace...)
+> Hmm... Thats sounds strange.
 > 
->      Now, again the same problem ensues: microcode core calls request_firmware and
->      depends on the (frozen) userspace to get the microcode.
+> Are you saying you cant change your scripts [But you'll have to anyway
+> to parse pagesize=] ?
+> 
 
-Ok, but is this a real-life scenario you expect to happen somewhere or
-is it something that happens only during test? IOW, if you have root
-there are many ways to shoot yourself in the foot, right?
+pagesize= isn't absolutely required, you can already get the thp stats 
+from /proc/pid/smaps.  A script can then parse /proc/pid/numa_maps for the 
+same vmas to determine the NUMA locality.  Adding pagesize= to numa_maps 
+then doesn't change the script at all if it's robust.
 
-[..]
+> I routinely use "cat /proc/xxx/numa_maps", and am stuck when a kernel
+> displays nothing (it happened on some debian released kernels)
+> 
+> Seeing pagesize=1GB is slightly better for human, and not that hard to
+> parse for a program.
+> 
 
-> I am still wondering if the approach I proposed earlier (the one in
-> which we defer applying microcode and queue up a callback function
-> etc) could solve all these issues. I am also playing around with the
-> idea of coupling that with mutual exclusion between cpu hotplug and
-> freezer to handle any problematic scenarios.
+Why on earth do we want to convert a byte value into a string so a script 
+can convert it the other way around?  Do you have a hard time parsing 
+4096, 2097152, and 1073741824 to be 4K, 2M, and 1G respectively?  Then you 
+better not use the hugepage sysfs interface to configure multiple hugepage 
+sizes because they're all specified in kB!
 
-Well, all those solutions seem like they're not worth the trouble and
-complexity if those cases are only conjecture - if you still trigger
-them during your testing then probably mutually excluding freezer and
-CPU hotplug is something I would lean towards but I could be wrong.
+> By the way, "pagesize=4KiB" are just noise if you ask me, thats the
+> default PAGE_SIZE. This also breaks old scripts :)
+> 
 
-There's of course a much better fix which has been on the table for a
-while now involving loading the ucode from the bootloader and applying
-it much earlier than what we have now and keeping the ucode image in
-memory. This would solve the CPU hotplug deal completely. Maybe it's
-time I looked into it :-).
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-ENOPARSE.  It better not break any old script, I don't know why it would.  
+Anything that emits a field=value tuple should be parsed as such.  I doubt 
+you can find a well-distributed example since numa_maps output includes 
+file, mapped, mapmax, anon, and dirty fields and not a single line of 
+output would have all of them.
