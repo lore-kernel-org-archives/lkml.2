@@ -1,50 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934069Ab1JEIqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 04:46:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44238 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932903Ab1JEIqe convert rfc822-to-8bit (ORCPT
+	id S933671Ab1JEIvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:51:07 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50812 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932659Ab1JEIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 04:46:34 -0400
-Subject: Re: linux-next: build failure after merge of the tip tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Date: Wed, 05 Oct 2011 10:46:13 +0200
-In-Reply-To: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
-References: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317804373.6766.0.camel@twins>
-Mime-Version: 1.0
+	Wed, 5 Oct 2011 04:51:06 -0400
+Message-ID: <4E8C1A74.5090601@linux.vnet.ibm.com>
+Date: Wed, 05 Oct 2011 14:21:00 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+References: <20111002195023.GC31799@mtj.dyndns.org> <4E88C3D4.2020300@linux.vnet.ibm.com> <20111003004051.GD31799@mtj.dyndns.org> <4E894D75.808@linux.vnet.ibm.com> <20111003084754.GB4411@liondog.tnic> <20111004071508.GA15637@dhcp-172-17-108-109.mtv.corp.google.com> <4E8B06E0.2090501@linux.vnet.ibm.com> <20111004134653.GC3148@gere.osrc.amd.com> <20111004171415.GB3915@gere.osrc.amd.com> <4E8B7326.6000606@linux.vnet.ibm.com> <20111005072102.GA11172@aftab>
+In-Reply-To: <20111005072102.GA11172@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-05 at 17:25 +1100, Stephen Rothwell wrote:
-> Hi all,
+On 10/05/2011 12:51 PM, Borislav Petkov wrote:
+> On Tue, Oct 04, 2011 at 04:57:10PM -0400, Srivatsa S. Bhat wrote:
+>> 1. Since we never invalidate the microcode once we get it from userspace, it
+>>    also means that we will never be able to update the microcode for that cpu
+>>    ever again! (since we will continue to reuse the same old microcode over and
+>>    over again on every cpu online operation for that cpu).
+>>    This restriction introduced by my patch seems bad, isn't it?
 > 
-> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+> Well, if you have a new microcode image, you are supposed to place it
+> under /lib/firmware/.. or where the kernel has been configured to find
+> it and then reload the microcode module.
+>
+Oh well, then we can update the microcode after all...
+ 
+>> 2. Suppose we have a 16 cpu machine and we boot it with only 8 cpus (ie., we online
+>>    only 8 of the 16 cpus while booting). So it means that the kernel gets a copy
+>>    of the microcode for each of these 8 cpus, but not for the ones that were not
+>>    onlined while booting.
+>>    [Let us assume that cpu number 10 was one among the 8 cpus that were not onlined
+>>     while booting].
+>>
+>>    Later on, let's say we start our cpu hotplug + suspend/resume tests simultaneously.
+>>    Now consider this possible scenario:
+>>    
+>>    * Userspace is not frozen
+>>    * We initiate a cpu online operation on cpu 10. At the same time, since suspend
+>>      is in progress, lets say the freezing begins.
+>>    * Just before cpu 10 could be brought up online, userspace gets frozen.
+>>    * Now while bringing up cpu 10, due to the CPU_ONLINE_FROZEN notification, the
+>>      microcode core tries to apply the microcode to the cpu. But unfortunately, it
+>>      doesn't have the microcode! (because this cpu is coming up for the first time
+>>      and hence we never got its microcode from userspace...)
+>>
+>>      Now, again the same problem ensues: microcode core calls request_firmware and
+>>      depends on the (frozen) userspace to get the microcode.
 > 
-> net/rds/ib_rdma.c: In function 'rds_ib_reuse_fmr':
-> net/rds/ib_rdma.c:272:2: error: implicit declaration of function 'llist_del_first' [-Werror=implicit-function-declaration]
-> net/rds/ib_rdma.c:272:6: warning: assignment makes pointer from integer without a cast [enabled by default]
-> net/rds/ib_rdma.c: In function 'rds_ib_flush_mr_pool':
-> net/rds/ib_rdma.c:671:4: error: implicit declaration of function 'llist_add_batch' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
+> Ok, but is this a real-life scenario you expect to happen somewhere or
+> is it something that happens only during test? IOW, if you have root
+> there are many ways to shoot yourself in the foot, right?
 > 
-> Caused by commit 1230db8e1543 ("llist: Make some llist functions inline")
-> interacting with commit 1bc144b62524 ("net, rds, Replace xlist in
-> net/rds/xlist.h with llist") from the net tree.  The former commit
-> removes the declarations of llist_del_first() and llist_add_batch() with
-> no explanation (and probably by accident since the definitions still
-> exist).
 
-Ugh yes, my bad. Ingo objected to inlining all those functions and I
-then screwed up. There are no users of those two functions in my tree.
+Well, honestly I was just trying to see in which all scenarios the patch
+would probably not work well... In real-life I don't expect to hit such
+a corner case!
+
+> [..]
+> 
+>> I am still wondering if the approach I proposed earlier (the one in
+>> which we defer applying microcode and queue up a callback function
+>> etc) could solve all these issues. I am also playing around with the
+>> idea of coupling that with mutual exclusion between cpu hotplug and
+>> freezer to handle any problematic scenarios.
+> 
+> Well, all those solutions seem like they're not worth the trouble and
+> complexity if those cases are only conjecture - if you still trigger
+> them during your testing then probably mutually excluding freezer and
+> CPU hotplug is something I would lean towards but I could be wrong.
+>
+
+Even I felt the same (moreover, that complex solution was not foolproof
+either!). Please see my other mail which talks about how just mutually
+excluding freezer and cpu hotplugging would solve everything.
+ 
+> There's of course a much better fix which has been on the table for a
+> while now involving loading the ucode from the bootloader and applying
+> it much earlier than what we have now and keeping the ucode image in
+> memory. This would solve the CPU hotplug deal completely. Maybe it's
+> time I looked into it :-).
+> 
+
+Assuming I understood this correctly, I can see some issues in this
+approach as well (since it is quite similar to the approach used in my
+one-line patch), but yeah, definitely they are all very much corner
+cases...
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
