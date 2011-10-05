@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934095Ab1JEFzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 01:55:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54403 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975Ab1JEFzB (ORCPT
+	id S934106Ab1JEGD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:03:59 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:12297 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932975Ab1JEGD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 01:55:01 -0400
+	Wed, 5 Oct 2011 02:03:58 -0400
+X-IronPort-AV: E=Sophos;i="4.68,489,1312156800"; 
+   d="scan'208";a="8215106"
+Subject: Re: [PATCH] stop_machine: fixup cut'n'paste error in stopped
+ thread name
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1317657968.20367.35.camel@twins>
+References: <1317643317.21903.36.camel@zakaz.uk.xensource.com>
+	 <1317657968.20367.35.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 5 Oct 2011 07:03:56 +0100
+Message-ID: <1317794636.24742.3.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20111005162414.da7b35fd2baf34efa63d2f2a@canb.auug.org.au>
-References: <20111005162414.da7b35fd2baf34efa63d2f2a@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 4 Oct 2011 23:54:40 -0600
-X-Google-Sender-Auth: cJsN8OtZEh2VpqP-RiSQWUSEGIA
-Message-ID: <CACxGe6vboBY+Wrw74f-dgu6MGfQ=ASiZm1e4qPYZh0K-0fWmtw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the devicetree tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 4, 2011 at 11:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> After merging the devicetree tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> drivers/tty/serial/altera_jtaguart.c:483:3: error: implicit declaration of function 'of_match_ptr' [-Werror=implicit-function-declaration]
-> drivers/tty/serial/altera_jtaguart.c:483:34: error: 'altera_jtaguart_match' undeclared here (not in a function)
->
-> Caused by commit 85888069cf5d ("tty: use of_match_ptr() for
-> of_match_table entry").
+On Mon, 2011-10-03 at 17:06 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-10-03 at 13:01 +0100, Ian Campbell wrote:
+> > Noticed this while poking around. Seems like the code was lifted a bit
+> > more thoroughly from the migration thread mgmt code than the author of
+> > the preceding comment intended...
+> > 
+> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > 
+> > --- a/kernel/stop_machine.c
+> > +++ b/kernel/stop_machine.c
+> > @@ -312,7 +312,7 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+> >  		p = kthread_create_on_node(cpu_stopper_thread,
+> >  					   stopper,
+> >  					   cpu_to_node(cpu),
+> > -					   "migration/%d", cpu);
+> > +					   "stopper/%d", cpu);
+> >  		if (IS_ERR(p))
+> >  			return notifier_from_errno(PTR_ERR(p));
+> >  		get_task_struct(p);
+> > 
+> 
+> IIRC it was because userspace already knew about the migration thread
+> and we didn't want to confuse things further. But yeah, its not
+> particularly important.
 
-Thanks Stephen.
+I'm not sure what knowledge userspace has of either kernel thread but
+fair enough, patch withdrawn.
 
-Looks like a missing include of linux/of.h from that driver.  I'll fix
-up my tree.
+Ian.
 
-g.
