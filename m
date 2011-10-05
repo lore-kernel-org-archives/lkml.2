@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934870Ab1JEPV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:21:58 -0400
-Received: from mx.binnacle.cx ([74.95.187.105]:34258 "EHLO mx.binnacle.cx"
+	id S934882Ab1JEPW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:22:56 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38866 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934735Ab1JEPV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:21:57 -0400
-Message-Id: <6.2.5.6.2.20111005110324.03a9df10@binnacle.cx>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Wed, 05 Oct 2011 11:12:15 -0400
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Christoph Lameter <cl@gentwo.org>
-From: starlight@binnacle.cx
-Subject: Re: big picture UDP/IP performance question re 2.6.18 
-  -> 2.6.32
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1317820942.6766.26.camel@twins>
-References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
- <alpine.DEB.2.00.1110041358500.12199@router.home>
- <1317820942.6766.26.camel@twins>
+	id S934453Ab1JEPWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:22:55 -0400
+Subject: Re: [RFCv3][PATCH 4/4] show page size in /proc/$pid/numa_maps
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, James.Bottomley@hansenpartnership.com,
+        hpa@zytor.com
+In-Reply-To: <1317798564.3099.12.camel@edumazet-laptop>
+References: <20111001000856.DD623081@kernel>
+	 <20111001000900.BD9248B8@kernel>
+	 <alpine.DEB.2.00.1110042344250.16359@chino.kir.corp.google.com>
+	 <1317798564.3099.12.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Oct 2011 08:22:35 -0700
+Message-ID: <1317828155.7842.73.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03:22 PM 10/5/2011 +0200, Peter Zijlstra wrote:
->On Tue, 2011-10-04 at 14:16 -0500, Christoph Lameter wrote:
->I suppose all this testing and feedback we receive
->from you really helps us keep the performance
->levels you want.. Oh wait, that's 0.
+On Wed, 2011-10-05 at 09:09 +0200, Eric Dumazet wrote:
+> By the way, "pagesize=4KiB" are just noise if you ask me, thats the
+> default PAGE_SIZE. This also breaks old scripts :)
 
-Well I have to admit that I've looked into the
-future (i.e. tested kernel.org releases) only on
-occasion.  To the extent that performance wasn't
-looking great I harbored an apparently over
-optimistic hope that things would get tuned/fixed
-in the process somewhere.  In particular I was
-thinking that RH might do something impressive
-with RHEL 6 where Novell failed with SLES 11.
-However, if anything the downstream is fiddling
-less and less with the kernel as it becomes ever
-more complex.
+How does it break old scripts?
 
->Clearly none of the tests being ran on a regular
->basis, by for instance the Intel regression team,
->covers your needs. Start by fixing that.
-
-I could create a test case.  It's quite a lot more
-than trivial, but not ridiculous either.  That UDP
-is broken on everything past 2.6.27 may goad me
-into the effort.  Have had a fairly excellent
-experience WRT the hugepage kernel corruption bugs
-I reported 18 months or so ago.  Not only did the
-kernel developers fix them, the fixes made it
-downstream into RHEL fairly quickly.  So that does
-encourage me.
+-- Dave
 
