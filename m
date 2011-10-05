@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935151Ab1JERwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 13:52:41 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53010 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab1JERwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 13:52:40 -0400
-Date: Wed, 5 Oct 2011 11:52:35 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 3/3] gpio-ml-ioh: Fix suspend/resume issue
-Message-ID: <20111005175235.GC4205@ponder.secretlab.ca>
-References: <1312517062-5582-1-git-send-email-tomoya-linux@dsn.okisemi.com>
- <1312517062-5582-3-git-send-email-tomoya-linux@dsn.okisemi.com>
- <20111004160731.GA9084@ponder.secretlab.ca>
- <4E8BB327.50306@dsn.lapis-semi.com>
+	id S935236Ab1JERxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 13:53:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935188Ab1JERxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 13:53:04 -0400
+Date: Wed, 5 Oct 2011 19:48:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 12/26]   Uprobes: Handle breakpoint
+	and Singlestep
+Message-ID: <20111005174842.GA3812@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120221.25326.74714.sendpatchset@srdronam.in.ibm.com> <1317045553.1763.23.camel@twins> <20110926160144.GC13535@linux.vnet.ibm.com> <1317054322.1763.31.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E8BB327.50306@dsn.lapis-semi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317054322.1763.31.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 10:30:15AM +0900, Tomoya MORINAGA wrote:
-> Hi Grant,
-> 
-> (2011/10/05 1:07), Grant Likely wrote:
-> >On Fri, Aug 05, 2011 at 01:04:22PM +0900, Tomoya MORINAGA wrote:
-> >Can this one be merged without 1/3 and 2/3?  Patch 2 looks like a
-> >feature instead of a bug fix.
+On 09/26, Peter Zijlstra wrote:
+>
+> On Mon, 2011-09-26 at 21:31 +0530, Srikar Dronamraju wrote:
+> > * Peter Zijlstra <peterz@infradead.org> [2011-09-26 15:59:13]:
 > >
-> 
-> Is the above true ?
-> I think,
-> 1/3 is a bug fix.
-> 2/3 and 3/3 are feature.
+> > > On Tue, 2011-09-20 at 17:32 +0530, Srikar Dronamraju wrote:
+> > > > 						Hence provide some extra
+> > > > + * time (by way of synchronize_sched() for breakpoint hit threads to acquire
+> > > > + * the uprobes_treelock before the uprobe is removed from the rbtree.
+> > >
+> > > 'Some extra time' doesn't make me all warm an fuzzy inside, but instead
+> > > screams we fudge around a race condition.
+> >
+> > The extra time provided is sufficient to avoid the race. So will modify
+> > it to mean "sufficient" instead of "some".
+> >
+> > Would that suffice?
+>
+> Much better, for extra point, explain why its sufficient as well ;-)
 
-Considering that the title of 3/3 is "Fix suspend/resume issue", you
-can understand my confusion.  I'm not talking about 1/3 because it
-looks like a trivial cleanup (not a bug fix).
++1 ;)
 
-> Do you mean you will merge only patch for a bug fix ?
-> What will you do feature patch ?
+I can't understand why synchronize_sched helps. In fact it is very
+possible I simply misunderstood the problem, I'll appreciate if you
+can explain.
 
-I'll merge them regardless, I just need to know which branch to merge
-them in.  If patch 3 is a bug fix independent of patches 1 & 2, then
-I'll put it in spi/merge and ask Linus to pull right away.  Otherwise
-I'll put it in spi/next along with patches 1 & 2.
+Just for example. Suppose that uprobe_notify_resume() sleeps in
+down_read(mmap_sem). In this case synchronize_sched() can return
+even before it takes this sem, how this can help the subsequent
+find_uprobe() ? Or that task  can be simply preempted before.
 
-g.
+Or I missed the point completely?
+
+Oleg.
 
