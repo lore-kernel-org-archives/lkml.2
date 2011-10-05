@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab1JEVhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:37:40 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13294 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab1JEVhj (ORCPT
+	id S1757967Ab1JEVjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:39:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41812 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab1JEVjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:37:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6490"; a="125116330"
-Message-ID: <4E8CCE22.9050205@codeaurora.org>
-Date: Wed, 05 Oct 2011 14:37:38 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: greg@kroah.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
-References: <20111004232403.10364.22050.stgit@ponder>
-In-Reply-To: <20111004232403.10364.22050.stgit@ponder>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Oct 2011 17:39:10 -0400
+Date: Wed, 5 Oct 2011 14:39:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] mm, arch: Complete pagefault_disable abstraction
+Message-Id: <20111005143907.09283b14.akpm@linux-foundation.org>
+In-Reply-To: <1317820169.6766.20.camel@twins>
+References: <1317820169.6766.20.camel@twins>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/11 16:26, Grant Likely wrote:
-> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-> index 27bb05a..991a678 100644
-> --- a/include/linux/platform_device.h
-> +++ b/include/linux/platform_device.h
-> @@ -146,6 +146,21 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
->  	dev_set_drvdata(&pdev->dev, data);
->  }
->  
-> +/* Helper macro for drivers that don't do anything special in module
-> + * init/exit.  This eliminates a lot of boilerplate */
-> +#define module_platform_driver(__platform_driver) \
-> +int __platform_driver##_init(void) \
-> +{ \
-> +	return platform_driver_register(&(__platform_driver)); \
-> +} \
-> +module_init(__platform_driver##_init); \
-> +void __platform_driver##_exit(void) \
-> +{ \
-> +	platform_driver_unregister(&(__platform_driver)); \
-> +} \
-> +module_exit(__platform_driver##_exit);
-> +
-> +
->
+On Wed, 05 Oct 2011 15:09:29 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Can you add __init, __exit, and static as well?
+> Currently we already have pagefault_{disable,enable}() but they're
+> nothing more than a glorified preempt_{disable,enable}().
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+That's not very accurate or useful.  Unlike preempt_disable(),
+pagefault_disable() will raise the preempt count when CONFIG_PREEMPT=n.
