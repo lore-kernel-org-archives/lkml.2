@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934648Ab1JEMvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 08:51:21 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37939 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934356Ab1JEMvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 08:51:19 -0400
-Subject: Re: [PATCH v2 2/2] virtio-net: Prevent NULL dereference
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <20111003184037.GA22427@redhat.com>
-References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
-	 <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
-	 <20111003184037.GA22427@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 05 Oct 2011 15:50:14 +0200
-Message-ID: <1317822614.3676.0.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S934658Ab1JEMvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 08:51:48 -0400
+Received: from bby1mta03.pmc-sierra.com ([216.241.235.118]:43561 "EHLO
+	bby1mta03.pmc-sierra.bc.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934356Ab1JEMvq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 08:51:46 -0400
+X-Greylist: delayed 1951 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 08:51:46 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [patch] [SCSI] aacraid: use lower snprintf() limit
+Date: Wed, 5 Oct 2011 05:19:12 -0700
+Message-ID: <FD2BDBE06AC58549AE9E16C08B45675D05D8ED9E@BBY1EXM10.pmc_nt.nt.pmc-sierra.bc.ca>
+In-Reply-To: <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [patch] [SCSI] aacraid: use lower snprintf() limit
+Thread-Index: AcyDMWgtuzvorZRgTzuOyxcm0mlKGAAJuBdg
+References: <20111005055046.GD32077@elgon.mountain> <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de>
+From: "Achim Leubner" <Achim_Leubner@pmc-sierra.com>
+To: "Rolf Eike Beer" <eike-kernel@sf-tec.de>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
+Cc: "Adaptec OEM Raid Solutions" <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <jbottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+X-OriginalArrivalTime: 05 Oct 2011 12:19:14.0819 (UTC) FILETIME=[FF29C530:01CC8358]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 20:40 +0200, Michael S. Tsirkin wrote:
-> On Wed, Sep 28, 2011 at 05:40:55PM +0300, Sasha Levin wrote:
-> > This patch prevents a NULL dereference when the user has passed a length
-> > longer than an actual buffer to virtio-net.
-> > 
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > Cc: virtualization@lists.linux-foundation.org
-> > Cc: netdev@vger.kernel.org
-> > Cc: kvm@vger.kernel.org
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > ---
-> >  drivers/net/virtio_net.c |   12 +++++++++++-
-> >  1 files changed, 11 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index bde0dec..4a53d2a 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -208,12 +208,22 @@ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
-> >  		return NULL;
-> >  	}
-> >  
-> > -	while (len) {
-> > +	while (len && page) {
-> >  		set_skb_frag(skb, page, offset, &len);
-> >  		page = (struct page *)page->private;
-> >  		offset = 0;
-> >  	}
-> >  
-> > +	/*
-> > +	 * This is the case where we ran out of pages in our linked list, but
-> > +	 * supposedly have more data to read.
-> 
-> Again, let's clarify that this only happens with broken devices.
+Looks good so far. But do we really need the last two lines?
+> +	if (len > 16)
+> +		len = 16;
 
-I think that the code within the if() makes it clear that it isn't the
-regular path.
+Acked-by: Achim Leubner <Achim_Leubner@pmc-sierra.com> 
 
--- 
+Thanks,
+Achim
 
-Sasha.
 
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Rolf Eike Beer
+Sent: Mittwoch, 5. Oktober 2011 09:35
+To: Dan Carpenter
+Cc: Adaptec OEM Raid Solutions; James E.J. Bottomley;
+linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
+kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] aacraid: use lower snprintf() limit
+
+> This is just a cleanup, to silence static checker warnings.  It
+> doesn't change how the code works.
+>
+> buf[] can either be BUF_SIZE if this is called from sysfs, or it can
+> be 16 if it's called from aac_get_adapter_info() via
+> aac_get_serial_number().  We use the smaller limit here.
+>
+> sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo) is 12 so there
+> is actually no chance of hitting either limit.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>
+> diff --git a/drivers/scsi/aacraid/linit.c
+b/drivers/scsi/aacraid/linit.c
+> index 3382475..ea8d96e 100644
+> --- a/drivers/scsi/aacraid/linit.c
+> +++ b/drivers/scsi/aacraid/linit.c
+> @@ -894,15 +894,20 @@ static ssize_t aac_show_serial_number(struct
+device
+> *device,
+>  	int len = 0;
+>
+>  	if (le32_to_cpu(dev->adapter_info.serial[0]) != 0xBAD0)
+> -		len = snprintf(buf, PAGE_SIZE, "%06X\n",
+> +		len = snprintf(buf, 16, "%06X\n",
+>  		  le32_to_cpu(dev->adapter_info.serial[0]));
+>  	if (len &&
+>  	  !memcmp(&dev->supplement_adapter_info.MfgPcbaSerialNo[
+>  	    sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo)-len],
+>  	  buf, len-1))
+> -		len = snprintf(buf, PAGE_SIZE, "%.*s\n",
+> +		len = snprintf(buf, 16, "%.*s\n",
+>
+(int)sizeof(dev->supplement_adapter_info.MfgPcbaSerialNo),
+>  		  dev->supplement_adapter_info.MfgPcbaSerialNo);
+> +
+> +
+
+One newline too much.
+
+> +	if (len > 16)
+> +		len = 16;
+
+max()?
+
+Eike
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
