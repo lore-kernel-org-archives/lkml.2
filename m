@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab1JEPMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:12:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6415 "EHLO mga01.intel.com"
+	id S1758018Ab1JEPPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:15:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42588 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757904Ab1JEPMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:12:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,491,1312182000"; 
-   d="scan'208";a="70580979"
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, starlight@binnacle.cx,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
-References: <6.2.5.6.2.20111003112108.03a83a28@binnacle.cx>
-	<alpine.DEB.2.00.1110041358500.12199@router.home>
-	<1317820942.6766.26.camel@twins>
-	<alpine.DEB.2.00.1110050915160.30467@router.home>
-Date: Wed, 05 Oct 2011 08:12:44 -0700
-In-Reply-To: <alpine.DEB.2.00.1110050915160.30467@router.home> (Christoph
-	Lameter's message of "Wed, 5 Oct 2011 09:26:24 -0500 (CDT)")
-Message-ID: <m2mxdf4glv.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1757554Ab1JEPPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:15:37 -0400
+Date: Wed, 5 Oct 2011 17:15:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: =?utf-8?B?5p2O5pyd5piO?= <chaoming_li@realsil.com.cn>,
+        linux-wireless@vger.kernel.org,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: =?utf-8?B?562U5aSNOiDnrZTlpI06IOetlA==?= =?utf-8?B?5aSNOg==?=
+ 3.1-rc6+ rtl8192se issue
+Message-ID: <20111005151533.GA18592@gere.osrc.amd.com>
+References: <CD4D8CF16C39438E82FE8241C9AF80F4@realsil.com.cn>
+ <20110921185816.GA2036@gere.osrc.amd.com>
+ <791179BCE62F4954AB936E6CAC9CA977@realsil.com.cn>
+ <4E7AAB8B.40900@lwfinger.net>
+ <20110922075115.GA17640@liondog.tnic>
+ <6452E68488784D0EA32E4BDF1B941EFB@realsil.com.cn>
+ <20110923103339.GA26078@gere.osrc.amd.com>
+ <4E7CB504.4060904@lwfinger.net>
+ <20110928131823.GA2693@gere.osrc.amd.com>
+ <4E83D092.7010405@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E83D092.7010405@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter <cl@gentwo.org> writes:
+On Wed, Sep 28, 2011 at 08:57:38PM -0500, Larry Finger wrote:
+> Asa you probably do not want to kill your standard tree, unpack the
+> Realtek version normally, cd to where it unpacked, and do a make.
+> Once it builds, do the following:
+> 
+> sudo modprobe -rv rtl8192se
+> sudo modprobe -v mac80211
+> sudo insmod rtlwifi.ko
+> sudo insmod rtl8192se/rtl8192se.ko
+> 
+> >
+> >Also, any preferred module parameters settings you want me to test?
+> 
+> Try it first with the default parameters. If that fails, use "ips=0".
 
-> On Wed, 5 Oct 2011, Peter Zijlstra wrote:
->
->> Clearly none of the tests being ran on a regular basis, by for instance
->> the Intel regression team, covers your needs. Start by fixing that.
->
-> The most commonly run, the aged old tests contained in the AIM9 suite,
-> have consistently shown these regressions over long years and they have
-> been brought up repeatedly in numerous discussions. This is pervasive
-> thoughout the OS hotpaths. Just look at how the page fault latencies
-> change over time. Take a modern machine and then run successively older
-> kernel versions on it. You will see performance getting better and
-> latencies becoming smaller.
+Ok, I can cautiosly say now that after a couple days of running the
+Realtek version that the box runs just fine, no hiccups whatsoever.
 
-One of the reason the Intel tests fix problems is that Alex and Tim
-and others look into them and track down regressions. If you see
-a new problem during your testing you should do the same.
-This actually helps.
+Larry, you said in an earlier mail that you've gone through the
+rtl8192se changes and weren't optimistic with the attached diff you sent
+me. What about the rtlwifi changes, is there something in Realtek's
+version which is missing upstream that would cause the sluggishness?
 
-It doesn't need to be a full analysis/patch, even just posting some detailed
-information on a new regression is useful.
-
-For example one tool I found useful is to just enable the function
-graph tracer and look at the latencies of functions in that path
-during the test. 
-
-If something changes dramatically it's relatively easy to point to.
-
-So for example if you see context switch changing it should not 
-be that difficult to do such a trace and at least point to the guilty
-functions and post a mail.
-
->> Also, for latency, we've got ftrace and a latencytracer, provide traces
->> that illustrate your fail.
->
-> We would need a backport of both to a kernel version that works with
-> reasonable latencies so that we can figure out what caused these
-> regressions for this particular case. Disabling network and kernel
-> features usually gives you better performance but there are a lot of
-> things in the hot paths these days that can not be disabled.
-
-Please do function traces and point fingers at slow things in hotpath.
-The more the merrier. Post a list of a shame!
-
--Andi
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Regards/Gruss,
+Boris.
