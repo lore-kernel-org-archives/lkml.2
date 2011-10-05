@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab1JEIiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 04:38:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50042 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752658Ab1JEIiN (ORCPT
+	id S933704Ab1JEIo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:44:29 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:48182 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab1JEIo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 04:38:13 -0400
-Date: Wed, 5 Oct 2011 09:38:09 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regcache: Use bsearch() to search the register defaults
-Message-ID: <20111005083809.GA16418@opensource.wolfsonmicro.com>
-References: <1317762396-1248-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 5 Oct 2011 04:44:28 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E8C1AE6.5000701@cam.ac.uk>
+Date: Wed, 05 Oct 2011 09:52:54 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317762396-1248-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: IIO (+ more general?) Error condition handling (e.g. wire fell
+ out errors)
+References: <4E858F5A.5000901@cam.ac.uk> <20110930104707.0645afda@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110930104707.0645afda@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 10:06:36PM +0100, Mark Brown wrote:
-> Rather than open coding a binary search use the standard bsearch() using
-> the comparison function we're already using for sort() on insert. This
-> fixes a lockup I was observing due to iterating on min <= max rather
-> than min < max when we fail to look up.
+Sorry for the slow reply!
+>> 3) Consider these out of band (from the out of band event data)
+>> and look at other options for reporting them.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/base/regmap/regcache.c |   40 ++++++++++++++++++++--------------------
->  1 files changed, 20 insertions(+), 20 deletions(-)
+> Treat it like a socket/pipe perhaps - if it "goes down" then report it as
+> having hung up and deliver a SIGPIPE or similar and with an appropriate
+> error code for those catching it (-EIO ?)
+I guess that will work.  Feels a little clunky, but such is life.
 > 
-> diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-> index 18ab5b3..bf82783 100644
-> --- a/drivers/base/regmap/regcache.c
-> +++ b/drivers/base/regmap/regcache.c
-> @@ -13,6 +13,7 @@
->  #include <linux/slab.h>
->  #include <linux/export.h>
->  #include <trace/events/regmap.h>
-> +#include <linux/bsearch.h>
->  #include <linux/sort.h>
->  
->  #include "internal.h"
-> @@ -356,25 +357,7 @@ unsigned int regcache_get_val(const void *base, unsigned int idx,
->  	return -1;
->  }
->  
-> -int regcache_lookup_reg(struct regmap *map, unsigned int reg)
-> -{
-> -	unsigned int min, max, index;
-> -
-> -	min = 0;
-> -	max = map->num_reg_defaults - 1;
-> -	do {
-> -		index = (min + max) / 2;
-> -		if (map->reg_defaults[index].reg == reg)
-> -			return index;
-> -		if (map->reg_defaults[index].reg < reg)
-> -			min = index + 1;
-> -		else
-> -			max = index;
-> -	} while (min <= max);
-> -	return -1;
-> -}
-> -
-> -static int regcache_insert_cmp(const void *a, const void *b)
-> +static int regcache_default_cmp(const void *a, const void *b)
->  {
->  	const struct reg_default *_a = a;
->  	const struct reg_default *_b = b;
-> @@ -382,6 +365,23 @@ static int regcache_insert_cmp(const void *a, const void *b)
->  	return _a->reg - _b->reg;
->  }
->  
-> +int regcache_lookup_reg(struct regmap *map, unsigned int reg)
-> +{
-> +	struct reg_default key;
-> +	struct reg_default *r;
-> +
-> +	key.reg = reg;
-> +	key.def = 0;
-> +
-> +	r = bsearch(&key, map->reg_defaults, map->num_reg_defaults,
-> +		    sizeof(struct reg_default), regcache_default_cmp);
-> +
-> +	if (r)
-> +		return r - map->reg_defaults;
-> +	else
-> +		return -1;
-> +}
-> +
->  int regcache_insert_reg(struct regmap *map, unsigned int reg,
->  			unsigned int val)
->  {
-> @@ -397,6 +397,6 @@ int regcache_insert_reg(struct regmap *map, unsigned int reg,
->  	map->reg_defaults[map->num_reg_defaults - 1].reg = reg;
->  	map->reg_defaults[map->num_reg_defaults - 1].def = val;
->  	sort(map->reg_defaults, map->num_reg_defaults,
-> -	     sizeof(struct reg_default), regcache_insert_cmp, NULL);
-> +	     sizeof(struct reg_default), regcache_default_cmp, NULL);
->  	return 0;
->  }
-> -- 
-> 1.7.6.3
+> That generally gets noticed.
 > 
+>> Is there anything general out there for reporting hardware failures
+>> that would be appropriate?  Sometime these conditions are the sort
+>> of thing that should cause a siren to go off.
+>> They might be sensor failure
+> 
+> There are two things here - one is making sure the app notices (where we
+> have equivalent handling in other interfaces) the other is what to do
+> about it. We don't have a general framework for reporting system
+> component failure. That's something that ought to get fixed generally to
+> report everything from "that new nasty smell was formerly your hard disk"
+> to a sensor fail.
+It does seem like that would be useful. 
+> 
+>> (p.s. I hope no one is using the current driver for trains, though
+>> that might explain British trains...)
+> 
+> Tssh... there is Linux on UK trains, but it's usually driving annoying
+> announcement/video systems.
+:) Good thing their are no 'this runs Linux' badges on the speakers.
+I've nothing against them using Linux, just the driver in question which
+is currently 'interesting'.
 
-Looks good :)
+Thanks,
 
-Acked-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Jonathan
+
