@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934057Ab1JECtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 22:49:42 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:56286 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934032Ab1JECtl convert rfc822-to-8bit (ORCPT
+	id S934074Ab1JEC4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 22:56:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49600 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903Ab1JEC4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 22:49:41 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: Move hyperv out of the drivers/staging/ directory
-Thread-Topic: Move hyperv out of the drivers/staging/ directory
-Thread-Index: AQHMgsz6RKrGNTwArES7b9WKFRPV/ZVtC9VQ
-Date: Wed, 5 Oct 2011 02:49:40 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081EBBB2@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1316708240-25048-1-git-send-email-kys@microsoft.com>
- <20110922170450.GA4490@suse.de>
- <6E21E5352C11B742B20C142EB499E048081E935D@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110922173618.GA5624@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB789@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004170415.GA1320@suse.de>
- <6E21E5352C11B742B20C142EB499E048081EB86F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20111004193414.GA15672@suse.de>
-In-Reply-To: <20111004193414.GA15672@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 4 Oct 2011 22:56:32 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: grant.likely@secretlab.ca, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2] irq: support domains with non-zero hwirq base
+Date: Tue,  4 Oct 2011 21:56:20 -0500
+Message-Id: <1317783380-773-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20111004233953.GE3009@ponder.secretlab.ca>
+References: <20111004233953.GE3009@ponder.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rob Herring <rob.herring@calxeda.com>
 
+Interrupt controllers can have non-zero starting value for h/w irq numbers.
+Adding support in irq_domain allows the domain hwirq numbering to match
+the interrupt controllers' numbering.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, October 04, 2011 3:34 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Move hyperv out of the drivers/staging/ directory
-> 
-> KY, how about the following patch?
-> 
-> Any objection from the virt developers about this?
-> 
-> KY, I'd like to get your signed-off-by before committing this, care to
-> test this out and pass it around the other hyperv developers and then
-> sign off on it?  Then I will be glad to commit this to my tree.
+As this makes looping over irqs for a domain more complicated, add loop
+iterators to iterate over all hwirqs and irqs for a domain.
 
-We completed the testing and everything is functional. Here is my sign-off:
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+Thomas,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Please ack. I'm dependent on this for adding Calxeda highbank support, so
+I'd like to take this thru arm-soc tree.
 
-Regards,
+v2:
+- Rebase to tglx's changes in my previous irq domain commit:
+irq: Fix check for already initialized irq_domain in irq_domain_add
+- drop NO_IRQ and add WARN_ON in irq_domain_to_irq
 
-K. Y
+Rob
 
+ include/linux/irqdomain.h |   16 +++++++++++++++-
+ kernel/irq/irqdomain.c    |   12 ++++++------
+ 2 files changed, 21 insertions(+), 7 deletions(-)
 
-> 
-> thanks,
-> 
-> greg k-h
-> 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 3ad553e..99834e58 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -47,6 +47,7 @@ struct irq_domain_ops {
+  *            of the irq_domain is responsible for allocating the array of
+  *            irq_desc structures.
+  * @nr_irq: Number of irqs managed by the irq domain
++ * @hwirq_base: Starting number for hwirqs managed by the irq domain
+  * @ops: pointer to irq_domain methods
+  * @priv: private data pointer for use by owner.  Not touched by irq_domain
+  *        core code.
+@@ -57,6 +58,7 @@ struct irq_domain {
+ 	struct list_head list;
+ 	unsigned int irq_base;
+ 	unsigned int nr_irq;
++	unsigned int hwirq_base;
+ 	const struct irq_domain_ops *ops;
+ 	void *priv;
+ 	struct device_node *of_node;
+@@ -72,9 +74,21 @@ struct irq_domain {
+ static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
+ 					     unsigned long hwirq)
+ {
+-	return d->ops->to_irq ? d->ops->to_irq(d, hwirq) : d->irq_base + hwirq;
++	if (d->ops->to_irq)
++		return d->ops->to_irq(d, hwirq);
++	if (WARN_ON(hwirq < d->hwirq_base))
++		return 0;
++	return d->irq_base + hwirq - d->hwirq_base;
+ }
+ 
++#define irq_domain_for_each_hwirq(d, hw) \
++	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
++
++#define irq_domain_for_each_irq(d, hw, irq) \
++	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
++	     hw < d->hwirq_base + d->nr_irq; \
++	     hw++, irq = irq_domain_to_irq(d, hw))
++
+ extern void irq_domain_add(struct irq_domain *domain);
+ extern void irq_domain_del(struct irq_domain *domain);
+ #endif /* CONFIG_IRQ_DOMAIN */
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index b57a377..200ce83 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -20,15 +20,15 @@ static DEFINE_MUTEX(irq_domain_mutex);
+ void irq_domain_add(struct irq_domain *domain)
+ {
+ 	struct irq_data *d;
+-	int hwirq;
++	int hwirq, irq;
+ 
+ 	/*
+ 	 * This assumes that the irq_domain owner has already allocated
+ 	 * the irq_descs.  This block will be removed when support for dynamic
+ 	 * allocation of irq_descs is added to irq_domain.
+ 	 */
+-	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+-		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
++	irq_domain_for_each_irq(domain, hwirq, irq) {
++		d = irq_get_irq_data(irq);
+ 		if (!d) {
+ 			WARN(1, "error: assigning domain to non existant irq_desc");
+ 			return;
+@@ -54,15 +54,15 @@ void irq_domain_add(struct irq_domain *domain)
+ void irq_domain_del(struct irq_domain *domain)
+ {
+ 	struct irq_data *d;
+-	int hwirq;
++	int hwirq, irq;
+ 
+ 	mutex_lock(&irq_domain_mutex);
+ 	list_del(&domain->list);
+ 	mutex_unlock(&irq_domain_mutex);
+ 
+ 	/* Clear the irq_domain assignments */
+-	for (hwirq = 0; hwirq < domain->nr_irq; hwirq++) {
+-		d = irq_get_irq_data(irq_domain_to_irq(domain, hwirq));
++	irq_domain_for_each_irq(domain, hwirq, irq) {
++		d = irq_get_irq_data(irq);
+ 		d->domain = NULL;
+ 	}
+ }
+-- 
+1.7.5.4
 
