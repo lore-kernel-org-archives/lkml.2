@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935305Ab1JEUQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:16:28 -0400
-Received: from home.keithp.com ([63.227.221.253]:35409 "EHLO keithp.com"
+	id S935338Ab1JEUST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:18:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41433 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934686Ab1JEUQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:16:27 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Alex Davis <alex14641@yahoo.com>,
-        "terraluna977\@gmail.com" <terraluna977@gmail.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
-In-Reply-To: <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com>
-References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com> <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com> <yun1uuslfhg.fsf@aiko.keithp.com> <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 05 Oct 2011 13:16:23 -0700
-Message-ID: <yun4nznmbxk.fsf@aiko.keithp.com>
+	id S935179Ab1JEUSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 16:18:17 -0400
+Date: Wed, 5 Oct 2011 22:18:16 +0200
+From: Jan Kara <jack@suse.cz>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Jan Kara <jack@suse.cz>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>
+Subject: Re: [PATCH] ext3/xattr_seciruty.c: local functions should be static
+Message-ID: <20111005201816.GJ23467@quack.suse.cz>
+References: <201109231507.09998.hartleys@visionengravers.com>
+ <20111004233746.GC21205@quack.suse.cz>
+ <ADE657CA350FB648AAC2C43247A983F001F39DCFE896@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F39DCFE896@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Wed 05-10-11 12:27:06, H Hartley Sweeten wrote:
+> On Tuesday, October 04, 2011 4:38 PM, Jan Kara wrote:
+> > On Fri 23-09-11 15:07:09, H Hartley Sweeten wrote:
+> >> Quiets the sparse noise:
+> >> 
+> >> warning: symbol 'ext3_initxattrs' was not declared. Should it be static?
+> >> 
+> >> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> >> Cc: Jan Kara <jack@suse.cz>
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> >  Here applies the same comment as to the ext2 patch - not in current
+> > Linus' kernel AFAICS.
+> 
+> These are in linux-next due to:
+> 
+> commit 9d8f13ba3f4833219e50767b022b82cd0da930eb
+> Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> Date:   Mon Jun 6 15:29:25 2011 -0400
+> 
+>     security: new security_inode_init_security API adds function callback
+> 
+> I can repost these after this commit hits Linus' kernel if necessary.
+  I see. OK, please repost when they hit Linus' kernel since I guess it's
+not urgent to merge these.
 
-On Wed, 5 Oct 2011 12:59:40 -0700 (PDT), Alex Davis <alex14641@yahoo.com> w=
-rote:
-
-> By 'disable', do you mean revert? If so, I would the like chance to submi=
-t a patch that adds a boot parameter=20
-> for the driver to disable the backlight by default, e.g: i915_disable_bl.=
- Once the issues are sorted, the
-> parameter could be removed.
-
-If your machine used to work (with 3.0) and does not work with 3.1-rc,
-then we need to fix the driver so that, with no configuration changes,
-your machine continues to work. Preventing regressions is our primary
-responsibility when changing the drivers.
-
-Does reverting Matthew's backlight patch fix a regression on your machine?
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBToy7FzYtFsjWk68qAQjQ9hAAkJDGR5ZAQqWFDdpuYApxuaKfr+5v88eh
-BY6NlEY3pwHI9moWZORFqNKs0IOazQUgke1veqdBDmk8tZTdq8z7uHyys41gZbo2
-m55zQ9J9rtZs17nHeS59Es/fuM7p3VSqUhQhqucbIY3SvtLXPgzKDwWb4TIQjglg
-IEQSHFn2bdpyGmcvi/6FFzcz+gbiUBDkdildVt3r4oyZ26NAeKTzSbn1gtn62I+V
-+LTCatBuNBYrDQrtEulWFeGXVL1CVMnTzZmaUsXGNu2FahrII3VnDz+4RVRxA8Di
-TSdZLznNe4zD8OYXLsN6PE38JtFPmgFpPJGYN06JTLbd4E5QVpKszoGfK8OvdHKv
-KRCEGMRPKLGmOhvflWxkGvNtOrAfjnhLyUMC3KQmCOTJ4fuRNsmLum6EcmN5oUBR
-5qf07YZWgLqLv5Lr3HDCbWmSoQ+l5sQSArm0bJUmc0BBZdEP4jCzgbO1HNSsTboJ
-y98FyysLNozU/5VU/WAZzLd7hhyzoZAZzDmezO8jPip3S/AWdN+z2VpGnHIT4y6B
-d9jBphM3wAtnmyV5vrDJD9Ago4zAQ4uwJOVo+Yt6kBOaC0qqEy0uwZVcrC9uucMv
-cAWOcuGUetLL47GW3uITwZOeKgzZ3EUeQrj5iSYF/L2BMy1UZs+L+EYI8VZC6rtM
-LwnElkco/DI=
-=RFcd
------END PGP SIGNATURE-----
---=-=-=--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
