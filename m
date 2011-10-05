@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934592Ab1JEV17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:27:59 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:53392 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab1JEV16 (ORCPT
+	id S1758119Ab1JEVhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:37:40 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:13294 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050Ab1JEVhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:27:58 -0400
-X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Oct 2011 17:27:58 EDT
-Message-Id: <201110052112.p95LCi4U007468@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 5 Oct 2011 17:09:29 -0400
-Subject: [PATCH] tile: revert change from <asm/atomic.h> to <linux/atomic.h> in asm files
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+	Wed, 5 Oct 2011 17:37:39 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6490"; a="125116330"
+Message-ID: <4E8CCE22.9050205@codeaurora.org>
+Date: Wed, 05 Oct 2011 14:37:38 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: greg@kroah.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
         linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 05 Oct 2011 21:12:47.0244 (UTC) FILETIME=[880E2CC0:01CC83A3]
+Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
+References: <20111004232403.10364.22050.stgit@ponder>
+In-Reply-To: <20111004232403.10364.22050.stgit@ponder>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 32-bit TILEPro support uses some #defines in <asm/atomic_32.h>
-for atomic support routines in assembly.  To make this more explicit,
-I've turned those includes into includes of <asm/atomic_32.h>, which
-should hopefully make it clear that they shouldn't be bombed into
-<linux/atomic.h> in any cleanups.
+On 10/04/11 16:26, Grant Likely wrote:
+> diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> index 27bb05a..991a678 100644
+> --- a/include/linux/platform_device.h
+> +++ b/include/linux/platform_device.h
+> @@ -146,6 +146,21 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
+>  	dev_set_drvdata(&pdev->dev, data);
+>  }
+>  
+> +/* Helper macro for drivers that don't do anything special in module
+> + * init/exit.  This eliminates a lot of boilerplate */
+> +#define module_platform_driver(__platform_driver) \
+> +int __platform_driver##_init(void) \
+> +{ \
+> +	return platform_driver_register(&(__platform_driver)); \
+> +} \
+> +module_init(__platform_driver##_init); \
+> +void __platform_driver##_exit(void) \
+> +{ \
+> +	platform_driver_unregister(&(__platform_driver)); \
+> +} \
+> +module_exit(__platform_driver##_exit);
+> +
+> +
+>
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/kernel/intvec_32.S  |    2 +-
- arch/tile/lib/atomic_asm_32.S |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Can you add __init, __exit, and static as well?
 
-diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
-index fc94607..aecc8ed 100644
---- a/arch/tile/kernel/intvec_32.S
-+++ b/arch/tile/kernel/intvec_32.S
-@@ -21,7 +21,7 @@
- #include <asm/ptrace.h>
- #include <asm/thread_info.h>
- #include <asm/irqflags.h>
--#include <linux/atomic.h>
-+#include <asm/atomic_32.h>
- #include <asm/asm-offsets.h>
- #include <hv/hypervisor.h>
- #include <arch/abi.h>
-diff --git a/arch/tile/lib/atomic_asm_32.S b/arch/tile/lib/atomic_asm_32.S
-index 1f75a2a..3063804 100644
---- a/arch/tile/lib/atomic_asm_32.S
-+++ b/arch/tile/lib/atomic_asm_32.S
-@@ -70,7 +70,7 @@
-  */
- 
- #include <linux/linkage.h>
--#include <linux/atomic.h>
-+#include <asm/atomic_32.h>
- #include <asm/page.h>
- #include <asm/processor.h>
- 
 -- 
-1.6.5.2
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
