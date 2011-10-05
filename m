@@ -1,65 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935575Ab1JEXkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 19:40:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64935 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934986Ab1JEXkH (ORCPT
+	id S935584Ab1JEXq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 19:46:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48191 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935554Ab1JEXq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 19:40:07 -0400
-Subject: [PATCH RESEND] ASoC: Remove impossible case from wm8994_hw_params
+	Wed, 5 Oct 2011 19:46:57 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20111005161620.GB11528@opensource.wolfsonmicro.com>
+References: <1317799677.21481.6.camel@phoenix> <20111005161620.GB11528@opensource.wolfsonmicro.com>
 From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+Date: Thu, 6 Oct 2011 07:46:36 +0800
+Message-ID: <CAF+7xWkCJG3r32m8rSVY3v+bCYzjNnW9RsthXPnjRQUxnBGUfg@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: ak4535: Set codec->hw_write to i2c_master_send
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
         Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Oct 2011 07:39:59 +0800
-Message-ID: <1317857999.6291.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We set hw_params callback for wm8994_aif3_dai_ops to wm8994_aif3_hw_params.
-Thus no need to check wm8994-aif3 in wm8994_hw_params.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8994.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 16542de..68e769e 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2235,7 +2235,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			    struct snd_soc_dai *dai)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	struct wm8994 *control = codec->control_data;
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
- 	int aif1_reg;
- 	int aif2_reg;
-@@ -2278,15 +2277,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			dev_dbg(codec->dev, "AIF2 using split LRCLK\n");
- 		}
- 		break;
--	case 3:
--		switch (control->type) {
--		case WM1811:
--		case WM8958:
--			aif1_reg = WM8958_AIF3_CONTROL_1;
--			break;
--		default:
--			return 0;
--		}
- 	default:
- 		return -EINVAL;
- 	}
--- 
-1.7.4.1
-
-
-
+2011/10/6 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Oct 05, 2011 at 03:27:56PM +0800, Axel Lin wrote:
+>> It was removed in commit f0fba2ad
+>> "ASoC: multi-component - ASoC Multi-Component Support".
+>>
+>> Add it back, otherwise codec->hw_write points to NULL.
+>
+> It's better to fix the driver not to use hw_write any more, it's broken
+> without anyway.
+>
+It's better convert to soc-cache.
+But this one-line-fix may be ok for 3.1.
