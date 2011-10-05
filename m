@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab1JEUgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:36:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41569 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757568Ab1JEUgw (ORCPT
+	id S1758064Ab1JEUiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:38:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60488 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757819Ab1JEUiB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:36:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111005201904.GC14406@localhost.pp.htv.fi>
-References: <201110020304.28288.rjw@sisk.pl>
-	<4E87B885.50005@zytor.com>
-	<201110021354.57995.rjw@sisk.pl>
-	<4E88A537.4010008@zytor.com>
-	<20111003093239.GB25136@localhost.pp.htv.fi>
-	<y0mobxyjazi.fsf@fche.csb>
-	<20111003180441.GD3072@localhost.pp.htv.fi>
-	<34045.1317760188@turing-police.cc.vt.edu>
-	<20111004223932.GA3460@localhost.pp.htv.fi>
-	<CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
-	<20111005201904.GC14406@localhost.pp.htv.fi>
-Date: Wed, 5 Oct 2011 16:36:50 -0400
-Message-ID: <CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Adrian Bunk <bunk@stusta.de>
-Cc: Valdis.Kletnieks@vt.edu, "Frank Ch. Eigler" <fche@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Oct 2011 16:38:01 -0400
+Subject: RE: [PATCH 0/8] Online/offline BSP on x86
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 05 Oct 2011 22:37:47 +0200
+In-Reply-To: <493994B35A117E4F832F97C4719C4C040136F7CCBD@orsmsx505.amr.corp.intel.com>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
+	 <1317842195.6766.40.camel@twins>
+	 <493994B35A117E4F832F97C4719C4C040136F7CC16@orsmsx505.amr.corp.intel.com>
+	 <1317842884.6766.45.camel@twins>
+	 <493994B35A117E4F832F97C4719C4C040136F7CCBD@orsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317847067.6766.46.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2011-10-05 at 13:29 -0700, Yu, Fenghua wrote:
+> > Yes, I got that part. Why do you care?
+> 
+> I can think of two reasons for bsp offline/online:
+> 
+> 1. RAS needs the feature. If socket0 needs to be hotplugged for any
+> reason (any thread on socket0 is bad, shared cache issue, uncore
+> issue, etc), CPU0 is required to be offlined.
+> 
+Right, this is what I asked.
 
-On Wed, Oct 5, 2011 at 4:19 PM, Adrian Bunk <bunk@stusta.de> wrote:
-> On Wed, Oct 05, 2011 at 04:00:39PM -0400, Arnaud Lacombe wrote:
->> Hi,
->>
->> On Tue, Oct 4, 2011 at 6:39 PM, Adrian Bunk <bunk@stusta.de> wrote:
->>...
->> > Each time a patch goes through him into the kernel, he certifies that
->> > his real name is Andrew Morton.
->> >
->> > If that would not be his real name, it would make him somewhere between
->> > completely untrustable and punishable at court.
->> >
->> Under which jurisdiction ? Under which law ?
->>
->> IANAL, but US copyright law does recognize the use of pseudonym for
->> copyrighted work[0], without requirements to disclose one's legal
->> name.
->
-> I am not talking about copyright law.
->
-> When you add a Signed-off-by: to a patch you have to use your real name
-> (see Documentation/SubmittingPatches for details).
->
-> If violating that would be considered fraud or some other crime in some
-> jurisdictions is likely a non-trivial question.
->
-One might still question the legality/constitutionality of such a
-statement. AFAIK, Greg KH, author of the sentence (in af45f32d25c) is
-not a lawyer.
+> 2. CPU0 is symmetrical to other CPU's. There is no specific reason why
+> it shouldn't be offlined except BIOS requirements. 
 
-Have the DCO clauses been legally validated ?
-
- - Arnaud
-
-note: to avoid doubt, I am writing this mail under my legal name.
+Right, so how are you going to deal with crappy BIOS stuffs? We all know
+there's plenty of that around.
