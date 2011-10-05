@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935038Ab1JEQsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:48:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41527 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934960Ab1JEQsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:48:31 -0400
-Message-ID: <1317833310.1782.33.camel@Joe-Laptop>
-Subject: [alternate PATCH] block: fix UUID string buffer length
-From: Joe Perches <joe@perches.com>
-To: Will Drewry <wad@chromium.org>
-Cc: Rabin Vincent <rabin@rab.in>, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Date: Wed, 05 Oct 2011 09:48:30 -0700
-In-Reply-To: <CABqD9hYw3qcMpcjyEtvstYD-WRB=QkVPS5S0MBbah=veZv9E6A@mail.gmail.com>
-References: <1317808364-21081-1-git-send-email-rabin@rab.in>
-	 <CABqD9hYw3qcMpcjyEtvstYD-WRB=QkVPS5S0MBbah=veZv9E6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S935049Ab1JEQvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:51:03 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:40647 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935004Ab1JEQvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 12:51:01 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] mfd/db8500-prcmu: rename init function
+Date: Wed, 5 Oct 2011 18:50:47 +0200
+Message-ID: <1317833447-714-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The UUID string buffer is several bytes shorter than what is actually
-required.  Fix it and remove the used once inline part_unpack_uuid,
-use snprintf and printf extension %pU directly.
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Based-on-a-patch-by: Rabin Vincent <rabin@rab.in>
-cc: Will Drewry <wad@chromium.org>
-Signed-off-by: Joe Perches <joe@perches.com>
+This renames the PRCMU clock force initialization function
+to have a less generic name.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- block/genhd.c         |    8 +++++---
- include/linux/genhd.h |    6 ------
- 2 files changed, 5 insertions(+), 9 deletions(-)
+Patch made on Samuel Ortiz' request as a review comment on
+"mfd/db8500-prcmu: initialize DB8500 PRCMU regs"
+---
+ drivers/mfd/db8500-prcmu.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index e2f6790..427c955 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -735,7 +735,7 @@ void __init printk_all_partitions(void)
- 		struct hd_struct *part;
- 		char name_buf[BDEVNAME_SIZE];
- 		char devt_buf[BDEVT_SIZE];
--		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
-+		char uuid[sizeof("12345678-1234-1234-1234-123456789012")];
- 
- 		/*
- 		 * Don't show empty devices or things that have been
-@@ -754,9 +754,11 @@ void __init printk_all_partitions(void)
- 		while ((part = disk_part_iter_next(&piter))) {
- 			bool is_part0 = part == &disk->part0;
- 
--			uuid[0] = 0;
- 			if (part->info)
--				part_unpack_uuid(part->info->uuid, uuid);
-+				snprintf(uuid, sizeof(uuid),
-+					 "%pU", part->info->uuid);
-+			else
-+				uuid[0] = '\0';
- 
- 			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
- 			       bdevt_str(part_devt(part), devt_buf),
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 02fa469..28bd275 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -221,12 +221,6 @@ static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 91a5e8c..98da431 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2154,7 +2154,7 @@ void __init db8500_prcmu_early_init(void)
  	}
  }
  
--static inline char *part_unpack_uuid(const u8 *uuid, char *out)
--{
--	sprintf(out, "%pU", uuid);
--	return out;
--}
--
- static inline int disk_max_parts(struct gendisk *disk)
+-static void __init init_prcm_registers(void)
++static void __init db8500_prcmu_init_clkforce(void)
  {
- 	if (disk->flags & GENHD_FL_EXT_DEVT)
-
+ 	u32 val;
+ 
+@@ -2412,7 +2412,7 @@ static int __init db8500_prcmu_probe(struct platform_device *pdev)
+ 	if (ux500_is_svp())
+ 		return -ENODEV;
+ 
+-	init_prcm_registers();
++	db8500_prcmu_init_clkforce();
+ 
+ 	/* Clean up the mailbox interrupts after pre-kernel code. */
+ 	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLR);
+-- 
+1.7.3.2
 
