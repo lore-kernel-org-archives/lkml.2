@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934106Ab1JEGD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 02:03:59 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:12297 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975Ab1JEGD6 (ORCPT
+	id S934132Ab1JEGZl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:25:41 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:50497 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933898Ab1JEGZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 02:03:58 -0400
-X-IronPort-AV: E=Sophos;i="4.68,489,1312156800"; 
-   d="scan'208";a="8215106"
-Subject: Re: [PATCH] stop_machine: fixup cut'n'paste error in stopped
- thread name
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1317657968.20367.35.camel@twins>
-References: <1317643317.21903.36.camel@zakaz.uk.xensource.com>
-	 <1317657968.20367.35.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Wed, 5 Oct 2011 07:03:56 +0100
-Message-ID: <1317794636.24742.3.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Oct 2011 02:25:39 -0400
+Date: Wed, 5 Oct 2011 17:25:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Huang Ying <ying.huang@intel.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the tip tree
+Message-Id: <20111005172528.0d0a8afc65acef7ace22a24e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 17:06 +0100, Peter Zijlstra wrote:
-> On Mon, 2011-10-03 at 13:01 +0100, Ian Campbell wrote:
-> > Noticed this while poking around. Seems like the code was lifted a bit
-> > more thoroughly from the migration thread mgmt code than the author of
-> > the preceding comment intended...
-> > 
-> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > --- a/kernel/stop_machine.c
-> > +++ b/kernel/stop_machine.c
-> > @@ -312,7 +312,7 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
-> >  		p = kthread_create_on_node(cpu_stopper_thread,
-> >  					   stopper,
-> >  					   cpu_to_node(cpu),
-> > -					   "migration/%d", cpu);
-> > +					   "stopper/%d", cpu);
-> >  		if (IS_ERR(p))
-> >  			return notifier_from_errno(PTR_ERR(p));
-> >  		get_task_struct(p);
-> > 
-> 
-> IIRC it was because userspace already knew about the migration thread
-> and we didn't want to confuse things further. But yeah, its not
-> particularly important.
+--Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not sure what knowledge userspace has of either kernel thread but
-fair enough, patch withdrawn.
+Hi all,
 
-Ian.
+After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
+net/rds/ib_rdma.c: In function 'rds_ib_reuse_fmr':
+net/rds/ib_rdma.c:272:2: error: implicit declaration of function 'llist_del=
+_first' [-Werror=3Dimplicit-function-declaration]
+net/rds/ib_rdma.c:272:6: warning: assignment makes pointer from integer wit=
+hout a cast [enabled by default]
+net/rds/ib_rdma.c: In function 'rds_ib_flush_mr_pool':
+net/rds/ib_rdma.c:671:4: error: implicit declaration of function 'llist_add=
+_batch' [-Werror=3Dimplicit-function-declaration]
+cc1: some warnings being treated as errors
+
+Caused by commit 1230db8e1543 ("llist: Make some llist functions inline")
+interacting with commit 1bc144b62524 ("net, rds, Replace xlist in
+net/rds/xlist.h with llist") from the net tree.  The former commit
+removes the declarations of llist_del_first() and llist_add_batch() with
+no explanation (and probably by accident since the definitions still
+exist).
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 5 Oct 2011 17:16:29 +1100
+Subject: [PATCH] llist: add back llist_add_batch and llist_del_first
+
+Commit 1230db8e1543 ("llist: Make some llist functions inline") appears
+to have deleted the definitions by accident.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/linux/llist.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index 837fb4a..7287734 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -178,4 +178,10 @@ static inline struct llist_node *llist_del_all(struct =
+llist_head *head)
+ {
+ 	return xchg(&head->first, NULL);
+ }
++
++extern bool llist_add_batch(struct llist_node *new_first,
++			    struct llist_node *new_last,
++			    struct llist_head *head);
++extern struct llist_node *llist_del_first(struct llist_head *head);
++
+ #endif /* LLIST_H */
+--=20
+1.7.6.3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOi/hYAAoJEECxmPOUX5FELywQAI8tJ8VUghyoz32qfScneYBq
+jYdGZUms02M/9XnBjKNL369+wMqR/VDoQclZ2m0F0E86Rl6FbtI0FSkqHpqJHEgV
+jnCak5BYUTUzsb6dy8dbHTC05xa8To7TU+Tc7eQDrG8WLq+zzrrRcH4VQuJw3bwc
+Zxf33tdkYi6tFwg+m/1LWT6e3dLVzOUQ9/ZBQbFst1+gZRnvkpddQyGNtlFPL3D+
+UahsaDF51NHAOuQMx8vK4rtQV7p+kHrEvHqLCZMksehGDVKf5nvGaG8htDnA0kVq
+sHtpNIm7PyCmJTtiEBKl+X0A/g1gx4zsVS9bhKHaEJhm28nuMjWpcwdTFAo9VwjL
+/IjSDWJd1ltVSh+gs0bMkdXGjMx7tIXrkI6TFVIBRe5SB5dUOCoPN400Xqx4hzYE
+UGe9I/4K/DWsY38sQHMZhD4atLr/6M3VBrDH1E7BbiqrCdH/w+N+3BYiNCoeypS/
+uJ9m+yWRmq+kGOHVpVOkv/9qpjCc1AH4Sq3ogTKDNmWacDAzEGE/rfmtoMxLErrM
+FRMRV5K0c4IxmyXuRXze1TEfuu7iQ3CVi7kugMbpEulv6RcUyEfHjLkVD8m4Qwp9
+IoTum3Low1gbX3/MEoK0IYdEdHa18mUewL2xdQX39udF03HCN4nUMy3lv2QFgFLi
+YaYiZNoJ1f3zovlsSJf3
+=5oyD
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__5_Oct_2011_17_25_28_+1100_dhJCLRNhNAmdY4ej--
