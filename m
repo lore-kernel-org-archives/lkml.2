@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934178Ab1JEJ04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 05:26:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56380 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933732Ab1JEJ0y convert rfc822-to-8bit (ORCPT
+	id S934181Ab1JEJdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 05:33:06 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27675 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933583Ab1JEJdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 05:26:54 -0400
+	Wed, 5 Oct 2011 05:33:04 -0400
+Date: Wed, 5 Oct 2011 12:32:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: ospite@studenti.unina.it
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [sparse stuff] bug in lp3944_led_set_brightness()
+Message-ID: <20111005093248.GA6792@mwanda>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.135.251]
-In-Reply-To: <1316948337-7924-2-git-send-email-ohad@wizery.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com> <1316948337-7924-2-git-send-email-ohad@wizery.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 5 Oct 2011 11:26:32 +0200
-Message-ID: <CAK=Wgba6xxD2DBJhM--AcTPBoNRiOZ_6f8+j3bfaCqZMO8A4+w@mail.gmail.com>
-Subject: Re: [RFC 1/5] ARM: dev_archdata: add private iommu extension
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E8C2445.0076:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Hi Antonio,
 
-On Sun, Sep 25, 2011 at 1:58 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Add a private iommu pointer to the ARM-specific arch data in the
-> device struct, which will be used to attach iommu-specific data
-> to devices which require iommu support.
+I was going through some Sparse warnings and this one seems pretty
+valid.
 
-Can you please take a look and ack/nack ?
+drivers/leds/leds-lp3944.c +292 23:
+	warning: mixing different enum types
 
-With this change in hand, generic code will now be able to control
-OMAP's iommu devices too, without having to use any OMAP-specific API
-(this is demonstrated in this patch set).
+   284  static void lp3944_led_set_brightness(struct led_classdev *led_cdev,
+   285                                        enum led_brightness brightness)
+   286  {
+   287          struct lp3944_led_data *led = ldev_to_led(led_cdev);
+   288  
+   289          dev_dbg(&led->client->dev, "%s: %s, %d\n",
+   290                  __func__, led_cdev->name, brightness);
+   291  
+   292          led->status = brightness;
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+   293          schedule_work(&led->work);
+   294  }
 
-This will allow us to further clean the existing mainline OMAP iommu
-users, and focus on generic IOMMU code for future users
-(rpmsg/remoteproc and Marek's upcoming generic DMA API).
+led->status should be values between 0-3.  brightness is 0, 127 and
+255.
 
-The change is only effective when an iommu driver, which supports the
-generic IOMMU API, is built (all of them must select
-CONFIG_IOMMU_API), and otherwise is a nop.
-
-Obviously the change itself is not OMAP-specific, and it will be
-useful for other platforms too.
-
-Thanks!
-Ohad.
-
-> Different iommu implementations (on different platforms) will attach
-> different types of data to this pointer, so 'void *' is currently used
-> (the downside is reduced typesafety).
->
-> Note: ia64, x86 and sparc have this exact iommu extension as well, and
-> if others are likely to adopt it too, we might want to consider
-> adding this to the device struct itself directly.
->
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/arm/include/asm/device.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
-> index 9f390ce..6615f03 100644
-> --- a/arch/arm/include/asm/device.h
-> +++ b/arch/arm/include/asm/device.h
-> @@ -10,6 +10,9 @@ struct dev_archdata {
->  #ifdef CONFIG_DMABOUNCE
->        struct dmabounce_device_info *dmabounce;
->  #endif
-> +#ifdef CONFIG_IOMMU_API
-> +       void *iommu; /* private IOMMU data */
-> +#endif
->  };
->
->  struct pdev_archdata {
-> --
-> 1.7.4.1
->
->
+regards,
+dan carpenter
