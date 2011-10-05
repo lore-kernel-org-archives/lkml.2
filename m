@@ -1,368 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934434Ab1JELWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 07:22:00 -0400
+	id S934447Ab1JELWP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 07:22:15 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:42353 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934411Ab1JELV6 (ORCPT
+	with ESMTP id S934411Ab1JELWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 07:21:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E8C370E.7080806@intel.com>
-References: <1317750317-4489-1-git-send-email-linkinjeon@gmail.com>
-	<4E8C1F98.9070909@intel.com>
-	<CAKYAXd-9+_1TBniszQir+krF1fRqzBMiAAX9PgzaW+odps0EDg@mail.gmail.com>
-	<4E8C370E.7080806@intel.com>
-Date: Wed, 5 Oct 2011 20:21:57 +0900
-Message-ID: <CAKYAXd_AoSgY6htSO5jJyD3QJ_xXFqgKLyNX49s3PuRW6AUmbg@mail.gmail.com>
-Subject: Re: [PATCH v10] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, linus.walleij@linaro.org,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
-        per.forlin@stericsson.com, johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 5 Oct 2011 07:22:11 -0400
+Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
+From: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: quilt-dev@nongnu.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        John Kacur <jkacur@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 05 Oct 2011 13:21:07 +0200
+References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+	 <20111004180237.GA15087@suse.de>
+	 <1317752148.18063.16.camel@gandalf.stny.rr.com>
+	 <20111004182615.GA16224@suse.de>
+	 <1317753468.18063.19.camel@gandalf.stny.rr.com>
+	 <1317779312.1662.37.camel@schurl.linbit> <20111005065309.GA6676@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317813674.1623.10.camel@schurl.linbit>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p95BM9w6027638
 
-2011/10/5 Adrian Hunter <adrian.hunter@intel.com>:
-> On 05/10/11 13:21, NamJae Jeon wrote:
->>
->> 2011/10/5 Adrian Hunter<adrian.hunter@intel.com>:
->>>
->>> On 04/10/11 20:45, Namjae Jeon wrote:
->>>>
->>>> It allows gerneral purpose partitions in MMC Device.
->>>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure
->>>> suggested by Andrei Warkentin.
->>>> After patching, we can see general purpose partitions like this.
->>>>>
->>>>> cat /proc/partitions
->>>>
->>>>           179 0 847872 mmcblk0
->>>>           179 192 4096 mmcblk0gp3
->>>>           179 160 4096 mmcblk0gp2
->>>>           179 128 4096 mmcblk0gp1
->>>>           179 96  1052672 mmcblk0gp0
->>>>           179 64  1024 mmcblk0boot1
->>>>           179 32  1024 mmcblk0boot0
->>>>
->>>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
->>>> ---
->>>>  drivers/mmc/card/block.c |   34 +++++++++++++++++------------
->>>>  drivers/mmc/core/mmc.c   |   52
->>>> ++++++++++++++++++++++++++++++++++++++++++---
->>>>  include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
->>>>  include/linux/mmc/mmc.h  |    5 +++-
->>>>  4 files changed, 105 insertions(+), 20 deletions(-)
->>>>
->>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>>> index 782d5f8..fb6f1e9 100644
->>>> --- a/drivers/mmc/card/block.c
->>>> +++ b/drivers/mmc/card/block.c
->>>> @@ -1470,26 +1470,32 @@ static int mmc_blk_alloc_part(struct mmc_card
->>>> *card,
->>>>        return 0;
->>>>  }
->>>>
->>>> +/* MMC Physical partition consist of two boot partitions and
->>>> + * up to four general purpose partitions.
->>>> + * For each partitions enabled in EXT_CSD
->>>> + * The block device will allocated to provide access to the partition.
->>>> + */
->>>> +
->>>>  static int mmc_blk_alloc_parts(struct mmc_card *card, struct
->>>> mmc_blk_data
->>>> *md)
->>>>  {
->>>> -       int ret = 0;
->>>> +       int idx, ret = 0;
->>>>
->>>>        if (!mmc_card_mmc(card))
->>>>                return 0;
->>>>
->>>> -       if (card->ext_csd.boot_size&&
->>>>  mmc_boot_partition_access(card->host)) {
->>>> -               ret = mmc_blk_alloc_part(card, md,
->>>> EXT_CSD_PART_CONFIG_ACC_BOOT0,
->>>> -                                        card->ext_csd.boot_size>>    9,
->>>> -                                        true,
->>>> -                                        "boot0");
->>>> -               if (ret)
->>>> -                       return ret;
->>>> -               ret = mmc_blk_alloc_part(card, md,
->>>> EXT_CSD_PART_CONFIG_ACC_BOOT1,
->>>> -                                        card->ext_csd.boot_size>>    9,
->>>> -                                        true,
->>>> -                                        "boot1");
->>>> -               if (ret)
->>>> -                       return ret;
->>>> +       for (idx = 0; idx<    card->nr_parts; idx++) {
->>>> +               if ((idx == 0 || idx == 1)&&
->>>> +                       !mmc_boot_partition_access(card->host))
->>>> +                       continue;
->>>
->>> Seems a bit fragile.  What if someone decided to put the gp
->>> partitions before the boot partitions.  What about:
->>
->> There are the default two boot partition in mmc spec. I think that
->> this case can not be happened.
->> And boot partition size of EXT CSD is read-only.
->> Can you explain which is case put to gp partitions before the boot
->> partition ?
+On Wed, 2011-10-05 at 10:23 +0200, Andreas Gruenbacher wrote:
+> On Tue, 2011-10-04 at 23:53 -0700, Greg KH wrote:
+> > Yes, quoting is the correct thing to do, but that does not usually
+> > happen in "Signed-off-by:" lines in kernel patches.
+> > 
+> > Actually, I think this is even a problem when the name is quoted
+> > properly, I've had to fix that up in patches by hand.
+> 
+> Yes, proper quoting currently isn't enough.
 >
-> Relying on the partition order in the partition array is fragile.
-> You cannot predict how someone may want to change it in the future,
-> and that person will not expect that certain positions have certain meaning.
- 0,1 of Boot partition is fixed if spec is changed over. but gp
-partition is variable in 2,3,4,5,6 of array.
-If How someone change code, problem occur ?
->
->>
->>>
->>>                if (mmc_is_boot_partition(&part[idx])&&
->>>                    !mmc_boot_partition_access(card->host)
->>>                        continue;
->>>
->>> And:
->>>
->>> int mmc_is_boot_partition(struct mmc_part *part)
->>> {
->>>        return part->part_cfg>= EXT_CSD_PART_CONFIG_ACC_BOOT0&&
->>>               part->part_cfg<= EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>>                                 MMC_NUM_BOOT_PARTITION;
->>> }
->>>
->>>> +               if (card->part[idx].size) {
->>>> +                       ret = mmc_blk_alloc_part(card, md,
->>>> +                               card->part[idx].part_cfg,
->>>> +                               card->part[idx].size>>    9,
->>>> +                               card->part[idx].force_ro,
->>>> +                               card->part[idx].name);
->>>> +                       if (ret)
->>>> +                               return ret;
->>>> +               }
->>>>        }
->>>>
->>>>        return ret;
->>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>>> index c632b1f..2f458a0 100644
->>>> --- a/drivers/mmc/core/mmc.c
->>>> +++ b/drivers/mmc/core/mmc.c
->>>> @@ -239,7 +239,9 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8
->>>> **new_ext_csd)
->>>>   */
->>>>  static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->>>>  {
->>>> -       int err = 0;
->>>> +       int err = 0, idx;
->>>> +       unsigned int part_size;
->>>> +       u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
->>>>
->>>>        BUG_ON(!card);
->>>>
->>>> @@ -340,7 +342,14 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>> u8
->>>> *ext_csd)
->>>>                 * There are two boot regions of equal size, defined in
->>>>                 * multiples of 128K.
->>>>                 */
->>>> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>>  17;
->>>> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
->>>> +                       for (idx = 0; idx<    MMC_NUM_BOOT_PARTITION;
->>>> idx++)
->>>> {
->>>> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>>  17;
->>>> +                               mmc_part_add(card, part_size,
->>>> +                                       EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>>> idx,
->>>> +                                       "boot%d", idx, true);
->>>> +                       }
->>>> +               }
->>>>        }
->>>>
->>>>        card->ext_csd.raw_hc_erase_gap_size =
->>>> @@ -362,9 +371,9 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>> u8
->>>> *ext_csd)
->>>>                card->ext_csd.raw_partition_support =
->>>> ext_csd[EXT_CSD_PARTITION_SUPPORT];
->>>>                if ((ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x2)&&
->>>>                (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE]&    0x1)) {
->>>> -                       u8 hc_erase_grp_sz =
->>>> +                       hc_erase_grp_sz =
->>>>                                ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>> -                       u8 hc_wp_grp_sz =
->>>> +                       hc_wp_grp_sz =
->>>>                                ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>>
->>>>                        card->ext_csd.enhanced_area_en = 1;
->>>> @@ -393,6 +402,41 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>> u8
->>>> *ext_csd)
->>>>                        card->ext_csd.enhanced_area_offset = -EINVAL;
->>>>                        card->ext_csd.enhanced_area_size = -EINVAL;
->>>>                }
->>>> +
->>>> +               /*
->>>> +                * General purpose partition feature support --
->>>> +                * If ext_csd have the size of general purpose
->>>> partitions,
->>>> +                * set size, part_cfg, partition name in mmc_part.
->>>> +                */
->>>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&
->>>> +                       EXT_CSD_PART_SUPPORT_PART_EN) {
->>>> +                       if (card->ext_csd.enhanced_area_en != 1) {
->>>> +                               hc_erase_grp_sz =
->>>> +
->>>> ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>> +                               hc_wp_grp_sz =
->>>> +                                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>> +
->>>> +                               card->ext_csd.enhanced_area_en = 1;
->>>> +                       }
->>>> +
->>>> +                       for (idx = 0; idx<    MMC_NUM_GP_PARTITION;
->>>> idx++) {
->>>> +                               if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx
->>>> *
->>>> 3]&&
->>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>> +
->>>> 1]&&
->>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>> +
->>>> 2])
->>>> +                                       continue;
->>>> +                               part_size =
->>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>> +
->>>> 2]
->>>> +<<    16) +
->>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>> +
->>>> 1]
->>>> +<<    8) +
->>>> +                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
->>>> +                               part_size *= (size_t)(hc_erase_grp_sz *
->>>> +                                       hc_wp_grp_sz);
->>>> +                               mmc_part_add(card, part_size<<    19,
->>>> +                                       EXT_CSD_PART_CONFIG_ACC_GP0 +
->>>> idx,
->>>> +                                       "gp%d", idx, false);
->>>> +                       }
->>>> +               }
->>>>                card->ext_csd.sec_trim_mult =
->>>>                        ext_csd[EXT_CSD_SEC_TRIM_MULT];
->>>>                card->ext_csd.sec_erase_mult =
->>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>>> index 5294ddf..0522627 100644
->>>> --- a/include/linux/mmc/card.h
->>>> +++ b/include/linux/mmc/card.h
->>>> @@ -12,6 +12,7 @@
->>>>
->>>>  #include<linux/mmc/core.h>
->>>>  #include<linux/mod_devicetable.h>
->>>> +#include<linux/genhd.h>
->>>>
->>>>  struct mmc_cid {
->>>>        unsigned int            manfid;
->>>> @@ -64,7 +65,6 @@ struct mmc_ext_csd {
->>>>        bool                    enhanced_area_en;       /* enable bit */
->>>>        unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>>        unsigned int            enhanced_area_size;     /* Units: KB */
->>>> -       unsigned int            boot_size;              /* in bytes */
->>>>        u8                      raw_partition_support;  /* 160 */
->>>>        u8                      raw_erased_mem_count;   /* 181 */
->>>>        u8                      raw_ext_csd_structure;  /* 194 */
->>>> @@ -158,6 +158,23 @@ struct sdio_func_tuple;
->>>>
->>>>  #define SDIO_MAX_FUNCS                7
->>>>
->>>> +/* The number of MMC physical partitions
->>>> + * It consist of boot partitions(2), general purpose partitions(4) in
->>>> MMC
->>>> v4.4
->>>> + */
->>>> +#define MMC_NUM_BOOT_PARTITION 2
->>>> +#define MMC_NUM_GP_PARTITION   4
->>>> +#define MMC_NUM_PHY_PARTITION  6
->>>> +
->>>> +/*
->>>> + * MMC Physical partitions
->>>> + */
->>>> +struct mmc_part {
->>>> +       unsigned int    size;   /* partition size (in bytes) */
->>>> +       unsigned int    part_cfg;       /* it used to part_type */
->>>> +       char    name[DISK_NAME_LEN];
->>>> +       bool    force_ro;       /* to make boot parts RO by default */
->>>> +};
->>>> +
->>>>  /*
->>>>   * MMC device
->>>>   */
->>>> @@ -219,9 +236,24 @@ struct mmc_card {
->>>>        unsigned int            sd_bus_speed;   /* Bus Speed Mode set for
->>>> the card */
->>>>
->>>>        struct dentry           *debugfs_root;
->>>> +       struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
->>>> partitions */
->>>> +       unsigned int    nr_parts;
->>>>  };
->>>>
->>>>  /*
->>>> + * This function fill contents in mmc_part.
->>>> + */
->>>> +static inline void mmc_part_add(struct mmc_card *card, unsigned int
->>>> size,
->>>> +                       unsigned int part_cfg, char *name, int idx, bool
->>>> ro)
->>>> +{
->>>> +       card->part[card->nr_parts].size = size;
->>>> +       card->part[card->nr_parts].part_cfg = part_cfg;
->>>> +       sprintf(card->part[card->nr_parts].name, name, idx);
->>>> +       card->part[card->nr_parts].force_ro = ro;
->>>> +       card->nr_parts++;
->>>> +}
->>>> +
->>>> +/*
->>>>   *  The world is not perfect and supplies us with broken mmc/sdio
->>>> devices.
->>>>   *  For at least some of these bugs we need a work-around.
->>>>   */
->>>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>>> index 50af227..ea558eb 100644
->>>> --- a/include/linux/mmc/mmc.h
->>>> +++ b/include/linux/mmc/mmc.h
->>>> @@ -270,6 +270,7 @@ struct _mmc_csd {
->>>>   * EXT_CSD fields
->>>>   */
->>>>
->>>> +#define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
->>>>  #define EXT_CSD_PARTITION_ATTRIBUTE   156     /* R/W */
->>>>  #define EXT_CSD_PARTITION_SUPPORT     160     /* RO */
->>>>  #define EXT_CSD_RST_N_FUNCTION                162     /* R/W */
->>>> @@ -313,7 +314,9 @@ struct _mmc_csd {
->>>>
->>>>  #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
->>>>  #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
->>>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
->>>> +#define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
->>>> +
->>>> +#define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
->>>>
->>>>  #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
->>>>  #define EXT_CSD_CMD_SET_SECURE                (1<<1)
->>>
->>>
->
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> > And yes, this is a problem, I run into at least 1-2 patches per stable
+> > kernel release with this issue.  I looked into fixing it and somehow the
+> > email parsing logic was wierd and I couldn't figure out how to resolve
+> > it.
+> 
+> Okay, I'll have another look ...
+
+I've tried to address this as follows now:
+
+commit f3e7822028616014f933b99d05f42fc028f8d12c
+Author: Andreas Gruenbacher <agruen@linbit.com>
+Date:   Wed Oct 5 12:57:48 2011 +0200
+
+    quilt mail: Allow commas in Signed-off-by and Acked-by lines
+    
+    The standard quilt_mail_patch_filter() in quilt mail tries to extract email
+    addresses from Signed-off-by and Acked-by lines.  It adds Cc headers with those
+    addresses.
+    
+    Signed-off-by and Acked-by lines sometimes contain commas as part of the
+    address.  When put in recipient headers (To, Cc, Bcc), the commas are
+    interpreted as separators, which breaks things.
+    
+    Try to recognize this case and add the appropriate quotes.  For example, the
+    email address in ``Signed-off-by: Gruenbacher, Andreas <agruen@linbit.com>'' is
+    now extracted as ``"Gruenbacher, Andreas" <agruen@linbit.com>''.
+    
+    Note that quilt_mail_patch_filter() can be overridden in .quiltrc; you may need
+    to update your .quiltrc.
+
+commit c6750845136ff21eb13bc99ec7a6e1689100a13a
+Author: Andreas Gruenbacher <agruen@linbit.com>
+Date:   Wed Oct 5 12:08:05 2011 +0200
+
+    quilt mail: Support double quoted special characters in email adresses
+    
+    Addresses like "Gruenbacher, Andreas" <agruen@linbit.com> will work now.
+
+
+Please give it a shot.
+
+Thanks,
+Andreas
+
