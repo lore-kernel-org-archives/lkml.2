@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab1JEHyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:54:44 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:46104 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab1JEHyn (ORCPT
+	id S1757992Ab1JEHzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 03:55:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57622 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab1JEHzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:54:43 -0400
-Date: Wed, 5 Oct 2011 10:54:39 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111005075438.GA29441@localhost.pp.htv.fi>
-References: <201110020304.28288.rjw@sisk.pl>
- <4E87B885.50005@zytor.com>
- <201110021354.57995.rjw@sisk.pl>
- <4E88A537.4010008@zytor.com>
- <20111003093239.GB25136@localhost.pp.htv.fi>
- <y0mobxyjazi.fsf@fche.csb>
- <20111003180441.GD3072@localhost.pp.htv.fi>
- <34045.1317760188@turing-police.cc.vt.edu>
- <20111004223932.GA3460@localhost.pp.htv.fi>
- <20111004231730.GB17089@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111004231730.GB17089@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Oct 2011 03:55:06 -0400
+Subject: [PATCH] leds: leds-lm3530: Add __devexit_p at necessary place
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Shreshtha Kumar SAHU <shreshthakumar.sahu@stericsson.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Oct 2011 15:54:56 +0800
+Message-ID: <1317801296.12133.0.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 07:17:30PM -0400, Frank Ch. Eigler wrote:
-> Hi -
-> 
-> On Wed, Oct 05, 2011 at 01:39:32AM +0300, Adrian Bunk wrote:
-> 
-> > [...]  But the semantics of PGP key signing is that you certify that
-> > you verified that a photo ID of that person matches the name on the
-> > key.  [...]
-> 
-> But that's begging the question.  The semantics are what you want them
-> to be.  Some keysigning parties take this super seriously, and maybe
-> with strangers there's some room for this.  But in the end, when *I*
-> see a key with someone else's signature on it, there is no proof how
-> rigorously they investigated the person.  The "reliable identity" part
-> of the web of trust is only one hop deep.
+According to the comments in include/linux/init.h:
 
-That is a rigid policy, but not the only one.
+"Pointers to __devexit functions must use __devexit_p(function_name), the
+wrapper will insert either the function_name or NULL, depending on the config
+options."
 
-And it has practical limitations - "Key must be signed
-by H. Peter Anvin" might be a consequence for kernel.org.
+We have __devexit annotation for lm3530_remove(), thus add __devexit_p at
+necessary place.
 
-What policy is now used at kernel.org now is exactly the question
-I asked in [1], and where I'm still waiting for an answer from hpa.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/leds-lm3530.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Other organizations like Debian have a clear and public policy on 
-what is required for the user identification part for uploading to
-the archive [2], and I expect the same for kernel.org.
-
-> - FChE
-
-cu
-Adrian
-
-[1] https://lkml.org/lkml/2011/10/3/362
-[2] http://www.debian.org/devel/join/nm-step2
-
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index 15c1733..0630e4f 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -449,7 +449,7 @@ MODULE_DEVICE_TABLE(i2c, lm3530_id);
+ 
+ static struct i2c_driver lm3530_i2c_driver = {
+ 	.probe = lm3530_probe,
+-	.remove = lm3530_remove,
++	.remove = __devexit_p(lm3530_remove),
+ 	.id_table = lm3530_id,
+ 	.driver = {
+ 		.name = LM3530_NAME,
 -- 
+1.7.4.1
 
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
+
 
