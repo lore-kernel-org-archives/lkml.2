@@ -1,163 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab1JEBLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Oct 2011 21:11:42 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:44675 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757417Ab1JEBLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Oct 2011 21:11:41 -0400
-Date: Wed, 5 Oct 2011 09:51:32 +0900
-From: Minoru Usui <usui@mxm.nes.nec.co.jp>
-To: linux-kernel@vger.kernel.org
-Cc: matthew@wil.cx, viro@zeniv.linux.org.uk
-Subject: Re: flock(2) cannot block other process which try to get same
- flock?
-Message-Id: <20111005095132.6a593057.usui@mxm.nes.nec.co.jp>
-In-Reply-To: <20110930200938.aaf0a897.usui@mxm.nes.nec.co.jp>
-References: <20110930200938.aaf0a897.usui@mxm.nes.nec.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757623Ab1JEBQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Oct 2011 21:16:24 -0400
+Received: from ozlabs.org ([203.10.76.45]:46018 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757417Ab1JEBQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Oct 2011 21:16:22 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization\@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "peter.maydell\@linaro.org" <peter.maydell@linaro.org>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        "Michael S.Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH] virtio: Add platform bus driver for memory mapped virtio device
+In-Reply-To: <1317745002.3158.340.camel@hornet.cambridge.arm.com>
+References: <1317217663-32647-1-git-send-email-pawel.moll@arm.com> <878vp1iqpz.fsf@rustcorp.com.au> <1317745002.3158.340.camel@hornet.cambridge.arm.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 05 Oct 2011 11:40:51 +1030
+Message-ID: <87aa9ggs4k.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm really sorry. I have to apologize to everyone.
-This is my fault. It's TP bug.
+On Tue, 04 Oct 2011 17:16:42 +0100, Pawel Moll <pawel.moll@arm.com> wrote:
+> Greetings!
+> 
+> > > +/* The alignment to use between consumer and producer parts of vring.
+> > > + * Currently hardcoded to page size. */
+> > > +#define VIRTIO_MMIO_VRING_ALIGN		PAGE_SIZE
+> > 
+> > Really?  Shouldn't that just be 4k?  I haven't seen the qemu side of
+> > this, but it seems weird to depend on the kernel's idea of page size...
+> 
+> Well, the Host doesn't really care now, as it's told what the alignment
+> is:
+> 
+> > +       /* Activate the queue */
+> > +       writel(VIRTIO_MMIO_VRING_ALIGN,
+> > +                       vm_dev->base + VIRTIO_MMIO_QUEUE_ALIGN);
+> > +       writel(virt_to_phys(info->queue) >> PAGE_SHIFT,
+> > +                       vm_dev->base + VIRTIO_MMIO_QUEUE_PFN);
+> 
+> And I've just chosen the PAGE_SIZE instead of 4096 following the
+> suggestion from your original paper ("Note that there is padding such as
+> to place this structure on a page separate from the available ring and
+> descriptor array:").
 
-I was fixed the bug, flock(2) worked fine.
+Sorry, I missed that.  OK!
 
----------------------------------------------------------
-# diff -uNp flock.c.org flock.c
---- flock.c.org 2011-10-05 09:48:03.000000000 +0900
-+++ flock.c     2011-10-04 11:36:11.000000000 +0900
-@@ -15,7 +15,7 @@ int main(void)
-        int pid = getpid();
- 
-        while(1) {
--               if ((fd = open(LOCKFILE, O_RDONLY) < 0)) {
-+               if ((fd = open(LOCKFILE, O_RDONLY)) < 0) {
-                                perror("open");
-                                exit(1);
----------------------------------------------------------
+> > Note that the seabios/coreboot hackers wanted a smaller ring alignment
+> > so they didn't have to waste two precious pages per device.  You might
+> > want to consider making this an option in the header (perhaps express
+> > it as log2, eg. 12 rather than 4096).
+> 
+> I had an impression that you were planning to add some API for the
+> devices to choose the alignment? If so this #define would simply
+> disappear... Generally, the Client is in control now.
 
+I'm not sure it makes sense to vary per-device, but per-OS perhaps.
 
-On Fri, 30 Sep 2011 20:09:38 +0900
-Minoru Usui <usui@mxm.nes.nec.co.jp> wrote:
+> > > +	/* TODO: Write requested queue size to VIRTIO_MMIO_QUEUE_NUM */
+> > > +
+> > > +	/* Check if queue is either not available or already active. */
+> > > +	num = readl(vm_dev->base + VIRTIO_MMIO_QUEUE_NUM);
+> > > +	if (!num || readl(vm_dev->base + VIRTIO_MMIO_QUEUE_PFN)) {
+> > 
+> > Please fix this now, like so:
+> > 
+> >         /* Queue shouldn't already be set up. */        
+> >         if (readl(vm_dev->base + VIRTIO_MMIO_QUEUE_PFN))
+> >                 ...
+> > 
+> >         /* Try for a big queue, drop down to a two-page queue. */
+> >         num = VIRTIO_MMIO_MAX_RING;
+> 
+> Ok, but how much would MAX_RING be? 1024? 513? 127? I really wouldn't
+> like to be a judge here... I was hoping the device would tell me that
+> (it knows what amounts of data are likely to be processed?)
 
-> Hi, 
-> 
-> I faced strange behaviour of flock(2) in upstream kernel(3.1.0-rc8+).
-> It seems flock cannot block other processes which try to get same flock.
-> If someone know the cause of this behaviour, please let me know.
-> 
-> My test is very very simple.
-> It tries to get flock against same file by 5 processes.
-> The result is following.
-> 
-> -----------------------------------------------------------------
-> # ./flock.sh
-> lock(pid:2384)
-> # unlock(pid:2384)
-> lock(pid:2385)   --- lock(a)
-> lock(pid:2384)   --- lock(b)
-> unlock(pid:2385) --- unlock(a)
-> unlock(pid:2384) --- unlock(b)
->    :
-> -----------------------------------------------------------------
-> 
-> I setup auditd and check audit.log, it indicated same behaviour.
-> 
-> -----------------------------------------------------------------
-> type=SYSCALL msg=audit(1317375911.187:105): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=2 a2=0 a3=7fffe664f920 items=0 ppid=2382 pid=2384 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
-> 
-> type=SYSCALL msg=audit(1317375912.187:106): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=8 a2=0 a3=8 items=0 ppid=1 pid=2384 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
-> 
-> type=SYSCALL msg=audit(1317375911.187:107): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=2 a2=0 a3=7fffdc2e2c70 items=0 ppid=1 pid=2385 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
->   -> lock(a) (pid=2385, a1=2)
-> 
-> type=SYSCALL msg=audit(1317375912.187:108): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=2 a2=0 a3=7fffe664f920 items=0 ppid=1 pid=2384 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
->   -> lock(b) (pid=2384, a1=2)
-> 
-> type=SYSCALL msg=audit(1317375913.187:109): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=8 a2=0 a3=8 items=0 ppid=1 pid=2384 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
->   -> unlock(a) (pid=2385, a1=8)
-> 
-> type=SYSCALL msg=audit(1317375913.187:110): arch=c000003e syscall=73 success=yes exit=0 a0=0 a1=8 a2=0 a3=8 items=0 ppid=1 pid=2385 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=pts1 ses=1 comm="flock" exe="/home/usui/devel/tp/flock" key=(null)
->   -> unlock(b) (pid=2384, a1=8)
-> -----------------------------------------------------------------
-> 
-> 
-> 
-> Test programs are following.
-> -----------------------------------------------------------------
-> # cat -n flock.sh
->      1  #! /bin/sh
->      2  
->      3  CNT=5
->      4  
->      5  if [ $# -ne 0 ]
->      6  then
->      7    CNT=$1
->      8  fi
->      9  
->     10  for i in `seq 1 $CNT`
->     11  do
->     12          ./flock &
->     13  done
-> 
-> # cat -n flock.c
->      1  #include <stdio.h>
->      2  #include <sys/file.h>
->      3  #include <sys/types.h>
->      4  #include <sys/stat.h>
->      5  #include <fcntl.h>
->      6  #include <errno.h>
->      7  #include <unistd.h>
->      8  #include <stdlib.h>
->      9  
->     10  #define LOCKFILE "/tmp/flocktest"
->     11  int main(void)
->     12  {
->     13          int fd;
->     14          int ret;
->     15          int pid = getpid();
->     16  
->     17          while(1) {
->     18                  if ((fd = open(LOCKFILE, O_RDONLY) < 0)) {
->     19                                  perror("open()");
->     20                                  exit(1);
->     21                  }
->     22  
->     23                  if (ret = flock(fd, LOCK_EX) < 0) {
->     24                          perror("flock(LOCK_EX)");
->     25                          exit(1);
->     26                  }
->     27                  printf("lock(pid:%d)\n", pid);
->     28                  fflush(stdout);
->     29  
->     30                  sleep(1);
->     31  
->     32                  printf("unlock(pid:%d)\n", pid);
->     33                  fflush(stdout);
->     34                  if (ret = flock(fd, LOCK_UN) < 0) {
->     35                          perror("flock(LOCK_UN)");
->     36                          exit(1);
->     37                  }
->     38  
->     39                  if (close(fd) < 0) {
->     40                          perror("flock(LOCK_UN)");
->     41                          exit(1);
->     42                  }
->     43          }
->     44  
->     45          return 0;
->     46  }
-> -----------------------------------------------------------------
-> -- 
-> Minoru Usui <usui@mxm.nes.nec.co.jp>
+I'm not sure who knows better, device or driver.  The device can suggest
+a value, but you should always write it, otherwise that code will never
+get tested until it's too late...
 
+> >         for (;;) {
+> >                 size = PAGE_ALIGN(vring_size(num, VIRTIO_MMIO_VRING_ALIGN));
+> >                 info->queue = alloc_pages_exact(size, GFP_KERNEL | __GFP_ZERO);
+> >                 if (info->queue)
+> >                         break;
+> > 
+> >                 /* Already smallest possible allocation? */
+> >                 if (size == VIRTIO_MMIO_VRING_ALIGN*2) {
+> >                         err = -ENOMEM;
+> >                         goto error_kmalloc;
+> >                 }
+> >                 num /= 2;
+> >         }
+> and then
+> 	writel(num, vm_dev->base + VIRTIO_MMIO_QUEUE_NUM);
+> 
+> Can do. This, however, gets us back to this question: can the Host
+> cowardly refuse the requested queue size? If you really think that it
+> can't, I'm happy to accept that and change the spec accordingly. If it
+> can, we'll have to read the size back and potentially re-alloc pages...
 
--- 
-Minoru Usui <usui@mxm.nes.nec.co.jp>
+I'm not sure.  Perhaps the device gives the maximum it will accept, and
+the driver should start from that or 1025, whatever is less (that's
+still 28k for each ring).  That gives us flexibility.
+
+The absolute maximum is a ring of 32k elements, which is about 850k.
+That seems a little excessive, though.
+
+Cheers,
+Rusty.
