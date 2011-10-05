@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935029Ab1JEQmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:42:36 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63590 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934922Ab1JEQmg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:42:36 -0400
+	id S935042Ab1JEQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:43:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47256 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934922Ab1JEQnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 12:43:15 -0400
+Date: Wed, 5 Oct 2011 12:43:06 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: Chris Ball <cjb@laptop.org>, Koji Matsumuro <matsumur@nts.ricoh.co.jp>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Always check for lower base frequency quirk for
+ Ricoh 1180:e823
+Message-ID: <20111005164306.GC2479@zod.bos.redhat.com>
+References: <20111005154449.GA2479@zod.bos.redhat.com>
+ <alpine.DEB.2.02.1110051059550.3478@sleepy>
 MIME-Version: 1.0
-In-Reply-To: <20111005100244.GA9783@opensource.wolfsonmicro.com>
-References: <20111004232403.10364.22050.stgit@ponder> <20111005100244.GA9783@opensource.wolfsonmicro.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 5 Oct 2011 10:42:15 -0600
-X-Google-Sender-Auth: YQayc-w9TNE9U7zIjbPZR_byj6I
-Message-ID: <CACxGe6sqqjo5wtbmQK_Qfixbj_ZRHBkUFQ7qtxDS53t7qu0EbQ@mail.gmail.com>
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1110051059550.3478@sleepy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 5, 2011 at 4:02 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Oct 04, 2011 at 05:26:55PM -0600, Grant Likely wrote:
->
->> +/* Helper macro for drivers that don't do anything special in module
->> + * init/exit.  This eliminates a lot of boilerplate */
->> +#define module_platform_driver(__platform_driver) \
->> +int __platform_driver##_init(void) \
->> +{ \
->> +     return platform_driver_register(&(__platform_driver)); \
->> +} \
->> +module_init(__platform_driver##_init); \
->
-> This looks great but I would prefer it if the function complained if
-> something goes wrong - it makes problems a lot more discoverable when
-> they crop up.
+On Wed, Oct 05, 2011 at 11:27:01AM -0500, Manoj Iyer wrote:
+> On Wed, 5 Oct 2011, Josh Boyer wrote:
+> 
+> >Commit 15bed0f2f added a quirk for the e823 Ricoh card reader to lower the
+> >base frequency.  However, the quirk first checks to see if the proprietary
+> >MMC controller is disabled, and returns if so.  On some devices, such as the
+> >Lenovo X220, the MMC controller is already disabled by firmware it seems,
+> 
+> It is possible that the newer firmware from Lenovo disables the MMC
+> controller. When the patch was done, these laptops had just been
+> announced, so they had a very early version of the firmware (ver
+> 1.02 iirc).
 
-Yes. As discussed in the other thread, I think that should be added to
-the core code, and it can be in a separate patch.  It doesn't belong
-in this macro.
+Seems so.  The X220 laptop I debugged this on shows:
 
-g.
+[jwboyer@zod linux-2.6]$ cat /sys/devices/virtual/dmi/id/bios_version 
+8DET42WW (1.12 )
+
+josh
