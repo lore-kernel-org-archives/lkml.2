@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336Ab1JEVTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 17:19:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34666 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab1JEVTo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 17:19:44 -0400
-Date: Wed, 5 Oct 2011 23:19:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 8/8] kernel/cpu.c: Define bsp_hotpluggable variable
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040136F7CCB1@orsmsx505.amr.corp.intel.com>
-Message-ID: <alpine.LFD.2.02.1110052247520.18778@ionos>
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-9-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1110052122240.18778@ionos> <493994B35A117E4F832F97C4719C4C040136F7CCB1@orsmsx505.amr.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S934819Ab1JEVUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 17:20:45 -0400
+Received: from nm3.bullet.mail.sp2.yahoo.com ([98.139.91.73]:31976 "HELO
+	nm3.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932307Ab1JEVUo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 17:20:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 742513.43602.bm@omp1039.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=esFDyHxlYhMSyf1CmQiSLI977PzjP4fOEaHyodYAQkA0mm5HdfgZocXdObAYV0yY7yuoKcd9wh3UnUWN3Wvo9hAlOaM2+J8/rw1yOzAlQFDw+vkoCTwAezmizPJ/iDmdgDEmiIV1xcM0yrxdJ1n7Mdg253MrJRf9Toilj8khJGI=;
+X-YMail-OSG: FQWznKcVM1kckjRRsuHHdrOfJ3zsKgELIORtgkbNwc91STI
+ Znpay4v0chOlLYSnMwgOZ.EgjnNbvoozWHbFjAsoMpWaG01zGyQmwj5jWc2h
+ py.2thEHMl.Kxlmtiw0nuzrm7ZJ_AuiPkLWaHXAUqJy.FOe7uCT9yH99OaNM
+ ohUdoR8etr2xh1Yw3YTg9jUHctWq6.39W.sTZxMHVe_dazqxafTAeF.uGX_A
+ caMqEJwLOcLQIHQP1NnEe7jJ__RjJozTbkMK0c3oyg8zdOo8hXZg.0.Roc.f
+ aNF71nhlAgFxzo5IHUWUTLV5BD6CvsoDu0QjAXMnCXhXrsCre2IgJum7FoqT
+ keuYKm2KrJFDt7atReqYYnIKWU9pv84ebdVKIizs9w7asmpIMK8pvP.Us8tI
+ DxX61Tg22hZk9DvPGnqnttND6MYqhL90kVVwL0fWNJhOuhQJRawVN31o0MLw
+ R8jRSE7EGzql6Gg4qmVZu6Vxy
+X-Mailer: YahooMailWebService/0.8.114.317681
+References: <1316957834.67111.YahooMailNeo@web130112.mail.mud.yahoo.com> <1317676210.22894.YahooMailNeo@web130106.mail.mud.yahoo.com> <yun1uuslfhg.fsf@aiko.keithp.com> <1317844780.69103.YahooMailNeo@web130122.mail.mud.yahoo.com> <yun4nznmbxk.fsf@aiko.keithp.com>
+Message-ID: <1317849643.25371.YahooMailNeo@web130122.mail.mud.yahoo.com>
+Date: Wed, 5 Oct 2011 14:20:43 -0700 (PDT)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: Re:  Regression: i915 blank issue on kernel 3.1.0-rc3
+To: Keith Packard <keithp@keithp.com>,
+        "terraluna977@gmail.com" <terraluna977@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <yun4nznmbxk.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Oct 2011, Yu, Fenghua wrote:
 
-> > -----Original Message-----
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > Sent: Wednesday, October 05, 2011 12:25 PM
-> > To: Yu, Fenghua
-> > Cc: Ingo Molnar; H Peter Anvin; Zwane Mwaikambo; Luck, Tony; Mallick,
-> > Asit K; Siddha, Suresh B; Len Brown; linux-kernel
-> > Subject: Re: [PATCH 8/8] kernel/cpu.c: Define bsp_hotpluggable variable
-> > 
-> > On Wed, 5 Oct 2011, Fenghua Yu wrote:
-> > 
-> > > From: Fenghua Yu <fenghua.yu@intel.com>
-> > >
-> > > This gloable variable controls BSP (aka CPU0) hotplug. If set, BSP is
-> > > hotpluggable. By default, it's 0. On X86, kernel option
-> > bsp_hotpluggable sets
-> > > the variable as 1.
-> > 
-> > .... and on !x86 its just pointless.
-> 
-> I'll change the variable to an inline function which returns bsp_hotpluggable on x86 and is empty function on !x86.
-> 
 
-Can you finally fix your mail client, please ? It want's to look like
-this:
+ 
+I code, therefore I am
 
-> I'll change the variable to an inline function which returns
-> bsp_hotpluggable on x86 and is empty function on !x86.
 
-No, that's wrong again. This needs to be in the arch function not in
-some random sysfs file op. Someone else pointed it out to you already,
-that it's racy as well.
+----- Original Message -----
+From: Keith Packard <keithp@keithp.com>
+>> By 'disable', do you mean revert? If so, I would the like chance to submit a patch that adds a boot parameter 
+>> for the driver to disable the backlight by default, e.g: i915_disable_bl. Once the issues are sorted, the
+>> parameter could be removed.
+>
+>If your machine used to work (with 3.0) and does not work with 3.1-rc,
+>then we need to fix the driver so that, with no configuration changes,
+>your machine continues to work. Preventing regressions is our primary
+>responsibility when changing the drivers.
+The patch I sent in a previous message in this thread makes it work correctly.
+If I added an explanation and a 'Signed-by' line, could someone pick it up?
 
-> > 
-> > I have yet to see a justification for that whole cpu0 unplugging
-> > business.
-> > 
-> > If there is a real reason that this is desireable, then ALL cpu0
-> > assumptions in arch/x86 need to be cleaned up and fixed.
-> 
-> I can think of two reasons for bsp offline/online:
-> 
-> 1. RAS needs the feature. If socket0 needs to be hotplugged for any
->    reason (any thread on socket0 is bad, shared cache issue, uncore
->    issue, etc), CPU0 is required to be offlined.
+> Does reverting Matthew's backlight patch fix a regression on your machine?
+Yes, but I have no backlight control: the screen is too bright to look at comfortably.
 
-That sounds like a reasonable requirement, which should have been
-mentioned in the 0/N mail to a patch series to avoid such questions.
-
-> 2. CPU0 is symmetrical to other CPU's. There is no specific reason
->    why it shouldn't be offlined except BIOS requirements.
-
-That's not a reason at all. And "except BIOS requirements" might be
-actually a reason NOT to do that.
- 
-Though as this needs to be runtime enabled, I have no general
-objections against doing it, but it has to be done right.
-
-To do that proper, it needs
-
-   - to fixup _ALL_ cpu 0 assumptions in arch/x86 and not just hacking
-     around some of them
-
-   - a proper mechanism to deal with hardware which cannot handle it
-     (i.e. no IOAPIC .....)
-
-   - proper fixups for set up but unused irqs like irq0
-
-   - ....
-
-Thanks,
-
-	tglx
