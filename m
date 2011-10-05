@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934719Ab1JETfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 15:35:17 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:40206 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933233Ab1JETfP (ORCPT
+	id S934873Ab1JETiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 15:38:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34435 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933233Ab1JETiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 15:35:15 -0400
-X-Sasl-enc: cPs6K1FXY+uqg+urx3dtrSe8bGavJLb5ObSDjUBH0ba3 1317843314
-Date: Wed, 5 Oct 2011 12:29:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver
- boilerplate
-Message-ID: <20111005192935.GA26664@kroah.com>
-References: <20111004232403.10364.22050.stgit@ponder>
- <20111005065617.GA6824@kroah.com>
- <CACxGe6si_i9mbVQFjbKYkq1H1QOp9UvQqrd=+2fYGrs63xzC1A@mail.gmail.com>
+	Wed, 5 Oct 2011 15:38:09 -0400
+Date: Wed, 5 Oct 2011 21:38:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/8] x86, apic.c: Disable irq0 if CPU enables ARAT for
+ local apic timer
+In-Reply-To: <493994B35A117E4F832F97C4719C4C040136F7CBF3@orsmsx505.amr.corp.intel.com>
+Message-ID: <alpine.LFD.2.02.1110052129270.18778@ionos>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-2-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1110052045430.18778@ionos> <493994B35A117E4F832F97C4719C4C040136F7CBF3@orsmsx505.amr.corp.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACxGe6si_i9mbVQFjbKYkq1H1QOp9UvQqrd=+2fYGrs63xzC1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 10:43:02AM -0600, Grant Likely wrote:
-> On Wed, Oct 5, 2011 at 12:56 AM, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Oct 04, 2011 at 05:26:55PM -0600, Grant Likely wrote:
-> >> For simple modules that contain a single platform_driver without any
-> >> additional setup code then ends up being a block of duplicated
-> >> boilerplate.  This patch adds a new macro, module_platform_driver(),
-> >> which replaces the module_init()/module_exit() registrations with
-> >> template functions.
-> >>
-> >> This patch also converts all the relevant spi drivers to use the new
-> >> macro.  There are a lot of drivers in the tree that are using this
-> >> pattern and could be converted.
-> >>
-> >> It also fixes up some incorrect section annotations where I found
-> >> them.
-> >>
-> >> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> >> ---
-> >>
-> >> I think this is useful, and I like the diffstat that it produces.
-> >> What does everyone else think of this approach?  I can do versions for
-> >> i2c_drivers and spi_drivers too.
-> >>
-> >> This is *not* tested very much.  I'm circulating mostly for review for
-> >> now.
-> >
-> > The idea looks sane to me, I like the diffstat it ends up creating, nice
-> > job.
+On Wed, 5 Oct 2011, Yu, Fenghua wrote:
+
+Please remove Zwane Mwaikambo <zwane@arm.linux.org.uk> from the cc
+list, that address does not exist anymore.
+
+> > 
+> > > From: Fenghua Yu <fenghua.yu@intel.com>
+> > >
+> > > irq0 won't generate any interrupt after local apic timers is enabled
+> > and ARAT
+> > > is enabled. Disable irq0 in this case. Thus irq0 won't block BSP
+> > offline.
+> > 
+> > Why would it do so ?
+
+> Irq0 is set as IRQF_NOBALANCING. And it's not used any more after
+> boot time if CPU using local apic timer supports ARAT. Although irq0
+> is useless, it blocks CPU0 offline.
+
+Please use proper line breaks around 78
+
+> That's why we need to treat irq0 specially for CPU0 offline.
+
+That's utter nonsense. Your whole approach is broken. irq0 is not
+special at all and any other interrupt could be marked
+IRQF_NOBALANCING as well.
+
+Special casing stuff is always a sign of bandaids and your whole patch
+set is just a big cobbled together duct tape thing.
+ 
+> > > +
+> > > +	/* irq0 won't be used any more if CPU supports ARAT feature. */
+> > > +	if (cpu == 0 && this_cpu_has(X86_FEATURE_ARAT))
+> > > +		disable_irq(0);
+> > 
+> > This is completely wrong. If we want to shut that interrupt down, then
+> > we do it in the clockevents set mode functions of PIT or HPET and not
+> > at some random place in the apic timer code.
 > 
-> Thanks.  Can I take that as your a-b?  Can I merge it via the spi tree?
+> Agree with you.
+> 
+> Or my original irq0 handling is just ignoring irq0 when ARAT is
+> enabled during CPU0 offline procedure. Is this way cleaner and
+> limited to CPU0 offline path? I'm afraid shutting that interrupt
+> down or disabling it may cause any other (legacy) issue?
 
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+That's still wrong and your offline check code is broken beyond repair
+anyway.
 
-And yes, please feel free to merge it through any tree you can.
+Thanks,
 
-greg k-h
+	tglx
