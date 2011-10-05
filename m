@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109Ab1JEFYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 01:24:24 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:35404 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933916Ab1JEFYW (ORCPT
+	id S933150Ab1JEFjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 01:39:44 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51412 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932860Ab1JEFjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 01:24:22 -0400
-Date: Wed, 5 Oct 2011 16:24:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: linux-next: build failure after merge of the devicetree tree
-Message-Id: <20111005162414.da7b35fd2baf34efa63d2f2a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__5_Oct_2011_16_24_14_+1100_YKO.9yE=gMuUI4j5"
+	Wed, 5 Oct 2011 01:39:43 -0400
+From: Krishna Kumar <krkumar2@in.ibm.com>
+To: rusty@rustcorp.com.au, mst@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Krishna Kumar <krkumar2@in.ibm.com>,
+        virtualization@lists.linux-foundation.org
+Date: Wed, 05 Oct 2011 11:08:59 +0530
+Message-Id: <20111005053859.5825.1089.sendpatchset@krkumar2.in.ibm.com>
+Subject: [RFC] [PATCH] virtio: Dont add "config" to list for !per_vq_vector
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__5_Oct_2011_16_24_14_+1100_YKO.9yE=gMuUI4j5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For the MSI but non-per_vq_vector case, the config/change vq
+also gets added to the list of vqs that need to process the
+MSI interrupt. This is not needed as config has it's own
+handler (vp_config_changed). In any case, vring_interrupt()
+finds nothing needs to be done on this vq.
 
-Hi Grant,
+I tested this patch by testing the "Fallback:" and "Finally
+fall back" cases in vp_find_vqs(). Please review.
 
-After merging the devicetree tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+---
+ drivers/virtio/virtio_pci.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-drivers/tty/serial/altera_jtaguart.c:483:3: error: implicit declaration of =
-function 'of_match_ptr' [-Werror=3Dimplicit-function-declaration]
-drivers/tty/serial/altera_jtaguart.c:483:34: error: 'altera_jtaguart_match'=
- undeclared here (not in a function)
+diff -ruNp org/drivers/virtio/virtio_pci.c new/drivers/virtio/virtio_pci.c
+--- org/drivers/virtio/virtio_pci.c	2011-10-03 09:10:11.000000000 +0530
++++ new/drivers/virtio/virtio_pci.c	2011-10-04 19:16:34.000000000 +0530
+@@ -415,9 +415,13 @@ static struct virtqueue *setup_vq(struct
+ 		}
+ 	}
+ 
+-	spin_lock_irqsave(&vp_dev->lock, flags);
+-	list_add(&info->node, &vp_dev->virtqueues);
+-	spin_unlock_irqrestore(&vp_dev->lock, flags);
++	if (callback) {
++		spin_lock_irqsave(&vp_dev->lock, flags);
++		list_add(&info->node, &vp_dev->virtqueues);
++		spin_unlock_irqrestore(&vp_dev->lock, flags);
++	} else {
++		INIT_LIST_HEAD(&info->node);
++	}
+ 
+ 	return vq;
 
-Caused by commit 85888069cf5d ("tty: use of_match_ptr() for
-of_match_table entry").
-
-I have used the version of the devicetree tree from next-20111004 for
-today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__5_Oct_2011_16_24_14_+1100_YKO.9yE=gMuUI4j5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOi+n+AAoJEECxmPOUX5FEjLQQAJpWGMTaXI4mWecKFrwXUBiL
-6Dd4ACAcCakjQG3kCMKBtcPHSYU2MEmehGMkwgfotiOxPKDafUmBnvnj3Bme3s5i
-CGhvmidkJdObdS1jLFNoxLznLGOJwkh4g4l55fSCvCctXo4OzknJTQcBeH4mjDon
-U1iD6EE7yHDFaKnYY05bCyRucExemGiaxJOlruqmmO2uHGCd+WbKad+jWdguemi4
-u2SyQBVnivzF1x/nL6bOGGZhfy+jygRKaCNPY7i5GgdIW/oniIxaQSbyX9sOgcmr
-hZES5dk4153BsrVrN+8shEi8zEMtxJ+7OGQKijdskCRa+xNNvITUCiM7KKnQp6fZ
-xCN+TsSM1jg5dhmStzTHcx58UMXx0IpzgBlvi4IFH/sc/7pPEN1xQdxrUGH+2p10
-reIGDL6inEpawFPpHGt33DNa1ITTzQhKL1qbtptbOI25B2TWcm9BirBvom2KUG2M
-XTMrTqI8FpY9cuhlkTlaCCGD4gUgXBs15LCizeR+veN7DZXPYuIj7k8CqraXj7mb
-SNsTlmaiqQV96y8xdZL6HlpbeMdZFD0GrlbBj1qRHSEraNjZl+W/WKxPD7Hu0mj3
-paG7VVYxczHr1bXTjQemJ7d1d1rWWZjaZO5T7vJuBOrVjpr6AY891fqjs/toyToq
-8UvTrG6WvUnID320ow1P
-=FUp0
------END PGP SIGNATURE-----
-
---Signature=_Wed__5_Oct_2011_16_24_14_+1100_YKO.9yE=gMuUI4j5--
