@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab1JEHza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 03:55:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:31967 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757978Ab1JEHz2 convert rfc822-to-8bit (ORCPT
+	id S1757999Ab1JEIBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:01:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40672 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab1JEIBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 03:55:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=hfHVoB96Rlx5ISmXkNMdWQVJrKjy7lU0UOummUZamfSCluv20fof5rs+47j40YRXS
-	Vc7UVZkhb9dV2huIEq+ug==
-MIME-Version: 1.0
-In-Reply-To: <20111003090641.GA5615@polaris.bitmath.org>
-References: <1317624200-9762-1-git-send-email-djkurtz@chromium.org> <20111003090641.GA5615@polaris.bitmath.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 5 Oct 2011 15:55:05 +0800
-X-Google-Sender-Auth: ZedCTloY2gumlAnisOHJVTh1NQg
-Message-ID: <CAGS+omAj9z2-Au2HABtDKHQGRBNVxXygF2cz+L8UMeTHRrMjbA@mail.gmail.com>
-Subject: Re: [PATCH] Input: evdev - use monotonic clock for event timestamps
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 5 Oct 2011 04:01:45 -0400
+Subject: [PATCH] video: platinumfb: Add __devexit_p at necessary place
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Oct 2011 16:01:38 +0800
+Message-ID: <1317801698.12133.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+According to the comments in include/linux/init.h:
 
-On Mon, Oct 3, 2011 at 5:06 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->
-> Hi Daniel,
->
-> > Using wallclock time for event timestamps subjects inter-event timing to
-> > ntp and other clock adjustments.  This complicates userspace drivers
-> > that use these timestamps to calculate velocities, or while processing
-> > state transitions.
-> >
-> > Instead, use the kernel monotonic clock for event timestamps, which is
-> > at least guaranteed never to go backwards.
-> >
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > ---
-> >  drivers/input/evdev.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> > index 4cf2534..118f936 100644
-> > --- a/drivers/input/evdev.c
-> > +++ b/drivers/input/evdev.c
-> > @@ -94,8 +94,11 @@ static void evdev_event(struct input_handle *handle,
-> >       struct evdev *evdev = handle->private;
-> >       struct evdev_client *client;
-> >       struct input_event event;
-> > +     struct timespec now;
-> >
-> > -     do_gettimeofday(&event.time);
-> > +     getrawmonotonic(&now);
-> > +     event.time.tv_sec = now.tv_sec;
-> > +     event.time.tv_usec = now.tv_nsec/1000;
-> >       event.type = type;
-> >       event.code = code;
-> >       event.value = value;
-> > --
-> > 1.7.3.1
->
-> Good thing per se, but reporting time relative to boot instead of
-> using real time, for all input events, may cause regression on some
-> obscure systems. Perhaps it is possible to improve on the desired
-> monotonicity in most cases, without such a drastic change.
->
-> Thanks,
-> Henrik
+"Pointers to __devexit functions must use __devexit_p(function_name), the
+wrapper will insert either the function_name or NULL, depending on the config
+options."
 
-Thanks for responding!  This is the smallest possible patch that I
-could think of that illustrates what I'd like to see.  What other
-options do we have to achieve the same affect?
+We have __devexit annotation for platinumfb_remove(), thus add __devexit_p at
+necessary place.
 
-I understand your concern about breaking random drivers, and am hoping
-that someon on this list could indicate whether this is a real concern
-or not.  To get a better feeling for possible regressions, I checked
-xf86-input-evdev & -synaptics, and neither uses the evdev timestamp in
-their current incarnations.  Any idea what else might be a good place
-to check?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/platinumfb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-One option is to make the evdev timestamp clock source a per-driver
-configuration option (controllable from userspace?).  This sounds like
-it is doable, but would be significantly more complicated.
+diff --git a/drivers/video/platinumfb.c b/drivers/video/platinumfb.c
+index 6694923..ae3caa6 100644
+--- a/drivers/video/platinumfb.c
++++ b/drivers/video/platinumfb.c
+@@ -683,7 +683,7 @@ static struct platform_driver platinum_driver =
+ 		.of_match_table = platinumfb_match,
+ 	},
+ 	.probe		= platinumfb_probe,
+-	.remove		= platinumfb_remove,
++	.remove		= __devexit_p(platinumfb_remove),
+ };
+ 
+ static int __init platinumfb_init(void)
+-- 
+1.7.4.1
 
-Another option would be to timestamp with monotonicraw + boottime +
-sleeptime.  This would be approximately wall clock time, but without
-ntp and slew adjustments.  But, I fear this would just make the rare
-driver issue less obvious, since it would only become obvious when the
-two clock sources started drifting apart.
 
--Dan
+
