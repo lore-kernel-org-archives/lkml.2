@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288Ab1JEShj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:37:39 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37883 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933573Ab1JEShj (ORCPT
+	id S1758067Ab1JESrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:47:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34202 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756406Ab1JESrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:37:39 -0400
-Message-ID: <4E8CA3EA.3080706@linux.vnet.ibm.com>
-Date: Thu, 06 Oct 2011 00:07:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
+	Wed, 5 Oct 2011 14:47:49 -0400
+Date: Wed, 5 Oct 2011 20:47:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, srivatsa.bhat@linux.vnet.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
         Zwane Mwaikambo <zwane@arm.linux.org.uk>,
         Tony Luck <tony.luck@intel.com>,
         Asit K Mallick <asit.k.mallick@intel.com>,
         Suresh B Siddha <suresh.b.siddha@intel.com>,
         Len Brown <lenb@kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] kernel/power/main.c: Not suspend/resume if CPU0 is
- offlined
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-8-git-send-email-fenghua.yu@intel.com>
-In-Reply-To: <1317832759-10223-8-git-send-email-fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/8] x86, apic.c: Disable irq0 if CPU enables ARAT for
+ local apic timer
+In-Reply-To: <1317832759-10223-2-git-send-email-fenghua.yu@intel.com>
+Message-ID: <alpine.LFD.2.02.1110052045430.18778@ionos>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-2-git-send-email-fenghua.yu@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 5 Oct 2011, Fenghua Yu wrote:
 
-On 10/05/2011 10:09 PM, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> @@ -178,6 +179,14 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
->  	int len;
->  	int error = -EINVAL;
+> irq0 won't generate any interrupt after local apic timers is enabled and ARAT
+> is enabled. Disable irq0 in this case. Thus irq0 won't block BSP offline.
+
+Why would it do so ?
+ 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/apic/apic.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	if (bsp_hotpluggable && cpumask_first(cpu_online_mask) != 0) {
-> +		printk(KERN_WARNING "Because CPU0 is offlined, system can't suspend/resume.\n");
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 52fa563..8813acf 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -506,6 +506,7 @@ static DEFINE_PER_CPU(struct clock_event_device, lapic_events);
+>  static void __cpuinit setup_APIC_timer(void)
+>  {
+>  	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+> +	int cpu = smp_processor_id();
+>  
+>  	if (this_cpu_has(X86_FEATURE_ARAT)) {
+>  		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_C3STOP;
+> @@ -517,6 +518,10 @@ static void __cpuinit setup_APIC_timer(void)
+>  	levt->cpumask = cpumask_of(smp_processor_id());
+>  
+>  	clockevents_register_device(levt);
 > +
-> +		return -ENODEV;
-> +	}
-> +#endif
+> +	/* irq0 won't be used any more if CPU supports ARAT feature. */
+> +	if (cpu == 0 && this_cpu_has(X86_FEATURE_ARAT))
+> +		disable_irq(0);
 
-There is a possible race condition here. What if CPU0 gets offlined
-AFTER this point(due to a CPU hotplug operation)?
-We will probably have to prevent CPU0 from being taken offline from
-this point onwards, and remove that restriction later on.
+This is completely wrong. If we want to shut that interrupt down, then
+we do it in the clockevents set mode functions of PIT or HPET and not
+at some random place in the apic timer code.
 
-> +
->  	p = memchr(buf, '\n', n);
->  	len = p ? p - buf : n;
-> 
+Thanks,
 
-
--- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+	tglx
