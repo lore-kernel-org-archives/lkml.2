@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263Ab1JEI3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 04:29:46 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:62864 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab1JEI3p (ORCPT
+	id S1757770Ab1JEIdk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 04:33:40 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:47862 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932659Ab1JEIdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 04:29:45 -0400
-Message-ID: <4E8C11B0.30000@ce.jp.nec.com>
-Date: Wed, 05 Oct 2011 17:13:36 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Wed, 5 Oct 2011 04:33:37 -0400
+Message-ID: <4E8C1659.6040208@linux.vnet.ibm.com>
+Date: Wed, 05 Oct 2011 14:03:29 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-CC: Mike Snitzer <snitzer@redhat.com>, Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        agk@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: request baset device mapper in Linux
-References: <20110721132627.GY7561@ics.muni.cz> <4E291F28.2040609@ct.jp.nec.com> <20110722081903.GB7561@ics.muni.cz> <4E2A7806.1060601@ce.jp.nec.com> <20110724221619.GM16487@ics.muni.cz> <4E367256.8020206@ct.jp.nec.com> <20110908132756.GT31717@ics.muni.cz> <CAMM=eLd9fToJ5Kh+vf4WG1ZN-qTc2CX98-+BUkFWWQQ=tCG7LQ@mail.gmail.com> <20110916140839.GE7428@ics.muni.cz> <4E76D810.6010504@ce.jp.nec.com> <20110929205748.GX19004@ics.muni.cz>
-In-Reply-To: <20110929205748.GX19004@ics.muni.cz>
-Content-Type: text/plain; charset=ISO-8859-2
+To: Tejun Heo <tj@kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, tigran@aivazian.fsnet.co.uk,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+References: <4E88B5E0.6080503@linux.vnet.ibm.com> <20111002195023.GC31799@mtj.dyndns.org> <4E88C3D4.2020300@linux.vnet.ibm.com> <20111003004051.GD31799@mtj.dyndns.org> <4E894D75.808@linux.vnet.ibm.com>
+In-Reply-To: <4E894D75.808@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lukas,
-
-On 09/30/11 05:57, Lukas Hejtmanek wrote:
-> On Mon, Sep 19, 2011 at 02:50:08PM +0900, Jun'ichi Nomura wrote:
->>   2.6.32.36
->>     no-multipath:        2.8 GB/s
->>     multipath:           600 MB/s
->>     multipath w/ patch:  2.8-2.9 GB/s
->>
->>   3.0.3
->>     no-multipath:        ??
->>     multipath:           2.5 GB/s
->>     multipath w/ patch:  2.5 GB/s(?)
->>
->> Have you tried 3.0.3 without multipath?
+On 10/03/2011 11:21 AM, Srivatsa S. Bhat wrote:
+> Hi,
 > 
-> yes, 3GB/s and only kwapd0 and kswapd1 is running, no kworker or ksoftirqd..
+> First of all, thank you for your invaluable inputs.
+> 
+> On 10/03/2011 06:10 AM, Tejun Heo wrote:
+>> Hello,
+[...]
+>>
+>> Can't one take a cpu offline, hot unplug it from the board and put in
+>> a new one and then bring it online?  That's usually what "hot
+>> [un]plug" stands for.  I don't think one would be able to put in a
+>> very different processor but maybe, say, revision difference is
+>> allowed and microcode should be looked up again?  Assuming that the
+>> same microcode can always be applied after the actual CPU is swapped
+>> could be dangerous.  Again, I'm not sure about how this is supposed to
+>> be managed so I could be wrong.
+>>
+[...]
+>> If I'm not wrong, can't we add synchronization between cpu hotplug and
+>> freezer so that they don't happen in parallel?
+>>
+> 
+> I have posted another patch related to CPU hotplug and freezer here:
+> https://lkml.org/lkml/2011/10/2/163
+> That patch aims to sync up the CPU hotplug infrastructure with the activity of the 
+> freezer and hence ensure that the right notifications are sent. Maybe I could easily
+> modify that patch to disable CPU hotplugging when the freezer is active.
+> 
+> But still, that would not solve our problem due to the following possible scenario:
+> 
+> [Let us assume that we go ahead and invalidate the microcode upon a CPU_DEAD notification,
+> like you suggested.] Then, consider this scenario:
+> 
+> * Take a CPU offline (a pure CPU hotplug operation, not related to suspend).
+>   Let us call this CPU X.
+>   - This would involve a CPU_DEAD notification, upon which the microcode is invalidated.
+> 
+> * Start freezing tasks (due to a suspend operation in progress). Now we disable
+>   CPU hotplugging.
+>  
+> * Disable (offline) the non-boot CPUs as part of suspend operation. This sends the
+> CPU_DEAD_FROZEN notification, upon which the microcode is NOT invalidated for the other CPUs.
+> 
+> * Enable (online) the non-boot CPUs as part of resume operation. Please note that the tasks
+> are still frozen. This is where we hit the same issue again! When trying to bring that CPU X
+> back online, it finds that the microcode has been invalidated and hence tries to request the
+> userspace for the microcode, but alas, the userspace is still frozen at that moment.
+> This is the exact problem we were trying to solve earlier, which remains unsolved by disabling
+> CPU hotplug during freezer operations!
+> 
 
-Hmm.. did you find any difference in your profile this time?
+Sorry, my understanding was wrong in this part. After digging some more into
+the code, I found that disable_nonboot_cpus() will only offline the currently
+online cpus, and enable_nonboot_cpus() will only online those cpus that were
+offlined during the disable_nonboot_cpus() phase (which it keeps track by using
+a frozen_cpus mask).
 
-I'm trying to reproduce it myself but no success so far
-(perhaps disks are not fast enough to saturate CPU on my test machine).
+So the problem I mentioned above wouldn't arise because during resume,
+enable_nonboot_cpus() wouldn't try to online CPU X.
 
-As ksoftirqd in top implies your CPU4 gets too much I/O completions,
-'rq_affnity = 2' for both dm and SCSI devices might be a solution.
-It'll distribute block completion softirqs to submitters and possibly
-reduce the loads of the 1st CPU in the socket.
-(See the commit below. It's a new feature of 3.1. Not available in 3.0...)
+I also found that both disable_nonboot_cpus() and enable_nonboot_cpus() will
+disable cpu hotplugging when they are active.
 
-  commit 5757a6d76cdf6dda2a492c09b985c015e86779b1
-  Author: Dan Williams <dan.j.williams@intel.com>
-  Date:   Sat Jul 23 20:44:25 2011 +0200
+So a suspend/resume on a high level with reference to only freezer and cpu
+hotplug, would look something like:
 
-    block: strict rq_affinity
-    
-    Some systems benefit from completions always being steered to the strict
-    requester cpu rather than the looser "per-socket" steering that
-    blk_cpu_to_group() attempts by default. This is because the first
-    CPU in the group mask ends up being completely overloaded with work,
-    while the others (including the original submitter) has power left
-    to spare.
-    
-    Allow the strict mode to be set by writing '2' to the sysfs control
-    file. This is identical to the scheme used for the nomerges file,
-    where '2' is a more aggressive setting than just being turned on.
-    
-    echo 2 > /sys/block/<bdev>/queue/rq_affinity
 
-Thanks,
+Freeze -> Disable nonboot cpus -> do suspend -> Enable nonboot cpus -> Thaw
+         |<------------ CPU hotplugging disabled ----------------->|
+
+
+So now as we can see, if we just prevent freezer and cpu hotplug from occurring
+in parallel (like what Tejun had suggested above), we could solve this whole
+issue properly. We wouldn't need anything complicated such as special callbacks
+etc which I was proposing in some of my other mails (which anyway wouldn't work
+as it is, due to some race conditions that I figured out later)...
+
+So if we go by the above solution, then the situation would look like:
+
+Freeze -> Disable nonboot cpus -> do suspend -> Enable nonboot cpus -> Thaw
+|<---------------------- CPU hotplugging disabled ----------------------->|
+
+
+Let me summarize how this solution works:
+1. Any CPU that was offline (either because it was never brought up during
+   booting or because due to a cpu hotplug operation, we had offlined it)
+   before suspend starts, will never be onlined (or even tried to online)
+   till resume is complete. After resume, a suitable cpu hotplug operation
+   would put such a cpu online, if necessary.
+   So, it doesn't matter whether the kernel has already got the microcode
+   for that cpu or not, because it will be onlined only when the resume is
+   complete (ie., userspace is thawed).
+
+2. Physical cpu hotplugging or any scenario which needs us to apply a revised
+   microcode:
+   Here, since we hotplug cpus (online or offline) only when the freezer is not
+   active, we won't have any trouble getting microcode from userspace upon cpu
+   online.
+
+
+But then, will introducing this restriction that "freezer and cpu hotplug must
+be mutually exclusive", create any problems? (I am asking this question because
+I have heard that the freezer is used in some cases other than in suspend/resume
+too). I don't seem to find anything obvious... So I guess that restriction
+should be quite acceptable...
+Any comments?
+
 -- 
-Jun'ichi Nomura, NEC Corporation
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
