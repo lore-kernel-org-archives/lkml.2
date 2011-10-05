@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935169Ab1JEQ5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:57:16 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52172 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935044Ab1JEQzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:55:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,492,1312182000"; 
-   d="scan'208";a="23558364"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H Peter Anvin" <hpa@zytor.com>,
-        "Zwane Mwaikambo" <zwane@arm.linux.org.uk>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Asit K Mallick" <asit.k.mallick@intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <lenb@kernel.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 0/8] Online/offline BSP on x86
-Date: Wed,  5 Oct 2011 09:39:11 -0700
-Message-Id: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
+	id S935122Ab1JEQ5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:57:15 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59154 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935068Ab1JEQ5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 12:57:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111003155331.GR4118@sortiz-mobl>
+References: <1313137760-31015-1-git-send-email-linus.walleij@stericsson.com>
+	<20111003155331.GR4118@sortiz-mobl>
+Date: Wed, 5 Oct 2011 18:57:11 +0200
+Message-ID: <CACRpkdZg8rLr_2=92MRMB5BC4TWWHqXGigD6j7m6_R-wX8FW0w@mail.gmail.com>
+Subject: Re: [PATCH 13/23] mfd/db5500-prcmu: update mailbox handling
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Vijaya Kumar Kilari <vijay.kilari@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Mon, Oct 3, 2011 at 5:53 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> On Fri, Aug 12, 2011 at 10:29:20AM +0200, Linus Walleij wrote:
+>> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+>>
+>> This updates the mailbox handling to be more robust and
+>> adds basic infrastructure for event (IRQ) handling.
+>
+> This patch and the next one (#14) adds 500 lines of code but I have the
+> feeling a lot of it could be shared between 8500 and 5500. What are your plans
+> for that ?
 
-BSP or CPU0 has been the last obstacle to CPU hotplug on x86. This patch set
-implements BSP online and offline and removes this obstacle to CPU hotplug.
+I've tried to locate similarities, but it's quite hard. The drivers reflect
+the fact that they are talking to software, which is reengineered for
+each SoC produced.
 
-Fenghua Yu (8):
-  x86, apic.c: Disable irq0 if CPU enables ARAT for local apic timer
-  x86/mtrr/main.c: Ask the first online CPU to save mtrr
-  x86, i387.c: thread xstate is initialized only on BSP once
-  kernel/workqueue.c: unbound work queue rescuer runs on first cpu in
-    cpumask_online_cpu
-  x86, common.c, smpboot.c: Init BSP during BSP online and don't
-    offline BSP if irq is bound to it
-  x86, topology.c: Enable CPU0 online/offline
-  kernel/power/main.c: Not suspend/resume if CPU0 is offlined
-  kernel/cpu.c: Define bsp_hotpluggable variable
+So for example if I take a common function like
+u*500_prcmu_set_power_state() you can see that they write very
+different things into very different mailboxes.
 
- Documentation/kernel-parameters.txt |    7 ++++++
- arch/x86/include/asm/processor.h    |    1 +
- arch/x86/kernel/apic/apic.c         |    5 ++++
- arch/x86/kernel/cpu/common.c        |   13 +++++++++--
- arch/x86/kernel/cpu/mtrr/main.c     |    6 +++-
- arch/x86/kernel/i387.c              |    9 +++++++-
- arch/x86/kernel/smpboot.c           |   38 ++++++++++++++++++++++++++++------
- arch/x86/kernel/topology.c          |   22 +++++++++++++------
- include/linux/cpu.h                 |    2 +
- kernel/cpu.c                        |    5 ++++
- kernel/power/main.c                 |    9 ++++++++
- kernel/workqueue.c                  |    4 +-
- 12 files changed, 99 insertions(+), 22 deletions(-)
+I do look for similarities and try to find some pattern, and I also
+think some vtable scheme for switching between the implementations
+could be good.
 
+If you think there is too much functional growth and too little
+consolidation from patch 13 onwards (i.e. the DB5500 stuff) then
+feel free to stop applying at this point.
+
+I think the two fixup patches I just sent out can apply on top of
+patch 12 or so anyway, maybe with some patch -p1 <
+to avoid patching the clock control in db5500-prcmu.c.
+
+Yours,
+Linus Walleij
