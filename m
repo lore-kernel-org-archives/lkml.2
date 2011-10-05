@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935383Ab1JEWOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:14:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64911 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab1JEWON convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:14:13 -0400
+	id S935443Ab1JEWOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 18:14:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46570 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755530Ab1JEWOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 18:14:44 -0400
+Date: Thu, 6 Oct 2011 00:14:42 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jack@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] udf : add readpages support for udf.
+Message-ID: <20111005221442.GL23467@quack.suse.cz>
+References: <1317618179-22176-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111003173359.GA3072@localhost.pp.htv.fi>
-References: <20111003090846.GA25136@localhost.pp.htv.fi> <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
- <20111003173359.GA3072@localhost.pp.htv.fi>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 5 Oct 2011 15:13:51 -0700
-X-Google-Sender-Auth: tOuDkCnHuVytJ_0z6M1XbXoMxTY
-Message-ID: <CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-To: Adrian Bunk <bunk@stusta.de>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317618179-22176-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
-> On Mon, Oct 03, 2011 at 06:04:53AM -0700, Andrew Lutomirski wrote:
->> On Mon, Oct 3, 2011 at 2:08 AM, Adrian Bunk <bunk@stusta.de> wrote:
->> > After upgrading a kernel the existing userspace should just work
->> > (assuming it did work before ;-) ), but when I upgraded my kernel
->> > from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
->> >
->> > dmesg said:
->> >  linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
->> >  linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
->> >
->> > Looking throught the changelog I ended up at commit 3ae36655
->> > ("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
->> >
->> > Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to
->> > vsyscall=native.
->> >
->> > That sounds reasonable to me, and fixes the problem for me.
->>
->> At this point in the -rc cycle, this sounds fine.
->>
->> That being said, I'd like to fix it for real for 3.2.  This particular
->> failure is suspicious -- the "vsyscall fault" message means that
->> sys_gettimeofday returned EFAULT, which means that the old (3.0 and
->> before) vgettimeofday should *also* have segfaulted.
->
-> This 2.6.30.1 UML kernel binary from 2009 worked for me for all host
-> kernels from 2.6.30 to 3.0, and with 3.1.0-rc8 and vsyscall=native
-> it also seems to run nicely.
->
-> Looking deeper into "a UML instance didn't come up properly",
-> the problem is that it comes up in a strange (readonly) state.
->
-> There are "Using makefile-style concurrent boot in runlevel S."
-> and "Using makefile-style concurrent boot in runlevel 2." in the
-> logs with a Debian userspace, but no output from the init scripts
-> in these broken bootups (normal messages are in non-broken bootups).
->
-> Perhaps the two the messages I see in dmesg on the host are from the
-> processes running rcS and rc2 failing early?
->
-> In a working startup with a Debian userspace, I'm getting during rcS
->  Setting the system clock.
->  Cannot access the Hardware Clock via any known method.
->  Use the --debug option to see the details of our search for an access method.
->  Unable to set System Clock to: Mon Oct 3 17:01:35 UTC 2011 ... (warning).
->
->> We do have a bit
->> of a bug in that the new code doesn't report si_addr properly, but
->> that sounds unlikely as a culprit.  Did you try with the offending
->> commit reverted (i.e. fce8dc0)?  I bet that it also fails there.
->
-> fce8dc0 is "x86-64: Wire up getcpu syscall", is that really the one you
-> want me to revert?
->
->> What's the .config for your UML binary?  I'd like to see if I can
->> reproduce this.
->
-> It's attached.
->
+On Mon 03-10-11 14:02:59, Namjae Jeon wrote:
+> Using mpage_readpages instead of multiple calls to udf_readpage to reduce the CPU utilization and make performance higher.
+  Thanks. I've merged this patch.
 
-I can't reproduce it.  What distro is running inside the UML instance?
-
---Andy
+									Honza
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  fs/udf/inode.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+> index 58665ce..81f9ce1 100644
+> --- a/fs/udf/inode.c
+> +++ b/fs/udf/inode.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/writeback.h>
+>  #include <linux/slab.h>
+>  #include <linux/crc-itu-t.h>
+> +#include <linux/mpage.h>
+>  
+>  #include "udf_i.h"
+>  #include "udf_sb.h"
+> @@ -104,7 +105,13 @@ static int udf_writepage(struct page *page, struct writeback_control *wbc)
+>  
+>  static int udf_readpage(struct file *file, struct page *page)
+>  {
+> -	return block_read_full_page(page, udf_get_block);
+> +	return mpage_readpage(page, udf_get_block);
+> +}
+> +
+> +static int udf_readpages(struct file *file, struct address_space *mapping,
+> +			struct list_head *pages, unsigned nr_pages)
+> +{
+> +	return mpage_readpages(mapping, pages, nr_pages, udf_get_block);
+>  }
+>  
+>  static int udf_write_begin(struct file *file, struct address_space *mapping,
+> @@ -139,6 +146,7 @@ static sector_t udf_bmap(struct address_space *mapping, sector_t block)
+>  
+>  const struct address_space_operations udf_aops = {
+>  	.readpage	= udf_readpage,
+> +	.readpages	= udf_readpages,
+>  	.writepage	= udf_writepage,
+>  	.write_begin		= udf_write_begin,
+>  	.write_end		= generic_write_end,
+> -- 
+> 1.7.4.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
