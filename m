@@ -1,159 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934424Ab1JELLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 07:11:16 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47849 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934403Ab1JELLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 07:11:15 -0400
-Date: Wed, 5 Oct 2011 16:22:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 5/26]   Uprobes: copy of the original
- instruction.
-Message-ID: <20111005105243.GA806@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120057.25326.63780.sendpatchset@srdronam.in.ibm.com>
- <20111003162905.GA3752@redhat.com>
+	id S934434Ab1JELWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 07:22:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42353 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934411Ab1JELV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 07:21:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111003162905.GA3752@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E8C370E.7080806@intel.com>
+References: <1317750317-4489-1-git-send-email-linkinjeon@gmail.com>
+	<4E8C1F98.9070909@intel.com>
+	<CAKYAXd-9+_1TBniszQir+krF1fRqzBMiAAX9PgzaW+odps0EDg@mail.gmail.com>
+	<4E8C370E.7080806@intel.com>
+Date: Wed, 5 Oct 2011 20:21:57 +0900
+Message-ID: <CAKYAXd_AoSgY6htSO5jJyD3QJ_xXFqgKLyNX49s3PuRW6AUmbg@mail.gmail.com>
+Subject: Re: [PATCH v10] mmc : general purpose partition support.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        awarkentin@vmware.com, linus.walleij@linaro.org,
+        james_p_freyensee@linux.intel.com, sebras@gmail.com,
+        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
+        per.forlin@stericsson.com, johan.rudholm@stericsson.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p95BM9w6027638
 
-* Oleg Nesterov <oleg@redhat.com> [2011-10-03 18:29:05]:
-
-> On 09/20, Srikar Dronamraju wrote:
-> >
-> > +static int __copy_insn(struct address_space *mapping,
-> > +			struct vm_area_struct *vma, char *insn,
-> > +			unsigned long nbytes, unsigned long offset)
-> > +{
-> > +	struct file *filp = vma->vm_file;
-> > +	struct page *page;
-> > +	void *vaddr;
-> > +	unsigned long off1;
-> > +	unsigned long idx;
-> > +
-> > +	if (!filp)
-> > +		return -EINVAL;
-> > +
-> > +	idx = (unsigned long) (offset >> PAGE_CACHE_SHIFT);
-> > +	off1 = offset &= ~PAGE_MASK;
-> > +
-> > +	/*
-> > +	 * Ensure that the page that has the original instruction is
-> > +	 * populated and in page-cache.
-> > +	 */
-> 
-> Hmm. But how we can ensure?
-
-
-> 
-> > +	page_cache_sync_readahead(mapping, &filp->f_ra, filp, idx, 1);
-> 
-> This schedules the i/o,
-> 
-> > +	page = grab_cache_page(mapping, idx);
-> 
-> This finds/locks the page in the page-cache,
-> 
-> > +	if (!page)
-> > +		return -ENOMEM;
-> > +
-> > +	vaddr = kmap_atomic(page);
-> > +	memcpy(insn, vaddr + off1, nbytes);
-> 
-> What if this page is not PageUptodate() ?
-
-Since we do a synchronous read ahead, I thought the page would be 
-populated and upto date. 
-
-would these two lines after grab_cache_page help?
-
-	if (!PageUptodate(page)) 
-		mapping->a_ops->readpage(filp, page);
-
-
-> 
-> Somehow this assumes that the i/o was already completed, I don't
-> understand this.
-> 
-> But I am starting to think I simply do not understand this change.
-> To the point, I do not underestand why do we need copy_insn() at all.
-> We are going to replace this page, can't we save/analyze ->insn later
-> when we copy the content of the old page? Most probably I missed
-> something simple...
-> 
-> 
-> > +static struct task_struct *get_mm_owner(struct mm_struct *mm)
-> > +{
-> > +	struct task_struct *tsk;
-> > +
-> > +	rcu_read_lock();
-> > +	tsk = rcu_dereference(mm->owner);
-> > +	if (tsk)
-> > +		get_task_struct(tsk);
-> > +	rcu_read_unlock();
-> > +	return tsk;
-> > +}
-> 
-> Hmm. Do we really need task_struct?
-> 
-> > -static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
-> > +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
-> > +				struct vm_area_struct *vma, loff_t vaddr)
-> >  {
-> > -	/* Placeholder: Yet to be implemented */
-> > +	struct task_struct *tsk;
-> > +	unsigned long addr;
-> > +	int ret = -EINVAL;
-> > +
-> >  	if (!uprobe->consumers)
-> >  		return 0;
-> >
-> > -	atomic_inc(&mm->mm_uprobes_count);
-> > -	return 0;
-> > +	tsk = get_mm_owner(mm);
-> > +	if (!tsk)	/* task is probably exiting; bail-out */
-> > +		return -ESRCH;
-> > +
-> > +	if (vaddr > TASK_SIZE_OF(tsk))
-> > +		goto put_return;
-> 
-> But this should not be possible, no? How it can map this vaddr above
-> TASK_SIZE ?
-> 
-> get_user_pages(tsk => NULL) is fine. Why else do we need mm->owner ?
-
-> 
-> Probably used by the next patches... Say, is_32bit_app(tsk). This
-> can use mm->context.ia32_compat (hopefully will be replaced with
-> MMF_COMPAT).
-> 
-
-We used the tsk struct for checking if the application was 32 bit and
-for calling get_user_pages. Since we can pass NULL to get_user_pages and
-since we can use mm->context.ia32_compat or MMF_COMPAT, I will remove
-get_mm_owner, that way we dont need to be dependent on CONFIG_MM_OWNER.
-
--- 
-Thanks and Regards
-Srikar
+2011/10/5 Adrian Hunter <adrian.hunter@intel.com>:
+> On 05/10/11 13:21, NamJae Jeon wrote:
+>>
+>> 2011/10/5 Adrian Hunter<adrian.hunter@intel.com>:
+>>>
+>>> On 04/10/11 20:45, Namjae Jeon wrote:
+>>>>
+>>>> It allows gerneral purpose partitions in MMC Device.
+>>>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure
+>>>> suggested by Andrei Warkentin.
+>>>> After patching, we can see general purpose partitions like this.
+>>>>>
+>>>>> cat /proc/partitions
+>>>>
+>>>>           179 0 847872 mmcblk0
+>>>>           179 192 4096 mmcblk0gp3
+>>>>           179 160 4096 mmcblk0gp2
+>>>>           179 128 4096 mmcblk0gp1
+>>>>           179 96  1052672 mmcblk0gp0
+>>>>           179 64  1024 mmcblk0boot1
+>>>>           179 32  1024 mmcblk0boot0
+>>>>
+>>>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
+>>>> ---
+>>>>  drivers/mmc/card/block.c |   34 +++++++++++++++++------------
+>>>>  drivers/mmc/core/mmc.c   |   52
+>>>> ++++++++++++++++++++++++++++++++++++++++++---
+>>>>  include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
+>>>>  include/linux/mmc/mmc.h  |    5 +++-
+>>>>  4 files changed, 105 insertions(+), 20 deletions(-)
+>>>>
+>>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>>>> index 782d5f8..fb6f1e9 100644
+>>>> --- a/drivers/mmc/card/block.c
+>>>> +++ b/drivers/mmc/card/block.c
+>>>> @@ -1470,26 +1470,32 @@ static int mmc_blk_alloc_part(struct mmc_card
+>>>> *card,
+>>>>        return 0;
+>>>>  }
+>>>>
+>>>> +/* MMC Physical partition consist of two boot partitions and
+>>>> + * up to four general purpose partitions.
+>>>> + * For each partitions enabled in EXT_CSD
+>>>> + * The block device will allocated to provide access to the partition.
+>>>> + */
+>>>> +
+>>>>  static int mmc_blk_alloc_parts(struct mmc_card *card, struct
+>>>> mmc_blk_data
+>>>> *md)
+>>>>  {
+>>>> -       int ret = 0;
+>>>> +       int idx, ret = 0;
+>>>>
+>>>>        if (!mmc_card_mmc(card))
+>>>>                return 0;
+>>>>
+>>>> -       if (card->ext_csd.boot_size&&
+>>>>  mmc_boot_partition_access(card->host)) {
+>>>> -               ret = mmc_blk_alloc_part(card, md,
+>>>> EXT_CSD_PART_CONFIG_ACC_BOOT0,
+>>>> -                                        card->ext_csd.boot_size>>    9,
+>>>> -                                        true,
+>>>> -                                        "boot0");
+>>>> -               if (ret)
+>>>> -                       return ret;
+>>>> -               ret = mmc_blk_alloc_part(card, md,
+>>>> EXT_CSD_PART_CONFIG_ACC_BOOT1,
+>>>> -                                        card->ext_csd.boot_size>>    9,
+>>>> -                                        true,
+>>>> -                                        "boot1");
+>>>> -               if (ret)
+>>>> -                       return ret;
+>>>> +       for (idx = 0; idx<    card->nr_parts; idx++) {
+>>>> +               if ((idx == 0 || idx == 1)&&
+>>>> +                       !mmc_boot_partition_access(card->host))
+>>>> +                       continue;
+>>>
+>>> Seems a bit fragile.  What if someone decided to put the gp
+>>> partitions before the boot partitions.  What about:
+>>
+>> There are the default two boot partition in mmc spec. I think that
+>> this case can not be happened.
+>> And boot partition size of EXT CSD is read-only.
+>> Can you explain which is case put to gp partitions before the boot
+>> partition ?
+>
+> Relying on the partition order in the partition array is fragile.
+> You cannot predict how someone may want to change it in the future,
+> and that person will not expect that certain positions have certain meaning.
+ 0,1 of Boot partition is fixed if spec is changed over. but gp
+partition is variable in 2,3,4,5,6 of array.
+If How someone change code, problem occur ?
+>
+>>
+>>>
+>>>                if (mmc_is_boot_partition(&part[idx])&&
+>>>                    !mmc_boot_partition_access(card->host)
+>>>                        continue;
+>>>
+>>> And:
+>>>
+>>> int mmc_is_boot_partition(struct mmc_part *part)
+>>> {
+>>>        return part->part_cfg>= EXT_CSD_PART_CONFIG_ACC_BOOT0&&
+>>>               part->part_cfg<= EXT_CSD_PART_CONFIG_ACC_BOOT0 +
+>>>                                 MMC_NUM_BOOT_PARTITION;
+>>> }
+>>>
+>>>> +               if (card->part[idx].size) {
+>>>> +                       ret = mmc_blk_alloc_part(card, md,
+>>>> +                               card->part[idx].part_cfg,
+>>>> +                               card->part[idx].size>>    9,
+>>>> +                               card->part[idx].force_ro,
+>>>> +                               card->part[idx].name);
+>>>> +                       if (ret)
+>>>> +                               return ret;
+>>>> +               }
+>>>>        }
+>>>>
+>>>>        return ret;
+>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>>>> index c632b1f..2f458a0 100644
+>>>> --- a/drivers/mmc/core/mmc.c
+>>>> +++ b/drivers/mmc/core/mmc.c
+>>>> @@ -239,7 +239,9 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8
+>>>> **new_ext_csd)
+>>>>   */
+>>>>  static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>>>>  {
+>>>> -       int err = 0;
+>>>> +       int err = 0, idx;
+>>>> +       unsigned int part_size;
+>>>> +       u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
+>>>>
+>>>>        BUG_ON(!card);
+>>>>
+>>>> @@ -340,7 +342,14 @@ static int mmc_read_ext_csd(struct mmc_card *card,
+>>>> u8
+>>>> *ext_csd)
+>>>>                 * There are two boot regions of equal size, defined in
+>>>>                 * multiples of 128K.
+>>>>                 */
+>>>> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT]<<
+>>>>  17;
+>>>> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
+>>>> +                       for (idx = 0; idx<    MMC_NUM_BOOT_PARTITION;
+>>>> idx++)
+>>>> {
+>>>> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT]<<
+>>>>  17;
+>>>> +                               mmc_part_add(card, part_size,
+>>>> +                                       EXT_CSD_PART_CONFIG_ACC_BOOT0 +
+>>>> idx,
+>>>> +                                       "boot%d", idx, true);
+>>>> +                       }
+>>>> +               }
+>>>>        }
+>>>>
+>>>>        card->ext_csd.raw_hc_erase_gap_size =
+>>>> @@ -362,9 +371,9 @@ static int mmc_read_ext_csd(struct mmc_card *card,
+>>>> u8
+>>>> *ext_csd)
+>>>>                card->ext_csd.raw_partition_support =
+>>>> ext_csd[EXT_CSD_PARTITION_SUPPORT];
+>>>>                if ((ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x2)&&
+>>>>                (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE]&    0x1)) {
+>>>> -                       u8 hc_erase_grp_sz =
+>>>> +                       hc_erase_grp_sz =
+>>>>                                ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+>>>> -                       u8 hc_wp_grp_sz =
+>>>> +                       hc_wp_grp_sz =
+>>>>                                ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+>>>>
+>>>>                        card->ext_csd.enhanced_area_en = 1;
+>>>> @@ -393,6 +402,41 @@ static int mmc_read_ext_csd(struct mmc_card *card,
+>>>> u8
+>>>> *ext_csd)
+>>>>                        card->ext_csd.enhanced_area_offset = -EINVAL;
+>>>>                        card->ext_csd.enhanced_area_size = -EINVAL;
+>>>>                }
+>>>> +
+>>>> +               /*
+>>>> +                * General purpose partition feature support --
+>>>> +                * If ext_csd have the size of general purpose
+>>>> partitions,
+>>>> +                * set size, part_cfg, partition name in mmc_part.
+>>>> +                */
+>>>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&
+>>>> +                       EXT_CSD_PART_SUPPORT_PART_EN) {
+>>>> +                       if (card->ext_csd.enhanced_area_en != 1) {
+>>>> +                               hc_erase_grp_sz =
+>>>> +
+>>>> ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+>>>> +                               hc_wp_grp_sz =
+>>>> +                                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+>>>> +
+>>>> +                               card->ext_csd.enhanced_area_en = 1;
+>>>> +                       }
+>>>> +
+>>>> +                       for (idx = 0; idx<    MMC_NUM_GP_PARTITION;
+>>>> idx++) {
+>>>> +                               if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx
+>>>> *
+>>>> 3]&&
+>>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
+>>>> +
+>>>> 1]&&
+>>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
+>>>> +
+>>>> 2])
+>>>> +                                       continue;
+>>>> +                               part_size =
+>>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
+>>>> +
+>>>> 2]
+>>>> +<<    16) +
+>>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
+>>>> +
+>>>> 1]
+>>>> +<<    8) +
+>>>> +                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
+>>>> +                               part_size *= (size_t)(hc_erase_grp_sz *
+>>>> +                                       hc_wp_grp_sz);
+>>>> +                               mmc_part_add(card, part_size<<    19,
+>>>> +                                       EXT_CSD_PART_CONFIG_ACC_GP0 +
+>>>> idx,
+>>>> +                                       "gp%d", idx, false);
+>>>> +                       }
+>>>> +               }
+>>>>                card->ext_csd.sec_trim_mult =
+>>>>                        ext_csd[EXT_CSD_SEC_TRIM_MULT];
+>>>>                card->ext_csd.sec_erase_mult =
+>>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>>>> index 5294ddf..0522627 100644
+>>>> --- a/include/linux/mmc/card.h
+>>>> +++ b/include/linux/mmc/card.h
+>>>> @@ -12,6 +12,7 @@
+>>>>
+>>>>  #include<linux/mmc/core.h>
+>>>>  #include<linux/mod_devicetable.h>
+>>>> +#include<linux/genhd.h>
+>>>>
+>>>>  struct mmc_cid {
+>>>>        unsigned int            manfid;
+>>>> @@ -64,7 +65,6 @@ struct mmc_ext_csd {
+>>>>        bool                    enhanced_area_en;       /* enable bit */
+>>>>        unsigned long long      enhanced_area_offset;   /* Units: Byte */
+>>>>        unsigned int            enhanced_area_size;     /* Units: KB */
+>>>> -       unsigned int            boot_size;              /* in bytes */
+>>>>        u8                      raw_partition_support;  /* 160 */
+>>>>        u8                      raw_erased_mem_count;   /* 181 */
+>>>>        u8                      raw_ext_csd_structure;  /* 194 */
+>>>> @@ -158,6 +158,23 @@ struct sdio_func_tuple;
+>>>>
+>>>>  #define SDIO_MAX_FUNCS                7
+>>>>
+>>>> +/* The number of MMC physical partitions
+>>>> + * It consist of boot partitions(2), general purpose partitions(4) in
+>>>> MMC
+>>>> v4.4
+>>>> + */
+>>>> +#define MMC_NUM_BOOT_PARTITION 2
+>>>> +#define MMC_NUM_GP_PARTITION   4
+>>>> +#define MMC_NUM_PHY_PARTITION  6
+>>>> +
+>>>> +/*
+>>>> + * MMC Physical partitions
+>>>> + */
+>>>> +struct mmc_part {
+>>>> +       unsigned int    size;   /* partition size (in bytes) */
+>>>> +       unsigned int    part_cfg;       /* it used to part_type */
+>>>> +       char    name[DISK_NAME_LEN];
+>>>> +       bool    force_ro;       /* to make boot parts RO by default */
+>>>> +};
+>>>> +
+>>>>  /*
+>>>>   * MMC device
+>>>>   */
+>>>> @@ -219,9 +236,24 @@ struct mmc_card {
+>>>>        unsigned int            sd_bus_speed;   /* Bus Speed Mode set for
+>>>> the card */
+>>>>
+>>>>        struct dentry           *debugfs_root;
+>>>> +       struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
+>>>> partitions */
+>>>> +       unsigned int    nr_parts;
+>>>>  };
+>>>>
+>>>>  /*
+>>>> + * This function fill contents in mmc_part.
+>>>> + */
+>>>> +static inline void mmc_part_add(struct mmc_card *card, unsigned int
+>>>> size,
+>>>> +                       unsigned int part_cfg, char *name, int idx, bool
+>>>> ro)
+>>>> +{
+>>>> +       card->part[card->nr_parts].size = size;
+>>>> +       card->part[card->nr_parts].part_cfg = part_cfg;
+>>>> +       sprintf(card->part[card->nr_parts].name, name, idx);
+>>>> +       card->part[card->nr_parts].force_ro = ro;
+>>>> +       card->nr_parts++;
+>>>> +}
+>>>> +
+>>>> +/*
+>>>>   *  The world is not perfect and supplies us with broken mmc/sdio
+>>>> devices.
+>>>>   *  For at least some of these bugs we need a work-around.
+>>>>   */
+>>>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+>>>> index 50af227..ea558eb 100644
+>>>> --- a/include/linux/mmc/mmc.h
+>>>> +++ b/include/linux/mmc/mmc.h
+>>>> @@ -270,6 +270,7 @@ struct _mmc_csd {
+>>>>   * EXT_CSD fields
+>>>>   */
+>>>>
+>>>> +#define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
+>>>>  #define EXT_CSD_PARTITION_ATTRIBUTE   156     /* R/W */
+>>>>  #define EXT_CSD_PARTITION_SUPPORT     160     /* RO */
+>>>>  #define EXT_CSD_RST_N_FUNCTION                162     /* R/W */
+>>>> @@ -313,7 +314,9 @@ struct _mmc_csd {
+>>>>
+>>>>  #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
+>>>>  #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
+>>>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
+>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
+>>>> +
+>>>> +#define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
+>>>>
+>>>>  #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
+>>>>  #define EXT_CSD_CMD_SET_SECURE                (1<<1)
+>>>
+>>>
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
