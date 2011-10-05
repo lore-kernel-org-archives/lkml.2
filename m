@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab1JEESk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 00:18:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38627 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab1JEESj (ORCPT
+	id S1754717Ab1JEETP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 00:19:15 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37424 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752067Ab1JEETL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 00:18:39 -0400
-Date: Wed, 5 Oct 2011 00:18:28 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the moduleh tree with the  tree
-Message-ID: <20111005041828.GC14123@windriver.com>
-References: <20111004175724.b253f03270f1067531e5d95d@canb.auug.org.au>
- <4E8B24BE.8060102@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4E8B24BE.8060102@cam.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Oct 2011 00:19:11 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
+        toshiharu-linux@dsn.lapis-semi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 2/7 v2] i2c-eg20t: delete 10bit access processing
+Date: Wed,  5 Oct 2011 13:17:39 +0900
+Message-Id: <1317788264-13118-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1317788264-13118-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1317788264-13118-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: linux-next: manual merge of the moduleh tree with the  tree] On 04/10/2011 (Tue 16:22) Jonathan Cameron wrote:
+Linux I2C core doesn't support 10bit access formally.
+Additionally, we can't test with 10bit mode.
+This patch deletes the 10bit access processing.
 
-> On 10/04/11 07:57, Stephen Rothwell wrote:
-> > Hi Paul,
-> > 
-> > Today's linux-next merge of the moduleh tree got a conflict in
-> > drivers/staging/iio/industrialio-ring.c between commit 14555b14455f
-> > ("staging:iio: replacing term ring with buffer in the IIO core") from the
-> > staging tree and commit 4903058fe223 ("staging: Add export.h for
-> > THIS_MODULE/EXPORT_SYMBOL to drivers/staging users") from the moduleh
-> > tree.
-> > 
-> > The former renamed the file modified by the latter.  The new file is
-> > drivers/staging/iio/industrialio-buffer.c and will need to include
-> > export.h.
-> > 
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Tue, 4 Oct 2011 17:48:56 +1100
-> > Subject: [PATCH] staging: Add export.h for EXPORT_SYMBOL to
-> >  drivers/staging/iio/industrialio-buffer.c
-> > 
-> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> Sorry Paul, I fear this going to keep happening.  Is there
-> a minimal set of patches Greg could pull into staging-next
-> to avoid more similar issues?
-> (assuming it isn't already all sorted out!)
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |   27 +++++++--------------------
+ 1 files changed, 7 insertions(+), 20 deletions(-)
 
-Git will handle renames without issue (e.g. net-next renames
-nearly all the drivers, and there are no issues there). I'm
-not sure what you've got planned that makes you think this will keep
-happening, but regardless, what you can do to help out is this:
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index f8ccdec..c18210e 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -387,8 +387,6 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 	u8 *buf;
+ 	u32 length;
+ 	u32 addr;
+-	u32 addr_2_msb;
+-	u32 addr_8_lsb;
+ 	s32 wrcount;
+ 	void __iomem *p = adap->pch_base_address;
+ 
+@@ -408,25 +406,16 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+ 	}
+ 
+ 	if (msgs->flags & I2C_M_TEN) {
+-		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
+-		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+-		if (first)
+-			pch_i2c_start(adap);
+-		if (pch_i2c_wait_for_xfer_complete(adap) == 0 &&
+-		    pch_i2c_getack(adap) == 0) {
+-			addr_8_lsb = (addr & I2C_ADDR_MSK);
+-			iowrite32(addr_8_lsb, p + PCH_I2CDR);
+-		} else {
+-			pch_i2c_stop(adap);
+-			return -ETIME;
+-		}
++		pch_err(adap, "10Bit access is not supported\n");
++		return -EINVAL;
+ 	} else {
+ 		/* set 7 bit slave address and R/W bit as 0 */
+ 		iowrite32(addr << 1, p + PCH_I2CDR);
+-		if (first)
+-			pch_i2c_start(adap);
+ 	}
+ 
++	if (first)
++		pch_i2c_start(adap);
++
+ 	if ((pch_i2c_wait_for_xfer_complete(adap) == 0) &&
+ 	    (pch_i2c_getack(adap) == 0)) {
+ 		for (wrcount = 0; wrcount < length; ++wrcount) {
+@@ -495,7 +484,6 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 	u32 count;
+ 	u32 length;
+ 	u32 addr;
+-	u32 addr_2_msb;
+ 	void __iomem *p = adap->pch_base_address;
+ 
+ 	length = msgs->len;
+@@ -511,9 +499,8 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+ 	}
+ 
+ 	if (msgs->flags & I2C_M_TEN) {
+-		addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
+-		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+-
++		pch_err(adap, "10Bit access is not supported\n");
++		return -EINVAL;
+ 	} else {
+ 		/* 7 address bits + R/W bit */
+ 		addr = (((addr) << 1) | (I2C_RD));
+-- 
+1.7.6.4
 
-If you create/rewrite some staging driver, check whether it
-uses module_param and only that -- if so it needs moduleparam.h
-
-Then check if it uses MODULE_* or module_*  -- such as
-MODULE_LICENSE and module_table or similar.  If so you really
-need to include module.h or else it will build fail in linux-next.
-The module.h will give you moduleparam.h (and export.h in l-next).
-
-Finally if it only uses EXPORT_SYMBOL and/or THIS_MODULE, it will
-eventually need export.h -- but since your tree won't have that
-file (yet) you can put a module.h include into that file, and give
-me a heads up on it and I can "downgrade" the include to be just
-for export.h later (via my post-merge queue of patches).  By putting
-the module.h in as a placeholder for the export.h, you manage to
-avoid Stephen having to deal with it as a build failure.
-
-Greg can't pull the module.h tree into staging permanently since
-the streams have to be presented separately for the final permanent
-merge upstream.  But there is nothing stopping you from fetching
-the module.h content, merging it into your sandbox and having it
-present during your testing if you were so inclined.
-
-Thanks for asking,
-Paul.
-
-> > ---
-> >  drivers/staging/iio/industrialio-buffer.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/staging/iio/industrialio-buffer.c b/drivers/staging/iio/industrialio-buffer.c
-> > index 4ce101a..628aa69 100644
-> > --- a/drivers/staging/iio/industrialio-buffer.c
-> > +++ b/drivers/staging/iio/industrialio-buffer.c
-> > @@ -14,6 +14,7 @@
-> >   * - Alternative access techniques?
-> >   */
-> >  #include <linux/kernel.h>
-> > +#include <linux/export.h>
-> >  #include <linux/device.h>
-> >  #include <linux/fs.h>
-> >  #include <linux/cdev.h>
-> 
