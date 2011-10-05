@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934603Ab1JEMXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 08:23:36 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53341 "EHLO mx2.parallels.com"
+	id S934615Ab1JEMbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 08:31:08 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59306 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934310Ab1JEMXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 08:23:35 -0400
-Message-ID: <4E8C4C23.8000007@parallels.com>
-Date: Wed, 5 Oct 2011 16:22:59 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S934330Ab1JEMbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 08:31:06 -0400
+Date: Wed, 5 Oct 2011 14:31:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Valdis.Kletnieks@vt.edu
+Cc: "K.Prasad" <prasad@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
+        anderson@redhat.com, tachibana@mxm.nes.nec.co.jp,
+        oomichi@mxs.nes.nec.co.jp
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111005123102.GA509@gere.osrc.amd.com>
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <m162k64c7w.fsf@fess.ebiederm.org>
+ <20111003120336.GK2223@in.ibm.com>
+ <20111004063440.GB5723@liondog.tnic>
+ <20111005070728.GA2235@in.ibm.com>
+ <20111005073111.GA13478@liondog.tnic>
+ <26571.1317815746@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <jbottomley@parallels.com>, Balbir Singh <bsingharora@gmail.com>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH 09/10] provide a version of cpuusage statistics inside
- cpu cgroup
-References: <1317583287-18300-1-git-send-email-glommer@parallels.com>  <1317583287-18300-10-git-send-email-glommer@parallels.com> <1317807988.6766.10.camel@twins>
-In-Reply-To: <1317807988.6766.10.camel@twins>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26571.1317815746@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2011 01:46 PM, Peter Zijlstra wrote:
-> On Sun, 2011-10-02 at 23:21 +0400, Glauber Costa wrote:
->> +/*
->> + * charge this task's execution time to its accounting group.
->> + *
->> + * called with rq->lock held.
->> + */
->> +static void cpuusage_charge(struct task_struct *tsk, u64 cputime)
->> +{
->> +       int cpu;
->> +
->> +#ifdef CONFIG_CGROUP_CPUACCT
->> +       struct cpuacct *ca;
->> +#endif
->> +#ifdef CONFIG_CGROUP_SCHED
->> +       struct task_group *tg;
->> +#endif
->> +       cpu = task_cpu(tsk);
->> +
->> +       rcu_read_lock();
->> +
->> +#ifdef CONFIG_CGROUP_CPUACCT
->> +       ca = task_ca(tsk);
->> +
->> +       if (unlikely(!cpuacct_subsys.active))
->> +               goto no_cpuacct;
->> +
->> +       for (; ca; ca = ca->parent) {
->> +               u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
->> +               *cpuusage += cputime;
->> +       }
->> +no_cpuacct:
->> +#endif
->> +
->> +#ifdef CONFIG_CGROUP_SCHED
->> +       tg = task_group(tsk);
->> +       for (; tg; tg = tg->parent) {
->> +               u64 *cpuusage = per_cpu_ptr(tg->cpuusage, cpu);
->> +               *cpuusage += cputime;
->> +       }
->> +#endif
->> +       rcu_read_unlock();
->> +}
->
-> I don't actually think we need to do this. tg->se[cpu]->sum_exec_runtime
-> should contain the same information.
+On Wed, Oct 05, 2011 at 07:55:46AM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 05 Oct 2011 09:31:11 +0200, Borislav Petkov said:
+> > On Wed, Oct 05, 2011 at 12:37:28PM +0530, K.Prasad wrote:
+> 
+> > > True. Like stated by me earlier, there could be two possible outcomes
+> > > from capturing memory dump in such cases - they're either dangerous or
+> > > doesn't make sense.
+> >
+> > Why, in the second example the only corruption is to the L2 cache so
+> > your memory image is intact. Why wouldn't you want to capture a memory
+> > dump then? It is business as usual in that case.
+> 
+> I'll bite.  What's the use case for bothering to capture a memory dump when
+> you're looking at an MCE that indicates L2 cache corruption?  What additional
+> useful information could you possibly get from the dump?
 
-Well,
+This was just a hypothetical example to show that you need a more
+finer-grained differentiation between fatal MCEs when deciding to dump
+or not to dump :-) and not to unconditionally _not_ dump just because
+we're going to panic.
 
-We should at least sum up se and rt_se, right?
-Otherwise... I will re-read the code, but from a first sight, I think 
-you are right.
-
-
-
+-- 
+Regards/Gruss,
+Boris.
