@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801Ab1JEEo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 00:44:28 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:20387 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757724Ab1JEEo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 00:44:26 -0400
-From: "Tomoya MORINAGA" <Tomoya.Morinaga@dsn.rohm.co.jp>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        "'Tomoya MORINAGA'" <morinaga526@dsn.okisemi.com>, <stable@kernel.org>
-References: <CACxGe6uPnXm4Ehk0Bwss_B48j3oUtE1L8SSTyCE6nC2b9K0hhA@mail.gmail.com>
-Subject: RE: [GIT PULL] spi driver bug fixes
-Date: Wed, 5 Oct 2011 13:44:21 +0900
-Message-ID: <95F40BC8A9814963B7347EF0C1B3B50B@hacdom.okisemi.com>
+	id S1757760Ab1JEEpB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 00:45:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48340 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757472Ab1JEEpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 00:45:00 -0400
+Date: Tue, 4 Oct 2011 21:37:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, longli@microsoft.com,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/1] Staging: hv: util: Fix a bug in kvp implementation
+Message-ID: <20111005043717.GA3918@suse.de>
+References: <1317762002-4351-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcyCsMZR2LDv2e8USFSSRa+Z117XVgAaDwVw
-In-Reply-To: <CACxGe6uPnXm4Ehk0Bwss_B48j3oUtE1L8SSTyCE6nC2b9K0hhA@mail.gmail.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317762002-4351-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 05, 2011 1:15 AM, Grant Likely wrote:
-> Tomoya, are these applicable for the stable tree?
-Yes, these are applicable for the stable.
+On Tue, Oct 04, 2011 at 02:00:02PM -0700, K. Y. Srinivasan wrote:
+> The host gurantees that there can be only one kvp transaction active
+> against the guest. So, the transaction active state is needed only to
+> protect against spurious user level calls. The current code had a race
+> condition where the guest could prematurely return because the previous
+> transaction state was not cleared - this state was being cleared after
+> sending the response to the host and there was a window where the host
+> could notify the guest of a new transaction before the transaction active
+> state was properly set. 
+> Also deal with the case when the user mode component
+> does not respond in a timely fashion correctly.
+> I would like to thank Long Li <longli@microsoft.com>
+> for identifying the problem.
 
-------
-Tomoya
-ROHM Co., Ltd.
+So that would be a "Reported-by:" tag, we don't have a "Diagnosed-by" do
+we?
 
------Original Message-----
-From: glikely@secretlab.ca [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-Sent: Wednesday, October 05, 2011 1:15 AM
-To: Linus Torvalds; Linux Kernel Mailing List; spi-devel-general@lists.sourceforge.net; Tomoya
-MORINAGA; stable@kernel.org
-Subject: [GIT PULL] spi driver bug fixes
+And should this go to the older (i.e. stable) kernels as well?
 
-Hi Linus,
+thanks,
 
-Here are some bug fixes for the topcliff spi driver.
-
-Tomoya, are these applicable for the stable tree?
-
-The following changes since commit 0f86267b79bc6e357b8606077c7f70239045ea9c:
-
-  Merge branch 'hwmon-for-linus' of git://github.com/groeck/linux
-(2011-10-03 12:54:56 -0700)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 spi/merge
-
-Tomoya MORINAGA (5):
-      spi-topcliff-pch: add tx-memory clear after complete transmitting
-      spi-topcliff-pch: Fix SSN Control issue
-      spi-topcliff-pch: Fix CPU read complete condition issue
-      spi-topcliff-pch: Add recovery processing in case FIFO overrun error occurs
-      spi-topcliff-pch: Fix overrun issue
-
- drivers/spi/spi-topcliff-pch.c |   93 ++++++++++++++++++++++++++++------------
- 1 files changed, 66 insertions(+), 27 deletions(-)
-
-
---
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
-
+greg k-h
