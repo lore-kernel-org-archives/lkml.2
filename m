@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab1JEPZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:25:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37063 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757554Ab1JEPZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:25:10 -0400
-Subject: [GIT PULL] SCSI fixes for 3.1-rc9
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 05 Oct 2011 08:25:05 -0700
-Message-ID: <1317828305.7238.5.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1758039Ab1JEP0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:26:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757963Ab1JEP0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:26:00 -0400
+Date: Wed, 5 Oct 2011 11:25:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111005152537.GB30146@redhat.com>
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <20111004140437.GA28306@redhat.com>
+ <20111005071844.GB2235@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111005071844.GB2235@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is two oops fixes.  However, the oopses are unlikely to trigger
-(although once you know how to do it, the libsas one is easy).
+On Wed, Oct 05, 2011 at 12:48:44PM +0530, K.Prasad wrote:
+> On Tue, Oct 04, 2011 at 10:04:37AM -0400, Vivek Goyal wrote:
+> > On Mon, Oct 03, 2011 at 01:02:03PM +0530, K.Prasad wrote:
+> > > There are certain types of crashes induced by faulty hardware in which
+> > > capturing crashing kernel's memory (through kdump) makes no sense (or sometimes
+> > > dangerous).
+> > > 
+> > > A case in point, is unrecoverable memory errors (resulting in fatal machine
+> > > check exceptions) in which reading from the faulty memory location from the
+> > > kexec'ed kernel will cause double fault and system reset (leaving no
+> > > information for the user).
+> > 
+> > Prasad,
+> > 
+> > I am just trying to remember what was wrong with Andi's approach of
+> > disable MCE while copying the dump?
+> >
+> 
+> Hi Vivek,
+> 	The behaviour upon a read operation on an UC memory location is
+> undefined and so we want to avoid it (previously discussed here:
+> http://article.gmane.org/gmane.linux.kernel/1146799).
 
-The head sha1 is
+> When we disable MCE and copy the dump, we will invariably read the faulty
+> memory location.
 
-commit a73914c35b05d80f8ce78288e10056c91090b666
+And how that is worse then not capturing a dump at all? Anyway, you said
+that in case of MCE vmcore is of no use and we don't want to capture it.
 
-The fix is available here:
-
-git://bedivere.hansenpartnership.com/git/scsi-rc-fixes-2.6.git
-
-The short changelog is:
-
-Mark Salyzyn (1):
-      libsas: fix panic when single phy is disabled on a wide port
-
-Roland Dreier (1):
-      qla2xxx: Fix crash in qla2x00_abort_all_cmds() on unload
-
-And the diffstat:
-
- drivers/scsi/libsas/sas_expander.c |   10 ++++++----
- drivers/scsi/qla2xxx/qla_os.c      |    9 +++++----
- 2 files changed, 11 insertions(+), 8 deletions(-)
-
-Full diff is below
-
-James
-
----
-
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index c9e3dc0..16ad97d 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -1769,10 +1769,12 @@ static void sas_unregister_devs_sas_addr(struct domain_device *parent,
- 		sas_disable_routing(parent, phy->attached_sas_addr);
- 	}
- 	memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
--	sas_port_delete_phy(phy->port, phy->phy);
--	if (phy->port->num_phys == 0)
--		sas_port_delete(phy->port);
--	phy->port = NULL;
-+	if (phy->port) {
-+		sas_port_delete_phy(phy->port, phy->phy);
-+		if (phy->port->num_phys == 0)
-+			sas_port_delete(phy->port);
-+		phy->port = NULL;
-+	}
- }
- 
- static int sas_discover_bfs_by_root_level(struct domain_device *root,
-diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-index 4cace3f..1e69527 100644
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -1328,10 +1328,9 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
- 					qla2x00_sp_compl(ha, sp);
- 				} else {
- 					ctx = sp->ctx;
--					if (ctx->type == SRB_LOGIN_CMD ||
--					    ctx->type == SRB_LOGOUT_CMD) {
--						ctx->u.iocb_cmd->free(sp);
--					} else {
-+					if (ctx->type == SRB_ELS_CMD_RPT ||
-+					    ctx->type == SRB_ELS_CMD_HST ||
-+					    ctx->type == SRB_CT_CMD) {
- 						struct fc_bsg_job *bsg_job =
- 						    ctx->u.bsg_job;
- 						if (bsg_job->request->msgcode
-@@ -1343,6 +1342,8 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
- 						kfree(sp->ctx);
- 						mempool_free(sp,
- 							ha->srb_mempool);
-+					} else {
-+						ctx->u.iocb_cmd->free(sp);
- 					}
- 				}
- 			}
-
-
+Thanks
+Vivek
