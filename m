@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab1JEG3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 02:29:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56870 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab1JEG3u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 02:29:50 -0400
-Date: Tue, 4 Oct 2011 23:29:44 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.1-rc9
-Message-ID: <20111005062944.GA31646@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757861Ab1JEGhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:37:35 -0400
+Received: from mx.binnacle.cx ([74.95.187.105]:20158 "EHLO mx.binnacle.cx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757723Ab1JEGhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 02:37:34 -0400
+Message-Id: <6.2.5.6.2.20111005020421.03a9e6c0@binnacle.cx>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Wed, 05 Oct 2011 02:11:27 -0400
+To: Joe Perches <joe@perches.com>, Christoph Lameter <cl@gentwo.org>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        Con Kolivas <kernel@kolivas.org>
+From: starlight@binnacle.cx
+Subject: Re: big picture UDP/IP performance question re 2.6.18
+  -> 2.6.32
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <stephen.hemminger@vyatta.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Gremlins!
 
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In my haste I overlooked that changing the
+thread pool from 140 to 13 is radical,
+especially with a core count matching
+the thread count.  Apples and oranges.
 
-Hi Linus,
+Ran the small-pool test on the other two
+kernels and here are the results.  The
+user and system columns are in jiffies.
 
-Please pull from:
+kernel          total      user   system
+2.6.18(rhel5)   02:07:16  615516  148152 (19.4%)
+2.6.39.4        02:27:44  658074  228420 (25.7%)
+2.6.39.4(bfs)   02:34:49  899936   29000 (3%)
 
-	git://github.com/dtor/input.git for-linus
+So BFS performs somewhat worse than the default
+scheduler on total-CPU.  The old RHEL 5 kernel
+is still the winner, but not by nearly as
+much in the small thread-pool scenario--.39
+is only 16% slower than .18 with the
+system overhead being 55% worse rather
+than 100% worse.
 
-to receive a fixup to wacom driver.
+So all that is shown after all is that
+the differential between the older and
+newer kernels is strongly influenced by
+the number of active threads, and the O(N)
+aspect of BFS makes it an inappropriate
+choice for heavy multithreaded workloads.
 
-Changelog:
----------
+Also small thread pools are more efficient
+than large ones (especially when the workflow
+is routed for optimal cache locality as
+is the case here).  However the small
+pool does not scale as well to maximum CPU
+load as the large pool (a different test)
+which is why it is no longer used in
+production and was only dusted off
+in order to enable the BFS comparison.
 
-Jason Gerecke (1):
-      Input: wacom - revert "Cintiq 21UX2 does not have menu strips"
-
-
-Diffstat:
---------
-
- drivers/input/tablet/wacom_wac.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
-
---=20
-Dmitry
-
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOi/lXAAoJEH70+W8r6ZYqA9EP/RPOHA8Al6+mtacHFGp4KSm/
-ZHAjKCE1qjb1+aFm1UL4VFWe9g5b1khwRFK5CsgIOR2/04zqA2iOQ0Wdrk4s5PKy
-uv3/lP5gIBAdUzAF8ew54IV7hpzV3ABUl7yGaaLBJjRL1srCcdOVH9FEqgAXm5RG
-/lTYi7E83Aw2wDah/xAqaXyx3JdNmG5sTOKcbkAo+8zx+nKfOpXgB/biLSokBjdu
-KSJeGO7lBSGxttQ/aq6Tybwdr1Q1ORb+uYVS1/Bpvi6AgFNrYHcOTP9qS9/DpOuW
-REf40yDfSivgrd1qZlB0VTtbfxULBNyn1+3nA2POsD2+Op2lxFISgZDXm1TFsPKa
-KXl+mldRUhWyzrcbwi2ETo6t9MtvF8H92hhYV33anKUxSHPyFhfH0cyWDgHSgdzq
-T62/AB7ORYnv773sJZAsGUMiUZnADkQVRq4lXXcb8VpCBBNGLtXaCQjO5rinkS+y
-lfb6CR/v41WXJO4x29OO8GCUdd+LtqgMG/8goxb3GpjJPxM4vbiu9sMgoyhxATRG
-7j3bYCkIziKnAWoAfAwVcL2WsogIXa453waLdtdKzyPF+SHeKG9RsrI2cwJDU9ML
-lIn7Fo/Eb8yezEbE7DDGL10hB5wwB6nBvDpEQfFLbKF/qQ6P4VCwtprmv8pW9QUE
-yf2HXSXLMuJAyG1Sb6Tf
-=QJ/y
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
