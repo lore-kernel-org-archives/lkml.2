@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934757Ab1JENaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 09:30:04 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:11281 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934700Ab1JENaD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 09:30:03 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Long Li <longli@microsoft.com>, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Staging: hv: util: Fix a bug in kvp implementation
-Thread-Topic: [PATCH 1/1] Staging: hv: util: Fix a bug in kvp implementation
-Thread-Index: AQHMgtqYGRBe1fkw0ECG1621D/vf1ZVtoI+AgAAcNvA=
-Date: Wed, 5 Oct 2011 13:30:01 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081EBC4D@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1317762002-4351-1-git-send-email-kys@microsoft.com>
- <20111005043717.GA3918@suse.de>
-In-Reply-To: <20111005043717.GA3918@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S934780Ab1JENiK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 09:38:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934670Ab1JENiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 09:38:08 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
+References: <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> 
+To: Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Date: Wed, 05 Oct 2011 14:37:10 +0100
+Message-ID: <1736.1317821830@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark Moseley <moseleymark@gmail.com> wrote:
 
+> [ 7719.996883] FS-Cache: Assertion failed
+> [ 7719.996886] 3 == 5 is false
+> [ 7719.996906] ------------[ cut here ]------------
+> [ 7720.006139] kernel BUG at fs/fscache/operation.c:408!
+> [ 7720.006751] invalid opcode: 0000 [#1] SMP
+> [ 7720.006751] CPU 7
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Wednesday, October 05, 2011 12:37 AM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Long Li; Haiyang Zhang
-> Subject: Re: [PATCH 1/1] Staging: hv: util: Fix a bug in kvp implementation
-> 
-> On Tue, Oct 04, 2011 at 02:00:02PM -0700, K. Y. Srinivasan wrote:
-> > The host gurantees that there can be only one kvp transaction active
-> > against the guest. So, the transaction active state is needed only to
-> > protect against spurious user level calls. The current code had a race
-> > condition where the guest could prematurely return because the previous
-> > transaction state was not cleared - this state was being cleared after
-> > sending the response to the host and there was a window where the host
-> > could notify the guest of a new transaction before the transaction active
-> > state was properly set.
-> > Also deal with the case when the user mode component
-> > does not respond in a timely fashion correctly.
-> > I would like to thank Long Li <longli@microsoft.com>
-> > for identifying the problem.
-> 
-> So that would be a "Reported-by:" tag, we don't have a "Diagnosed-by" do
-> we?
+Ummm... what's at line 408 for you?  It doesn't seem to be the same as what
+I've got.
 
-Reported-by tag would do.
-> 
-> And should this go to the older (i.e. stable) kernels as well?
-> 
+Do you have all my patches applied?
 
-While the bug can be triggered by doing something that is not the way this (KVP) 
-feature is to be used, I don't think this bug can be triggered under normal usage.
-The test case that exposed this bug was one where KVP values were being queried
-from the host in a tight loop - hardly a typical usage scenario. So, I was not sure if this would
-qualify for back porting to other stable kernels. What do you think?
-
-Regards,
-
-K. Y
-
+David
