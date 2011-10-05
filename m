@@ -1,371 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934445Ab1JELXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 07:23:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53213 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934411Ab1JELW6 (ORCPT
+	id S934438Ab1JEL3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 07:29:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60635 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934397Ab1JEL3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 07:22:58 -0400
+	Wed, 5 Oct 2011 07:29:32 -0400
+Date: Wed, 5 Oct 2011 13:29:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: linux-ext4@vger.kernel.org
+cc: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: fs: jdb/jbd2: Put identical code in a common header
+Message-ID: <alpine.LFD.2.02.1110051328010.18778@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAKYAXd_AoSgY6htSO5jJyD3QJ_xXFqgKLyNX49s3PuRW6AUmbg@mail.gmail.com>
-References: <1317750317-4489-1-git-send-email-linkinjeon@gmail.com>
-	<4E8C1F98.9070909@intel.com>
-	<CAKYAXd-9+_1TBniszQir+krF1fRqzBMiAAX9PgzaW+odps0EDg@mail.gmail.com>
-	<4E8C370E.7080806@intel.com>
-	<CAKYAXd_AoSgY6htSO5jJyD3QJ_xXFqgKLyNX49s3PuRW6AUmbg@mail.gmail.com>
-Date: Wed, 5 Oct 2011 20:22:56 +0900
-Message-ID: <CAKYAXd9iHW3bdeFkq=ywdOTPtzFdqK8Yb9fXxi8Jvoq6BRvHtQ@mail.gmail.com>
-Subject: Re: [PATCH v10] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        awarkentin@vmware.com, linus.walleij@linaro.org,
-        james_p_freyensee@linux.intel.com, sebras@gmail.com,
-        Ulf.Hansson@stericsson.com, stefan.xk.nilsson@stericsson.com,
-        per.forlin@stericsson.com, johan.rudholm@stericsson.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p95BNAAo027646
 
-2011/10/5 NamJae Jeon <linkinjeon@gmail.com>:
-> 2011/10/5 Adrian Hunter <adrian.hunter@intel.com>:
->> On 05/10/11 13:21, NamJae Jeon wrote:
->>>
->>> 2011/10/5 Adrian Hunter<adrian.hunter@intel.com>:
->>>>
->>>> On 04/10/11 20:45, Namjae Jeon wrote:
->>>>>
->>>>> It allows gerneral purpose partitions in MMC Device.
->>>>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part structure
->>>>> suggested by Andrei Warkentin.
->>>>> After patching, we can see general purpose partitions like this.
->>>>>>
->>>>>> cat /proc/partitions
->>>>>
->>>>>           179 0 847872 mmcblk0
->>>>>           179 192 4096 mmcblk0gp3
->>>>>           179 160 4096 mmcblk0gp2
->>>>>           179 128 4096 mmcblk0gp1
->>>>>           179 96  1052672 mmcblk0gp0
->>>>>           179 64  1024 mmcblk0boot1
->>>>>           179 32  1024 mmcblk0boot0
->>>>>
->>>>> Signed-off-by: Namjae Jeon<linkinjeon@gmail.com>
->>>>> ---
->>>>>  drivers/mmc/card/block.c |   34 +++++++++++++++++------------
->>>>>  drivers/mmc/core/mmc.c   |   52
->>>>> ++++++++++++++++++++++++++++++++++++++++++---
->>>>>  include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
->>>>>  include/linux/mmc/mmc.h  |    5 +++-
->>>>>  4 files changed, 105 insertions(+), 20 deletions(-)
->>>>>
->>>>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->>>>> index 782d5f8..fb6f1e9 100644
->>>>> --- a/drivers/mmc/card/block.c
->>>>> +++ b/drivers/mmc/card/block.c
->>>>> @@ -1470,26 +1470,32 @@ static int mmc_blk_alloc_part(struct mmc_card
->>>>> *card,
->>>>>        return 0;
->>>>>  }
->>>>>
->>>>> +/* MMC Physical partition consist of two boot partitions and
->>>>> + * up to four general purpose partitions.
->>>>> + * For each partitions enabled in EXT_CSD
->>>>> + * The block device will allocated to provide access to the partition.
->>>>> + */
->>>>> +
->>>>>  static int mmc_blk_alloc_parts(struct mmc_card *card, struct
->>>>> mmc_blk_data
->>>>> *md)
->>>>>  {
->>>>> -       int ret = 0;
->>>>> +       int idx, ret = 0;
->>>>>
->>>>>        if (!mmc_card_mmc(card))
->>>>>                return 0;
->>>>>
->>>>> -       if (card->ext_csd.boot_size&&
->>>>>  mmc_boot_partition_access(card->host)) {
->>>>> -               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_BOOT0,
->>>>> -                                        card->ext_csd.boot_size>>    9,
->>>>> -                                        true,
->>>>> -                                        "boot0");
->>>>> -               if (ret)
->>>>> -                       return ret;
->>>>> -               ret = mmc_blk_alloc_part(card, md,
->>>>> EXT_CSD_PART_CONFIG_ACC_BOOT1,
->>>>> -                                        card->ext_csd.boot_size>>    9,
->>>>> -                                        true,
->>>>> -                                        "boot1");
->>>>> -               if (ret)
->>>>> -                       return ret;
->>>>> +       for (idx = 0; idx<    card->nr_parts; idx++) {
->>>>> +               if ((idx == 0 || idx == 1)&&
->>>>> +                       !mmc_boot_partition_access(card->host))
->>>>> +                       continue;
->>>>
->>>> Seems a bit fragile.  What if someone decided to put the gp
->>>> partitions before the boot partitions.  What about:
->>>
->>> There are the default two boot partition in mmc spec. I think that
->>> this case can not be happened.
->>> And boot partition size of EXT CSD is read-only.
->>> Can you explain which is case put to gp partitions before the boot
->>> partition ?
->>
->> Relying on the partition order in the partition array is fragile.
->> You cannot predict how someone may want to change it in the future,
->> and that person will not expect that certain positions have certain meaning.
-0,1 of Boot partition is fixed if spec is not changed over. but gp
-partition is variable in 2,3,4,5,6 of array.
-If How someone change code, problem occur ?
->>
->>>
->>>>
->>>>                if (mmc_is_boot_partition(&part[idx])&&
->>>>                    !mmc_boot_partition_access(card->host)
->>>>                        continue;
->>>>
->>>> And:
->>>>
->>>> int mmc_is_boot_partition(struct mmc_part *part)
->>>> {
->>>>        return part->part_cfg>= EXT_CSD_PART_CONFIG_ACC_BOOT0&&
->>>>               part->part_cfg<= EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>>>                                 MMC_NUM_BOOT_PARTITION;
->>>> }
->>>>
->>>>> +               if (card->part[idx].size) {
->>>>> +                       ret = mmc_blk_alloc_part(card, md,
->>>>> +                               card->part[idx].part_cfg,
->>>>> +                               card->part[idx].size>>    9,
->>>>> +                               card->part[idx].force_ro,
->>>>> +                               card->part[idx].name);
->>>>> +                       if (ret)
->>>>> +                               return ret;
->>>>> +               }
->>>>>        }
->>>>>
->>>>>        return ret;
->>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>>>> index c632b1f..2f458a0 100644
->>>>> --- a/drivers/mmc/core/mmc.c
->>>>> +++ b/drivers/mmc/core/mmc.c
->>>>> @@ -239,7 +239,9 @@ static int mmc_get_ext_csd(struct mmc_card *card, u8
->>>>> **new_ext_csd)
->>>>>   */
->>>>>  static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->>>>>  {
->>>>> -       int err = 0;
->>>>> +       int err = 0, idx;
->>>>> +       unsigned int part_size;
->>>>> +       u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
->>>>>
->>>>>        BUG_ON(!card);
->>>>>
->>>>> @@ -340,7 +342,14 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>>> u8
->>>>> *ext_csd)
->>>>>                 * There are two boot regions of equal size, defined in
->>>>>                 * multiples of 128K.
->>>>>                 */
->>>>> -               card->ext_csd.boot_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>>>  17;
->>>>> +               if (ext_csd[EXT_CSD_BOOT_MULT]) {
->>>>> +                       for (idx = 0; idx<    MMC_NUM_BOOT_PARTITION;
->>>>> idx++)
->>>>> {
->>>>> +                               part_size = ext_csd[EXT_CSD_BOOT_MULT]<<
->>>>>  17;
->>>>> +                               mmc_part_add(card, part_size,
->>>>> +                                       EXT_CSD_PART_CONFIG_ACC_BOOT0 +
->>>>> idx,
->>>>> +                                       "boot%d", idx, true);
->>>>> +                       }
->>>>> +               }
->>>>>        }
->>>>>
->>>>>        card->ext_csd.raw_hc_erase_gap_size =
->>>>> @@ -362,9 +371,9 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>>> u8
->>>>> *ext_csd)
->>>>>                card->ext_csd.raw_partition_support =
->>>>> ext_csd[EXT_CSD_PARTITION_SUPPORT];
->>>>>                if ((ext_csd[EXT_CSD_PARTITION_SUPPORT]&    0x2)&&
->>>>>                (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE]&    0x1)) {
->>>>> -                       u8 hc_erase_grp_sz =
->>>>> +                       hc_erase_grp_sz =
->>>>>                                ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>>> -                       u8 hc_wp_grp_sz =
->>>>> +                       hc_wp_grp_sz =
->>>>>                                ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>>>
->>>>>                        card->ext_csd.enhanced_area_en = 1;
->>>>> @@ -393,6 +402,41 @@ static int mmc_read_ext_csd(struct mmc_card *card,
->>>>> u8
->>>>> *ext_csd)
->>>>>                        card->ext_csd.enhanced_area_offset = -EINVAL;
->>>>>                        card->ext_csd.enhanced_area_size = -EINVAL;
->>>>>                }
->>>>> +
->>>>> +               /*
->>>>> +                * General purpose partition feature support --
->>>>> +                * If ext_csd have the size of general purpose
->>>>> partitions,
->>>>> +                * set size, part_cfg, partition name in mmc_part.
->>>>> +                */
->>>>> +               if (ext_csd[EXT_CSD_PARTITION_SUPPORT]&
->>>>> +                       EXT_CSD_PART_SUPPORT_PART_EN) {
->>>>> +                       if (card->ext_csd.enhanced_area_en != 1) {
->>>>> +                               hc_erase_grp_sz =
->>>>> +
->>>>> ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
->>>>> +                               hc_wp_grp_sz =
->>>>> +                                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
->>>>> +
->>>>> +                               card->ext_csd.enhanced_area_en = 1;
->>>>> +                       }
->>>>> +
->>>>> +                       for (idx = 0; idx<    MMC_NUM_GP_PARTITION;
->>>>> idx++) {
->>>>> +                               if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx
->>>>> *
->>>>> 3]&&
->>>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>>> +
->>>>> 1]&&
->>>>> +                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>>> +
->>>>> 2])
->>>>> +                                       continue;
->>>>> +                               part_size =
->>>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>>> +
->>>>> 2]
->>>>> +<<    16) +
->>>>> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3
->>>>> +
->>>>> 1]
->>>>> +<<    8) +
->>>>> +                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
->>>>> +                               part_size *= (size_t)(hc_erase_grp_sz *
->>>>> +                                       hc_wp_grp_sz);
->>>>> +                               mmc_part_add(card, part_size<<    19,
->>>>> +                                       EXT_CSD_PART_CONFIG_ACC_GP0 +
->>>>> idx,
->>>>> +                                       "gp%d", idx, false);
->>>>> +                       }
->>>>> +               }
->>>>>                card->ext_csd.sec_trim_mult =
->>>>>                        ext_csd[EXT_CSD_SEC_TRIM_MULT];
->>>>>                card->ext_csd.sec_erase_mult =
->>>>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
->>>>> index 5294ddf..0522627 100644
->>>>> --- a/include/linux/mmc/card.h
->>>>> +++ b/include/linux/mmc/card.h
->>>>> @@ -12,6 +12,7 @@
->>>>>
->>>>>  #include<linux/mmc/core.h>
->>>>>  #include<linux/mod_devicetable.h>
->>>>> +#include<linux/genhd.h>
->>>>>
->>>>>  struct mmc_cid {
->>>>>        unsigned int            manfid;
->>>>> @@ -64,7 +65,6 @@ struct mmc_ext_csd {
->>>>>        bool                    enhanced_area_en;       /* enable bit */
->>>>>        unsigned long long      enhanced_area_offset;   /* Units: Byte */
->>>>>        unsigned int            enhanced_area_size;     /* Units: KB */
->>>>> -       unsigned int            boot_size;              /* in bytes */
->>>>>        u8                      raw_partition_support;  /* 160 */
->>>>>        u8                      raw_erased_mem_count;   /* 181 */
->>>>>        u8                      raw_ext_csd_structure;  /* 194 */
->>>>> @@ -158,6 +158,23 @@ struct sdio_func_tuple;
->>>>>
->>>>>  #define SDIO_MAX_FUNCS                7
->>>>>
->>>>> +/* The number of MMC physical partitions
->>>>> + * It consist of boot partitions(2), general purpose partitions(4) in
->>>>> MMC
->>>>> v4.4
->>>>> + */
->>>>> +#define MMC_NUM_BOOT_PARTITION 2
->>>>> +#define MMC_NUM_GP_PARTITION   4
->>>>> +#define MMC_NUM_PHY_PARTITION  6
->>>>> +
->>>>> +/*
->>>>> + * MMC Physical partitions
->>>>> + */
->>>>> +struct mmc_part {
->>>>> +       unsigned int    size;   /* partition size (in bytes) */
->>>>> +       unsigned int    part_cfg;       /* it used to part_type */
->>>>> +       char    name[DISK_NAME_LEN];
->>>>> +       bool    force_ro;       /* to make boot parts RO by default */
->>>>> +};
->>>>> +
->>>>>  /*
->>>>>   * MMC device
->>>>>   */
->>>>> @@ -219,9 +236,24 @@ struct mmc_card {
->>>>>        unsigned int            sd_bus_speed;   /* Bus Speed Mode set for
->>>>> the card */
->>>>>
->>>>>        struct dentry           *debugfs_root;
->>>>> +       struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical
->>>>> partitions */
->>>>> +       unsigned int    nr_parts;
->>>>>  };
->>>>>
->>>>>  /*
->>>>> + * This function fill contents in mmc_part.
->>>>> + */
->>>>> +static inline void mmc_part_add(struct mmc_card *card, unsigned int
->>>>> size,
->>>>> +                       unsigned int part_cfg, char *name, int idx, bool
->>>>> ro)
->>>>> +{
->>>>> +       card->part[card->nr_parts].size = size;
->>>>> +       card->part[card->nr_parts].part_cfg = part_cfg;
->>>>> +       sprintf(card->part[card->nr_parts].name, name, idx);
->>>>> +       card->part[card->nr_parts].force_ro = ro;
->>>>> +       card->nr_parts++;
->>>>> +}
->>>>> +
->>>>> +/*
->>>>>   *  The world is not perfect and supplies us with broken mmc/sdio
->>>>> devices.
->>>>>   *  For at least some of these bugs we need a work-around.
->>>>>   */
->>>>> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
->>>>> index 50af227..ea558eb 100644
->>>>> --- a/include/linux/mmc/mmc.h
->>>>> +++ b/include/linux/mmc/mmc.h
->>>>> @@ -270,6 +270,7 @@ struct _mmc_csd {
->>>>>   * EXT_CSD fields
->>>>>   */
->>>>>
->>>>> +#define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
->>>>>  #define EXT_CSD_PARTITION_ATTRIBUTE   156     /* R/W */
->>>>>  #define EXT_CSD_PARTITION_SUPPORT     160     /* RO */
->>>>>  #define EXT_CSD_RST_N_FUNCTION                162     /* R/W */
->>>>> @@ -313,7 +314,9 @@ struct _mmc_csd {
->>>>>
->>>>>  #define EXT_CSD_PART_CONFIG_ACC_MASK  (0x7)
->>>>>  #define EXT_CSD_PART_CONFIG_ACC_BOOT0 (0x1)
->>>>> -#define EXT_CSD_PART_CONFIG_ACC_BOOT1  (0x2)
->>>>> +#define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
->>>>> +
->>>>> +#define EXT_CSD_PART_SUPPORT_PART_EN   (0x1)
->>>>>
->>>>>  #define EXT_CSD_CMD_SET_NORMAL                (1<<0)
->>>>>  #define EXT_CSD_CMD_SET_SECURE                (1<<1)
->>>>
->>>>
->>
->>
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+The state bits and the lock functions of jbd and jbd2 are
+identical. Share them.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/jbd.h        |   64 ------------------------------------------
+ include/linux/jbd2.h       |   65 -------------------------------------------
+ include/linux/jbd_common.h |   68 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 70 insertions(+), 127 deletions(-)
+
+Index: linux-2.6/include/linux/jbd.h
+===================================================================
+--- linux-2.6.orig/include/linux/jbd.h
++++ linux-2.6/include/linux/jbd.h
+@@ -244,6 +244,7 @@ typedef struct journal_superblock_s
+ 
+ #include <linux/fs.h>
+ #include <linux/sched.h>
++#include <linux/jbd_common.h>
+ 
+ #define J_ASSERT(assert)	BUG_ON(!(assert))
+ 
+@@ -270,69 +271,6 @@ typedef struct journal_superblock_s
+ #define J_EXPECT_JH(jh, expr, why...)	__journal_expect(expr, ## why)
+ #endif
+ 
+-enum jbd_state_bits {
+-	BH_JBD			/* Has an attached ext3 journal_head */
+-	  = BH_PrivateStart,
+-	BH_JWrite,		/* Being written to log (@@@ DEBUGGING) */
+-	BH_Freed,		/* Has been freed (truncated) */
+-	BH_Revoked,		/* Has been revoked from the log */
+-	BH_RevokeValid,		/* Revoked flag is valid */
+-	BH_JBDDirty,		/* Is dirty but journaled */
+-	BH_State,		/* Pins most journal_head state */
+-	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
+-	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
+-};
+-
+-BUFFER_FNS(JBD, jbd)
+-BUFFER_FNS(JWrite, jwrite)
+-BUFFER_FNS(JBDDirty, jbddirty)
+-TAS_BUFFER_FNS(JBDDirty, jbddirty)
+-BUFFER_FNS(Revoked, revoked)
+-TAS_BUFFER_FNS(Revoked, revoked)
+-BUFFER_FNS(RevokeValid, revokevalid)
+-TAS_BUFFER_FNS(RevokeValid, revokevalid)
+-BUFFER_FNS(Freed, freed)
+-
+-static inline struct buffer_head *jh2bh(struct journal_head *jh)
+-{
+-	return jh->b_bh;
+-}
+-
+-static inline struct journal_head *bh2jh(struct buffer_head *bh)
+-{
+-	return bh->b_private;
+-}
+-
+-static inline void jbd_lock_bh_state(struct buffer_head *bh)
+-{
+-	bit_spin_lock(BH_State, &bh->b_state);
+-}
+-
+-static inline int jbd_trylock_bh_state(struct buffer_head *bh)
+-{
+-	return bit_spin_trylock(BH_State, &bh->b_state);
+-}
+-
+-static inline int jbd_is_locked_bh_state(struct buffer_head *bh)
+-{
+-	return bit_spin_is_locked(BH_State, &bh->b_state);
+-}
+-
+-static inline void jbd_unlock_bh_state(struct buffer_head *bh)
+-{
+-	bit_spin_unlock(BH_State, &bh->b_state);
+-}
+-
+-static inline void jbd_lock_bh_journal_head(struct buffer_head *bh)
+-{
+-	bit_spin_lock(BH_JournalHead, &bh->b_state);
+-}
+-
+-static inline void jbd_unlock_bh_journal_head(struct buffer_head *bh)
+-{
+-	bit_spin_unlock(BH_JournalHead, &bh->b_state);
+-}
+-
+ struct jbd_revoke_table_s;
+ 
+ /**
+Index: linux-2.6/include/linux/jbd2.h
+===================================================================
+--- linux-2.6.orig/include/linux/jbd2.h
++++ linux-2.6/include/linux/jbd2.h
+@@ -275,6 +275,7 @@ typedef struct journal_superblock_s
+ 
+ #include <linux/fs.h>
+ #include <linux/sched.h>
++#include <linux/jbd_common.h>
+ 
+ #define J_ASSERT(assert)	BUG_ON(!(assert))
+ 
+@@ -302,70 +303,6 @@ typedef struct journal_superblock_s
+ #define J_EXPECT_JH(jh, expr, why...)	__journal_expect(expr, ## why)
+ #endif
+ 
+-enum jbd_state_bits {
+-	BH_JBD			/* Has an attached ext3 journal_head */
+-	  = BH_PrivateStart,
+-	BH_JWrite,		/* Being written to log (@@@ DEBUGGING) */
+-	BH_Freed,		/* Has been freed (truncated) */
+-	BH_Revoked,		/* Has been revoked from the log */
+-	BH_RevokeValid,		/* Revoked flag is valid */
+-	BH_JBDDirty,		/* Is dirty but journaled */
+-	BH_State,		/* Pins most journal_head state */
+-	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
+-	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
+-	BH_JBDPrivateStart,	/* First bit available for private use by FS */
+-};
+-
+-BUFFER_FNS(JBD, jbd)
+-BUFFER_FNS(JWrite, jwrite)
+-BUFFER_FNS(JBDDirty, jbddirty)
+-TAS_BUFFER_FNS(JBDDirty, jbddirty)
+-BUFFER_FNS(Revoked, revoked)
+-TAS_BUFFER_FNS(Revoked, revoked)
+-BUFFER_FNS(RevokeValid, revokevalid)
+-TAS_BUFFER_FNS(RevokeValid, revokevalid)
+-BUFFER_FNS(Freed, freed)
+-
+-static inline struct buffer_head *jh2bh(struct journal_head *jh)
+-{
+-	return jh->b_bh;
+-}
+-
+-static inline struct journal_head *bh2jh(struct buffer_head *bh)
+-{
+-	return bh->b_private;
+-}
+-
+-static inline void jbd_lock_bh_state(struct buffer_head *bh)
+-{
+-	bit_spin_lock(BH_State, &bh->b_state);
+-}
+-
+-static inline int jbd_trylock_bh_state(struct buffer_head *bh)
+-{
+-	return bit_spin_trylock(BH_State, &bh->b_state);
+-}
+-
+-static inline int jbd_is_locked_bh_state(struct buffer_head *bh)
+-{
+-	return bit_spin_is_locked(BH_State, &bh->b_state);
+-}
+-
+-static inline void jbd_unlock_bh_state(struct buffer_head *bh)
+-{
+-	bit_spin_unlock(BH_State, &bh->b_state);
+-}
+-
+-static inline void jbd_lock_bh_journal_head(struct buffer_head *bh)
+-{
+-	bit_spin_lock(BH_JournalHead, &bh->b_state);
+-}
+-
+-static inline void jbd_unlock_bh_journal_head(struct buffer_head *bh)
+-{
+-	bit_spin_unlock(BH_JournalHead, &bh->b_state);
+-}
+-
+ /* Flags in jbd_inode->i_flags */
+ #define __JI_COMMIT_RUNNING 0
+ /* Commit of the inode data in progress. We use this flag to protect us from
+Index: linux-2.6/include/linux/jbd_common.h
+===================================================================
+--- /dev/null
++++ linux-2.6/include/linux/jbd_common.h
+@@ -0,0 +1,68 @@
++#ifndef _LINUX_JBD_STATE_H
++#define _LINUX_JBD_STATE_H
++
++enum jbd_state_bits {
++	BH_JBD			/* Has an attached ext3 journal_head */
++	  = BH_PrivateStart,
++	BH_JWrite,		/* Being written to log (@@@ DEBUGGING) */
++	BH_Freed,		/* Has been freed (truncated) */
++	BH_Revoked,		/* Has been revoked from the log */
++	BH_RevokeValid,		/* Revoked flag is valid */
++	BH_JBDDirty,		/* Is dirty but journaled */
++	BH_State,		/* Pins most journal_head state */
++	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
++	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
++	BH_JBDPrivateStart,	/* First bit available for private use by FS */
++};
++
++BUFFER_FNS(JBD, jbd)
++BUFFER_FNS(JWrite, jwrite)
++BUFFER_FNS(JBDDirty, jbddirty)
++TAS_BUFFER_FNS(JBDDirty, jbddirty)
++BUFFER_FNS(Revoked, revoked)
++TAS_BUFFER_FNS(Revoked, revoked)
++BUFFER_FNS(RevokeValid, revokevalid)
++TAS_BUFFER_FNS(RevokeValid, revokevalid)
++BUFFER_FNS(Freed, freed)
++
++static inline struct buffer_head *jh2bh(struct journal_head *jh)
++{
++	return jh->b_bh;
++}
++
++static inline struct journal_head *bh2jh(struct buffer_head *bh)
++{
++	return bh->b_private;
++}
++
++static inline void jbd_lock_bh_state(struct buffer_head *bh)
++{
++	bit_spin_lock(BH_State, &bh->b_state);
++}
++
++static inline int jbd_trylock_bh_state(struct buffer_head *bh)
++{
++	return bit_spin_trylock(BH_State, &bh->b_state);
++}
++
++static inline int jbd_is_locked_bh_state(struct buffer_head *bh)
++{
++	return bit_spin_is_locked(BH_State, &bh->b_state);
++}
++
++static inline void jbd_unlock_bh_state(struct buffer_head *bh)
++{
++	bit_spin_unlock(BH_State, &bh->b_state);
++}
++
++static inline void jbd_lock_bh_journal_head(struct buffer_head *bh)
++{
++	bit_spin_lock(BH_JournalHead, &bh->b_state);
++}
++
++static inline void jbd_unlock_bh_journal_head(struct buffer_head *bh)
++{
++	bit_spin_unlock(BH_JournalHead, &bh->b_state);
++}
++
++#endif
