@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935445Ab1JEWB7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:01:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34779 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935355Ab1JEWB6 (ORCPT
+	id S935453Ab1JEWDd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 18:03:33 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59933 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935355Ab1JEWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:01:58 -0400
-Date: Thu, 6 Oct 2011 00:01:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Adrian Bunk <bunk@stusta.de>
-cc: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Andrew Morton <akpm00@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-In-Reply-To: <20111005214047.GE14406@localhost.pp.htv.fi>
-Message-ID: <alpine.LFD.2.02.1110052346080.18778@ionos>
-References: <20111005214047.GE14406@localhost.pp.htv.fi>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 5 Oct 2011 18:03:32 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <4E8980A6.8000905@linux.vnet.ibm.com>
+References: <CAG1a4rtrh7=+gr=kUGO6y4wt926F8rBusOcFgvu4CmvrmR5PCw@mail.gmail.com>
+ <1317358146.9597.11.camel@PavelComp> <4E8980A6.8000905@linux.vnet.ibm.com>
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Wed, 5 Oct 2011 18:03:01 -0400
+Message-ID: <CAG1a4ruZM6F8yWRRAuq9aKv+F1woQz7TS3xUCM+Tx8gzq66G_Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] Allow for stack traces to be printed on serial console
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Oct 2011, Adrian Bunk wrote:
+On Mon, Oct 3, 2011 at 5:30 AM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 09/30/2011 10:19 AM, Pavel Ivanov wrote:
+>> When I tried to chase some mysterious lockup of my PC the only means to
+>> see some error reports for me was serial console. But it looks like only
+>> printk with KERN_ERR is sent to serial console. So when hung task
+>> detector tried to show me stack traces for hung tasks I didn't see them
+>> on serial console and I didn't see them after reboot as they couldn't be
+>> saved to dmesg. Thus the following patch allowed me to actually see
+>> those stack traces.
+>
+> Which kernel messages gets displayed on your serial console is controlled by
+> your system configuration which can be altered by modifying /etc/rsyslog.conf
+> or /etc/sysconfig/syslog.conf
+> There you can specify that you want to print every kernel message by specifying
+> kern.* for example.
 
-> After upgrading a kernel the existing userspace should just work
-> (assuming it did work before ;-) ), but when I upgraded my kernel
-> from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
-> 
-> dmesg said:
->   linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
->   linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
-> 
-> Looking throught the changelog I ended up at commit 3ae36655
-> ("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
-> 
-> Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to 
-> vsyscall=native.
-> 
-> That sounds reasonable to me, and fixes the problem for me.
+I've tried to add "kern.* /dev/ttyS0" and "*.* /dev/ttyS0" to
+/etc/rsyslog.conf but it didn't help at all.
 
-NAK.
+> There are also some kernel command line options you can use to specify which
+> level of kernel messages you want to get displayed.
 
-We have way too long listened to people who insisted that we keep all
-known security holes open by default for the sake of backwards
-compatibility.
+I've tried to add loglevel=7 as bootup parameter but it didn't help.
+Then I've tried to
+"echo $'7\t7\t1\t7' >/proc/sys/kernel/printk" and it helped a little
+(message with level KERN_INFO was printed from sched_show_task() to
+serial console). But still I wasn't able to see stack traces. Do I
+miss something?
 
-Default wants to be restricted and not the other way round. Forcing
-people to loosen restrictions makes them aware of the problem. Not
-doing so keeps them in the illusion that stuff is just safe to use.
+> Since you clearly have a system configuration problem here, you don't need to alter the
+> kernel source to print with KERN_ERR everywhere. Doing that would also defeat the very
+> purpose of having that nice distinction between informational messages, error messages
+> and so on, isn't it?
 
-We might need better dmesg output, e.g.
+Sure. But what configuration parameter should I tune?
 
-   printk_once("you might run something which requires
-   		vsyscall=native, but be aware that you are
-		opening a security hole. See Documentation/....")
+I proposed this patch because I didn't believe that there can be cases
+when kernel wants to print stack trace and somebody looking at serial
+console doesn't want to see it. But of course I can live with some
+configuration parameter as long as I find it.
 
-That's fine, but making the defaults insecure is just ass backwards.
 
-Thanks,
-
-	tglx
+>> I believe kernel prints stack traces only in some serious cases and
+>> expects that they would be actually seen, so KERN_ERR looks justified
+>> for me in all changed places. I understand that patch is incomplete and
+>> would need some other places to be changed for consistency (at least
+>> other arch code). But first I want to hear comments on whether this
+>> approach is good enough to be included in mainline or it should be left
+>> for me as a hack.
