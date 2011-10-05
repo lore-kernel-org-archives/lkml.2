@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855Ab1JEGjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 02:39:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756193Ab1JEGjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 02:39:12 -0400
-Date: Wed, 5 Oct 2011 08:39:45 -0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "peter.maydell@linaro.org" <peter.maydell@linaro.org>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH] virtio: Add platform bus driver for memory mapped virtio
- device
-Message-ID: <20111005103944.GB5587@redhat.com>
-References: <1317217663-32647-1-git-send-email-pawel.moll@arm.com>
- <878vp1iqpz.fsf@rustcorp.com.au>
- <1317745002.3158.340.camel@hornet.cambridge.arm.com>
- <87aa9ggs4k.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87aa9ggs4k.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933894Ab1JEGk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 02:40:58 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45552 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab1JEGk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 02:40:57 -0400
+Subject: [PATCH 1/2] ASoC: Remove unused function declaration in imx-ssi.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Oct 2011 14:40:46 +0800
+Message-ID: <1317796846.21481.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 11:40:51AM +1030, Rusty Russell wrote:
-> The absolute maximum is a ring of 32k elements, which is about 850k.
-> That seems a little excessive, though.
+These functions are removed in commit f0fba2ad
+"ASoC: multi-component - ASoC Multi-Component Support".
+Let's remove the leftover function declaration in header file.
 
-Given that it must be physically contigious and each descriptor
-is 64 byte in size + space for used and avail rings, yes it does :)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/imx/imx-ssi.h |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
+
+diff --git a/sound/soc/imx/imx-ssi.h b/sound/soc/imx/imx-ssi.h
+index 0a84cec..1072dfb 100644
+--- a/sound/soc/imx/imx-ssi.h
++++ b/sound/soc/imx/imx-ssi.h
+@@ -218,12 +218,6 @@ struct imx_ssi {
+ 	struct platform_device *soc_platform_pdev_fiq;
+ };
+ 
+-struct snd_soc_platform *imx_ssi_fiq_init(struct platform_device *pdev,
+-		struct imx_ssi *ssi);
+-void imx_ssi_fiq_exit(struct platform_device *pdev, struct imx_ssi *ssi);
+-struct snd_soc_platform *imx_ssi_dma_mx2_init(struct platform_device *pdev,
+-		struct imx_ssi *ssi);
+-
+ int snd_imx_pcm_mmap(struct snd_pcm_substream *substream, struct vm_area_struct *vma);
+ int imx_pcm_new(struct snd_soc_pcm_runtime *rtd);
+ void imx_pcm_free(struct snd_pcm *pcm);
+-- 
+1.7.4.1
+
+
 
