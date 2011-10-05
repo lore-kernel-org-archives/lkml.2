@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294Ab1JEJjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 05:39:32 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:56247 "EHLO
+	id S934250Ab1JEJjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 05:39:31 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:56218 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934213Ab1JEJiL (ORCPT
+	with ESMTP id S934216Ab1JEJiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Oct 2011 05:38:11 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 12/16] drbd: fix race when forcefully disconnecting
-Date: Wed,  5 Oct 2011 11:38:00 +0200
-Message-Id: <1317807484-24628-13-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 13/16] drbd: fix thread stop deadlock
+Date: Wed,  5 Oct 2011 11:38:01 +0200
+Message-Id: <1317807484-24628-14-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317807484-24628-1-git-send-email-philipp.reisner@linbit.com>
 References: <1317807484-24628-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,223 +22,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-If a forced disconnect hits a restarting receiver right after it passed
-its final "if (C_DISCONNECTING)" test in drbdd_init(), but before it was
-actually restarted by drbd_thread_setup, we could be left with a
-connection stuck in C_DISCONNECTING, never reaching C_STANDALONE,
-which would be necessary to take it down or reconfigure it.
+There are races where the receiver may be exiting,
+but still need the worker to process some stuff.
 
-Move the last cleanup into w_after_conn_state_ch(), and do an additional
-state change request in conn_try_disconnect(), just in case.
+Do not wait for the receiver to die from an exiting worker.
+The receiver must already be dead in case the worker decides to exit.
+If the receiver was still alive, it may still want to queue work, and do
+drbd_flush_workqueue() from it's disconnect cleanup code,
+which would no longer be processed by an exiting worker.
+
+This also would deadlock,
+if the worker was to synchornously wait for the receiver to die.
+
+Do not implicitly stop the worker.
+The worker will only be stopped from configuration context, from
+conn_reconfig_done(), drbd_adm_down() or drbd_adm_delete_connection(),
+after making sure the receiver is already stopped.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_nl.c       |   85 ++++++++++++++++++++----------------
- drivers/block/drbd/drbd_receiver.c |   14 +------
- drivers/block/drbd/drbd_state.c    |   13 ++++++
- 3 files changed, 62 insertions(+), 50 deletions(-)
+ drivers/block/drbd/drbd_main.c   |    2 +-
+ drivers/block/drbd/drbd_nl.c     |   14 ++++++++++----
+ drivers/block/drbd/drbd_state.c  |   14 --------------
+ drivers/block/drbd/drbd_worker.c |    4 ----
+ 4 files changed, 11 insertions(+), 23 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 1ea12d4..e0342d0 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -503,7 +503,7 @@ restart:
+ 	thi->task = NULL;
+ 	thi->t_state = NONE;
+ 	smp_mb();
+-	complete(&thi->stop);
++	complete_all(&thi->stop);
+ 	spin_unlock_irqrestore(&thi->t_lock, flags);
+ 
+ 	conn_info(tconn, "Terminating %s\n", current->comm);
 diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 0bf74b1..455b9a9 100644
+index 455b9a9..019f762 100644
 --- a/drivers/block/drbd/drbd_nl.c
 +++ b/drivers/block/drbd/drbd_nl.c
-@@ -2160,37 +2160,54 @@ out:
- static enum drbd_state_rv conn_try_disconnect(struct drbd_tconn *tconn, bool force)
+@@ -1072,10 +1072,16 @@ static void conn_reconfig_start(struct drbd_tconn *tconn)
+ /* if still unconfigured, stops worker again. */
+ static void conn_reconfig_done(struct drbd_tconn *tconn)
  {
- 	enum drbd_state_rv rv;
--	if (force) {
--		spin_lock_irq(&tconn->req_lock);
--		rv = _conn_request_state(tconn, NS(conn, C_DISCONNECTING), CS_HARD);
--		spin_unlock_irq(&tconn->req_lock);
--		return rv;
--	}
- 
--	rv = conn_request_state(tconn, NS(conn, C_DISCONNECTING), 0);
-+	rv = conn_request_state(tconn, NS(conn, C_DISCONNECTING),
-+			force ? CS_HARD : 0);
- 
- 	switch (rv) {
- 	case SS_NOTHING_TO_DO:
-+		break;
- 	case SS_ALREADY_STANDALONE:
- 		return SS_SUCCESS;
- 	case SS_PRIMARY_NOP:
- 		/* Our state checking code wants to see the peer outdated. */
- 		rv = conn_request_state(tconn, NS2(conn, C_DISCONNECTING,
--							pdsk, D_OUTDATED), CS_VERBOSE);
-+						pdsk, D_OUTDATED), CS_VERBOSE);
- 		break;
- 	case SS_CW_FAILED_BY_PEER:
- 		/* The peer probably wants to see us outdated. */
- 		rv = conn_request_state(tconn, NS2(conn, C_DISCONNECTING,
- 							disk, D_OUTDATED), 0);
- 		if (rv == SS_IS_DISKLESS || rv == SS_LOWER_THAN_OUTDATED) {
--			conn_request_state(tconn, NS(conn, C_DISCONNECTING), CS_HARD);
--			rv = SS_SUCCESS;
-+			rv = conn_request_state(tconn, NS(conn, C_DISCONNECTING),
-+					CS_HARD);
- 		}
- 		break;
- 	default:;
- 		/* no special handling necessary */
- 	}
- 
-+	if (rv >= SS_SUCCESS) {
-+		enum drbd_state_rv rv2;
-+		/* No one else can reconfigure the network while I am here.
-+		 * The state handling only uses drbd_thread_stop_nowait(),
-+		 * we want to really wait here until the receiver is no more.
-+		 */
-+		drbd_thread_stop(&adm_ctx.tconn->receiver);
-+
-+		/* Race breaker.  This additional state change request may be
-+		 * necessary, if this was a forced disconnect during a receiver
-+		 * restart.  We may have "killed" the receiver thread just
-+		 * after drbdd_init() returned.  Typically, we should be
-+		 * C_STANDALONE already, now, and this becomes a no-op.
-+		 */
-+		rv2 = conn_request_state(tconn, NS(conn, C_STANDALONE),
-+				CS_VERBOSE | CS_HARD);
-+		if (rv2 < SS_SUCCESS)
-+			conn_err(tconn,
-+				"unexpected rv2=%d in conn_try_disconnect()\n",
-+				rv2);
++	bool stop_threads;
+ 	spin_lock_irq(&tconn->req_lock);
+-	if (conn_all_vols_unconf(tconn))
+-		drbd_thread_stop_nowait(&tconn->worker);
++	stop_threads = conn_all_vols_unconf(tconn);
+ 	spin_unlock_irq(&tconn->req_lock);
++	if (stop_threads) {
++		/* asender is implicitly stopped by receiver
++		 * in drbd_disconnect() */
++		drbd_thread_stop(&tconn->receiver);
++		drbd_thread_stop(&tconn->worker);
 +	}
- 	return rv;
  }
  
-@@ -2221,19 +2238,9 @@ int drbd_adm_disconnect(struct sk_buff *skb, struct genl_info *info)
+ /* Make sure IO is suspended before calling this function(). */
+@@ -3169,7 +3175,6 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
  
- 	rv = conn_try_disconnect(tconn, parms.force_disconnect);
- 	if (rv < SS_SUCCESS)
--		goto fail;
+ 	/* delete connection */
+ 	if (conn_lowest_minor(adm_ctx.tconn) < 0) {
+-		drbd_thread_stop(&adm_ctx.tconn->worker);
+ 		list_del(&adm_ctx.tconn->all_tconn);
+ 		kref_put(&adm_ctx.tconn->kref, &conn_destroy);
+ 
+@@ -3179,7 +3184,6 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
+ 		retcode = ERR_CONN_IN_USE;
+ 		drbd_msg_put_info("failed to delete connection");
+ 	}
 -
--	/* No one else can reconfigure the network while I am here.
--	 * The state handling only uses drbd_thread_stop_nowait(),
--	 * we want to really wait here until the receiver is no more. */
--	drbd_thread_stop(&tconn->receiver);
--	if (wait_event_interruptible(tconn->ping_wait,
--				     tconn->cstate == C_STANDALONE)) {
--		retcode = ERR_INTR;
--		goto fail;
--	}
--
--	retcode = NO_ERROR;
-+		retcode = rv;  /* FIXME: Type mismatch. */
-+	else
-+		retcode = NO_ERROR;
-  fail:
+ 	up_write(&drbd_cfg_rwsem);
+ 	goto out;
+ out_unlock:
+@@ -3210,6 +3214,8 @@ int drbd_adm_delete_connection(struct sk_buff *skb, struct genl_info *info)
+ 	}
+ 	up_write(&drbd_cfg_rwsem);
+ 
++	if (retcode == NO_ERROR)
++		drbd_thread_stop(&adm_ctx.tconn->worker);
+ out:
  	drbd_adm_finish(info, retcode);
  	return 0;
-@@ -3095,8 +3102,7 @@ out:
- 
- int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
- {
--	enum drbd_ret_code retcode;
--	enum drbd_state_rv rv;
-+	int retcode; /* enum drbd_ret_code rsp. enum drbd_state_rv */
- 	struct drbd_conf *mdev;
- 	unsigned i;
- 
-@@ -3120,30 +3126,35 @@ int drbd_adm_down(struct sk_buff *skb, struct genl_info *info)
- 			goto out_unlock;
- 		}
- 	}
-+	up_read(&drbd_cfg_rwsem);
- 
--	/* disconnect */
--	rv = conn_try_disconnect(adm_ctx.tconn, 0);
--	if (rv < SS_SUCCESS) {
--		retcode = rv; /* enum type mismatch! */
-+	/* disconnect; may stop the receiver;
-+	 * must not hold the drbd_cfg_rwsem */
-+	retcode = conn_try_disconnect(adm_ctx.tconn, 0);
-+	if (retcode < SS_SUCCESS) {
- 		drbd_msg_put_info("failed to disconnect");
--		goto out_unlock;
-+		goto out;
- 	}
- 
--	/* Make sure the network threads have actually stopped,
--	 * state handling only does drbd_thread_stop_nowait(). */
--	drbd_thread_stop(&adm_ctx.tconn->receiver);
--
-+	down_read(&drbd_cfg_rwsem);
- 	/* detach */
- 	idr_for_each_entry(&adm_ctx.tconn->volumes, mdev, i) {
--		rv = adm_detach(mdev);
--		if (rv < SS_SUCCESS) {
--			retcode = rv; /* enum type mismatch! */
-+		retcode = adm_detach(mdev);
-+		if (retcode < SS_SUCCESS) {
- 			drbd_msg_put_info("failed to detach");
- 			goto out_unlock;
- 		}
- 	}
- 	up_read(&drbd_cfg_rwsem);
- 
-+	/* If we reach this, all volumes (of this tconn) are Secondary,
-+	 * Disconnected, Diskless, aka Unconfigured. Make sure all threads have
-+	 * actually stopped, state handling only does drbd_thread_stop_nowait().
-+	 * This needs to be done without holding drbd_cfg_rwsem. */
-+	drbd_thread_stop(&adm_ctx.tconn->worker);
-+
-+	/* Now, nothing can fail anymore */
-+
- 	/* delete volumes */
- 	down_write(&drbd_cfg_rwsem);
- 	idr_for_each_entry(&adm_ctx.tconn->volumes, mdev, i) {
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 9c8bcce..956cdda 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4213,20 +4213,8 @@ static void drbd_disconnect(struct drbd_tconn *tconn)
- 
- 	spin_unlock_irq(&tconn->req_lock);
- 
--	if (oc == C_DISCONNECTING) {
--		struct net_conf *old_conf;
--
--		mutex_lock(&tconn->net_conf_update);
--		old_conf = tconn->net_conf;
--		rcu_assign_pointer(tconn->net_conf, NULL);
--		conn_free_crypto(tconn);
--		mutex_unlock(&tconn->net_conf_update);
--
--		synchronize_rcu();
--		kfree(old_conf);
--
-+	if (oc == C_DISCONNECTING)
- 		conn_request_state(tconn, NS(conn, C_STANDALONE), CS_VERBOSE | CS_HARD);
--	}
- }
- 
- static int drbd_disconnected(int vnr, void *p, void *data)
 diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 978dcef..f2e1535 100644
+index f2e1535..327a75e 100644
 --- a/drivers/block/drbd/drbd_state.c
 +++ b/drivers/block/drbd/drbd_state.c
-@@ -1398,6 +1398,19 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
- 	if (oc == C_STANDALONE && ns_max.conn == C_UNCONNECTED)
- 		drbd_thread_start(&tconn->receiver);
+@@ -41,7 +41,6 @@ extern void _tl_restart(struct drbd_tconn *, enum drbd_req_event what);
+ static int w_after_state_ch(struct drbd_work *w, int unused);
+ static void after_state_ch(struct drbd_conf *mdev, union drbd_state os,
+ 			   union drbd_state ns, enum chg_state_flags flags);
+-static void after_all_state_ch(struct drbd_tconn *tconn);
+ static enum drbd_state_rv is_valid_state(struct drbd_conf *, union drbd_state);
+ static enum drbd_state_rv is_valid_soft_transition(union drbd_state, union drbd_state);
+ static enum drbd_state_rv is_valid_transition(union drbd_state os, union drbd_state ns);
+@@ -1362,8 +1361,6 @@ static void after_state_ch(struct drbd_conf *mdev, union drbd_state os,
+ 			resume_next_sg(mdev);
+ 	}
  
-+	if (oc == C_DISCONNECTING && ns_max.conn == C_STANDALONE) {
-+		struct net_conf *old_conf;
-+
-+		mutex_lock(&tconn->net_conf_update);
-+		old_conf = tconn->net_conf;
-+		rcu_assign_pointer(tconn->net_conf, NULL);
-+		conn_free_crypto(tconn);
-+		mutex_unlock(&tconn->net_conf_update);
-+
-+		synchronize_rcu();
-+		kfree(old_conf);
-+	}
-+
- 	if (ns_max.susp_fen) {
- 		/* case1: The outdate peer handler is successful: */
- 		if (ns_max.pdsk <= D_OUTDATED) {
+-	after_all_state_ch(mdev->tconn);
+-
+ 	drbd_md_sync(mdev);
+ }
+ 
+@@ -1375,12 +1372,6 @@ struct after_conn_state_chg_work {
+ 	enum chg_state_flags flags;
+ };
+ 
+-static void after_all_state_ch(struct drbd_tconn *tconn)
+-{
+-	if (conn_all_vols_unconf(tconn))
+-		drbd_thread_stop_nowait(&tconn->worker);
+-}
+-
+ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
+ {
+ 	struct after_conn_state_chg_work *acscw =
+@@ -1443,12 +1434,7 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
+ 			spin_unlock_irq(&tconn->req_lock);
+ 		}
+ 	}
+-
+-
+-	//conn_err(tconn, STATE_FMT, STATE_ARGS("nms", nms));
+-	after_all_state_ch(tconn);
+ 	kref_put(&tconn->kref, &conn_destroy);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 0eed488..f22288b1 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -1744,10 +1744,6 @@ int drbd_worker(struct drbd_thread *thi)
+ 	 */
+ 	spin_unlock_irq(&tconn->data.work.q_lock);
+ 
+-	/* _drbd_set_state only uses stop_nowait.
+-	 * wait here for the exiting receiver. */
+-	drbd_thread_stop(&tconn->receiver);
+-
+ 	down_read(&drbd_cfg_rwsem);
+ 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
+ 		D_ASSERT(mdev->state.disk == D_DISKLESS && mdev->state.conn == C_STANDALONE);
 -- 
 1.7.4.1
 
