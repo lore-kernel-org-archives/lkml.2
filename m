@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab1JESuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:50:09 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34225 "EHLO
+	id S1758033Ab1JESwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:52:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34237 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933846Ab1JESuH (ORCPT
+	with ESMTP id S1753139Ab1JESwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:50:07 -0400
-Date: Wed, 5 Oct 2011 20:49:54 +0200 (CEST)
+	Wed, 5 Oct 2011 14:52:23 -0400
+Date: Wed, 5 Oct 2011 20:52:12 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Fenghua Yu <fenghua.yu@intel.com>
 cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
@@ -16,12 +16,13 @@ cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
         Asit K Mallick <asit.k.mallick@intel.com>,
         Suresh B Siddha <suresh.b.siddha@intel.com>,
         Len Brown <lenb@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] x86, i387.c: thread xstate is initialized only on
- BSP once
-In-Reply-To: <1317832759-10223-4-git-send-email-fenghua.yu@intel.com>
-Message-ID: <alpine.LFD.2.02.1110052048290.18778@ionos>
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-4-git-send-email-fenghua.yu@intel.com>
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 4/8] kernel/workqueue.c: unbound work queue rescuer runs
+ on first cpu in cpumask_online_cpu
+In-Reply-To: <1317832759-10223-5-git-send-email-fenghua.yu@intel.com>
+Message-ID: <alpine.LFD.2.02.1110052050010.18778@ionos>
+References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com> <1317832759-10223-5-git-send-email-fenghua.yu@intel.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -36,46 +37,38 @@ On Wed, 5 Oct 2011, Fenghua Yu wrote:
 
 > From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> init_thread_xstate() is only called on BSP once to avoid to override
-> xstate_size.
-> 
+> If work queue is unbound to a specific cpu, run rescuer on first cpu in
+> cpumask_online_cpu instead BSP which could be offlined.
+
+This patch needs to be applied separate from that series as it fixes a
+bug which affects all architectures which can offline the boot cpu.
+
+Thanks,
+
+	tglx
+
+ 
 > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 > ---
->  arch/x86/kernel/i387.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
+>  kernel/workqueue.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 739d859..de2b48a 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
->  {
->  	unsigned long cr0;
->  	unsigned long cr4_mask = 0;
-> +	static int once;
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 1783aab..d26e411 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1496,9 +1496,9 @@ static bool send_mayday(struct work_struct *work)
 >  
->  	if (cpu_has_fxsr)
->  		cr4_mask |= X86_CR4_OSFXSR;
-> @@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
->  		cr0 |= X86_CR0_EM;
->  	write_cr0(cr0);
->  
-> -	if (!smp_processor_id())
-> +	/*
-> +	 * init_thread_xstate is only called on BSP once to avoid to override
-> +	 * xstate_size.
-> +	 */
-> +	if (!smp_processor_id() && once) {
-
-Brilliant change. Makes sure that init_thread_xstate() is NEVER
-called. Was this crap tested at all?
-
-> +		once = 0;
->  		init_thread_xstate();
-> +	}
->  
->  	mxcsr_feature_mask_init();
->  	/* clean state in init */
+>  	/* mayday mayday mayday */
+>  	cpu = cwq->gcwq->cpu;
+> -	/* WORK_CPU_UNBOUND can't be set in cpumask, use cpu 0 instead */
+> +	/* WORK_CPU_UNBOUND can't be set in cpumask, use first cpu instead */
+>  	if (cpu == WORK_CPU_UNBOUND)
+> -		cpu = 0;
+> +		cpu = cpumask_first(cpu_online_mask);
+>  	if (!mayday_test_and_set_cpu(cpu, wq->mayday_mask))
+>  		wake_up_process(wq->rescuer->task);
+>  	return true;
 > -- 
 > 1.6.0.3
 > 
