@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab1JESSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 14:18:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52033 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932812Ab1JESSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 14:18:16 -0400
-Message-ID: <1317838695.1782.43.camel@Joe-Laptop>
-Subject: Re: [alternate PATCH] block: fix UUID string buffer length
-From: Joe Perches <joe@perches.com>
-To: Vivek Goyal <vgoyal@redhat.com>, Huang Ying <ying.huang@intel.com>
-Cc: Will Drewry <wad@chromium.org>, Rabin Vincent <rabin@rab.in>,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org
-Date: Wed, 05 Oct 2011 11:18:15 -0700
-In-Reply-To: <20111005181131.GK30146@redhat.com>
-References: <1317808364-21081-1-git-send-email-rabin@rab.in>
-	 <CABqD9hYw3qcMpcjyEtvstYD-WRB=QkVPS5S0MBbah=veZv9E6A@mail.gmail.com>
-	 <1317833310.1782.33.camel@Joe-Laptop> <20111005181131.GK30146@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933930Ab1JEST1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 14:19:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14977 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932812Ab1JESTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 14:19:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJe_Zhc2hY0dZRRZrZMzrasnvZ-+c32gB2oaGdK0mtA6GcOQew@mail.gmail.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	<CABE8wwshrNc3dmzZ+nXSA4ZXO5OgvNwEApKTGW4ieSKu_YC5sw@mail.gmail.com>
+	<CAJe_Zhc2hY0dZRRZrZMzrasnvZ-+c32gB2oaGdK0mtA6GcOQew@mail.gmail.com>
+Date: Wed, 5 Oct 2011 11:19:23 -0700
+Message-ID: <CABE8wwvSRaJBED4E+dKo_SWAF93LA+Lqqdb1agqbMcROKxYQ8Q@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-05 at 14:11 -0400, Vivek Goyal wrote:
-> On Wed, Oct 05, 2011 at 09:48:30AM -0700, Joe Perches wrote:
-> > The UUID string buffer is several bytes shorter than what is actually
-> > required.  Fix it and remove the used once inline part_unpack_uuid,
-> > use snprintf and printf extension %pU directly.
-> > 
-> > Based-on-a-patch-by: Rabin Vincent <rabin@rab.in>
-> > cc: Will Drewry <wad@chromium.org>
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  block/genhd.c         |    8 +++++---
-> >  include/linux/genhd.h |    6 ------
-> >  2 files changed, 5 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/block/genhd.c b/block/genhd.c
-> > index e2f6790..427c955 100644
-> > --- a/block/genhd.c
-> > +++ b/block/genhd.c
-> > @@ -735,7 +735,7 @@ void __init printk_all_partitions(void)
-> >  		struct hd_struct *part;
-> >  		char name_buf[BDEVNAME_SIZE];
-> >  		char devt_buf[BDEVT_SIZE];
-> > -		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
-> > +		char uuid[sizeof("12345678-1234-1234-1234-123456789012")];
-> 
-> will following look better.
-> 
-> char uuid [PARTITION_META_INFO_UUIDLTH * 2 + 5]
-> 
-> 4 bytes for hyphen and 1 for NULL.
+On Mon, Oct 3, 2011 at 11:23 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> You are assuming only Slave usage.
+> src_inc/dst_inc are mainly for 'Memset' type operation.
 
-Perhaps include/linux/uuid.h could be extended to provide
-some #defines for the various UUID lengths.
- 
+There currently are not any users of offloaded memset in the kernel,
+do you have one in mind?  Otherwise I would not design for it this
+early.
 
+> In Slave transfer they would help avoid allocating full length RX buffer
+> when the client only wants to send data but the controller works
+> only in full-duplex and vice-versa (thanks to RMK for pointing the case,
+> and I remember S3C24XX do have such SPI controller).
+> More generally when one needs to transmit the same data, or discard
+> the received data, for a certain period of time.
 
+In the slave case I would think the driver would know the address
+increment attributes of the slave and would not need to be told on
+each operation by the client?
