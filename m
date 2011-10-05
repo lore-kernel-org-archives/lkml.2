@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935499Ab1JEWls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 18:41:48 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48625 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935480Ab1JEWlq convert rfc822-to-8bit (ORCPT
+	id S935495Ab1JEWrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 18:47:04 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64908 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934900Ab1JEWrC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 18:41:46 -0400
+	Wed, 5 Oct 2011 18:47:02 -0400
 MIME-Version: 1.0
 In-Reply-To: <20111005223055.GG14406@localhost.pp.htv.fi>
-References: <20111003090846.GA25136@localhost.pp.htv.fi>
-	<CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
-	<20111003173359.GA3072@localhost.pp.htv.fi>
-	<CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
-	<CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com>
-	<20111005223055.GG14406@localhost.pp.htv.fi>
-Date: Thu, 6 Oct 2011 00:41:45 +0200
-Message-ID: <CAFLxGvyL0Mx-9Jru_bt19zipi3AjB+eGPZZC-LsosqaAmfGr2A@mail.gmail.com>
+References: <20111003090846.GA25136@localhost.pp.htv.fi> <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
+ <20111003173359.GA3072@localhost.pp.htv.fi> <CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
+ <CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com> <20111005223055.GG14406@localhost.pp.htv.fi>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 5 Oct 2011 15:46:41 -0700
+X-Google-Sender-Auth: Wm9Xw0mKO53CM0DEl4wq8XZGkU8
+Message-ID: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
 Subject: Re: [3.1 patch] x86: default to vsyscall=native
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
 To: Adrian Bunk <bunk@stusta.de>
-Cc: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
@@ -30,7 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 6, 2011 at 12:30 AM, Adrian Bunk <bunk@stusta.de> wrote:
+On Wed, Oct 5, 2011 at 3:30 PM, Adrian Bunk <bunk@stusta.de> wrote:
 > On Thu, Oct 06, 2011 at 12:22:34AM +0200, richard -rw- weinberger wrote:
 >> On Thu, Oct 6, 2011 at 12:13 AM, Andrew Lutomirski <luto@mit.edu> wrote:
 >> > On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
@@ -112,14 +111,8 @@ On Thu, Oct 6, 2011 at 12:30 AM, Adrian Bunk <bunk@stusta.de> wrote:
 >
 > I gave the information that was requested. plus my observations.
 >
+> What more information exactly do you need from me?
 
-Whoops, the mail containing that information did not make it into my
-head, sorry.
-Now I know where to look for...
+None :)  I just reproduced the problem with Debian Squeeze.  Lenny works fine.
 
-BTW: Can you please test 3.1-rcX as UML kernel? It contains
-vDSO/vsyscall fixes...
-
--- 
-Thanks,
-//richard
+--Andy
