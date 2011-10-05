@@ -1,66 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934965Ab1JEQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 12:26:09 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:37597 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934476Ab1JEQ0G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 12:26:06 -0400
-Date: Wed, 5 Oct 2011 09:26:00 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jon Mason <mason@myri.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 2/3] pci: Clamp pcie_set_readrq() when using
- "performance" settings
-Message-ID: <20111005092600.36d505b2@jbarnes-desktop>
-In-Reply-To: <CA+55aFwoeC+X=XWWJ7HFUfz6tZmJW6PMmkGcRM5otLbyGt587Q@mail.gmail.com>
-References: <1317653420-21404-3-git-send-email-mason@myri.com>
-	<CA+55aFyyx99Z4=x-Twp7JCpU=JHPzP8HRdLc4H3NOGHNQq9jCw@mail.gmail.com>
-	<1317742838.29415.217.camel@pasglop>
-	<CA+55aFzFWC3Acp0bwx33CgUZ9NgiDdJ8H=yNOdb0xmLsAAJZxQ@mail.gmail.com>
-	<1317744493.29415.238.camel@pasglop>
-	<CA+55aFyV9uqTt6UHA2wsAdRHHCSAtCSmoO2d3dm62HAo+s75Sg@mail.gmail.com>
-	<1317749439.29415.251.camel@pasglop>
-	<CA+55aFyOcb2y1QVaTNssWFU+nCee8RSs9-wZ-ARnFWcF5MdGSA@mail.gmail.com>
-	<1317798113.29415.270.camel@pasglop>
-	<CA+55aFwoeC+X=XWWJ7HFUfz6tZmJW6PMmkGcRM5otLbyGt587Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S934984Ab1JEQ07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 12:26:59 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40826 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934476Ab1JEQ06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 12:26:58 -0400
+Date: Wed, 5 Oct 2011 21:39:34 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonathan Corbet <corbet@lwn.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 5/26]   Uprobes: copy of the original
+ instruction.
+Message-ID: <20111005160934.GC806@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120057.25326.63780.sendpatchset@srdronam.in.ibm.com>
+ <20111003162905.GA3752@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20111003162905.GA3752@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Oct 2011 07:49:24 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Oleg Nesterov <oleg@redhat.com> [2011-10-03 18:29:05]:
 
-> On Wed, Oct 5, 2011 at 12:01 AM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
+> On 09/20, Srikar Dronamraju wrote:
 > >
-> >> We just don't the hell know, do we?
-> >
-> > Well, we do with some confidence :-) Or rather what we do know is what
-> > you have today in your tree is broken.
+> > +static int __copy_insn(struct address_space *mapping,
+> > +			struct vm_area_struct *vma, char *insn,
+> > +			unsigned long nbytes, unsigned long offset)
+> > +{
+> > +	struct file *filp = vma->vm_file;
+> > +	struct page *page;
+> > +	void *vaddr;
+> > +	unsigned long off1;
+> > +	unsigned long idx;
+> > +
+> > +	if (!filp)
+> > +		return -EINVAL;
+> > +
+> > +	idx = (unsigned long) (offset >> PAGE_CACHE_SHIFT);
+> > +	off1 = offset &= ~PAGE_MASK;
+> > +
+> > +	/*
+> > +	 * Ensure that the page that has the original instruction is
+> > +	 * populated and in page-cache.
+> > +	 */
 > 
-> You're missing the point.
+> Hmm. But how we can ensure?
 > 
-> Repeat after me: late -rc series is not when we test these kinds of things.
+> > +	page_cache_sync_readahead(mapping, &filp->f_ra, filp, idx, 1);
+> 
+> This schedules the i/o,
+> 
+> > +	page = grab_cache_page(mapping, idx);
+> 
+> This finds/locks the page in the page-cache,
+> 
+> > +	if (!page)
+> > +		return -ENOMEM;
+> > +
+> > +	vaddr = kmap_atomic(page);
+> > +	memcpy(insn, vaddr + off1, nbytes);
+> 
+> What if this page is not PageUptodate() ?
+> 
+> Somehow this assumes that the i/o was already completed, I don't
+> understand this.
+> 
+> But I am starting to think I simply do not understand this change.
+> To the point, I do not underestand why do we need copy_insn() at all.
+> We are going to replace this page, can't we save/analyze ->insn later
+> when we copy the content of the old page? Most probably I missed
+> something simple...
+> 
 
-Yeah I think Ben just wants the convenience of having the non-default
-code paths fixed when 3.1 comes out; but I agree we shouldn't be poking
-around at all at this point.
+Copying the instruction at the time we replace the original instruction
+would have been ideal. However there are a few irritants to handle.
 
-Hopefully I'll get my kernel.org tree back up and running this week so
-I can queue up the various fixes for the merge window.  I'll do another
-scan and ask people to send directly to you for the 2 or 3 things we
-still have open for 3.1.
+ - While inserting the breakpoint, we might find that the original
+   instruction to be the breakpoint instruction itself. (This could
+   happen if mmap_uprobe were to race with register_uprobe() or somebody
+   else like gdb inserted a breakpoint). How do we distinguish if the
+   breakpoint instruction was around in the text or somebody inserted a
+   breakpoint in that address-space? Since we read from the page-cache,
+   we can easily resolve this.
 
-Thanks,
+-  On archs like x86, with variable size instructions, the original
+   instruction can be across 2 pages. This is because we copy the
+   maximum instruction size from the given vaddr into a buffer for
+   subsequent analysis. So the copy_insn takes care of getting two pages
+   if and when required. 
+   Currently the insert and remove breakpoint
+   assumes that the instruction size of a breakpoint is the smallest
+   size for that architecture. Hence reading/writing to one page in
+   write_opcode is good enough.
+
+-  Again on variable instruction size supporting archs, if two
+   subsequent instructions are probed, the original instruction if
+   copied using get_user_pages might already have a breakpoint included.
+   (This shouldnt have any effect on the uprobes though.)
+
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks and Regards
+Srikar
