@@ -1,432 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934664Ab1JENAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 09:00:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44287 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934365Ab1JENAR (ORCPT
+	id S934674Ab1JENJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 09:09:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54163 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934332Ab1JENJg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 09:00:17 -0400
-Message-ID: <4E8C54DC.6040700@gmail.com>
-Date: Wed, 05 Oct 2011 08:00:12 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] AT91: dt: at91sam9g45 family and board device tree
- files
-References: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1317636056-9537-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Oct 2011 09:09:36 -0400
+Subject: [PATCH] mm, arch: Complete pagefault_disable abstraction
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 05 Oct 2011 15:09:29 +0200
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317820169.6766.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas,
+Subject: mm, arch: Complete pagefault_disable abstraction
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Wed Oct 05 14:22:37 CEST 2011
 
-On 10/03/2011 05:00 AM, Nicolas Ferre wrote:
-> Create a new device tree source file for Atmel at91sam9g45 SoC family.
-> The Evaluation Kit at91sam9m10g45ek includes it.
-> This first basic support will be populated as drivers and boards will be
-> converted to device tree.
-> Contains serial, dma and interrupt controllers.
-> 
-> The generic board file still takes advantage of platform data for early serial
-> init. As we need a storage media and the NAND flash driver is not converted to
-> DT yet, we keep old initialization for it.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> V2: foundation for AT91SAM generic support
-> - device tree focused board file
-> - inclusion of USART DT support
-> - early USART and NAND still using platform data
-> 
->  arch/arm/boot/dts/at91sam9g45.dtsi       |  103 +++++++++++++++++++++++++
->  arch/arm/boot/dts/at91sam9m10g45ek.dts   |   37 +++++++++
->  arch/arm/mach-at91/Kconfig               |   11 +++
->  arch/arm/mach-at91/Makefile              |    3 +
->  arch/arm/mach-at91/Makefile.boot         |    2 +
->  arch/arm/mach-at91/at91sam9g45_devices.c |   24 +++++--
->  arch/arm/mach-at91/board-dt.c            |  122 ++++++++++++++++++++++++++++++
->  7 files changed, 296 insertions(+), 6 deletions(-)
->  create mode 100644 arch/arm/boot/dts/at91sam9g45.dtsi
->  create mode 100644 arch/arm/boot/dts/at91sam9m10g45ek.dts
->  create mode 100644 arch/arm/mach-at91/board-dt.c
-> 
-> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-> new file mode 100644
-> index 0000000..7d3341f
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-> @@ -0,0 +1,103 @@
-> +/*
-> + * at91sam9g45.dtsi - Device Tree Include file for AT91SAM9G45 family SoC
-> + *                    applies to AT91SAM9G45, AT91SAM9M10,
-> + *                    AT91SAM9G46, AT91SAM9M11 SoC
-> + *
-> + *  Copyright (C) 2011 Atmel,
-> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +
-> +/include/ "skeleton.dtsi"
-> +
-> +/ {
-> +	model = "Atmel AT91SAM9G45 family SoC";
-> +	compatible = "atmel,at91sam9g45";
-> +	interrupt-parent = <&aic>;
-> +
-> +	aliases {
-> +		serial0 = &dbgu;
-> +		serial1 = &usart0;
-> +		serial2 = &usart1;
-> +		serial3 = &usart2;
-> +		serial4 = &usart3;
-> +	};
-> +	cpus {
-> +		cpu@0 {
-> +			compatible = "arm,arm926ejs";
-> +		};
-> +	};
-> +
-> +	memory {
+Currently we already have pagefault_{disable,enable}() but they're
+nothing more than a glorified preempt_{disable,enable}().
 
-Should be memory@0x70000000
+For -rt we want to make pagefault_disable() regions preemptible and
+for that we need to complete the abstraction, replace the current
+in_atomic() tests that are relevant to pagefault_disable() usage with
+pagefault_disabled().
 
-> +		reg = <0x70000000 0x10000000>;
-> +	};
-> +
-> +	ahb {
-> +		compatible = "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +
-> +		apb {
-> +			compatible = "simple-bus";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +
-> +			aic: interrupt-controller@fffff000 {
-> +				#interrupt-cells = <1>;
-> +				compatible = "atmel,at91rm9200-aic";
-> +				interrupt-controller;
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/alpha/mm/fault.c      |    2 +-
+ arch/arm/mm/fault.c        |    2 +-
+ arch/avr32/mm/fault.c      |    2 +-
+ arch/cris/mm/fault.c       |    2 +-
+ arch/frv/mm/fault.c        |    2 +-
+ arch/ia64/mm/fault.c       |    2 +-
+ arch/m32r/mm/fault.c       |    2 +-
+ arch/m68k/mm/fault.c       |    2 +-
+ arch/microblaze/mm/fault.c |    2 +-
+ arch/mips/mm/fault.c       |    2 +-
+ arch/mn10300/mm/fault.c    |    2 +-
+ arch/parisc/mm/fault.c     |    2 +-
+ arch/powerpc/mm/fault.c    |    2 +-
+ arch/s390/mm/fault.c       |    6 ++++--
+ arch/score/mm/fault.c      |    2 +-
+ arch/sh/mm/fault_32.c      |    2 +-
+ arch/sparc/mm/fault_32.c   |    4 ++--
+ arch/sparc/mm/fault_64.c   |    2 +-
+ arch/tile/mm/fault.c       |    2 +-
+ arch/um/kernel/trap.c      |    2 +-
+ arch/unicore32/mm/fault.c  |    2 +-
+ arch/x86/mm/fault.c        |    2 +-
+ arch/xtensa/mm/fault.c     |    2 +-
+ include/linux/sched.h      |    6 ++++++
+ mm/filemap.c               |    2 +-
+ 25 files changed, 34 insertions(+), 26 deletions(-)
 
-Add "interrupt-parent;" so that the aic is not the parent of itself.
-
-> +				reg = <0xfffff000 0x200>;
-> +			};
-> +
-> +			dma: dma-controller@ffffec00 {
-> +				compatible = "atmel,at91sam9g45-hdmac";
-> +				reg = <0xffffec00 0x200>;
-> +				interrupts = <21>;
-> +				atmel,hdmac-nr-channels = <8>;
-> +				atmel,hdmac-cap-memcpy;
-> +				atmel,hdmac-cap-slave;
-> +			};
-> +
-> +			dbgu: serial@ffffee00 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xffffee00 0x200>;
-> +				interrupts = <1>;
-> +			};
-> +
-> +			usart0: serial@fff8c000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfff8c000 0x4000>;
-
-Is 16K really used? I would set to 4K so your not wasting virtual space
-(probably not an issue yet on Atmel parts).
-
-> +				interrupts = <7>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +			};
-> +
-> +			usart1: serial@fff90000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfff90000 0x4000>;
-> +				interrupts = <8>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +			};
-> +
-> +			usart2: serial@fff94000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfff94000 0x4000>;
-> +				interrupts = <9>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +			};
-> +
-> +			usart3: serial@fff98000 {
-> +				compatible = "atmel,at91sam9260-usart";
-> +				reg = <0xfff98000 0x4000>;
-> +				interrupts = <10>;
-> +				atmel,use-dma-rx;
-> +				atmel,use-dma-tx;
-> +			};
-> +		};
-> +	};
-> +};
-> diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> new file mode 100644
-> index 0000000..cf743de
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-> @@ -0,0 +1,37 @@
-> +/*
-> + * at91sam9m10g45ek.dts - Device Tree file for AT91SAM9M10G45-EK board
-> + *
-> + *  Copyright (C) 2011 Atmel,
-> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +/dts-v1/;
-> +/include/ "at91sam9g45.dtsi"
-> +
-> +/ {
-> +	model = "Atmel AT91SAM9M10G45-EK";
-> +	compatible = "atmel,at91sam9m10g45ek", "atmel,at91sam9g45", "atmel,at91sam9";
-> +
-> +	chosen {
-> +		bootargs = "mem=64M console=ttyS0,115200 mtdparts=atmel_nand:4M(bootstrap/uboot/kernel)ro,60M(rootfs),-(data) root=/dev/mtdblock1 rw rootfstype=jffs2";
-> +	};
-> +
-> +	memory {
-> +		reg = <0x70000000 0x4000000>;
-> +	};
-> +
-> +	ahb {
-> +		apb {
-> +			usart0: serial@fff8c000 {
-> +				status = "disabled";
-> +			};
-> +			usart2: serial@fff94000 {
-> +				status = "disabled";
-> +			};
-> +			usart3: serial@fff98000 {
-> +				status = "disabled";
-> +			};
-> +		};
-> +	};
-> +};
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 2248467..4b59d96 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -442,6 +442,17 @@ endif
->  
->  # ----------------------------------------------------------
->  
-> +comment "Generic Board Type"
-> +
-> +config MACH_AT91SAM_DT
-> +	bool "Atmel AT91SAM Evaluation Kits with device-tree support"
-> +	select USE_OF
-> +	help
-> +	  Select this if you want to experiment device-tree with
-> +	  an Atmel Evaluation Kit.
-> +
-> +# ----------------------------------------------------------
-> +
->  comment "AT91 Board Options"
->  
->  config MTD_AT91_DATAFLASH_CARD
-> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-> index bf57e8b..3ff245e 100644
-> --- a/arch/arm/mach-at91/Makefile
-> +++ b/arch/arm/mach-at91/Makefile
-> @@ -74,6 +74,9 @@ obj-$(CONFIG_MACH_SNAPPER_9260)	+= board-snapper9260.o
->  # AT91SAM9G45 board-specific support
->  obj-$(CONFIG_MACH_AT91SAM9M10G45EK) += board-sam9m10g45ek.o
->  
-> +# AT91SAM board with device-tree
-> +obj-$(CONFIG_MACH_AT91SAM_DT) += board-dt.o
-> +
->  # AT91CAP9 board-specific support
->  obj-$(CONFIG_MACH_AT91CAP9ADK)	+= board-cap9adk.o
->  
-> diff --git a/arch/arm/mach-at91/Makefile.boot b/arch/arm/mach-at91/Makefile.boot
-> index 3462b81..d278863 100644
-> --- a/arch/arm/mach-at91/Makefile.boot
-> +++ b/arch/arm/mach-at91/Makefile.boot
-> @@ -16,3 +16,5 @@ else
->  params_phys-y	:= 0x20000100
->  initrd_phys-y	:= 0x20410000
->  endif
-> +
-> +dtb-$(CONFIG_MACH_AT91SAM_DT) += at91sam9m10g45ek.dtb
-> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-> index bb84040..27276b8 100644
-> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-> @@ -69,9 +69,16 @@ static struct platform_device at_hdmac_device = {
->  
->  void __init at91_add_device_hdmac(void)
->  {
-> -	dma_cap_set(DMA_MEMCPY, atdma_pdata.cap_mask);
-> -	dma_cap_set(DMA_SLAVE, atdma_pdata.cap_mask);
-> -	platform_device_register(&at_hdmac_device);
-> +	struct device_node *of_node =
-> +		of_find_node_by_name(NULL, "dma-controller");
-
-You should really search by the compatible string.
-
-> +
-> +	if (of_node) {
-> +		of_node_put(of_node);
-> +	} else {
-> +		dma_cap_set(DMA_MEMCPY, atdma_pdata.cap_mask);
-> +		dma_cap_set(DMA_SLAVE, atdma_pdata.cap_mask);
-
-This really should be in the driver.
-
-> +		platform_device_register(&at_hdmac_device);
-> +	}
->  }
->  #else
->  void __init at91_add_device_hdmac(void) {}
-> @@ -1556,10 +1563,15 @@ void __init at91_set_serial_console(unsigned portnr)
->  void __init at91_add_device_serial(void)
->  {
->  	int i;
-> +	struct device_node *of_node = of_find_node_by_name(NULL, "serial");
->  
-> -	for (i = 0; i < ATMEL_MAX_UART; i++) {
-> -		if (at91_uarts[i])
-> -			platform_device_register(at91_uarts[i]);
-> +	if (of_node) {
-> +		of_node_put(of_node);
-> +	} else {
-> +		for (i = 0; i < ATMEL_MAX_UART; i++) {
-> +			if (at91_uarts[i])
-> +				platform_device_register(at91_uarts[i]);
-> +		}
-
-Why can't you only call these init functions when booting non-DT?
-
->  	}
->  
->  	if (!atmel_default_console_device)
-> diff --git a/arch/arm/mach-at91/board-dt.c b/arch/arm/mach-at91/board-dt.c
-> new file mode 100644
-> index 0000000..7bcb9a9
-> --- /dev/null
-> +++ b/arch/arm/mach-at91/board-dt.c
-> @@ -0,0 +1,122 @@
-> +/*
-> + *  Setup code for AT91SAM Evaluation Kits with Device Tree support
-> + *
-> + *  Covers: * AT91SAM9G45-EKES  board
-> + *          * AT91SAM9M10-EKES  board
-> + *          * AT91SAM9M10G45-EK board
-> + *
-> + *  Copyright (C) 2011 Atmel,
-> + *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +
-> +#include <linux/types.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_platform.h>
-> +
-> +#include <mach/hardware.h>
-> +#include <mach/board.h>
-> +#include <mach/gpio.h>
-> +#include <mach/system_rev.h>
-> +#include <mach/at91sam9_smc.h>
-> +
-> +#include <asm/setup.h>
-> +#include <asm/irq.h>
-> +#include <asm/mach/arch.h>
-> +#include <asm/mach/map.h>
-> +#include <asm/mach/irq.h>
-> +
-> +#include "sam9_smc.h"
-> +#include "generic.h"
-> +
-> +
-> +static void __init ek_init_early(void)
-> +{
-> +	/* Initialize processor: 12.000 MHz crystal */
-> +	at91_initialize(12000000);
-> +
-> +	/* DGBU on ttyS0. (Rx & Tx only) */
-> +	at91_register_uart(0, 0, 0);
-> +
-> +	/* USART0 not connected on the -EK board */
-> +	/* USART1 on ttyS2. (Rx, Tx, RTS, CTS) */
-> +	at91_register_uart(AT91SAM9G45_ID_US1, 2, ATMEL_UART_CTS | ATMEL_UART_RTS);
-> +
-> +	/* set serial console to ttyS0 (ie, DBGU) */
-> +	at91_set_serial_console(0);
-> +}
-> +
-> +/* det_pin is not connected */
-> +static struct atmel_nand_data __initdata ek_nand_data = {
-> +	.ale		= 21,
-> +	.cle		= 22,
-> +	.rdy_pin	= AT91_PIN_PC8,
-> +	.enable_pin	= AT91_PIN_PC14,
-> +};
-> +
-> +static struct sam9_smc_config __initdata ek_nand_smc_config = {
-> +	.ncs_read_setup		= 0,
-> +	.nrd_setup		= 2,
-> +	.ncs_write_setup	= 0,
-> +	.nwe_setup		= 2,
-> +
-> +	.ncs_read_pulse		= 4,
-> +	.nrd_pulse		= 4,
-> +	.ncs_write_pulse	= 4,
-> +	.nwe_pulse		= 4,
-> +
-> +	.read_cycle		= 7,
-> +	.write_cycle		= 7,
-> +
-> +	.mode			= AT91_SMC_READMODE | AT91_SMC_WRITEMODE | AT91_SMC_EXNWMODE_DISABLE,
-> +	.tdf_cycles		= 3,
-> +};
-> +
-> +static void __init ek_add_device_nand(void)
-> +{
-> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
-> +	/* setup bus-width (8 or 16) */
-> +	if (ek_nand_data.bus_width_16)
-> +		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-> +	else
-> +		ek_nand_smc_config.mode |= AT91_SMC_DBW_8;
-> +
-> +	/* configure chip-select 3 (NAND) */
-> +	sam9_smc_configure(3, &ek_nand_smc_config);
-> +
-> +	at91_add_device_nand(&ek_nand_data);
-> +}
-> +
-> +static const struct of_device_id aic_of_match[] __initconst = {
-> +	{ .compatible = "atmel,at91rm9200-aic", },
-> +	{},
-> +};
-> +
-> +static void __init at91_dt_device_init(void)
-> +{
-> +	irq_domain_generate_simple(aic_of_match, 0xfffff000, 0);
-
-Why is this not in the .init_irq function? I'm surprised your timer
-interrupt even works.
-
-Rob
+Index: linux-2.6/arch/alpha/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/alpha/mm/fault.c
++++ linux-2.6/arch/alpha/mm/fault.c
+@@ -107,7 +107,7 @@ do_page_fault(unsigned long address, uns
+ 
+ 	/* If we're in an interrupt context, or have no user context,
+ 	   we must not take the fault.  */
+-	if (!mm || in_atomic())
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ #ifdef CONFIG_ALPHA_LARGE_VMALLOC
+Index: linux-2.6/arch/arm/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mm/fault.c
++++ linux-2.6/arch/arm/mm/fault.c
+@@ -293,7 +293,7 @@ do_page_fault(unsigned long addr, unsign
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	/*
+Index: linux-2.6/arch/avr32/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/avr32/mm/fault.c
++++ linux-2.6/arch/avr32/mm/fault.c
+@@ -81,7 +81,7 @@ asmlinkage void do_page_fault(unsigned l
+ 	 * If we're in an interrupt or have no user context, we must
+ 	 * not take the fault...
+ 	 */
+-	if (in_atomic() || !mm || regs->sr & SYSREG_BIT(GM))
++	if (!mm || regs->sr & SYSREG_BIT(GM) || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	local_irq_enable();
+Index: linux-2.6/arch/cris/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/cris/mm/fault.c
++++ linux-2.6/arch/cris/mm/fault.c
+@@ -111,7 +111,7 @@ do_page_fault(unsigned long address, str
+ 	 * user context, we must not take the fault.
+ 	 */
+ 
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/frv/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/frv/mm/fault.c
++++ linux-2.6/arch/frv/mm/fault.c
+@@ -79,7 +79,7 @@ asmlinkage void do_page_fault(int datamm
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/ia64/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/ia64/mm/fault.c
++++ linux-2.6/arch/ia64/mm/fault.c
+@@ -89,7 +89,7 @@ ia64_do_page_fault (unsigned long addres
+ 	/*
+ 	 * If we're in an interrupt or have no user context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ #ifdef CONFIG_VIRTUAL_MEM_MAP
+Index: linux-2.6/arch/m32r/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/m32r/mm/fault.c
++++ linux-2.6/arch/m32r/mm/fault.c
+@@ -115,7 +115,7 @@ asmlinkage void do_page_fault(struct pt_
+ 	 * If we're in an interrupt or have no user context or are running in an
+ 	 * atomic region then we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto bad_area_nosemaphore;
+ 
+ 	/* When running in the kernel we expect faults to occur only to
+Index: linux-2.6/arch/m68k/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/m68k/mm/fault.c
++++ linux-2.6/arch/m68k/mm/fault.c
+@@ -85,7 +85,7 @@ int do_page_fault(struct pt_regs *regs,
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/microblaze/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/microblaze/mm/fault.c
++++ linux-2.6/arch/microblaze/mm/fault.c
+@@ -107,7 +107,7 @@ void do_page_fault(struct pt_regs *regs,
+ 	if ((error_code & 0x13) == 0x13 || (error_code & 0x11) == 0x11)
+ 		is_write = 0;
+ 
+-	if (unlikely(in_atomic() || !mm)) {
++	if (unlikely(!mm || pagefault_disabled())) {
+ 		if (kernel_mode(regs))
+ 			goto bad_area_nosemaphore;
+ 
+Index: linux-2.6/arch/mips/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/mips/mm/fault.c
++++ linux-2.6/arch/mips/mm/fault.c
+@@ -88,7 +88,7 @@ asmlinkage void __kprobes do_page_fault(
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto bad_area_nosemaphore;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/mn10300/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/mn10300/mm/fault.c
++++ linux-2.6/arch/mn10300/mm/fault.c
+@@ -168,7 +168,7 @@ asmlinkage void do_page_fault(struct pt_
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/parisc/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/parisc/mm/fault.c
++++ linux-2.6/arch/parisc/mm/fault.c
+@@ -176,7 +176,7 @@ void do_page_fault(struct pt_regs *regs,
+ 	unsigned long acc_type;
+ 	int fault;
+ 
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/powerpc/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/fault.c
++++ linux-2.6/arch/powerpc/mm/fault.c
+@@ -162,7 +162,7 @@ int __kprobes do_page_fault(struct pt_re
+ 	}
+ #endif
+ 
+-	if (in_atomic() || mm == NULL) {
++	if (!mm || pagefault_disabled()) {
+ 		if (!user_mode(regs))
+ 			return SIGSEGV;
+ 		/* in_atomic() in user mode is really bad,
+Index: linux-2.6/arch/s390/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/s390/mm/fault.c
++++ linux-2.6/arch/s390/mm/fault.c
+@@ -295,7 +295,8 @@ static inline int do_exception(struct pt
+ 	 * user context.
+ 	 */
+ 	fault = VM_FAULT_BADCONTEXT;
+-	if (unlikely(!user_space_fault(trans_exc_code) || in_atomic() || !mm))
++	if (unlikely(!user_space_fault(trans_exc_code) ||
++		     !mm || pagefault_disabled()))
+ 		goto out;
+ 
+ 	address = trans_exc_code & __FAIL_ADDR_MASK;
+@@ -426,7 +427,8 @@ void __kprobes do_asce_exception(struct
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+ 
+-	if (unlikely(!user_space_fault(trans_exc_code) || in_atomic() || !mm))
++	if (unlikely(!user_space_fault(trans_exc_code) ||
++		     !mm || pagefault_disabled()))
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/score/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/score/mm/fault.c
++++ linux-2.6/arch/score/mm/fault.c
+@@ -72,7 +72,7 @@ asmlinkage void do_page_fault(struct pt_
+ 	* If we're in an interrupt or have no user
+ 	* context, we must not take the fault..
+ 	*/
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto bad_area_nosemaphore;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/sh/mm/fault_32.c
+===================================================================
+--- linux-2.6.orig/arch/sh/mm/fault_32.c
++++ linux-2.6/arch/sh/mm/fault_32.c
+@@ -166,7 +166,7 @@ asmlinkage void __kprobes do_page_fault(
+ 	 * If we're in an interrupt, have no user context or are running
+ 	 * in an atomic region then we must not take the fault:
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/sparc/mm/fault_32.c
+===================================================================
+--- linux-2.6.orig/arch/sparc/mm/fault_32.c
++++ linux-2.6/arch/sparc/mm/fault_32.c
+@@ -248,8 +248,8 @@ asmlinkage void do_sparc_fault(struct pt
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-        if (in_atomic() || !mm)
+-                goto no_context;
++	if (!mm || pagefault_disabled())
++		goto no_context;
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+ 
+Index: linux-2.6/arch/sparc/mm/fault_64.c
+===================================================================
+--- linux-2.6.orig/arch/sparc/mm/fault_64.c
++++ linux-2.6/arch/sparc/mm/fault_64.c
+@@ -322,7 +322,7 @@ asmlinkage void __kprobes do_sparc64_fau
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto intr_or_no_mm;
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+Index: linux-2.6/arch/tile/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/tile/mm/fault.c
++++ linux-2.6/arch/tile/mm/fault.c
+@@ -346,7 +346,7 @@ static int handle_page_fault(struct pt_r
+ 	 * If we're in an interrupt, have no user context or are running in an
+ 	 * atomic region then we must not take the fault.
+ 	 */
+-	if (in_atomic() || !mm) {
++	if (!mm || pagefault_disabled()) {
+ 		vma = NULL;  /* happy compiler */
+ 		goto bad_area_nosemaphore;
+ 	}
+Index: linux-2.6/arch/um/kernel/trap.c
+===================================================================
+--- linux-2.6.orig/arch/um/kernel/trap.c
++++ linux-2.6/arch/um/kernel/trap.c
+@@ -37,7 +37,7 @@ int handle_page_fault(unsigned long addr
+ 	 * If the fault was during atomic operation, don't take the fault, just
+ 	 * fail.
+ 	 */
+-	if (in_atomic())
++	if (!mm || pagefault_disabled())
+ 		goto out_nosemaphore;
+ 
+ 	down_read(&mm->mmap_sem);
+Index: linux-2.6/arch/unicore32/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/unicore32/mm/fault.c
++++ linux-2.6/arch/unicore32/mm/fault.c
+@@ -225,7 +225,7 @@ static int do_pf(unsigned long addr, uns
+ 	 * If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm)
++	if (!mm || pagefault_disabled())
+ 		goto no_context;
+ 
+ 	/*
+Index: linux-2.6/arch/x86/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/fault.c
++++ linux-2.6/arch/x86/mm/fault.c
+@@ -1084,7 +1084,7 @@ do_page_fault(struct pt_regs *regs, unsi
+ 	 * If we're in an interrupt, have no user context or are running
+ 	 * in an atomic region then we must not take the fault:
+ 	 */
+-	if (unlikely(in_atomic() || !mm)) {
++	if (unlikely(!mm || pagefault_disabled())) {
+ 		bad_area_nosemaphore(regs, error_code, address);
+ 		return;
+ 	}
+Index: linux-2.6/arch/xtensa/mm/fault.c
+===================================================================
+--- linux-2.6.orig/arch/xtensa/mm/fault.c
++++ linux-2.6/arch/xtensa/mm/fault.c
+@@ -57,7 +57,7 @@ void do_page_fault(struct pt_regs *regs)
+ 	/* If we're in an interrupt or have no user
+ 	 * context, we must not take the fault..
+ 	 */
+-	if (in_atomic() || !mm) {
++	if (!mm || pagefault_disabled()) {
+ 		bad_page_fault(regs, address, SIGSEGV);
+ 		return;
+ 	}
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -91,6 +91,7 @@ struct sched_param {
+ #include <linux/latencytop.h>
+ #include <linux/cred.h>
+ #include <linux/llist.h>
++#include <linux/hardirq.h>
+ 
+ #include <asm/processor.h>
+ 
+@@ -1575,6 +1576,11 @@ struct task_struct {
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+ 
++static inline bool pagefault_disabled(void)
++{
++	return in_atomic();
++}
++
+ /*
+  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
+  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
+Index: linux-2.6/mm/filemap.c
+===================================================================
+--- linux-2.6.orig/mm/filemap.c
++++ linux-2.6/mm/filemap.c
+@@ -2061,7 +2061,7 @@ size_t iov_iter_copy_from_user_atomic(st
+ 	char *kaddr;
+ 	size_t copied;
+ 
+-	BUG_ON(!in_atomic());
++	BUG_ON(!pagefault_disabled());
+ 	kaddr = kmap_atomic(page, KM_USER0);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
 
