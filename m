@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934861Ab1JEPQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 11:16:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60253 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934812Ab1JEPQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 11:16:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="60179102"
-From: Andi Kleen <andi@firstfloor.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
-References: <20111003134228.090592370@intel.com>
-	<20111004195206.GG28306@redhat.com>
-Date: Wed, 05 Oct 2011 08:16:41 -0700
-In-Reply-To: <20111004195206.GG28306@redhat.com> (Vivek Goyal's message of
-	"Tue, 4 Oct 2011 15:52:06 -0400")
-Message-ID: <m2ipo34gfa.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934878Ab1JEPRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 11:17:16 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37021 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934812Ab1JEPRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 11:17:15 -0400
+Subject: Re: Re: Re: Re: BUG in kernel: Wrong Handling of USB
+ =?UTF-8?Q?HDD=E2=80=99s?= in scsiglue(slave_configure) and
+ scsi/sd(sd_read_cache_ =?windows-1252?Q?type=29
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <Pine.LNX.4.44L0.1110051014590.2289-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1110051014590.2289-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 05 Oct 2011 08:17:11 -0700
+Message-ID: <1317827831.7238.2.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
->
-> Will it make sense to break down this work in two patch series. First
-> push IO less balance dirty pages and then all the complicated pieces
-> of ratelimits.
+On Wed, 2011-10-05 at 10:17 -0400, Alan Stern wrote:
+> On Wed, 5 Oct 2011, Amit Sahrawat wrote:
+> 
+> > Hi,
+> > 
+> > In order to verify the SYNC_CACHE command being passed.
+> > First I checked on the USB HDD(Seagate - Free Agent) which is gettind
+> > properly identified on linux. I performed - copy of a file and then
+> > did 'Safely Remove Hardware" - this resulted in SYNC_CACHE command
+> > being passed - All logs are captured for this.
+> > 
+> > Then, for the same Hard Disk - I checked for the behaviour on Windows.
+> > There is no SYNC CACHE command being passed in this case.
+> > 
+> > Again, checked for a different hard disk(Seagate) - which has cache
+> > but not shown in Linux. In that case also, there is no SYNC CACHE
+> > command.
+> > 
+> > Please find the logs for the '3' cases attached.
+> 
+> This is a little disappointing.  If Windows doesn't use the SYNCHRONIZE 
+> CACHE command, it's quite likely that some USB drives will crash when 
+> they receive it.
+> 
+> This strongly suggests that we should not change the current code.
 
-I would be wary against too much refactoring of well tested patchkits.
-I've seen too many cases where this can add nasty and subtle bugs,
-given that our unit test coverage is usually relatively poor.
+I agree ... it means they go by the SCSI mode pages too, so we'll be no
+worse than they are.  Plus we don't risk upsetting the rest of the USB
+device universe.
 
-For example the infamous "absolute path names became twice as slow" 
-bug was very likely introduced in such a refactoring of a large VFS
-patchkit.
+James
 
-While it's generally good to make things easier for reviewers too much
-of a good thing can be quite bad.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
