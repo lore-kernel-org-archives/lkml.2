@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab1JEUcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 16:32:36 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:55911 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab1JEUcf (ORCPT
+	id S1757945Ab1JEUgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 16:36:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41569 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757568Ab1JEUgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 16:32:35 -0400
-Message-ID: <4E8CBEDC.4010502@linux.vnet.ibm.com>
-Date: Thu, 06 Oct 2011 02:02:28 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Wed, 5 Oct 2011 16:36:52 -0400
 MIME-Version: 1.0
-To: Thomas Tuttle <ttuttle@chromium.org>
-CC: linux-kernel@vger.kernel.org, Marco Stornelli <marco.stornelli@gmail.com>
-Subject: Re: [PATCH] ramoops: scripts/ramoops.c for extracting oopses
-References: <20111005182503.GA6142@google.com>
-In-Reply-To: <20111005182503.GA6142@google.com>
+In-Reply-To: <20111005201904.GC14406@localhost.pp.htv.fi>
+References: <201110020304.28288.rjw@sisk.pl>
+	<4E87B885.50005@zytor.com>
+	<201110021354.57995.rjw@sisk.pl>
+	<4E88A537.4010008@zytor.com>
+	<20111003093239.GB25136@localhost.pp.htv.fi>
+	<y0mobxyjazi.fsf@fche.csb>
+	<20111003180441.GD3072@localhost.pp.htv.fi>
+	<34045.1317760188@turing-police.cc.vt.edu>
+	<20111004223932.GA3460@localhost.pp.htv.fi>
+	<CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
+	<20111005201904.GC14406@localhost.pp.htv.fi>
+Date: Wed, 5 Oct 2011 16:36:50 -0400
+Message-ID: <CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Valdis.Kletnieks@vt.edu, "Frank Ch. Eigler" <fche@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 10/05/2011 11:55 PM, Thomas Tuttle wrote:
-> +static int print_records(int record)
-> +{
-> +	unsigned long mem_address, mem_size, record_size, num_records;
-> +	FILE *mem;
-> +	int i;
-> +	int ret = 0;
-> +
-> +	read_long(RAMOOPS_PARAM "mem_address", &mem_address);
-> +	read_long(RAMOOPS_PARAM "mem_size",    &mem_size);
-> +	read_long(RAMOOPS_PARAM "record_size", &record_size);
-> +	num_records = mem_size / record_size;
-> +
-> +	if (record != REC_LIST &&
-> +	    (record < 0 || (unsigned long)record >= num_records)) {
-> +		fprintf(stderr, "%s: record number %d out of range [0, %ld)\n",
-> +			progn, record, num_records);
-> +		return 1;
-> +	}
-> +
-> +	buf = malloc(record_size);
+On Wed, Oct 5, 2011 at 4:19 PM, Adrian Bunk <bunk@stusta.de> wrote:
+> On Wed, Oct 05, 2011 at 04:00:39PM -0400, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> On Tue, Oct 4, 2011 at 6:39 PM, Adrian Bunk <bunk@stusta.de> wrote:
+>>...
+>> > Each time a patch goes through him into the kernel, he certifies that
+>> > his real name is Andrew Morton.
+>> >
+>> > If that would not be his real name, it would make him somewhere between
+>> > completely untrustable and punishable at court.
+>> >
+>> Under which jurisdiction ? Under which law ?
+>>
+>> IANAL, but US copyright law does recognize the use of pseudonym for
+>> copyrighted work[0], without requirements to disclose one's legal
+>> name.
+>
+> I am not talking about copyright law.
+>
+> When you add a Signed-off-by: to a patch you have to use your real name
+> (see Documentation/SubmittingPatches for details).
+>
+> If violating that would be considered fraud or some other crime in some
+> jurisdictions is likely a non-trivial question.
+>
+One might still question the legality/constitutionality of such a
+statement. AFAIK, Greg KH, author of the sentence (in af45f32d25c) is
+not a lawyer.
 
-Since buf is not declared, this fails program compilation.
+Have the DCO clauses been legally validated ?
 
-> +	if (!buf) {
-> +		fprintf(stderr, "%s: failed to allocate record buffer\n",
-> +			progn);
-> +		return 1;
-> +	}
-> +
+ - Arnaud
 
--- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+note: to avoid doubt, I am writing this mail under my legal name.
