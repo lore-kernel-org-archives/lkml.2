@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab1JFTeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:34:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53451 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795Ab1JFTeQ (ORCPT
+	id S1759157Ab1JFThG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:37:06 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44548 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758737Ab1JFThF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:34:16 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=VKzB9fIMzP--0FXAUagA:9 a=yuKKYf7CDWY9T4GQFk8A:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
- initialized, don't nop it out
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org, rth@redhat.com
-Date: Thu, 06 Oct 2011 15:34:13 -0400
-In-Reply-To: <20111006183841.GC2505@redhat.com>
-References: <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>
-	 <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
-	 <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
-	 <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
-	 <1317925615.4729.14.camel@gandalf.stny.rr.com> <4E8DF385.3070009@zytor.com>
-	 <20111006183841.GC2505@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317929656.4729.22.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Thu, 6 Oct 2011 15:37:05 -0400
+From: Robert Schwebel <r.schwebel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Robert Schwebel <r.schwebel@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Subject: [PATCH] at91_udc: change french comments to english
+Date: Thu,  6 Oct 2011 21:36:26 +0200
+Message-Id: <1317929786-27744-1-git-send-email-r.schwebel@pengutronix.de>
+X-Mailer: git-send-email 1.7.6.3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: rsc@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 14:38 -0400, Jason Baron wrote:
+While being there, change C++ style comments to /* */.
 
-> Right, its certainly doable, but I'm not sure its so simple, since we'll
-> need a pass to eliminate the jumps - which can be keyed off the
-> '__jump_table' section. 
+Signed-off-by: Robert Schwebel <r.schwebel@pengutronix.de>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/gadget/at91_udc.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-Look at the code of scripts/recordmcount.c and friends.
-
-It does two things.
-
-1) find all the callers of mcount and make a section for it.
-
-2) For those callers of mcount that is in sections that are not
-whitelisted, and therefor will not be patched, to replace the call to
-mcount with a nop.
-
-
-We can use this code, or a copy of it, to do the same with jump_label.
-Have the x86 jump_label be:
-
-
-static __always_inline bool arch_static_branch(struct jump_label_key
-*key)
-{
-	asm goto("1:"
-		"jmp l_yes\n"
-		".pushsection __jump_table,  \"aw\" \n\t"
-		_ASM_ALIGN "\n\t"
-		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
-		".popsection \n\t"
-		: :  "i" (key) : : l_yes);
-	return false;
-l_yes:
-	return true;
-}
-
-Then have the record_jumplabel.c (or whatever it's called) find all the
-jmps at run time, and convert them into the appropriate nop.
-
-Then at runtime patching, the jumplabel code could figure out what size
-jump it needs to replace it.
-
--- Steve
-
+diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+index ddb118a..0059216 100644
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -460,7 +460,7 @@ static void nuke(struct at91_ep *ep, int status)
+ {
+ 	struct at91_request *req;
+ 
+-	// terminer chaque requete dans la queue
++	/* terminate any request in the queue */
+ 	ep->stopped = 1;
+ 	if (list_empty(&ep->queue))
+ 		return;
+@@ -788,7 +788,7 @@ static const struct usb_ep_ops at91_ep_ops = {
+ 	.queue		= at91_ep_queue,
+ 	.dequeue	= at91_ep_dequeue,
+ 	.set_halt	= at91_ep_set_halt,
+-	// there's only imprecise fifo status reporting
++	/* there's only imprecise fifo status reporting */
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -846,7 +846,7 @@ static void udc_reinit(struct at91_udc *udc)
+ 		ep->fifo_bank = 0;
+ 		ep->ep.maxpacket = ep->maxpacket;
+ 		ep->creg = (void __iomem *) udc->udp_baseaddr + AT91_UDP_CSR(i);
+-		// initialiser une queue par endpoint
++		/* initialize one queue per endpoint */
+ 		INIT_LIST_HEAD(&ep->queue);
+ 	}
+ }
+@@ -952,7 +952,7 @@ static int at91_vbus_session(struct usb_gadget *gadget, int is_active)
+ 	struct at91_udc	*udc = to_udc(gadget);
+ 	unsigned long	flags;
+ 
+-	// VDBG("vbus %s\n", is_active ? "on" : "off");
++	/* VDBG("vbus %s\n", is_active ? "on" : "off"); */
+ 	spin_lock_irqsave(&udc->lock, flags);
+ 	udc->vbus = (is_active != 0);
+ 	if (udc->driver)
+@@ -1003,7 +1003,7 @@ static const struct usb_gadget_ops at91_udc_ops = {
+ 	 * VBUS-powered devices may also also want to support bigger
+ 	 * power budgets after an appropriate SET_CONFIGURATION.
+ 	 */
+-	// .vbus_power		= at91_vbus_power,
++	/* .vbus_power		= at91_vbus_power, */
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -1072,7 +1072,7 @@ static void handle_setup(struct at91_udc *udc, struct at91_ep *ep, u32 csr)
+ 			ep->is_in = 0;
+ 		}
+ 	} else {
+-		// REVISIT this happens sometimes under load; why??
++		/* REVISIT this happens sometimes under load; why?? */
+ 		ERR("SETUP len %d, csr %08x\n", rxcount, csr);
+ 		status = -EINVAL;
+ 	}
+@@ -1451,7 +1451,7 @@ static irqreturn_t at91_udc_irq (int irq, void *_udc)
+ 			at91_udp_write(udc, AT91_UDP_IDR, AT91_UDP_RXSUSP);
+ 			at91_udp_write(udc, AT91_UDP_IER, AT91_UDP_RXRSM);
+ 			at91_udp_write(udc, AT91_UDP_ICR, AT91_UDP_RXSUSP);
+-			// VDBG("bus suspend\n");
++			/* VDBG("bus suspend\n"); */
+ 			if (udc->suspended)
+ 				continue;
+ 			udc->suspended = 1;
+@@ -1473,7 +1473,7 @@ static irqreturn_t at91_udc_irq (int irq, void *_udc)
+ 			at91_udp_write(udc, AT91_UDP_IDR, AT91_UDP_RXRSM);
+ 			at91_udp_write(udc, AT91_UDP_IER, AT91_UDP_RXSUSP);
+ 			at91_udp_write(udc, AT91_UDP_ICR, AT91_UDP_RXRSM);
+-			// VDBG("bus resume\n");
++			/* VDBG("bus resume\n"); */
+ 			if (!udc->suspended)
+ 				continue;
+ 			udc->suspended = 0;
+-- 
+1.7.6.3
 
