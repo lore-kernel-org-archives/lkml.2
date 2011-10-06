@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759205Ab1JFTuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:50:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759154Ab1JFTuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:50:12 -0400
-Date: Thu, 6 Oct 2011 15:50:07 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: virtualbox tainting.
-Message-ID: <20111006195007.GA24900@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20111006190526.GA13883@redhat.com>
- <20111006194432.GA21642@kroah.com>
+	id S1759242Ab1JFTvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:51:17 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51870 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759204Ab1JFTvP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 15:51:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111006194432.GA21642@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111006194156.GA21627@kroah.com>
+References: <1317928788.76722.YahooMailNeo@web30301.mail.mud.yahoo.com>
+	<20111006194156.GA21627@kroah.com>
+Date: Thu, 6 Oct 2011 15:51:14 -0400
+Message-ID: <CA+5PVA45jCyk0xZpkxd7dzx6v4HhkYJLFT4VrrgC5d30WAgORQ@mail.gmail.com>
+Subject: Re: acm/ttyACM0/cdc_acm does not deliver data
+From: Josh Boyer <jwboyer@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: AW <arne_woerner@yahoo.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 12:44:32PM -0700, Greg Kroah-Hartman wrote:
- 
- > > diff --git a/kernel/module.c b/kernel/module.c
- > > index 04379f92..d26c9a3 100644
- > > --- a/kernel/module.c
- > > +++ b/kernel/module.c
- > > @@ -2653,6 +2653,10 @@ static int check_module_license_and_versions(struct module *mod)
- > >  	if (strcmp(mod->name, "ndiswrapper") == 0)
- > >  		add_taint(TAINT_PROPRIETARY_MODULE);
- > >  
- > > +	/* vbox is garbage. */
- > > +	if (strcmp(mod->name, "vboxdrv") == 0)
- > > +		add_taint(TAINT_CRAP);
- > 
- > Odds are we should have a list of these types of modules, as I think
- > there are a few others out there we should mark this way :)
+On Thu, Oct 6, 2011 at 3:41 PM, Greg KH <greg@kroah.com> wrote:
+> On Thu, Oct 06, 2011 at 12:19:48PM -0700, AW wrote:
+>> Hi!
+>>
+>> I made some USB devices using the CDC-ACM proposal...
+>> They work fine with 2.6.38.8-35.fc15/amd64 and earlier.
+>>
+>> But since 2.6.40-4.fc15/amd64 it doesnt work as before...
+>
+> Can you try a kernel.org release instead of a Fedora kernel?  Does this
+> work on 3.0.6?
 
-possibly, though this is by far the leader (for us at least) today.
+He's tried 2.6.40.6, which is analogous to 3.0.6.  It still fails
+according to the report.
 
- > But anyway, I like this, and I think I'll go add it to the openSUSE
- > kernels so we can avoid the numerous bug reports we get there as well
- > for this crappy driver.
- > 
- > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+Your suggestion of using a vanilla kernel is fine, but I wouldn't
+expect different results.  We have a fairly small set of patches, none
+of which seem to jump out as impacting this.
 
-I feel a bit dirty overloading TAINT_CRAP (even if the name is apropos).
-Should I introduce a TAINT_OUT_OF_TREE perhaps instead ?
-
-	Dave
-
+josh
