@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935320Ab1JFFYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 01:24:51 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8596 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753037Ab1JFFYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 01:24:49 -0400
-Message-ID: <4E8D3B9D.6030208@dsn.lapis-semi.com>
-Date: Thu, 06 Oct 2011 14:24:45 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S935182Ab1JFFZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 01:25:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56165 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932255Ab1JFFZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 01:25:50 -0400
+Date: Wed, 5 Oct 2011 22:25:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Adrian Bunk <bunk@stusta.de>, Valdis.Kletnieks@vt.edu,
+        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111006052521.GA6622@suse.de>
+References: <y0mobxyjazi.fsf@fche.csb>
+ <20111003180441.GD3072@localhost.pp.htv.fi>
+ <34045.1317760188@turing-police.cc.vt.edu>
+ <20111004223932.GA3460@localhost.pp.htv.fi>
+ <CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
+ <20111005201904.GC14406@localhost.pp.htv.fi>
+ <CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
+ <20111005235541.GA4328@suse.de>
+ <CACqU3MURyco+nmv5MeY_2jK-8A-628MHJMe+gt5VsXVT+JtgUA@mail.gmail.com>
+ <CACqU3MVd8z05_x8HWKyeXn8fVp0NZkNGYh5ZMu0BPJyo4Bqj=A@mail.gmail.com>
 MIME-Version: 1.0
-To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-CC: grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        tomoya-linux@dsn.okisemi.com
-Subject: Re: [PATCH] spi_topcliff_pch: supports a spi mode setup and bit order
- setup by IO control
-References: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-In-Reply-To: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACqU3MVd8z05_x8HWKyeXn8fVp0NZkNGYh5ZMu0BPJyo4Bqj=A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-It seems this patch Toshiharu posted in 20-July remains not to be
-reviewed by you.
-
-Could you review this patch and merge to your tree ?
-
-Thanks in advance,
-
--- 
-tomoya
-ROHM Co., Ltd.
-
-(2011/07/20 14:56), Toshiharu Okada wrote:
-> This patch supports a spi mode setup and bit order setup by IO control.
->      spi mode:     mode 0 to mode 3
->      bit order:    LSB first, MSB first
+On Wed, Oct 05, 2011 at 08:50:08PM -0400, Arnaud Lacombe wrote:
+> On Wed, Oct 5, 2011 at 8:23 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> > I assume the worst case, unless given documents proving otherwise. The
+> > commit message is not particularly verbose.
+> >
+> Just thinking about it, but even if lawyers have been involved, this
+> has been done, unless error of my part, behind closed doors, without
+> any public records, so I'd tempted to ask "who paid those lawyers?",
+> "what was the qualification of those lawyers?", "what was the interest
+> of those lawyers?" and "what was the interest of those who paid the
+> lawyers?".
 > 
-> Signed-off-by: Toshiharu Okada<toshiharu-linux@dsn.okisemi.com>
-> ---
->   drivers/spi/spi_topcliff_pch.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi_topcliff_pch.c
-> index 79e48d4..dec83c9 100644
-> --- a/drivers/spi/spi_topcliff_pch.c
-> +++ b/drivers/spi/spi_topcliff_pch.c
-> @@ -1038,6 +1038,7 @@ static int pch_spi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->   	master->num_chipselect = PCH_MAX_CS;
->   	master->setup = pch_spi_setup;
->   	master->transfer = pch_spi_transfer;
-> +	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
->   	dev_dbg(&pdev->dev,
->   		"%s transfer member of SPI master initialized\n", __func__);
-> 
+> Moreover, the commit message's subject states "We can not allow
+> anonymous contributions to the kernel", however it fails to describe
+> who's behind "we".
 
-
+*plonk*
