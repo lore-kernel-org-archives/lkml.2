@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab1JFCn0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 22:43:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16942 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab1JFCnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 22:43:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,495,1312182000"; 
-   d="scan'208";a="75211466"
-From: Andi Kleen <andi@firstfloor.org>
-To: "Yu\, Fenghua" <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>, "Luck\, Tony" <tony.luck@intel.com>,
-        "Mallick\, Asit K" <asit.k.mallick@intel.com>,
-        "Siddha\, Suresh B" <suresh.b.siddha@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH 1/8] x86, apic.c: Disable irq0 if CPU enables ARAT for local apic timer
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
-	<1317832759-10223-2-git-send-email-fenghua.yu@intel.com>
-	<alpine.LFD.2.02.1110052045430.18778@ionos>
-	<493994B35A117E4F832F97C4719C4C040136F7CBF3@orsmsx505.amr.corp.intel.com>
-	<alpine.LFD.2.02.1110052129270.18778@ionos>
-	<493994B35A117E4F832F97C4719C4C040136F7CC8E@orsmsx505.amr.corp.intel.com>
-Date: Wed, 05 Oct 2011 19:43:24 -0700
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040136F7CC8E@orsmsx505.amr.corp.intel.com>
-	(Fenghua Yu's message of "Wed, 5 Oct 2011 13:11:46 -0700")
-Message-ID: <m2ehyq4z77.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758144Ab1JFCrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 22:47:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45736 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1JFCrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 22:47:17 -0400
+Date: Wed, 5 Oct 2011 18:58:31 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: greg@kroah.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] drivercore: Add helper macro for platform_driver
+ boilerplate
+Message-ID: <20111006005831.GA18276@ponder.secretlab.ca>
+References: <20111004232403.10364.22050.stgit@ponder>
+ <4E8CCE22.9050205@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E8CCE22.9050205@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Yu, Fenghua" <fenghua.yu@intel.com> writes:
->
-> SC1200 WDT DRIVER
-> M:      Zwane Mwaikambo <zwane@arm.linux.org.uk>
-> S:      Maintained
-> F:      drivers/watchdog/sc1200wdt.c
->
-> I was hoping Zwane knows which PCI quirks depends on CPU0.
+On Wed, Oct 05, 2011 at 02:37:38PM -0700, Stephen Boyd wrote:
+> On 10/04/11 16:26, Grant Likely wrote:
+> > diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+> > index 27bb05a..991a678 100644
+> > --- a/include/linux/platform_device.h
+> > +++ b/include/linux/platform_device.h
+> > @@ -146,6 +146,21 @@ static inline void platform_set_drvdata(struct platform_device *pdev, void *data
+> >  	dev_set_drvdata(&pdev->dev, data);
+> >  }
+> >  
+> > +/* Helper macro for drivers that don't do anything special in module
+> > + * init/exit.  This eliminates a lot of boilerplate */
+> > +#define module_platform_driver(__platform_driver) \
+> > +int __platform_driver##_init(void) \
+> > +{ \
+> > +	return platform_driver_register(&(__platform_driver)); \
+> > +} \
+> > +module_init(__platform_driver##_init); \
+> > +void __platform_driver##_exit(void) \
+> > +{ \
+> > +	platform_driver_unregister(&(__platform_driver)); \
+> > +} \
+> > +module_exit(__platform_driver##_exit);
+> > +
+> > +
+> >
+> 
+> Can you add __init, __exit, and static as well?
 
-At least one AMD SIS chipset relied on IRQ0 always being on CPU0 
-Not sure we got a quirk for it because the existing code handled it
-(I guess it's reasonable to just blacklist for all of SIS,
-i don't think they ever did anything multi-socket)
-Alan may remember more.
+Done, thanks for the review.
 
--Andi
+g.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
