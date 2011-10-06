@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935230Ab1JFHiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 03:38:21 -0400
-Received: from claw.goop.org ([74.207.240.146]:60716 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934406Ab1JFHiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 03:38:20 -0400
-Message-ID: <4E8CFA99.8030805@goop.org>
-Date: Wed, 05 Oct 2011 17:47:21 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been initialized,
- don't nop it out
-References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com> <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com> <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org> <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com> <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
-In-Reply-To: <4E8CF385.2080804@zytor.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+	id S1758207Ab1JFHnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 03:43:17 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:7143 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755824Ab1JFHnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 03:43:16 -0400
+Date: Thu, 6 Oct 2011 09:43:02 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Himanshu Chauhan <hschauhan@nulltrace.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a 
+ device number
+Message-ID: <20111006094302.71ea4dfd@endymion.delvare>
+In-Reply-To: <20111006051955.GA22835@ericsson.com>
+References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
+	<1317839407.3983.46.camel@groeck-laptop>
+	<20111006040656.GA2125@ubuntu.ubuntu-domain>
+	<20111006051955.GA22835@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2011 05:17 PM, H. Peter Anvin wrote:
-> On 10/05/2011 05:16 PM, Jeremy Fitzhardinge wrote:
->> On 10/04/2011 09:30 AM, H. Peter Anvin wrote:
->>> On 10/04/2011 07:10 AM, Jason Baron wrote:
->>>> 1) The jmp +0, is a 'safe' no-op that I know is going to initially
->>>> boot for all x86. I'm not sure if there is a 5-byte nop that works on
->>>> all x86 variants - but by using jmp +0, we make it much easier to debug
->>>> cases where we may be using broken no-ops.
->>>>
->>> There are *plenty*.  jmp+0 is about as pessimal as you can get.
->> As an aside, do you know if a 2-byte unconditional jmp is any more
->> efficient than 5-byte, aside from just being a smaller instruction and
->> taking less icache?
->>
-> I don't know for sure, no.  I probably depends on the CPU.
+I am purposely removing kernelnewbies from the CC list, as it seems
+quite irrelevant for this discussion.
 
-I was thinking about making the jump-label stuff generate a small jmp if
-the offset is small (specifically "jmp; nop3", or perhaps "jmp; ud2a;
-nop" to make absolutely sure there's no speculation beyond the jmp), on
-the grounds that, while it probably doesn't matter for any modern
-Intel/AMD processor, it may help for others.  But I couldn't find any
-concrete evidence to support it, and there's already enough questions
-about doing "live" code updates without adding more instruction patterns.
+On Wed, 5 Oct 2011 22:19:55 -0700, Guenter Roeck wrote:
+> On Thu, Oct 06, 2011 at 12:06:59AM -0400, Himanshu Chauhan wrote:
+> > Hi,
+> > 
+> > > I can not comment on the merits of your patch. Unless I am missing
+> > > something, which may well be since I only spent a couple of minutes on
+> > > it, other device classes don't seem to provide a similar API, so I don't
+> > > know if or why it would make sense for hwmon. Maybe a driver which wants
+> > > to register a character device interface should do so independently of
+> > > hwmon.
+> > > 
+> > 
+> > The idea here is to sit in the same class directory as of hwmon. Devices
+> > registered with this interface will have "dev" under, for example,
+> > /sys/class/hwmon/hwmon0/dev. To do the same inside the driver will be
+> > a bit more involved than a call.
+> > 
+> > In my opinion other classes should also have similar interfaces.
+> > 
+> I think you'll have to spend some more time and effort explaining the "what for".
+> 
+> Apparently no other device class needs this functionality so far, yet you
+> suggest that such an interface should exist for all device classes.
 
-    J
+Actually a lot of class devices do have a device node:
+$ ls -1 /sys/class/*/*/dev | wc -l
+252
+This includes block, drm, dvb, input, msr, sound and tty class devices,
+to name just a few. But this isn't the problem. All these are
+documented in Documentation/devices.txt, and have a properly defined
+API. There is no such thing for hwmon devices at this point.
+
+> But you do so without explanation, or in other words without use case.
+
+This is indeed the key point. Creating a device node is pointless
+without a standard API to make use of it. So Himanshu will have to
+document that first.
+
+> I for my part have no idea what you would use or need this new interface for,
+> and if there would be other less intrusive means to accomplish the same goal.
+> And I would want to see really good reasons to make a change like this.
+
+Another good point.
+
+> Specifically looking at the hwmon subsystem, you are expected to use the lm-sensors
+> library to access all hwmon attributes. So I would expect your explanation to include
+> exactly what you want to accomplish and why, details why you believe that you can not
+> use the lm-sensors library, why you believe that the current infrastructure
+> does not provide the means you need to accomplish your goals, and why you
+> think that the existing infrastructure can not be modified to let you accomplish
+> what you want to do without such a - from a conceptual perspective - substantial change.
+
+I again agree. Which means that Himanshu is still 3 steps away from
+getting his patch accepted:
+* Explaining why the current sysfs interface is insufficient and can't
+  be fixed.
+* Getting official device node numbers registered for hwmon use.
+* Defining an API for these device nodes.
+
+Before then, there's no point in resending this patch, it will be
+rejected.
+
+-- 
+Jean Delvare
