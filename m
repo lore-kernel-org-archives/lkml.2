@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771Ab1JFRy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:54:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab1JFRy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:54:27 -0400
-Date: Thu, 6 Oct 2011 14:53:33 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
-Message-ID: <20111006175333.GA3959@amt.cnet>
-References: <4E7AF758.7060900@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E7AF758.7060900@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965262Ab1JFRyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:54:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44819 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab1JFRyi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 13:54:38 -0400
+Subject: Re: [PATCH 06/12] perf_events: implement PERF_SAMPLE_BRANCH for
+ Intel X86
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
+        ravitillo@lbl.gov
+Date: Thu, 06 Oct 2011 19:54:24 +0200
+In-Reply-To: <1317912555-9559-7-git-send-email-eranian@google.com>
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	 <1317912555-9559-7-git-send-email-eranian@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317923665.29658.18.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 04:52:40PM +0800, Xiao Guangrong wrote:
-> This patchset is against https://github.com/avikivity/kvm.git next branch.
-> 
-> In this version, some changes come from Avi's comments:
-> - fix instruction retried for nested guest
-> - skip write-flooding for the sp whose level is 1
-> - rename some functions
+On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
+> @@ -876,6 +889,13 @@ static void intel_pmu_disable_event(struct perf_event *event)
+>                 return;
+>         }
+>  
+> +       /*
+> +        * must disable before any actual event
+> +        * because any event may be combined with LBR
+> +        */
+> +       if (intel_pmu_needs_lbr_smpl(event))
+> +               intel_pmu_lbr_disable(event);
+> +
+>         if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+>                 intel_pmu_disable_fixed(hwc);
+>                 return; 
 
-Please rebase.
+I don't get that, since until you disable the counter a PMI could happen
+(*) you'd need to disable the LBR after you disable the counters.
 
+* doesn't actually happen since we likely have the whole pmu disabled
+here, but that's another thing ;-)
