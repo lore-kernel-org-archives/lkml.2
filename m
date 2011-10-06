@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1JFEKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 00:10:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37771 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab1JFEKc (ORCPT
+	id S932693Ab1JFEny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 00:43:54 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48730 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751312Ab1JFEnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 00:10:32 -0400
-Date: Thu, 6 Oct 2011 09:40:11 +0530
-From: Himanshu Chauhan <hschauhan@nulltrace.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon class driver registration with a device number
-Message-ID: <20111006041011.GB2125@ubuntu.ubuntu-domain>
-References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
- <20111005193359.GB26664@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111005193359.GB26664@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Oct 2011 00:43:53 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: [PATCH] ASoC: fix codec breakage caused by the volsw/volsw_2r merger
+Date: Thu,  6 Oct 2011 07:43:21 +0300
+Message-Id: <1317876201-7041-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20111006132204.29c84ed7349daf8c4aa39c3b@canb.auug.org.au>
+References: <20111006132204.29c84ed7349daf8c4aa39c3b@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+By accident few places still uses the _2r calls from
+the core.
+This is a quick fix, the drivers using the old callbacks
+going to be changed.
 
-> 
-> How do you later remove a device created with this new interface?  As it
-> is, I think the existing calls will fail, right?
-> 
-If I have not missed out anything from hwmon_device_unregister(), it shouldn't
-fail. Why did you point that out?
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
 
--Himanshu
+Hi Stephen, Mark,
+
+I'm really sorry, I can not explain how it happened.
+Please find a quick fox for the issue.
+I'm going to fix the drivers meanwhile.
+
+Regards,
+Peter
+
+ include/sound/soc.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 88ba85a..858291d 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -393,6 +393,8 @@ int snd_soc_get_volsw(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
+ int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
++#define snd_soc_get_volsw_2r snd_soc_get_volsw
++#define snd_soc_put_volsw_2r snd_soc_put_volsw
+ int snd_soc_info_volsw_s8(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_info *uinfo);
+ int snd_soc_get_volsw_s8(struct snd_kcontrol *kcontrol,
+-- 
+1.7.7
+
