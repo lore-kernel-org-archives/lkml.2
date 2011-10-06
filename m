@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab1JFDsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 23:48:37 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47380 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab1JFDsg (ORCPT
+	id S1758160Ab1JFDvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 23:51:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61101 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab1JFDva convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 23:48:36 -0400
-Date: Thu, 6 Oct 2011 14:48:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: linux-next: build failure after merge of the gpio tree
-Message-Id: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Oct_2011_14_48_26_+1100_7TJTgztXCFKYvzA/"
+	Wed, 5 Oct 2011 23:51:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110316185755.GC7918@khazad-dum.debian.net>
+References: <1300181106-20219-1-git-send-email-keng-yu.lin@canonical.com> <20110316185755.GC7918@khazad-dum.debian.net>
+From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <kengyu@canonical.com>
+Date: Thu, 6 Oct 2011 11:50:49 +0800
+X-Google-Sender-Auth: T6sru6UCcYfonoBDai_Gjncbip0
+Message-ID: <CADXHx7b36g1+vo9cjuiq7VnjN3LWiwQtgepHjGU1P74ZsdtwQw@mail.gmail.com>
+Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: disable alsa volume mixer
+ for SL410/SL510
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Matthew Garrett <mjg@redhat.com>, ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Oct_2011_14_48_26_+1100_7TJTgztXCFKYvzA/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 17, 2011 at 2:57 AM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Tue, 15 Mar 2011, Keng-Yu Lin wrote:
+>> The mute key on SL410/SL510 only works when the alsa volume mixer
+>> is not enabled. This patch makes the alsa volume mixer disabled
+>> on the matched SL410/SL510 EC versions.
+>
+> I'd like more data on this.  Is this some sort of weird interaction with
+> userspace, or does the firmware actually changes behaviour when we
+> enable the MUTE HKEY event in the event mask?
+>
 
-Hi Grant,
+The firmware does not change its behaviour with the key enabled in the keymask.
+The mute key (and the LED on it) of the two models works good without
+thinkpad_acpi loaded. So in the patch I like to exclude the volume
+control part for the two models.
 
-After merging the gpio tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+>>  #define TPACPI_VOL_Q_MUTEONLY        0x0001  /* Mute-only control available */
+>>  #define TPACPI_VOL_Q_LEVEL   0x0002  /* Volume control available */
+>> +#define TPACPI_VOL_Q_IGNORE  0x0003  /* No Volume control available */
+>
+> Change the comment to /* Blacklist volume control */, please. And name
+> it TPACPI_VOL_Q_BLACKLIST.
+>
+>> @@ -6921,20 +6924,21 @@ static int __init volume_init(struct ibm_init_struct *iibm)
+>>       if (volume_capabilities >= TPACPI_VOL_CAP_MAX)
+>>               return -EINVAL;
+>>
+>> +     quirks = tpacpi_check_quirks(volume_quirk_table,
+>> +                                  ARRAY_SIZE(volume_quirk_table));
+>> +
+>>       /*
+>>        * The ALSA mixer is our primary interface.
+>>        * When disabled, don't install the subdriver at all
+>>        */
+>> -     if (!alsa_enable) {
+>> +     if (!alsa_enable || quirks & TPACPI_VOL_Q_IGNORE) {
+>>               vdbg_printk(TPACPI_DBG_INIT | TPACPI_DBG_MIXER,
+>>                           "ALSA mixer disabled by parameter, "
+>>                           "not loading volume subdriver...\n");
+>> +             alsa_enable = 0; /* reflect the quirk status in sysfs */
+>>               return 1;
+>>       }
+>>
+>> -     quirks = tpacpi_check_quirks(volume_quirk_table,
+>> -                                  ARRAY_SIZE(volume_quirk_table));
+>> -
+>>       switch (volume_capabilities) {
+>>       case TPACPI_VOL_CAP_AUTO:
+>>               if (quirks & TPACPI_VOL_Q_MUTEONLY)
+>
+> Do not overload error messages like that.  It will now spill an
+> incorrect message when the quirk list blacklists the volume control.
+>
+> Unfortunately, we're constrained by the unextensible alsa module command
+> line ABI, so something more sensible (implementing "auto") is not
+> available.
+>
+> Instead, please do it like this:
+>
+> 1.  Do not move the quirks test or error message up.
+>
+> 2.  After the quirk check, do this:
+>
+> if (quirks & TPACPI_VOL_Q_IGNORE) {
+>        dbg_printk(TPACPI_DBG_INIT | TPACPI_DBG_MIXER,
+>                   "ALSA mixer blacklisted for this model, not loading
+> volume subdriver...\n");
+>        return 1;
+> }
+>
+> Note that it is a "dbg_printk", and NOT a "vdbg_printk".
+>
+> I'd much rather have something that allows the user to override the
+> blacklisting, though.  But it cannot be done through alsa_enable.  Maybe
+> you could be persuaded to add support for a "force_volume" parameter?
+>
+> If you do add support for "force_volume", please make it an unsigned int
+> (not bool), use 0 for no, and 1 for yes, and leave the other values
+> undefined.  And add it to the documentation in
+> Documentation/laptops/thinkpad-acpi.txt.
+>
 
-ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
-ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
-
-Presumably caused by commits 54be566317b6 ("gpio-ml-ioh: Support
-interrupt function") and 38eb18a6f92d ("gpio-pch: Support interrupt
-function").
-
-I have used the gpio tree from next-20111005 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__6_Oct_2011_14_48_26_+1100_7TJTgztXCFKYvzA/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOjSUKAAoJEECxmPOUX5FE/GMQAIfUtWCtDBhS3GGa+HUyx2Zj
-YYtVbE9GXvFllj/6C81F7n4G/t9iW0F7HRU4m1SdPcWwiP/4+B/jtjrn5Uy4J2tV
-vr8TuZ1Z1mf+luGh8wRwUzw1BgE9hjaLL0tI092dVbsPkKEZ2aZktiaOugyJyrbV
-WdO3Fmcki2RXVx9N+YjpGUV7vojRoKmzmzbJV2fT0JW88mcqB6RGksXjpaxlVCu0
-amC4T7ARGtshF8xsiEV1W0GUq5ntSYyucE+xemFzaIXXYSMMopAjREIvLow/dBov
-yOBKvXuJBY7qXaHJhE2Q9WLqOt2VOgqtbEHDSlSya0rLeXTcSuJUf0XfTDRwrlNF
-r8irJ8v7BDOLwMS0CN5RyiZtSxUm6Vbhl1K7mSEyMCPRto76+SjbgxdrM6yYwAwI
-+HaYBnj8wpflwRIS0qRD6nWw7cnReEMyALSeOAQSoiDDwmnf8nadfxYdKmyaRlva
-qT+WGBqCdPMVVMQ5PuBZy6bT3pUHydLXuSZCnfSHe+PPvb7464bl7ux2li1ub2YW
-WnAHrTgIxRfhVvrTJ8dt44Nq12EhEk7G070PHFVX3jH5pFUlE+KKVGs7Cs+GDj2n
-NHhb9OoPA5DM5CmXGt9snGB6twGXNSUiDZuxPv8tgOSGB6u/eWIZ6Ou8QWAVw11Q
-TDMIYS8aMjJhS7Z4uSg2
-=hDjz
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Oct_2011_14_48_26_+1100_7TJTgztXCFKYvzA/--
+Thanks for the suggestion. I will be sending a new version of patches.
