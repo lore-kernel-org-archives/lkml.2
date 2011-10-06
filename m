@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab1JFGwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 02:52:31 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33492 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab1JFGw2 (ORCPT
+	id S934910Ab1JFGwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 02:52:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41407 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758163Ab1JFGws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 02:52:28 -0400
-Message-ID: <4E8D5028.3080406@linux.vnet.ibm.com>
-Date: Thu, 06 Oct 2011 12:22:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Full lockup when compiling kernel with "optimal" number of threads
-References: <CAG1a4rvdYnOSWu3DJ+DL+Q_bfsfTv_px20vP06fBKRm6B8cwMw@mail.gmail.com> <4E8982E3.9080809@linux.vnet.ibm.com> <CAG1a4rvYX9P+vHTLQBV_edViU8QriT=mrut0c5oS5YZ96L3x=A@mail.gmail.com>
-In-Reply-To: <CAG1a4rvYX9P+vHTLQBV_edViU8QriT=mrut0c5oS5YZ96L3x=A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Oct 2011 02:52:48 -0400
+Subject: Re: [PATCH 00/10] Convert wm8xxx codec drivers to use
+ snd_soc_cache_sync
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Arthur <linux@wolfsonmicro.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Kenneth Kiraly <kiraly@lab126.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+In-Reply-To: <1317881417.13399.1.camel@phoenix>
+References: <1317881417.13399.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Oct 2011 14:52:40 +0800
+Message-ID: <1317883960.13399.17.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 03:13 AM, Pavel Ivanov wrote:
-> On Mon, Oct 3, 2011 at 5:39 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 09/03/2011 09:04 AM, Pavel Ivanov wrote:
->>> Hi,
->>>
->>> I can reliably reproduce a complete machine lockup when compiling
->>> kernel sources with "make -j". After making some progress machine
->>> stops responding to anything (including CapsLock/NumLock switching or
->>> mouse moving) and after hard reboot nothing is left in kern.log or
->>> syslog. Only attaching a serial console gives me the following clues
->>> to what happens:
->>>
->> By the way "optimal" is supposed to be make -j <nr_cpus*2> isn't it?
->> IIRC, "maximal" refers to make -j
+Sorry. I just found we need to set codec->cache_sync = 1 in
+SND_SOC_BIAS_OFF. Otherwise, snd_soc_cache_sync won't sync work.
+
+Will send a v2 soon.
+
+Axel
+
+於 四，2011-10-06 於 14:10 +0800，Axel Lin 提到：
+> This serial converts the wm8xxx codec drivers to use snd_soc_cache_sync.
+> I don't have these hardware, but I assume Mark has all these hardware.
+> These patches are UNTESTED. I'd appreciate if someone can test them.
+> (Current code is broken anyway, thus we need convert to use new API. )
 > 
-> I'm sure I didn't make up that word "optimal" by myself. I took it
-> from some documentation or internet, although now I can't find where I
-> took it from. Wherever I look it says that -j is "unbounded" number of
-> threads.
+> Axel Lin (10):
+>   ASoC: wm8510: Convert to snd_soc_cache_sync
+>   ASoC: wm8711: Convert to snd_soc_cache_sync
+>   ASoC: wm8731: Convert to snd_soc_cache_sync
+>   ASoC: wm8750: Convert to snd_soc_cache_sync
+>   ASoC: wm8776: Convert to snd_soc_cache_sync
+>   ASoC: wm8940: Convert to snd_soc_cache_sync
+>   ASoC: wm8960: Convert to snd_soc_cache_sync
+>   ASoC: wm8971: Convert to snd_soc_cache_sync
+>   ASoC: wm8974: Convert to snd_soc_cache_sync
+>   ASoC: wm8988: Convert to snd_soc_cache_sync
+> 
+>  sound/soc/codecs/wm8510.c |   30 ++++++++++++++++++----------
+>  sound/soc/codecs/wm8711.c |   19 +++++++----------
+>  sound/soc/codecs/wm8731.c |   29 ++++++++++++++++-----------
+>  sound/soc/codecs/wm8750.c |   32 +++++++++++++++++-------------
+>  sound/soc/codecs/wm8776.c |   33 ++++++++++++++++++-------------
+>  sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
+>  sound/soc/codecs/wm8960.c |   37 +++++++++++++++++++++++++----------
+>  sound/soc/codecs/wm8971.c |   32 +++++++++++++++++++-----------
+>  sound/soc/codecs/wm8974.c |   29 +++++++++++++++++----------
+>  sound/soc/codecs/wm8988.c |   32 +++++++++++++++++-------------
+>  10 files changed, 185 insertions(+), 134 deletions(-)
 > 
 
-I was referring to the terms used by kernbench.
 
--- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
