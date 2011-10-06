@@ -1,69 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935882Ab1JFUpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 16:45:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64928 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756962Ab1JFUps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 16:45:48 -0400
-X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=Hsptb0i6piVC7Twp2wYA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
- initialized, don't nop it out
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org, rth@redhat.com
-Date: Thu, 06 Oct 2011 16:45:45 -0400
-In-Reply-To: <20111006203358.GA5985@redhat.com>
-References: <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
-	 <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
-	 <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
-	 <1317925615.4729.14.camel@gandalf.stny.rr.com> <4E8DF385.3070009@zytor.com>
-	 <20111006183841.GC2505@redhat.com>
-	 <1317929656.4729.22.camel@gandalf.stny.rr.com>
-	 <20111006203358.GA5985@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317933947.4729.25.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	id S1759157Ab1JFUvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 16:51:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61456 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757235Ab1JFUvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 16:51:12 -0400
+Date: Thu, 6 Oct 2011 16:50:42 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
+        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
+        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com
+Subject: Re: [RFC][PATCH] x86, reboot:  use NMI instead of REBOOT_VECTOR to
+ stop cpus
+Message-ID: <20111006205042.GM5795@redhat.com>
+References: <1317236148-15134-1-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317236148-15134-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 16:33 -0400, Jason Baron wrote:
+On Wed, Sep 28, 2011 at 02:55:48PM -0400, Don Zickus wrote:
+> A recent discussion started talking about the locking on the pstore fs
+> and how it relates to the kmsg infrastructure.  We noticed it was possible
+> for userspace to r/w to the pstore fs (grabbing the locks in the process)
+> and block the panic path from r/w to the same fs.
 
-> > Then have the record_jumplabel.c (or whatever it's called) find all the
-> > jmps at run time, and convert them into the appropriate nop.
-> > 
+Poke?  Anyone have an opinion on this?
+
+Cheers,
+Don
+
 > 
-> I'd prefer to do this at build-time as hpa said. We don't want there to
-> be some race b/w patching in the no-ops and taking an incorrect branch.
-
-Yep, this record_jumplabel.c would execute at build time. Just like the
-record_mcount.c does.
-
+> The reason was the cpu with the lock could be doing work while the crashing
+> cpu is panic'ing.  Busting those spinlocks might cause those cpus to step
+> on each other's data.  Fine, fair enough.
 > 
-> > Then at runtime patching, the jumplabel code could figure out what size
-> > jump it needs to replace it.
-
-The runtime patching is when we can figure out what size the compiler
-used. That wont change. It should be pretty trivial to do. I can't see
-any races here.
-
--- Steve
-
-
-
-
+> It was suggested it would be nice to serialize the panic path (ie stop
+> the other cpus) and have only one cpu running.  This would allow us to
+> bust the spinlocks and not worry about another cpu stepping on the data.
+> 
+> Of course, smp_send_stop() does this in the panic case.  kmsg_dump() would
+> have to be moved to be called after it.  Easy enough.
+> 
+> The only problem is on x86 the smp_send_stop() function calls the
+> REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and its backend
+> ERST would do), block this IPI and thus do not stop.  This makes it
+> difficult to reliably log data to the pstore fs.
+> 
+> The patch below switches from the REBOOT_VECTOR to NMI (and mimics what
+> kdump does).  Switching to NMI allows us to deliver the IPI when irqs are
+> disabled, increasing the reliability of this function.
+> 
+> However, Andi carefully noted that on some machines this approach does not
+> work because of broken BIOSes or whatever.
+> 
+> I was hoping to get feedback on how much of a problem this really is.  Are
+> there that many machines?  I assume most modern machines have a reliable NMI
+> IPI mechanism (well on x86).  Is this just a problem on 32-bit machines?
+> Early SMP machines?
+> 
+> One idea I had was to create a blacklist of machines and have those machines
+> fallback to the original native_stop_other_cpus() that Andi wrote originally.
+> The hope was that list was small.
+> 
+> Does anyone have any feedback whether this is a good idea or not?  Perhaps I am
+> missing something?  Perhaps I should approach this problem differently?
+> 
+> [note] this patch sits on top of another NMI infrastructure change I have
+> submitted, so the nmi registeration might not apply cleanly without that patch.
+> However, for discussion purposes, I don't think that change is relevant, it is
+> more the idea/philosophy of this patch that I am worried about.
+> 
+> Thanks,
+> Don
+> ---
+>  arch/x86/kernel/smp.c |   56 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 54 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+> index 013e7eb..e98f0a1 100644
+> --- a/arch/x86/kernel/smp.c
+> +++ b/arch/x86/kernel/smp.c
+> @@ -28,6 +28,7 @@
+>  #include <asm/mmu_context.h>
+>  #include <asm/proto.h>
+>  #include <asm/apic.h>
+> +#include <asm/nmi.h>
+>  /*
+>   *	Some notes on x86 processor bugs affecting SMP operation:
+>   *
+> @@ -147,6 +148,57 @@ void native_send_call_func_ipi(const struct cpumask *mask)
+>  	free_cpumask_var(allbutself);
+>  }
+>  
+> +static int stopping_cpu;
+> +
+> +static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
+> +{
+> +	/* We are registerd on stopping cpu too, avoid spurious NMI */
+> +	if (raw_smp_processor_id() == stopping_cpu)
+> +		return NMI_HANDLED;
+> +
+> +	stop_this_cpu(NULL);
+> +
+> +	return NMI_HANDLED;
+> +}
+> +
+> +static void native_nmi_stop_other_cpus(int wait)
+> +{
+> +	unsigned long flags;
+> +	unsigned long timeout;
+> +
+> +	if (reboot_force)
+> +		return;
+> +
+> +	/*
+> +	 * Use an own vector here because smp_call_function
+> +	 * does lots of things not suitable in a panic situation.
+> +	 */
+> +	if (num_online_cpus() > 1) {
+> +		stopping_cpu = safe_smp_processor_id();
+> +
+> +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
+> +					 NMI_FLAG_FIRST, "smp_stop"))
+> +			return;		/* return what? */
+> +
+> +		/* sync above data before sending NMI */
+> +		wmb();
+> +
+> +		apic->send_IPI_allbutself(NMI_VECTOR);
+> +
+> +		/*
+> +		 * Don't wait longer than a second if the caller
+> +		 * didn't ask us to wait.
+> +		 */
+> +		timeout = USEC_PER_SEC;
+> +		while (num_online_cpus() > 1 && (wait || timeout--))
+> +			udelay(1);
+> +	}
+> +
+> +	local_irq_save(flags);
+> +	disable_local_APIC();
+> +	local_irq_restore(flags);
+> +}
+> +
+>  /*
+>   * this function calls the 'stop' function on all other CPUs in the system.
+>   */
+> @@ -159,7 +211,7 @@ asmlinkage void smp_reboot_interrupt(void)
+>  	irq_exit();
+>  }
+>  
+> -static void native_stop_other_cpus(int wait)
+> +static void native_irq_stop_other_cpus(int wait)
+>  {
+>  	unsigned long flags;
+>  	unsigned long timeout;
+> @@ -229,7 +281,7 @@ struct smp_ops smp_ops = {
+>  	.smp_prepare_cpus	= native_smp_prepare_cpus,
+>  	.smp_cpus_done		= native_smp_cpus_done,
+>  
+> -	.stop_other_cpus	= native_stop_other_cpus,
+> +	.stop_other_cpus	= native_nmi_stop_other_cpus,
+>  	.smp_send_reschedule	= native_smp_send_reschedule,
+>  
+>  	.cpu_up			= native_cpu_up,
+> -- 
+> 1.7.6
+> 
