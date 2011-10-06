@@ -1,125 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab1JFNls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 09:41:48 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34105 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757981Ab1JFNiG (ORCPT
+	id S1758492Ab1JFNnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 09:43:08 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59326
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757981Ab1JFNnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 09:38:06 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 04/15] drbd: Split drbd_alter_sa() into drbd_sync_after_valid() and drbd_sync_after_changed()
-Date: Thu,  6 Oct 2011 15:37:49 +0200
-Message-Id: <1317908280-28951-5-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1317908280-28951-1-git-send-email-philipp.reisner@linbit.com>
-References: <1317908280-28951-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 6 Oct 2011 09:43:06 -0400
+Date: Thu, 6 Oct 2011 09:42:57 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] virtio-blk: implement ->make_request
+Message-ID: <20111006134257.GB20190@infradead.org>
+References: <20111005195403.407628164@bombadil.infradead.org>
+ <20111005195530.558142038@bombadil.infradead.org>
+ <87obxuga41.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87obxuga41.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparing RCU for disk_conf
+On Thu, Oct 06, 2011 at 12:22:14PM +1030, Rusty Russell wrote:
+> On Wed, 05 Oct 2011 15:54:08 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+> > Add an alternate I/O path that implements ->make_request for virtio-blk.
+> > This is required for high IOPs devices which get slowed down to 1/5th of
+> > the native speed by all the locking, memory allocation and other overhead
+> > in the request based I/O path.
+> 
+> Ouch.
+> 
+> I'd be tempted to just switch across to this, though I'd be interested
+> to see if the simple add_buf change I referred to before has some effect
+> by itself (I doubt it).
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_int.h    |    3 ++-
- drivers/block/drbd/drbd_nl.c     |   15 +++++++--------
- drivers/block/drbd/drbd_worker.c |   22 ++++++++--------------
- 3 files changed, 17 insertions(+), 23 deletions(-)
+Benchmarking this more extensively even on low-end devices is number
+on my todo list after sorting out the virtqueue race and implementing
+flush/fua support.  I'd really prefer to switch over to it
+unconditionally if the performance numbers allow it.
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 8c7e340..f8d0ac3 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1409,7 +1409,8 @@ extern int drbd_khelper(struct drbd_conf *mdev, char *cmd);
- 
- /* drbd_worker.c */
- extern int drbd_worker(struct drbd_thread *thi);
--extern int drbd_alter_sa(struct drbd_conf *mdev, int na);
-+enum drbd_ret_code drbd_sync_after_valid(struct drbd_conf *mdev, int o_minor);
-+void drbd_sync_after_changed(struct drbd_conf *mdev);
- extern void drbd_start_resync(struct drbd_conf *mdev, enum drbd_conns side);
- extern void resume_next_sg(struct drbd_conf *mdev);
- extern void suspend_other_sg(struct drbd_conf *mdev);
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index dfe43f2..4efeffa 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1181,13 +1181,6 @@ int drbd_adm_disk_opts(struct sk_buff *skb, struct genl_info *info)
- 	if (!expect(new_disk_conf->al_extents <= DRBD_AL_EXTENTS_MAX))
- 		new_disk_conf->al_extents = DRBD_AL_EXTENTS_MAX;
- 
--	/* most sanity checks done, try to assign the new sync-after
--	 * dependency.  need to hold the global lock in there,
--	 * to avoid a race in the dependency loop check. */
--	retcode = drbd_alter_sa(mdev, new_disk_conf->resync_after);
--	if (retcode != NO_ERROR)
--		goto fail;
--
- 	fifo_size = (new_disk_conf->c_plan_ahead * 10 * SLEEP_TIME) / HZ;
- 	if (fifo_size != mdev->rs_plan_s.size && fifo_size > 0) {
- 		rs_plan_s   = kzalloc(sizeof(int) * fifo_size, GFP_KERNEL);
-@@ -1221,7 +1214,13 @@ int drbd_adm_disk_opts(struct sk_buff *skb, struct genl_info *info)
- 	 * To avoid someone looking at a half-updated struct, we probably
- 	 * should have a rw-semaphor on net_conf and disk_conf.
- 	 */
--	mdev->ldev->dc = *new_disk_conf;
-+	write_lock_irq(&global_state_lock);
-+	retcode = drbd_sync_after_valid(mdev, new_disk_conf->resync_after);
-+	if (retcode == NO_ERROR) {
-+		mdev->ldev->dc = *new_disk_conf;
-+		drbd_sync_after_changed(mdev);
-+	}
-+	write_unlock_irq(&global_state_lock);
- 
- 	drbd_md_sync(mdev);
- 
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index f22288b1..f8fdf75 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -1401,7 +1401,8 @@ void suspend_other_sg(struct drbd_conf *mdev)
- 	write_unlock_irq(&global_state_lock);
- }
- 
--static int sync_after_error(struct drbd_conf *mdev, int o_minor)
-+/* caller must hold global_state_lock */
-+enum drbd_ret_code drbd_sync_after_valid(struct drbd_conf *mdev, int o_minor)
- {
- 	struct drbd_conf *odev;
- 
-@@ -1425,22 +1426,15 @@ static int sync_after_error(struct drbd_conf *mdev, int o_minor)
- 	}
- }
- 
--int drbd_alter_sa(struct drbd_conf *mdev, int na)
-+/* caller must hold global_state_lock */
-+void drbd_sync_after_changed(struct drbd_conf *mdev)
- {
- 	int changes;
--	int retcode;
- 
--	write_lock_irq(&global_state_lock);
--	retcode = sync_after_error(mdev, na);
--	if (retcode == NO_ERROR) {
--		mdev->ldev->dc.resync_after = na;
--		do {
--			changes  = _drbd_pause_after(mdev);
--			changes |= _drbd_resume_next(mdev);
--		} while (changes);
--	}
--	write_unlock_irq(&global_state_lock);
--	return retcode;
-+	do {
-+		changes  = _drbd_pause_after(mdev);
-+		changes |= _drbd_resume_next(mdev);
-+	} while (changes);
- }
- 
- void drbd_rs_controller_reset(struct drbd_conf *mdev)
--- 
-1.7.4.1
+> Also, though it's overkill I'd use standard list primitives rather than
+> open-coding a single linked list.
+
+I really prefer using standard helpers, but using a doubly linked list
+and increasing memory usage seems like such a waste.  Maybe I should
+annoy Linus by proposing another iteration of a common single linked
+list implementation :)
 
