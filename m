@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab1JFRaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:30:09 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:54109 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758742Ab1JFRaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:30:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAP3kjU5bdWOb/2dsb2JhbABDhHSkRIFUAQUjDwEjIxAlAiYCAjkDGwYBEogApyKRVoEthFMYgRQEk26IX4hp
-X-IronPort-AV: E=Sophos;i="4.68,497,1312149600"; 
-   d="scan'208";a="421558697"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-To: Tony Lindgren <tony@atomide.com>, Joe Perches <joe@perches.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Timo Teras" <timo.teras@solidboot.com>,
-        "Harvey Harrison" <harvey.harrison@gmail.com>
-Subject: [PATCH v2] omap: dmtimer: convert printk to pr_err / WARN
-Date: Thu,  6 Oct 2011 19:30:02 +0200
-Message-Id: <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
-References: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
+	id S965194Ab1JFRdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:33:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965106Ab1JFRdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 13:33:45 -0400
+Message-ID: <4E8DDBF8.6080905@redhat.com>
+Date: Thu, 06 Oct 2011 17:48:56 +0100
+From: Niels de Vos <ndevos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Joe Krahn <krahn@niehs.nih.gov>,
+        Andrew Morton <akpm@google.com>, Rich.Liu@ite.com.tw,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] parport_pc: release IO region properly if unsupported
+ ITE887x card is found
+References: <alpine.LNX.2.00.1110061654280.31654@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1110061654280.31654@pobox.suse.cz>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert a printk(KERN_ERR) message in the driver to pr_err(), and
-use WARN() instead of a custom log message with a stack dump.
+On 10/06/2011 04:38 PM, Jiri Kosina wrote:
+> sio_ite_8872_probe() bails out if it detects no-parallel (1S, 2S) or unknown
+> card.
+> 
+> It doesn't call release_region() on the previously allocated resource though.
+> This causes
+> 
+>   (a) leak of the resource
+>   (b) kernel oops when parport module is removed and /proc/ioports is read. This
+>       is because the string that has been associated to the IO port region
+>       is a static char array inside the already removed module.
+> 
+> Let's call release_region() properly before baling out.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  drivers/parport/parport_pc.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+> index d1cdb94..d0b597b 100644
+> --- a/drivers/parport/parport_pc.c
+> +++ b/drivers/parport/parport_pc.c
+> @@ -2595,14 +2595,17 @@ static int __devinit sio_ite_8872_probe(struct pci_dev *pdev, int autoirq,
+>  		break;
+>  	case 0x6:
+>  		printk(KERN_INFO "parport_pc: ITE8873 found (1S)\n");
+> +		release_region(inta_addr[i], 32);
+>  		return 0;
+>  	case 0x8:
+>  		printk(KERN_INFO "parport_pc: ITE8874 found (2S)\n");
+> +		release_region(inta_addr[i], 32);
+>  		return 0;
+>  	default:
+>  		printk(KERN_INFO "parport_pc: unknown ITE887x\n");
+>  		printk(KERN_INFO "parport_pc: please mail 'lspci -nvv' "
+>  			"output to Rich.Liu@ite.com.tw\n");
+> +		release_region(inta_addr[i], 32);
+>  		return 0;
+>  	}
+>  
 
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- arch/arm/plat-omap/dmtimer.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Looks good to me, now release_region() is now consistent through the
+whole of sio_ite_8872_probe().
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index ee9f6eb..dead0f3 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -322,7 +322,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
- 	while (!(omap_dm_timer_read_reg(timer, OMAP_TIMER_SYS_STAT_REG) & 1)) {
- 		c++;
- 		if (c > 100000) {
--			printk(KERN_ERR "Timer failed to reset\n");
-+			pr_err("Timer failed to reset\n");
- 			return;
- 		}
- 	}
-@@ -397,9 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
- 	spin_lock_irqsave(&dm_timer_lock, flags);
- 	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
- 		spin_unlock_irqrestore(&dm_timer_lock, flags);
--		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
--		       __FILE__, __LINE__, __func__, id);
--		dump_stack();
-+		WARN(1, "unable to get timer %d\n", id);
- 		return NULL;
- 	}
- 
--- 
-1.7.6.3
+Also verified that this is not an issue in drivers/tty/serial/8250_pci.c
+where a similar logic for the same chip is used.
 
+Acked-by: Niels de Vos <ndevos@redhat.com>
