@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759126Ab1JFT2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:28:50 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:51274 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab1JFT2s (ORCPT
+	id S1759044Ab1JFTeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:34:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53451 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756795Ab1JFTeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:28:48 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        dave@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
-        brking@linux.vnet.ibm.com, ngupta@vflare.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] staging: zcache: fix crash on cpu remove
-Date: Thu,  6 Oct 2011 14:28:26 -0500
-Message-Id: <1317929306-18471-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 6 Oct 2011 15:34:16 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=VKzB9fIMzP--0FXAUagA:9 a=yuKKYf7CDWY9T4GQFk8A:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
+ initialized, don't nop it out
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org, rth@redhat.com
+Date: Thu, 06 Oct 2011 15:34:13 -0400
+In-Reply-To: <20111006183841.GC2505@redhat.com>
+References: <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>
+	 <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
+	 <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
+	 <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
+	 <1317925615.4729.14.camel@gandalf.stny.rr.com> <4E8DF385.3070009@zytor.com>
+	 <20111006183841.GC2505@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317929656.4729.22.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case that a cpu is taken offline before zcache_do_preload() is
-ever called on the cpu, the per-cpu zcache_preloads structure will
-be uninitialized.  In the CPU_DEAD case for zcache_cpu_notifier(),
-kp->obj is not checked before calling kmem_cache_free() on it.
-If it is NULL, a crash results.
+On Thu, 2011-10-06 at 14:38 -0400, Jason Baron wrote:
 
-This patch ensures that both kp->obj and kp->page are not NULL before
-calling the respective free functions. In practice, just checking
-one or the other should be sufficient since they are assigned together
-in zcache_do_preload(), but I check both for safety.
+> Right, its certainly doable, but I'm not sure its so simple, since we'll
+> need a pass to eliminate the jumps - which can be keyed off the
+> '__jump_table' section. 
 
-Based on v3.1-rc8
+Look at the code of scripts/recordmcount.c and friends.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+It does two things.
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 462fbc2..41d1ba1 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1357,8 +1357,14 @@ static int zcache_cpu_notifier(struct notifier_block *nb,
- 			kp->objnodes[kp->nr - 1] = NULL;
- 			kp->nr--;
- 		}
--		kmem_cache_free(zcache_obj_cache, kp->obj);
--		free_page((unsigned long)kp->page);
-+		if (kp->obj) {
-+			kmem_cache_free(zcache_obj_cache, kp->obj);
-+			kp->obj = NULL;
-+		}
-+		if (kp->page) {
-+			free_page((unsigned long)kp->page);
-+			kp->page = NULL;
-+		}
- 		break;
- 	default:
- 		break;
--- 
-1.7.4.1
+1) find all the callers of mcount and make a section for it.
+
+2) For those callers of mcount that is in sections that are not
+whitelisted, and therefor will not be patched, to replace the call to
+mcount with a nop.
+
+
+We can use this code, or a copy of it, to do the same with jump_label.
+Have the x86 jump_label be:
+
+
+static __always_inline bool arch_static_branch(struct jump_label_key
+*key)
+{
+	asm goto("1:"
+		"jmp l_yes\n"
+		".pushsection __jump_table,  \"aw\" \n\t"
+		_ASM_ALIGN "\n\t"
+		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+		".popsection \n\t"
+		: :  "i" (key) : : l_yes);
+	return false;
+l_yes:
+	return true;
+}
+
+Then have the record_jumplabel.c (or whatever it's called) find all the
+jmps at run time, and convert them into the appropriate nop.
+
+Then at runtime patching, the jumplabel code could figure out what size
+jump it needs to replace it.
+
+-- Steve
+
 
