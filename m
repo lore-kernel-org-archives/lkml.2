@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965296Ab1JFSaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 14:30:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53968 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758955Ab1JFS1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 14:27:33 -0400
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: ben-linux@fluff.org, Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 07/13] i2c-designware: move i2c functionality bit field to be adapter specific
-Date: Thu,  6 Oct 2011 11:26:31 -0700
-Message-Id: <1317925597-32245-8-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
+	id S1758976Ab1JFSaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 14:30:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51275 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965277Ab1JFS37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 14:29:59 -0400
+Message-ID: <4E8DF385.3070009@zytor.com>
+Date: Thu, 06 Oct 2011 11:29:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org, rth@redhat.com
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been initialized,
+ don't nop it out
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>  <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>  <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>  <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>  <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>  <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com> <1317925615.4729.14.camel@gandalf.stny.rr.com>
+In-Reply-To: <1317925615.4729.14.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On 10/06/2011 11:26 AM, Steven Rostedt wrote:
+> On Thu, 2011-10-06 at 14:10 -0400, Jason Baron wrote:
+> 
+>>> Looks like jmp2 is about 5% faster than jmp5 on Sandybridge with this
+>>> benchmark.
+>>>
+>>> But insignificant difference on Nehalem.
+>>>
+>>>     J
+>>
+>> It would be cool if we could make the total width 2-bytes, when
+>> possible.  It might be possible by making the initial 'JUMP_LABEL_INITIAL_NOP'
+>> as a 'jmp' to the 'l_yes' label. And then patching that with a no-op at boot
+>> time or link time - letting the compiler pick the width. In that way we could
+>> get the optimal width...
+> 
+> Why not just do it?
+> 
+> jump_label is encapsulated in arch_static_branch() which on x86 looks
+> like:
+> 
+> static __always_inline bool arch_static_branch(struct jump_label_key *key)
+> {
+> 	asm goto("1:"
+> 		JUMP_LABEL_INITIAL_NOP
+> 		".pushsection __jump_table,  \"aw\" \n\t"
+> 		_ASM_ALIGN "\n\t"
+> 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+> 		".popsection \n\t"
+> 		: :  "i" (key) : : l_yes);
+> 	return false;
+> l_yes:
+> 	return true;
+> }
+> 
+> 
+> That jmp to l_yes should easily be a two byte jump.
+> 
+> If not I'm sure it would be easy to catch it before modifying the code.
+> And then complain real loudly about it.
+> 
 
-The functionality of the adapter depends on the configuration of the
-IP block at silicon compile time and is adapter specific.
+The important thing is that it requires the build-time elimination of
+jumps.  It's just work.
 
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Signed-off-by: Ben Dooks <ben-linux@fluff.org>
----
- drivers/i2c/busses/i2c-designware-core.c    |    8 ++------
- drivers/i2c/busses/i2c-designware-core.h    |    1 +
- drivers/i2c/busses/i2c-designware-platdrv.c |    8 ++++++++
- 3 files changed, 11 insertions(+), 6 deletions(-)
+	-hpa
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index cd52f17..7105511 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -457,12 +457,8 @@ done:
- 
- u32 i2c_dw_func(struct i2c_adapter *adap)
- {
--	return	I2C_FUNC_I2C |
--		I2C_FUNC_10BIT_ADDR |
--		I2C_FUNC_SMBUS_BYTE |
--		I2C_FUNC_SMBUS_BYTE_DATA |
--		I2C_FUNC_SMBUS_WORD_DATA |
--		I2C_FUNC_SMBUS_I2C_BLOCK;
-+	struct dw_i2c_dev *dev = i2c_get_adapdata(adap);
-+	return dev->functionality;
- }
- 
- static u32 i2c_dw_read_clear_intrbits(struct dw_i2c_dev *dev)
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 43de340..ab4e655 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -182,6 +182,7 @@ struct dw_i2c_dev {
- 	int			irq;
- 	int			swab;
- 	struct i2c_adapter	adapter;
-+	u32			functionality;
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
- };
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 08783a6..36db7a8 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -96,6 +96,14 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 	}
- 	clk_enable(dev->clk);
- 
-+	dev->functionality =
-+		I2C_FUNC_I2C |
-+		I2C_FUNC_10BIT_ADDR |
-+		I2C_FUNC_SMBUS_BYTE |
-+		I2C_FUNC_SMBUS_BYTE_DATA |
-+		I2C_FUNC_SMBUS_WORD_DATA |
-+		I2C_FUNC_SMBUS_I2C_BLOCK;
-+
- 	dev->base = ioremap(mem->start, resource_size(mem));
- 	if (dev->base == NULL) {
- 		dev_err(&pdev->dev, "failure mapping io resources\n");
+
 -- 
-1.7.3.4
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
