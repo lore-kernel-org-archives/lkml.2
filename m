@@ -1,215 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077Ab1JFOwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:52:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33852 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964972Ab1JFOuE (ORCPT
+	id S1758585Ab1JFPOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 11:14:41 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:57196 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758284Ab1JFPOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:50:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
-	in-reply-to:references:x-system-of-record;
-	b=Q7g5mTtYYZSdG/CzG7/8HXQev6GRQGrhz6trAgKFXTiY/rDmpUW5bZ2lq5RexjvWC
-	NJvtnK7B5A1BC4ktXObJA==
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, robert.richter@amd.com, ravitillo@lbl.gov
-Subject: [PATCH 05/12] perf_events: add LBR mappings for PERF_SAMPLE_BRANCH filters
-Date: Thu,  6 Oct 2011 16:49:08 +0200
-Message-Id: <1317912555-9559-6-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1317912555-9559-1-git-send-email-eranian@google.com>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-X-System-Of-Record: true
+	Thu, 6 Oct 2011 11:14:39 -0400
+Date: Thu, 6 Oct 2011 08:14:35 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Paul Menzel <paulepanter@users.sourceforge.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+        linux-pci@vger.kernel.org, stable@kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v2] x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
+Message-ID: <20111006081435.74b00765@jbarnes-desktop>
+In-Reply-To: <1317739047.4892.24.camel@mattotaupa>
+References: <1316514056.3891.2.camel@mattotaupa>
+	<CAErSpo4FACymQXs1fuDwP87_1U2XLTxC=wKLEK2Q0scxhw7R+Q@mail.gmail.com>
+	<1317116380.4877.5.camel@mattotaupa>
+	<CAErSpo6KopVRio-84uoUf1on+VQ6zuduypztXnUwcq_8iNtbjw@mail.gmail.com>
+	<1317739047.4892.24.camel@mattotaupa>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/U_Ydo1j5h3WZaUidPkQBo1Q"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mappings from the generic PERF_SAMPLE_BRANCH_*
-filters to the actual Intel X86 LBR filters, whenever they exist.
+--Sig_/U_Ydo1j5h3WZaUidPkQBo1Q
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-The patch also adds a restriction on Intel Atom, whereby only
-stepping 10 (PineView) and more recent are supported. Older models,
-do not have a functional LBR (does not freeze on PMU interrupt).
+On Tue, 04 Oct 2011 16:37:27 +0200
+Paul Menzel <paulepanter@users.sourceforge.net> wrote:
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c     |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  110 +++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 3 deletions(-)
+> Am Dienstag, den 27.09.2011, 08:09 -0600 schrieb Bjorn Helgaas:
+> > On Tue, Sep 27, 2011 at 3:39 AM, Paul Menzel wrote:
+> > > Am Dienstag, den 20.09.2011, 10:39 -0600 schrieb Bjorn Helgaas:
+> > >> On Tue, Sep 20, 2011 at 4:20 AM, Paul Menzel wrote:
+> > >> > ...
+> > >> >
+> > >> > Using coreboot [1] with this board the problem does not exist but =
+this quirk also does not affect it either. To be safe though the check is t=
+ightened to only take effect when the BIOS from American Megatrends is used.
+> > >> >
+> > >> >        15:13 < ruik> but coreboot does not need that
+> > >> >        15:13 < ruik> because i have there only one root bus
+> > >> >        15:13 < ruik> the audio is behind a bridge
+> > >>
+> > >> I'd like to know more about this coreboot situation.  Would it be
+> > >> possible to get a dmesg log from the system with coreboot?  I'd like
+> > >> to see how coreboot configures this device differently.
+> > >
+> > > I had attached that to the Bugzilla report #30552 [2], but this is do=
+wn
+> > > at the moment. I saw that you got the output from someone on #coreboot
+> > > though.
+> > >
+> > >> > CC: stable@kernel.org (=E2=89=A5 2.6.34)
+> > >> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > >> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > >> > CC: Ingo Molnar <mingo@redhat.com>
+> > >> > CC: H. Peter Anvin <hpa@zytor.com>
+> > >> > CC: x86@kernel.org
+> > >> > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > >> > Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
+> > >>
+> > >> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> > >>
+> > >> This is fine with me.  I don't think it's the final solution, but I
+> > >> think it's worth doing for now.
+> > >
+> > > Thank you. I could not see this in Linus=E2=80=99 tree [3] yet. Jesse=
+, could you
+> > > pick that up as you have done for the other commit? (Where is your
+> > > (temporary) tree located?)
+> >=20
+> > Jesse's on vacation right now.
+>=20
+> It looks like Jesse is back from vacation. Jesse, I hope you could enjoy
+> it and I am sorry for bothering you right after you have been back.
+>=20
+> Is it possible to get this patch in for Linux 3.1?
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e2639f4..740857f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1612,7 +1612,7 @@ static __init int intel_pmu_init(void)
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
- 		       sizeof(hw_cache_event_ids));
- 
--		intel_pmu_lbr_init_nhm();
-+		intel_pmu_lbr_init_snb();
- 
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_snb_pebs_events;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index e8a6851..abcabe3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -8,6 +8,47 @@ enum {
- };
- 
- /*
-+ * Intel LBR_SELECT bits
-+ * Intel Vol3a, April 2011, Section 16.7 Table 16-10
-+ *
-+ * Hardware branch filter (not available on all CPUs)
-+ */
-+#define LBR_KERNEL_BIT		0 /* do not capture at ring0 */
-+#define LBR_USER_BIT		1 /* do not capture at ring > 0 */
-+#define LBR_JCC_BIT		2 /* do not capture conditional branches */
-+#define LBR_REL_CALL_BIT	3 /* do not capture relative calls */
-+#define LBR_IND_CALL_BIT	4 /* do not capture indirect calls */
-+#define LBR_RETURN_BIT		5 /* do not capture near returns */
-+#define LBR_IND_JMP_BIT		6 /* do not capture indirect jumps */
-+#define LBR_REL_JMP_BIT		7 /* do not capture relative jumps */
-+#define LBR_FAR_BIT		8 /* do not capture far branches */
-+
-+#define LBR_KERNEL	(1 << LBR_KERNEL_BIT)
-+#define LBR_USER	(1 << LBR_USER_BIT)
-+#define LBR_JCC		(1 << LBR_JCC_BIT)
-+#define LBR_REL_CALL	(1 << LBR_REL_CALL_BIT)
-+#define LBR_IND_CALL	(1 << LBR_IND_CALL_BIT)
-+#define LBR_RETURN	(1 << LBR_RETURN_BIT)
-+#define LBR_REL_JMP	(1 << LBR_REL_JMP_BIT)
-+#define LBR_IND_JMP	(1 << LBR_IND_JMP_BIT)
-+#define LBR_FAR		(1 << LBR_FAR_BIT)
-+
-+#define LBR_PLM (LBR_KERNEL | LBR_USER)
-+
-+#define LBR_SEL_MASK	0x1ff /* valid bits in LBR_SELECT */
-+
-+#define LBR_ANY		 \
-+	(LBR_JCC	|\
-+	 LBR_REL_CALL	|\
-+	 LBR_IND_CALL	|\
-+	 LBR_RETURN	|\
-+	 LBR_REL_JMP	|\
-+	 LBR_IND_JMP	|\
-+	 LBR_FAR)
-+
-+#define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
-+
-+/*
-  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
-  * otherwise it becomes near impossible to get a reliable stack.
-  */
-@@ -147,8 +188,6 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
- 	cpuc->lbr_stack.nr = i;
- }
- 
--#define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
--
- /*
-  * Due to lack of segmentation in Linux the effective address (offset)
-  * is the same as the linear address, allowing us to merge the LIP and EIP
-@@ -196,28 +235,95 @@ static void intel_pmu_lbr_read(void)
- 		intel_pmu_lbr_read_64(cpuc);
- }
- 
-+/*
-+ * Map interface branch filters onto LBR filters
-+ */
-+static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX]=
-+{
-+	[PERF_SAMPLE_BRANCH_ANY]        = LBR_ANY,
-+	[PERF_SAMPLE_BRANCH_USER]       = LBR_USER,
-+	[PERF_SAMPLE_BRANCH_KERNEL]     = LBR_KERNEL,
-+	[PERF_SAMPLE_BRANCH_ANY_RETURN] =
-+		LBR_RETURN | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
-+	/*
-+	 * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
-+	 */
-+	[PERF_SAMPLE_BRANCH_ANY_CALL] =
-+		LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
-+	/*
-+	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
-+	 */
-+	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
-+};
-+
-+static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX]=
-+{
-+	[PERF_SAMPLE_BRANCH_ANY]        = LBR_ANY,
-+	[PERF_SAMPLE_BRANCH_USER]       = LBR_USER,
-+	[PERF_SAMPLE_BRANCH_KERNEL]     = LBR_KERNEL,
-+	[PERF_SAMPLE_BRANCH_ANY_RETURN] = LBR_RETURN | LBR_FAR,
-+	[PERF_SAMPLE_BRANCH_ANY_CALL]   = LBR_REL_CALL | LBR_IND_CALL | LBR_FAR,
-+	[PERF_SAMPLE_BRANCH_IND_CALL]   = LBR_IND_CALL,
-+};
-+
-+/* core */
- static void intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
-+
-+	pr_cont("4-deep LBR, ");
- }
- 
-+/* nehalem/westmere */
- static void intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
-+
-+	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
-+	x86_pmu.lbr_sel_map  = nhm_lbr_sel_map;
-+
-+	pr_cont("16-deep LBR, ");
-+}
-+
-+/* sandy bridge */
-+static void intel_pmu_lbr_init_snb(void)
-+{
-+	x86_pmu.lbr_nr	 = 16;
-+	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
-+	x86_pmu.lbr_from = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to   = MSR_LBR_NHM_TO;
-+
-+	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
-+	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
-+
-+	pr_cont("16-deep LBR, ");
- }
- 
-+/* atom */
- static void intel_pmu_lbr_init_atom(void)
- {
-+	/*
-+	 * only models starting at stepping 10 seems
-+	 * to have an operational LBR which can freeze
-+	 * on PMU interrupt
-+	 */
-+	if (boot_cpu_data.x86_mask < 10) {
-+		pr_cont("LBR disabled due to erratum");
-+		return;
-+	}
-+
- 	x86_pmu.lbr_nr	   = 8;
- 	x86_pmu.lbr_tos    = MSR_LBR_TOS;
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
-+
-+	pr_cont("8-deep LBR, ");
- }
- 
- #endif /* CONFIG_CPU_SUP_INTEL */
--- 
-1.7.4.1
+Yeah looks safe.  You'll have to send it straight to Linus though with
+my ack; my tree isn't quite back up yet (have my new key signed so
+maybe tomorrow).
 
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/U_Ydo1j5h3WZaUidPkQBo1Q
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOjcXbAAoJEIEoDkX4Qk9h+ZoQAMROiVEvYsQw623iIccXa+JJ
+1O55Buz+VxLME/UHlfPnGy77CFvmADuaJNVjn+OMrAg1WpsBm1Q/0GfENeZzFRzD
+RUJviXXyIPe73gQ+b3woRSdhouixa2L2zSm+QPBjPQRJpiZNLMxuYQ6sS7CQwA18
+JFPd5HkY0tYRYaGXYCyEc2gpzRRYNIY2KQJWD8SZtBtqVvvKIdXCemY8Au0m0j9p
+9gNwHfLi4G1kWsxjY5o7bk+7ONQQY5jg2ZZEMRg6qb7eQdwUwYqWSbUGzxhoR9h7
+mTovQS69uuLJrnpNZC/LA+J2f8hQlsEX4NqkLpkwMD582dsGnCvpvtPy+3I4msaE
+be6eXh7wPELZXUhTYujx/lDqIvsAwP8tjprvvj0anYTtvNGrwuHVxOEA8NyY3LBH
++IVoVFzLAzShDSnTHphKP1bdHviGkjswYMMxyN/A9zGuhgptw1WyGJ7iLq3c7wx/
+93mUlaK+8VZ6HYgqsEtJf7oVj7G+mWZsi8rwCVLcTC1zGUo2585Py8Nbv1ot92Zl
+ABaxtJBLFBnUgTYGx+THFgNELxTeUouwaljg7n+/O3H/PD0EhqYjW33rEp9+mYgQ
++oEvlDwe35jx+ySBfvcuvnG1onW/LR/q5njiFIufjP2PUU1f2OnfTIztfpEh5ySB
+vSlYLxWBqYvZfXjVYHPW
+=hvK3
+-----END PGP SIGNATURE-----
+
+--Sig_/U_Ydo1j5h3WZaUidPkQBo1Q--
