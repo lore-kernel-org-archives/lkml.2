@@ -1,236 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193Ab1JFHFf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 03:05:35 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59146 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab1JFHFe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 03:05:34 -0400
-Subject: [RFC][PATCH v2] ASoC: ak4535: convert to soc-cache
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Oct 2011 15:05:26 +0800
-Message-ID: <1317884726.13399.19.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758197Ab1JFHI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 03:08:57 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42326 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755680Ab1JFHI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 03:08:56 -0400
+Date: Thu, 6 Oct 2011 12:21:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 3/26]   Uprobes: register/unregister
+ probes.
+Message-ID: <20111006065125.GC17591@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120022.25326.35868.sendpatchset@srdronam.in.ibm.com>
+ <20111003124640.GA25811@redhat.com>
+ <20111005170420.GB28250@linux.vnet.ibm.com>
+ <20111005185008.GA8107@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20111005185008.GA8107@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-v2: Set codec->cache_sync = 1 before calling snd_soc_cache_sync().
+* Oleg Nesterov <oleg@redhat.com> [2011-10-05 20:50:08]:
 
-I don't have this hardware, this patch is UNTESTED!!
-( But current code is broken anyway )
-I'd appreciate if someone can test it.
+> On 10/05, Srikar Dronamraju wrote:
+> >
+> > Agree. Infact I encountered this problem last week and had fixed it.
+> > In mycase, I had mapped the file read and write while trying to insert
+> > probes.
+> > The changed code looks like this
+> >
+> > 	if (!vma)
+> > 		return NULL;
+> 
+> This is unneeded, vma_prio_tree_foreach() stops when vma_prio_tree_next()
+> returns NULL. IOW, you can never see vma == NULL.
 
-Axel
+Agree.
 
- sound/soc/codecs/ak4535.c |  101 ++++++++------------------------------------
- 1 files changed, 19 insertions(+), 82 deletions(-)
+> 
+> > 	if (!valid_vma(vma))
+> > 		continue;
+> 
+> Yes.
+> 
+> > > > +	mutex_lock(&inode->i_mutex);
+> > > > +	uprobe = alloc_uprobe(inode, offset);
+> > >
+> > > Looks like, alloc_uprobe() doesn't need ->i_mutex.
+> >
+> >
+> > Actually this was pointed out by you in the last review.
+> > https://lkml.org/lkml/2011/7/24/91
+> 
+> OOPS ;) may be deserves a comment...
 
-diff --git a/sound/soc/codecs/ak4535.c b/sound/soc/codecs/ak4535.c
-index e1a214e..8c497fc 100644
---- a/sound/soc/codecs/ak4535.c
-+++ b/sound/soc/codecs/ak4535.c
-@@ -34,7 +34,6 @@
- struct ak4535_priv {
- 	unsigned int sysclk;
- 	enum snd_soc_control_type control_type;
--	void *control_data;
- };
- 
- /*
-@@ -47,63 +46,6 @@ static const u16 ak4535_reg[AK4535_CACHEREGNUM] = {
-     0x0000, 0x0000, 0x0057, 0x0000,
- };
- 
--/*
-- * read ak4535 register cache
-- */
--static inline unsigned int ak4535_read_reg_cache(struct snd_soc_codec *codec,
--	unsigned int reg)
--{
--	u16 *cache = codec->reg_cache;
--	if (reg >= AK4535_CACHEREGNUM)
--		return -1;
--	return cache[reg];
--}
--
--/*
-- * write ak4535 register cache
-- */
--static inline void ak4535_write_reg_cache(struct snd_soc_codec *codec,
--	u16 reg, unsigned int value)
--{
--	u16 *cache = codec->reg_cache;
--	if (reg >= AK4535_CACHEREGNUM)
--		return;
--	cache[reg] = value;
--}
--
--/*
-- * write to the AK4535 register space
-- */
--static int ak4535_write(struct snd_soc_codec *codec, unsigned int reg,
--	unsigned int value)
--{
--	u8 data[2];
--
--	/* data is
--	 *   D15..D8 AK4535 register offset
--	 *   D7...D0 register data
--	 */
--	data[0] = reg & 0xff;
--	data[1] = value & 0xff;
--
--	ak4535_write_reg_cache(codec, reg, value);
--	if (codec->hw_write(codec->control_data, data, 2) == 2)
--		return 0;
--	else
--		return -EIO;
--}
--
--static int ak4535_sync(struct snd_soc_codec *codec)
--{
--	u16 *cache = codec->reg_cache;
--	int i, r = 0;
--
--	for (i = 0; i < AK4535_CACHEREGNUM; i++)
--		r |= ak4535_write(codec, i, cache[i]);
--
--	return r;
--};
--
- static const char *ak4535_mono_gain[] = {"+6dB", "-17dB"};
- static const char *ak4535_mono_out[] = {"(L + R)/2", "Hi-Z"};
- static const char *ak4535_hp_out[] = {"Stereo", "Mono"};
-@@ -304,7 +246,7 @@ static int ak4535_hw_params(struct snd_pcm_substream *substream,
- 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
- 	struct snd_soc_codec *codec = rtd->codec;
- 	struct ak4535_priv *ak4535 = snd_soc_codec_get_drvdata(codec);
--	u8 mode2 = ak4535_read_reg_cache(codec, AK4535_MODE2) & ~(0x3 << 5);
-+	u8 mode2 = snd_soc_read(codec, AK4535_MODE2) & ~(0x3 << 5);
- 	int rate = params_rate(params), fs = 256;
- 
- 	if (rate)
-@@ -323,7 +265,7 @@ static int ak4535_hw_params(struct snd_pcm_substream *substream,
- 	}
- 
- 	/* set rate */
--	ak4535_write(codec, AK4535_MODE2, mode2);
-+	snd_soc_write(codec, AK4535_MODE2, mode2);
- 	return 0;
- }
- 
-@@ -348,44 +290,37 @@ static int ak4535_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 	/* use 32 fs for BCLK to save power */
- 	mode1 |= 0x4;
- 
--	ak4535_write(codec, AK4535_MODE1, mode1);
-+	snd_soc_write(codec, AK4535_MODE1, mode1);
- 	return 0;
- }
- 
- static int ak4535_mute(struct snd_soc_dai *dai, int mute)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	u16 mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
-+	u16 mute_reg = snd_soc_read(codec, AK4535_DAC);
- 	if (!mute)
--		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
-+		snd_soc_write(codec, AK4535_DAC, mute_reg & ~0x20);
- 	else
--		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
-+		snd_soc_write(codec, AK4535_DAC, mute_reg | 0x20);
- 	return 0;
- }
- 
- static int ak4535_set_bias_level(struct snd_soc_codec *codec,
- 	enum snd_soc_bias_level level)
- {
--	u16 i, mute_reg;
--
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
--		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
--		ak4535_write(codec, AK4535_DAC, mute_reg & ~0x20);
-+		snd_soc_update_bits(codec, AK4535_DAC, 0x20, 0);
- 		break;
- 	case SND_SOC_BIAS_PREPARE:
--		mute_reg = ak4535_read_reg_cache(codec, AK4535_DAC);
--		ak4535_write(codec, AK4535_DAC, mute_reg | 0x20);
-+		snd_soc_update_bits(codec, AK4535_DAC, 0x20, 0x20);
- 		break;
- 	case SND_SOC_BIAS_STANDBY:
--		i = ak4535_read_reg_cache(codec, AK4535_PM1);
--		ak4535_write(codec, AK4535_PM1, i | 0x80);
--		i = ak4535_read_reg_cache(codec, AK4535_PM2);
--		ak4535_write(codec, AK4535_PM2, i & (~0x80));
-+		snd_soc_update_bits(codec, AK4535_PM1, 0x80, 0x80);
-+		snd_soc_update_bits(codec, AK4535_PM2, 0x80, 0);
- 		break;
- 	case SND_SOC_BIAS_OFF:
--		i = ak4535_read_reg_cache(codec, AK4535_PM1);
--		ak4535_write(codec, AK4535_PM1, i & (~0x80));
-+		snd_soc_update_bits(codec, AK4535_PM1, 0x80, 0);
- 		break;
- 	}
- 	codec->dapm.bias_level = level;
-@@ -428,7 +363,8 @@ static int ak4535_suspend(struct snd_soc_codec *codec, pm_message_t state)
- 
- static int ak4535_resume(struct snd_soc_codec *codec)
- {
--	ak4535_sync(codec);
-+	codec->cache_sync = 1;
-+	snd_soc_cache_sync(codec);
- 	ak4535_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
- 	return 0;
- }
-@@ -436,11 +372,15 @@ static int ak4535_resume(struct snd_soc_codec *codec)
- static int ak4535_probe(struct snd_soc_codec *codec)
- {
- 	struct ak4535_priv *ak4535 = snd_soc_codec_get_drvdata(codec);
-+	int ret;
- 
- 	printk(KERN_INFO "AK4535 Audio Codec %s", AK4535_VERSION);
- 
--	codec->control_data = ak4535->control_data;
--
-+	ret = snd_soc_codec_set_cache_io(codec, 8, 8, ak4535->control_type);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
-+		return ret;
-+	}
- 	/* power on device */
- 	ak4535_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
- 
-@@ -461,8 +401,6 @@ static struct snd_soc_codec_driver soc_codec_dev_ak4535 = {
- 	.remove =	ak4535_remove,
- 	.suspend =	ak4535_suspend,
- 	.resume =	ak4535_resume,
--	.read = ak4535_read_reg_cache,
--	.write = ak4535_write,
- 	.set_bias_level = ak4535_set_bias_level,
- 	.reg_cache_size = ARRAY_SIZE(ak4535_reg),
- 	.reg_word_size = sizeof(u8),
-@@ -485,7 +423,6 @@ static __devinit int ak4535_i2c_probe(struct i2c_client *i2c,
- 		return -ENOMEM;
- 
- 	i2c_set_clientdata(i2c, ak4535);
--	ak4535->control_data = i2c;
- 	ak4535->control_type = SND_SOC_I2C;
- 
- 	ret = snd_soc_register_codec(&i2c->dev,
+will add a comment.
+
+> 
+> > > > +void unregister_uprobe(struct inode *inode, loff_t offset,
+> > > > +				struct uprobe_consumer *consumer)
+> > > > +{
+> > > > +	struct uprobe *uprobe;
+> > > > +
+> > > > +	inode = igrab(inode);
+> > > > +	if (!inode || !consumer)
+> > > > +		return;
+> > > > +
+> > > > +	if (offset > inode->i_size)
+> > > > +		return;
+> > > > +
+> > > > +	uprobe = find_uprobe(inode, offset);
+> > > > +	if (!uprobe)
+> > > > +		return;
+> > > > +
+> > > > +	if (!del_consumer(uprobe, consumer)) {
+> > > > +		put_uprobe(uprobe);
+> > > > +		return;
+> > > > +	}
+> > > > +
+> > > > +	mutex_lock(&inode->i_mutex);
+> > > > +	if (!uprobe->consumers)
+> > > > +		__unregister_uprobe(inode, offset, uprobe);
+> > >
+> > > It seemes that del_consumer() should be done under ->i_mutex. If it
+> > > removes the last consumer, we can race with register_uprobe() which
+> > > takes ->i_mutex before us and does another __register_uprobe(), no?
+> >
+> > We should still be okay, because we check for the consumers before we
+> > do the actual unregister in form of __unregister_uprobe.
+> > since the consumer is again added by the time we get the lock, we dont
+> > do the actual unregistration and go as if del_consumer deleted one
+> > consumer but not the last.
+> 
+> Yes, but I meant in this case register_uprobe() does the unnecessary
+> __register_uprobe() because it sees ->consumers == NULL (add_consumer()
+> returns NULL).
+
+yes we might be doing an unnecessary __register_uprobe() but because it
+raced with unregister_uprobe() and got the lock, we would avoid doing a 
+__unregister_uprobe().  
+
+However I am okay to move the lock before del_consumer(). Please let me
+know how you prefer this.
+
+> 
+> I guess this is probably harmless because of is_bkpt_insn/-EEXIST
+> logic, but still.
+> 
+
+Agree.
+
+> 
+> Btw. __register_uprobe() does
+> 
+> 		ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
+> 		if (ret && (ret != -ESRCH || ret != -EEXIST)) {
+> 			up_read(&mm->mmap_sem);
+> 			mmput(mm);
+> 			break;
+> 		}
+> 		ret = 0;
+> 		up_read(&mm->mmap_sem);
+> 		mmput(mm);
+> 
+> Yes, this is cosmetic, but why do we duplicate up_read/mmput ?
+> 
+> Up to you, but
+> 
+> 		ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
+> 		up_read(&mm->mmap_sem);
+> 		mmput(mm);
+> 
+> 		if (ret) {
+> 			if (ret != -ESRCH && ret != -EEXIST)
+> 				break;
+> 			ret = 0;
+> 		}
+> 
+> Looks a bit simpler.
+
+Okay, will do.
+
+> 
+> Oh, wait. I just noticed that the original code does
+> 
+> 	(ret != -ESRCH || ret != -EEXIST)
+> 
+> this expression is always true ;)
+
+Right, will correct this.
+> 
+> Oleg.
+> 
+
 -- 
-1.7.4.1
-
-
-
+Thanks and Regards
+Srikar
