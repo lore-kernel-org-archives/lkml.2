@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935625Ab1JFANy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 20:13:54 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46719 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935580Ab1JFANw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 20:13:52 -0400
+	id S935620Ab1JFAQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 20:16:11 -0400
+Received: from claw.goop.org ([74.207.240.146]:60063 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935580Ab1JFAQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Oct 2011 20:16:10 -0400
+Message-ID: <4E8CF348.4080405@goop.org>
+Date: Wed, 05 Oct 2011 17:16:08 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1757717892.66886.1317828833207.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-References: <1317825945-1918-1-git-send-email-linkinjeon@gmail.com>
-	<1757717892.66886.1317828833207.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Date: Thu, 6 Oct 2011 09:13:50 +0900
-Message-ID: <CAKYAXd9wqjK90pn6YHNGKi+gDEqwDV4x14CrY-Nc7JHQ_Ed7xw@mail.gmail.com>
-Subject: Re: [PATCH v11] mmc : general purpose partition support.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Andrei Warkentin <awarkentin@vmware.com>
-Cc: linux-kernel@vger.kernel.org, adrian hunter <adrian.hunter@intel.com>,
-        linus walleij <linus.walleij@linaro.org>,
-        james p freyensee <james_p_freyensee@linux.intel.com>,
-        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
-        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
-        per forlin <per.forlin@stericsson.com>,
-        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
-        linux-mmc@vger.kernel.org
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been initialized,
+ don't nop it out
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com> <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com> <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org> <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
+In-Reply-To: <4E8B3489.60902@zytor.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/6 Andrei Warkentin <awarkentin@vmware.com>:
-> Hi,
->
-> ----- Original Message -----
->> From: "Namjae Jeon" <linkinjeon@gmail.com>
->> To: cjb@laptop.org, linux-mmc@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com, "adrian hunter" <adrian.hunter@intel.com>, "linus walleij"
->> <linus.walleij@linaro.org>, "james p freyensee" <james_p_freyensee@linux.intel.com>, sebras@gmail.com, "Ulf Hansson"
->> <Ulf.Hansson@stericsson.com>, "stefan xk nilsson" <stefan.xk.nilsson@stericsson.com>, "per forlin"
->> <per.forlin@stericsson.com>, "johan rudholm" <johan.rudholm@stericsson.com>, "Namjae Jeon" <linkinjeon@gmail.com>
->> Sent: Wednesday, October 5, 2011 10:45:45 AM
->> Subject: [PATCH v11] mmc : general purpose partition support.
+On 10/04/2011 09:30 AM, H. Peter Anvin wrote:
+> On 10/04/2011 07:10 AM, Jason Baron wrote:
+>> 1) The jmp +0, is a 'safe' no-op that I know is going to initially
+>> boot for all x86. I'm not sure if there is a 5-byte nop that works on
+>> all x86 variants - but by using jmp +0, we make it much easier to debug
+>> cases where we may be using broken no-ops.
 >>
->> It allows gerneral purpose partitions in MMC Device.
->> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
->> structure suggested by Andrei Warkentin.
->> After patching, we can see general purpose partitions like this.
->> > cat /proc/partitions
->>           179 0 847872 mmcblk0
->>           179 192 4096 mmcblk0gp3
->>           179 160 4096 mmcblk0gp2
->>           179 128 4096 mmcblk0gp1
->>           179 96  1052672 mmcblk0gp0
->>           179 64  1024 mmcblk0boot1
->>           179 32  1024 mmcblk0boot0
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> ---
->>  drivers/mmc/card/block.c |   41 +++++++++++++++++++++++------------
->>  drivers/mmc/core/mmc.c   |   52
->>  ++++++++++++++++++++++++++++++++++++++++++---
->>  include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
->>  include/linux/mmc/mmc.h  |    5 +++-
->>  4 files changed, 112 insertions(+), 20 deletions(-)
->>
->> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->> +     for (idx = 0; idx < card->nr_parts; idx++) {
->> +             if (mmc_is_boot_partition(&card->part[idx]) &&
->> +                     !mmc_boot_partition_access(card->host))
->> +                     continue;
->> +             if (card->part[idx].size) {
->> +                     ret = mmc_blk_alloc_part(card, md,
->> +                             card->part[idx].part_cfg,
->> +                             card->part[idx].size >> 9,
->> +                             card->part[idx].force_ro,
->> +                             card->part[idx].name);
->> +                     if (ret)
->> +                             return ret;
->> +             }
->>       }
->
-> Is there any reason for putting the mmc_boot_partition_access() logic here? If
-> boot partitions are not allowed by host, then just don't add the mmc_parts to
-> the parts array, no? Such minutae should belong in core mmc code, not block driver, IMHO.
+> There are *plenty*.  jmp+0 is about as pessimal as you can get.
 
-Hi.
+As an aside, do you know if a 2-byte unconditional jmp is any more
+efficient than 5-byte, aside from just being a smaller instruction and
+taking less icache?
 
-How about changing patch like this ?
-
-if (ext_csd[EXT_CSD_BOOT_MULT] && mmc_boot_partition_access(card->host)) {
-                        for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
-                                part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
-                                mmc_part_add(card, part_size,
-                                        EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
-                                        "boot%d", idx, true);
-                        }
-                }
-
-I want to hear the opinion from andrei and
-adrian(mmc_boot_partition_access patch's author)
-Thanks.
->
-> A
->
+    J
