@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab1JFFHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 01:07:36 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63599 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1JFFHf (ORCPT
+	id S1756050Ab1JFFMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 01:12:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17675 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1JFFMH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 01:07:35 -0400
-Date: Wed, 5 Oct 2011 22:07:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Thomas Tuttle <ttuttle@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Johan Myreen <jem@iki.fi>
-Subject: Re: [PATCH] misc/serio_raw: Avoid circular locking.
-Message-ID: <20111006050725.GD20217@core.coreip.homeip.net>
-References: <20111005170249.GA27129@google.com>
+	Thu, 6 Oct 2011 01:12:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Message-ID: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
+Date: Wed, 5 Oct 2011 22:11:58 -0700 (PDT)
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+To: <linux-x86_64@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpu idle ticks show twice in xen pvm guest
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20111005170249.GA27129@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A02020B.4E8D38A7.0021,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+Run below test on xen pvm.
+# x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
+&& y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
+&& echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
 
-On Wed, Oct 05, 2011 at 01:02:49PM -0400, Thomas Tuttle wrote:
-> 
-> This patch rearranges serio_raw_connect so that it takes the mutex once
-> to allocate a device number and open the serio device, drops it to call
-> misc_register, then takes it again to add the serio_raw device to the
-> list.
-> 
-> BUG=chromium-os:21113
-> TEST=Adhoc: PROVE_LOCKING no longer finds circular locking dependency
-> 
-> Change-Id: I414c5a3d606c28c81e42dcf989e5c55918eb4ea3
-> Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
-> ---
-> I think this works, but I'm not familiar enough with the misc and serio
-> subsystems to know if this is completely correct, nor if it is the best
-> way to break the circular dependency.  Feedback would be appreciated.
+@ X:58562301
+@ Y:58574282
+@ IDLE: 199.600
 
-Thank you for your report; I looked at the driver and (to my
-embarrassment) is is quite broken and requires a bit more extensive
-fixing. I'll be posting a few patches shortly and would appreciate if
-you could look them over and/or test.
+Normal idle percent should be around 100%.
+xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
+but these ticks will be accounted again when idle ticks restarted.
 
-Thanks.
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
 
--- 
-Dmitry
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 163b467..5dcbc91 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -151,7 +151,6 @@ static void do_stolen_accounting(void)
+ 
+ 	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+ 	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
+ }
+ 
+ /* Get the TSC speed from Xen */
