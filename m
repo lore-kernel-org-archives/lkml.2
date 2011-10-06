@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758976Ab1JFSaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 14:30:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51275 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965277Ab1JFS37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 14:29:59 -0400
-Message-ID: <4E8DF385.3070009@zytor.com>
-Date: Thu, 06 Oct 2011 11:29:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org, rth@redhat.com
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been initialized,
- don't nop it out
-References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>  <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>  <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>  <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>  <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>  <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com> <1317925615.4729.14.camel@gandalf.stny.rr.com>
-In-Reply-To: <1317925615.4729.14.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1759016Ab1JFSan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 14:30:43 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43730 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758945Ab1JFS12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 14:27:28 -0400
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Cc: ben-linux@fluff.org,
+        Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 03/13] i2c-designware: Allow mixed endianness accesses
+Date: Thu,  6 Oct 2011 11:26:27 -0700
+Message-Id: <1317925597-32245-4-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
+References: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 11:26 AM, Steven Rostedt wrote:
-> On Thu, 2011-10-06 at 14:10 -0400, Jason Baron wrote:
-> 
->>> Looks like jmp2 is about 5% faster than jmp5 on Sandybridge with this
->>> benchmark.
->>>
->>> But insignificant difference on Nehalem.
->>>
->>>     J
->>
->> It would be cool if we could make the total width 2-bytes, when
->> possible.  It might be possible by making the initial 'JUMP_LABEL_INITIAL_NOP'
->> as a 'jmp' to the 'l_yes' label. And then patching that with a no-op at boot
->> time or link time - letting the compiler pick the width. In that way we could
->> get the optimal width...
-> 
-> Why not just do it?
-> 
-> jump_label is encapsulated in arch_static_branch() which on x86 looks
-> like:
-> 
-> static __always_inline bool arch_static_branch(struct jump_label_key *key)
-> {
-> 	asm goto("1:"
-> 		JUMP_LABEL_INITIAL_NOP
-> 		".pushsection __jump_table,  \"aw\" \n\t"
-> 		_ASM_ALIGN "\n\t"
-> 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
-> 		".popsection \n\t"
-> 		: :  "i" (key) : : l_yes);
-> 	return false;
-> l_yes:
-> 	return true;
-> }
-> 
-> 
-> That jmp to l_yes should easily be a two byte jump.
-> 
-> If not I'm sure it would be easy to catch it before modifying the code.
-> And then complain real loudly about it.
-> 
+From: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
 
-The important thing is that it requires the build-time elimination of
-jumps.  It's just work.
+Allows CPUs of a given endianness to access a dw controller of a different
+endianness. Endianncess difference is detected at run time through the dw
+component type register.
 
-	-hpa
+Signed-off-by: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+---
+ drivers/i2c/busses/i2c-designware.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-
+diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
+index 4be9297..680f7c9 100644
+--- a/drivers/i2c/busses/i2c-designware.c
++++ b/drivers/i2c/busses/i2c-designware.c
+@@ -37,6 +37,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/swab.h>
+ 
+ /*
+  * Registers offset
+@@ -193,6 +194,7 @@ static char *abort_sources[] = {
+  * @status: i2c master status, one of STATUS_*
+  * @abort_source: copy of the TX_ABRT_SOURCE register
+  * @irq: interrupt number for the i2c master
++ * @swab: true if the instantiated IP is of different endianess
+  * @adapter: i2c subsystem adapter node
+  * @tx_fifo_depth: depth of the hardware tx fifo
+  * @rx_fifo_depth: depth of the hardware rx fifo
+@@ -216,6 +218,7 @@ struct dw_i2c_dev {
+ 	unsigned int		status;
+ 	u32			abort_source;
+ 	int			irq;
++	int			swab;
+ 	struct i2c_adapter	adapter;
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
+@@ -223,11 +226,19 @@ struct dw_i2c_dev {
+ 
+ static u32 dw_readl(struct dw_i2c_dev *dev, int offset)
+ {
+-	return readl(dev->base + offset);
++	u32 value = readl(dev->base + offset);
++
++	if (dev->swab)
++		return swab32(value);
++	else
++		return value;
+ }
+ 
+ static void dw_writel(struct dw_i2c_dev *dev, u32 b, int offset)
+ {
++	if (dev->swab)
++		b = swab32(b);
++
+ 	writel(b, dev->base + offset);
+ }
+ 
+@@ -760,7 +771,9 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	reg = dw_readl(dev, DW_IC_COMP_TYPE);
+-	if (reg != 0x44570140) {
++	if (reg == ___constant_swab32(0x44570140))
++		dev->swab = 1;
++	else if (reg != 0x44570140) {
+ 		dev_err(&pdev->dev, "Unknown Synopsys component type: "
+ 				"0x%08x\n",	reg);
+ 		r = -ENODEV;
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.3.4
 
