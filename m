@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229Ab1JFUG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 16:06:59 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:40570 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756876Ab1JFUG6 (ORCPT
+	id S1756952Ab1JFUSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 16:18:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60535 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755497Ab1JFUSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 16:06:58 -0400
-X-Sasl-enc: yk1bkcKewQXVkeZVLW59ZD1q7ZRnMuxQumfV9Ipn2rEc 1317931617
-Date: Thu, 6 Oct 2011 13:06:52 -0700
-From: Greg KH <greg@kroah.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: virtualbox tainting.
-Message-ID: <20111006200652.GA22225@kroah.com>
-References: <20111006190526.GA13883@redhat.com>
- <20111006194432.GA21642@kroah.com>
- <20111006195007.GA24900@redhat.com>
- <14371.1317930822@turing-police.cc.vt.edu>
+	Thu, 6 Oct 2011 16:18:35 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18gZr4CBS6PQvaf7CYsLU6f
+Date: Thu, 6 Oct 2011 13:18:27 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: =?utf-8?Q?V=C3=ADctor_Manuel_J=C3=A1quez?= Leal 
+	<vjaquez@igalia.com>
+Cc: Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Timo Teras <timo.teras@solidboot.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>
+Subject: Re: [PATCH v2] omap: dmtimer: convert printk to pr_err / WARN
+Message-ID: <20111006201827.GT6324@atomide.com>
+References: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
+ <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <14371.1317930822@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 03:53:42PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 06 Oct 2011 15:50:07 EDT, Dave Jones said:
+* Víctor Manuel Jáquez Leal <vjaquez@igalia.com> [111006 09:56]:
+> Convert a printk(KERN_ERR) message in the driver to pr_err(), and
+> use WARN() instead of a custom log message with a stack dump.
 > 
-> > I feel a bit dirty overloading TAINT_CRAP (even if the name is apropos).
-> > Should I introduce a TAINT_OUT_OF_TREE perhaps instead ?
-> 
-> That would fix my biggest issue with the patch - it's a slippery slope.  But if
-> we bite the bullet and go straight to the bottom of the slope with an
-> OUT_OF_TREE taint, I'd be happy with that.
-> 
-> Is there a good way to identify at modprobe time if a module is in-tree or
-> out-of-tree?
+> Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
 
-See my previous email, yes, we can do this.
+Looks like this won't apply with the changes we have queued up,
+care to refresh this against linux-omap master branch (or dmtimer
+branch)?
 
-greg k-h
+Regards,
+
+Tony
+
+> ---
+>  arch/arm/plat-omap/dmtimer.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+> index ee9f6eb..dead0f3 100644
+> --- a/arch/arm/plat-omap/dmtimer.c
+> +++ b/arch/arm/plat-omap/dmtimer.c
+> @@ -322,7 +322,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
+>  	while (!(omap_dm_timer_read_reg(timer, OMAP_TIMER_SYS_STAT_REG) & 1)) {
+>  		c++;
+>  		if (c > 100000) {
+> -			printk(KERN_ERR "Timer failed to reset\n");
+> +			pr_err("Timer failed to reset\n");
+>  			return;
+>  		}
+>  	}
+> @@ -397,9 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
+>  	spin_lock_irqsave(&dm_timer_lock, flags);
+>  	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
+>  		spin_unlock_irqrestore(&dm_timer_lock, flags);
+> -		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
+> -		       __FILE__, __LINE__, __func__, id);
+> -		dump_stack();
+> +		WARN(1, "unable to get timer %d\n", id);
+>  		return NULL;
+>  	}
+>  
+> -- 
+> 1.7.6.3
+> 
