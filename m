@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935614Ab1JFANh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 20:13:37 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:58758 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935580Ab1JFANg (ORCPT
+	id S935625Ab1JFANy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 20:13:54 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46719 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935580Ab1JFANw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 20:13:36 -0400
-Date: Thu, 6 Oct 2011 11:13:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, stable@kernel.org
-Subject: Re: linux-next: build failure after merge of the arm-soc tree
-Message-Id: <20111006111317.531e6fcc1829fc9927d4924d@canb.auug.org.au>
-In-Reply-To: <201110040940.12876.arnd@arndb.de>
-References: <20111004112623.aa04e959d29cb19af8053739@canb.auug.org.au>
-	<201110040940.12876.arnd@arndb.de>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Oct_2011_11_13_17_+1100_azSOk0zn8BQoUPpA"
+	Wed, 5 Oct 2011 20:13:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1757717892.66886.1317828833207.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+References: <1317825945-1918-1-git-send-email-linkinjeon@gmail.com>
+	<1757717892.66886.1317828833207.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Date: Thu, 6 Oct 2011 09:13:50 +0900
+Message-ID: <CAKYAXd9wqjK90pn6YHNGKi+gDEqwDV4x14CrY-Nc7JHQ_Ed7xw@mail.gmail.com>
+Subject: Re: [PATCH v11] mmc : general purpose partition support.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Andrei Warkentin <awarkentin@vmware.com>
+Cc: linux-kernel@vger.kernel.org, adrian hunter <adrian.hunter@intel.com>,
+        linus walleij <linus.walleij@linaro.org>,
+        james p freyensee <james_p_freyensee@linux.intel.com>,
+        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
+        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
+        per forlin <per.forlin@stericsson.com>,
+        johan rudholm <johan.rudholm@stericsson.com>, cjb@laptop.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Oct_2011_11_13_17_+1100_azSOk0zn8BQoUPpA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Arnd,
-
-On Tue, 4 Oct 2011 09:40:12 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+2011/10/6 Andrei Warkentin <awarkentin@vmware.com>:
+> Hi,
 >
-> On Tuesday 04 October 2011, Stephen Rothwell wrote:
-> > After merging the arm-soc tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> >=20
-> > ERROR: "clk_enable" [drivers/misc/atmel_pwm.ko] undefined!
-> > ERROR: "clk_disable" [drivers/misc/atmel_pwm.ko] undefined!
-> > ERROR: "clk_put" [drivers/misc/atmel_pwm.ko] undefined!
-> > ERROR: "clk_get_rate" [drivers/misc/atmel_pwm.ko] undefined!
-> > ERROR: "clk_get" [drivers/misc/atmel_pwm.ko] undefined!
-> >=20
-> > Caused by commit 9dccc010c816 ("ARM: at91: remove dependency for Atmel
-> > PWM driver selector in Kconfig").
-> >=20
-> > I have used the arm-soc tree from next-20110930 for today.
->=20
-> Ah, thanks for tracking this down. I actually noticed the same
-> problem on an ARM build but did not realize it was from one of
-> the patches I had jut put in there myself.
->=20
-> I'm really glad I didn't send this to Linus cc:stable yet then.
-> Nicolas, in my randconfig branch, I've fixed this by adding
->=20
-> 	depends on HAVE_CLK
->=20
-> which I think is the right solution. I'll replace your patch
-> with one that does this if you don't mind.
->=20
-> I'd also remove the stable tag for this patch, because it can
-> have unintended side-effects on other architectures.
+> ----- Original Message -----
+>> From: "Namjae Jeon" <linkinjeon@gmail.com>
+>> To: cjb@laptop.org, linux-mmc@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org, awarkentin@vmware.com, "adrian hunter" <adrian.hunter@intel.com>, "linus walleij"
+>> <linus.walleij@linaro.org>, "james p freyensee" <james_p_freyensee@linux.intel.com>, sebras@gmail.com, "Ulf Hansson"
+>> <Ulf.Hansson@stericsson.com>, "stefan xk nilsson" <stefan.xk.nilsson@stericsson.com>, "per forlin"
+>> <per.forlin@stericsson.com>, "johan rudholm" <johan.rudholm@stericsson.com>, "Namjae Jeon" <linkinjeon@gmail.com>
+>> Sent: Wednesday, October 5, 2011 10:45:45 AM
+>> Subject: [PATCH v11] mmc : general purpose partition support.
+>>
+>> It allows gerneral purpose partitions in MMC Device.
+>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
+>> structure suggested by Andrei Warkentin.
+>> After patching, we can see general purpose partitions like this.
+>> > cat /proc/partitions
+>>           179 0 847872 mmcblk0
+>>           179 192 4096 mmcblk0gp3
+>>           179 160 4096 mmcblk0gp2
+>>           179 128 4096 mmcblk0gp1
+>>           179 96  1052672 mmcblk0gp0
+>>           179 64  1024 mmcblk0boot1
+>>           179 32  1024 mmcblk0boot0
+>>
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> ---
+>>  drivers/mmc/card/block.c |   41 +++++++++++++++++++++++------------
+>>  drivers/mmc/core/mmc.c   |   52
+>>  ++++++++++++++++++++++++++++++++++++++++++---
+>>  include/linux/mmc/card.h |   34 +++++++++++++++++++++++++++++-
+>>  include/linux/mmc/mmc.h  |    5 +++-
+>>  4 files changed, 112 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> +     for (idx = 0; idx < card->nr_parts; idx++) {
+>> +             if (mmc_is_boot_partition(&card->part[idx]) &&
+>> +                     !mmc_boot_partition_access(card->host))
+>> +                     continue;
+>> +             if (card->part[idx].size) {
+>> +                     ret = mmc_blk_alloc_part(card, md,
+>> +                             card->part[idx].part_cfg,
+>> +                             card->part[idx].size >> 9,
+>> +                             card->part[idx].force_ro,
+>> +                             card->part[idx].name);
+>> +                     if (ret)
+>> +                             return ret;
+>> +             }
+>>       }
+>
+> Is there any reason for putting the mmc_boot_partition_access() logic here? If
+> boot partitions are not allowed by host, then just don't add the mmc_parts to
+> the parts array, no? Such minutae should belong in core mmc code, not block driver, IMHO.
 
-I am still getting the failure ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Hi.
 
---Signature=_Thu__6_Oct_2011_11_13_17_+1100_azSOk0zn8BQoUPpA
-Content-Type: application/pgp-signature
+How about changing patch like this ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+if (ext_csd[EXT_CSD_BOOT_MULT] && mmc_boot_partition_access(card->host)) {
+                        for (idx = 0; idx < MMC_NUM_BOOT_PARTITION; idx++) {
+                                part_size = ext_csd[EXT_CSD_BOOT_MULT] << 17;
+                                mmc_part_add(card, part_size,
+                                        EXT_CSD_PART_CONFIG_ACC_BOOT0 + idx,
+                                        "boot%d", idx, true);
+                        }
+                }
 
-iQIcBAEBCAAGBQJOjPKdAAoJEECxmPOUX5FEhmUQAJ5UcH0D9lBq76vNK+GfDXrL
-0a02oZoSKUT2ChRRkO9N5V84zbLCB/dd/O6ref1sAo2pOUJoDxX0hgX9yPcjt2+7
-vmQy2jY4DuMPWuVyS+I/nKPpIh2PsBBMXTqaoafw2ItM6uCeVuuj/D6xGtEHEE7a
-NbgTTR97dsbNDD5Pd7O3HhpPtMoZKYrxaf4JuBSZJlg3TeROIFo0mTLfaihssdRI
-m8nIya5Nw+zfVWgABf4gYeE+bFiksPC8Z05JFP+FOnzcqpzjBRbOmWdK06pZQQ/T
-Jq4DZH5OBKL6T+6GrxtrbUpU2fMBwK9ldiruSrn3tPxl4bjz2lyTRyO9H9bj+UOj
-xUfe7tSVXZwfHZS3fXZPVhjk5QdK6FOD5sOMN39OMXvFx+kBfwOgdixg8Z7TFMIP
-QA2SFURKSxzgikpQNUK56LXluGKJr4rWlbq2lKFqQ5A/GyQkeB/qN7R7X+FBCERM
-G5JYTYzY98+FqPt8/JoOq5DnXEFGSrYP0gp3wwGUYbTMLYq1fZIKvw5Rj7dM/t3a
-YnZ0UmUlmfQ9C6z4UHHnzj4RxBlDQTie1OWe2V8gz5JpFd0j/s/cpZMYlTnlcDXD
-E48cviKt+pKyBfi87xR+GwRGgFvUhk4vc8wsEiMS/6dP40KN+fFgUwp704qdRL2t
-mYnH/SkEKuv0xakoz/3Q
-=/csh
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Oct_2011_11_13_17_+1100_azSOk0zn8BQoUPpA--
+I want to hear the opinion from andrei and
+adrian(mmc_boot_partition_access patch's author)
+Thanks.
+>
+> A
+>
