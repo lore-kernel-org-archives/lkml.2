@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935750Ab1JFI7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 04:59:21 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4003 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935622Ab1JFI7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 04:59:19 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Message-ID: <4E8D6DDE.9050102@broadcom.com>
-Date: Thu, 6 Oct 2011 10:59:10 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
- Gecko/20110922 Thunderbird/3.1.15
+	id S935757Ab1JFJA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 05:00:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37931 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321Ab1JFJA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 05:00:27 -0400
 MIME-Version: 1.0
-To: "Stephen Rothwell" <sfr@canb.auug.org.au>
-cc: "Greg KH" <greg@kroah.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eliad Peller" <eliad@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the staging tree with the net
- tree
-References: <20111006155810.14a6b5c199edc388bbf11437@canb.auug.org.au>
-In-Reply-To: <20111006155810.14a6b5c199edc388bbf11437@canb.auug.org.au>
-X-WSS-ID: 6293B0DE3KO27918913-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 6 Oct 2011 18:00:26 +0900
+Message-ID: <CAFPAmTQnKv_kQBHP_97fwkEAF0b-QmcqH-1=v5Ce6kSgFe1TUw@mail.gmail.com>
+Subject: Query about coredump image generation for multi-threaded apps.
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: chungki0201.woo@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 06:58 AM, Stephen Rothwell wrote:
-> Hi Greg,
->
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/brcm80211/brcmsmac/mac80211_if.c between commit
-> 37a41b4affa3 ("mac80211: add ieee80211_vif param to tsf functions") from
-> the net tree and commit 3956b4a2ddb0 ("staging: brcm80211: remove locking
-> macro definitions") from the staging tree.
->
-> I fixed it up (which essentially means I used the staging tree version
-> with one small change to the brcms_ops_conf_tx prototype) and can carry
-> the fixes as necessary.
+Dear All,
 
-Thanks, Stephen
+We are running a multi-threaded embedded application on a uniprocessor
+ARM system.
 
-I had to make the mac80211 conf_tx callback change  for the mainline 
-patch as well.
+We encountered a memory corruption due to which the application crashed.
+The crashing thread accessed a pointer variable whose value was
+corrupted and so the
+application crashed.
 
-Acked.
+However, there are multiple threads writing to that corrupted pointer
+variable at the same instant
+as the crash occurs on the crashing thread.
+( As per the application logic, only proper writeable virtual memory
+addresses are written to that
+  variable, so this is a random corruption from some other module in
+the process virtual address
+  space. )
 
-Gr. AvS
+The result is that the coredump image generated does not contain the
+same corrupted value inside
+the pointer variable.
 
+Also, various other variables' values are changed as a result of the
+delay between the actual crash
+and the actions of other threads on the shared global variables.
+
+Query:
+=====
+Is there any way we can get the image of the process virtual memory in
+the coredump at the exact time
+of crash ?
+Can someone describe possible solutions or workarounds to this problem
+for both uniprocessor and SMP
+systems ?
+
+Note:
+-------
+I understand that this problem probably won't happen if we use a
+pthread_mutex to protect those global
+variables.
+In that event, if there is a crash, the other threads will not be able
+to access the shared global variables
+as the mutex would not have been released.
+However, this is currently not an option for us due to certain official reasons.
+We would appreciate it if someone could find a way to solve this
+without having to introduce any
+pthread_mutexes.
+
+Thanks,
+Kautuk.
