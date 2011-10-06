@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758378Ab1JFMmL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 08:42:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54563 "EHLO mx2.suse.de"
+	id S1758440Ab1JFMmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 08:42:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54609 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758299Ab1JFMmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 08:42:02 -0400
+	id S1758365Ab1JFMmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 08:42:09 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/14] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
-Date: Thu,  6 Oct 2011 13:41:43 +0100
-Message-Id: <1317904910-14095-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 14/14] mm: Account for the number of times direct reclaimers get throttled
+Date: Thu,  6 Oct 2011 13:41:50 +0100
+Message-Id: <1317904910-14095-15-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1317904910-14095-1-git-send-email-mgorman@suse.de>
 References: <1317904910-14095-1-git-send-email-mgorman@suse.de>
@@ -22,86 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow specific sockets to be tagged SOCK_MEMALLOC and use
-__GFP_MEMALLOC for their allocations. These sockets will be able to go
-below watermarks and allocate from the emergency reserve. Such sockets
-are to be used to service the VM (iow. to swap over). They must be
-handled kernel side, exposing such a socket to user-space is a bug.
+Under significant pressure when writing back to network-backed storage,
+direct reclaimers may get throttled. This is expected to be a
+short-lived event and the processes get woken up again but processes do
+get stalled. This patch counts how many times such stalling occurs. It's
+up to the administrator whether to reduce these stalls by increasing
+min_free_kbytes.
 
-There is a risk that the reserves be depleted so for now, the
-administrator is responsible for increasing min_free_kbytes as
-necessary to prevent deadlock for their workloads.
-
-[a.p.zijlstra@chello.nl: Original patches]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/net/sock.h |    5 ++++-
- net/core/sock.c    |   22 ++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 1 deletions(-)
+ include/linux/vm_event_item.h |    1 +
+ mm/vmscan.c                   |    1 +
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index a4d5e61..583df68 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -554,6 +554,7 @@ enum sock_flags {
- 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
- 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
- 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
-+	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
- 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
- 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
- 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
-@@ -588,7 +589,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cdc..652e5f3 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -29,6 +29,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		FOR_ALL_ZONES(PGSTEAL),
+ 		FOR_ALL_ZONES(PGSCAN_KSWAPD),
+ 		FOR_ALL_ZONES(PGSCAN_DIRECT),
++		PGSCAN_DIRECT_THROTTLE,
+ #ifdef CONFIG_NUMA
+ 		PGSCAN_ZONE_RECLAIM_FAILED,
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ca5ca02..6cb1aee 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2258,6 +2258,7 @@ static void throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 		return;
  
- static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
- {
--	return gfp_mask;
-+	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
+ 	/* Throttle */
++	count_vm_event(PGSCAN_DIRECT_THROTTLE);
+ 	wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,
+ 		pfmemalloc_watermark_ok(zone->zone_pgdat, high_zoneidx));
  }
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index d52b13d..96070b4 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -740,6 +740,7 @@ const char * const vmstat_text[] = {
+ 	TEXTS_FOR_ZONES("pgsteal")
+ 	TEXTS_FOR_ZONES("pgscan_kswapd")
+ 	TEXTS_FOR_ZONES("pgscan_direct")
++	"pgscan_direct_throttle",
  
- static inline void sk_acceptq_removed(struct sock *sk)
-@@ -718,6 +719,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
- extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
- extern int sk_stream_error(struct sock *sk, int flags, int err);
- extern void sk_stream_kill_queues(struct sock *sk);
-+extern void sk_set_memalloc(struct sock *sk);
-+extern void sk_clear_memalloc(struct sock *sk);
- 
- extern int sk_wait_data(struct sock *sk, long *timeo);
- 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index bc745d0..2e3b69b 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -221,6 +221,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
- int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
- EXPORT_SYMBOL(sysctl_optmem_max);
- 
-+/**
-+ * sk_set_memalloc - sets %SOCK_MEMALLOC
-+ * @sk: socket to set it on
-+ *
-+ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
-+ * It's the responsibility of the admin to adjust min_free_kbytes
-+ * to meet the requirements
-+ */
-+void sk_set_memalloc(struct sock *sk)
-+{
-+	sock_set_flag(sk, SOCK_MEMALLOC);
-+	sk->sk_allocation |= __GFP_MEMALLOC;
-+}
-+EXPORT_SYMBOL_GPL(sk_set_memalloc);
-+
-+void sk_clear_memalloc(struct sock *sk)
-+{
-+	sock_reset_flag(sk, SOCK_MEMALLOC);
-+	sk->sk_allocation &= ~__GFP_MEMALLOC;
-+}
-+EXPORT_SYMBOL_GPL(sk_clear_memalloc);
-+
- #if defined(CONFIG_CGROUPS) && !defined(CONFIG_NET_CLS_CGROUP)
- int net_cls_subsys_id = -1;
- EXPORT_SYMBOL_GPL(net_cls_subsys_id);
+ #ifdef CONFIG_NUMA
+ 	"zone_reclaim_failed",
 -- 
 1.7.3.4
 
