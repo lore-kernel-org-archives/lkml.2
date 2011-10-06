@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157Ab1JFThG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:37:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44548 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758737Ab1JFThF (ORCPT
+	id S1759151Ab1JFTii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:38:38 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29776 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758742Ab1JFTig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:37:05 -0400
-From: Robert Schwebel <r.schwebel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Robert Schwebel <r.schwebel@pengutronix.de>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Subject: [PATCH] at91_udc: change french comments to english
-Date: Thu,  6 Oct 2011 21:36:26 +0200
-Message-Id: <1317929786-27744-1-git-send-email-r.schwebel@pengutronix.de>
-X-Mailer: git-send-email 1.7.6.3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: rsc@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 6 Oct 2011 15:38:36 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/CgWuKTAFdM+CHRrhuuNED
+Date: Thu, 6 Oct 2011 12:38:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Abhilash K V <abhilash.kv@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: Re: [PATCH 0/2] AM3517EVM: Add support for MMC1
+Message-ID: <20111006193832.GL6324@atomide.com>
+References: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While being there, change C++ style comments to /* */.
+* Abhilash K V <abhilash.kv@ti.com> [110819 04:19]:
+> This patch-set adds support for MMC1 slot on the 
+> AM3517 EVM's base-board.
+> These patches are dependent on the following patch-set
+> http://marc.info/?l=linux-omap&m=131247357813228&w=2
+> which gets the AM3517 EVM booting.
+> 
+> The patches are tested on master of tmlind/linux-omap-2.6.git.
+> Kernel version is 3.0.0-rc7 and last commit on top of which these patches
+> were added is:
+> 
+>         885cf6ff7d3dad4cc44be74b0577d3a554d3ab71: Linux-omap rebuilt:
+>         Updated to -rc7, added new boards
+> 
+> Cc: Vaibhav Hiremath <hvaibhav@ti.com>
+> ---
+> Abhilash K V (1):
+>   AM3517: Support for MMC1
+> 
+> Vaibhav Hiremath (1):
+>   AM3517EVM: Add support for base-board MMC slot
+> 
+>  arch/arm/mach-omap2/board-am3517evm.c |   22 ++++++++++++++++++++++
+>  arch/arm/mach-omap2/hsmmc.c           |   10 +++++++++-
+>  2 files changed, 31 insertions(+), 1 deletions(-)
+> 
 
-Signed-off-by: Robert Schwebel <r.schwebel@pengutronix.de>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org
----
- drivers/usb/gadget/at91_udc.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+Adding these both to board branch thanks.
 
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index ddb118a..0059216 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -460,7 +460,7 @@ static void nuke(struct at91_ep *ep, int status)
- {
- 	struct at91_request *req;
- 
--	// terminer chaque requete dans la queue
-+	/* terminate any request in the queue */
- 	ep->stopped = 1;
- 	if (list_empty(&ep->queue))
- 		return;
-@@ -788,7 +788,7 @@ static const struct usb_ep_ops at91_ep_ops = {
- 	.queue		= at91_ep_queue,
- 	.dequeue	= at91_ep_dequeue,
- 	.set_halt	= at91_ep_set_halt,
--	// there's only imprecise fifo status reporting
-+	/* there's only imprecise fifo status reporting */
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -846,7 +846,7 @@ static void udc_reinit(struct at91_udc *udc)
- 		ep->fifo_bank = 0;
- 		ep->ep.maxpacket = ep->maxpacket;
- 		ep->creg = (void __iomem *) udc->udp_baseaddr + AT91_UDP_CSR(i);
--		// initialiser une queue par endpoint
-+		/* initialize one queue per endpoint */
- 		INIT_LIST_HEAD(&ep->queue);
- 	}
- }
-@@ -952,7 +952,7 @@ static int at91_vbus_session(struct usb_gadget *gadget, int is_active)
- 	struct at91_udc	*udc = to_udc(gadget);
- 	unsigned long	flags;
- 
--	// VDBG("vbus %s\n", is_active ? "on" : "off");
-+	/* VDBG("vbus %s\n", is_active ? "on" : "off"); */
- 	spin_lock_irqsave(&udc->lock, flags);
- 	udc->vbus = (is_active != 0);
- 	if (udc->driver)
-@@ -1003,7 +1003,7 @@ static const struct usb_gadget_ops at91_udc_ops = {
- 	 * VBUS-powered devices may also also want to support bigger
- 	 * power budgets after an appropriate SET_CONFIGURATION.
- 	 */
--	// .vbus_power		= at91_vbus_power,
-+	/* .vbus_power		= at91_vbus_power, */
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -1072,7 +1072,7 @@ static void handle_setup(struct at91_udc *udc, struct at91_ep *ep, u32 csr)
- 			ep->is_in = 0;
- 		}
- 	} else {
--		// REVISIT this happens sometimes under load; why??
-+		/* REVISIT this happens sometimes under load; why?? */
- 		ERR("SETUP len %d, csr %08x\n", rxcount, csr);
- 		status = -EINVAL;
- 	}
-@@ -1451,7 +1451,7 @@ static irqreturn_t at91_udc_irq (int irq, void *_udc)
- 			at91_udp_write(udc, AT91_UDP_IDR, AT91_UDP_RXSUSP);
- 			at91_udp_write(udc, AT91_UDP_IER, AT91_UDP_RXRSM);
- 			at91_udp_write(udc, AT91_UDP_ICR, AT91_UDP_RXSUSP);
--			// VDBG("bus suspend\n");
-+			/* VDBG("bus suspend\n"); */
- 			if (udc->suspended)
- 				continue;
- 			udc->suspended = 1;
-@@ -1473,7 +1473,7 @@ static irqreturn_t at91_udc_irq (int irq, void *_udc)
- 			at91_udp_write(udc, AT91_UDP_IDR, AT91_UDP_RXRSM);
- 			at91_udp_write(udc, AT91_UDP_IER, AT91_UDP_RXSUSP);
- 			at91_udp_write(udc, AT91_UDP_ICR, AT91_UDP_RXRSM);
--			// VDBG("bus resume\n");
-+			/* VDBG("bus resume\n"); */
- 			if (!udc->suspended)
- 				continue;
- 			udc->suspended = 0;
--- 
-1.7.6.3
-
+Tony
