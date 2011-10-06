@@ -1,80 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab1JFUSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 16:18:36 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60535 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755497Ab1JFUSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 16:18:35 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18gZr4CBS6PQvaf7CYsLU6f
-Date: Thu, 6 Oct 2011 13:18:27 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: =?utf-8?Q?V=C3=ADctor_Manuel_J=C3=A1quez?= Leal 
-	<vjaquez@igalia.com>
-Cc: Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Timo Teras <timo.teras@solidboot.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>
-Subject: Re: [PATCH v2] omap: dmtimer: convert printk to pr_err / WARN
-Message-ID: <20111006201827.GT6324@atomide.com>
-References: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
- <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
+	id S965162Ab1JFUUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 16:20:39 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:46769 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759163Ab1JFUUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 16:20:37 -0400
+Date: Thu, 6 Oct 2011 13:20:42 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Theodore Tso <tytso@mit.edu>, David Miller <davem@davemloft.net>
+Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] crc32c: Add faster algorithm and self-test code
+Message-ID: <20111006202042.GD12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11100620-3534-0000-0000-000000775395
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Víctor Manuel Jáquez Leal <vjaquez@igalia.com> [111006 09:56]:
-> Convert a printk(KERN_ERR) message in the driver to pr_err(), and
-> use WARN() instead of a custom log message with a stack dump.
+On Tue, Oct 04, 2011 at 04:53:57PM -0700, Darrick J. Wong wrote:
+> Hi all,
 > 
-> Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
-
-Looks like this won't apply with the changes we have queued up,
-care to refresh this against linux-omap master branch (or dmtimer
-branch)?
-
-Regards,
-
-Tony
-
-> ---
->  arch/arm/plat-omap/dmtimer.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+> This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+> software crc32c implementation.  It requires that all ten of his patches (at
+> least the ones dated 31 Aug 2011) be applied.  It removes the crc32c
+> implementation in crypto/ in favor of using the stamped-out one in lib/.  There
+> is also a change to Kconfig so that the kernel builder can pick an
+> implementation best suited for the hardware.
 > 
-> diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-> index ee9f6eb..dead0f3 100644
-> --- a/arch/arm/plat-omap/dmtimer.c
-> +++ b/arch/arm/plat-omap/dmtimer.c
-> @@ -322,7 +322,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
->  	while (!(omap_dm_timer_read_reg(timer, OMAP_TIMER_SYS_STAT_REG) & 1)) {
->  		c++;
->  		if (c > 100000) {
-> -			printk(KERN_ERR "Timer failed to reset\n");
-> +			pr_err("Timer failed to reset\n");
->  			return;
->  		}
->  	}
-> @@ -397,9 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
->  	spin_lock_irqsave(&dm_timer_lock, flags);
->  	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
->  		spin_unlock_irqrestore(&dm_timer_lock, flags);
-> -		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
-> -		       __FILE__, __LINE__, __func__, id);
-> -		dump_stack();
-> +		WARN(1, "unable to get timer %d\n", id);
->  		return NULL;
->  	}
->  
-> -- 
-> 1.7.6.3
+> The motivation for this patchset is that I am working on adding full metadata
+> checksumming to ext4.  As far as performance impact of adding checksumming
+> goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+> test that involves only file creation and deletion and extent tree writes, I
+> see a drop of about 50 pcercent with the current kernel crc32c implementation;
+> this improves to a drop of about 20 percent with the enclosed crc32c code.
 > 
+> When metadata is usually a small fraction of total IO, this new implementation
+> doesn't help much because metadata is usually a small fraction of total IO.
+> However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+> tree), then this patch speeds up the operation substantially.
+> 
+> Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+> should improve their speed as well.  I have not yet quantified that, however.
+
+As for Mr. Tjernlund's unresolved questions regarding the v4 patch, I have
+tested this new code on x64/x32/ppc32/ppc64 and it seems to work fine, both
+with the crc32c selftest and also on a practical level with ext4 metadata
+checksumming enabled.  Updating to Bob's newest calculation code brings about a
+10-15% speedup on the ppc64 box.  I also see that slice-by-8 is about 20%
+faster than slice-by-4 on my ppc32 box.
+
+I did _not_ see any failures on ppc32 when running an extended ext4+checksum
+test suite.
+
+Details of the ppc32 box:
+root@dyn9047029101:~# cat /proc/cpuinfo 
+processor	: 0
+cpu		: 740/750
+temperature 	: 45 C (uncalibrated)
+clock		: 500.000000MHz
+revision	: 131.0 (pvr 0008 8300)
+bogomips	: 49.86
+
+total bogomips	: 49.86
+timebase	: 24934966
+platform	: PowerMac
+model		: PowerMac1,1
+machine		: PowerMac1,1
+motherboard	: PowerMac1,1 MacRISC Power Macintosh
+detected as	: 66 (Blue&White G3)
+pmac flags	: 00000000
+L2 cache	: 1024K unified
+pmac-generation	: NewWorld
+Memory		: 896 MB
+root@dyn9047029101:~# gcc --version
+gcc-4.4.real (Ubuntu 4.4.3-4ubuntu5) 4.4.3
+Copyright (C) 2009 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+root@dyn9047029101:~# for i in /sys/devices/system/cpu/cpu0/cache/*/*; do echo $i $(cat $i); done
+/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size 32
+/sys/devices/system/cpu/cpu0/cache/index0/level 1
+/sys/devices/system/cpu/cpu0/cache/index0/number_of_sets 128
+/sys/devices/system/cpu/cpu0/cache/index0/shared_cpu_map 00000000,00000000,00000000,00000001
+/sys/devices/system/cpu/cpu0/cache/index0/size 32K
+/sys/devices/system/cpu/cpu0/cache/index0/type Data
+/sys/devices/system/cpu/cpu0/cache/index0/ways_of_associativity 8
+/sys/devices/system/cpu/cpu0/cache/index1/coherency_line_size 32
+/sys/devices/system/cpu/cpu0/cache/index1/level 1
+/sys/devices/system/cpu/cpu0/cache/index1/number_of_sets 128
+/sys/devices/system/cpu/cpu0/cache/index1/shared_cpu_map 00000000,00000000,00000000,00000001
+/sys/devices/system/cpu/cpu0/cache/index1/size 32K
+/sys/devices/system/cpu/cpu0/cache/index1/type Instruction
+/sys/devices/system/cpu/cpu0/cache/index1/ways_of_associativity 8
+/sys/devices/system/cpu/cpu0/cache/index2/coherency_line_size 128
+/sys/devices/system/cpu/cpu0/cache/index2/level 2
+/sys/devices/system/cpu/cpu0/cache/index2/number_of_sets 4096
+/sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_map 00000000,00000000,00000000,00000001
+/sys/devices/system/cpu/cpu0/cache/index2/size 1024K
+/sys/devices/system/cpu/cpu0/cache/index2/type Unified
+/sys/devices/system/cpu/cpu0/cache/index2/ways_of_associativity 2
+
+The ppc64 box:
+root@elm3c7:~# cat /proc/cpuinfo 
+processor	: 0
+cpu		: POWER5+ (gs)
+clock		: 1900.098000MHz
+revision	: 2.0 (pvr 003b 0200)
+
+(the rest is omitted for brevity)
+
+root@elm3c7:~# gcc --version
+gcc-4.4.real (Ubuntu 4.4.3-4ubuntu5) 4.4.3
+Copyright (C) 2009 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+root@elm3c7:~# for i in /sys/devices/system/cpu/cpu0/cache/*/*; do echo $i $(cat $i); done
+/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size 128
+/sys/devices/system/cpu/cpu0/cache/index0/level 1
+/sys/devices/system/cpu/cpu0/cache/index0/number_of_sets 64
+/sys/devices/system/cpu/cpu0/cache/index0/shared_cpu_map 00000000,00000000,00000000,00000001
+/sys/devices/system/cpu/cpu0/cache/index0/size 32K
+/sys/devices/system/cpu/cpu0/cache/index0/type Data
+/sys/devices/system/cpu/cpu0/cache/index0/ways_of_associativity 4
+/sys/devices/system/cpu/cpu0/cache/index1/coherency_line_size 128
+/sys/devices/system/cpu/cpu0/cache/index1/level 1
+/sys/devices/system/cpu/cpu0/cache/index1/number_of_sets 256
+/sys/devices/system/cpu/cpu0/cache/index1/shared_cpu_map 00000000,00000000,00000000,00000001
+/sys/devices/system/cpu/cpu0/cache/index1/size 64K
+/sys/devices/system/cpu/cpu0/cache/index1/type Instruction
+/sys/devices/system/cpu/cpu0/cache/index1/ways_of_associativity 2
+/sys/devices/system/cpu/cpu0/cache/index2/coherency_line_size 128
+/sys/devices/system/cpu/cpu0/cache/index2/level 2
+/sys/devices/system/cpu/cpu0/cache/index2/number_of_sets 1536
+/sys/devices/system/cpu/cpu0/cache/index2/shared_cpu_map 00000000,00000000,00000000,00000005
+/sys/devices/system/cpu/cpu0/cache/index2/size 1920K
+/sys/devices/system/cpu/cpu0/cache/index2/type Unified
+/sys/devices/system/cpu/cpu0/cache/index2/ways_of_associativity 10
+/sys/devices/system/cpu/cpu0/cache/index3/coherency_line_size 128
+/sys/devices/system/cpu/cpu0/cache/index3/level 3
+/sys/devices/system/cpu/cpu0/cache/index3/number_of_sets 1
+/sys/devices/system/cpu/cpu0/cache/index3/shared_cpu_map 00000000,00000000,00000000,00000005
+/sys/devices/system/cpu/cpu0/cache/index3/size 36864K
+/sys/devices/system/cpu/cpu0/cache/index3/type Unified
+/sys/devices/system/cpu/cpu0/cache/index3/ways_of_associativity 0
+
+--D
+
