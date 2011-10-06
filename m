@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965285Ab1JFR6M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:58:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49279 "EHLO
+	id S1758803Ab1JFR6X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:58:23 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49288 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab1JFR6K (ORCPT
+	with ESMTP id S1750940Ab1JFR6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:58:10 -0400
-Date: Thu, 6 Oct 2011 19:58:08 +0200
+	Thu, 6 Oct 2011 13:58:19 -0400
+Date: Thu, 6 Oct 2011 19:58:18 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        rdunlap@xenotime.net, axboe@kernel.dk, akpm@linux-foundation.org,
-        neilb@suse.de
-Subject: Re: [GIT] Bcache version 12
-Message-ID: <20111006175808.GA9886@atrey.karlin.mff.cuni.cz>
-References: <20110910064531.GA32536@moria> <CAOJsxLFPODubVEB3Tjg54C7jDKM8H-RCM_u5kvO1D0kKyjUYXQ@mail.gmail.com> <20110921025545.GB5521@moria> <CAOJsxLHQdf-+HuwVsQtF26oY_oJf3BsVdDi3NyJDi7F0eD03Gw@mail.gmail.com> <CAOJsxLGWoGqdv=tdBwWjM9-MD_Qm3ibMSGpp1j-tQLjMW-b-0A@mail.gmail.com> <20110921055708.GB6601@moria>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Luca Tettamanti <kronos.it@gmail.com>, Barry Song <Barry.Song@csr.com>,
+        frank.hofmann@tomtom.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com, rjw@sisk.pl,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support
+	MMC-like devices as resume file
+Message-ID: <20111006175818.GB9886@atrey.karlin.mff.cuni.cz>
+References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com> <CAKPcRGr3EzjS2es6HniuQziEivpsfH2r=d_Y=nkrsFW59g6xSw@mail.gmail.com> <CAGsJ_4zjRpEx_yLwXx74uipPN-Q2hun3AdLxKw2EYOy00cDm3Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110921055708.GB6601@moria>
+In-Reply-To: <CAGsJ_4zjRpEx_yLwXx74uipPN-Q2hun3AdLxKw2EYOy00cDm3Q@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> It can cache filesystem metadata - it can cache anything.
+> 2011/9/29 Luca Tettamanti <kronos.it@gmail.com>:
+> > On Thu, Sep 29, 2011 at 11:29 AM, Barry Song <Barry.Song@csr.com> wrote:
+> >> From: Barry Song <baohua.song@csr.com>
+> >>
+> >> Some devices like mmc are async detected very slow. For example,
+> >> drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
+> >> mmc partitions then add disk.
+> >>
+> >> we do have wait_for_device_probe and scsi_complete_async_scans
+> >> before calling swsusp_check, but it is not enough to wait mmc.
+> >>
+> >> This patch adds resumewait kernel param just like rootwait so
+> >> that we have enough time to wait mmc ready. The differene is
+> >> here we wait for resume partition but rootwait waits for rootfs
+> >> partition.
+> >
+> > I assume that such a device would need "rootwait" to boot in the first
+> > place; why don't you "overload" the param to also enable waiting in
+> > the resume path?
 > 
-> Because bcache has its own superblock (much like md), it can guarantee
-> that bcache devices are consistent; this is particularly important if
-> you want to do writeback caching. You really don't want to accidently
-> mount a filesystem that you were doing writeback caching on without the
-> ache - bcache makes it impossible to do so accidently.
-> 
-> Is any of that useful?
+> not real. for an embedded product, the type of the rootfs, the place
+> of the rootfs  and the way to mount rootfs are pretty flexible.
+> even though both rootfs and resume file use mmc, they will be in
+> different partitions at least. so i don't think rootwait can overload
+> resumewait.
 
-I guess some kind of benchmark would be nice....? I don't know what
-fair workload for this is. System bootup? Kernel compile after reboot?
+It would be good to at least model it the same way. rootdelay allows
+you to specify time, which is important for USB devices...
 
-									Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
