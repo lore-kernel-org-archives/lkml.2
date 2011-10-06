@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964912Ab1JFOFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:05:15 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:37827
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758230Ab1JFOFM (ORCPT
+	id S1758569Ab1JFOSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:18:41 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10458 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388Ab1JFOSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:05:12 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz9371K1432N98dKzz1202hzz8275bhz32i668h839h93fh)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LSNDR4-01-65F-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
-Date: Thu, 6 Oct 2011 16:04:13 +0200
-Message-ID: <2707952.s3VYcmPHUN@chlor>
-Organization: AMD OSRC
-User-Agent: KMail/4.7.0  (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <201109282008.17722.stephan.diestelhorst@amd.com> <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-OriginatorOrg: amd.com
+	Thu, 6 Oct 2011 10:18:39 -0400
+Date: Thu, 06 Oct 2011 16:18:36 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 7/7] ARM: integrate CMA with DMA-mapping subsystem
+In-reply-to: <1317909290-29832-8-git-send-email-m.szyprowski@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org
+Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>
+Message-id: <000201cc8432$d642b930$82c82b90$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcyEL4b9N6bSwhmxQI62Ge/flyCSGgAAqr6g
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <1317909290-29832-8-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 September 2011, 14:49:56 Linus Torvalds wrote:
-> On Wed, Sep 28, 2011 at 11:08 AM, Stephan Diestelhorst
-> <stephan.diestelhorst@amd.com> wrote:
-> >
-> > I must have missed the part when this turned into the propose-the-
-> > craziest-way-that-this-still-works.contest :)
+Hello,
+
+On Thursday, October 06, 2011 3:55 PM Marek Szyprowski wrote:
+
+> This patch adds support for CMA to dma-mapping subsystem for ARM
+> architecture. By default a global CMA area is used, but specific devices
+> are allowed to have their private memory areas if required (they can be
+> created with dma_declare_contiguous() function during board
+> initialization).
 > 
-> So doing it just with the "lock addb" probably works fine, but I have
-> to say that I personally shudder at the "surround the locked addb by
-> reads from the word, in order to approximate an atomic read of the
-> upper bits".
+> Contiguous memory areas reserved for DMA are remapped with 2-level page
+> tables on boot. Once a buffer is requested, a low memory kernel mapping
+> is updated to to match requested memory access type.
 > 
-> Because what you get is not really an "atomic read of the upper bits",
-> it's a "ok, we'll get the worst case of somebody modifying the upper
-> bits at the same time".
+> GFP_ATOMIC allocations are performed from special pool which is created
+> early during boot. This way remapping page attributes is not needed on
+> allocation time.
 > 
-> Which certainly should *work*, but from a conceptual standpoint, isn't
-> it just *much* nicer to say "we actually know *exactly* what the upper
-> bits were".
+> CMA has been enabled unconditionally for ARMv6+ systems.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Well, we really do NOT want atomicity here. What we really rather want
-is sequentiality: free the lock, make the update visible, and THEN
-check if someone has gone sleeping on it.
+Please ignore this patch. The patch named as "[PATCH 8/9] ARM: integrate
+CMA with DMA-mapping subsystem" in this thread is the correct one.
 
-Atomicity only conveniently enforces that the three do not happen in a
-different order (with the store becoming visible after the checking
-load).
-
-This does not have to be atomic, since spurious wakeups are not a
-problem, in particular not with the FIFO-ness of ticket locks.
-
-For that the fence, additional atomic etc. would be IMHO much cleaner
-than the crazy overflow logic.
-
-> But I don't care all *that* deeply. I do agree that the xaddw trick is
-> pretty tricky. I just happen to think that it's actually *less* tricky
-> than "read the upper bits separately and depend on subtle ordering
-> issues with another writer that happens at the same time on another
-> CPU".
-
-Fair enough :)
-
-Stephan
+Best regards
 -- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com
-Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH
-Einsteinring 24
-85609 Aschheim
-Germany
-
-Geschaeftsfuehrer: Alberto Bozzo
-Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632, WEEE-Reg-Nr: DE 12919551
-
+Marek Szyprowski
+Samsung Poland R&D Center
 
