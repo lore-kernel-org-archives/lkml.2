@@ -1,78 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab1JFHKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 03:10:55 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:47937 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab1JFHKx (ORCPT
+	id S934802Ab1JFHL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 03:11:26 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37358 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab1JFHLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 03:10:53 -0400
-Date: Thu, 6 Oct 2011 12:23:26 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 9/26]   Uprobes: Background page
- replacement.
-Message-ID: <20111006065326.GD17591@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120137.25326.72005.sendpatchset@srdronam.in.ibm.com>
- <20111005161914.GA903@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111005161914.GA903@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Oct 2011 03:11:25 -0400
+Subject: Re: [RFC][PATCH v2] ASoC: ak4535: convert to soc-cache
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+In-Reply-To: <1317884726.13399.19.camel@phoenix>
+References: <1317884726.13399.19.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Oct 2011 15:11:18 +0800
+Message-ID: <1317885078.13399.22.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2011-10-05 18:19:14]:
-
-> On 09/20, Srikar Dronamraju wrote:
-> >
-> > +int __weak read_opcode(struct task_struct *tsk, unsigned long vaddr,
-> > +						uprobe_opcode_t *opcode)
-> > +{
-> > +	struct vm_area_struct *vma;
-> > +	struct page *page;
-> > +	void *vaddr_new;
-> > +	int ret;
-> > +
-> > +	ret = get_user_pages(tsk, tsk->mm, vaddr, 1, 0, 0, &page, &vma);
-> > +	if (ret <= 0)
-> > +		return ret;
-> > +	ret = -EINVAL;
-> > +
-> > +	/*
-> > +	 * We are interested in text pages only. Our pages of interest
-> > +	 * should be mapped for read and execute only. We desist from
-> > +	 * adding probes in write mapped pages since the breakpoints
-> > +	 * might end up in the file copy.
-> > +	 */
-> > +	if (!valid_vma(vma))
-> > +		goto put_out;
+於 四，2011-10-06 於 15:05 +0800，Axel Lin 提到：
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> v2: Set codec->cache_sync = 1 before calling snd_soc_cache_sync().
 > 
-> Another case when valid_vma() looks suspicious. We are going to restore
-> the original instruction. We shouldn't fail (at least we shouldn't "leak"
-> ->mm_uprobes_count) if ->vm_flags was changed between register_uprobe()
-> and unregister_uprobe().
-> 
+Pls ignore this v2. 
 
-Agree.
+After commit 7be4ba24 "ASoC: Mark cache as dirty when suspending",
+The soc-core will set codec->cache_sync flag now.
 
--- 
-Thanks and Regards
-Srikar
+Regards,
+Axel
+
