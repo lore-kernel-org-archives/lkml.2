@@ -1,67 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935814Ab1JFLUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:20:03 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33874 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLUC (ORCPT
+	id S935827Ab1JFLUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:20:19 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:34301 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935288Ab1JFLUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:20:02 -0400
-Date: Thu, 6 Oct 2011 14:19:56 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Valdis.Kletnieks@vt.edu,
-        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-Message-ID: <20111006111956.GB29126@localhost.pp.htv.fi>
-References: <20111003180441.GD3072@localhost.pp.htv.fi>
- <34045.1317760188@turing-police.cc.vt.edu>
- <20111004223932.GA3460@localhost.pp.htv.fi>
- <20111004231730.GB17089@redhat.com>
- <20111005075438.GA29441@localhost.pp.htv.fi>
- <20111005170616.GD4297@thunk.org>
- <20111005192349.GA14406@localhost.pp.htv.fi>
- <alpine.LFD.2.02.1110060101130.18778@ionos>
- <20111006080425.GB25753@localhost.pp.htv.fi>
- <CA+5PVA423aVYrQCwh2C30S+ivSfNbCQmjbb1KJNeE-Vze+3wpQ@mail.gmail.com>
+	Thu, 6 Oct 2011 07:20:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E8D90E9.5060208@cam.ac.uk>
+Date: Thu, 06 Oct 2011 12:28:41 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA423aVYrQCwh2C30S+ivSfNbCQmjbb1KJNeE-Vze+3wpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 06/10] ASoC: wm8940: Convert to snd_soc_cache_sync
+References: <1317881417.13399.1.camel@phoenix> <1317881863.13399.10.camel@phoenix>
+In-Reply-To: <1317881863.13399.10.camel@phoenix>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 07:05:01AM -0400, Josh Boyer wrote:
-> On Thu, Oct 6, 2011 at 4:04 AM, Adrian Bunk <bunk@stusta.de> wrote:
-> > My main reason for regaining my kernel.org account is that I heavily
-> > used my bunk@kernel.org address for kernel development (just check the
-> > kernel history), and I was still getting emails to that.
-> >
-> > Assuming the @kernel.org addresses will not vanish, I need accepted
-> > credential for accessing that address.
+On 10/06/11 07:17, Axel Lin wrote:
+> Convert to snd_soc_cache_sync for sync reg_cache with the hardware.
+Looks sane, but I'm not that familiar with the cache side of things, so you'll want
+an ack from someone who is.  One comment inline.
 > 
-> As I understand things, the @kernel.org addresses will simply forward
-> to somewhere else from now on.  There will be no active email hosting
-> on kernel.org.
-
-With the level of security now imposed I surely won't be allowed to set 
-or change the address where emails are forwarded to without a trusted 
-key.
-
-> josh
-
-cu
-Adrian
-
--- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
+>  1 files changed, 22 insertions(+), 24 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+> index 7e0f54c..a4abfdf 100644
+> --- a/sound/soc/codecs/wm8940.c
+> +++ b/sound/soc/codecs/wm8940.c
+> @@ -45,6 +45,17 @@ struct wm8940_priv {
+>  	enum snd_soc_control_type control_type;
+>  };
+>  
+> +static int wm8940_volatile_register(struct snd_soc_codec *codec,
+> +				    unsigned int reg)
+> +{
+> +	switch (reg) {
+> +	case WM8940_SOFTRESET:
+> +		return 1;
+> +	default:
+> +		return 0;
+> +	}
+> +}
+I guess this makes sense from point of view of keeping things inline with
+more complex drivers.  Otherwise I'd expect to see something like:
+{
+	return !!(reg == WM894_SOFTRESET);
+}
+> +
+>  static u16 wm8940_reg_defaults[] = {
+>  	0x8940, /* Soft Reset */
+>  	0x0000, /* Power 1 */
+> @@ -459,6 +470,14 @@ static int wm8940_set_bias_level(struct snd_soc_codec *codec,
+>  		ret = snd_soc_write(codec, WM8940_POWER1, pwr_reg | 0x1);
+>  		break;
+>  	case SND_SOC_BIAS_STANDBY:
+> +		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
+> +			ret = snd_soc_cache_sync(codec);
+> +			if (ret < 0) {
+> +				dev_err(codec->dev, "Failed to sync cache: %d\n", ret);
+> +				return ret;
+> +			}
+> +		}
+> +
+>  		/* ensure bufioen and biasen */
+>  		pwr_reg |= (1 << 2) | (1 << 3);
+>  		/* set vmid to 300k for standby */
+> @@ -659,30 +678,8 @@ static int wm8940_suspend(struct snd_soc_codec *codec, pm_message_t state)
+>  
+>  static int wm8940_resume(struct snd_soc_codec *codec)
+>  {
+> -	int i;
+> -	int ret;
+> -	u8 data[3];
+> -	u16 *cache = codec->reg_cache;
+> -
+> -	/* Sync reg_cache with the hardware
+> -	 * Could use auto incremented writes to speed this up
+> -	 */
+> -	for (i = 0; i < ARRAY_SIZE(wm8940_reg_defaults); i++) {
+> -		data[0] = i;
+> -		data[1] = (cache[i] & 0xFF00) >> 8;
+> -		data[2] = cache[i] & 0x00FF;
+> -		ret = codec->hw_write(codec->control_data, data, 3);
+> -		if (ret < 0)
+> -			goto error_ret;
+> -		else if (ret != 3) {
+> -			ret = -EIO;
+> -			goto error_ret;
+> -		}
+> -	}
+> -	ret = wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> -
+> -error_ret:
+> -	return ret;
+> +	wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> +	return 0;
+>  }
+>  
+>  static int wm8940_probe(struct snd_soc_codec *codec)
+> @@ -742,6 +739,7 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8940 = {
+>  	.reg_cache_size = ARRAY_SIZE(wm8940_reg_defaults),
+>  	.reg_word_size = sizeof(u16),
+>  	.reg_cache_default = wm8940_reg_defaults,
+> +	.volatile_register = wm8940_volatile_register,
+>  };
+>  
+>  #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 
