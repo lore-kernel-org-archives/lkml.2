@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab1JFVD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 17:03:58 -0400
-Received: from home.keithp.com ([63.227.221.253]:49667 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756916Ab1JFVD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 17:03:56 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [PULL] drm-intel-fixes (drm/i915 driver)
-In-Reply-To: <CA+55aFzR91rOstOcAUoTXGHvztqG-aB-j37_p3F9C3-Ngc_6dQ@mail.gmail.com>
-References: <yunpqiikeut.fsf@aiko.keithp.com> <CA+55aFzR91rOstOcAUoTXGHvztqG-aB-j37_p3F9C3-Ngc_6dQ@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 06 Oct 2011 15:03:46 -0600
-Message-ID: <yunlisxltn1.fsf@aiko.keithp.com>
+	id S1759274Ab1JFVIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 17:08:30 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41865 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab1JFVI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 17:08:29 -0400
+Date: Thu, 6 Oct 2011 22:08:10 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
+        vgoyal@redhat.com, tony.luck@intel.com, gong.chen@intel.com,
+        satoru.moriya@hds.com, avi@redhat.com
+Subject: Re: [RFC][PATCH] x86, reboot:  use NMI instead of REBOOT_VECTOR to
+ stop cpus
+Message-ID: <20111006210810.GA30040@srcf.ucam.org>
+References: <1317236148-15134-1-git-send-email-dzickus@redhat.com>
+ <20111006205042.GM5795@redhat.com>
+ <201110062300.24513.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201110062300.24513.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+It sounds reasonable to me, but it's a little outside my area of 
+experience.
 
-On Thu, 6 Oct 2011 10:12:57 -0700, Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
-
->   [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
-
-Thanks. I've got a patch series that fixes a pile of refclk bugs which
-is still out for review that should fix this. This error should be
-harmless, but still..
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTo4XsjYtFsjWk68qAQg2TBAAsT/jZQSt4wOWE6XtBiFh+BYhKDnpW/s0
-Wi0Iun4Q8g+HkeiAQ7v80+CqJtxk+S7N1ZJOcrDTdkTXsLyMAcZUTBA2JfcvLYxG
-Ciu5XvNGT1o2qovzUFB23yVBg4VOA3TFq5LrQJQiCDRp3AAFCamMygS/5BIG7Rw9
-M3qqNqmQA78wPrjxMCmFcah/HdJFcNFHOuvreU2PBBG42bu3Yp2D8s4swTZnhNHt
-DKnGwwTviU+S/A153Z/GN2Tie6oTUasrNAG9hr41+RpMvrwMBck5QfoRN5b4R3MK
-IHFDs34iTZfSm8z8lSTO2hFJz6SDBfCgHxp1HzGTyzl8TZr0HHxI+8Nl3NcrNtN6
-QbbOAAIDl9AQwd5mV8S0Nzs/nCbb9HjrV/dyzkRfA20zkTz1xdNcgIZs9OWiuwk7
-/Ve3NVklnSxJpMIbs8FWvDkx301w2v9upC4JsXzdj4wp3sq9Il6YfjiGgq4892Dj
-kJfMU5aK2PTiRQEvvEDWYREvf4aGf5hPIXiO9/4gmDn1j1PdpqguxWGSMeMgGXhR
-ReNqX/+Qz3gHAf0+Dcpi9TZbKu+LpXNhYdkGUHPESlMTD8lpwKVoxYedbIFWWJA1
-gUeYYhR2R8SfpM6Ryg7VNQJ06BzTVaJlivMq8l9KcsQTKVysQzjlnmyghZ1o773M
-6uBSxKnpmRA=
-=P2QP
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
