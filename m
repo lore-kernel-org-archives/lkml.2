@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab1JFFEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 01:04:48 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44088 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1JFFEr (ORCPT
+	id S1754996Ab1JFFHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 01:07:36 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63599 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1JFFHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 01:04:47 -0400
-Date: Thu, 6 Oct 2011 16:04:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Mark Einon <mark.einon@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the net tree
-Message-Id: <20111006160433.44de2a1374b6ec4efc97e04e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Oct_2011_16_04_33_+1100_XIAb135vYIODAlvJ"
+	Thu, 6 Oct 2011 01:07:35 -0400
+Date: Wed, 5 Oct 2011 22:07:26 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thomas Tuttle <ttuttle@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Johan Myreen <jem@iki.fi>
+Subject: Re: [PATCH] misc/serio_raw: Avoid circular locking.
+Message-ID: <20111006050725.GD20217@core.coreip.homeip.net>
+References: <20111005170249.GA27129@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111005170249.GA27129@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Oct_2011_16_04_33_+1100_XIAb135vYIODAlvJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Thomas,
 
-Hi Greg,
+On Wed, Oct 05, 2011 at 01:02:49PM -0400, Thomas Tuttle wrote:
+> 
+> This patch rearranges serio_raw_connect so that it takes the mutex once
+> to allocate a device number and open the serio device, drops it to call
+> misc_register, then takes it again to add the serio_raw device to the
+> list.
+> 
+> BUG=chromium-os:21113
+> TEST=Adhoc: PROVE_LOCKING no longer finds circular locking dependency
+> 
+> Change-Id: I414c5a3d606c28c81e42dcf989e5c55918eb4ea3
+> Signed-off-by: Thomas Tuttle <ttuttle@chromium.org>
+> ---
+> I think this works, but I'm not familiar enough with the misc and serio
+> subsystems to know if this is completely correct, nor if it is the best
+> way to break the circular dependency.  Feedback would be appreciated.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/et131x/et1310_tx.c between commit bf3f1a6081aa ("et131x:
-convert to SKB paged frag API") from the net tree and commit 10f00a49b048
-("staging: et131x: Rename var name 'etdev' to 'adapter' throughout
-module") from the staging tree.
+Thank you for your report; I looked at the driver and (to my
+embarrassment) is is quite broken and requires a bit more extensive
+fixing. I'll be posting a few patches shortly and would appreciate if
+you could look them over and/or test.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks.
 
-diff --cc drivers/staging/et131x/et1310_tx.c
-index 03e7a4e,2ecb934..0000000
---- a/drivers/staging/et131x/et1310_tx.c
-+++ b/drivers/staging/et131x/et1310_tx.c
-@@@ -519,12 -392,12 +392,12 @@@ static int nic_send_packet(struct et131
-  			 * returned by pci_map_page() is always 32-bit
-  			 * addressable (as defined by the pci/dma subsystem)
-  			 */
- -			desc[frag++].addr_lo =3D
- -			    pci_map_page(adapter->pdev,
- -					 frags[i - 1].page,
- -					 frags[i - 1].page_offset,
- -					 frags[i - 1].size,
- -					 PCI_DMA_TODEVICE);
- +			desc[frag++].addr_lo =3D skb_frag_dma_map(
-- 							&etdev->pdev->dev,
-++							&adapter->pdev->dev,
- +							&frags[i - 1],
- +							0,
- +							frags[i - 1].size,
- +							PCI_DMA_TODEVICE);
-  		}
-  	}
- =20
-
---Signature=_Thu__6_Oct_2011_16_04_33_+1100_XIAb135vYIODAlvJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOjTbhAAoJEECxmPOUX5FEOg8P/R2VbR6MqtVIGuLAjk6238DO
-swW5979xb0aZRJHFqQ8t/pl6c2AJMr0oyakNIwNaY2HpFq32Kqtf6yIo/K1STB8E
-Tg2wCu2JSpEY68zJW8EHVEAypHz5WS0fFgS1xAnHz/jqyoFih59bhsgmV9Sxb8KK
-QglqepjYGAXQHbjwDa19Kjg8H+zaGc9Janow9moX1YOLj3NvMTpiDDKaqsrDC7H9
-/LZNEejEAszHx8eAubKpctAhCBqBBLf0QQYApVZBvab05Vvrvb/6/DNTLvv/8/IL
-KlBvR5Vow5ckhSnpnm/8VOMOynsBiVQhfvp1x0G4Sz5hood3Ytsu6QegUAfzeUdh
-CP6RsuaneV7GIYlDsS4uzv2d7p045edEPoDS+z1TX9obKY6PfMxyaiBDVKt0E0MK
-TvxzyQuROCzPe1TWNS6iGvK6+M0hqBEF+CEcjOwZnd2JG0K2xrb83Uq8uusk5pKf
-szDpBeYzhFLO+tBlf9YAuWpP7c6CBXhRI1edwUrhdsVPQ/2sNp14NHeeo+ZqBZnu
-v6yzzWvEsuxa3AnAu0D/eUxIFzsXnn74pZPL2TJhSTiKU0o2kC0H9D/sPeshhPmo
-AZHcLx0ubaME9m8UtHVAJ1PqqUEWYsWFvJmQaM5IuP5rBW+CLEDKD7Yv/+ffl584
-kSC8keGoeiqu8GJkHWGd
-=eTYo
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Oct_2011_16_04_33_+1100_XIAb135vYIODAlvJ--
+-- 
+Dmitry
