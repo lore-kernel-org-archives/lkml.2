@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964967Ab1JFPsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 11:48:01 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35934 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935529Ab1JFPsA (ORCPT
+	id S964998Ab1JFPsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 11:48:36 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51456 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751420Ab1JFPsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 11:48:00 -0400
-Message-ID: <4E8DCDA6.8030802@linux.vnet.ibm.com>
-Date: Thu, 06 Oct 2011 21:17:50 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
-        Tejun Heo <tj@kernel.org>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-References: <20111002195023.GC31799@mtj.dyndns.org> <201110052226.58373.rjw@sisk.pl> <4E8CC8FA.2090100@linux.vnet.ibm.com> <201110060043.19583.rjw@sisk.pl> <4E8D4FC6.1080204@linux.vnet.ibm.com> <20111006083439.GA21575@aftab>
-In-Reply-To: <20111006083439.GA21575@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 6 Oct 2011 11:48:35 -0400
+Date: Thu, 6 Oct 2011 16:46:00 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Himanshu Chauhan <hschauhan@nulltrace.org>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a
+ device number
+Message-ID: <20111006164600.071213e1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111006151232.GA3267@ubuntu.ubuntu-domain>
+References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
+	<1317839407.3983.46.camel@groeck-laptop>
+	<20111006040656.GA2125@ubuntu.ubuntu-domain>
+	<20111006051955.GA22835@ericsson.com>
+	<20111006094302.71ea4dfd@endymion.delvare>
+	<20111006151232.GA3267@ubuntu.ubuntu-domain>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 02:04 PM, Borislav Petkov wrote:
-> On Thu, Oct 06, 2011 at 02:50:46AM -0400, Srivatsa S. Bhat wrote:
->> On 10/06/2011 04:13 AM, Rafael J. Wysocki wrote:
->>> On Wednesday, October 05, 2011, Srivatsa S. Bhat wrote:
->>>> On 10/06/2011 01:56 AM, Rafael J. Wysocki wrote:
->>>>>
->>>>> OK, can you please repost the patch with Borislav's Acked-by and Tested-by
->>>>> and add some more Intel people to the CC list?
->>>>>
->>>>
->>>> Sure, I'll do that. Thank you.
->>>> But are we not going to consider a cleaner/correct solution such as the
->>>> one proposed here:
->>>> http://permalink.gmane.org/gmane.linux.kernel/1199494
->>>>
->>>> Well, honestly I don't mean to be stubborn, but somehow, knowing that
->>>> there are issues with my patch doesn't make me feel very comfortable
->>>> going with it, especially when there is another approach, which I
->>>> believe can fix the issue properly, without undesirable side-effects.
->>>>
->>>> I agree that the issues are mostly some corner cases, so if you want a
->>>> quick fix for now, I guess we can go with this patch and then later on
->>>> follow-up with a proper solution to this whole problem.
->>>
->>> It ultimately is your call.  If you feel more comfortable with the
->>> alternative, just post that one instead.
->>>
->> Cool! I am working on implementing that other solution. I'll post it as soon
->> as I am done writing and testing that patch.
-> 
-> Please test your other patch which removes the CPU_DEAD line from the
-> microcode CPU hotplug callback on an Intel box with microcode too and
-> submit it. This fix makes sense irrespective of a suspend/resume fix
-> because reloading the ucode when onlining the CPU is clearly unneeded.
-> 
+> AFAIK, the current sysfs interface is to read standard attributes from
+> the device. My reasoning is:
 
-Ok, I tested both these scenarios on Intel boxes:
-1. cpu hotplug stress test + pm_test in parallel
-2. loading/unloading microcode etc. 
-They all work fine. I'll post that one-line patch with your Acked-by and Tested-by.
-Thank you very much.
+and any other attributes.
 
--- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+> 1. This will give hwmon devices to have their "dev" in their sysfs folder
+>    as like other classes and in turn be visible in /dev by mdev or udev.
+
+Well there is in theory no reason a device shouldn't do that, but most
+sysfs devices don't need to so making it generic seems odd.
+
+> 2. Implementing IOCTL if required. I know that kernel hackers believe
+>    they are "backdoors" and "can't be done right" but sometimes there
+>    isn't any get away with them. I don't know when their support will
+>    be completely removed. Rather, I see that instead of deprecation,
+>    new IOCTL vectors like compat_ioctl have been introduced.
+
+Certain things need ioctl, in fact some problems are *very* hard to
+solve any other way: transactional updates (changing a set of fields at
+once all or none), and query/response data being two.
+ 
+> 2. During probing, for each device, call "hwmon_device_register_numbered"
+>    and let mdev create a /dev node for it. I don't say that this interface
+>    be imposed on drivers. If they want they can still call "hwmon_device_register"
+>    if they don't want to implement standard ioctl, read, write calls.
+
+I guess I don't see why a device that is more than just a monitoring
+interface can't allocate a misc device or similar if it needs one.
+
+For the more complex cases take a look at drivers/staging/iio also.
