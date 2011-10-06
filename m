@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab1JFRM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:12:27 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55566 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab1JFRMY (ORCPT
+	id S1758699Ab1JFRNv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:13:51 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38281 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758657Ab1JFRNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:12:24 -0400
-Date: Thu, 6 Oct 2011 13:12:08 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
-Message-ID: <20111006171208.GB22462@hmsreliant.think-freely.org>
-References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
- <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
- <20110930143211.5ab39c02@stein>
- <20110930153321.GA31760@hmsreliant.think-freely.org>
- <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
- <20110930165403.GB31760@hmsreliant.think-freely.org>
- <20111006083607.2c4eb9a5@jbarnes-desktop>
+	Thu, 6 Oct 2011 13:13:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111006083607.2c4eb9a5@jbarnes-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6 (--)
+In-Reply-To: <yunpqiikeut.fsf@aiko.keithp.com>
+References: <yunpqiikeut.fsf@aiko.keithp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Oct 2011 10:12:57 -0700
+X-Google-Sender-Auth: r-diD-SA_ZYv8qtXYWBTIhJn_2I
+Message-ID: <CA+55aFzR91rOstOcAUoTXGHvztqG-aB-j37_p3F9C3-Ngc_6dQ@mail.gmail.com>
+Subject: Re: [PULL] drm-intel-fixes (drm/i915 driver)
+To: Keith Packard <keithp@keithp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 08:36:07AM -0700, Jesse Barnes wrote:
-> On Fri, 30 Sep 2011 12:54:03 -0400
-> Neil Horman <nhorman@tuxdriver.com> wrote:
-> 
-> > On Fri, Sep 30, 2011 at 10:33:36AM -0600, Bjorn Helgaas wrote:
-> > > On Fri, Sep 30, 2011 at 9:33 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > > >
-> > > > On Fri, Sep 30, 2011 at 02:32:11PM +0200, Stefan Richter wrote:
-> > > > > On Sep 29 Neil Horman wrote:
-> > > > > > (v4)
-> > > > > > Fixed up some spelling mistakes, and added a scissors line with a good
-> > > > > > commitlog, so that git-am drops all the version logging
-> > > > > >
-> > > > > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > > > > > CC: Greg Kroah-Hartman <gregkh@suse.de>
-> > > > > > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > > > > > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > > > > > CC: linux-pci@vger.kernel.org
-> > > > >
-> > > > > It drops these last 5 lines then too, doesn't it?
-> > > > >
-> > > > I would have thought so, but I tested a git-format-patch / git-am operation here
-> > > > on a temporary branch, and it worked properly.
-> > > >
-> > > > > > --- a/Documentation/ABI/testing/sysfs-bus-pci
-> > > > > > +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> > > > > > @@ -66,6 +66,24 @@ Description:
-> > > > > >             re-discover previously removed devices.
-> > > > > >             Depends on CONFIG_HOTPLUG.
-> > > > > >
-> > > > > > +What:              /sys/bus/pci/devices/.../msi_irqs/
-> > > > > > +Date:              September, 2011
-> > > > > > +Contact:   Neil Horman <nhorman@tuxdriver.com>
-> > > > > > +Description:
-> > > > > > +           The /sys/devices/.../msi_irqs directory contains a variable set
-> > > > > > +           sub-directories, with each sub-directory being named after a
-> > > > > > +           corresponding msi irq vector allocated to that device.
-> > > > >
-> > > > > "contains a variable set _of_ sub-directories"?
-> > > > Gah, bad ispell foo on my part.  Bjorn, can you add that in, or shall I repost?
-> > > 
-> > > I'll try to remember to add that in.
-> > > 
-> > Thank you, apologies for my poor writing skills :)
-> > Neil
-> 
-> Is there a final patch available for me to queue up?
-> 
-I was under the impression that v4 was the version to queue up.  Stefan had
-found that I left the word of out of the documentation at one location but Bjorn
-was kind enough to offer to fix it up on commit.
+On Thu, Sep 29, 2011 at 6:18 PM, Keith Packard <keithp@keithp.com> wrote:
+>
+> Here are three tiny patches, two new bug fixes and one regression fix
+> that disables FBC on Ironlake and older chips.
 
-Regards
-Neil
+So I got this error notice at bootup with the current -git tree.
+Everything seems to work despite it, but I thought I'd mention it.
 
+  [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
 
+This is a Lenovo X1.
 
+                      Linus
+
+---
+00:02.0 VGA compatible controller: Intel Corporation 2nd Generation
+Core Processor Family Integrated Graphics Controller (rev 09) (prog-if
+00 [VGA controller])
+	Subsystem: Lenovo Device 21e8
+	Flags: bus master, fast devsel, latency 0, IRQ 40
+	Memory at f0000000 (64-bit, non-prefetchable) [size=4M]
+	Memory at e0000000 (64-bit, prefetchable) [size=256M]
+	I/O ports at 5000 [size=64]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: <access denied>
+	Kernel driver in use: i915
+00: 86 80 26 01 07 04 90 00 09 00 00 03 00 00 00 00
+10: 04 00 00 f0 00 00 00 00 0c 00 00 e0 00 00 00 00
+20: 01 50 00 00 00 00 00 00 00 00 00 00 aa 17 e8 21
+30: 00 00 00 00 90 00 00 00 00 00 00 00 0b 01 00 00
