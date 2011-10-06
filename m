@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1JFEny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 00:43:54 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48730 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751312Ab1JFEnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 00:43:53 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [PATCH] ASoC: fix codec breakage caused by the volsw/volsw_2r merger
-Date: Thu,  6 Oct 2011 07:43:21 +0300
-Message-Id: <1317876201-7041-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <20111006132204.29c84ed7349daf8c4aa39c3b@canb.auug.org.au>
-References: <20111006132204.29c84ed7349daf8c4aa39c3b@canb.auug.org.au>
+	id S1752801Ab1JFExP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 00:53:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46764 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab1JFExO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 00:53:14 -0400
+References: <4E8655CD.90107@zytor.com> <alpine.LRH.2.00.1110031316260.14853@twin.jikos.cz> <20111003225651.GA10257@leaf> <20111004044914.GP6684@thunk.org> <4E8A910D.6020107@zytor.com> <4E8D1D0A.6020003@canonical.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <4E8D1D0A.6020003@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Wed, 05 Oct 2011 21:49:45 -0700
+To: John Johansen <john.johansen@canonical.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Josh Triplett <josh@joshtriplett.org>,
+        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Message-ID: <2bae51e1-7e99-4cc3-ac3f-bc182030c4cf@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By accident few places still uses the _2r calls from
-the core.
-This is a quick fix, the drivers using the old callbacks
-going to be changed.
+Good.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
+John Johansen <john.johansen@canonical.com> wrote:
 
-Hi Stephen, Mark,
+>On 10/03/2011 09:52 PM, H. Peter Anvin wrote:
+>> On 10/03/2011 09:49 PM, Ted Ts'o wrote:
+>>>
+>>> Note that if your laptop allows incoming ssh connections, and you
+>>> logged into master.kernel.org with ssh forwarding enabled, your
+>laptop
+>>> may not be safe.  So be very, very careful before you assume that
+>your
+>>> laptop is safe.  At least one kernel developer, after he got past
+>the
+>>> belief, "surely I could have never had my machine be compromised",
+>>> looked carefully and found rootkits on his machines.
+>>>
+>>>        		     	   	       - Ted
+>> 
+>> By the way, I'm now pretty convinced that allowing inbound ssh on
+>> laptops (which is the default on all the mainline Linux distros as
+>far
+>> as I know) is seriously broken... laptops get connected to
+>*extremely*
+>> insecure networks on just way too regular a basis.
+>> 
+>I can't speak for the other distros but Ubuntu does not enable sshd by
+>default.  The openssh-server package or ssh meta package must be
+>installed before sshd will be run.
 
-I'm really sorry, I can not explain how it happened.
-Please find a quick fox for the issue.
-I'm going to fix the drivers meanwhile.
-
-Regards,
-Peter
-
- include/sound/soc.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index 88ba85a..858291d 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -393,6 +393,8 @@ int snd_soc_get_volsw(struct snd_kcontrol *kcontrol,
- 	struct snd_ctl_elem_value *ucontrol);
- int snd_soc_put_volsw(struct snd_kcontrol *kcontrol,
- 	struct snd_ctl_elem_value *ucontrol);
-+#define snd_soc_get_volsw_2r snd_soc_get_volsw
-+#define snd_soc_put_volsw_2r snd_soc_put_volsw
- int snd_soc_info_volsw_s8(struct snd_kcontrol *kcontrol,
- 	struct snd_ctl_elem_info *uinfo);
- int snd_soc_get_volsw_s8(struct snd_kcontrol *kcontrol,
 -- 
-1.7.7
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
