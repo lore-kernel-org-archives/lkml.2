@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906Ab1JFMv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 08:51:26 -0400
-Received: from emh02.mail.saunalahti.fi ([62.142.5.108]:48440 "EHLO
-	emh02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964879Ab1JFMvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 08:51:25 -0400
-X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Oct 2011 08:51:25 EDT
-Subject: [PATCH] of: include errno.h
-To: grant.likely@secretlab.ca
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 06 Oct 2011 15:40:44 +0300
-Message-ID: <20111006124044.1066.7111.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Antivirus: VAMS
+	id S1758290Ab1JFNCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 09:02:50 -0400
+Received: from lo.gmane.org ([80.91.229.12]:33384 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756425Ab1JFNCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 09:02:49 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?UTF-8?B?U3ZlbiBLw7ZobGVy?= <sven.koehler@gmail.com>
+Subject: Re: Linux 3.0.5
+Date: Thu, 06 Oct 2011 15:02:31 +0200
+Message-ID: <4E8DA6E7.3010105@gmail.com>
+References: <20111003203249.GA22113@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: horkheimer.ti5.tu-harburg.de
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111004 Thunderbird/7.0.1
+In-Reply-To: <20111003203249.GA22113@kroah.com>
+Cc: stable@linux.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling ath6kl for beagleboard (omap2plus_defconfig plus
-CONFIG_ATH6KL, CONFIG_OF disable) with current linux-next compilation
-fails:
+There's an error in 3.0.5:
 
-include/linux/of.h:269: error: 'ENOSYS' undeclared (first use in this function)
-include/linux/of.h:276: error: 'ENOSYS' undeclared (first use in this function)
-include/linux/of.h:289: error: 'ENOSYS' undeclared (first use in this function)
+# LANG=C make all
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CC      drivers/gpu/drm/radeon/r100.o
+drivers/gpu/drm/radeon/r100.c: In function 'r100_copy_blit':
+drivers/gpu/drm/radeon/r100.c:776:27: error: 'num_pages' undeclared
+(first use in this function)
+drivers/gpu/drm/radeon/r100.c:776:27: note: each undeclared identifier
+is reported only once for each function it appears in
+make[4]: *** [drivers/gpu/drm/radeon/r100.o] Error 1
+make[3]: *** [drivers/gpu/drm/radeon] Error 2
+make[2]: *** [drivers/gpu/drm] Error 2
+make[1]: *** [drivers/gpu] Error 2
+make: *** [drivers] Error 2
 
-Fix this by including errno.h from of.h.
 
-Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
----
- include/linux/of.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+3.0.4 compiles just fine with the same config file.
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 9180dc5..219c29d 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -17,6 +17,7 @@
-  */
- #include <linux/types.h>
- #include <linux/bitops.h>
-+#include <linux/errno.h>
- #include <linux/kref.h>
- #include <linux/mod_devicetable.h>
- #include <linux/spinlock.h>
+
+Regards,
+  Sven Köhler
 
