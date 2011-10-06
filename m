@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965309Ab1JFSx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 14:53:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45656 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965275Ab1JFSx6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 14:53:58 -0400
-Subject: Re: [PATCH 08/12] perf_events: disable PERF_SAMPLE_BRANCH_* when
- not supported
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
-        ravitillo@lbl.gov
-Date: Thu, 06 Oct 2011 20:53:47 +0200
-In-Reply-To: <1317912555-9559-9-git-send-email-eranian@google.com>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	 <1317912555-9559-9-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317927227.9813.7.camel@twins>
-Mime-Version: 1.0
+	id S1759102Ab1JFTFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:05:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758996Ab1JFTFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 15:05:30 -0400
+Date: Thu, 6 Oct 2011 15:05:27 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: RFC: virtualbox tainting.
+Message-ID: <20111006190526.GA13883@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
-> PERF_SAMPLE_BRANCH_* is disabled for:
+The number of bug reports we get from people with virtualbox loaded are
+truly astonishing.  It's GPL, but sadly that doesn't mean it's good.
+Nearly all of these bugs look like random corruption. (corrupt linked lists,
+corrupt page tables, and just plain 'weird' crashes).
 
-> - ALL but Intel X86 architecture
-> - AMD64 processors
-> 
-It would be good if you could CC all arch/*/kernel/perf_event*
-maintainers on this, that way they are aware of the existence of the
-feature. Maybe one of them can actually support some of this.. who
-knows ;-)
+This diff adds tainting to the module loader to treat it as we do with stuff
+from staging/ (crap). With this tainting in place, automatic bug filing tools
+can opt out of automatically filing kernel bugs, and inform the user to file
+bugs somewhere more appropriate.
 
-Robert, does this Fam15 thing have anything useful in this regards?
+Signed-off-by: Dave Jones <davej@redhat.com>
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 04379f92..d26c9a3 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2653,6 +2653,10 @@ static int check_module_license_and_versions(struct module *mod)
+ 	if (strcmp(mod->name, "ndiswrapper") == 0)
+ 		add_taint(TAINT_PROPRIETARY_MODULE);
+ 
++	/* vbox is garbage. */
++	if (strcmp(mod->name, "vboxdrv") == 0)
++		add_taint(TAINT_CRAP);
++
+ 	/* driverloader was caught wrongly pretending to be under GPL */
+ 	if (strcmp(mod->name, "driverloader") == 0)
+ 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
