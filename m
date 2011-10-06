@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab1JFOTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:19:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755388Ab1JFOTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:19:07 -0400
-Date: Thu, 6 Oct 2011 15:17:13 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        Zdenek Kabelac <zkabelac@redhat.com>,
-        Doug Ledford <dledford@redhat.com>
-Subject: [git pull] device-mapper fixes for 3.1
-Message-ID: <20111006141713.GB2840@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	stable@kernel.org, Jonathan Brassow <jbrassow@redhat.com>,
-	Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-	Zdenek Kabelac <zkabelac@redhat.com>,
-	Doug Ledford <dledford@redhat.com>
+	id S1758538Ab1JFOZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:25:39 -0400
+Received: from nm30-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.238]:26119 "HELO
+	nm30-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751009Ab1JFOZi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 10:25:38 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 101203.36283.bm@omp1032.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ymail.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=c/wMvFGEvZZ7ghGdph5fxlwSKa0ScD60eTVcOzFfPe7BZDG5Xio2rstlIHcU1XzZoW77mYiKGuqfpF9uq/4SIU09KXYFJJH0MTufocPhVFxGMBYod96wzUDYU0a/IWTXt2j7B6iMQvvCBUm0MYCSs8BUo6i+wwVxLs6P609V9Oc=;
+X-YMail-OSG: NjLrLugVM1nemF.r2zJ7.a2y0DhEtcXSWu5ThhBIO84ucQv
+ S0mWrEwGJTROiwPrXUuLHwmFKP2FjDywH3puAYjXqhMd_VgU20jExJRWz_C5
+ EekArKC0g7B64odP.YjXSS2VvCi8M5CzmYhe3nBaxB1B.ZkEddMvxCEsH_BU
+ 7L3JwYdbkO.MtQlH7_C.4OQK9v2nBKaefgGol_f22YZHE3sXJ43ibkC75uaz
+ j3wP5QqKtNK1v6lhnav6A5j_Ri2gAZfyKxgm9l7HcyA6OBywvvxHiY3dzpxR
+ JETLRH_SnAEFudNkXBTRmxgkOQiI7iB17xcE1YU2nd0psM1N1JXS.mnfREk6
+ JGUV4HN1nXqgc72dJ4oVqV6Bu7t6ezoRc7ijZOX_dRSHoi_tmG_s9Opw-
+X-Mailer: YahooMailWebService/0.8.114.317681
+Message-ID: <1317911137.65372.YahooMailNeo@web111004.mail.gq1.yahoo.com>
+Date: Thu, 6 Oct 2011 07:25:37 -0700 (PDT)
+From: Ramaraju G <ramarajug@ymail.com>
+Reply-To: Ramaraju G <ramarajug@ymail.com>
+Subject: kgdb over ethernet support
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "ramarajug@ymail.com" <ramarajug@ymail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+Hi All,
 
-  http://people.redhat.com/agk/git/linux-dm for-linus
 
-to get the following device-mapper fixes for inclusion in 3.1:
+I am new to kernel development. Sorry for posting the
+ question in this advanced forum. I had posted the same question in 
+linux-newbie forum. But, did not get any reply. Hence posting here.
 
-Jonthan Brassow (1):
-      dm: raid fix write_mostly arg validation
 
-Mike Snitzer (2):
-      dm: flakey fix corrupt_bio_byte error path
-      dm table: avoid crash if integrity profile changes
+I want to understand the kernel by doing  step by step using kgdb over ethernet.
+unfortunately, My laptop doesn't contain any serial port.
 
-Milan Broz (1):
-      dm crypt: always disable discard_zeroes_data
+Can anybody help me in setting up kgdb over ethernet support in 2.6.28 version of the kernel ?
 
- drivers/md/dm-crypt.c         |    2 ++
- drivers/md/dm-flakey.c        |    4 +++-
- drivers/md/dm-raid.c          |    2 +-
- drivers/md/dm-table.c         |   32 ++++++++++++++++++++++++++------
- include/linux/device-mapper.h |    5 +++++
- 5 files changed, 37 insertions(+), 8 deletions(-)
+thanks and regards,
+Raju
 
-Thanks,
-Alasdair
