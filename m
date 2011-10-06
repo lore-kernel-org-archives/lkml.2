@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab1JFWYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:24:03 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:36997 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1JFWYB (ORCPT
+	id S1759343Ab1JFWY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 18:24:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44834 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1JFWYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:24:01 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Date: Fri, 07 Oct 2011 09:23:58 +1100
-In-Reply-To: <201110062045.48689.rjw@sisk.pl>
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	 <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl>
-	 <201110062045.48689.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317939838.1961.1.camel@shrek.rexursive.com>
-Mime-Version: 1.0
+	Thu, 6 Oct 2011 18:24:25 -0400
+From: Alex Ben <aleben358@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <Mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Alex Ben <aleben358@gmail.com>
+Subject: [PATCH] x86: Removed superfluous parentheses in macro defs
+Date: Fri,  7 Oct 2011 09:22:04 +1100
+Message-Id: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 20:45 +0200, Rafael J. Wysocki wrote:
+1) make it consistent with other constant macro deinitions, which
+don't have parentheses, as they are really superfluous.
 
-> > I get a kernel panic on a test box using a x86_64 kernel with this patch
-> > applied.
-> 
-> The panic happens during late resume, when trying to switch to the hibernated
-> kernel.
+2) the extra parentheses on the 5th line of #define GDT_ENTRY is
+superfluous, as there is no bit shifting on that line.
+---
+ arch/x86/include/asm/segment.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Do you have a dump by any chance? Is it always at the same spot or
-random?
+diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
+index 5e64171..92621c1 100644
+--- a/arch/x86/include/asm/segment.h
++++ b/arch/x86/include/asm/segment.h
+@@ -10,7 +10,7 @@
+	 (((flags) & _AC(0x0000f0ff,ULL)) << 40) |	\
+	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
+	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
+-	 (((limit) & _AC(0x0000ffff,ULL))))
++	 ((limit)  & _AC(0x0000ffff,ULL)))
 
--- 
-Bojan
+ /* Simple and small GDT entries for booting only */
 
+@@ -75,7 +75,7 @@
+
+ #define GDT_ENTRY_DEFAULT_USER_DS	15
+
+-#define GDT_ENTRY_KERNEL_BASE		(12)
++#define GDT_ENTRY_KERNEL_BASE		12
+
+ #define GDT_ENTRY_KERNEL_CS		(GDT_ENTRY_KERNEL_BASE+0)
+
+--
+1.7.4.1
