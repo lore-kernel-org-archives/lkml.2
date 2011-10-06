@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403Ab1JFMmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 08:42:14 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42806 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab1JFMmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 08:42:06 -0400
-Date: Thu, 6 Oct 2011 14:42:01 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
-Subject: Re: [GIT PULL] RAS update
-Message-ID: <20111006124201.GA22432@aftab>
-References: <20110930102034.GB22622@aftab>
- <20111006105535.GA6007@elte.hu>
- <20111006110403.GA31022@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111006110403.GA31022@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758378Ab1JFMmL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 08:42:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54563 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758299Ab1JFMmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 08:42:02 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 07/14] netvm: Allow the use of __GFP_MEMALLOC by specific sockets
+Date: Thu,  6 Oct 2011 13:41:43 +0100
+Message-Id: <1317904910-14095-8-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1317904910-14095-1-git-send-email-mgorman@suse.de>
+References: <1317904910-14095-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 07:04:04AM -0400, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> > 
-> > * Borislav Petkov <bp@amd64.org> wrote:
-> > 
-> > > Hi Ingo,
-> > > 
-> > > please pull from the branch below to receive one fix which
-> > > causes a very nasty warning on _all_ CPUs when fiddling with
-> > > MCE poller interval. Since it is not that important, I'm fine
-> > > with it going in during the merge window. Top commit here is
-> > > 9aaef96f61d93062556d34e15731f7d5869dd82e.
-> > > 
-> > > Thanks.
-> > > 
-> > > The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
-> > > 
-> > >   Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
-> > > 
-> > > are available in the git repository at:
-> > >   git://amd64.org/linux/bp.git ras
-> > > 
-> > > Hidetoshi Seto (1):
-> > >       x86, mce: Do not call del_timer_sync() in IRQ context
-> > > 
-> > >  arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
-> > >  1 files changed, 14 insertions(+), 6 deletions(-)
-> > 
-> > Pulled, thanks a lot Joerg!
-> 
-> s/Boris :-)
+Allow specific sockets to be tagged SOCK_MEMALLOC and use
+__GFP_MEMALLOC for their allocations. These sockets will be able to go
+below watermarks and allocate from the emergency reserve. Such sockets
+are to be used to service the VM (iow. to swap over). They must be
+handled kernel side, exposing such a socket to user-space is a bug.
 
-It doesn't matter - practically, we're almost one and the same guy. :-).
+There is a risk that the reserves be depleted so for now, the
+administrator is responsible for increasing min_free_kbytes as
+necessary to prevent deadlock for their workloads.
 
+[a.p.zijlstra@chello.nl: Original patches]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/net/sock.h |    5 ++++-
+ net/core/sock.c    |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index a4d5e61..583df68 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -554,6 +554,7 @@ enum sock_flags {
+ 	SOCK_RCVTSTAMPNS, /* %SO_TIMESTAMPNS setting */
+ 	SOCK_LOCALROUTE, /* route locally only, %SO_DONTROUTE setting */
+ 	SOCK_QUEUE_SHRUNK, /* write queue has been shrunk recently */
++	SOCK_MEMALLOC, /* VM depends on this socket for swapping */
+ 	SOCK_TIMESTAMPING_TX_HARDWARE,  /* %SOF_TIMESTAMPING_TX_HARDWARE */
+ 	SOCK_TIMESTAMPING_TX_SOFTWARE,  /* %SOF_TIMESTAMPING_TX_SOFTWARE */
+ 	SOCK_TIMESTAMPING_RX_HARDWARE,  /* %SOF_TIMESTAMPING_RX_HARDWARE */
+@@ -588,7 +589,7 @@ static inline int sock_flag(struct sock *sk, enum sock_flags flag)
+ 
+ static inline gfp_t sk_allocation(struct sock *sk, gfp_t gfp_mask)
+ {
+-	return gfp_mask;
++	return gfp_mask | (sk->sk_allocation & __GFP_MEMALLOC);
+ }
+ 
+ static inline void sk_acceptq_removed(struct sock *sk)
+@@ -718,6 +719,8 @@ extern int sk_stream_wait_memory(struct sock *sk, long *timeo_p);
+ extern void sk_stream_wait_close(struct sock *sk, long timeo_p);
+ extern int sk_stream_error(struct sock *sk, int flags, int err);
+ extern void sk_stream_kill_queues(struct sock *sk);
++extern void sk_set_memalloc(struct sock *sk);
++extern void sk_clear_memalloc(struct sock *sk);
+ 
+ extern int sk_wait_data(struct sock *sk, long *timeo);
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index bc745d0..2e3b69b 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -221,6 +221,28 @@ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+ 
++/**
++ * sk_set_memalloc - sets %SOCK_MEMALLOC
++ * @sk: socket to set it on
++ *
++ * Set %SOCK_MEMALLOC on a socket for access to emergency reserves.
++ * It's the responsibility of the admin to adjust min_free_kbytes
++ * to meet the requirements
++ */
++void sk_set_memalloc(struct sock *sk)
++{
++	sock_set_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation |= __GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_set_memalloc);
++
++void sk_clear_memalloc(struct sock *sk)
++{
++	sock_reset_flag(sk, SOCK_MEMALLOC);
++	sk->sk_allocation &= ~__GFP_MEMALLOC;
++}
++EXPORT_SYMBOL_GPL(sk_clear_memalloc);
++
+ #if defined(CONFIG_CGROUPS) && !defined(CONFIG_NET_CLS_CGROUP)
+ int net_cls_subsys_id = -1;
+ EXPORT_SYMBOL_GPL(net_cls_subsys_id);
 -- 
-Regards/Gruss,
-Boris.
+1.7.3.4
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
