@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965140Ab1JFQ0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 12:26:19 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:34009 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935856Ab1JFQ0R (ORCPT
+	id S965135Ab1JFQfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 12:35:05 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:37528 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935869Ab1JFQfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 12:26:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApwEAH/VjU5bdWOb/2dsb2JhbABDqTiBUwEBBTIBIyMQCxguFCUDIYgTuC2HLAScTYhp
-X-IronPort-AV: E=Sophos;i="4.68,496,1312149600"; 
-   d="scan'208";a="898017144"
-Date: Thu, 6 Oct 2011 18:26:14 +0200
-From: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-To: Joe Perches <joe@perches.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, Timo Teras <timo.teras@solidboot.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>
-Subject: Re: [PATCH] omap: dmtimer: convert printk to pr_*
-Message-ID: <20111006162614.GH30222@lit.local.igalia.com>
-References: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
- <1317914379.10495.5.camel@Joe-Laptop>
+	Thu, 6 Oct 2011 12:35:04 -0400
+Date: Thu, 6 Oct 2011 10:35:02 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Subject: Re: [PATCH 2/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+In-Reply-To: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
+Message-ID: <alpine.DEB.2.00.1110061030490.4611@utopia.booyaka.com>
+References: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1317914379.10495.5.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 08:19:39AM -0700, Joe Perches wrote:
-> On Thu, 2011-10-06 at 12:48 +0200, Víctor Manuel Jáquez Leal wrote:
-> > Convert all the printk(<level>) messages in the driver to pr_<level>().
-> []
-> > diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-> []
-> > @@ -397,8 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
-> >  	spin_lock_irqsave(&dm_timer_lock, flags);
-> >  	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
-> >  		spin_unlock_irqrestore(&dm_timer_lock, flags);
-> > -		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
-> > -		       __FILE__, __LINE__, __func__, id);
-> > +		pr_warning("unable to get timer %d\n", id);
-> 
-> For new conversions, please use pr_warn not pr_warning.
-> It's shorter and similar to other dev_warn/netdev_warn
-> uses.
-> 
-> >  		dump_stack();
-> 
-> To emit a message then dump stack, please use
-> 	WARN(1, fmt, ...)
-> 
+Hi Keshava,
 
-Thanks a lot!
+On Thu, 6 Oct 2011, Keshava Munegowda wrote:
 
-I'll do that and then resend.
+> Following 2 hwmod structures are added
+>     1. usb_host_hs
+>          The hwmod of usbhs with uhh, ehci and ohci base addresses
+>          functional clock and ehci, ohci irqs
+> 
+>     2. usb_tll_hs
+>           hwmod of usbhs with the TLL base address and irq.
+> 
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> Reviewed-by: Partha Basak <parthab@india.ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
+>  1 files changed, 227 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> index 59fdb9f..b8ca690 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
 
-vmjl
+...
+
+> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__ick = {
+> +	.master         = &omap3xxx_l4_core_hwmod,
+> +	.slave          = &omap34xx_usb_host_hs_hwmod,
+> +	.clk		= "usbhost_ick",
+> +	.addr		= omap34xx_usb_host_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +/*
+> + * This clock should be on/off only with main clock; If auto idle is set,
+> + * the usbhs controller prevents the omap to enter in to low power mode,
+> + * hence don't use auto idle here.
+> + */
+> +	.flags		= OCPIF_SWSUP_IDLE,
+
+This is still unclear to me.  Doesn't this interface clock support 
+interface clock auto-idle?  If so, then when the UHH's target port is 
+forced idle and its initiator port is forced to standby, then shouldn't 
+the PRCM automatically idle this interface clock?
+
+Or is there some hardware problem where the PRCM won't auto-idle this 
+clock when the UHH is in idle + standby?
+
+> +};
+> +
+
+...
+
+> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
+> +	.clk		= "usbtll_ick",
+> +	.addr		= omap34xx_usb_tll_hs_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +/*
+> + * This clock should be on/off only with main clock; If auto idle is set,
+> + * the usbhs controller prevents the omap to enter in to low power mode,
+> + * hence don't use auto idle here.
+> + */
+> +	.flags		= OCPIF_SWSUP_IDLE,
+
+Same comment here, with the exception of the part about standby since the 
+TLL doesn't have an initiator port.
+
+
+- Paul
