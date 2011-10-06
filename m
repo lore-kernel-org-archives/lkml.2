@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965029Ab1JFOug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:50:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23615 "EHLO
+	id S965055Ab1JFOun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:50:43 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23974 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964946Ab1JFOu3 (ORCPT
+	with ESMTP id S965043Ab1JFOuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:50:29 -0400
+	Thu, 6 Oct 2011 10:50:39 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=ftV3P9uxdqTJnpEDO9nZpbheVO4ivfVW4/Jm0K7SsmDuLwy6Z0Cbhk88TVVenEdYl
-	iYY6osElQfQO3GnGnJyiA==
+	b=DelyzEZccwMcIOeY9HLKfjiaKbHz45ewTo1DsV5kEwrp8SGkWWxA7M0QxmodiiVYn
+	hZ4FhBGtRghPIL4Zx8NQg==
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
         andi@firstfloor.org, robert.richter@amd.com, ravitillo@lbl.gov
-Subject: [PATCH 10/12] perf: add code to support PERF_SAMPLE_BRANCH_STACK
-Date: Thu,  6 Oct 2011 16:49:13 +0200
-Message-Id: <1317912555-9559-11-git-send-email-eranian@google.com>
+Subject: [PATCH 11/12] perf: add support for sampling taken branch to perf record
+Date: Thu,  6 Oct 2011 16:49:14 +0200
+Message-Id: <1317912555-9559-12-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1317912555-9559-1-git-send-email-eranian@google.com>
 References: <1317912555-9559-1-git-send-email-eranian@google.com>
@@ -27,875 +27,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds:
-- ability to parse samples with PERF_SAMPLE_BRANCH_STACK
-- sort on branches
-- build histograms on branches
+This patch adds a new option to enable taken branch stack
+sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
+of perf_events.
+
+There is a new option to active this mode: -b.
+It is possible to pass a set of filters to select the type of
+branches to sample.
+
+The following filters are available:
+- any : any type of branches
+- any_call : any function call or system call
+- any_ret : any function return or system call return
+- any_ind : any indirect branch
+- u:  only when the branch target is at the user level
+- k: only when the branch target is in the kernel
+
+Filters can be combined by passing a comma separated list
+to the option:
+
+$ perf record -b any_call,u -e cycles:u branchy
 
 Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/perf.h          |   17 ++
- tools/perf/util/annotate.c |    2 +-
- tools/perf/util/event.h    |    1 +
- tools/perf/util/evsel.c    |   10 ++
- tools/perf/util/hist.c     |   97 ++++++++++---
- tools/perf/util/hist.h     |    6 +
- tools/perf/util/session.c  |   72 +++++++++
- tools/perf/util/session.h  |    5 +
- tools/perf/util/sort.c     |  348 +++++++++++++++++++++++++++++++++-----------
- tools/perf/util/sort.h     |    5 +
- tools/perf/util/symbol.h   |   13 ++
- 11 files changed, 464 insertions(+), 112 deletions(-)
+ tools/perf/Documentation/perf-record.txt |   18 +++++++
+ tools/perf/builtin-record.c              |   75 ++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index a5fc660..549ac58 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -170,6 +170,23 @@ struct ip_callchain {
- 	u64 ips[0];
- };
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 5a520f8..ddc1999 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -148,6 +148,24 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
+ corresponding events, i.e., they always refer to events defined earlier on the command
+ line.
  
-+struct branch_flags{
-+	u64 mispred : 1;
-+	u64 predicted : 1;
-+	u64 reserved : 62;
-+};
++-b::
++--branch-stack::
++Enable taken branch stack sampling. Each sample captures a series of consecutive
++taken branches. The number of branches captured with each sample depends on the
++underlying hardware, the type of branches of interested and the executed code.
++It is possible to filter the types of branches by enabling filters. The
++following filters are defined: any (any type of branches), any_call (any function
++call or system call), any_ret (any function return or system call return), any_ind
++(any indirect branch), u (only when the branch target is at the user level), k (only when
++the branch target is in the kernel). At least one of any, any_call, any_ret, any_ind
++must be provided. The privilege levels may be ommitted, in which case, the privilege
++levels of the associated event is applied to the branch filter. When sampling on multiple
++events, branch stack sampling is enabled for all the sampling events. The sampled branch
++type is the same for all events. The privilege levels are adjusted based on those of
++the associated event unless specified explicitly with this option. Note that taken
++branch sampling may not be available on all processors. The various filters must
++be specified as a comma separated list: -b any_ret,u,k
 +
-+struct branch_entry {
-+	u64				from;
-+	u64				to;
-+	struct branch_flags flags;
-+};
-+
-+struct branch_stack {
-+	u64				nr;
-+	struct branch_entry	entries[0];
-+};
-+
- extern bool perf_host, perf_guest;
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f4c3fbe..4464677 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -57,6 +57,7 @@ static pid_t			child_pid			=     -1;
+ static bool			no_inherit			=  false;
+ static enum write_mode_t	write_mode			= WRITE_FORCE;
+ static bool			call_graph			=  false;
++static int			branch_stack			=  0;
+ static bool			inherit_stat			=  false;
+ static bool			no_samples			=  false;
+ static bool			sample_address			=  false;
+@@ -204,6 +205,11 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ 	if (system_wide)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
  
- #endif
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index e01af2b..532e4a6 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -62,7 +62,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 
- 	pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
- 
--	if (addr >= sym->end)
-+	if (addr >= sym->end || addr < sym->start)
- 		return 0;
- 
- 	offset = addr - sym->start;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 357a85b..026b1f6 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -80,6 +80,7 @@ struct perf_sample {
- 	u32 raw_size;
- 	void *raw_data;
- 	struct ip_callchain *callchain;
-+	struct branch_stack *branch_stack;
- };
- 
- #define BUILD_ID_SIZE 20
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e389815..cca6c23 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -472,5 +472,15 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 		data->raw_data = (void *) pdata;
- 	}
- 
-+	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+		u64 sz;
-+
-+		data->branch_stack = (struct branch_stack *)array;
-+		array++; /* nr */
-+
-+		sz = data->branch_stack->nr * sizeof (struct branch_entry);
-+		sz /= sizeof(uint64_t);
-+		array += sz;
-+	}
- 	return 0;
- }
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 677e1da..9421391 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -49,8 +49,10 @@ static void hists__calc_col_len(struct hists *self, struct hist_entry *h)
- {
- 	u16 len;
- 
--	if (h->ms.sym)
--		hists__new_col_len(self, HISTC_SYMBOL, h->ms.sym->namelen);
-+	if (h->ms.sym){
-+		int symlen = max((int)h->ms.sym->namelen + 4, BITS_PER_LONG / 4 + 6);
-+		hists__new_col_len(self, HISTC_SYMBOL, symlen);
-+	}
- 	else {
- 		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
- 
-@@ -128,33 +130,18 @@ static u8 symbol__parent_filter(const struct symbol *parent)
- 	return 0;
- }
- 
--struct hist_entry *__hists__add_entry(struct hists *self,
--				      struct addr_location *al,
--				      struct symbol *sym_parent, u64 period)
--{
-+static struct hist_entry *add_hist_entry(struct hists *self,
-+					 struct hist_entry *entry,
-+					 struct addr_location *al,
-+					 u64 period){
- 	struct rb_node **p = &self->entries.rb_node;
- 	struct rb_node *parent = NULL;
- 	struct hist_entry *he;
--	struct hist_entry entry = {
--		.thread	= al->thread,
--		.ms = {
--			.map	= al->map,
--			.sym	= al->sym,
--		},
--		.cpu	= al->cpu,
--		.ip	= al->addr,
--		.level	= al->level,
--		.period	= period,
--		.parent = sym_parent,
--		.filtered = symbol__parent_filter(sym_parent),
--	};
- 	int cmp;
--
- 	while (*p != NULL) {
- 		parent = *p;
- 		he = rb_entry(parent, struct hist_entry, rb_node);
--
--		cmp = hist_entry__cmp(&entry, he);
-+		cmp = hist_entry__cmp(entry, he);
- 
- 		if (!cmp) {
- 			he->period += period;
-@@ -168,9 +155,10 @@ struct hist_entry *__hists__add_entry(struct hists *self,
- 			p = &(*p)->rb_right;
- 	}
- 
--	he = hist_entry__new(&entry);
-+	he = hist_entry__new(entry);
- 	if (!he)
- 		return NULL;
-+
- 	rb_link_node(&he->rb_node, parent, p);
- 	rb_insert_color(&he->rb_node, &self->entries);
- 	hists__inc_nr_entries(self, he);
-@@ -179,6 +167,69 @@ out:
- 	return he;
- }
- 
-+struct hist_entry *__hists__add_branch_entry(struct hists *self,
-+					     struct addr_location *al,
-+					     struct symbol *sym_parent,
-+					     struct branch_info* bi,
-+					     u64 period){
-+	struct hist_entry entry = {
-+		.thread	= al->thread,
-+		.ms = {
-+			.map	= bi->to.map,
-+			.sym	= bi->to.sym,
-+		},
-+		.cpu	= al->cpu,
-+		.ip	= bi->to.addr,
-+		.level	= al->level,
-+		.period	= period,
-+		.parent = sym_parent,
-+		.filtered = symbol__parent_filter(sym_parent),
-+		.branch_info = bi,
-+	};
-+	struct hist_entry *he;
-+
-+	he = add_hist_entry(self, &entry, al, period);
-+	if (!he)
-+		return NULL;
-+
-+	/*
-+	 * in branch mode, we do not display al->sym, al->addr
-+	 * but instead what is in branch_info. The addresses and
-+	 * symbols there may need wider columns, so make sure they
-+	 * are taken into account.
-+	 *
-+	 * hists__calc_col_len() tracks the max column width, so
-+	 * we need to call it for both the from and to addresses
-+	 */
-+	entry.ip     = bi->from.addr;
-+	entry.ms.map = bi->from.map;
-+	entry.ms.sym = bi->from.sym;
-+	hists__calc_col_len(self, &entry);
-+
-+	return he;
-+}
-+
-+struct hist_entry *__hists__add_entry(struct hists *self,
-+				      struct addr_location *al,
-+				      struct symbol *sym_parent, u64 period)
-+{
-+	struct hist_entry entry = {
-+		.thread	= al->thread,
-+		.ms = {
-+			.map	= al->map,
-+			.sym	= al->sym,
-+		},
-+		.cpu	= al->cpu,
-+		.ip	= al->addr,
-+		.level	= al->level,
-+		.period	= period,
-+		.parent = sym_parent,
-+		.filtered = symbol__parent_filter(sym_parent),
-+	};
-+
-+	return add_hist_entry(self, &entry, al, period);
-+}
-+
- int64_t
- hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
- {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3beb97c..1b6eda2 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -39,6 +39,7 @@ enum hist_column {
- 	HISTC_COMM,
- 	HISTC_PARENT,
- 	HISTC_CPU,
-+	HISTC_MISPREDICT,
- 	HISTC_NR_COLS, /* Last entry */
- };
- 
-@@ -55,6 +56,11 @@ struct hists {
- struct hist_entry *__hists__add_entry(struct hists *self,
- 				      struct addr_location *al,
- 				      struct symbol *parent, u64 period);
-+struct hist_entry *__hists__add_branch_entry(struct hists *self,
-+					     struct addr_location *al,
-+					     struct symbol *sym_parent,
-+					     struct branch_info* bi,
-+					     u64 period);
- extern int64_t hist_entry__cmp(struct hist_entry *, struct hist_entry *);
- extern int64_t hist_entry__collapse(struct hist_entry *, struct hist_entry *);
- int hist_entry__fprintf(struct hist_entry *self, struct hists *hists,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 72458d9..ac1dfaea 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -236,6 +236,64 @@ static bool symbol__match_parent_regex(struct symbol *sym)
- 	return 0;
- }
- 
-+
-+static const u8 cpumodes[] = {
-+	PERF_RECORD_MISC_USER,
-+	PERF_RECORD_MISC_KERNEL,
-+	PERF_RECORD_MISC_GUEST_USER,
-+	PERF_RECORD_MISC_GUEST_KERNEL
-+};
-+#define NCPUMODES (sizeof(cpumodes)/sizeof(u8))
-+
-+static void ip__resolve_ams(struct perf_session *self, struct thread *thread,
-+                                        struct addr_map_symbol *ams,
-+                                        u64 ip)
-+{
-+	struct addr_location al;
-+	size_t i;
-+	u8 m;
-+
-+	memset(&al, 0, sizeof(al));
-+
-+	for (i = 0; i < NCPUMODES; i++) {
-+		m = cpumodes[i];
-+		/*
-+		 * we cannot use the header.misc hint to determine whether a
-+		 * branch stack address is user, kernel, guest, hypervisor.
-+		 * Branches may straddle the kernel/user/hypervisor boundaries.
-+		 * Thus, we have to try * consecutively until we find a match
-+		 * or else, the symbol is unknown
-+		 */
-+		thread__find_addr_location(thread, self, m, MAP__FUNCTION,
-+				thread->pid, ip, &al, NULL);
-+		if (al.sym)
-+			goto found;
-+	}
-+found:
-+	ams->addr = ip;
-+	ams->sym = al.sym;
-+	ams->map = al.map;
-+}
-+
-+struct branch_info *perf_session__resolve_bstack(struct perf_session *self,
-+						 struct thread *thr,
-+						 struct branch_stack *bs)
-+{
-+	struct branch_info *bi;
-+	unsigned int i;
-+
-+	bi = calloc(bs->nr, sizeof(struct branch_info));
-+	if (!bi)
-+		return NULL;
-+
-+	for (i = 0; i < bs->nr; i++) {
-+		ip__resolve_ams(self, thr, &bi[i].to, bs->entries[i].to);
-+		ip__resolve_ams(self, thr, &bi[i].from, bs->entries[i].from);
-+		bi[i].flags = bs->entries[i].flags;
-+	}
-+	return bi;
-+}
-+
- int perf_session__resolve_callchain(struct perf_session *self,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
-@@ -679,6 +737,17 @@ static void callchain__printf(struct perf_sample *sample)
- 		       i, sample->callchain->ips[i]);
- }
- 
-+static void branch_stack__printf(struct perf_sample *sample)
-+{
-+	uint64_t i;
-+
-+	printf("... branch stack: nr:%" PRIu64 "\n", sample->branch_stack->nr);
-+
-+	for (i = 0; i < sample->branch_stack->nr; i++)
-+		printf("..... %2"PRIu64": %016" PRIx64 " -> %016" PRIx64 "\n", i, sample->branch_stack-> \
-+			entries[i].from, sample->branch_stack->entries[i].to);
-+}
-+
- static void perf_session__print_tstamp(struct perf_session *session,
- 				       union perf_event *event,
- 				       struct perf_sample *sample)
-@@ -726,6 +795,9 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
- 
- 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
- 		callchain__printf(sample);
-+
-+	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
-+		branch_stack__printf(sample);
- }
- 
- static int perf_session_deliver_event(struct perf_session *session,
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 974d0cb..1bf9ba5 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -100,6 +100,11 @@ int __perf_session__process_events(struct perf_session *self,
- int perf_session__process_events(struct perf_session *self,
- 				 struct perf_event_ops *event_ops);
- 
-+
-+struct branch_info *perf_session__resolve_bstack(struct perf_session *self,
-+						 struct thread *thread,
-+						 struct branch_stack *bs);
-+
- int perf_session__resolve_callchain(struct perf_session *self,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1ee8f1e..f6b31f8 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -8,6 +8,7 @@ const char	default_sort_order[] = "comm,dso,symbol";
- const char	*sort_order = default_sort_order;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
-+bool		sort__branch_mode = 0;
- 
- enum sort_type	sort__first_dimension;
- 
-@@ -94,6 +95,26 @@ static int hist_entry__comm_snprintf(struct hist_entry *self, char *bf,
- 	return repsep_snprintf(bf, size, "%*s", width, self->thread->comm);
- }
- 
-+static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
-+{
-+	struct dso *dso_l = map_l ? map_l->dso : NULL;
-+	struct dso *dso_r = map_r ? map_r->dso : NULL;
-+	const char *dso_name_l, *dso_name_r;
-+
-+	if (!dso_l || !dso_r)
-+		return cmp_null(dso_l, dso_r);
-+
-+	if (verbose) {
-+		dso_name_l = dso_l->long_name;
-+		dso_name_r = dso_r->long_name;
-+	} else {
-+		dso_name_l = dso_l->short_name;
-+		dso_name_r = dso_r->short_name;
++	if (branch_stack) {
++		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
++		attr->branch_sample_type = branch_stack;
 +	}
 +
-+	return strcmp(dso_name_l, dso_name_r);
-+}
-+
- struct sort_entry sort_comm = {
- 	.se_header	= "Command",
- 	.se_cmp		= sort__comm_cmp,
-@@ -107,36 +128,72 @@ struct sort_entry sort_comm = {
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	struct dso *dso_l = left->ms.map ? left->ms.map->dso : NULL;
--	struct dso *dso_r = right->ms.map ? right->ms.map->dso : NULL;
--	const char *dso_name_l, *dso_name_r;
-+        return _sort__dso_cmp(left->ms.map, right->ms.map);
-+}
- 
--	if (!dso_l || !dso_r)
--		return cmp_null(dso_l, dso_r);
- 
--	if (verbose) {
--		dso_name_l = dso_l->long_name;
--		dso_name_r = dso_r->long_name;
--	} else {
--		dso_name_l = dso_l->short_name;
--		dso_name_r = dso_r->short_name;
-+static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
-+			      u64 ip_l, u64 ip_r)
-+{
-+	if (!sym_l || !sym_r)
-+		return cmp_null(sym_l, sym_r);
-+
-+	if (sym_l == sym_r)
-+		return 0;
-+
-+	if(sym_l)
-+		ip_l = sym_l->start;
-+	if(sym_r)
-+		ip_r = sym_r->start;
-+
-+	return (int64_t)(ip_r - ip_l);
-+}
-+
-+static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-+				     size_t size, unsigned int width)
-+{
-+	if (map && map->dso) {
-+		const char *dso_name = !verbose ? map->dso->short_name :
-+			map->dso->long_name;
-+		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
- 	}
- 
--	return strcmp(dso_name_l, dso_name_r);
-+	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
+ 	if (sample_id_all_avail &&
+ 	    (sample_time || system_wide || !no_inherit || cpu_list))
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+@@ -717,6 +723,72 @@ out_delete_session:
+ 	return err;
  }
  
- static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
- 				    size_t size, unsigned int width)
- {
--	if (self->ms.map && self->ms.map->dso) {
--		const char *dso_name = !verbose ? self->ms.map->dso->short_name :
--						  self->ms.map->dso->long_name;
--		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
-+	return _hist_entry__dso_snprintf(self->ms.map, bf, size, width);
-+}
++#define BRANCH_OPT(n, m) \
++	{ .name = n, .mode = (m) }
 +
-+static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
-+				     u64 ip, char level, char *bf, size_t size,
-+				     unsigned int width __used)
-+{
-+	size_t ret = 0;
++#define BRANCH_END { .name = NULL }
 +
-+	if (verbose) {
-+		char o = map ? dso__symtab_origin(map->dso) : '!';
-+		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
-+				       BITS_PER_LONG / 4, ip, o);
- 	}
- 
--	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
-+	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", level);
-+	if (sym)
-+		ret += repsep_snprintf(bf + ret, size - ret, "%-*s", width - ret,
-+				       sym->name);
-+	else {
-+		size_t len = BITS_PER_LONG / 4;
-+		ret += repsep_snprintf(bf + ret, size - ret, "%-#.*llx",
-+				       len, ip);
-+		ret += repsep_snprintf(bf + ret, size - ret, "%-*s", width - ret, "");
-+	}
-+
-+	return ret;
- }
- 
-+
- struct sort_entry sort_dso = {
- 	.se_header	= "Shared Object",
- 	.se_cmp		= sort__dso_cmp,
-@@ -144,8 +201,14 @@ struct sort_entry sort_dso = {
- 	.se_width_idx	= HISTC_DSO,
- };
- 
--/* --sort symbol */
-+static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width __used)
-+{
-+	return _hist_entry__sym_snprintf(self->ms.map, self->ms.sym, self->ip,
-+					 self->level, bf, size, width);
-+}
- 
-+/* --sort symbol */
- static int64_t
- sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- {
-@@ -154,38 +217,10 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	if (!left->ms.sym && !right->ms.sym)
- 		return right->level - left->level;
- 
--	if (!left->ms.sym || !right->ms.sym)
--		return cmp_null(left->ms.sym, right->ms.sym);
--
--	if (left->ms.sym == right->ms.sym)
--		return 0;
--
- 	ip_l = left->ms.sym->start;
- 	ip_r = right->ms.sym->start;
- 
--	return (int64_t)(ip_r - ip_l);
--}
--
--static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
--				    size_t size, unsigned int width __used)
--{
--	size_t ret = 0;
--
--	if (verbose) {
--		char o = self->ms.map ? dso__symtab_origin(self->ms.map->dso) : '!';
--		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
--				       BITS_PER_LONG / 4, self->ip, o);
--	}
--
--	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
--	if (self->ms.sym)
--		ret += repsep_snprintf(bf + ret, size - ret, "%s",
--				       self->ms.sym->name);
--	else
--		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx",
--				       BITS_PER_LONG / 4, self->ip);
--
--	return ret;
-+	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
- }
- 
- struct sort_entry sort_sym = {
-@@ -244,6 +279,124 @@ struct sort_entry sort_cpu = {
- 	.se_width_idx	= HISTC_CPU,
- };
- 
-+static int64_t
-+sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right){
-+	return _sort__dso_cmp(left->branch_info->from.map,
-+				       right->branch_info->from.map);
-+}
-+
-+static int hist_entry__dso_from_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width){
-+	return _hist_entry__dso_snprintf(self->branch_info->from.map,
-+					      bf, size, width);
-+}
-+
-+struct sort_entry sort_dso_from = {
-+	.se_header	= "Source Shared Object",
-+	.se_cmp		= sort__dso_from_cmp,
-+	.se_snprintf	= hist_entry__dso_from_snprintf,
-+	.se_width_idx	= HISTC_DSO,
++struct branch_mode {
++	const char *name;
++	int mode;
 +};
 +
-+static int64_t
-+sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right){
-+	return _sort__dso_cmp(left->branch_info->to.map,
-+				       right->branch_info->to.map);
-+}
++static const struct branch_mode branch_modes[]={
++	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
++	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
++	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
++	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
++	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
++	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_END
++};
 +
-+static int hist_entry__dso_to_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width){
-+	return _hist_entry__dso_snprintf(self->branch_info->to.map,
-+					      bf, size, width);
-+}
-+
-+static int64_t
-+sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right){
-+	struct addr_map_symbol *from_l = &left->branch_info->from;
-+	struct addr_map_symbol *from_r = &right->branch_info->from;
-+	if (!from_l->sym && !from_r->sym)
-+		return right->level - left->level;
-+	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
-+			     from_r->addr);
-+}
-+
-+static int64_t
-+sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right){
-+	struct addr_map_symbol *to_l = &left->branch_info->to;
-+	struct addr_map_symbol *to_r = &right->branch_info->to;
-+	if (!to_l->sym && !to_r->sym)
-+		return right->level - left->level;
-+	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
-+}
-+
-+static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width __used)
++static int
++parse_branch_stack(const struct option *opt, const char *str, int unset __used)
 +{
-+	struct addr_map_symbol *from = &self->branch_info->from;
-+	return _hist_entry__sym_snprintf(from->map, from->sym, from->addr,
-+					 self->level, bf, size, width);
++#define ONLY_PLM (PERF_SAMPLE_BRANCH_USER|PERF_SAMPLE_BRANCH_KERNEL)
++	uint64_t *mode = (uint64_t *)opt->value;
++	const struct branch_mode *br;
++	char *s, *os, *p;
++	int ret = -1;
 +
-+}
++	*mode = 0;
 +
-+static int hist_entry__sym_to_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width __used)
-+{
-+	struct addr_map_symbol *to = &self->branch_info->to;
-+	return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
-+					 self->level, bf, size, width);
++	/* because str is read-only */
++	s = os = strdup(str);
++	if (!s)
++		return -1;
 +
-+}
++	for (;;) {
++		p = strchr(s, ',');
++		if (p)
++			*p = '\0';
 +
-+struct sort_entry sort_dso_to = {
-+	.se_header	= "Target Shared Object",
-+	.se_cmp		= sort__dso_to_cmp,
-+	.se_snprintf	= hist_entry__dso_to_snprintf,
-+	.se_width_idx	= HISTC_DSO,
-+};
-+
-+struct sort_entry sort_sym_from = {
-+	.se_header	= "Source Symbol",
-+	.se_cmp		= sort__sym_from_cmp,
-+	.se_snprintf	= hist_entry__sym_from_snprintf,
-+	.se_width_idx	= HISTC_SYMBOL,
-+};
-+
-+struct sort_entry sort_sym_to = {
-+	.se_header	= "Target Symbol",
-+	.se_cmp		= sort__sym_to_cmp,
-+	.se_snprintf	= hist_entry__sym_to_snprintf,
-+	.se_width_idx	= HISTC_SYMBOL,
-+};
-+
-+static int64_t
-+sort__mispredict_cmp(struct hist_entry *left, struct hist_entry *right){
-+	const unsigned char mp = left->branch_info->flags.mispred !=
-+					right->branch_info->flags.mispred;
-+	const unsigned char p = left->branch_info->flags.predicted !=
-+					right->branch_info->flags.predicted;
-+
-+	return mp || p;
-+}
-+
-+static int hist_entry__mispredict_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width){
-+	static const char *out = "N/A";
-+
-+	if (self->branch_info->flags.predicted)
-+		out = "N";
-+	else if (self->branch_info->flags.mispred)
-+		out = "Y";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_mispredict = {
-+	.se_header	= "Branch Mispredicted",
-+	.se_cmp		= sort__mispredict_cmp,
-+	.se_snprintf	= hist_entry__mispredict_snprintf,
-+	.se_width_idx	= HISTC_MISPREDICT,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -251,14 +404,59 @@ struct sort_dimension {
- };
- 
- static struct sort_dimension sort_dimensions[] = {
--	{ .name = "pid",	.entry = &sort_thread,	},
--	{ .name = "comm",	.entry = &sort_comm,	},
--	{ .name = "dso",	.entry = &sort_dso,	},
--	{ .name = "symbol",	.entry = &sort_sym,	},
--	{ .name = "parent",	.entry = &sort_parent,	},
--	{ .name = "cpu",	.entry = &sort_cpu,	},
-+	{ .name = "pid",	.entry = &sort_thread,			},
-+	{ .name = "comm",	.entry = &sort_comm,			},
-+	{ .name = "dso",	.entry = &sort_dso,			},
-+	{ .name = "dso_from", 	.entry = &sort_dso_from,.taken = true	},
-+	{ .name = "dso_to",	.entry = &sort_dso_to,	.taken = true	},
-+	{ .name = "symbol",	.entry = &sort_sym,			},
-+	{ .name = "symbol_from",.entry = &sort_sym_from,.taken = true	},
-+	{ .name = "symbol_to",	.entry = &sort_sym_to,	.taken = true	},
-+	{ .name = "parent",	.entry = &sort_parent,			},
-+	{ .name = "cpu",	.entry = &sort_cpu,			},
-+	{ .name = "mispredict", .entry = &sort_mispredict, },
- };
- 
-+static int _sort_dimension__add(struct sort_dimension *sd)
-+{
-+	if (sd->entry->se_collapse)
-+		sort__need_collapse = 1;
-+
-+	if (sd->entry == &sort_parent) {
-+		int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
-+		if (ret) {
-+			char err[BUFSIZ];
-+
-+			regerror(ret, &parent_regex, err, sizeof(err));
-+			pr_err("Invalid regex: %s\n%s", parent_pattern, err);
-+			return -EINVAL;
++		for (br = branch_modes; br->name; br++) {
++			if (!strcasecmp(s, br->name))
++				break;
 +		}
-+		sort__has_parent = 1;
-+	}
++		if (!br->name)
++			goto error;
 +
-+	if (list_empty(&hist_entry__sort_list)) {
-+		if (!strcmp(sd->name, "pid"))
-+			sort__first_dimension = SORT_PID;
-+		else if (!strcmp(sd->name, "comm"))
-+			sort__first_dimension = SORT_COMM;
-+		else if (!strcmp(sd->name, "dso"))
-+			sort__first_dimension = SORT_DSO;
-+		else if (!strcmp(sd->name, "symbol"))
-+			sort__first_dimension = SORT_SYM;
-+		else if (!strcmp(sd->name, "parent"))
-+			sort__first_dimension = SORT_PARENT;
-+		else if (!strcmp(sd->name, "cpu"))
-+			sort__first_dimension = SORT_CPU;
-+		else if (!strcmp(sd->name, "mispredict"))
-+			sort__first_dimension = SORT_MISPREDICTED;
-+	}
++		*mode |= br->mode;
 +
-+	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
-+	sd->taken = 1;
-+
-+	return 0;
-+}
-+
- int sort_dimension__add(const char *tok)
- {
- 	unsigned int i;
-@@ -269,48 +467,22 @@ int sort_dimension__add(const char *tok)
- 		if (strncasecmp(tok, sd->name, strlen(tok)))
- 			continue;
- 
--		if (sd->entry == &sort_parent) {
--			int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
--			if (ret) {
--				char err[BUFSIZ];
--
--				regerror(ret, &parent_regex, err, sizeof(err));
--				pr_err("Invalid regex: %s\n%s", parent_pattern, err);
--				return -EINVAL;
--			}
--			sort__has_parent = 1;
--		}
--
- 		if (sd->taken)
- 			return 0;
- 
--		if (sd->entry->se_collapse)
--			sort__need_collapse = 1;
--
--		if (list_empty(&hist_entry__sort_list)) {
--			if (!strcmp(sd->name, "pid"))
--				sort__first_dimension = SORT_PID;
--			else if (!strcmp(sd->name, "comm"))
--				sort__first_dimension = SORT_COMM;
--			else if (!strcmp(sd->name, "dso"))
--				sort__first_dimension = SORT_DSO;
--			else if (!strcmp(sd->name, "symbol"))
--				sort__first_dimension = SORT_SYM;
--			else if (!strcmp(sd->name, "parent"))
--				sort__first_dimension = SORT_PARENT;
--			else if (!strcmp(sd->name, "cpu"))
--				sort__first_dimension = SORT_CPU;
--		}
--
--		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
--		sd->taken = 1;
- 
--		return 0;
-+		if(sort__branch_mode && (sd->entry == &sort_dso ||
-+					sd->entry == &sort_sym)){
-+			int err = _sort_dimension__add(sd + 1);
-+			return err ?: _sort_dimension__add(sd + 2);
-+		}
-+		else if(sd->entry == &sort_mispredict && !sort__branch_mode)
++		if (!p)
 +			break;
-+		else
-+			return _sort_dimension__add(sd);
- 	}
--
- 	return -ESRCH;
- }
--
- void setup_sorting(const char * const usagestr[], const struct option *opts)
- {
- 	char *tmp, *tok, *str = strdup(sort_order);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 77d0388..9cd0106 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -31,11 +31,14 @@ extern const char *parent_pattern;
- extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
-+extern bool sort__branch_mode;
- extern char *field_sep;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
- extern struct sort_entry sort_sym;
- extern struct sort_entry sort_parent;
-+extern struct sort_entry sort_lbr_dso;
-+extern struct sort_entry sort_lbr_sym;
- extern enum sort_type sort__first_dimension;
- 
- /**
-@@ -70,6 +73,7 @@ struct hist_entry {
- 		struct hist_entry *pair;
- 		struct rb_root	  sorted_chain;
- 	};
-+	struct branch_info	*branch_info;
- 	struct callchain_root	callchain[0];
- };
- 
-@@ -80,6 +84,7 @@ enum sort_type {
- 	SORT_SYM,
- 	SORT_PARENT,
- 	SORT_CPU,
-+	SORT_MISPREDICTED,
- };
- 
- /*
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 4f377d9..daa251f 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -5,6 +5,7 @@
- #include <stdbool.h>
- #include <stdint.h>
- #include "map.h"
-+#include "../perf.h"
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-@@ -115,6 +116,18 @@ struct map_symbol {
- 	bool	      has_children;
- };
- 
-+struct addr_map_symbol {
-+	struct map    *map;
-+	struct symbol *sym;
-+	u64	      addr;
-+};
 +
-+struct branch_info {
-+	struct addr_map_symbol from;
-+	struct addr_map_symbol to;
-+	struct branch_flags flags;
-+};
++		s = p + 1;
++	}
++	ret = 0;
 +
- struct addr_location {
- 	struct thread *thread;
- 	struct map    *map;
++	if ((*mode & ~ONLY_PLM) == 0) {
++		pr_warning("error: needs at least one branch type with -b\n");
++		ret = -1;
++	}
++error:
++	free(os);
++	return ret;
++}
++
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -777,6 +849,9 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &evsel_list, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
++	OPT_CALLBACK('b', "branch stack", &branch_stack, "branch mode mask",
++		     "branch stack sampling modes",
++		     parse_branch_stack),
+ 	OPT_END()
+ };
+ 
 -- 
 1.7.4.1
 
