@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab1JFTZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:25:34 -0400
-Received: from nm5-vm3.bullet.mail.ne1.yahoo.com ([98.138.91.135]:41723 "HELO
-	nm5-vm3.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756577Ab1JFTZd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:25:33 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Oct 2011 15:25:33 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 925522.44097.bm@omp1057.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=yrVI83N6l+yMcPqtY1ca89OaxX6Pm3KFDtoY3EsKKsTVnnXk9oojfwqhEC68vHfyzPPbTc3gaKbpbuV7juzBpaeSfyNBxq6iJWFlJx84It/j4+lvCZLdqxV2cyPMvO9oMJcIlia1VwbONSU9rScgvkEFv1h0KNDZxx0K09Lim7g=;
-X-YMail-OSG: PGB3TRcVM1kUx.Q8de1VfXUMf5uI4mh8.R8ccUWFJAbOdac
- mjAqBSoqcBWFjqgGjJHIK5vHan.cSeWZ2lsRp7nP1hdnfw1q6fG4XQTGS3aO
- qaFpyTRhX1on8zRikj.2GfEg0JesaBxGx9v5yfnJzrN2nMsNmMG3Kx6ddL8l
- P9QRnVk_Q7aLSL4hts2XagBW0iUJN72q9x1IOULPnLa8Kbv9PV3qly9b0Ufi
- RF.D2x5rs_e3hyshM76cNziWp8pQfhbFSSXgR1pajGNzSLCDbs9g.x64CKkY
- _pAOFY8Q57KlY7iuSGedZiHMaorrL4T_Zm6czuienbIg8tnrMa8Xwe78hANN
- 8xzUB5Ole9xsio.nNomIhTiWdRZAKwrL6duQp_jC9CBrHbU9cEz11ANtlg8l
- 0XhwIqDxJr_h7To2vjHO6jxwHVzZ5JdU55PMq.I3USL4.zvLAse1gxHkKMlJ
- G1kXUXfVDVR2dF30CYarDbBrrvxRm2uGXJuve0qT52_WxC93r2CTwKa0jlpf
- DNqnDKj7cgFI91vXTy9HSF2hLDAp58wvT8igaYDHkeQ--
-X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1317928788.76722.YahooMailNeo@web30301.mail.mud.yahoo.com>
-Date: Thu, 6 Oct 2011 12:19:48 -0700 (PDT)
-From: AW <arne_woerner@yahoo.com>
-Reply-To: AW <arne_woerner@yahoo.com>
-Subject: acm/ttyACM0/cdc_acm does not deliver data
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758841Ab1JFT2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:28:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37560 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab1JFT2m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 15:28:42 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=AH-lfbgdtNEcOgX23IsA:9 a=vJcPFCk81GmUwGN446QA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
+ initialized, don't nop it out
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Henderson <rth@redhat.com>
+Cc: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org
+Date: Thu, 06 Oct 2011 15:28:39 -0400
+In-Reply-To: <4E8DF870.6010000@redhat.com>
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
+	  <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
+	  <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>
+	  <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
+	  <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
+	  <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
+	 <1317925615.4729.14.camel@gandalf.stny.rr.com>
+	 <4E8DF870.6010000@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317929321.4729.17.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, 2011-10-06 at 11:50 -0700, Richard Henderson wrote:
+> On 10/06/2011 11:26 AM, Steven Rostedt wrote:
+>  
+> > 
+> > That jmp to l_yes should easily be a two byte jump.
+> 
+> Until the compiler decides to re-order the code.  That's the problem --
+> in the general case you do not know how far away the destination is really
+> going to be.
 
-I made some USB devices using the CDC-ACM proposal...
-They work fine with 2.6.38.8-35.fc15/amd64 and earlier.
+Yeah, I was discussing this with Peter Zijlstra on IRC.
 
-But since 2.6.40-4.fc15/amd64 it doesnt work as before...
+> 
+> There are a couple of possibilities for improvement:
+> 
+> (1) Do as Jason suggests above and let the assembler figure out the size
+> of the branch that is needed.  Without adding more data to __jump_table,
+> you'll want to be extremely careful about checking the two pointers to 
+> see what size branch has been installed.
+
+Yeah, that could be done at patch time.
 
 
-My device receives a byte and then echoes it...
-Sometimes when the 65th byte is sent, a read(2) returns with 0...
-When I close the device and open it again and send 1 byte, I receive the echo for the 65th byte...
-(btw: after 65 bytes, the roles change: my self-tinkered device sends 65bytes and listens to the echoes...)
-Funnily some 65-byte-sequences are always echoed as before, while some are not (I tried it at least 10 times; I think the "bad" sequences had a lot of zeroes...)...
+> 
+> (2) Always reserve 5 bytes of space, but if the distance is small enough
+> patch in a 2-byte jump.  That doesn't help with the icache footprint.
 
-On my headless Atom N270 I have 1 self-tinkered USB-ACM-device and 2 DVB-T USB sticks...
-When I boot the 2.6.40 kernel it crashes after some minutes...
+I don't think this one is worth it.
 
-Can we change that somehow? *wag tail*
-Is it safe to use 2.6.38.8-35 behind a NAT? (I mean: r there big security holes?)
+-- Steve
 
-PS: I reported it here https://bugzilla.redhat.com/show_bug.cgi?id=727610 , but fedora/redhat cant help me so much, because i m the only one who has that problem...
-
-Thx.
-
-Bye
-Arne
