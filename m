@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935546Ab1JFIjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 04:39:00 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:42110 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab1JFIi6 (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 6 Oct 2011 04:38:58 -0400
-Subject: Re: [PATCH] acer-wmi: Add wireless quirk for Lenovo 3000 N200
-From: joeyli <jlee@suse.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1317756778-11822-1-git-send-email-seth.forshee@canonical.com>
-References: <1317756778-11822-1-git-send-email-seth.forshee@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 06 Oct 2011 16:38:34 +0800
-Message-ID: <1317890314.11626.115.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S935685Ab1JFIjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 04:39:35 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40995 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932384Ab1JFIje convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 04:39:34 -0400
+Message-ID: <4E8D6923.7080404@parallels.com>
+Date: Thu, 6 Oct 2011 12:38:59 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
+        <avagin@parallels.com>, <devel@openvz.org>
+Subject: Re: [PATCH v5 6/8] tcp buffer limitation: per-cgroup limit
+References: <1317730680-24352-1-git-send-email-glommer@parallels.com>  <1317730680-24352-7-git-send-email-glommer@parallels.com>  <1317732535.2440.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4E8C1064.3030902@parallels.com> <1317805090.2473.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1317805090.2473.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth, 
+On 10/05/2011 12:58 PM, Eric Dumazet wrote:
+> Le mercredi 05 octobre 2011 à 12:08 +0400, Glauber Costa a écrit :
+>> On 10/04/2011 04:48 PM, Eric Dumazet wrote:
+>
+>>> 2) Could you add const qualifiers when possible to your pointers ?
+>>
+>> Well, I'll go over the patches again and see where I can add them.
+>> Any specific place site you're concerned about?
+>
+> Everywhere its possible :
+>
+> It helps reader to instantly knows if a function is about to change some
+> part of the object or only read it, without reading function body.
+Sure it does.
 
-於 二，2011-10-04 於 14:32 -0500，Seth Forshee 提到：
-> This quirk fixes the wlan rfkill status on this machine. Without
-> it, wlan is permanently soft blocked whenever acer-wmi is loaded.
-> 
-> BugLink: https://bugs.launchpad.net/bugs/865807
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/platform/x86/acer-wmi.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index af2bb20..dac286a 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -464,6 +464,15 @@ static struct dmi_system_id acer_quirks[] = {
->  		},
->  		.driver_data = &quirk_lenovo_ideapad_s205,
->  	},
-> +	{
-> +		.callback = dmi_matched,
-> +		.ident = "Lenovo 3000 N200",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "0687A31"),
-> +		},
-> +		.driver_data = &quirk_fujitsu_amilo_li_1718,
-> +	},
->  	{}
->  };
->  
+So, give me your opinion on this:
 
-Simple applied and tested on my acer machine, no problem!
+most of the acessors inside struct sock do not modify the pointers,
+but return an address of an element inside it (that can later on be
+modified by the caller.
 
-Reviewed-by: Lee, Chun-Yi <jlee@novell.com>
+I think it is fine for the purpose of clarity, but to avoid warnings we 
+end up having to do stuff like this:
 
-Thank's for your patch!
-Joey Lee
++#define CONSTCG(m) ((struct mem_cgroup *)(m))
++long *tcp_sysctl_mem(const struct mem_cgroup *memcg)
++{
++       return CONSTCG(memcg)->tcp.tcp_prot_mem;
++}
 
+Is it acceptable?
