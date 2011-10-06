@@ -1,97 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab1JFHnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 03:43:17 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7143 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab1JFHnQ (ORCPT
+	id S935362Ab1JFIEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 04:04:33 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:47510 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932374Ab1JFIEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 03:43:16 -0400
-Date: Thu, 6 Oct 2011 09:43:02 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Himanshu Chauhan <hschauhan@nulltrace.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a 
- device number
-Message-ID: <20111006094302.71ea4dfd@endymion.delvare>
-In-Reply-To: <20111006051955.GA22835@ericsson.com>
-References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
-	<1317839407.3983.46.camel@groeck-laptop>
-	<20111006040656.GA2125@ubuntu.ubuntu-domain>
-	<20111006051955.GA22835@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Oct 2011 04:04:31 -0400
+Date: Thu, 6 Oct 2011 11:04:26 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Ted Ts'o" <tytso@mit.edu>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111006080425.GB25753@localhost.pp.htv.fi>
+References: <20111003093239.GB25136@localhost.pp.htv.fi>
+ <y0mobxyjazi.fsf@fche.csb>
+ <20111003180441.GD3072@localhost.pp.htv.fi>
+ <34045.1317760188@turing-police.cc.vt.edu>
+ <20111004223932.GA3460@localhost.pp.htv.fi>
+ <20111004231730.GB17089@redhat.com>
+ <20111005075438.GA29441@localhost.pp.htv.fi>
+ <20111005170616.GD4297@thunk.org>
+ <20111005192349.GA14406@localhost.pp.htv.fi>
+ <alpine.LFD.2.02.1110060101130.18778@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1110060101130.18778@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am purposely removing kernelnewbies from the CC list, as it seems
-quite irrelevant for this discussion.
-
-On Wed, 5 Oct 2011 22:19:55 -0700, Guenter Roeck wrote:
-> On Thu, Oct 06, 2011 at 12:06:59AM -0400, Himanshu Chauhan wrote:
-> > Hi,
-> > 
-> > > I can not comment on the merits of your patch. Unless I am missing
-> > > something, which may well be since I only spent a couple of minutes on
-> > > it, other device classes don't seem to provide a similar API, so I don't
-> > > know if or why it would make sense for hwmon. Maybe a driver which wants
-> > > to register a character device interface should do so independently of
-> > > hwmon.
-> > > 
-> > 
-> > The idea here is to sit in the same class directory as of hwmon. Devices
-> > registered with this interface will have "dev" under, for example,
-> > /sys/class/hwmon/hwmon0/dev. To do the same inside the driver will be
-> > a bit more involved than a call.
-> > 
-> > In my opinion other classes should also have similar interfaces.
-> > 
-> I think you'll have to spend some more time and effort explaining the "what for".
+On Thu, Oct 06, 2011 at 01:57:24AM +0200, Thomas Gleixner wrote:
+> On Wed, 5 Oct 2011, Adrian Bunk wrote:
+>...
+> > Let me paraphrase my question:
+> > "Whose signatures do I need on my key so that it will be accepted
+> >  at kernel.org?"
+>
+> Your understanding of key signing seems to be that some technical
+> measure which makes the key valid is enough to enter a web of trust.
+>
+> Webs of trust cannot be built nor entered by any technical means.
+>
+> A web of trust is built by personal relationships and the key signing
+> is just a technical measure to express that.
+>
+> I really do not care about your ID card, because it's a fact that
+> people got keys signed by showing fake IDs.
+>
+> > With that information I can check if one email to a few local people to 
+> > have a local keysigning is enough.
 > 
-> Apparently no other device class needs this functionality so far, yet you
-> suggest that such an interface should exist for all device classes.
+> Whatfor? To regain your k.org account? Can you provide a single
+> reason why that should happen?
+> 
+> I can't think of one. You vanished away with a big bang and now you
+> come back out of the blue and assume that you're a trusted person just
+> by slapping a few signs on your key?
 
-Actually a lot of class devices do have a device node:
-$ ls -1 /sys/class/*/*/dev | wc -l
-252
-This includes block, drm, dvb, input, msr, sound and tty class devices,
-to name just a few. But this isn't the problem. All these are
-documented in Documentation/devices.txt, and have a properly defined
-API. There is no such thing for hwmon devices at this point.
+I would say I vanished silently after several big bangs with you and 
+other people and some other incidents, but that's not really relevant.
 
-> But you do so without explanation, or in other words without use case.
+My main reason for regaining my kernel.org account is that I heavily 
+used my bunk@kernel.org address for kernel development (just check the 
+kernel history), and I was still getting emails to that.
 
-This is indeed the key point. Creating a device node is pointless
-without a standard API to make use of it. So Himanshu will have to
-document that first.
+Assuming the @kernel.org addresses will not vanish, I need accepted 
+credential for accessing that address.
 
-> I for my part have no idea what you would use or need this new interface for,
-> and if there would be other less intrusive means to accomplish the same goal.
-> And I would want to see really good reasons to make a change like this.
+> > Or if I have to bother Linus to meet me and sign my key the next
+> > time he is here in Helsinki.
+> 
+> And how would that change the fact that your personal trust value in
+> this community is exactly ZERO?
 
-Another good point.
+Your trust in me is exactly zero, and that wouldn't change if you'd sign 
+my key.
 
-> Specifically looking at the hwmon subsystem, you are expected to use the lm-sensors
-> library to access all hwmon attributes. So I would expect your explanation to include
-> exactly what you want to accomplish and why, details why you believe that you can not
-> use the lm-sensors library, why you believe that the current infrastructure
-> does not provide the means you need to accomplish your goals, and why you
-> think that the existing infrastructure can not be modified to let you accomplish
-> what you want to do without such a - from a conceptual perspective - substantial change.
+And for some other people in this community the same is surely also true.
 
-I again agree. Which means that Himanshu is still 3 steps away from
-getting his patch accepted:
-* Explaining why the current sysfs interface is insufficient and can't
-  be fixed.
-* Getting official device node numbers registered for hwmon use.
-* Defining an API for these device nodes.
+Now I can laugh about the incident when a member of the program commitee 
+(sic) of a kernel summit sent me an angry "Why didn't you take your seat?"
+email - it turned out I was not invited.
 
-Before then, there's no point in resending this patch, it will be
-rejected.
+I don't know anything about the behind-the-scenes politics of kernel 
+development, but I got the message that some people want to avoid my
+physical presence, and will not impose that on anyone who does not
+want to meet me. [1]
+
+> As your idea of trust seems to be based on an ID card you better find
+> some other place with people who are stupid enough to believe that
+> technical measures can replace deep personal trust.
+
+We are talking about the technical requirements for regaining an 
+account I was trusted to have before.
+
+If anyone accepts patches from me, or if Linus will ever again pull git 
+trees from me, are questions completely unrelated to whether you or he 
+or anyone else signs my key.
+
+> Thanks,
+> 
+> 	tglx
+
+cu
+Adrian
+
+[1] And my "have to bother Linus to meet me" was intended as asking him
+    if it would be possible, I wouldn't do stalking if he'd refuse.
 
 -- 
-Jean Delvare
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
+
