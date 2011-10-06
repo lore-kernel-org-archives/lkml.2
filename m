@@ -1,127 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935827Ab1JFLUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:20:19 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:34301 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLUP (ORCPT
+	id S935820Ab1JFLXH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:23:07 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38226 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935288Ab1JFLXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:20:15 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E8D90E9.5060208@cam.ac.uk>
-Date: Thu, 06 Oct 2011 12:28:41 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
+	Thu, 6 Oct 2011 07:23:04 -0400
+Date: Thu, 6 Oct 2011 16:35:31 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
+ mmap/munmap.
+Message-ID: <20111006110531.GE17591@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
+ <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com>
+ <20111003133710.GA28118@redhat.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 06/10] ASoC: wm8940: Convert to snd_soc_cache_sync
-References: <1317881417.13399.1.camel@phoenix> <1317881863.13399.10.camel@phoenix>
-In-Reply-To: <1317881863.13399.10.camel@phoenix>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20111003133710.GA28118@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/11 07:17, Axel Lin wrote:
-> Convert to snd_soc_cache_sync for sync reg_cache with the hardware.
-Looks sane, but I'm not that familiar with the cache side of things, so you'll want
-an ack from someone who is.  One comment inline.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
->  1 files changed, 22 insertions(+), 24 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-> index 7e0f54c..a4abfdf 100644
-> --- a/sound/soc/codecs/wm8940.c
-> +++ b/sound/soc/codecs/wm8940.c
-> @@ -45,6 +45,17 @@ struct wm8940_priv {
->  	enum snd_soc_control_type control_type;
->  };
->  
-> +static int wm8940_volatile_register(struct snd_soc_codec *codec,
-> +				    unsigned int reg)
-> +{
-> +	switch (reg) {
-> +	case WM8940_SOFTRESET:
-> +		return 1;
-> +	default:
-> +		return 0;
-> +	}
-> +}
-I guess this makes sense from point of view of keeping things inline with
-more complex drivers.  Otherwise I'd expect to see something like:
-{
-	return !!(reg == WM894_SOFTRESET);
-}
-> +
->  static u16 wm8940_reg_defaults[] = {
->  	0x8940, /* Soft Reset */
->  	0x0000, /* Power 1 */
-> @@ -459,6 +470,14 @@ static int wm8940_set_bias_level(struct snd_soc_codec *codec,
->  		ret = snd_soc_write(codec, WM8940_POWER1, pwr_reg | 0x1);
->  		break;
->  	case SND_SOC_BIAS_STANDBY:
-> +		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
-> +			ret = snd_soc_cache_sync(codec);
-> +			if (ret < 0) {
-> +				dev_err(codec->dev, "Failed to sync cache: %d\n", ret);
-> +				return ret;
-> +			}
-> +		}
-> +
->  		/* ensure bufioen and biasen */
->  		pwr_reg |= (1 << 2) | (1 << 3);
->  		/* set vmid to 300k for standby */
-> @@ -659,30 +678,8 @@ static int wm8940_suspend(struct snd_soc_codec *codec, pm_message_t state)
->  
->  static int wm8940_resume(struct snd_soc_codec *codec)
->  {
-> -	int i;
-> -	int ret;
-> -	u8 data[3];
-> -	u16 *cache = codec->reg_cache;
-> -
-> -	/* Sync reg_cache with the hardware
-> -	 * Could use auto incremented writes to speed this up
-> -	 */
-> -	for (i = 0; i < ARRAY_SIZE(wm8940_reg_defaults); i++) {
-> -		data[0] = i;
-> -		data[1] = (cache[i] & 0xFF00) >> 8;
-> -		data[2] = cache[i] & 0x00FF;
-> -		ret = codec->hw_write(codec->control_data, data, 3);
-> -		if (ret < 0)
-> -			goto error_ret;
-> -		else if (ret != 3) {
-> -			ret = -EIO;
-> -			goto error_ret;
-> -		}
-> -	}
-> -	ret = wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-> -
-> -error_ret:
-> -	return ret;
-> +	wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-> +	return 0;
->  }
->  
->  static int wm8940_probe(struct snd_soc_codec *codec)
-> @@ -742,6 +739,7 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8940 = {
->  	.reg_cache_size = ARRAY_SIZE(wm8940_reg_defaults),
->  	.reg_word_size = sizeof(u16),
->  	.reg_cache_default = wm8940_reg_defaults,
-> +	.volatile_register = wm8940_volatile_register,
->  };
->  
->  #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+* Oleg Nesterov <oleg@redhat.com> [2011-10-03 15:37:10]:
 
+> On 09/20, Srikar Dronamraju wrote:
+> >
+> > @@ -739,6 +740,10 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+> >  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> >  	mm->pmd_huge_pte = NULL;
+> >  #endif
+> > +#ifdef CONFIG_UPROBES
+> > +	atomic_set(&mm->mm_uprobes_count,
+> > +			atomic_read(&oldmm->mm_uprobes_count));
+> 
+> Hmm. Why this can't race with install_breakpoint/remove_breakpoint
+> between _read and _set ?
+
+At this time the child vmas are not yet created, so I dont see a 
+install_breakpoints/remove_breakpoints from child affecting.
+
+However if install_breakpoints/remove_breakpoints happen from a parent
+context, from now on till we do a vma_prio_tree_add (actually down_write(oldmm->mmap_sem) in dup_mmap()),  then the count in the child may not be the right one. If you are pointing to this race, then its probably bigger than just between read and set.
+
+or are you talking of some other issue?
+
+> 
+> What about VM_DONTCOPY vma's with breakpoints ?
+
+Ah... I have missed this.
+
+One solution could be to call mmap_uprobe() like routine just before we
+release the mmap_sem of the child but after we do a vma_prio_tree_add.
+
+This should also solve the problem of install_breakpoints/remove
+breakpoints called in parent context that we talked about above.
+
+> 
+> > -static int match_uprobe(struct uprobe *l, struct uprobe *r)
+> > +static int match_uprobe(struct uprobe *l, struct uprobe *r, int *match_inode)
+> >  {
+> > +	/*
+> > +	 * if match_inode is non NULL then indicate if the
+> > +	 * inode atleast match.
+> > +	 */
+> > +	if (match_inode)
+> > +		*match_inode = 0;
+> > +
+> >  	if (l->inode < r->inode)
+> >  		return -1;
+> >  	if (l->inode > r->inode)
+> >  		return 1;
+> >  	else {
+> > +		if (match_inode)
+> > +			*match_inode = 1;
+> > +
+> 
+> It is very possible I missed something, but imho this looks confusing.
+> 
+> This close_match logic is only needed for build_probe_list() and
+> dec_mm_uprobes_count(), and both do not actually need the returned
+> uprobe.
+> 
+> Instead of complicating match_uprobe() and __find_uprobe(), perhaps
+> it makes sense to add "struct rb_node *__find_close_rb_node(inode)" ?
+
+
+Yes, we do this too.
+
+> 
+> > +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
+> >  {
+> >  	/* Placeholder: Yet to be implemented */
+> > +	if (!uprobe->consumers)
+> > +		return 0;
+> 
+> How it is possible to see ->consumers == NULL?
+> 
+
+consumers == NULL check is mostly for the mmap_uprobe path.
+_register_uprobe and _unregister_uprobe() use the same lock to serialize
+so they can check consumers after taking the lock.
+
+> OK, afaics it _is_ possible, but only because unregister does del_consumer()
+> without ->i_mutex, but this is bug afaics (see the previous email).
+
+We have discussed this in the other thread.
+
+> 
+> Another user is mmap_uprobe() and it checks ->consumers != NULL itself (but
+> see below).
+> 
+> > +int mmap_uprobe(struct vm_area_struct *vma)
+> > +{
+> > +	struct list_head tmp_list;
+> > +	struct uprobe *uprobe, *u;
+> > +	struct inode *inode;
+> > +	int ret = 0;
+> > +
+> > +	if (!valid_vma(vma))
+> > +		return ret;	/* Bail-out */
+> > +
+> > +	inode = igrab(vma->vm_file->f_mapping->host);
+> > +	if (!inode)
+> > +		return ret;
+> > +
+> > +	INIT_LIST_HEAD(&tmp_list);
+> > +	mutex_lock(&uprobes_mmap_mutex);
+> > +	build_probe_list(inode, &tmp_list);
+> > +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> > +		loff_t vaddr;
+> > +
+> > +		list_del(&uprobe->pending_list);
+> > +		if (!ret && uprobe->consumers) {
+> > +			vaddr = vma->vm_start + uprobe->offset;
+> > +			vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > +			if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+> > +				continue;
+> > +			ret = install_breakpoint(vma->vm_mm, uprobe);
+> 
+> So. We are adding the new mapping, we should find all breakpoints this
+> file has in the start/end range.
+> 
+> We are holding ->mmap_sem... this seems enough to protect against the
+> races with register/unregister. Except, what if __register_uprobe()
+> fails? In this case __unregister_uprobe() does delete_uprobe() at the
+> very end. What if mmap mmap_uprobe() is called right before delete_?
+> 
+
+Because consumers would be NULL before _unregister_uprobe kicks in, we
+shouldnt have a problem here.
+
+_unregister_uprobe and mmap_uprobe() would race for
+down_read(&mm->mmap_sem), if _unregister_uprobe() gets the read_lock,
+then by the time mmap_uprobe() gets to run, consumers would be NULL and
+we are fine since we dont go ahead an insert.
+
+If mmap_uprobe() were to get the write_lock, _unregister_uprobe would do
+the necessary cleanup.
+
+we are checking consumers twice, but thats just being conservative.
+we should able to do with just one check too.
+
+Am I missing something?
+
+> > +static void dec_mm_uprobes_count(struct vm_area_struct *vma,
+> > +		struct inode *inode)
+> > +{
+> > +	struct uprobe *uprobe;
+> > +	struct rb_node *n;
+> > +	unsigned long flags;
+> > +
+> > +	n = uprobes_tree.rb_node;
+> > +	spin_lock_irqsave(&uprobes_treelock, flags);
+> > +	uprobe = __find_uprobe(inode, 0, &n);
+> > +
+> > +	/*
+> > +	 * If indeed there is a probe for the inode and with offset zero,
+> > +	 * then lets release its reference. (ref got thro __find_uprobe)
+> > +	 */
+> > +	if (uprobe)
+> > +		put_uprobe(uprobe);
+> > +	for (; n; n = rb_next(n)) {
+> > +		loff_t vaddr;
+> > +
+> > +		uprobe = rb_entry(n, struct uprobe, rb_node);
+> > +		if (uprobe->inode != inode)
+> > +			break;
+> > +		vaddr = vma->vm_start + uprobe->offset;
+> > +		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > +		if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+> > +			continue;
+> > +		atomic_dec(&vma->vm_mm->mm_uprobes_count);
+> 
+> So, this does atomic_dec() for each bp in this vma?
+
+yes.
+
+> 
+> And the caller is
+> 
+> > @@ -1337,6 +1338,9 @@ unsigned long unmap_vmas(struct mmu_gather *tlb,
+> >  		if (unlikely(is_pfn_mapping(vma)))
+> >  			untrack_pfn_vma(vma, 0, 0);
+> >
+> > +		if (vma->vm_file)
+> > +			munmap_uprobe(vma);
+> 
+> Doesn't look right...
+> 
+> munmap_uprobe() assumes that the whole region goes away. This is
+> true in munmap() case afaics, it does __split_vma() if necessary.
+> 
+> But what about truncate() ? In this case this vma is not unmapped,
+> but unmap_vmas() is called anyway and [start, end) can be different.
+> IOW, unless I missed something (this is very possible) we can do
+> more atomic_dec's then needed.
+> 
+would unlink_file_vma be a good place to call munmap_uprobe().
+
+The other idea could be to call munmap_uprobe in unmap_region() just
+before free_pgtables() and call atomic_set to set the count to 0 in
+exit_mmap() (again before free_pgtables.).
+
+
+One other thing that we probably need to do at mmap_uprobe() is cache
+the number of probes mmap_uprobe installed successfully and then
+substract the same from mm_uprobes_count if and only if mmap_uprobe()
+were to return -ve number.
+
+> Also, truncate() obviously changes ->i_size. Doesn't this mean
+> unregister_uprobe() should return if offset > i_size ? We need to
+> free uprobes anyway.
+
+Do you mean we shouldnt check for the offset in unregister_uprobe() and
+just search in the rbtree for the matching uprobe?
+Thats also possible to do.
+
+> 
+> MADV_DONTNEED? It calls unmap_vmas() too. And application can do
+> madvise(DONTNEED) in a loop.
+> 
+
+I think this would be taken care of if we move the munmap_uprobe() hook
+from unmap_vmas to unlink_file_vma().
+
+The other thing that I need to investigate a bit more is if I have
+handle all cases of mremap correctly.
+
+-- 
+Thanks and Regards
+Srikar
