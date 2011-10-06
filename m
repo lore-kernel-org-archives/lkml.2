@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab1JFWep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:34:45 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38030 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1JFWeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:34:44 -0400
-Date: Fri, 7 Oct 2011 00:34:38 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@amd64.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Borislav Petkov <bp@alien8.de>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH RESEND] Freezer, CPU hotplug, x86 Microcode: Fix
- task freezing failures
-Message-ID: <20111006223438.GA27702@aftab>
-References: <20111002195023.GC31799@mtj.dyndns.org>
- <201110052226.58373.rjw@sisk.pl>
- <4E8CC8FA.2090100@linux.vnet.ibm.com>
- <201110060043.19583.rjw@sisk.pl>
- <4E8D4FC6.1080204@linux.vnet.ibm.com>
- <20111006083439.GA21575@aftab>
- <4E8DCDA6.8030802@linux.vnet.ibm.com>
- <4E8E1125.4050701@linux.vnet.ibm.com>
- <20111006221334.GB7085@google.com>
+	id S1759375Ab1JFWu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 18:50:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44221 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290Ab1JFWu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 18:50:26 -0400
+Date: Fri, 7 Oct 2011 00:50:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Ben <aleben358@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <Mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Removed superfluous parentheses in macro defs
+Message-ID: <20111006225020.GB5810@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Ben <aleben358@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <Mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, linux-kernel@vger.kernel.org
+References: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111006221334.GB7085@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 06:13:34PM -0400, Tejun Heo wrote:
-> Hello,
+On Fri, Oct 07, 2011 at 09:22:04AM +1100, Alex Ben wrote:
+> 1) make it consistent with other constant macro deinitions, which
+> don't have parentheses, as they are really superfluous.
 > 
-> On Fri, Oct 07, 2011 at 02:05:49AM +0530, Srivatsa S. Bhat wrote:
-> ...
-> > diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-> > index f924280..cd7ef2f 100644
-> > --- a/arch/x86/kernel/microcode_core.c
-> > +++ b/arch/x86/kernel/microcode_core.c
-> > @@ -483,7 +483,15 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
-> >  		sysfs_remove_group(&sys_dev->kobj, &mc_attr_group);
-> >  		pr_debug("CPU%d removed\n", cpu);
-> >  		break;
-> > -	case CPU_DEAD:
-> > +
-> > +	/*
-> > +	 * Do not invalidate the microcode if a CPU goes offline,
-> > +	 * because it would be impossible to get the microcode again
-> > +	 * from userspace when the CPU comes back up, if the userspace
-> > +	 * happens to be frozen at that moment by the freezer subsystem,
-> > +	 * for example, due to a suspend operation in progress.
-> > +	 */
-> > +
+> 2) the extra parentheses on the 5th line of #define GDT_ENTRY is
+> superfluous, as there is no bit shifting on that line.
+> ---
+>  arch/x86/include/asm/segment.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> This still looks like a bandaid to me.  The exclusion approach didn't
-> pan out?
+> diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
+> index 5e64171..92621c1 100644
+> --- a/arch/x86/include/asm/segment.h
+> +++ b/arch/x86/include/asm/segment.h
+> @@ -10,7 +10,7 @@
+> 	 (((flags) & _AC(0x0000f0ff,ULL)) << 40) |	\
+> 	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
+> 	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
+> -	 (((limit) & _AC(0x0000ffff,ULL))))
+> +	 ((limit)  & _AC(0x0000ffff,ULL)))
+> 
+>  /* Simple and small GDT entries for booting only */
+> 
+> @@ -75,7 +75,7 @@
+> 
+>  #define GDT_ENTRY_DEFAULT_USER_DS	15
+> 
+> -#define GDT_ENTRY_KERNEL_BASE		(12)
+> +#define GDT_ENTRY_KERNEL_BASE		12
 
-Well, this saves us the needless reloading of the ucode image when the
-CPU comes back online and is an annoyance fix and onlining path speedup
-in its own right. I, as you, thought that the exclusion approach should
-be the proper fix. Srivatsa?
+Please do a git annotate on the file you're patching and look at the
+commit id which is listed for the GDT_ENTRY_KERNEL_BASE line to find out
+why is the 12 parenthesized. Hint: 3234282f33b29
 
-Thanks.
+:-)
 
 -- 
 Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+    Boris.
