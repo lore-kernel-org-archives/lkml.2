@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964887Ab1JFMnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 08:43:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54593 "EHLO mx2.suse.de"
+	id S1758336Ab1JFMmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 08:42:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54576 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758339Ab1JFMmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 08:42:07 -0400
+	id S1758310Ab1JFMmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 08:42:03 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/14] mm: Micro-optimise slab to avoid a function call
-Date: Thu,  6 Oct 2011 13:41:47 +0100
-Message-Id: <1317904910-14095-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 09/14] netvm: Propagate page->pfmemalloc to skb
+Date: Thu,  6 Oct 2011 13:41:45 +0100
+Message-Id: <1317904910-14095-10-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1317904910-14095-1-git-send-email-mgorman@suse.de>
 References: <1317904910-14095-1-git-send-email-mgorman@suse.de>
@@ -22,76 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Getting and putting objects in SLAB currently requires a function call
-but the bulk of the work is related to PFMEMALLOC reserves which are
-only consumed when network-backed storage is critical. Use an inline
-function to determine if the function call is required.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/slab.c |   28 ++++++++++++++++++++++++++--
- 1 files changed, 26 insertions(+), 2 deletions(-)
+ include/linux/skbuff.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 25f69ec..31276f9 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -117,6 +117,8 @@
- #include	<linux/memory.h>
- #include	<linux/prefetch.h>
- 
-+#include	<net/sock.h>
-+
- #include	<asm/cacheflush.h>
- #include	<asm/tlbflush.h>
- #include	<asm/page.h>
-@@ -985,7 +987,7 @@ static void check_ac_pfmemalloc(struct kmem_cache *cachep,
- 	ac->pfmemalloc = false;
- }
- 
--static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 						gfp_t flags, bool force_refill)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 639a372..c7da15f 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1142,6 +1142,8 @@ static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
  {
- 	int i;
-@@ -1032,7 +1034,20 @@ static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 	return objp;
- }
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
--static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+static inline void *ac_get_obj(struct kmem_cache *cachep,
-+			struct array_cache *ac, gfp_t flags, bool force_refill)
-+{
-+	void *objp;
-+
-+	if (unlikely(sk_memalloc_socks()))
-+		objp = __ac_get_obj(cachep, ac, flags, force_refill);
-+	else
-+		objp = ac->entry[--ac->avail];
-+
-+	return objp;
-+}
-+
-+static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 								void *objp)
- {
- 	struct slab *slabp;
-@@ -1045,6 +1060,15 @@ static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
- 			set_obj_pfmemalloc(&objp);
- 	}
- 
-+	return objp;
-+}
-+
-+static inline void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
-+								void *objp)
-+{
-+	if (unlikely(sk_memalloc_socks()))
-+		objp = __ac_put_obj(cachep, ac, objp);
-+
- 	ac->entry[ac->avail++] = objp;
- }
- 
++	if (page->pfmemalloc)
++		skb->pfmemalloc	  = true;
+ 	frag->page		  = page;
+ 	frag->page_offset	  = off;
+ 	frag->size		  = size;
 -- 
 1.7.3.4
 
