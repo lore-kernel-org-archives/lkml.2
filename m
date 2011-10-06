@@ -1,71 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab1JFOnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:43:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46124 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935224Ab1JFOnE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:43:04 -0400
+	id S964937Ab1JFOp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:45:56 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:1953 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563Ab1JFOpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 10:45:54 -0400
+Message-ID: <4E8DBF14.6010903@atmel.com>
+Date: Thu, 06 Oct 2011 16:45:40 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <27959.1317908661@turing-police.cc.vt.edu>
-References: <201110021354.57995.rjw@sisk.pl>
-	<4E88A537.4010008@zytor.com>
-	<20111003093239.GB25136@localhost.pp.htv.fi>
-	<y0mobxyjazi.fsf@fche.csb>
-	<20111003180441.GD3072@localhost.pp.htv.fi>
-	<34045.1317760188@turing-police.cc.vt.edu>
-	<20111004223932.GA3460@localhost.pp.htv.fi>
-	<CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
-	<20111005201904.GC14406@localhost.pp.htv.fi>
-	<CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
-	<20111005235541.GA4328@suse.de>
-	<CACqU3MURyco+nmv5MeY_2jK-8A-628MHJMe+gt5VsXVT+JtgUA@mail.gmail.com>
-	<CACqU3MVd8z05_x8HWKyeXn8fVp0NZkNGYh5ZMu0BPJyo4Bqj=A@mail.gmail.com>
-	<27959.1317908661@turing-police.cc.vt.edu>
-Date: Thu, 6 Oct 2011 10:43:01 -0400
-Message-ID: <CACqU3MVyi1jyK2VDkb_hKH6=Q21y6mFYdsmh+gE5Py6dU_iARQ@mail.gmail.com>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Greg KH <gregkh@suse.de>, Adrian Bunk <bunk@stusta.de>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.pitre@linaro.org, per.forlin@linaro.org
+Subject: Re: [PATCH RESEND] mmc: sdio: rw extended, use a sg entry for each
+ block
+References: <1316598039-30238-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1316598039-30238-1-git-send-email-nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/21/2011 11:40 AM, Nicolas Ferre :
+> While using io multiple blocks operations, change the way that sg is built:
+> use one sg entry for each block instead of aggregating the whole buffer
+> in a single sg entry.
+> Using a single sg entry for a multiple block command may lead to
+> misunderstanding between the sd/mmc and the DMA controllers. In fact, the
+> knowledge of the block length will allow both controllers to optimize burst
+> sizes on internal bus while dealing with those data.
 
-On Thu, Oct 6, 2011 at 9:44 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Wed, 05 Oct 2011 20:50:08 EDT, Arnaud Lacombe said:
->
->> Just thinking about it, but even if lawyers have been involved, this
->> has been done, unless error of my part, behind closed doors, without
->> any public records, so I'd tempted to ask "who paid those lawyers?",
->> "what was the qualification of those lawyers?", "what was the interest
->> of those lawyers?" and "what was the interest of those who paid the
->> lawyers?".
->
-> At least in the US, the answer to "what was the interest of those lawyers?" is
-> almost always "to represent the interests of their clients in a legally ethical
-> manner".  Intentional disregard for the client's interests can and does get you
-> disbarred.  Any lawyer who stuck in a clause that was contrary to the client's
-> interest would also be doing so against their own interest - lawyers can get
-> sued for malpractice or (as noted) even disbarrment.  So I don't think you need
-> to worry about some lawyer with a pro-Microsoft agenda secretly sticking in a
-> hidden phrase that's actually against Linux's interest. (In particular, it's
-> *really* hard to hide detrimental language in something as short and heavily
-> read as the Developer's Certificate of Origin).
->
-> And if you *do* worry about that, you better also question whether the
-> people supplying tin foil are part of the conspiracy too.
->
-I do not particularly worry about any of the question I wrote, I was
-merely raising unknown, from some excerpt of
-http://www.groklaw.net/articlebasic.php?story=20101227144336645.
+After having performed some tests I realize that it seems quite
+difficult to benchmark this particular case (SDIO, CMD53, multi-block
+case). Moreover, the SDIO card that I use is triggering this case on
+pretty small blocks (16 x 32 bytes). For the record, I use Marvell 8686
+with libertas driver.
 
- - Arnaud
+The benchmark results hardly show an improvement! I guess that the
+benefit of having optimized transfers on internal bus is completely
+concealed by the overhead of multiple small blocks management by DMA...
+
+Hopefully another SDIO card can use bigger multiple blocks but it could
+be difficult to adapt this piece of code to the size of the block itself...
+
+So, do you have ideas about how I can trigger bigger multiple SDIO and
+test further?
+
+> Use a sg table to store start addresses of blocks within the data buffer.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/mmc/core/sdio_ops.c |   38 +++++++++++++++++++++++++++++---------
+
+For my platform the alternative would be to re-configure at runtime the
+chunck size (max size of bursts between sd controller and DMA).
+This operation will be conditioned by the identification of this case
+(SDIO, CMD53, multi-block) and will involve both DMA and sd/mmc drivers.
+I fear that it can be heavyweight.
+
+>  1 files changed, 29 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
+> index f087d87..aea6978 100644
+> --- a/drivers/mmc/core/sdio_ops.c
+> +++ b/drivers/mmc/core/sdio_ops.c
+> @@ -124,7 +124,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
+>  	struct mmc_request mrq = {0};
+>  	struct mmc_command cmd = {0};
+>  	struct mmc_data data = {0};
+> -	struct scatterlist sg;
+> +	struct sg_table sgt;
+>  
+>  	BUG_ON(!card);
+>  	BUG_ON(fn > 7);
+> @@ -144,24 +144,44 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
+>  	cmd.arg |= fn << 28;
+>  	cmd.arg |= incr_addr ? 0x04000000 : 0x00000000;
+>  	cmd.arg |= addr << 9;
+> -	if (blocks == 1 && blksz <= 512)
+> -		cmd.arg |= (blksz == 512) ? 0 : blksz;	/* byte mode */
+> -	else
+> -		cmd.arg |= 0x08000000 | blocks;		/* block mode */
+> +	if (blocks == 1 && blksz <= 512) {
+> +		/* byte mode */
+> +		struct scatterlist sg;
+> +
+> +		cmd.arg |= (blksz == 512) ? 0 : blksz;
+> +		sg_init_one(&sg, buf, blksz * blocks);
+> +
+> +		data.sg = &sg;
+> +		data.sg_len = 1;
+> +	} else {
+> +		/* block mode */
+> +		struct scatterlist *sg_ptr;
+> +		int i;
+> +
+> +		cmd.arg |= 0x08000000 | blocks;
+> +		if (sg_alloc_table(&sgt, blocks, GFP_KERNEL))
+> +			return -ENOMEM;
+> +		for_each_sg(sgt.sgl, sg_ptr, sgt.nents, i) {
+> +			sg_set_buf(sg_ptr, buf + i * blksz, blksz);
+> +		}
+> +
+> +		data.sg = sgt.sgl;
+> +		data.sg_len = sgt.nents;
+> +	}
+> +
+>  	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
+>  
+>  	data.blksz = blksz;
+>  	data.blocks = blocks;
+>  	data.flags = write ? MMC_DATA_WRITE : MMC_DATA_READ;
+> -	data.sg = &sg;
+> -	data.sg_len = 1;
+> -
+> -	sg_init_one(&sg, buf, blksz * blocks);
+>  
+>  	mmc_set_data_timeout(&data, card);
+>  
+>  	mmc_wait_for_req(card->host, &mrq);
+>  
+> +	if (blocks != 1 || blksz > 512)
+> +		sg_free_table(&sgt);
+> +
+>  	if (cmd.error)
+>  		return cmd.error;
+>  	if (data.error)
+
+Best regards,
+-- 
+Nicolas Ferre
