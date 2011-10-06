@@ -1,127 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935899Ab1JFWJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:09:31 -0400
-Received: from icarus.com ([209.172.115.90]:36907 "EHLO icarus.com"
+	id S935908Ab1JFWKp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 18:10:45 -0400
+Received: from claw.goop.org ([74.207.240.146]:34606 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935612Ab1JFWJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:09:30 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Oct 2011 18:09:30 EDT
-Message-ID: <4E8E2569.8030301@icarus.com>
-Date: Thu, 06 Oct 2011 15:02:17 -0700
-From: Stephen Williams <steve@icarus.com>
-Reply-To: Stephen Williams <steve@icarus.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S935612Ab1JFWKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 18:10:43 -0400
+Message-ID: <4E8E275F.6010801@goop.org>
+Date: Thu, 06 Oct 2011 15:10:39 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: MODULE_LICENSE("GPL") not working for me
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/mixed;
- boundary="------------010806060403060203070306"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Richard Henderson <rth@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been initialized,
+ don't nop it out
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>    <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>    <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>    <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>    <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>    <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>   <1317925615.4729.14.camel@gandalf.stny.rr.com>   <4E8DF870.6010000@redhat.com>  <1317929321.4729.17.camel@gandalf.stny.rr.com> <4E8E20CD.5030207@goop.org> <1317938775.4729.29.camel@gandalf.stny.rr.com>
+In-Reply-To: <1317938775.4729.29.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010806060403060203070306
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On 10/06/2011 03:06 PM, Steven Rostedt wrote:
+> But it only speeds up the tracing case. The non-tracing case is a nop
+> and 5bytes is 5bytes regardless.
+>
+> Did you see a 5% speed up while tracing was happening? How did you do
+> your test. I find a 5 byte compared to a 2 byte jump being negligible
+> with the rest of the overhead of tracing, but I could be wrong.
 
-I have some large drivers for use in embedded arm systems, and
-I want them to be GPL, because I want to use some symbols exported
-as GPL, and also because I just wanna. But it is not working for
-me. I've attached my Makefile. I'm building from outside the kernel
-tree, but that should be OK. I'm using the following script to
-actually build:
+You're right, this was a completely artificial microbenchmark.  In
+practice the improvement would be a much smaller effect.
 
-  SE0=/home/u/wing/steve/picturel/SE0
+But bear in mind, I'm not using jump-label for tracing.  While its
+important for the "disabled" state to be quick, performance of the
+"enabled" state is also important.
 
-CROSS_COMPILE=/opt/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnueabi-
-
-  export CROSS_COMPILE
-  make KERNELDIR=$SE0/linux-2.6.33-quatro ARCH=arm modules
-
-But no matter what I do, when I try to load my module, I get
-errors line this:
-
-  # insmod ./vidfor2.ko
-  vidfor: module license 'unspecified' taints kernel.
-  Disabling lock debugging due to kernel taint
-  vidfor: Unknown symbol driver_remove_file
-  vidfor: Unknown symbol driver_create_file
-  insmod: can't insert './vidfor2.ko': unknown symbol in module or
-invalid parameter
-
-I have a MODULE_LICENSE("GPL"); line in the "linux.c" source file,
-and the pertinent parts of the makefile are here:
-
-  OBJ := linux.o ops.o console.o sysfs.o ident_tables.o
-  LIBOBJ := vidforio.o init.o format.o video.o isr.o version.o
-
-  ifneq ($(KERNELRELEASE),)
-
-  EXTRA_CFLAGS += -I$(M)/../libvidforio
-  obj-m += vidfor.o
-  vidfor-objs := $(OBJ) $(patsubst %,../libvidforio/%,$(LIBOBJ))
-
-  else
-  [...]
-
-What's the trick for getting the MODULE_LICENSE successfully stamped
-into my generated .ko file?
-
-I've googled the list and the internet in general, and found
-as many relevant examples as I could in the kernel source, but
-I'm at wit's end. I'm not subscribed, so please CC responses,
-although I will check back often.
-
--- 
-Steve Williams                "The woods are lovely, dark and deep.
-steve at icarus.com           But I have promises to keep,
-http://www.icarus.com         and lines to code before I sleep,
-http://www.picturel.com       And lines to code before I sleep."
-
---------------010806060403060203070306
-Content-Type: text/plain;
- name="Makefile"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="Makefile"
-
-
-
-OBJ := linux.o ops.o console.o sysfs.o ident_tables.o
-LIBOBJ := vidforio.o init.o format.o video.o isr.o version.o
-
-ifneq ($(KERNELRELEASE),)
-
-EXTRA_CFLAGS += -I$(M)/../libvidforio
-obj-m += vidfor.o
-vidfor-objs := $(OBJ) $(patsubst %,../libvidforio/%,$(LIBOBJ))
-
-else
-
-KERNELDIR ?= /lib/modules/$(shell uname -r)/build
-PWD := $(shell pwd)
-
-version ident_tables.c:
-	@echo ' /* MACHINE GENERATED -- DO NOT EDIT */' > tmp.c
-	@echo 'const char vidfor_build_stamp[] =' >> tmp.c
-	@echo '"'`git describe --tags --long --always --match sys-\*`'";' >> tmp.c
-	@diff tmp.c ident_tables.c > /dev/null 2>&1 || (echo "updating ident_tables.c"; cp tmp.c ident_tables.c)
-	@rm -f tmp.c
-
-modules:
-	$(MAKE) -C ../libvidforio version
-	$(MAKE) version
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-
-modules_install:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
-
-clean:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
-
-endif
-
---------------010806060403060203070306--
+Thanks,
+    J
