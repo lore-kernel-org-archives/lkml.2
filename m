@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935685Ab1JFIjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 04:39:35 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:40995 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384Ab1JFIje convert rfc822-to-8bit (ORCPT
+	id S935701Ab1JFImZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 04:42:25 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:36690 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab1JFImX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 04:39:34 -0400
-Message-ID: <4E8D6923.7080404@parallels.com>
-Date: Thu, 6 Oct 2011 12:38:59 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Thu, 6 Oct 2011 04:42:23 -0400
+Date: Thu, 6 Oct 2011 09:42:18 +0100
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Chris Wright <chrisw@sous-sol.org>,
+        Jens Axboe <axboe@kernel.dk>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] virtio: support unlocked queue kick
+Message-ID: <20111006084218.GA16511@stefanha-thinkpad.localdomain>
+References: <20111005195403.407628164@bombadil.infradead.org>
+ <20111005195529.964397366@bombadil.infradead.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
-        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
-        <avagin@parallels.com>, <devel@openvz.org>
-Subject: Re: [PATCH v5 6/8] tcp buffer limitation: per-cgroup limit
-References: <1317730680-24352-1-git-send-email-glommer@parallels.com>  <1317730680-24352-7-git-send-email-glommer@parallels.com>  <1317732535.2440.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <4E8C1064.3030902@parallels.com> <1317805090.2473.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1317805090.2473.28.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111005195529.964397366@bombadil.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2011 12:58 PM, Eric Dumazet wrote:
-> Le mercredi 05 octobre 2011 à 12:08 +0400, Glauber Costa a écrit :
->> On 10/04/2011 04:48 PM, Eric Dumazet wrote:
->
->>> 2) Could you add const qualifiers when possible to your pointers ?
->>
->> Well, I'll go over the patches again and see where I can add them.
->> Any specific place site you're concerned about?
->
-> Everywhere its possible :
->
-> It helps reader to instantly knows if a function is about to change some
-> part of the object or only read it, without reading function body.
-Sure it does.
+On Wed, Oct 05, 2011 at 03:54:05PM -0400, Christoph Hellwig wrote:
+> Split virtqueue_kick to be able to do the actual notification outside the
+> lock protecting the virtqueue.  This patch was originally done by
+> Stefan Hajnoczi, but I can't find the original one anymore and had to
+> recreated it from memory.  Pointers to the original or corrections for
+> the commit message are welcome.
 
-So, give me your opinion on this:
+Here is the patch:
+https://github.com/stefanha/linux/commit/a6d06644e3a58e57a774e77d7dc34c4a5a2e7496
 
-most of the acessors inside struct sock do not modify the pointers,
-but return an address of an element inside it (that can later on be
-modified by the caller.
+Or as an email if you want to track it down in your inbox:
+http://www.spinics.net/lists/linux-virtualization/msg14616.html
 
-I think it is fine for the purpose of clarity, but to avoid warnings we 
-end up having to do stuff like this:
+The code you posted is equivalent, the only additional thing my patch
+did was to update doc comments in include/linux/virtio.h.  Feel free to
+grab my patch or just the hunk.
 
-+#define CONSTCG(m) ((struct mem_cgroup *)(m))
-+long *tcp_sysctl_mem(const struct mem_cgroup *memcg)
-+{
-+       return CONSTCG(memcg)->tcp.tcp_prot_mem;
-+}
-
-Is it acceptable?
+Stefan
