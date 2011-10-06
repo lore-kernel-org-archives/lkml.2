@@ -1,44 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935640Ab1JFAka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 20:40:30 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1251 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935355Ab1JFAk3 (ORCPT
+	id S935654Ab1JFAuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 20:50:11 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42719 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935275Ab1JFAuK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 20:40:29 -0400
-Message-ID: <4E8CF8F8.7090909@dsn.lapis-semi.com>
-Date: Thu, 06 Oct 2011 09:40:24 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Wed, 5 Oct 2011 20:50:10 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: Re: [PATCH 3/3] gpio-ml-ioh: Fix suspend/resume issue
-References: <1312517062-5582-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1312517062-5582-3-git-send-email-tomoya-linux@dsn.okisemi.com> <20111004160731.GA9084@ponder.secretlab.ca> <4E8BB327.50306@dsn.lapis-semi.com> <20111005175235.GC4205@ponder.secretlab.ca>
-In-Reply-To: <20111005175235.GC4205@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACqU3MURyco+nmv5MeY_2jK-8A-628MHJMe+gt5VsXVT+JtgUA@mail.gmail.com>
+References: <201110021354.57995.rjw@sisk.pl>
+	<4E88A537.4010008@zytor.com>
+	<20111003093239.GB25136@localhost.pp.htv.fi>
+	<y0mobxyjazi.fsf@fche.csb>
+	<20111003180441.GD3072@localhost.pp.htv.fi>
+	<34045.1317760188@turing-police.cc.vt.edu>
+	<20111004223932.GA3460@localhost.pp.htv.fi>
+	<CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
+	<20111005201904.GC14406@localhost.pp.htv.fi>
+	<CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
+	<20111005235541.GA4328@suse.de>
+	<CACqU3MURyco+nmv5MeY_2jK-8A-628MHJMe+gt5VsXVT+JtgUA@mail.gmail.com>
+Date: Wed, 5 Oct 2011 20:50:08 -0400
+Message-ID: <CACqU3MVd8z05_x8HWKyeXn8fVp0NZkNGYh5ZMu0BPJyo4Bqj=A@mail.gmail.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Adrian Bunk <bunk@stusta.de>, Valdis.Kletnieks@vt.edu,
+        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/06 2:52), Grant Likely wrote:
-> On Wed, Oct 05, 2011 at 10:30:15AM +0900, Tomoya MORINAGA wrote:
-> Considering that the title of 3/3 is "Fix suspend/resume issue", you
-> can understand my confusion.  I'm not talking about 1/3 because it
-> looks like a trivial cleanup (not a bug fix).
+Hi,
 
-I can understand your confusion.
-As you said before,
-2/3 is completely feature patch.
-3/3 is bug-fix patch.
-So, you can merge 3/3 into spi/merge, 1/3 and 2/3 into spi/next.
+On Wed, Oct 5, 2011 at 8:23 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Wed, Oct 5, 2011 at 7:55 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Wed, Oct 05, 2011 at 04:36:50PM -0400, Arnaud Lacombe wrote:
+>>> Hi,
+>>>
+>>> On Wed, Oct 5, 2011 at 4:19 PM, Adrian Bunk <bunk@stusta.de> wrote:
+>>> > On Wed, Oct 05, 2011 at 04:00:39PM -0400, Arnaud Lacombe wrote:
+>>> >> Hi,
+>>> >>
+>>> >> On Tue, Oct 4, 2011 at 6:39 PM, Adrian Bunk <bunk@stusta.de> wrote:
+>>> >>...
+>>> >> > Each time a patch goes through him into the kernel, he certifies that
+>>> >> > his real name is Andrew Morton.
+>>> >> >
+>>> >> > If that would not be his real name, it would make him somewhere between
+>>> >> > completely untrustable and punishable at court.
+>>> >> >
+>>> >> Under which jurisdiction ? Under which law ?
+>>> >>
+>>> >> IANAL, but US copyright law does recognize the use of pseudonym for
+>>> >> copyrighted work[0], without requirements to disclose one's legal
+>>> >> name.
+>>> >
+>>> > I am not talking about copyright law.
+>>> >
+>>> > When you add a Signed-off-by: to a patch you have to use your real name
+>>> > (see Documentation/SubmittingPatches for details).
+>>> >
+>>> > If violating that would be considered fraud or some other crime in some
+>>> > jurisdictions is likely a non-trivial question.
+>>> >
+>>> One might still question the legality/constitutionality of such a
+>>> statement. AFAIK, Greg KH, author of the sentence (in af45f32d25c) is
+>>> not a lawyer.
+>>
+>> How do you not know that such a sentance was not vetted by a lawyer?  :)
+>>
+> I assume the worst case, unless given documents proving otherwise. The
+> commit message is not particularly verbose.
+>
+Just thinking about it, but even if lawyers have been involved, this
+has been done, unless error of my part, behind closed doors, without
+any public records, so I'd tempted to ask "who paid those lawyers?",
+"what was the qualification of those lawyers?", "what was the interest
+of those lawyers?" and "what was the interest of those who paid the
+lawyers?".
 
-Thanks,
+Moreover, the commit message's subject states "We can not allow
+anonymous contributions to the kernel", however it fails to describe
+who's behind "we".
 
--- 
-tomoya
-ROHM Co., Ltd.
+Finally, I'd be tempted to make a difference between "Anonymous" and
+"Pseudonymous".
+
+regards,
+ - Arnaud
