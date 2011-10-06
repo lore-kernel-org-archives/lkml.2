@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935463Ab1JFIep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 04:34:45 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34931 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab1JFIeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 04:34:44 -0400
-Date: Thu, 6 Oct 2011 10:34:39 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@amd64.org>,
-        Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [BUGFIX][PATCH] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111006083439.GA21575@aftab>
-References: <20111002195023.GC31799@mtj.dyndns.org>
- <201110052226.58373.rjw@sisk.pl>
- <4E8CC8FA.2090100@linux.vnet.ibm.com>
- <201110060043.19583.rjw@sisk.pl>
- <4E8D4FC6.1080204@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8D4FC6.1080204@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935546Ab1JFIjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 04:39:00 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:42110 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab1JFIi6 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 6 Oct 2011 04:38:58 -0400
+Subject: Re: [PATCH] acer-wmi: Add wireless quirk for Lenovo 3000 N200
+From: joeyli <jlee@suse.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1317756778-11822-1-git-send-email-seth.forshee@canonical.com>
+References: <1317756778-11822-1-git-send-email-seth.forshee@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Oct 2011 16:38:34 +0800
+Message-ID: <1317890314.11626.115.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 02:50:46AM -0400, Srivatsa S. Bhat wrote:
-> On 10/06/2011 04:13 AM, Rafael J. Wysocki wrote:
-> > On Wednesday, October 05, 2011, Srivatsa S. Bhat wrote:
-> >> On 10/06/2011 01:56 AM, Rafael J. Wysocki wrote:
-> >>>
-> >>> OK, can you please repost the patch with Borislav's Acked-by and Tested-by
-> >>> and add some more Intel people to the CC list?
-> >>>
-> >>
-> >> Sure, I'll do that. Thank you.
-> >> But are we not going to consider a cleaner/correct solution such as the
-> >> one proposed here:
-> >> http://permalink.gmane.org/gmane.linux.kernel/1199494
-> >>
-> >> Well, honestly I don't mean to be stubborn, but somehow, knowing that
-> >> there are issues with my patch doesn't make me feel very comfortable
-> >> going with it, especially when there is another approach, which I
-> >> believe can fix the issue properly, without undesirable side-effects.
-> >>
-> >> I agree that the issues are mostly some corner cases, so if you want a
-> >> quick fix for now, I guess we can go with this patch and then later on
-> >> follow-up with a proper solution to this whole problem.
-> > 
-> > It ultimately is your call.  If you feel more comfortable with the
-> > alternative, just post that one instead.
-> > 
-> Cool! I am working on implementing that other solution. I'll post it as soon
-> as I am done writing and testing that patch.
+Hi Seth, 
 
-Please test your other patch which removes the CPU_DEAD line from the
-microcode CPU hotplug callback on an Intel box with microcode too and
-submit it. This fix makes sense irrespective of a suspend/resume fix
-because reloading the ucode when onlining the CPU is clearly unneeded.
+於 二，2011-10-04 於 14:32 -0500，Seth Forshee 提到：
+> This quirk fixes the wlan rfkill status on this machine. Without
+> it, wlan is permanently soft blocked whenever acer-wmi is loaded.
+> 
+> BugLink: https://bugs.launchpad.net/bugs/865807
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  drivers/platform/x86/acer-wmi.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index af2bb20..dac286a 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -464,6 +464,15 @@ static struct dmi_system_id acer_quirks[] = {
+>  		},
+>  		.driver_data = &quirk_lenovo_ideapad_s205,
+>  	},
+> +	{
+> +		.callback = dmi_matched,
+> +		.ident = "Lenovo 3000 N200",
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "0687A31"),
+> +		},
+> +		.driver_data = &quirk_fujitsu_amilo_li_1718,
+> +	},
+>  	{}
+>  };
+>  
 
-Thanks.
+Simple applied and tested on my acer machine, no problem!
 
--- 
-Regards/Gruss,
-Boris.
+Reviewed-by: Lee, Chun-Yi <jlee@novell.com>
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thank's for your patch!
+Joey Lee
+
