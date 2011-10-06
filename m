@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935540Ab1JFAXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Oct 2011 20:23:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45447 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab1JFAXv convert rfc822-to-8bit (ORCPT
+	id S935555Ab1JFAbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Oct 2011 20:31:40 -0400
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:58493 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab1JFAbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Oct 2011 20:23:51 -0400
+	Wed, 5 Oct 2011 20:31:39 -0400
+Message-ID: <4E8CF69E.4030000@genband.com>
+Date: Wed, 05 Oct 2011 18:30:22 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <20111005235541.GA4328@suse.de>
-References: <201110021354.57995.rjw@sisk.pl>
-	<4E88A537.4010008@zytor.com>
-	<20111003093239.GB25136@localhost.pp.htv.fi>
-	<y0mobxyjazi.fsf@fche.csb>
-	<20111003180441.GD3072@localhost.pp.htv.fi>
-	<34045.1317760188@turing-police.cc.vt.edu>
-	<20111004223932.GA3460@localhost.pp.htv.fi>
-	<CACqU3MWr5DKAWKydHmJuz=+a3UN3KdtsdXwfE-UxSD5_9tzqag@mail.gmail.com>
-	<20111005201904.GC14406@localhost.pp.htv.fi>
-	<CACqU3MVUO8WP6Q=QEX+2GosprB0JvCawu2iNpptcsscYr_DcvA@mail.gmail.com>
-	<20111005235541.GA4328@suse.de>
-Date: Wed, 5 Oct 2011 20:23:50 -0400
-Message-ID: <CACqU3MURyco+nmv5MeY_2jK-8A-628MHJMe+gt5VsXVT+JtgUA@mail.gmail.com>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Adrian Bunk <bunk@stusta.de>, Valdis.Kletnieks@vt.edu,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mark Mielke <mark@mark.mielke.cc>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Appropriate use of sync() from user space?
+References: <4E8CEECF.4050008@mark.mielke.cc>
+In-Reply-To: <4E8CEECF.4050008@mark.mielke.cc>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2011 00:30:24.0568 (UTC) FILETIME=[23923B80:01CC83BF]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-18428.003
+X-TM-AS-Result: No--14.614900-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/05/2011 05:57 PM, Mark Mielke wrote:
 
-On Wed, Oct 5, 2011 at 7:55 PM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Oct 05, 2011 at 04:36:50PM -0400, Arnaud Lacombe wrote:
->> Hi,
->>
->> On Wed, Oct 5, 2011 at 4:19 PM, Adrian Bunk <bunk@stusta.de> wrote:
->> > On Wed, Oct 05, 2011 at 04:00:39PM -0400, Arnaud Lacombe wrote:
->> >> Hi,
->> >>
->> >> On Tue, Oct 4, 2011 at 6:39 PM, Adrian Bunk <bunk@stusta.de> wrote:
->> >>...
->> >> > Each time a patch goes through him into the kernel, he certifies that
->> >> > his real name is Andrew Morton.
->> >> >
->> >> > If that would not be his real name, it would make him somewhere between
->> >> > completely untrustable and punishable at court.
->> >> >
->> >> Under which jurisdiction ? Under which law ?
->> >>
->> >> IANAL, but US copyright law does recognize the use of pseudonym for
->> >> copyrighted work[0], without requirements to disclose one's legal
->> >> name.
->> >
->> > I am not talking about copyright law.
->> >
->> > When you add a Signed-off-by: to a patch you have to use your real name
->> > (see Documentation/SubmittingPatches for details).
->> >
->> > If violating that would be considered fraud or some other crime in some
->> > jurisdictions is likely a non-trivial question.
->> >
->> One might still question the legality/constitutionality of such a
->> statement. AFAIK, Greg KH, author of the sentence (in af45f32d25c) is
->> not a lawyer.
+> The vendor stated that sync() is integral to their synchronization
+> process to ensure all files reach disk before they are accessed, and
+> that this is not a defect in their product. We have a work around - run
+> "sync" before calling their command, and this generally avoids the
+> failures.
 >
-> How do you not know that such a sentance was not vetted by a lawyer?  :)
+> I think the use of sync() in this regard is a hack. According to POSIX.1
+> and the Linux man pages, it seems clear to me that sync() does not
+> guarantee data integrity (bytes guaranteed to have reached disk) - and
+> it also seems clear that forcing all system data to flush out in
+> response to a minor command is over kill. Like cutting down the forest
+> to harvest fruit from a single tree.
 >
-I assume the worst case, unless given documents proving otherwise. The
-commit message is not particularly verbose.
+> I'm wondering what you think.
 
->> Have the DCO clauses been legally validated ?
->
-> Lawyers were involved in it.  What do you mean by "validated"?
->
-I would assume that to involve a court ruling, but still, I'd assume
-it would need to be done by an international jurisdiction, which
-AFAIK, do not exist.
+Totally agree.
 
-I'm strongly using the conditional here as IANAL.
+The susv3 man page for sync() is pretty clear:  "The writing, although 
+scheduled, is not necessarily complete upon return from sync()."
 
- - Arnaud
+They should probably be using msync()/fsync()/fdatasync() which only 
+affect the specified files and are supposed to wait for the data to hit 
+the storage device.  Of course this would require them to do something 
+for each file they touch rather than once at the end of the whole operation.
+
+Chris
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
