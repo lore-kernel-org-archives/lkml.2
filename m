@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934691Ab1JFFY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 01:24:28 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:54517 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab1JFFY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 01:24:28 -0400
-Date: Wed, 5 Oct 2011 22:19:55 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Himanshu Chauhan <hschauhan@nulltrace.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH] hwmon class driver registration with a device number
-Message-ID: <20111006051955.GA22835@ericsson.com>
-References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
- <1317839407.3983.46.camel@groeck-laptop>
- <20111006040656.GA2125@ubuntu.ubuntu-domain>
+	id S935320Ab1JFFYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 01:24:51 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8596 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753037Ab1JFFYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 01:24:49 -0400
+Message-ID: <4E8D3B9D.6030208@dsn.lapis-semi.com>
+Date: Thu, 06 Oct 2011 14:24:45 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111006040656.GA2125@ubuntu.ubuntu-domain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+CC: grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        tomoya-linux@dsn.okisemi.com
+Subject: Re: [PATCH] spi_topcliff_pch: supports a spi mode setup and bit order
+ setup by IO control
+References: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
+In-Reply-To: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 12:06:59AM -0400, Himanshu Chauhan wrote:
-> Hi,
-> 
-> > I can not comment on the merits of your patch. Unless I am missing
-> > something, which may well be since I only spent a couple of minutes on
-> > it, other device classes don't seem to provide a similar API, so I don't
-> > know if or why it would make sense for hwmon. Maybe a driver which wants
-> > to register a character device interface should do so independently of
-> > hwmon.
-> > 
-> 
-> The idea here is to sit in the same class directory as of hwmon. Devices
-> registered with this interface will have "dev" under, for example,
-> /sys/class/hwmon/hwmon0/dev. To do the same inside the driver will be
-> a bit more involved than a call.
-> 
-> In my opinion other classes should also have similar interfaces.
-> 
-I think you'll have to spend some more time and effort explaining the "what for".
+Hi Grant,
 
-Apparently no other device class needs this functionality so far, yet you
-suggest that such an interface should exist for all device classes.
-But you do so without explanation, or in other words without use case.
+It seems this patch Toshiharu posted in 20-July remains not to be
+reviewed by you.
 
-I for my part have no idea what you would use or need this new interface for,
-and if there would be other less intrusive means to accomplish the same goal.
-And I would want to see really good reasons to make a change like this.
+Could you review this patch and merge to your tree ?
 
-Specifically looking at the hwmon subsystem, you are expected to use the lm-sensors
-library to access all hwmon attributes. So I would expect your explanation to include
-exactly what you want to accomplish and why, details why you believe that you can not
-use the lm-sensors library, why you believe that the current infrastructure
-does not provide the means you need to accomplish your goals, and why you
-think that the existing infrastructure can not be modified to let you accomplish
-what you want to do without such a - from a conceptual perspective - substantial change.
+Thanks in advance,
 
-Thanks,
-Guenter
+-- 
+tomoya
+ROHM Co., Ltd.
+
+(2011/07/20 14:56), Toshiharu Okada wrote:
+> This patch supports a spi mode setup and bit order setup by IO control.
+>      spi mode:     mode 0 to mode 3
+>      bit order:    LSB first, MSB first
+> 
+> Signed-off-by: Toshiharu Okada<toshiharu-linux@dsn.okisemi.com>
+> ---
+>   drivers/spi/spi_topcliff_pch.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi_topcliff_pch.c
+> index 79e48d4..dec83c9 100644
+> --- a/drivers/spi/spi_topcliff_pch.c
+> +++ b/drivers/spi/spi_topcliff_pch.c
+> @@ -1038,6 +1038,7 @@ static int pch_spi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>   	master->num_chipselect = PCH_MAX_CS;
+>   	master->setup = pch_spi_setup;
+>   	master->transfer = pch_spi_transfer;
+> +	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
+>   	dev_dbg(&pdev->dev,
+>   		"%s transfer member of SPI master initialized\n", __func__);
+> 
+
+
