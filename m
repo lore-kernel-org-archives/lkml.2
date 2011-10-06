@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758237Ab1JFK6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 06:58:21 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:38233 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab1JFK6T (ORCPT
+	id S964793Ab1JFLFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:05:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63665 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286Ab1JFLFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 06:58:19 -0400
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Oct 2011 06:58:19 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0EABKGjU5bdWOb/2dsb2JhbABEhHSkP4F9DwEjIzUCJgI7AzSIAKUikVWBLYRrgRQEk26IX4hp
-X-IronPort-AV: E=Sophos;i="4.68,495,1312149600"; 
-   d="scan'208";a="818801128"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Timo Teras" <timo.teras@solidboot.com>,
-        "Harvey Harrison" <harvey.harrison@gmail.com>
-Subject: [PATCH] omap: dmtimer: convert printk to pr_*
-Date: Thu,  6 Oct 2011 12:48:23 +0200
-Message-Id: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.6.3
+	Thu, 6 Oct 2011 07:05:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20111006080425.GB25753@localhost.pp.htv.fi>
+References: <20111003093239.GB25136@localhost.pp.htv.fi>
+	<y0mobxyjazi.fsf@fche.csb>
+	<20111003180441.GD3072@localhost.pp.htv.fi>
+	<34045.1317760188@turing-police.cc.vt.edu>
+	<20111004223932.GA3460@localhost.pp.htv.fi>
+	<20111004231730.GB17089@redhat.com>
+	<20111005075438.GA29441@localhost.pp.htv.fi>
+	<20111005170616.GD4297@thunk.org>
+	<20111005192349.GA14406@localhost.pp.htv.fi>
+	<alpine.LFD.2.02.1110060101130.18778@ionos>
+	<20111006080425.GB25753@localhost.pp.htv.fi>
+Date: Thu, 6 Oct 2011 07:05:01 -0400
+Message-ID: <CA+5PVA423aVYrQCwh2C30S+ivSfNbCQmjbb1KJNeE-Vze+3wpQ@mail.gmail.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Josh Boyer <jwboyer@gmail.com>
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Valdis.Kletnieks@vt.edu,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all the printk(<level>) messages in the driver to pr_<level>().
+On Thu, Oct 6, 2011 at 4:04 AM, Adrian Bunk <bunk@stusta.de> wrote:
+> My main reason for regaining my kernel.org account is that I heavily
+> used my bunk@kernel.org address for kernel development (just check the
+> kernel history), and I was still getting emails to that.
+>
+> Assuming the @kernel.org addresses will not vanish, I need accepted
+> credential for accessing that address.
 
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- arch/arm/plat-omap/dmtimer.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+As I understand things, the @kernel.org addresses will simply forward
+to somewhere else from now on.  There will be no active email hosting
+on kernel.org.
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index ee9f6eb..34384b0 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -322,7 +322,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
- 	while (!(omap_dm_timer_read_reg(timer, OMAP_TIMER_SYS_STAT_REG) & 1)) {
- 		c++;
- 		if (c > 100000) {
--			printk(KERN_ERR "Timer failed to reset\n");
-+			pr_err("Timer failed to reset\n");
- 			return;
- 		}
- 	}
-@@ -397,8 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
- 	spin_lock_irqsave(&dm_timer_lock, flags);
- 	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
- 		spin_unlock_irqrestore(&dm_timer_lock, flags);
--		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
--		       __FILE__, __LINE__, __func__, id);
-+		pr_warning("unable to get timer %d\n", id);
- 		dump_stack();
- 		return NULL;
- 	}
--- 
-1.7.6.3
-
+josh
