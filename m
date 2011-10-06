@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab1JFRMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:12:22 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57374 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755974Ab1JFRMU (ORCPT
+	id S1758691Ab1JFRM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:12:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55566 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab1JFRMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:12:20 -0400
-Message-ID: <4E8DE170.8020502@xenotime.net>
-Date: Thu, 06 Oct 2011 10:12:16 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Thu, 6 Oct 2011 13:12:24 -0400
+Date: Thu, 6 Oct 2011 13:12:08 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] sysfs: add per pci device msi[x] irq listing (v4)
+Message-ID: <20111006171208.GB22462@hmsreliant.think-freely.org>
+References: <1316025413-5855-1-git-send-email-nhorman@tuxdriver.com>
+ <1317307129-11579-1-git-send-email-nhorman@tuxdriver.com>
+ <20110930143211.5ab39c02@stein>
+ <20110930153321.GA31760@hmsreliant.think-freely.org>
+ <CAErSpo56QU78RHE0UOcvcT5iwcis1o_Ue=ZLPQ3GhdB483-L4Q@mail.gmail.com>
+ <20110930165403.GB31760@hmsreliant.think-freely.org>
+ <20111006083607.2c4eb9a5@jbarnes-desktop>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        x86 maintainers <x86@kernel.org>, dsd@laptop.org
-Subject: Re: [PATCH] olpc: olpc-xo1-sci.c is an input driver, depends on INPUT
-References: <20110929165730.661cf28c9bb27b8a85432cd2@canb.auug.org.au>	<4E84D259.5020008@xenotime.net> <20110929133446.40ff3250@queued.net>
-In-Reply-To: <20110929133446.40ff3250@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111006083607.2c4eb9a5@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/11 13:34, Andres Salomon wrote:
-> On Thu, 29 Sep 2011 13:17:29 -0700
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Thu, Oct 06, 2011 at 08:36:07AM -0700, Jesse Barnes wrote:
+> On Fri, 30 Sep 2011 12:54:03 -0400
+> Neil Horman <nhorman@tuxdriver.com> wrote:
 > 
->> From: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Fix build errors when CONFIG_INPUT is disabled (shortened list):
->>
->> olpc-xo1-sci.c:(.text+0x1aee6): undefined reference to `input_event'
->> olpc-xo1-sci.c:(.text+0x1b077): undefined reference to
->> `input_unregister_device' olpc-xo1-sci.c:(.text+0x1b081): undefined
->> reference to `input_free_device'
->> arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1b270): more undefined
->> references to `input_event' follow
->> olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to
->> `input_allocate_device' olpc-xo1-sci.c:(.devinit.text+0x1a4):
->> undefined reference to `input_register_device'
->>
->> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
->> Cc: Andres Salomon <dilinger@debian.org>
->> ---
->> Found in linux-next but also applies to mainline.
->>
->>  arch/x86/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> --- next-2011-0929.orig/arch/x86/Kconfig
->> +++ next-2011-0929/arch/x86/Kconfig
->> @@ -2052,7 +2052,7 @@ config OLPC_XO1_RTC
->>  
->>  config OLPC_XO1_SCI
->>  	bool "OLPC XO-1 SCI extras"
->> -	depends on OLPC && OLPC_XO1_PM
->> +	depends on OLPC && OLPC_XO1_PM && INPUT
->>  	select POWER_SUPPLY
->>  	select GPIO_CS5535
->>  	select MFD_CORE
+> > On Fri, Sep 30, 2011 at 10:33:36AM -0600, Bjorn Helgaas wrote:
+> > > On Fri, Sep 30, 2011 at 9:33 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> > > >
+> > > > On Fri, Sep 30, 2011 at 02:32:11PM +0200, Stefan Richter wrote:
+> > > > > On Sep 29 Neil Horman wrote:
+> > > > > > (v4)
+> > > > > > Fixed up some spelling mistakes, and added a scissors line with a good
+> > > > > > commitlog, so that git-am drops all the version logging
+> > > > > >
+> > > > > > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> > > > > > CC: Greg Kroah-Hartman <gregkh@suse.de>
+> > > > > > CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > > > > > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > > > > > CC: linux-pci@vger.kernel.org
+> > > > >
+> > > > > It drops these last 5 lines then too, doesn't it?
+> > > > >
+> > > > I would have thought so, but I tested a git-format-patch / git-am operation here
+> > > > on a temporary branch, and it worked properly.
+> > > >
+> > > > > > --- a/Documentation/ABI/testing/sysfs-bus-pci
+> > > > > > +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> > > > > > @@ -66,6 +66,24 @@ Description:
+> > > > > >             re-discover previously removed devices.
+> > > > > >             Depends on CONFIG_HOTPLUG.
+> > > > > >
+> > > > > > +What:              /sys/bus/pci/devices/.../msi_irqs/
+> > > > > > +Date:              September, 2011
+> > > > > > +Contact:   Neil Horman <nhorman@tuxdriver.com>
+> > > > > > +Description:
+> > > > > > +           The /sys/devices/.../msi_irqs directory contains a variable set
+> > > > > > +           sub-directories, with each sub-directory being named after a
+> > > > > > +           corresponding msi irq vector allocated to that device.
+> > > > >
+> > > > > "contains a variable set _of_ sub-directories"?
+> > > > Gah, bad ispell foo on my part.  Bjorn, can you add that in, or shall I repost?
+> > > 
+> > > I'll try to remember to add that in.
+> > > 
+> > Thank you, apologies for my poor writing skills :)
+> > Neil
 > 
-> Thanks!
+> Is there a final patch available for me to queue up?
 > 
-> Hm.  This might actually need a 'select INPUT' though, since
-> OLPC_XO1_SCI is bool while INPUT is tristate.  Sigh, bool..
-> --
+I was under the impression that v4 was the version to queue up.  Stefan had
+found that I left the word of out of the documentation at one location but Bjorn
+was kind enough to offer to fix it up on commit.
 
-This build error still happens in linux-next of 20111006.
+Regards
+Neil
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+
