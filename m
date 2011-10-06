@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759016Ab1JFSan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 14:30:43 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:43730 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758945Ab1JFS12 (ORCPT
+	id S1758936Ab1JFS10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 14:27:26 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65483 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758922Ab1JFS1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 14:27:28 -0400
+	Thu, 6 Oct 2011 14:27:23 -0400
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: ben-linux@fluff.org,
-        Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 03/13] i2c-designware: Allow mixed endianness accesses
-Date: Thu,  6 Oct 2011 11:26:27 -0700
-Message-Id: <1317925597-32245-4-git-send-email-dirk.brandewie@gmail.com>
+Cc: ben-linux@fluff.org, Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 00/13] V5 Split i2c-designware.c to support PCI drivers.
+Date: Thu,  6 Oct 2011 11:26:24 -0700
+Message-Id: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Allows CPUs of a given endianness to access a dw controller of a different
-endianness. Endianncess difference is detected at run time through the dw
-component type register.
+This patch set reworks i2c-designware.c to enable supporting multiple
+instances of the driver in the system and adds support for Designware
+I2C IP cores behind PCI devices.
 
-Signed-off-by: Jean-Hugues Deschenes <jean-hugues.deschenes@octasic.com>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-Signed-off-by: Ben Dooks <ben-linux@fluff.org>
----
- drivers/i2c/busses/i2c-designware.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+Previous discussion thread:
+   https://lkml.org/lkml/2011/3/12/70
 
-diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
-index 4be9297..680f7c9 100644
---- a/drivers/i2c/busses/i2c-designware.c
-+++ b/drivers/i2c/busses/i2c-designware.c
-@@ -37,6 +37,7 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/swab.h>
+Changes since V4:
+   rebased onto v3.1-rc9.
+   cleanup of whitespace errors
+   Fix warning from PCI core during suspend/resume.
+   Dropped patch removing i2c-intel-mid.c
+
+Changes since V3:
+   commits 330d1c^..5c7d3e from linux-next rebased onto v3.0-rc2
+
+Changes since V2:
+   Fixed bug that kept PCI driver from compiling :-(
+
+   PCI Runtime power mangement code changed to remove warning at probe
+   time and remove device.
+
+   Fix checking of component version on big endian machine to work
+   correctly.
  
- /*
-  * Registers offset
-@@ -193,6 +194,7 @@ static char *abort_sources[] = {
-  * @status: i2c master status, one of STATUS_*
-  * @abort_source: copy of the TX_ABRT_SOURCE register
-  * @irq: interrupt number for the i2c master
-+ * @swab: true if the instantiated IP is of different endianess
-  * @adapter: i2c subsystem adapter node
-  * @tx_fifo_depth: depth of the hardware tx fifo
-  * @rx_fifo_depth: depth of the hardware rx fifo
-@@ -216,6 +218,7 @@ struct dw_i2c_dev {
- 	unsigned int		status;
- 	u32			abort_source;
- 	int			irq;
-+	int			swab;
- 	struct i2c_adapter	adapter;
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
-@@ -223,11 +226,19 @@ struct dw_i2c_dev {
- 
- static u32 dw_readl(struct dw_i2c_dev *dev, int offset)
- {
--	return readl(dev->base + offset);
-+	u32 value = readl(dev->base + offset);
-+
-+	if (dev->swab)
-+		return swab32(value);
-+	else
-+		return value;
- }
- 
- static void dw_writel(struct dw_i2c_dev *dev, u32 b, int offset)
- {
-+	if (dev->swab)
-+		b = swab32(b);
-+
- 	writel(b, dev->base + offset);
- }
- 
-@@ -760,7 +771,9 @@ static int __devinit dw_i2c_probe(struct platform_device *pdev)
- 	}
- 
- 	reg = dw_readl(dev, DW_IC_COMP_TYPE);
--	if (reg != 0x44570140) {
-+	if (reg == ___constant_swab32(0x44570140))
-+		dev->swab = 1;
-+	else if (reg != 0x44570140) {
- 		dev_err(&pdev->dev, "Unknown Synopsys component type: "
- 				"0x%08x\n",	reg);
- 		r = -ENODEV;
+Changes since V1 of the patch set:
+
+   Patches 1-3 are now Jean-Hugues Deschenes patches unmodified from
+   http://www.spinics.net/lists/linux-i2c/msg02421.html
+
+   Patch 4 moves the version checking introduced in Jean's code to the
+   core init function.
+
+   Patch 5 splits i2c-designware.c into IP core and bus specific files.
+
+   Patch 6-9 rework i2c-designware-core.c and i2c-designware-platdrv.c to
+   add the ability to support multiple instances of the driver.
+
+   Patch 10 Finishes moving all register access and associated offset and
+   bit definitions into the core.
+
+   Patch 11 Adds support for designware I2C IP cores behind PCI
+   devices on the Moorestown and Medfield platforms. removed change to
+   authors name.
+
+   Patch 12 Adds runtime power management to the PCI driver.    
+
+   Patch 13 Fixs a warning from the PCI core during suspend/resume.
+
+
+Dirk Brandewie (9):
+  i2c-designware: Move checking of IP core version to i2c_dw_init()
+  i2c-designware: split of i2c-designware.c into core and bus specific
+    parts
+  i2c-designware: Move retriveving the clock speed out of core code.
+  i2c-designware: move i2c functionality bit field to be adapter
+    specific
+  i2c-designware: move controller config to bus specific portion of
+    driver
+  i2c-designware: Support multiple cores using same ISR
+  i2c-designware: Push all register reads/writes into the core code.
+  i2c-designware: Add support for Designware core behind PCI devices.
+  i2c-designware: Add runtime power management support
+
+Jean-Hugues Deschenes (3):
+  i2c-designware: Use local version of readl & writel
+  i2c-designware: Check component type register
+  i2c-designware: Allow mixed endianness accesses
+
+Octavian Purdila (1):
+  i2c-designware: Fix PCI core warning on suspend/resume
+
+ drivers/i2c/busses/Kconfig                  |   16 +-
+ drivers/i2c/busses/Makefile                 |    5 +-
+ drivers/i2c/busses/i2c-designware-core.c    |  705 ++++++++++++++++++++++
+ drivers/i2c/busses/i2c-designware-core.h    |  105 ++++
+ drivers/i2c/busses/i2c-designware-pcidrv.c  |  392 +++++++++++++
+ drivers/i2c/busses/i2c-designware-platdrv.c |  215 +++++++
+ drivers/i2c/busses/i2c-designware.c         |  847 ---------------------------
+ 7 files changed, 1434 insertions(+), 851 deletions(-)
+ create mode 100644 drivers/i2c/busses/i2c-designware-core.c
+ create mode 100644 drivers/i2c/busses/i2c-designware-core.h
+ create mode 100644 drivers/i2c/busses/i2c-designware-pcidrv.c
+ create mode 100644 drivers/i2c/busses/i2c-designware-platdrv.c
+ delete mode 100644 drivers/i2c/busses/i2c-designware.c
+
 -- 
 1.7.3.4
 
