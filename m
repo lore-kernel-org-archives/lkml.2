@@ -1,32 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935844Ab1JFLgX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:36:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42227 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:36:22 -0400
+	id S964809Ab1JFLi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:38:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59942 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935288Ab1JFLiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 07:38:25 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v13] omap: usb: host: Runtime PM preparation for EHCI and OHCI drivers
+Date: Thu, 6 Oct 2011 17:07:25 +0530
+Message-ID: <1317901045-2492-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Date: Thu, 6 Oct 2011 13:36:21 +0200
-Message-ID: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
-Subject: sched: ARM: arch_scale_freq_power
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
-        linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I work to link the cpu_power of ARM cores to their frequency by using
-arch_scale_freq_power. It's explained in the kernel that cpu_power is
-used to distribute load on cpus and a cpu with more cpu_power will
-pick up more load. The default value is SCHED_POWER_SCALE and I
-increase the value if I want a cpu to have more load than another one.
-Is there an advised range for cpu_power value as well as some time
-scale constraints for updating the cpu_power value ?
-I'm also wondering why this scheduler feature is currently disable by default ?
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-Regards,
-Vincent
+The Hwmod structures for ehci and ohci drivers are implemented for
+EHCI and OHCI drivers of OMAP3 and OMAP4.
+The ehci and ohci drivers does not use the APIs of the usbhs
+core driver; the runtime pm APIs are used for clock
+enable/disable. 
+
+TODO:
+  - Adding mux-information to Hwmods.
+  - Aggressive Clock Management around USB bus suspend/resume.
+  - Remote Wakeup support implementation using IO-ring Wakeup
+    on EHCI/OHCI pads via PRCM IRQ chain handler.
+
+In version 13:
+	- for omap3, the ehci 120mhz clock is conditional enabled
+	  if ehci is selected for atleast one port in the omap platform.
+	- the hardware erratas information is added.
+	- the patches are split in to two series
+		i) The hwmod and preparation for run time pm of ehci and
+			ohci drivers ( this series)
+		ii) The Runtime pm support for ehci and ohci drivers.
+	  Since the patches are split , both the series are SHOULD be 
+	  applied to make the ehci and ohci drivers are functional with
+	  runtime pm support.
+	
+In version 12:
+  - The ehci, ohci and usb_host_hs hwmods combined as a single hwmod
+    usb_host_hs.
+  - for omap3
+	the usbhost_ick and and usbtll_ick clocks are changed as interface
+        clocks. The usbtll_fck, usbhost_48m_fck clocks are changed as main
+        clocks and the 120mhz functional clock is changed to optional clock 
+  - the usbhs mfd driver enable/disable this optional clock in 
+    runtime_resume and runtime_suspend callbacks of pm_runtime_get_sync
+    and pm_runtime_put_sync APIs.
+
+
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
+
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  omap: usb: host: Replace usbhs core driver APIs by Runtime pm APIs
+
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 ++--
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  206 +++++++++++++++++++++++++-
+ arch/arm/mach-omap2/usb-host.c             |  100 ++++--------
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |    2 +-
+ drivers/usb/host/ehci-omap.c               |   17 +--
+ drivers/usb/host/ohci-omap3.c              |   18 +--
+ 9 files changed, 498 insertions(+), 111 deletions(-)
+
