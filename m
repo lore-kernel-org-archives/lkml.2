@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759386Ab1JFXaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 19:30:04 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:56314 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759150Ab1JFXaB (ORCPT
+	id S965298Ab1JFXnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 19:43:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62009 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab1JFXnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 19:30:01 -0400
-Date: Fri, 7 Oct 2011 10:29:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, linux-next@vger.kernel.org
-Subject: Re: Including C6X in linux-next
-Message-Id: <20111007102953.7b533ec58dd613b9fd78a198@canb.auug.org.au>
-In-Reply-To: <1317917085.2703.16.camel@deneb.redhat.com>
-References: <1317917085.2703.16.camel@deneb.redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Thu, 6 Oct 2011 19:43:51 -0400
+Subject: [PATCH 00/11 v2] Convert wm8xxx codec drivers to use
+ snd_soc_write/snd_soc_cache_sync
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Oct 2011 07:43:39 +0800
+Message-ID: <1317944619.5579.1.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Oct_2011_10_29_53_+1100_iPLTM927E+TXjDJu"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Oct_2011_10_29_53_+1100_iPLTM927E+TXjDJu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This serial converts the wm8xxx codec drivers to use snd_soc_cache_sync.
+I don't have these hardware, but I assume Mark has all these hardware.
+These patches are UNTESTED. I'd appreciate if someone can test it.
+(Current code is broken anyway, thus we need convert to use new API. )
 
-Hi Mark,
+v2: For 7, 9 CODECs that are write only, convert to using cache_bypass + snd_soc_write
+    v2 also includes wm8990 that I had sent separately.
 
-On Thu, 06 Oct 2011 12:04:44 -0400 Mark Salter <msalter@redhat.com> wrote:
->
-> All of the patches in the latest C6X patch set have gotten Acked-bys, so
-> I guess its time to include it in the linux-next tree. The patches are
-> available on the "for-linux-next" branch at:
->=20
->    http://linux-c6x.org/git/projects/linux-c6x-upstreaming.git
+*** BLURB HERE ***
 
-I had a look at this and unfortunately you have based it on linux-next.
-I cannot use it like that.  You need to rebase this onto Linus' tree,
-sorry.  (Also, I used the git://... version of the URL as that is more
-efficient than http://.. for updting git trees).
+Axel Lin (11):
+  ASoC: wm8510: Convert to snd_soc_write
+  ASoC: wm8711: Convert to snd_soc_write
+  ASoC: wm8731: Convert to snd_soc_write
+  ASoC: wm8750: Convert to snd_soc_write
+  ASoC: wm8776: Convert to snd_soc_write
+  ASoC: wm8940: Convert to snd_soc_cache_sync
+  ASoC: wm8960: Convert to snd_soc_write
+  ASoC: wm8971: Convert to snd_soc_write
+  ASoC: wm8974: Convert to snd_soc_write
+  ASoC: wm8988: Convert to snd_soc_write
+  ASoC: wm8990: Convert to snd_soc_cache_sync
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ sound/soc/codecs/wm8510.c |   33 +++++++++++++++++++++----------
+ sound/soc/codecs/wm8711.c |   33 +++++++++++++++++++++----------
+ sound/soc/codecs/wm8731.c |   35 +++++++++++++++++++++------------
+ sound/soc/codecs/wm8750.c |   36 +++++++++++++++++++++-------------
+ sound/soc/codecs/wm8776.c |   36 +++++++++++++++++++++-------------
+ sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
+ sound/soc/codecs/wm8960.c |   34 +++++++++++++++++++++++---------
+ sound/soc/codecs/wm8971.c |   35 ++++++++++++++++++++++-----------
+ sound/soc/codecs/wm8974.c |   33 +++++++++++++++++++++----------
+ sound/soc/codecs/wm8988.c |   37 +++++++++++++++++++++--------------
+ sound/soc/codecs/wm8990.c |   32 ++++++++++++++++++------------
+ 11 files changed, 242 insertions(+), 148 deletions(-)
 
---Signature=_Fri__7_Oct_2011_10_29_53_+1100_iPLTM927E+TXjDJu
-Content-Type: application/pgp-signature
+-- 
+1.7.4.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOjjnxAAoJEECxmPOUX5FECPoQAKnWCqFy0P8D6HTNdcUTgpR+
-9g911QvT4W76SiBOldhPMJUwQDqvZ14rhOZU7wJ7AgCOH6wqvfVmbRlvlbxtBaZy
-tGbeka4KKDra8rshZ0zZHroNiH1gjdJvD2LujfgYn3nK+KNC5NYteC3mzSPWK7Sb
-pZooGcCl8GTLpBPZY0LwQIFimhBuxcx3D3QrJnf8+OLLDp0lto1Ig/+wxgC0+b07
-DHNDOj9mAaX/SyL/7wkBSENxad31MzN1bhBwLB5hbU3sXZp7pb3IC3y1QsGNIGS4
-9NfSqUdPyyc4WDXqCcnXt6EyO9Mb3wo+4pXaZhn1p9FJpBxvEt4oJcwQLh/dFV96
-npxTzONqUbvCfHGUf3JsxJpcgVDUZMbZ3fRG/PSfzZoG9S0XBTBAn3p89jDnJH7Y
-StPife+6ZddeCEpAujSV8OxYRVzIYQ2xXQOqp1cHrn8Re2NCHyZpWhiRQN0G5rFf
-qfczVo9BO2reT7H8z9aSOn7NauocTXq72O7NDUu9Od4AbWQN1md+c6yVjA9TuWCa
-YhRh9vKIcXLj8Awyx0Y3EP3J20z5InuaqOZQz3krgYBTMyh5/MP55l1WTMTcvIUj
-Yt8L7TssC5ENvhDP4RfOdO5f6ZLp9BcE1h762HXT6trl7oD09ulIPsxHo8bZjNc0
-RQqN8fC6L2KhWq1xHOui
-=vN9x
------END PGP SIGNATURE-----
 
---Signature=_Fri__7_Oct_2011_10_29_53_+1100_iPLTM927E+TXjDJu--
