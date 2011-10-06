@@ -1,185 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab1JFU6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 16:58:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52736 "EHLO ogre.sisk.pl"
+	id S1759260Ab1JFVD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 17:03:58 -0400
+Received: from home.keithp.com ([63.227.221.253]:49667 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759145Ab1JFU6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 16:58:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Don Zickus <dzickus@redhat.com>
-Subject: Re: [RFC][PATCH] x86, reboot:  use NMI instead of REBOOT_VECTOR to stop cpus
-Date: Thu, 6 Oct 2011 23:00:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <1317236148-15134-1-git-send-email-dzickus@redhat.com> <20111006205042.GM5795@redhat.com>
-In-Reply-To: <20111006205042.GM5795@redhat.com>
+	id S1756916Ab1JFVD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 17:03:56 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: [PULL] drm-intel-fixes (drm/i915 driver)
+In-Reply-To: <CA+55aFzR91rOstOcAUoTXGHvztqG-aB-j37_p3F9C3-Ngc_6dQ@mail.gmail.com>
+References: <yunpqiikeut.fsf@aiko.keithp.com> <CA+55aFzR91rOstOcAUoTXGHvztqG-aB-j37_p3F9C3-Ngc_6dQ@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 06 Oct 2011 15:03:46 -0600
+Message-ID: <yunlisxltn1.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110062300.24513.rjw@sisk.pl>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 06, 2011, Don Zickus wrote:
-> On Wed, Sep 28, 2011 at 02:55:48PM -0400, Don Zickus wrote:
-> > A recent discussion started talking about the locking on the pstore fs
-> > and how it relates to the kmsg infrastructure.  We noticed it was possible
-> > for userspace to r/w to the pstore fs (grabbing the locks in the process)
-> > and block the panic path from r/w to the same fs.
-> 
-> Poke?  Anyone have an opinion on this?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I think Matthew Garrett should have a look at this (now CCed).
+On Thu, 6 Oct 2011 10:12:57 -0700, Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
 
-> > The reason was the cpu with the lock could be doing work while the crashing
-> > cpu is panic'ing.  Busting those spinlocks might cause those cpus to step
-> > on each other's data.  Fine, fair enough.
-> > 
-> > It was suggested it would be nice to serialize the panic path (ie stop
-> > the other cpus) and have only one cpu running.  This would allow us to
-> > bust the spinlocks and not worry about another cpu stepping on the data.
-> > 
-> > Of course, smp_send_stop() does this in the panic case.  kmsg_dump() would
-> > have to be moved to be called after it.  Easy enough.
-> > 
-> > The only problem is on x86 the smp_send_stop() function calls the
-> > REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and its backend
-> > ERST would do), block this IPI and thus do not stop.  This makes it
-> > difficult to reliably log data to the pstore fs.
-> > 
-> > The patch below switches from the REBOOT_VECTOR to NMI (and mimics what
-> > kdump does).  Switching to NMI allows us to deliver the IPI when irqs are
-> > disabled, increasing the reliability of this function.
-> > 
-> > However, Andi carefully noted that on some machines this approach does not
-> > work because of broken BIOSes or whatever.
-> > 
-> > I was hoping to get feedback on how much of a problem this really is.  Are
-> > there that many machines?  I assume most modern machines have a reliable NMI
-> > IPI mechanism (well on x86).  Is this just a problem on 32-bit machines?
-> > Early SMP machines?
-> > 
-> > One idea I had was to create a blacklist of machines and have those machines
-> > fallback to the original native_stop_other_cpus() that Andi wrote originally.
-> > The hope was that list was small.
-> > 
-> > Does anyone have any feedback whether this is a good idea or not?  Perhaps I am
-> > missing something?  Perhaps I should approach this problem differently?
-> > 
-> > [note] this patch sits on top of another NMI infrastructure change I have
-> > submitted, so the nmi registeration might not apply cleanly without that patch.
-> > However, for discussion purposes, I don't think that change is relevant, it is
-> > more the idea/philosophy of this patch that I am worried about.
-> > 
-> > Thanks,
-> > Don
-> > ---
-> >  arch/x86/kernel/smp.c |   56 +++++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 files changed, 54 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-> > index 013e7eb..e98f0a1 100644
-> > --- a/arch/x86/kernel/smp.c
-> > +++ b/arch/x86/kernel/smp.c
-> > @@ -28,6 +28,7 @@
-> >  #include <asm/mmu_context.h>
-> >  #include <asm/proto.h>
-> >  #include <asm/apic.h>
-> > +#include <asm/nmi.h>
-> >  /*
-> >   *	Some notes on x86 processor bugs affecting SMP operation:
-> >   *
-> > @@ -147,6 +148,57 @@ void native_send_call_func_ipi(const struct cpumask *mask)
-> >  	free_cpumask_var(allbutself);
-> >  }
-> >  
-> > +static int stopping_cpu;
-> > +
-> > +static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-> > +{
-> > +	/* We are registerd on stopping cpu too, avoid spurious NMI */
-> > +	if (raw_smp_processor_id() == stopping_cpu)
-> > +		return NMI_HANDLED;
-> > +
-> > +	stop_this_cpu(NULL);
-> > +
-> > +	return NMI_HANDLED;
-> > +}
-> > +
-> > +static void native_nmi_stop_other_cpus(int wait)
-> > +{
-> > +	unsigned long flags;
-> > +	unsigned long timeout;
-> > +
-> > +	if (reboot_force)
-> > +		return;
-> > +
-> > +	/*
-> > +	 * Use an own vector here because smp_call_function
-> > +	 * does lots of things not suitable in a panic situation.
-> > +	 */
-> > +	if (num_online_cpus() > 1) {
-> > +		stopping_cpu = safe_smp_processor_id();
-> > +
-> > +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> > +					 NMI_FLAG_FIRST, "smp_stop"))
-> > +			return;		/* return what? */
-> > +
-> > +		/* sync above data before sending NMI */
-> > +		wmb();
-> > +
-> > +		apic->send_IPI_allbutself(NMI_VECTOR);
-> > +
-> > +		/*
-> > +		 * Don't wait longer than a second if the caller
-> > +		 * didn't ask us to wait.
-> > +		 */
-> > +		timeout = USEC_PER_SEC;
-> > +		while (num_online_cpus() > 1 && (wait || timeout--))
-> > +			udelay(1);
-> > +	}
-> > +
-> > +	local_irq_save(flags);
-> > +	disable_local_APIC();
-> > +	local_irq_restore(flags);
-> > +}
-> > +
-> >  /*
-> >   * this function calls the 'stop' function on all other CPUs in the system.
-> >   */
-> > @@ -159,7 +211,7 @@ asmlinkage void smp_reboot_interrupt(void)
-> >  	irq_exit();
-> >  }
-> >  
-> > -static void native_stop_other_cpus(int wait)
-> > +static void native_irq_stop_other_cpus(int wait)
-> >  {
-> >  	unsigned long flags;
-> >  	unsigned long timeout;
-> > @@ -229,7 +281,7 @@ struct smp_ops smp_ops = {
-> >  	.smp_prepare_cpus	= native_smp_prepare_cpus,
-> >  	.smp_cpus_done		= native_smp_cpus_done,
-> >  
-> > -	.stop_other_cpus	= native_stop_other_cpus,
-> > +	.stop_other_cpus	= native_nmi_stop_other_cpus,
-> >  	.smp_send_reschedule	= native_smp_send_reschedule,
-> >  
-> >  	.cpu_up			= native_cpu_up,
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+>   [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
 
+Thanks. I've got a patch series that fixes a pile of refclk bugs which
+is still out for review that should fix this. This error should be
+harmless, but still..
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTo4XsjYtFsjWk68qAQg2TBAAsT/jZQSt4wOWE6XtBiFh+BYhKDnpW/s0
+Wi0Iun4Q8g+HkeiAQ7v80+CqJtxk+S7N1ZJOcrDTdkTXsLyMAcZUTBA2JfcvLYxG
+Ciu5XvNGT1o2qovzUFB23yVBg4VOA3TFq5LrQJQiCDRp3AAFCamMygS/5BIG7Rw9
+M3qqNqmQA78wPrjxMCmFcah/HdJFcNFHOuvreU2PBBG42bu3Yp2D8s4swTZnhNHt
+DKnGwwTviU+S/A153Z/GN2Tie6oTUasrNAG9hr41+RpMvrwMBck5QfoRN5b4R3MK
+IHFDs34iTZfSm8z8lSTO2hFJz6SDBfCgHxp1HzGTyzl8TZr0HHxI+8Nl3NcrNtN6
+QbbOAAIDl9AQwd5mV8S0Nzs/nCbb9HjrV/dyzkRfA20zkTz1xdNcgIZs9OWiuwk7
+/Ve3NVklnSxJpMIbs8FWvDkx301w2v9upC4JsXzdj4wp3sq9Il6YfjiGgq4892Dj
+kJfMU5aK2PTiRQEvvEDWYREvf4aGf5hPIXiO9/4gmDn1j1PdpqguxWGSMeMgGXhR
+ReNqX/+Qz3gHAf0+Dcpi9TZbKu+LpXNhYdkGUHPESlMTD8lpwKVoxYedbIFWWJA1
+gUeYYhR2R8SfpM6Ryg7VNQJ06BzTVaJlivMq8l9KcsQTKVysQzjlnmyghZ1o773M
+6uBSxKnpmRA=
+=P2QP
+-----END PGP SIGNATURE-----
+--=-=-=--
