@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab1JFGxl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 02:53:41 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27146 "EHLO
+	id S934767Ab1JFGxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 02:53:53 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27133 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753778Ab1JFGvl (ORCPT
+	by vger.kernel.org with ESMTP id S1753685Ab1JFGvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Oct 2011 02:51:41 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
@@ -14,9 +14,9 @@ To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
         Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 3/7 v1] i2c-eg20t: Fix 10bit access issue
-Date: Thu,  6 Oct 2011 15:56:27 +0900
-Message-Id: <1317884192-10694-3-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 2/7 v3] i2c-eg20t: Modify returned value s32 to long
+Date: Thu,  6 Oct 2011 15:56:26 +0900
+Message-Id: <1317884192-10694-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1317884192-10694-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 References: <1317884192-10694-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
@@ -24,33 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-by: Jeffrey (Sheng-Hui) Chu <jeffchu@broadcom.com>
+Type of wait_event_timeout is long not s32.
+This patch replaces s32 with long.
+Additionally, delete negative processing(ret < 0).
+
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 ---
- drivers/i2c/busses/i2c-eg20t.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-eg20t.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index c5b9924..aa1705e 100644
+index 35d819a..c5b9924 100644
 --- a/drivers/i2c/busses/i2c-eg20t.c
 +++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -410,7 +410,7 @@ static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
- 	}
+@@ -313,13 +313,9 @@ static void pch_i2c_start(struct i2c_algo_pch_data *adap)
+  */
+ static s32 pch_i2c_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
+ {
+-	s32 ret;
++	long ret;
+ 	ret = wait_event_timeout(pch_event,
+ 			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
+-	if (ret < 0) {
+-		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+-		return ret;
+-	}
  
- 	if (msgs->flags & I2C_M_TEN) {
--		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
-+		addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7) & 0x06;
- 		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
- 		if (first)
- 			pch_i2c_start(adap);
-@@ -515,7 +515,6 @@ static s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
- 	if (msgs->flags & I2C_M_TEN) {
- 		addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
- 		iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
--
- 	} else {
- 		/* 7 address bits + R/W bit */
- 		addr = (((addr) << 1) | (I2C_RD));
+ 	if (ret == 0) {
+ 		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
 -- 
 1.7.4.4
 
