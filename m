@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935833Ab1JFLcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:32:15 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:55986 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLcO (ORCPT
+	id S935839Ab1JFLdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:33:52 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39851 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935288Ab1JFLdv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:32:14 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E8D93B7.4010802@cam.ac.uk>
-Date: Thu, 06 Oct 2011 12:40:39 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110930 Thunderbird/6.0.2
+	Thu, 6 Oct 2011 07:33:51 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: greg@kroah.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
-References: <20111004232403.10364.22050.stgit@ponder>
-In-Reply-To: <20111004232403.10364.22050.stgit@ponder>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <4E8D90E9.5060208@cam.ac.uk>
+References: <1317881417.13399.1.camel@phoenix> <1317881863.13399.10.camel@phoenix>
+ <4E8D90E9.5060208@cam.ac.uk>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 6 Oct 2011 19:33:29 +0800
+Message-ID: <CAF+7xWnWaPB8JKepUoGmvpVw6W6pJPVNkXAdy9GTD2rf9QDUNQ@mail.gmail.com>
+Subject: Re: [PATCH 06/10] ASoC: wm8940: Convert to snd_soc_cache_sync
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/11 00:26, Grant Likely wrote:
-> For simple modules that contain a single platform_driver without any
-> additional setup code then ends up being a block of duplicated
-> boilerplate.  This patch adds a new macro, module_platform_driver(),
-> which replaces the module_init()/module_exit() registrations with
-> template functions.
-> 
-> This patch also converts all the relevant spi drivers to use the new
-> macro.  There are a lot of drivers in the tree that are using this
-> pattern and could be converted.
-> 
-> It also fixes up some incorrect section annotations where I found
-> them.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> 
-> I think this is useful, and I like the diffstat that it produces.
-> What does everyone else think of this approach?  I can do versions for
-> i2c_drivers and spi_drivers too.
-Excellent idea.  Great to shrink this boilerplate where ever you can.
-i2c and spi version would be excellent.  Look to be 426 instances
-(I haven't checked but most are of the standard trivial form). So that is
-another few thousand lines gone. It's getting on for 500 in IIO alone where
-they are all of the trivial form, so this will make me very happy :)
+>> +static int wm8940_volatile_register(struct snd_soc_codec *codec,
+>> +                                 unsigned int reg)
+>> +{
+>> +     switch (reg) {
+>> +     case WM8940_SOFTRESET:
+>> +             return 1;
+>> +     default:
+>> +             return 0;
+>> +     }
+>> +}
+> I guess this makes sense from point of view of keeping things inline with
+> more complex drivers.  Otherwise I'd expect to see something like:
+> {
+>        return !!(reg == WM894_SOFTRESET);
+> }
 
-Thanks Grant!
+Either is ok to me.
+But current syntax makes it easier to add more registers to be volatile
+if necessary.
 
-Jonathan
+So I'll let Mark decide if I need to send a v2 for changing this.
+
+Regards,
+Axel
