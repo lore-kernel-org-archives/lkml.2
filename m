@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab1JFKYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 06:24:33 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55251 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755386Ab1JFKYc (ORCPT
+	id S1758195Ab1JFK2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 06:28:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33592 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755487Ab1JFK2F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 06:24:32 -0400
-Date: Thu, 6 Oct 2011 11:24:31 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Philip Rakity <prakity@marvell.com>
-Cc: Liam Girdwood <lrg@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/2] regulator: Fix some bitrot in the machine driver
- documentation
-Message-ID: <20111006102430.GD14518@opensource.wolfsonmicro.com>
-References: <1315503693-3785-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <94C474E6-A373-476B-935A-E675A5F57AED@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94C474E6-A373-476B-935A-E675A5F57AED@marvell.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Oct 2011 06:28:05 -0400
+Subject: [RFC][PATCH v2][QUILT] Add
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: quilt-dev <quilt-dev@nongnu.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Kacur <jkacur@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andreas Gruenbacher <agruen@suse.de>
+Date: Thu, 06 Oct 2011 12:27:37 +0200
+In-Reply-To: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317896857.29658.10.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 06:39:56PM -0700, Philip Rakity wrote:
-> 
-> Resend
-> 
-> Did not make it yet into linux next.
+since we're all happily sharing quilt hackery, let me hijack this thread
+and share one I've been carrying around for a while.
 
-Liam has been away for most of the past month unfortunately.
+I use the below patch to run a script like:
+
+#!/bin/bash
+
+if [ -x ./scripts/chechpatch.pl ]; then
+        ./scripts/checkpatch.pl $1
+fi
+
+
+---
+--- /usr/share/quilt/refresh.orig	2010-02-27 20:42:14.888302809 +0100
++++ /usr/share/quilt/refresh	2010-10-31 12:36:57.355400831 +0100
+@@ -310,6 +310,10 @@
+ 
+ cat $tmp_patch >> $tmp_result
+ 
++if [ -n $QUILT_REFRESH_EXT ] ; then
++	$QUILT_REFRESH_EXT $tmp_result
++fi
++
+ mkdir -p $(dirname $patch_file)
+ 
+ if [ -e $patch_file ] && \
+
