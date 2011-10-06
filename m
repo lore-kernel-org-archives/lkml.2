@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab1JFR2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758758Ab1JFR2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 13:28:07 -0400
-Date: Thu, 6 Oct 2011 13:27:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, stable@kernel.org
-Subject: Re: [patch v2 1/2] sched: Use resched IPI to kick off the nohz idle
- balance
-Message-ID: <20111006172731.GA31781@redhat.com>
-References: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
+	id S1758773Ab1JFRaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:30:09 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:54109 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758742Ab1JFRaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 13:30:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4EAP3kjU5bdWOb/2dsb2JhbABDhHSkRIFUAQUjDwEjIxAlAiYCAjkDGwYBEogApyKRVoEthFMYgRQEk26IX4hp
+X-IronPort-AV: E=Sophos;i="4.68,497,1312149600"; 
+   d="scan'208";a="421558697"
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
+	<vjaquez@igalia.com>
+To: Tony Lindgren <tony@atomide.com>, Joe Perches <joe@perches.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Timo Teras" <timo.teras@solidboot.com>,
+        "Harvey Harrison" <harvey.harrison@gmail.com>
+Subject: [PATCH v2] omap: dmtimer: convert printk to pr_err / WARN
+Date: Thu,  6 Oct 2011 19:30:02 +0200
+Message-Id: <1317922204-12512-1-git-send-email-vjaquez@igalia.com>
+X-Mailer: git-send-email 1.7.6.3
+In-Reply-To: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
+References: <1317898106-1891-1-git-send-email-vjaquez@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 03:09:00PM -0700, Suresh Siddha wrote:
-[..]
-> 
->    [ This issue is present from 2.6.35+ kernels, but marking it -stable
->      only from v3.0+ as the proposed fix depends on the scheduler_ipi()
->      that is introduced recently. ]
-> 
+Convert a printk(KERN_ERR) message in the driver to pr_err(), and
+use WARN() instead of a custom log message with a stack dump.
 
-Hi Suresh,
+Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
+---
+ arch/arm/plat-omap/dmtimer.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Are you planning to fix this issue for older kernels too? I am wondering
-how to go about fixing it there.
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index ee9f6eb..dead0f3 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -322,7 +322,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
+ 	while (!(omap_dm_timer_read_reg(timer, OMAP_TIMER_SYS_STAT_REG) & 1)) {
+ 		c++;
+ 		if (c > 100000) {
+-			printk(KERN_ERR "Timer failed to reset\n");
++			pr_err("Timer failed to reset\n");
+ 			return;
+ 		}
+ 	}
+@@ -397,9 +397,7 @@ struct omap_dm_timer *omap_dm_timer_request_specific(int id)
+ 	spin_lock_irqsave(&dm_timer_lock, flags);
+ 	if (id <= 0 || id > dm_timer_count || dm_timers[id-1].reserved) {
+ 		spin_unlock_irqrestore(&dm_timer_lock, flags);
+-		printk("BUG: warning at %s:%d/%s(): unable to get timer %d\n",
+-		       __FILE__, __LINE__, __func__, id);
+-		dump_stack();
++		WARN(1, "unable to get timer %d\n", id);
+ 		return NULL;
+ 	}
+ 
+-- 
+1.7.6.3
 
-Thanks
-Vivek
