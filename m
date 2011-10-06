@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759151Ab1JFTii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:38:38 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29776 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758742Ab1JFTig (ORCPT
+	id S1759174Ab1JFTnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:43:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:33847 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812Ab1JFTnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:38:36 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/CgWuKTAFdM+CHRrhuuNED
-Date: Thu, 6 Oct 2011 12:38:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: Re: [PATCH 0/2] AM3517EVM: Add support for MMC1
-Message-ID: <20111006193832.GL6324@atomide.com>
-References: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 6 Oct 2011 15:43:15 -0400
+Date: Thu, 06 Oct 2011 15:41:05 -0400 (EDT)
+Message-Id: <20111006.154105.273839447525115710.davem@davemloft.net>
+To: levinsasha928@gmail.com
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] virtio-net: Verify page list size before
+ fitting into skb
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 06 Oct 2011 12:41:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Abhilash K V <abhilash.kv@ti.com> [110819 04:19]:
-> This patch-set adds support for MMC1 slot on the 
-> AM3517 EVM's base-board.
-> These patches are dependent on the following patch-set
-> http://marc.info/?l=linux-omap&m=131247357813228&w=2
-> which gets the AM3517 EVM booting.
-> 
-> The patches are tested on master of tmlind/linux-omap-2.6.git.
-> Kernel version is 3.0.0-rc7 and last commit on top of which these patches
-> were added is:
-> 
->         885cf6ff7d3dad4cc44be74b0577d3a554d3ab71: Linux-omap rebuilt:
->         Updated to -rc7, added new boards
-> 
-> Cc: Vaibhav Hiremath <hvaibhav@ti.com>
-> ---
-> Abhilash K V (1):
->   AM3517: Support for MMC1
-> 
-> Vaibhav Hiremath (1):
->   AM3517EVM: Add support for base-board MMC slot
-> 
->  arch/arm/mach-omap2/board-am3517evm.c |   22 ++++++++++++++++++++++
->  arch/arm/mach-omap2/hsmmc.c           |   10 +++++++++-
->  2 files changed, 31 insertions(+), 1 deletions(-)
-> 
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Wed, 28 Sep 2011 17:40:54 +0300
 
-Adding these both to board branch thanks.
+> This patch verifies that the length of a buffer stored in a linked list
+> of pages is small enough to fit into a skb.
+> 
+> If the size is larger than a max size of a skb, it means that we shouldn't
+> go ahead building skbs anyway since we won't be able to send the buffer as
+> the user requested.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Cc: kvm@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Tony
+Applied to net-next
