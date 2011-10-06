@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965055Ab1JFOun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:50:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23974 "EHLO
+	id S965042Ab1JFOui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:50:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34248 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965043Ab1JFOuj (ORCPT
+	with ESMTP id S965017Ab1JFOu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:50:39 -0400
+	Thu, 6 Oct 2011 10:50:28 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=DelyzEZccwMcIOeY9HLKfjiaKbHz45ewTo1DsV5kEwrp8SGkWWxA7M0QxmodiiVYn
-	hZ4FhBGtRghPIL4Zx8NQg==
+	b=n8To4Yoe1EF5kengS7dcWHolshiAa9niTcFuHsTvjDedZ+V4EjOaeulI4qfLTJEci
+	dPHjfCXjYi/yt3iByrYyg==
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
         andi@firstfloor.org, robert.richter@amd.com, ravitillo@lbl.gov
-Subject: [PATCH 11/12] perf: add support for sampling taken branch to perf record
-Date: Thu,  6 Oct 2011 16:49:14 +0200
-Message-Id: <1317912555-9559-12-git-send-email-eranian@google.com>
+Subject: [PATCH 09/12] perf_events: add hook to flush branch_stack on context switch
+Date: Thu,  6 Oct 2011 16:49:12 +0200
+Message-Id: <1317912555-9559-10-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1317912555-9559-1-git-send-email-eranian@google.com>
 References: <1317912555-9559-1-git-send-email-eranian@google.com>
@@ -27,170 +27,287 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new option to enable taken branch stack
-sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
-of perf_events.
+With branch stack sampling, it is possible to filter by priv levels.
+In system-wide mode, that means it is possible to capture only user
+level branches. The builtin SW LBR filter needs to disassemble code
+based on LBR captured addresses. For that, it needs to know the task
+the addresses are associated with. Because of context switches, the
+content of the branch stack buffer may contain addresses from
+different tasks.
 
-There is a new option to active this mode: -b.
-It is possible to pass a set of filters to select the type of
-branches to sample.
+We need a hook on context switch to either flush the branch stack
+or save it. This patch adds a new hook in struct pmu which is called
+during context switches. The hook is called only when necessary.
+That is when a system-wide context has, at least, one event which
+uses PERF_SAMPLE_BRANCH_STACK. The hook is never called for per-thread
+context.
 
-The following filters are available:
-- any : any type of branches
-- any_call : any function call or system call
-- any_ret : any function return or system call return
-- any_ind : any indirect branch
-- u:  only when the branch target is at the user level
-- k: only when the branch target is in the kernel
+In this version, the Intel X86 code simply flushes (reset) the LBR
+on context switches (fill with zeroes). Those zeroed branches are
+then filtered out by the SW filter.
 
-Filters can be combined by passing a comma separated list
-to the option:
-
-$ perf record -b any_call,u -e cycles:u branchy
-
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Documentation/perf-record.txt |   18 +++++++
- tools/perf/builtin-record.c              |   75 ++++++++++++++++++++++++++++++
- 2 files changed, 93 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |   31 +++++++-----
+ arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++
+ include/linux/perf_event.h             |    7 ++-
+ kernel/events/core.c                   |   85 ++++++++++++++++++++++++++++++++
+ 4 files changed, 123 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 5a520f8..ddc1999 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -148,6 +148,24 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
- corresponding events, i.e., they always refer to events defined earlier on the command
- line.
- 
-+-b::
-+--branch-stack::
-+Enable taken branch stack sampling. Each sample captures a series of consecutive
-+taken branches. The number of branches captured with each sample depends on the
-+underlying hardware, the type of branches of interested and the executed code.
-+It is possible to filter the types of branches by enabling filters. The
-+following filters are defined: any (any type of branches), any_call (any function
-+call or system call), any_ret (any function return or system call return), any_ind
-+(any indirect branch), u (only when the branch target is at the user level), k (only when
-+the branch target is in the kernel). At least one of any, any_call, any_ret, any_ind
-+must be provided. The privilege levels may be ommitted, in which case, the privilege
-+levels of the associated event is applied to the branch filter. When sampling on multiple
-+events, branch stack sampling is enabled for all the sampling events. The sampled branch
-+type is the same for all events. The privilege levels are adjusted based on those of
-+the associated event unless specified explicitly with this option. Note that taken
-+branch sampling may not be available on all processors. The various filters must
-+be specified as a comma separated list: -b any_ret,u,k
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f4c3fbe..4464677 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -57,6 +57,7 @@ static pid_t			child_pid			=     -1;
- static bool			no_inherit			=  false;
- static enum write_mode_t	write_mode			= WRITE_FORCE;
- static bool			call_graph			=  false;
-+static int			branch_stack			=  0;
- static bool			inherit_stat			=  false;
- static bool			no_samples			=  false;
- static bool			sample_address			=  false;
-@@ -204,6 +205,11 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
- 	if (system_wide)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 
-+	if (branch_stack) {
-+		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
-+		attr->branch_sample_type = branch_stack;
-+	}
-+
- 	if (sample_id_all_avail &&
- 	    (sample_time || system_wide || !no_inherit || cpu_list))
- 		attr->sample_type	|= PERF_SAMPLE_TIME;
-@@ -717,6 +723,72 @@ out_delete_session:
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 80aa2f1..7df913c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -268,7 +268,7 @@ struct x86_pmu {
+ 	void		(*cpu_starting)(int cpu);
+ 	void		(*cpu_dying)(int cpu);
+ 	void		(*cpu_dead)(int cpu);
+-
++	void		(*flush_branch_stack)(void);
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+ 	 */
+@@ -1827,21 +1827,28 @@ static int x86_pmu_event_init(struct perf_event *event)
  	return err;
  }
  
-+#define BRANCH_OPT(n, m) \
-+	{ .name = n, .mode = (m) }
-+
-+#define BRANCH_END { .name = NULL }
-+
-+struct branch_mode {
-+	const char *name;
-+	int mode;
-+};
-+
-+static const struct branch_mode branch_modes[]={
-+	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
-+	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
-+	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
-+	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
-+	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
-+	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-+	BRANCH_END
-+};
-+
-+static int
-+parse_branch_stack(const struct option *opt, const char *str, int unset __used)
++static void x86_pmu_flush_branch_stack(void)
 +{
-+#define ONLY_PLM (PERF_SAMPLE_BRANCH_USER|PERF_SAMPLE_BRANCH_KERNEL)
-+	uint64_t *mode = (uint64_t *)opt->value;
-+	const struct branch_mode *br;
-+	char *s, *os, *p;
-+	int ret = -1;
-+
-+	*mode = 0;
-+
-+	/* because str is read-only */
-+	s = os = strdup(str);
-+	if (!s)
-+		return -1;
-+
-+	for (;;) {
-+		p = strchr(s, ',');
-+		if (p)
-+			*p = '\0';
-+
-+		for (br = branch_modes; br->name; br++) {
-+			if (!strcasecmp(s, br->name))
-+				break;
-+		}
-+		if (!br->name)
-+			goto error;
-+
-+		*mode |= br->mode;
-+
-+		if (!p)
-+			break;
-+
-+		s = p + 1;
-+	}
-+	ret = 0;
-+
-+	if ((*mode & ~ONLY_PLM) == 0) {
-+		pr_warning("error: needs at least one branch type with -b\n");
-+		ret = -1;
-+	}
-+error:
-+	free(os);
-+	return ret;
++	if (x86_pmu.flush_branch_stack)
++		x86_pmu.flush_branch_stack();
 +}
 +
- static const char * const record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
-@@ -777,6 +849,9 @@ const struct option record_options[] = {
- 	OPT_CALLBACK('G', "cgroup", &evsel_list, "name",
- 		     "monitor event in cgroup name only",
- 		     parse_cgroups),
-+	OPT_CALLBACK('b', "branch stack", &branch_stack, "branch mode mask",
-+		     "branch stack sampling modes",
-+		     parse_branch_stack),
- 	OPT_END()
+ static struct pmu pmu = {
+-	.pmu_enable	= x86_pmu_enable,
+-	.pmu_disable	= x86_pmu_disable,
++	.pmu_enable		= x86_pmu_enable,
++	.pmu_disable		= x86_pmu_disable,
+ 
+-	.event_init	= x86_pmu_event_init,
++	.event_init		= x86_pmu_event_init,
+ 
+-	.add		= x86_pmu_add,
+-	.del		= x86_pmu_del,
+-	.start		= x86_pmu_start,
+-	.stop		= x86_pmu_stop,
+-	.read		= x86_pmu_read,
++	.add			= x86_pmu_add,
++	.del			= x86_pmu_del,
++	.start			= x86_pmu_start,
++	.stop			= x86_pmu_stop,
++	.read			= x86_pmu_read,
+ 
+-	.start_txn	= x86_pmu_start_txn,
+-	.cancel_txn	= x86_pmu_cancel_txn,
+-	.commit_txn	= x86_pmu_commit_txn,
++	.start_txn		= x86_pmu_start_txn,
++	.cancel_txn		= x86_pmu_cancel_txn,
++	.commit_txn		= x86_pmu_commit_txn,
++	.flush_branch_stack	= x86_pmu_flush_branch_stack,
  };
  
+ /*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index b5e7c52..3bb1614 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1440,6 +1440,18 @@ static void intel_pmu_cpu_dying(int cpu)
+ 	fini_debug_store_on_cpu(cpu);
+ }
+ 
++static void intel_pmu_flush_branch_stack(void)
++{
++	/*
++	 * Intel LBR does not tag entries with the
++	 * PID of the current task, then we need to
++	 * flush it on ctxsw
++	 * For now, we simply reset it
++	 */
++	if (x86_pmu.lbr_nr)
++		intel_pmu_lbr_reset();
++}
++
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -1466,6 +1478,7 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.cpu_prepare		= intel_pmu_cpu_prepare,
+ 	.cpu_starting		= intel_pmu_cpu_starting,
+ 	.cpu_dying		= intel_pmu_cpu_dying,
++	.flush_branch_stack	= intel_pmu_flush_branch_stack,
+ };
+ 
+ static void intel_clovertown_quirks(void)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0819364..70d6453 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -732,6 +732,9 @@ struct pmu {
+ 	 * for each successful ->add() during the transaction.
+ 	 */
+ 	void (*cancel_txn)		(struct pmu *pmu); /* optional */
++	/*
++	 * flush branch stack on context-switches (needed in cpu-wide mode) */
++	void (*flush_branch_stack)	(void);
+ };
+ 
+ /**
+@@ -960,7 +963,8 @@ struct perf_event_context {
+ 	u64				parent_gen;
+ 	u64				generation;
+ 	int				pin_count;
+-	int				nr_cgroups; /* cgroup events present */
++	int				nr_cgroups;	 /* cgroup evts */
++	int				nr_branch_stack; /* branch_stack evt */
+ 	struct rcu_head			rcu_head;
+ };
+ 
+@@ -1025,6 +1029,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr,
+ extern u64 perf_event_read_value(struct perf_event *event,
+ 				 u64 *enabled, u64 *running);
+ 
++
+ struct perf_sample_data {
+ 	u64				type;
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e5caab5..a7f388f 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -129,6 +129,7 @@ enum event_type_t {
+  */
+ struct jump_label_key perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
++static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -877,6 +878,9 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	if (is_cgroup_event(event))
+ 		ctx->nr_cgroups++;
+ 
++	if (has_branch_stack(event))
++		ctx->nr_branch_stack++;
++
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+ 	if (!ctx->nr_events)
+ 		perf_pmu_rotate_start(ctx->pmu);
+@@ -1016,6 +1020,9 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 			cpuctx->cgrp = NULL;
+ 	}
+ 
++	if (has_branch_stack(event))
++		ctx->nr_branch_stack--;
++
+ 	ctx->nr_events--;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat--;
+@@ -2185,6 +2192,66 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ }
+ 
+ /*
++ * When sampling the branck stack in system-wide, it may be necessary
++ * to flush the stack on context switch. This happens when the branch
++ * stack does not tag its entries with the pid of the current task.
++ * Otherwise it becomes impossible to associate a branch entry with a
++ * task. This ambiguity is more likely to appear when the branch stack
++ * supports priv level filtering and the user sets it to monitor only
++ * at the user level (which could be a useful measurement in system-wide
++ * mode). In that case, the risk is high of having a branch stack with
++ * branch from multiple tasks. Flushing may mean dropping the existing
++ * entries or stashing them somewhere in the PMU specific code layer.
++ *
++ * This function provides the context switch callback to the lower code
++ * layer. It is invoked ONLY when there is at least one system-wide context
++ * with at least one active event using taken branch sampling.
++ */
++static void perf_branch_stack_sched_in(struct task_struct *prev,
++				       struct task_struct *task)
++{
++	struct perf_cpu_context *cpuctx;
++	struct pmu *pmu;
++	unsigned long flags;
++
++	/* no need to flush branch stack if not changing task */
++	if (prev == task)
++		return;
++
++	local_irq_save(flags);
++
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++
++		/*
++		 * check if the context has at least one
++		 * event using PERF_SAMPLE_BRANCH_STACK
++		 */
++		if (cpuctx->ctx.nr_branch_stack > 0
++		    && pmu->flush_branch_stack) {
++
++			pmu = cpuctx->ctx.pmu;
++
++			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++
++			perf_pmu_disable(pmu);
++
++			pmu->flush_branch_stack();
++
++			perf_pmu_enable(pmu);
++
++			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++		}
++	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++}
++
++/*
+  * Called from scheduler to add the events of the current task
+  * with interrupts disabled.
+  *
+@@ -2215,6 +2282,10 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	 */
+ 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+ 		perf_cgroup_sched_in(prev, task);
++
++	/* check for system-wide branch_stack events */
++	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
++		perf_branch_stack_sched_in(prev, task);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+@@ -2954,6 +3025,14 @@ static void free_event(struct perf_event *event)
+ 			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
+ 			jump_label_dec(&perf_sched_events);
+ 		}
++
++		if (has_branch_stack(event)) {
++			jump_label_dec(&perf_sched_events);
++			/* is system-wide event */
++			if (!(event->attach_state & PERF_ATTACH_TASK))
++				atomic_dec(&per_cpu(perf_branch_stack_events,
++						    event->cpu));
++		}
+ 	}
+ 
+ 	if (event->rb) {
+@@ -5960,6 +6039,12 @@ done:
+ 				return ERR_PTR(err);
+ 			}
+ 		}
++		if (has_branch_stack(event)) {
++			jump_label_inc(&perf_sched_events);
++			if (!(event->attach_state & PERF_ATTACH_TASK))
++				atomic_inc(&per_cpu(perf_branch_stack_events,
++						    event->cpu));
++		}
+ 	}
+ 
+ 	return event;
 -- 
 1.7.4.1
 
