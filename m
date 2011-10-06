@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935682Ab1JFGEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 02:04:43 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37136 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935657Ab1JFGEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 02:04:41 -0400
-Date: Thu, 6 Oct 2011 11:17:10 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
- thread is singlestepping.
-Message-ID: <20111006054710.GB17591@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com>
- <1317128626.15383.61.camel@twins>
- <20110927131213.GE3685@linux.vnet.ibm.com>
- <20111005180139.GA5704@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111005180139.GA5704@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935666Ab1JFGKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 02:10:31 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44289 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab1JFGKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 02:10:30 -0400
+Subject: [PATCH 00/10] Convert wm8xxx codec drivers to use
+ snd_soc_cache_sync
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Arthur <linux@wolfsonmicro.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Kenneth Kiraly <kiraly@lab126.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 06 Oct 2011 14:10:17 +0800
+Message-ID: <1317881417.13399.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2011-10-05 20:01:39]:
+This serial converts the wm8xxx codec drivers to use snd_soc_cache_sync.
+I don't have these hardware, but I assume Mark has all these hardware.
+These patches are UNTESTED. I'd appreciate if someone can test them.
+(Current code is broken anyway, thus we need convert to use new API. )
 
-> Srikar, I am still reading this series, need more time to read this
-> patch, but:
+Axel Lin (10):
+  ASoC: wm8510: Convert to snd_soc_cache_sync
+  ASoC: wm8711: Convert to snd_soc_cache_sync
+  ASoC: wm8731: Convert to snd_soc_cache_sync
+  ASoC: wm8750: Convert to snd_soc_cache_sync
+  ASoC: wm8776: Convert to snd_soc_cache_sync
+  ASoC: wm8940: Convert to snd_soc_cache_sync
+  ASoC: wm8960: Convert to snd_soc_cache_sync
+  ASoC: wm8971: Convert to snd_soc_cache_sync
+  ASoC: wm8974: Convert to snd_soc_cache_sync
+  ASoC: wm8988: Convert to snd_soc_cache_sync
 
-Okay, 
-
-> 
-> On 09/27, Srikar Dronamraju wrote:
-> >
-> > I did a rethink and implemented this patch a little differently using
-> > block_all_signals, unblock_all_signals. This wouldnt need the
-> > #ifdeffery + no changes in kernel/signal.c
-> 
-> No, Please don't. block_all_signals() must be killed. This interface
-> simply do not work. At all. It is buggy as hell. I guess I should ping
-> David Airlie again.
-> 
-
-I could use sigprocmask instead of block_all_signals.
-
-The patch (that I sent out as part of v5 patchset) uses per task
-pending sigqueue and start queueing the signals when the task
-singlesteps. After completion of singlestep, walks thro the pending
-signals.
-
-But I was thinking if I should block signals instead of queueing them in
-a different sigqueue. So Idea is to block signals just before the task
-enables singlestep and unblock after task disables singlestep.
-
-Instead of using block_all_signals, I could use sigprocmask to achieve
-the same.
-
-Which approach do you suggest or do you have any other approach to look
-at?
+ sound/soc/codecs/wm8510.c |   30 ++++++++++++++++++----------
+ sound/soc/codecs/wm8711.c |   19 +++++++----------
+ sound/soc/codecs/wm8731.c |   29 ++++++++++++++++-----------
+ sound/soc/codecs/wm8750.c |   32 +++++++++++++++++-------------
+ sound/soc/codecs/wm8776.c |   33 ++++++++++++++++++-------------
+ sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
+ sound/soc/codecs/wm8960.c |   37 +++++++++++++++++++++++++----------
+ sound/soc/codecs/wm8971.c |   32 +++++++++++++++++++-----------
+ sound/soc/codecs/wm8974.c |   29 +++++++++++++++++----------
+ sound/soc/codecs/wm8988.c |   32 +++++++++++++++++-------------
+ 10 files changed, 185 insertions(+), 134 deletions(-)
 
 -- 
-Thanks and Regards
-Srikar
+1.7.4.1
+
 
 
