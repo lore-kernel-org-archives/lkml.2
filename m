@@ -1,146 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935793Ab1JFKTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 06:19:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42656 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935385Ab1JFKTj (ORCPT
+	id S1758221Ab1JFKWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 06:22:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36181 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757131Ab1JFKWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 06:19:39 -0400
-Date: Thu, 6 Oct 2011 04:19:35 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] gpio: langwell: ensure alternate function is cleared
-Message-ID: <20111006101935.GN3009@ponder.secretlab.ca>
-References: <1317641767-2942-1-git-send-email-adrian.hunter@intel.com>
- <20111004183710.GG2870@ponder.secretlab.ca>
- <4E8C0CA7.2020907@intel.com>
- <CACxGe6tJJiX55r9z_Pvn4DMsPRyBK0qfeedNikBjVN3JHSo=+A@mail.gmail.com>
- <4E8D4CA1.6040203@intel.com>
+	Thu, 6 Oct 2011 06:22:23 -0400
+Date: Thu, 6 Oct 2011 12:22:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Adrian Bunk <bunk@stusta.de>
+cc: "Ted Ts'o" <tytso@mit.edu>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+In-Reply-To: <20111006080425.GB25753@localhost.pp.htv.fi>
+Message-ID: <alpine.LFD.2.02.1110061214290.18778@ionos>
+References: <20111003093239.GB25136@localhost.pp.htv.fi> <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi> <34045.1317760188@turing-police.cc.vt.edu> <20111004223932.GA3460@localhost.pp.htv.fi> <20111004231730.GB17089@redhat.com>
+ <20111005075438.GA29441@localhost.pp.htv.fi> <20111005170616.GD4297@thunk.org> <20111005192349.GA14406@localhost.pp.htv.fi> <alpine.LFD.2.02.1110060101130.18778@ionos> <20111006080425.GB25753@localhost.pp.htv.fi>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8D4CA1.6040203@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 09:37:21AM +0300, Adrian Hunter wrote:
-> On 05/10/11 19:58, Grant Likely wrote:
-> >On Wed, Oct 5, 2011 at 1:52 AM, Adrian Hunter<adrian.hunter@intel.com>  wrote:
-> >>On 04/10/11 21:37, Grant Likely wrote:
-> >>>
-> >>>On Mon, Oct 03, 2011 at 02:36:07PM +0300, Adrian Hunter wrote:
-> >>>>+       ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg
-> >>>>* 4);
-> >>>
-> >>>This looks wrong.  It looks to me like the __iomem annotation should
-> >>>be added to ->reg_base.
-> >>>
-> >>>Otherwise, the patch looks okay.
-> >>>
-> >>
-> >>Deserves a separate patch...
-> >
-> >What order do they get applied in?</grant-being-lazy>
+On Thu, 6 Oct 2011, Adrian Bunk wrote:
+> On Thu, Oct 06, 2011 at 01:57:24AM +0200, Thomas Gleixner wrote:
+> > Whatfor? To regain your k.org account? Can you provide a single
+> > reason why that should happen?
+> > 
+> > I can't think of one. You vanished away with a big bang and now you
+> > come back out of the blue and assume that you're a trusted person just
+> > by slapping a few signs on your key?
 > 
-> First one first ;-)
+> I would say I vanished silently after several big bangs with you and 
+> other people and some other incidents, but that's not really relevant.
+> 
+> My main reason for regaining my kernel.org account is that I heavily 
+> used my bunk@kernel.org address for kernel development (just check the 
+> kernel history), and I was still getting emails to that.
+> 
+> Assuming the @kernel.org addresses will not vanish, I need accepted 
+> credential for accessing that address.
 
-Please repost the 2nd patch properly.  The way it was copied in caused
-whitespace corruption and forces me to manually apply the patch.  It
-adds a lot of extra work if I cannot use "git am" to apply from my
-inbox.
+You seem to believe that the fact that you had a @k.org address is
+enough of a reason that it will be restored?
+
+> > As your idea of trust seems to be based on an ID card you better find
+> > some other place with people who are stupid enough to believe that
+> > technical measures can replace deep personal trust.
+> 
+> We are talking about the technical requirements for regaining an 
+> account I was trusted to have before.
+
+As you might have noticed, the rules under which those accounts are
+given out have been changed and the change is not only a question of
+providing a signed gpg key.
 
 Thanks,
-g.
 
-> 
-> i.e.
-> 
-> gpio: langwell: ensure alternate function is cleared
-> gpio: langwell: declare reg_base as __iomem
-> 
-> Since the absence of __iomem was present before the original
-> patch, there is no advantage to having the second one first,
-> but the original patch would need to be changed as well.
-> 
-> >
-> >>
-> >>From: Adrian Hunter<adrian.hunter@intel.com>
-> >>Date: Wed, 5 Oct 2011 10:29:27 +0300
-> >>Subject: [PATCH] gpio: langwell: declare reg_base as __iomem
-> >>
-> >>reg_base is __iomem so add that to the declaration
-> >>and fix up assignment casts and types.
-> >>
-> >>Signed-off-by: Adrian Hunter<adrian.hunter@intel.com>
-> >>---
-> >>  drivers/gpio/gpio-langwell.c |   12 ++++++------
-> >>  1 files changed, 6 insertions(+), 6 deletions(-)
-> >>
-> >>diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-> >>index 00692e8..b7465e5 100644
-> >>--- a/drivers/gpio/gpio-langwell.c
-> >>+++ b/drivers/gpio/gpio-langwell.c
-> >>@@ -64,7 +64,7 @@ enum GPIO_REG {
-> >>
-> >>  struct lnw_gpio {
-> >>        struct gpio_chip                chip;
-> >>-       void                            *reg_base;
-> >>+       void __iomem                    *reg_base;
-> >>        spinlock_t                      lock;
-> >>        unsigned                        irq_base;
-> >>        struct pci_dev                  *pdev;
-> >>@@ -78,7 +78,7 @@ static void __iomem *gpio_reg(struct gpio_chip *chip,
-> >>unsigned offset,
-> >>        u8 reg = offset / 32;
-> >>        void __iomem *ptr;
-> >>
-> >>-       ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg *
-> >>4);
-> >>+       ptr = lnw->reg_base + reg_type * nreg * 4 + reg * 4;
-> >>        return ptr;
-> >>  }
-> >>
-> >>@@ -90,7 +90,7 @@ static void __iomem *gpio_reg_2bit(struct gpio_chip *chip,
-> >>unsigned offset,
-> >>        u8 reg = offset / 16;
-> >>        void __iomem *ptr;
-> >>
-> >>-       ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg *
-> >>4);
-> >>+       ptr = lnw->reg_base + reg_type * nreg * 4 + reg * 4;
-> >>        return ptr;
-> >>  }
-> >>
-> >>@@ -299,7 +299,7 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
-> >>  static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
-> >>                        const struct pci_device_id *id)
-> >>  {
-> >>-       void *base;
-> >>+       void __iomem *base;
-> >>        int i;
-> >>        resource_size_t start, len;
-> >>        struct lnw_gpio *lnw;
-> >>@@ -324,8 +324,8 @@ static int __devinit lnw_gpio_probe(struct pci_dev
-> >>*pdev,
-> >>                dev_err(&pdev->dev, "error mapping bar1\n");
-> >>                goto err3;
-> >>        }
-> >>-       irq_base = *(u32 *)base;
-> >>-       gpio_base = *((u32 *)base + 1);
-> >>+       irq_base = *(__force u32 *)base;
-> >>+       gpio_base = *((__force u32 *)base + 1);
-> >>        /* release the IO mapping, since we already get the info from bar1 */
-> >>        iounmap(base);
-> >>        /* get the register base from bar0 */
-> >>--
-> >>1.7.6
-> >>
-> >>
-> >
-> >
-> >
-> 
+	tglx
