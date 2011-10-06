@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965333Ab1JFWEC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:04:02 -0400
-Received: from smtp207.alice.it ([82.57.200.103]:38528 "EHLO smtp207.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965307Ab1JFWEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:04:00 -0400
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Antonio Ospite <ospite@studenti.unina.it>,
-        Johannes Berg <johannes.berg@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] leds: turn the blink_timer off before starting to blink
-Date: Fri,  7 Oct 2011 00:03:31 +0200
-Message-Id: <1317938611-4418-3-git-send-email-ospite@studenti.unina.it>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <1317938611-4418-1-git-send-email-ospite@studenti.unina.it>
-References: <1317938611-4418-1-git-send-email-ospite@studenti.unina.it>
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S935882Ab1JFWGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 18:06:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:62784 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab1JFWGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 18:06:16 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=IBu5faARPO_BLb2dZK8A:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
+ initialized, don't nop it out
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Richard Henderson <rth@redhat.com>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        peterz@infradead.org
+Date: Thu, 06 Oct 2011 18:06:13 -0400
+In-Reply-To: <4E8E20CD.5030207@goop.org>
+References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
+	   <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
+	   <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>
+	   <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
+	   <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
+	   <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
+	  <1317925615.4729.14.camel@gandalf.stny.rr.com>
+	  <4E8DF870.6010000@redhat.com>
+	 <1317929321.4729.17.camel@gandalf.stny.rr.com> <4E8E20CD.5030207@goop.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1317938775.4729.29.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on the implementation of the hardware blinking function in
-blink_set(), the led can support hardware blinking for some values of
-delay_on and delay_off and fall-back to software blinking for some other
-values.
+On Thu, 2011-10-06 at 14:42 -0700, Jeremy Fitzhardinge wrote:
+> On 10/06/2011 12:28 PM, Steven Rostedt wrote:
+> >> (2) Always reserve 5 bytes of space, but if the distance is small enough
+> >> patch in a 2-byte jump.  That doesn't help with the icache footprint.
+> > I don't think this one is worth it.
+> 
+> I disagree.  This is what I benchmarked as having a 5% improvement.  If
+> squashing out the padding helps, then that's a separate optimisation.
 
-Turning off the blink_timer unconditionally before starting to blink 
-make sure that a sequence like:
+But it only speeds up the tracing case. The non-tracing case is a nop
+and 5bytes is 5bytes regardless.
 
-  OFF
-  hardware blinking
-  software blinking
-  hardware blinking
+Did you see a 5% speed up while tracing was happening? How did you do
+your test. I find a 5 byte compared to a 2 byte jump being negligible
+with the rest of the overhead of tracing, but I could be wrong.
 
-does not leave the software blinking timer active.
-
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
----
- drivers/leds/led-class.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index 939f24a..a7f0b29 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -266,6 +266,8 @@ void led_blink_set(struct led_classdev *led_cdev,
- 		   unsigned long *delay_on,
- 		   unsigned long *delay_off)
- {
-+	del_timer_sync(&led_cdev->blink_timer);
-+
- 	if (led_cdev->blink_set &&
- 	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
- 		led_cdev->blink_delay_on = *delay_on;
--- 
-1.7.6.3
+-- Steve
+ 
 
