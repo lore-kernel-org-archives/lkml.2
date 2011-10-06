@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab1JFTvR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:51:17 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51870 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759204Ab1JFTvP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:51:15 -0400
+	id S1759251Ab1JFTvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:51:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8660 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759181Ab1JFTvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 15:51:21 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Christophe Saout <christophe@saout.de>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [dm-devel] Block regression since 3.1-rc3
+References: <1317397918.27140.15.camel@localhost>
+	<x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
+	<1317729761.25998.4.camel@localhost>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 06 Oct 2011 15:51:00 -0400
+In-Reply-To: <1317729761.25998.4.camel@localhost> (Christophe Saout's message
+	of "Tue, 04 Oct 2011 14:02:41 +0200")
+Message-ID: <x49bottoq57.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20111006194156.GA21627@kroah.com>
-References: <1317928788.76722.YahooMailNeo@web30301.mail.mud.yahoo.com>
-	<20111006194156.GA21627@kroah.com>
-Date: Thu, 6 Oct 2011 15:51:14 -0400
-Message-ID: <CA+5PVA45jCyk0xZpkxd7dzx6v4HhkYJLFT4VrrgC5d30WAgORQ@mail.gmail.com>
-Subject: Re: acm/ttyACM0/cdc_acm does not deliver data
-From: Josh Boyer <jwboyer@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: AW <arne_woerner@yahoo.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 6, 2011 at 3:41 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, Oct 06, 2011 at 12:19:48PM -0700, AW wrote:
->> Hi!
->>
->> I made some USB devices using the CDC-ACM proposal...
->> They work fine with 2.6.38.8-35.fc15/amd64 and earlier.
->>
->> But since 2.6.40-4.fc15/amd64 it doesnt work as before...
+Christophe Saout <christophe@saout.de> writes:
+
+> Hi Jeff,
 >
-> Can you try a kernel.org release instead of a Fedora kernel?  Does this
-> work on 3.0.6?
+>> Anyway, it would help a great deal if you could retrigger the failure
+>> and provide the full failure output.  You can get that by issuing the
+>> 'dmesg' command and redirecting it to a file.
+>
+> Oh, sorry, yes, there's a line missing.
+>
+> Line 323 is this one: BUG_ON(!rq->bio || rq->bio != rq->biotail);
 
-He's tried 2.6.40.6, which is analogous to 3.0.6.  It still fails
-according to the report.
+OK, it turns out my testing was incomplete.  I only tested targets that
+had a write-through cache, so I didn't hit this problem.  It reproduces
+pretty easily with just multipath involved (no linear target on top) when
+running against the right storage.
 
-Your suggestion of using a vanilla kernel is fine, but I wouldn't
-expect different results.  We have a fairly small set of patches, none
-of which seem to jump out as impacting this.
+So, here's a patch, but I don't have a full explanation for it just yet.
+What I observed was that, on fsync, blkdev_issue_flush was called.
+Eventually, the flush request gets cloned, and blk_insert_cloned_request
+is called.  This cloned request never actually gets issued to the
+q->requst_fn (scsi_request_fn in my case).  So, it may be that there is
+no plug list for this, so the queue isn't goosed?  I'll try to come up
+with a better explanation, or Tejun may just know off the top of his
+head what's going on.
 
-josh
+So, the patch works for me, but is very much just an RFC.
+
+Cheers,
+Jeff
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 491eb30..7aa4736 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -320,7 +320,7 @@ void blk_insert_flush(struct request *rq)
+ 		return;
+ 	}
+ 
+-	BUG_ON(!rq->bio || rq->bio != rq->biotail);
++	BUG_ON(rq->bio && rq->bio != rq->biotail);
+ 
+ 	/*
+ 	 * If there's data but flush is not necessary, the request can be
+@@ -345,6 +345,12 @@ void blk_insert_flush(struct request *rq)
+ 	rq->end_io = flush_data_end_io;
+ 
+ 	blk_flush_complete_seq(rq, REQ_FSEQ_ACTIONS & ~policy, 0);
++
++	/*
++	 * A cloned empty flush needs a queue kick to make progress.
++	 */
++	if (!rq->bio)
++		blk_run_queue_async(q);
+ }
+ 
+ /**
