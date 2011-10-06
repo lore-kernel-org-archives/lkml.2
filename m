@@ -1,284 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964928Ab1JFN5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 09:57:48 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8205 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758356Ab1JFNy5 (ORCPT
+	id S964912Ab1JFOFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:05:15 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:37827
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758230Ab1JFOFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 09:54:57 -0400
-Date: Thu, 06 Oct 2011 15:54:45 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 5/9] mm: MIGRATE_CMA isolation functions added
-In-reply-to: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Message-id: <1317909290-29832-6-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.6.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+	Thu, 6 Oct 2011 10:05:12 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz9371K1432N98dKzz1202hzz8275bhz32i668h839h93fh)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LSNDR4-01-65F-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+Date: Thu, 6 Oct 2011 16:04:13 +0200
+Message-ID: <2707952.s3VYcmPHUN@chlor>
+Organization: AMD OSRC
+User-Agent: KMail/4.7.0  (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <201109282008.17722.stephan.diestelhorst@amd.com> <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+On Wednesday 28 September 2011, 14:49:56 Linus Torvalds wrote:
+> On Wed, Sep 28, 2011 at 11:08 AM, Stephan Diestelhorst
+> <stephan.diestelhorst@amd.com> wrote:
+> >
+> > I must have missed the part when this turned into the propose-the-
+> > craziest-way-that-this-still-works.contest :)
+> 
+> So doing it just with the "lock addb" probably works fine, but I have
+> to say that I personally shudder at the "surround the locked addb by
+> reads from the word, in order to approximate an atomic read of the
+> upper bits".
+> 
+> Because what you get is not really an "atomic read of the upper bits",
+> it's a "ok, we'll get the worst case of somebody modifying the upper
+> bits at the same time".
+> 
+> Which certainly should *work*, but from a conceptual standpoint, isn't
+> it just *much* nicer to say "we actually know *exactly* what the upper
+> bits were".
 
-This commit changes various functions that change pages and
-pageblocks migrate type between MIGRATE_ISOLATE and
-MIGRATE_MOVABLE in such a way as to allow to work with
-MIGRATE_CMA migrate type.
+Well, we really do NOT want atomicity here. What we really rather want
+is sequentiality: free the lock, make the update visible, and THEN
+check if someone has gone sleeping on it.
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-[m.nazarewicz: fixed incorrect handling of pages from ISOLATE page blocks]
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- include/linux/page-isolation.h |   40 +++++++++++++++++++++++++++-------------
- mm/page_alloc.c                |   31 ++++++++++++++++++++++++-------
- mm/page_isolation.c            |   17 +++++++++--------
- 3 files changed, 60 insertions(+), 28 deletions(-)
+Atomicity only conveniently enforces that the three do not happen in a
+different order (with the store becoming visible after the checking
+load).
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 9b6aa8a..003c52f 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -3,41 +3,55 @@
- 
- /*
-  * Changes migrate type in [start_pfn, end_pfn) to be MIGRATE_ISOLATE.
-- * If specified range includes migrate types other than MOVABLE,
-+ * If specified range includes migrate types other than MOVABLE or CMA,
-  * this will fail with -EBUSY.
-  *
-  * For isolating all pages in the range finally, the caller have to
-  * free all pages in the range. test_page_isolated() can be used for
-  * test it.
-  */
--extern int
--start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
-+int __start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			       unsigned migratetype);
-+
-+static inline int
-+start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	return __start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+}
-+
-+int __undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			      unsigned migratetype);
- 
- /*
-  * Changes MIGRATE_ISOLATE to MIGRATE_MOVABLE.
-  * target range is [start_pfn, end_pfn)
-  */
--extern int
--undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn);
-+static inline int
-+undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	return __undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+}
- 
- /*
-- * test all pages in [start_pfn, end_pfn)are isolated or not.
-+ * Test all pages in [start_pfn, end_pfn) are isolated or not.
-  */
--extern int
--test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
- 
- /*
-- * Internal funcs.Changes pageblock's migrate type.
-- * Please use make_pagetype_isolated()/make_pagetype_movable().
-+ * Internal functions. Changes pageblock's migrate type.
-  */
--extern int set_migratetype_isolate(struct page *page);
--extern void unset_migratetype_isolate(struct page *page);
-+int set_migratetype_isolate(struct page *page);
-+void __unset_migratetype_isolate(struct page *page, unsigned migratetype);
-+static inline void unset_migratetype_isolate(struct page *page)
-+{
-+	__unset_migratetype_isolate(page, MIGRATE_MOVABLE);
-+}
- 
- /* The below functions must be run on a range from a single zone. */
- extern unsigned long alloc_contig_freed_pages(unsigned long start,
- 					      unsigned long end, gfp_t flag);
- extern int alloc_contig_range(unsigned long start, unsigned long end,
--			      gfp_t flags);
-+			      gfp_t flags, unsigned migratetype);
- extern void free_contig_pages(unsigned long pfn, unsigned nr_pages);
- 
- /*
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6758b9a..6dd6fb5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -641,6 +641,18 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			page = list_entry(list->prev, struct page, lru);
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
-+
-+			/*
-+			 * When page is isolated in set_migratetype_isolate()
-+			 * function it's page_private is not changed since the
-+			 * function has no way of knowing if it can touch it.
-+			 * This means that when a page is on PCP list, it's
-+			 * page_private no longer matches the desired migrate
-+			 * type.
-+			 */
-+			if (get_pageblock_migratetype(page) == MIGRATE_ISOLATE)
-+				set_page_private(page, MIGRATE_ISOLATE);
-+
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, zone, 0, page_private(page));
- 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
-@@ -5733,7 +5745,7 @@ out:
- 	return ret;
- }
- 
--void unset_migratetype_isolate(struct page *page)
-+void __unset_migratetype_isolate(struct page *page, unsigned migratetype)
- {
- 	struct zone *zone;
- 	unsigned long flags;
-@@ -5741,8 +5753,8 @@ void unset_migratetype_isolate(struct page *page)
- 	spin_lock_irqsave(&zone->lock, flags);
- 	if (get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 		goto out;
--	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
--	move_freepages_block(zone, page, MIGRATE_MOVABLE);
-+	set_pageblock_migratetype(page, migratetype);
-+	move_freepages_block(zone, page, migratetype);
- out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
-@@ -5880,6 +5892,10 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * @start:	start PFN to allocate
-  * @end:	one-past-the-last PFN to allocate
-  * @flags:	flags passed to alloc_contig_freed_pages().
-+ * @migratetype:	migratetype of the underlaying pageblocks (either
-+ *			#MIGRATE_MOVABLE or #MIGRATE_CMA).  All pageblocks
-+ *			in range must have the same migratetype and it must
-+ *			be either of the two.
-  *
-  * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
-  * aligned, hovewer it's callers responsibility to guarantee that we
-@@ -5891,7 +5907,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-  * need to be freed with free_contig_pages().
-  */
- int alloc_contig_range(unsigned long start, unsigned long end,
--		       gfp_t flags)
-+		       gfp_t flags, unsigned migratetype)
- {
- 	unsigned long outer_start, outer_end;
- 	int ret;
-@@ -5919,8 +5935,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	 * them.
- 	 */
- 
--	ret = start_isolate_page_range(pfn_to_maxpage(start),
--				       pfn_to_maxpage_up(end));
-+	ret = __start_isolate_page_range(pfn_to_maxpage(start),
-+					 pfn_to_maxpage_up(end), migratetype);
- 	if (ret)
- 		goto done;
- 
-@@ -5958,7 +5974,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 
- 	ret = 0;
- done:
--	undo_isolate_page_range(pfn_to_maxpage(start), pfn_to_maxpage_up(end));
-+	__undo_isolate_page_range(pfn_to_maxpage(start), pfn_to_maxpage_up(end),
-+				  migratetype);
- 	return ret;
- }
- 
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 270a026..bcbed1d 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -23,10 +23,11 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
- }
- 
- /*
-- * start_isolate_page_range() -- make page-allocation-type of range of pages
-+ * __start_isolate_page_range() -- make page-allocation-type of range of pages
-  * to be MIGRATE_ISOLATE.
-  * @start_pfn: The lower PFN of the range to be isolated.
-  * @end_pfn: The upper PFN of the range to be isolated.
-+ * @migratetype: migrate type to set in error recovery.
-  *
-  * Making page-allocation-type to be MIGRATE_ISOLATE means free pages in
-  * the range will never be allocated. Any free pages and pages freed in the
-@@ -35,8 +36,8 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
-  * start_pfn/end_pfn must be aligned to pageblock_order.
-  * Returns 0 on success and -EBUSY if any part of range cannot be isolated.
-  */
--int
--start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+int __start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			       unsigned migratetype)
- {
- 	unsigned long pfn;
- 	unsigned long undo_pfn;
-@@ -59,7 +60,7 @@ undo:
- 	for (pfn = start_pfn;
- 	     pfn < undo_pfn;
- 	     pfn += pageblock_nr_pages)
--		unset_migratetype_isolate(pfn_to_page(pfn));
-+		__unset_migratetype_isolate(pfn_to_page(pfn), migratetype);
- 
- 	return -EBUSY;
- }
-@@ -67,8 +68,8 @@ undo:
- /*
-  * Make isolated pages available again.
-  */
--int
--undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-+int __undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-+			      unsigned migratetype)
- {
- 	unsigned long pfn;
- 	struct page *page;
-@@ -80,7 +81,7 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
- 		if (!page || get_pageblock_migratetype(page) != MIGRATE_ISOLATE)
- 			continue;
--		unset_migratetype_isolate(page);
-+		__unset_migratetype_isolate(page, migratetype);
- 	}
- 	return 0;
- }
-@@ -89,7 +90,7 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn)
-  * all pages in [start_pfn...end_pfn) must be in the same zone.
-  * zone->lock must be held before call this.
-  *
-- * Returns 1 if all pages in the range is isolated.
-+ * Returns 1 if all pages in the range are isolated.
-  */
- static int
- __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
+This does not have to be atomic, since spurious wakeups are not a
+problem, in particular not with the FIFO-ness of ticket locks.
+
+For that the fence, additional atomic etc. would be IMHO much cleaner
+than the crazy overflow logic.
+
+> But I don't care all *that* deeply. I do agree that the xaddw trick is
+> pretty tricky. I just happen to think that it's actually *less* tricky
+> than "read the upper bits separately and depend on subtle ordering
+> issues with another writer that happens at the same time on another
+> CPU".
+
+Fair enough :)
+
+Stephan
 -- 
-1.7.1.569.g6f426
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com
+Tel. +49 (0)351 448 356 719
+
+Advanced Micro Devices GmbH
+Einsteinring 24
+85609 Aschheim
+Germany
+
+Geschaeftsfuehrer: Alberto Bozzo
+Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632, WEEE-Reg-Nr: DE 12919551
+
 
