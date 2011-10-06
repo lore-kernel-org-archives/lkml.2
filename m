@@ -1,435 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab1JFMIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 08:08:39 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:35905 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643Ab1JFMIi (ORCPT
+	id S1758248Ab1JFMM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 08:12:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64400 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1JFMMz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 08:08:38 -0400
-Date: Thu, 6 Oct 2011 15:08:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-Cc: balbi@ti.com, gregkh@suse.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
-Message-ID: <20111006120830.GN1714@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+	Thu, 6 Oct 2011 08:12:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uMPAU7A2Er6+wvsD"
-Content-Disposition: inline
-In-Reply-To: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+References: <20111003090846.GA25136@localhost.pp.htv.fi>
+	<CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
+	<20111003173359.GA3072@localhost.pp.htv.fi>
+	<CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
+	<CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com>
+	<20111005223055.GG14406@localhost.pp.htv.fi>
+	<CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+	<CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+	<CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+Date: Thu, 6 Oct 2011 14:12:52 +0200
+Message-ID: <CAFLxGvyKcjUVwAoGtE5TpuyiGOVTOb=i5=UdsE4Q0QUDg9ffpA@mail.gmail.com>
+Subject: Re: [3.1 patch] x86: default to vsyscall=native
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 6, 2011 at 5:06 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Wed, Oct 5, 2011 at 4:36 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>> On Wed, Oct 5, 2011 at 3:46 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>> On Wed, Oct 5, 2011 at 3:30 PM, Adrian Bunk <bunk@stusta.de> wrote:
+>>>> On Thu, Oct 06, 2011 at 12:22:34AM +0200, richard -rw- weinberger wrote:
+>>>>> On Thu, Oct 6, 2011 at 12:13 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>>>> > On Mon, Oct 3, 2011 at 10:33 AM, Adrian Bunk <bunk@stusta.de> wrote:
+>>>>> >> On Mon, Oct 03, 2011 at 06:04:53AM -0700, Andrew Lutomirski wrote:
+>>>>> >>> On Mon, Oct 3, 2011 at 2:08 AM, Adrian Bunk <bunk@stusta.de> wrote:
+>>>>> >>> > After upgrading a kernel the existing userspace should just work
+>>>>> >>> > (assuming it did work before ;-) ), but when I upgraded my kernel
+>>>>> >>> > from 3.0.4 to 3.1.0-rc8 a UML instance didn't come up properly.
+>>>>> >>> >
+>>>>> >>> > dmesg said:
+>>>>> >>> >  linux-2.6.30.1[3800] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb9c498 ax:ffffffffff600000 si:0 di:606790
+>>>>> >>> >  linux-2.6.30.1[3856] vsyscall fault (exploit attempt?) ip:ffffffffff600000 cs:33 sp:7fbfb13168 ax:ffffffffff600000 si:0 di:606790
+>>>>> >>> >
+>>>>> >>> > Looking throught the changelog I ended up at commit 3ae36655
+>>>>> >>> > ("x86-64: Rework vsyscall emulation and add vsyscall= parameter").
+>>>>> >>> >
+>>>>> >>> > Linus suggested in https://lkml.org/lkml/2011/8/9/376 to default to
+>>>>> >>> > vsyscall=native.
+>>>>> >>> >
+>>>>> >>> > That sounds reasonable to me, and fixes the problem for me.
+>>>>> >>>
+>>>>> >>> At this point in the -rc cycle, this sounds fine.
+>>>>> >>>
+>>>>> >>> That being said, I'd like to fix it for real for 3.2.  This particular
+>>>>> >>> failure is suspicious -- the "vsyscall fault" message means that
+>>>>> >>> sys_gettimeofday returned EFAULT, which means that the old (3.0 and
+>>>>> >>> before) vgettimeofday should *also* have segfaulted.
+>>>>> >>
+>>>>> >> This 2.6.30.1 UML kernel binary from 2009 worked for me for all host
+>>>>> >> kernels from 2.6.30 to 3.0, and with 3.1.0-rc8 and vsyscall=native
+>>>>> >> it also seems to run nicely.
+>>>>> >>
+>>>>> >> Looking deeper into "a UML instance didn't come up properly",
+>>>>> >> the problem is that it comes up in a strange (readonly) state.
+>>>>> >>
+>>>>> >> There are "Using makefile-style concurrent boot in runlevel S."
+>>>>> >> and "Using makefile-style concurrent boot in runlevel 2." in the
+>>>>> >> logs with a Debian userspace, but no output from the init scripts
+>>>>> >> in these broken bootups (normal messages are in non-broken bootups).
+>>>>> >>
+>>>>> >> Perhaps the two the messages I see in dmesg on the host are from the
+>>>>> >> processes running rcS and rc2 failing early?
+>>>>> >>
+>>>>> >> In a working startup with a Debian userspace, I'm getting during rcS
+>>>>> >>  Setting the system clock.
+>>>>> >>  Cannot access the Hardware Clock via any known method.
+>>>>> >>  Use the --debug option to see the details of our search for an access method.
+>>>>> >>  Unable to set System Clock to: Mon Oct 3 17:01:35 UTC 2011 ... (warning).
+>>>>> >>
+>>>>> >>> We do have a bit
+>>>>> >>> of a bug in that the new code doesn't report si_addr properly, but
+>>>>> >>> that sounds unlikely as a culprit.  Did you try with the offending
+>>>>> >>> commit reverted (i.e. fce8dc0)?  I bet that it also fails there.
+>>>>> >>
+>>>>> >> fce8dc0 is "x86-64: Wire up getcpu syscall", is that really the one you
+>>>>> >> want me to revert?
+>>>>> >>
+>>>>> >>> What's the .config for your UML binary?  I'd like to see if I can
+>>>>> >>> reproduce this.
+>>>>> >>
+>>>>> >> It's attached.
+>>>>> >>
+>>>>> >
+>>>>> > I can't reproduce it.  What distro is running inside the UML instance?
+>>>>>
+>>>>> Same here.
+>>>>> Adrian, is the UML kernel crashing before executing init?
+>>>>
+>>>> As I wrote:
+>>>>  Looking deeper into "a UML instance didn't come up properly",
+>>>>  the problem is that it comes up in a strange (readonly) state.
+>>>>
+>>>> The UML kernel is running happily without crashing, and as I wrote my
+>>>> guess about my problems is:
+>>>>  Perhaps the two the messages I see in dmesg on the host are from the
+>>>>  processes running rcS and rc2 failing early?
+>>>>
+>>>>> We definitely need more information...
+>>>>
+>>>> I gave the information that was requested. plus my observations.
+>>>>
+>>>> What more information exactly do you need from me?
+>>>
+>>> None :)  I just reproduced the problem with Debian Squeeze.  Lenny works fine.
+>>
+>> This is strange.  The problem appears to be in startpar.  That same
+>> exact Debian image works fine on KVM running 3.1-rc8 (with
+>> vsyscall=emulate) and on 2.6.40 (i.e. Fedora 15's kernel).  If I set
+>> print-fatal-signals=1 I don't see a fatal signal in startpar.
+>>
+>> Richard, is it possible that UML 2.6.30.1 generates a bogus
+>> vgettimeofday and recovers successfully on older kernels because the
+>> resulting SIGSEGV had a valid sigcontext?  I can try hacking the
+>> "vsyscall fault" path to generate full sigcontext and info.  This
+>> seems rather unlikely, though.
+>
+> I think that is the problem.  UML appears to lazily set up "page
+> tables" just like a real machine; it does this by handling SIGSEGV and
+> calling handle_mm_fault.  If cr2 isn't set right, though, it doesn't
+> know where the fault was and it can't handle it, so it just sends
+> SIGSEGV to userspace.
+>
+> In 3.0 and earlier, we don't crash but we malfunction differently: UML
+> doesn't intercept the vsyscall at all and the guest sees the hosts's
+> time.  This should be fixed in a newer version of UML.
 
---uMPAU7A2Er6+wvsD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+How can we intercept a vsyscall?
+It's not trivial.
 
-Hi,
+Starting with Linux 3.1 UML (x86_64) has a vDSO page which transforms
+all vDSO calls
+to real system calls which can be intercepted.
+So, only statically linked binaries will use the host's vsyscall interface.
 
-a few style issues below.
+> In vsyscall=native mode, we DTRT because UML handles the syscall itself.
+>
+> I'll see how ugly the patch to get this all correct is.  It may not be
+> all that pretty because we won't be able to use sys_gettimeofday
+> anymore.
+>
 
-On Thu, Sep 08, 2011 at 08:24:47PM +0200, Klaus Schwarzkopf wrote:
-> This driver provides two functions in one configuration:
-> a mass storage, and a CDC ACM (serial port) link.
-> Heavily based on multi.c and cdc2.c
->=20
-> Signed-off-by: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-> ---
->  drivers/usb/gadget/Kconfig  |   10 ++
->  drivers/usb/gadget/Makefile |    2 +
->  drivers/usb/gadget/acm_ms.c |  269 +++++++++++++++++++++++++++++++++++++=
-++++++
->  include/linux/usb/gadget.h  |    1 +
->  4 files changed, 282 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/usb/gadget/acm_ms.c
->=20
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index 029e288..2592ba7 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -959,6 +959,16 @@ config USB_G_NOKIA
->  	  It's only really useful for N900 hardware. If you're building
->  	  a kernel for N900, say Y or M here. If unsure, say N.
-> =20
-> +config USB_G_ACM_MS
-> +	tristate "CDC Composite Device (ACM and mass storage)"
-> +	depends on BLOCK
-> +	help
-> +	  This driver provides two functions in one configuration:
-> +	  a mass storage, and a CDC ACM (serial port) link.
-> +
-> +	  Say "y" to link the driver statically, or "m" to build a
-> +	  dynamically linked module called "g_acm_ms".
-> +
->  config USB_G_MULTI
->  	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
->  	depends on BLOCK && NET
-> diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-> index 4fe92b1..3876d8c 100644
-> --- a/drivers/usb/gadget/Makefile
-> +++ b/drivers/usb/gadget/Makefile
-> @@ -49,6 +49,7 @@ g_dbgp-y			:=3D dbgp.o
->  g_nokia-y			:=3D nokia.o
->  g_webcam-y			:=3D webcam.o
->  g_ncm-y				:=3D ncm.o
-> +g_acm_ms-y			:=3D acm_ms.o
-> =20
->  obj-$(CONFIG_USB_ZERO)		+=3D g_zero.o
->  obj-$(CONFIG_USB_AUDIO)		+=3D g_audio.o
-> @@ -67,3 +68,4 @@ obj-$(CONFIG_USB_G_MULTI)	+=3D g_multi.o
->  obj-$(CONFIG_USB_G_NOKIA)	+=3D g_nokia.o
->  obj-$(CONFIG_USB_G_WEBCAM)	+=3D g_webcam.o
->  obj-$(CONFIG_USB_G_NCM)		+=3D g_ncm.o
-> +obj-$(CONFIG_USB_G_ACM_MS)	+=3D g_acm_ms.o
-> diff --git a/drivers/usb/gadget/acm_ms.c b/drivers/usb/gadget/acm_ms.c
-> new file mode 100644
-> index 0000000..64d0f79
-> --- /dev/null
-> +++ b/drivers/usb/gadget/acm_ms.c
-> @@ -0,0 +1,269 @@
-> +/*
-> + * cdc2.c -- CDC Composite driver, with ACM and mass storage support
-> + *
-> + * Copyright (C) 2008 David Brownell
-> + * Copyright (C) 2008 Nokia Corporation
-> + * Author: David Brownell
-> + * Modified: Klaus Schwarzkopf
-> + *
-> + * Heavily based on multi.c and cdc2.c
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 =
- USA
+vsyscall=emulate would be okay for UML if the SEGV has a valid signal context.
 
-this paragraph is useless.
-
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/utsname.h>
-> +
-> +#include "u_serial.h"
-> +
-> +
-
-one blank line only.
-
-> +#define DRIVER_DESC		"CDC Composite Gadget (ACM + MS)"
-> +#define DRIVER_VERSION		"2011/09/08"
-> +
-> +/*----------------------------------------------------------------------=
----*/
-> +
-> +/* DO NOT REUSE THESE IDs with a protocol-incompatible driver!!  Ever!!
-> + * Instead:  allocate your own, using normal USB-IF procedures.
-> + */
-
-wrong comment style.
-
-> +#define CDC_VENDOR_NUM	0x1d6b	/* Linux Foundation */
-> +#define CDC_PRODUCT_NUM	0x0106	/* CDC Composite: ACM + MS*/
-
-did you ask Greg for this ?
-
-> +/*----------------------------------------------------------------------=
----*/
-> +
-> +/*
-> + * Kbuild is not very cooperative with respect to linking separately
-> + * compiled library objects into one module.  So for now we won't use
-> + * separate compilation ... ensuring init/exit sections work to shrink
-> + * the runtime footprint, and giving us at least some parts of what
-> + * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
-> + */
-> +
-> +#include "composite.c"
-> +#include "usbstring.c"
-> +#include "config.c"
-> +#include "epautoconf.c"
-> +#include "u_serial.c"
-> +#include "f_acm.c"
-> +#include "f_mass_storage.c"
-> +
-> +/*----------------------------------------------------------------------=
----*/
-> +
-> +static struct usb_device_descriptor device_desc =3D {
-> +	.bLength =3D		sizeof device_desc,
-> +	.bDescriptorType =3D	USB_DT_DEVICE,
-> +
-> +	.bcdUSB =3D		cpu_to_le16(0x0200),
-> +
-> +	.bDeviceClass =3D		USB_CLASS_COMM,
-> +	.bDeviceSubClass =3D	0,
-> +	.bDeviceProtocol =3D	0,
-> +	/* .bMaxPacketSize0 =3D f(hardware) */
-> +
-> +	/* Vendor and product id can be overridden by module parameters.  */
-> +	.idVendor =3D		cpu_to_le16(CDC_VENDOR_NUM),
-> +	.idProduct =3D		cpu_to_le16(CDC_PRODUCT_NUM),
-> +	/* .bcdDevice =3D f(hardware) */
-> +	/* .iManufacturer =3D DYNAMIC */
-> +	/* .iProduct =3D DYNAMIC */
-> +	/* NO SERIAL NUMBER */
-
-why not ? If someone wants to make a product out of this, they will need
-a serial number.
-
-> +	.bNumConfigurations =3D	1,
-> +};
-> +
-> +static struct usb_otg_descriptor otg_descriptor =3D {
-> +	.bLength =3D		sizeof otg_descriptor,
-> +	.bDescriptorType =3D	USB_DT_OTG,
-> +
-> +	/* REVISIT SRP-only hardware is possible, although
-> +	 * it would not be called "OTG" ...
-> +	 */
-
-comment style is wrong.
-
-> +	.bmAttributes =3D		USB_OTG_SRP | USB_OTG_HNP,
-> +};
-> +
-> +static const struct usb_descriptor_header *otg_desc[] =3D {
-> +	(struct usb_descriptor_header *) &otg_descriptor,
-> +	NULL,
-> +};
-> +
-> +
-> +/* string IDs are assigned dynamically */
-> +
-> +#define STRING_MANUFACTURER_IDX		0
-> +#define STRING_PRODUCT_IDX		1
-> +
-> +static char manufacturer[50];
-> +
-> +static struct usb_string strings_dev[] =3D {
-> +	[STRING_MANUFACTURER_IDX].s =3D manufacturer,
-> +	[STRING_PRODUCT_IDX].s =3D DRIVER_DESC,
-> +	{  } /* end of list */
-> +};
-> +
-> +static struct usb_gadget_strings stringtab_dev =3D {
-> +	.language	=3D 0x0409,	/* en-us */
-> +	.strings	=3D strings_dev,
-> +};
-> +
-> +static struct usb_gadget_strings *dev_strings[] =3D {
-> +	&stringtab_dev,
-> +	NULL,
-> +};
-> +
-> +/****************************** Configurations *************************=
-*****/
-> +
-> +static struct fsg_module_parameters fsg_mod_data =3D { .stall =3D 1 };
-> +FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
-> +
-> +static struct fsg_common fsg_common;
-> +
-> +/*----------------------------------------------------------------------=
----*/
-> +
-> +/*
-> + * We _always_ have both CDC ECM and CDC ACM functions.
-> + */
-
-comment doesn't match code.
-
-> +static int __init cdc_do_config(struct usb_configuration *c)
-> +{
-> +	int	status;
-> +
-> +	if (gadget_is_otg(c->cdev->gadget)) {
-> +		c->descriptors =3D otg_desc;
-> +		c->bmAttributes |=3D USB_CONFIG_ATT_WAKEUP;
-> +	}
-> +
-> +
-> +	status =3D acm_bind_config(c, 0);
-> +	if (status < 0)
-> +		return status;
-> +
-> +	status =3D fsg_bind_config(c->cdev, c, &fsg_common);
-> +	if (status < 0)
-> +		return status;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct usb_configuration cdc_config_driver =3D {
-> +	.label			=3D DRIVER_DESC,
-> +	.bConfigurationValue	=3D 1,
-> +	/* .iConfiguration =3D DYNAMIC */
-> +	.bmAttributes		=3D USB_CONFIG_ATT_SELFPOWER,
-> +};
-> +
-> +/*----------------------------------------------------------------------=
----*/
-> +
-> +static int __init cdc_bind(struct usb_composite_dev *cdev)
-> +{
-> +	int			gcnum;
-> +	struct usb_gadget	*gadget =3D cdev->gadget;
-> +	int			status;
-> +
-> +
-> +	/* set up serial link layer */
-> +	status =3D gserial_setup(cdev->gadget, 1);
-> +	if (status < 0)
-> +		return status;
-> +
-> +	/* set up mass storage function */
-> +	{
-> +		void *retp;
-> +		retp =3D fsg_common_from_params(&fsg_common, cdev, &fsg_mod_data);
-> +		if (IS_ERR(retp)) {
-> +			status =3D PTR_ERR(retp);
-> +			goto fail0;
-> +		}
-> +	}
-
-you can define void *retp with the other local variables and remove the
-braces.
-
-> +	gcnum =3D usb_gadget_controller_number(gadget);
-> +	if (gcnum >=3D 0)
-> +		device_desc.bcdDevice =3D cpu_to_le16(0x0300 | gcnum);
-> +	else {
-> +		/* We assume that can_support_ecm() tells the truth;
-> +		 * but if the controller isn't recognized at all then
-> +		 * that assumption is a bit more likely to be wrong.
-> +		 */
-> +		WARNING(cdev, "controller '%s' not recognized; trying %s\n",
-> +				gadget->name,
-> +				cdc_config_driver.label);
-> +		device_desc.bcdDevice =3D
-> +			cpu_to_le16(0x0300 | 0x0099);
-> +	}
-> +
-> +
-
-one blank line only. Also, put braces on both branches.
-
-> +	/* Allocate string descriptor numbers ... note that string
-> +	 * contents can be overridden by the composite_dev glue.
-> +	 */
-
-wrong comment style
-
-> +
-> +	/* device descriptor strings: manufacturer, product */
-> +	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
-> +		init_utsname()->sysname, init_utsname()->release,
-> +		gadget->name);
-> +	status =3D usb_string_id(cdev);
-> +	if (status < 0)
-> +		goto fail1;
-> +	strings_dev[STRING_MANUFACTURER_IDX].id =3D status;
-> +	device_desc.iManufacturer =3D status;
-> +
-> +	status =3D usb_string_id(cdev);
-> +	if (status < 0)
-> +		goto fail1;
-> +	strings_dev[STRING_PRODUCT_IDX].id =3D status;
-> +	device_desc.iProduct =3D status;
-> +
-> +	/* register our configuration */
-> +	status =3D usb_add_config(cdev, &cdc_config_driver, cdc_do_config);
-> +	if (status < 0)
-> +		goto fail1;
-> +
-> +	dev_info(&gadget->dev, "%s, version: " DRIVER_VERSION "\n",
-> +			DRIVER_DESC);
-> +	fsg_common_put(&fsg_common);
-> +	return 0;
-> +
-> +	/* error recovery */
-> +fail1:
-> +	fsg_common_put(&fsg_common);
-> +fail0:
-> +	gserial_cleanup();
-> +	return status;
-> +}
-> +
-> +static int __exit cdc_unbind(struct usb_composite_dev *cdev)
-> +{
-> +	gserial_cleanup();
-> +
-> +	return 0;
-> +}
-> +
-> +static struct usb_composite_driver cdc_driver =3D {
-> +	.name		=3D "g_acm_ms",
-> +	.dev		=3D &device_desc,
-> +	.strings	=3D dev_strings,
-> +	.unbind		=3D __exit_p(cdc_unbind),
-> +};
-> +
-> +MODULE_DESCRIPTION(DRIVER_DESC);
-> +MODULE_AUTHOR("Klaus Schwarzkopf");
-> +MODULE_LICENSE("GPL");
-> +
-> +static int __init init(void)
-> +{
-> +	return usb_composite_probe(&cdc_driver, cdc_bind);
-> +}
-> +module_init(init);
-> +
-> +static void __exit cleanup(void)
-> +{
-> +	usb_composite_unregister(&cdc_driver);
-> +}
-> +module_exit(cleanup);
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index dd1571d..f623f3d 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -15,6 +15,7 @@
->  #ifndef __LINUX_USB_GADGET_H
->  #define __LINUX_USB_GADGET_H
-> =20
-> +#include <linux/device.h>
-
-this is not part of $SUBJECT
-
---=20
-balbi
-
---uMPAU7A2Er6+wvsD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOjZo+AAoJEAv8Txj19kN1ESUH/jiMjumGOMq7DaZ9vc2WxJyE
-o0C7v2b+yXNPnCxt3SdSmp0ecGpcPF6E62bH5mBjDP3Yulu/01zto1NtDw7mQUAI
-2tiiBDyl4t4IQA2PqjZwYM6M5o4anMkJBm7Dcgd6la/yWD4F+qB83vKpun/g1ncV
-IOJWaOFRanphJvMjlAzauqaAfA3BR3Z5ScVyJEqE/WZ2RiaEdnTlm9cf9hjY/wNk
-RPvNqu8uALO9jk1K1+IfhC0IgmqHOCGco0lIfPUqI95RpTRteBH0JlH47sSzIRMK
-AsyUcLYTLPJVnNzyBHr6TLMAgY1CAbs2xATiwWnmOsC8X8eNpbCtTyY4UVS1xz8=
-=FEnK
------END PGP SIGNATURE-----
-
---uMPAU7A2Er6+wvsD--
+-- 
+Thanks,
+//richard
