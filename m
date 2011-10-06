@@ -1,54 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935839Ab1JFLdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:33:52 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39851 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLdv convert rfc822-to-8bit (ORCPT
+	id S935844Ab1JFLgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:36:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42227 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935288Ab1JFLgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:33:51 -0400
+	Thu, 6 Oct 2011 07:36:22 -0400
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <4E8D90E9.5060208@cam.ac.uk>
-References: <1317881417.13399.1.camel@phoenix> <1317881863.13399.10.camel@phoenix>
- <4E8D90E9.5060208@cam.ac.uk>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 6 Oct 2011 19:33:29 +0800
-Message-ID: <CAF+7xWnWaPB8JKepUoGmvpVw6W6pJPVNkXAdy9GTD2rf9QDUNQ@mail.gmail.com>
-Subject: Re: [PATCH 06/10] ASoC: wm8940: Convert to snd_soc_cache_sync
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Date: Thu, 6 Oct 2011 13:36:21 +0200
+Message-ID: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+Subject: sched: ARM: arch_scale_freq_power
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +static int wm8940_volatile_register(struct snd_soc_codec *codec,
->> +                                 unsigned int reg)
->> +{
->> +     switch (reg) {
->> +     case WM8940_SOFTRESET:
->> +             return 1;
->> +     default:
->> +             return 0;
->> +     }
->> +}
-> I guess this makes sense from point of view of keeping things inline with
-> more complex drivers.  Otherwise I'd expect to see something like:
-> {
->        return !!(reg == WM894_SOFTRESET);
-> }
-
-Either is ok to me.
-But current syntax makes it easier to add more registers to be volatile
-if necessary.
-
-So I'll let Mark decide if I need to send a v2 for changing this.
+I work to link the cpu_power of ARM cores to their frequency by using
+arch_scale_freq_power. It's explained in the kernel that cpu_power is
+used to distribute load on cpus and a cpu with more cpu_power will
+pick up more load. The default value is SCHED_POWER_SCALE and I
+increase the value if I want a cpu to have more load than another one.
+Is there an advised range for cpu_power value as well as some time
+scale constraints for updating the cpu_power value ?
+I'm also wondering why this scheduler feature is currently disable by default ?
 
 Regards,
-Axel
+Vincent
