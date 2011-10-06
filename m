@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935805Ab1JFLGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 07:06:51 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:40494 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935288Ab1JFLGv (ORCPT
+	id S935799Ab1JFLKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 07:10:50 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:47635 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935288Ab1JFLKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 07:06:51 -0400
-Date: Thu, 6 Oct 2011 12:55:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL] RAS update
-Message-ID: <20111006105535.GA6007@elte.hu>
-References: <20110930102034.GB22622@aftab>
+	Thu, 6 Oct 2011 07:10:49 -0400
+Date: Thu, 6 Oct 2011 14:10:42 +0300
+From: Adrian Bunk <bunk@stusta.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Ted Ts'o" <tytso@mit.edu>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Valdis.Kletnieks@vt.edu, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+Message-ID: <20111006111042.GA29126@localhost.pp.htv.fi>
+References: <20111003180441.GD3072@localhost.pp.htv.fi>
+ <34045.1317760188@turing-police.cc.vt.edu>
+ <20111004223932.GA3460@localhost.pp.htv.fi>
+ <20111004231730.GB17089@redhat.com>
+ <20111005075438.GA29441@localhost.pp.htv.fi>
+ <20111005170616.GD4297@thunk.org>
+ <20111005192349.GA14406@localhost.pp.htv.fi>
+ <alpine.LFD.2.02.1110060101130.18778@ionos>
+ <20111006080425.GB25753@localhost.pp.htv.fi>
+ <alpine.LFD.2.02.1110061214290.18778@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110930102034.GB22622@aftab>
+In-Reply-To: <alpine.LFD.2.02.1110061214290.18778@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.9
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 06, 2011 at 12:22:01PM +0200, Thomas Gleixner wrote:
+> On Thu, 6 Oct 2011, Adrian Bunk wrote:
+> > On Thu, Oct 06, 2011 at 01:57:24AM +0200, Thomas Gleixner wrote:
+> > > Whatfor? To regain your k.org account? Can you provide a single
+> > > reason why that should happen?
+> > > 
+> > > I can't think of one. You vanished away with a big bang and now you
+> > > come back out of the blue and assume that you're a trusted person just
+> > > by slapping a few signs on your key?
+> > 
+> > I would say I vanished silently after several big bangs with you and 
+> > other people and some other incidents, but that's not really relevant.
+> > 
+> > My main reason for regaining my kernel.org account is that I heavily 
+> > used my bunk@kernel.org address for kernel development (just check the 
+> > kernel history), and I was still getting emails to that.
+> > 
+> > Assuming the @kernel.org addresses will not vanish, I need accepted 
+> > credential for accessing that address.
+> 
+> You seem to believe that the fact that you had a @k.org address is
+> enough of a reason that it will be restored?
 
-* Borislav Petkov <bp@amd64.org> wrote:
+I used it as the permanent address for kernel work, and there are 1011
+"Signed-off-by: Adrian Bunk <bunk@kernel.org>" lines in the kernel log.
 
-> Hi Ingo,
-> 
-> please pull from the branch below to receive one fix which
-> causes a very nasty warning on _all_ CPUs when fiddling with
-> MCE poller interval. Since it is not that important, I'm fine
-> with it going in during the merge window. Top commit here is
-> 9aaef96f61d93062556d34e15731f7d5869dd82e.
-> 
-> Thanks.
-> 
-> The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
-> 
->   Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
-> 
-> are available in the git repository at:
->   git://amd64.org/linux/bp.git ras
-> 
-> Hidetoshi Seto (1):
->       x86, mce: Do not call del_timer_sync() in IRQ context
-> 
->  arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
->  1 files changed, 14 insertions(+), 6 deletions(-)
+If anyone wants to contact me regarding anything I did in the kernel 
+that is the address.
 
-Pulled, thanks a lot Joerg!
+I did not use it for any non-kernel stuff, and will not use it for that 
+in the future.
 
-	Ingo
+You were asking for a single reason why I want to regain my kernel.org 
+account, and this is the reason.
+
+>...
+> Thanks,
+> 
+> 	tglx
+
+cu
+Adrian
+
+-- 
+
+       "Is there not promise of rain?" Ling Tan asked suddenly out
+        of the darkness. There had been need of rain for many days.
+       "Only a promise," Lao Er said.
+                                       Pearl S. Buck - Dragon Seed
+
