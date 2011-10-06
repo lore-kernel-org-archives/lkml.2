@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758841Ab1JFT2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 15:28:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37560 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab1JFT2m (ORCPT
+	id S1759126Ab1JFT2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 15:28:50 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51274 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab1JFT2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 15:28:42 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=msyzJTVhAHgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=AH-lfbgdtNEcOgX23IsA:9 a=vJcPFCk81GmUwGN446QA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH RFC V2 3/5] jump_label: if a key has already been
- initialized, don't nop it out
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Richard Henderson <rth@redhat.com>
-Cc: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Date: Thu, 06 Oct 2011 15:28:39 -0400
-In-Reply-To: <4E8DF870.6010000@redhat.com>
-References: <cover.1317506051.git.jeremy.fitzhardinge@citrix.com>
-	  <477dead9647029012f93c651f2892ed0e86b89e7.1317506051.git.jeremy.fitzhardinge@citrix.com>
-	  <20111003150205.GB2462@redhat.com> <4E89E28C.7010700@goop.org>
-	  <20111004141011.GA2520@redhat.com> <4E8B3489.60902@zytor.com>
-	  <4E8CF348.4080405@goop.org> <4E8CF385.2080804@zytor.com>
-	  <4E8DEB19.1050509@goop.org> <20111006181055.GA2505@redhat.com>
-	 <1317925615.4729.14.camel@gandalf.stny.rr.com>
-	 <4E8DF870.6010000@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317929321.4729.17.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
+	Thu, 6 Oct 2011 15:28:48 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dave@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com,
+        brking@linux.vnet.ibm.com, ngupta@vflare.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH] staging: zcache: fix crash on cpu remove
+Date: Thu,  6 Oct 2011 14:28:26 -0500
+Message-Id: <1317929306-18471-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 11:50 -0700, Richard Henderson wrote:
-> On 10/06/2011 11:26 AM, Steven Rostedt wrote:
->  
-> > 
-> > That jmp to l_yes should easily be a two byte jump.
-> 
-> Until the compiler decides to re-order the code.  That's the problem --
-> in the general case you do not know how far away the destination is really
-> going to be.
+In the case that a cpu is taken offline before zcache_do_preload() is
+ever called on the cpu, the per-cpu zcache_preloads structure will
+be uninitialized.  In the CPU_DEAD case for zcache_cpu_notifier(),
+kp->obj is not checked before calling kmem_cache_free() on it.
+If it is NULL, a crash results.
 
-Yeah, I was discussing this with Peter Zijlstra on IRC.
+This patch ensures that both kp->obj and kp->page are not NULL before
+calling the respective free functions. In practice, just checking
+one or the other should be sufficient since they are assigned together
+in zcache_do_preload(), but I check both for safety.
 
-> 
-> There are a couple of possibilities for improvement:
-> 
-> (1) Do as Jason suggests above and let the assembler figure out the size
-> of the branch that is needed.  Without adding more data to __jump_table,
-> you'll want to be extremely careful about checking the two pointers to 
-> see what size branch has been installed.
+Based on v3.1-rc8
 
-Yeah, that could be done at patch time.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-
-> 
-> (2) Always reserve 5 bytes of space, but if the distance is small enough
-> patch in a 2-byte jump.  That doesn't help with the icache footprint.
-
-I don't think this one is worth it.
-
--- Steve
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 462fbc2..41d1ba1 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1357,8 +1357,14 @@ static int zcache_cpu_notifier(struct notifier_block *nb,
+ 			kp->objnodes[kp->nr - 1] = NULL;
+ 			kp->nr--;
+ 		}
+-		kmem_cache_free(zcache_obj_cache, kp->obj);
+-		free_page((unsigned long)kp->page);
++		if (kp->obj) {
++			kmem_cache_free(zcache_obj_cache, kp->obj);
++			kp->obj = NULL;
++		}
++		if (kp->page) {
++			free_page((unsigned long)kp->page);
++			kp->page = NULL;
++		}
+ 		break;
+ 	default:
+ 		break;
+-- 
+1.7.4.1
 
