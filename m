@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab1JFWY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:24:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44834 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab1JFWYZ (ORCPT
+	id S1759345Ab1JFWaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 18:30:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63924 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1JFWaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:24:25 -0400
-From: Alex Ben <aleben358@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <Mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Alex Ben <aleben358@gmail.com>
-Subject: [PATCH] x86: Removed superfluous parentheses in macro defs
-Date: Fri,  7 Oct 2011 09:22:04 +1100
-Message-Id: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 6 Oct 2011 18:30:21 -0400
+MIME-Version: 1.0
+Date: Thu, 6 Oct 2011 15:30:19 -0700
+Message-ID: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
+Subject: MODULE_LICENSE("GPL") not working for me
+From: Stephen Williams <steveicarus@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=000e0ce0f5989b680d04aea8de99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) make it consistent with other constant macro deinitions, which
-don't have parentheses, as they are really superfluous.
+--000e0ce0f5989b680d04aea8de99
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-2) the extra parentheses on the 5th line of #define GDT_ENTRY is
-superfluous, as there is no bit shifting on that line.
----
- arch/x86/include/asm/segment.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I have some large drivers for use in embedded arm systems, and
+I want them to be GPL, because I want to use some symbols exported
+as GPL, and also because I just wanna. But it is not working for
+me. I've attached my Makefile. I'm building from outside the kernel
+tree, but that should be OK. (right?) I'm using the following script to
+actually build:
 
-diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-index 5e64171..92621c1 100644
---- a/arch/x86/include/asm/segment.h
-+++ b/arch/x86/include/asm/segment.h
-@@ -10,7 +10,7 @@
-	 (((flags) & _AC(0x0000f0ff,ULL)) << 40) |	\
-	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
-	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
--	 (((limit) & _AC(0x0000ffff,ULL))))
-+	 ((limit)  & _AC(0x0000ffff,ULL)))
+SE0=3D/home/u/wing/steve/picturel/SE0
+CROSS_COMPILE=3D/opt/CodeSourcery/Sourcery_G++_Lite/bin/arm-none-linux-gnue=
+abi-
+export CROSS_COMPILE
+make KERNELDIR=3D$SE0/linux-2.6.33-quatro ARCH=3Darm modules
 
- /* Simple and small GDT entries for booting only */
+But no matter what I do, when I try to load my module, I get
+errors line this:
 
-@@ -75,7 +75,7 @@
+# insmod ./vidfor2.ko
+vidfor: module license 'unspecified' taints kernel.
+Disabling lock debugging due to kernel taint
+vidfor: Unknown symbol driver_remove_file
+vidfor: Unknown symbol driver_create_file
+insmod: can't insert './vidfor2.ko': unknown symbol in module or
+invalid parameter
 
- #define GDT_ENTRY_DEFAULT_USER_DS	15
+I have a MODULE_LICENSE("GPL"); line in the "linux.c" source file,
+and the pertinent parts of the makefile are here:
 
--#define GDT_ENTRY_KERNEL_BASE		(12)
-+#define GDT_ENTRY_KERNEL_BASE		12
+OBJ :=3D linux.o ops.o console.o sysfs.o ident_tables.o
+LIBOBJ :=3D vidforio.o init.o format.o video.o isr.o version.o
 
- #define GDT_ENTRY_KERNEL_CS		(GDT_ENTRY_KERNEL_BASE+0)
+ifneq ($(KERNELRELEASE),)
 
---
-1.7.4.1
+EXTRA_CFLAGS +=3D -I$(M)/../libvidforio
+obj-m +=3D vidfor.o
+vidfor-objs :=3D $(OBJ) $(patsubst %,../libvidforio/%,$(LIBOBJ))
+
+else
+[...]
+
+What's the trick for getting the MODULE_LICENSE successfully stamped
+into my generated .ko file?
+
+I've googled the list and the internet in general, and found
+as many relevant examples as I could in the kernel source, but
+I'm at wit's end. I'm not subscribed, so please CC responses,
+although I will check back often.
+
+
+
+--=20
+Steve Williams=A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 "The woods are lovely, dark a=
+nd deep.
+steve at icarus.com=A0 =A0 =A0 =A0 =A0=A0 But I have promises to keep,
+http://www.icarus.com=A0 =A0 =A0 =A0=A0 and lines to code before I sleep,
+http://www.picturel.com=A0 =A0 =A0=A0 And lines to code before I sleep."
+
+--000e0ce0f5989b680d04aea8de99
+Content-Type: application/octet-stream; name=Makefile
+Content-Disposition: attachment; filename=Makefile
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gtgbhago0
+
+CgpEUlZPQkogOj0gbGludXgubyBvcHMubyBjb25zb2xlLm8gc3lzZnMubyBpZGVudF90YWJsZXMu
+bwpMSUJPQkogOj0gdmlkZm9yaW8ubyBpbml0Lm8gZm9ybWF0Lm8gdmlkZW8ubyBpc3IubyB2ZXJz
+aW9uLm8KCmlmbmVxICgkKEtFUk5FTFJFTEVBU0UpLCkKCkVYVFJBX0NGTEFHUyArPSAtSSQoTSkv
+Li4vbGlidmlkZm9yaW8Kb2JqLW0gKz0gdmlkZm9yLm8KdmlkZm9yLW9ianMgOj0gJChEUlZPQkop
+ICQocGF0c3Vic3QgJSwuLi9saWJ2aWRmb3Jpby8lLCQoTElCT0JKKSkKCmVsc2UKCktFUk5FTERJ
+UiA/PSAvbGliL21vZHVsZXMvJChzaGVsbCB1bmFtZSAtcikvYnVpbGQKUFdEIDo9ICQoc2hlbGwg
+cHdkKQoKdmVyc2lvbiBpZGVudF90YWJsZXMuYzoKCUBlY2hvICcgLyogTUFDSElORSBHRU5FUkFU
+RUQgLS0gRE8gTk9UIEVESVQgKi8nID4gdG1wLmMKCUBlY2hvICdjb25zdCBjaGFyIHZpZGZvcl9i
+dWlsZF9zdGFtcFtdID0nID4+IHRtcC5jCglAZWNobyAnIidgZ2l0IGRlc2NyaWJlIC0tdGFncyAt
+LWxvbmcgLS1hbHdheXMgLS1tYXRjaCBzeXMtXCpgJyI7JyA+PiB0bXAuYwoJQGRpZmYgdG1wLmMg
+aWRlbnRfdGFibGVzLmMgPiAvZGV2L251bGwgMj4mMSB8fCAoZWNobyAidXBkYXRpbmcgaWRlbnRf
+dGFibGVzLmMiOyBjcCB0bXAuYyBpZGVudF90YWJsZXMuYykKCUBybSAtZiB0bXAuYwoKbW9kdWxl
+czoKCSQoTUFLRSkgLUMgLi4vbGlidmlkZm9yaW8gdmVyc2lvbgoJJChNQUtFKSB2ZXJzaW9uCgkk
+KE1BS0UpIC1DICQoS0VSTkVMRElSKSBNPSQoUFdEKSBtb2R1bGVzCgptb2R1bGVzX2luc3RhbGw6
+CgkkKE1BS0UpIC1DICQoS0VSTkVMRElSKSBNPSQoUFdEKSBtb2R1bGVzX2luc3RhbGwKCmNsZWFu
+OgoJJChNQUtFKSAtQyAkKEtFUk5FTERJUikgTT0kKFBXRCkgY2xlYW4KCmVuZGlmCg==
+--000e0ce0f5989b680d04aea8de99--
