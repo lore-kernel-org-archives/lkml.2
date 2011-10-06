@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375Ab1JFWu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 18:50:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44221 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290Ab1JFWu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 18:50:26 -0400
-Date: Fri, 7 Oct 2011 00:50:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Ben <aleben358@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <Mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Removed superfluous parentheses in macro defs
-Message-ID: <20111006225020.GB5810@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Ben <aleben358@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <Mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, linux-kernel@vger.kernel.org
-References: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1317939724-27924-1-git-send-email-aleben358@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759377Ab1JFXBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 19:01:49 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60779 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1JFXBr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 19:01:47 -0400
+Date: Thu, 6 Oct 2011 16:01:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sys_poll(): fix function definition/negative timeout
+ values
+Message-Id: <20111006160144.cf90307b.akpm@linux-foundation.org>
+In-Reply-To: <1316110862.2492.10.camel@edumazet-laptop>
+References: <1316090761.6545.70.camel@localhost.localdomain>
+	<m27h59g0k7.fsf@firstfloor.org>
+	<1316109917.2492.3.camel@edumazet-laptop>
+	<20110915181242.GZ7761@one.firstfloor.org>
+	<1316110862.2492.10.camel@edumazet-laptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 09:22:04AM +1100, Alex Ben wrote:
-> 1) make it consistent with other constant macro deinitions, which
-> don't have parentheses, as they are really superfluous.
-> 
-> 2) the extra parentheses on the 5th line of #define GDT_ENTRY is
-> superfluous, as there is no bit shifting on that line.
-> ---
->  arch/x86/include/asm/segment.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-> index 5e64171..92621c1 100644
-> --- a/arch/x86/include/asm/segment.h
-> +++ b/arch/x86/include/asm/segment.h
-> @@ -10,7 +10,7 @@
-> 	 (((flags) & _AC(0x0000f0ff,ULL)) << 40) |	\
-> 	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
-> 	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
-> -	 (((limit) & _AC(0x0000ffff,ULL))))
-> +	 ((limit)  & _AC(0x0000ffff,ULL)))
-> 
->  /* Simple and small GDT entries for booting only */
-> 
-> @@ -75,7 +75,7 @@
-> 
->  #define GDT_ENTRY_DEFAULT_USER_DS	15
-> 
-> -#define GDT_ENTRY_KERNEL_BASE		(12)
-> +#define GDT_ENTRY_KERNEL_BASE		12
+On Thu, 15 Sep 2011 20:21:02 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Please do a git annotate on the file you're patching and look at the
-commit id which is listed for the GDT_ENTRY_KERNEL_BASE line to find out
-why is the 12 parenthesized. Hint: 3234282f33b29
+> Le jeudi 15 septembre 2011 __ 20:12 +0200, Andi Kleen a __crit :
+> > On Thu, Sep 15, 2011 at 08:05:17PM +0200, Eric Dumazet wrote:
+> > > Le jeudi 15 septembre 2011 __ 10:47 -0700, Andi Kleen a __crit :
+> > > > Thomas Meyer <thomas@m3y3r.de> writes:
+> > > > 
+> > > > > Fix negative timeout values for x86 userland on x86_64 kernels.
+> > > > > Align sys_poll() definition to glibc's definition.
+> > > > 
+> > > > Nack. Please write a compat wrapper that sign extends.
+> > > > 
+> > > 
+> > > Why ?
+> > 
+> > Because we shouldn't change existing interfaces and there could
+> > be valid reasons on 64bit for really long delays.
+> 
+> I disagree.
+> 
+> Existing interface and POSIX mandates "int delay"
+> 
+> The kernel part of the contract was fine when we supported 32bit only
+> machines, by chance, because sizeof(int) == sizeof(long).
+> 
+> If you want more than 31 bits delay, then we need a new interface, and
+> this new interface must also work on 32bit arches (sort of poll64())
 
-:-)
+So what's happening here?
 
--- 
-Regards/Gruss,
-    Boris.
+If the change will break (or alter) existing code which does
+
+	poll(..., something_greater_than_2g)
+
+then I don't think we can apply the patch.  There may be code out there
+which breaks, there may not be.  We don't know.  We screwed up, we get
+to wear the cost of having done so.
+
