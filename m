@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758538Ab1JFOZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 10:25:39 -0400
-Received: from nm30-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.238]:26119 "HELO
-	nm30-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751009Ab1JFOZi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 10:25:38 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 101203.36283.bm@omp1032.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=ymail.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=c/wMvFGEvZZ7ghGdph5fxlwSKa0ScD60eTVcOzFfPe7BZDG5Xio2rstlIHcU1XzZoW77mYiKGuqfpF9uq/4SIU09KXYFJJH0MTufocPhVFxGMBYod96wzUDYU0a/IWTXt2j7B6iMQvvCBUm0MYCSs8BUo6i+wwVxLs6P609V9Oc=;
-X-YMail-OSG: NjLrLugVM1nemF.r2zJ7.a2y0DhEtcXSWu5ThhBIO84ucQv
- S0mWrEwGJTROiwPrXUuLHwmFKP2FjDywH3puAYjXqhMd_VgU20jExJRWz_C5
- EekArKC0g7B64odP.YjXSS2VvCi8M5CzmYhe3nBaxB1B.ZkEddMvxCEsH_BU
- 7L3JwYdbkO.MtQlH7_C.4OQK9v2nBKaefgGol_f22YZHE3sXJ43ibkC75uaz
- j3wP5QqKtNK1v6lhnav6A5j_Ri2gAZfyKxgm9l7HcyA6OBywvvxHiY3dzpxR
- JETLRH_SnAEFudNkXBTRmxgkOQiI7iB17xcE1YU2nd0psM1N1JXS.mnfREk6
- JGUV4HN1nXqgc72dJ4oVqV6Bu7t6ezoRc7ijZOX_dRSHoi_tmG_s9Opw-
-X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1317911137.65372.YahooMailNeo@web111004.mail.gq1.yahoo.com>
-Date: Thu, 6 Oct 2011 07:25:37 -0700 (PDT)
-From: Ramaraju G <ramarajug@ymail.com>
-Reply-To: Ramaraju G <ramarajug@ymail.com>
-Subject: kgdb over ethernet support
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "ramarajug@ymail.com" <ramarajug@ymail.com>
+	id S1758481Ab1JFObW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 10:31:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:35632 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab1JFObV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 10:31:21 -0400
+Date: Thu, 6 Oct 2011 17:27:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <jbottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] [SCSI] aacraid: use lower snprintf() limit
+Message-ID: <20111006142758.GB18470@longonot.mountain>
+References: <20111005055046.GD32077@elgon.mountain>
+ <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4E8DBB97.0111,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Wed, Oct 05, 2011 at 09:35:13AM +0200, Rolf Eike Beer wrote:
+> >  		  dev->supplement_adapter_info.MfgPcbaSerialNo);
+> > +
+> > +
+> 
+> One newline too much.
+> 
 
+True.  I wish checkpatch.pl checked for that...
 
-I am new to kernel development. Sorry for posting the
- question in this advanced forum. I had posted the same question in 
-linux-newbie forum. But, did not get any reply. Hence posting here.
+> > +	if (len > 16)
+> > +		len = 16;
+> 
+> max()?
 
+min() actually.  I don't know that it improves the readability, but
+can do.
 
-I want to understand the kernel by doing  step by step using kgdb over ethernet.
-unfortunately, My laptop doesn't contain any serial port.
-
-Can anybody help me in setting up kgdb over ethernet support in 2.6.28 version of the kernel ?
-
-thanks and regards,
-Raju
-
+regards,
+dan carpenter
