@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758864Ab1JFRYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 13:24:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50169 "EHLO
+	id S1758852Ab1JFRYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 13:24:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50171 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758754Ab1JFRWw (ORCPT
+	with ESMTP id S1758784Ab1JFRWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 6 Oct 2011 13:22:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/15] perf top: Add callgraph support
-Date: Thu,  6 Oct 2011 14:22:30 -0300
-Message-Id: <1317921758-4154-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/15] perf annotate browser: Allow navigation to called functions
+Date: Thu,  6 Oct 2011 14:22:31 -0300
+Message-Id: <1317921758-4154-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1317921758-4154-1-git-send-email-acme@infradead.org>
 References: <1317921758-4154-1-git-send-email-acme@infradead.org>
@@ -29,274 +29,316 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Just like in 'perf report', but live.
+I.e. when in the annotate TUI window, if Enter is pressed over an
+assembly line with a 'callq' it will try to open another TUI window with
+that symbol.
 
-Still needs to decay the callchains, but already somewhat useful as-is.
+This is just a proof of concept and works only on x86_64, more work is
+needed to support kernel modules, userland, other arches, etc, but
+should already be useful as-is.
 
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-cj3rmaf5jpsvi3v0tf7t4uvp@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-opyvskw5na3qdmkv8vxi3zbr@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-top.txt |   15 ++++
- tools/perf/builtin-top.c              |  146 ++++++++++++++++++++++++++++++++-
- 2 files changed, 159 insertions(+), 2 deletions(-)
+ tools/perf/builtin-annotate.c          |    9 +++-
+ tools/perf/util/annotate.h             |    2 +-
+ tools/perf/util/hist.h                 |    4 +-
+ tools/perf/util/ui/browsers/annotate.c |   69 ++++++++++++++++++++++++++-----
+ tools/perf/util/ui/browsers/hists.c    |   20 ++++++----
+ 5 files changed, 79 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index d146ba3..e2e5cd0 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -126,6 +126,21 @@ Default is to monitor all CPUS.
- --symbols::
- 	Only consider these symbols.
- 
-+-G [type,min,order]::
-+--call-graph::
-+        Display call chains using type, min percent threshold and order.
-+	type can be either:
-+	- flat: single column, linear exposure of call chains.
-+	- graph: use a graph tree, displaying absolute overhead rates.
-+	- fractal: like graph, but displays relative rates. Each branch of
-+		 the tree is considered as a new profiled object.
-+
-+	order can be either:
-+	- callee: callee based call graph.
-+	- caller: inverted caller based call graph.
-+
-+	Default: fractal,0.5,callee.
-+
- INTERACTIVE PROMPTING KEYS
- --------------------------
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2cf5e50..b9b7fe0 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -76,6 +76,12 @@ static bool			system_wide			=  false;
- 
- static bool			use_tui, use_stdio;
- 
-+static bool			sort_has_symbols;
-+
-+static bool			dont_use_callchains;
-+static char			callchain_default_opt[]		= "fractal,0.5,callee";
-+
-+
- static int			default_interval		=      0;
- 
- static bool			kptr_restrict_warned;
-@@ -648,9 +654,11 @@ static void perf_event__process_sample(const union perf_event *event,
- 				       struct perf_sample *sample,
- 				       struct perf_session *session)
- {
-+	struct symbol *parent = NULL;
- 	u64 ip = event->ip.ip;
- 	struct addr_location al;
- 	struct machine *machine;
-+	int err;
- 	u8 origin = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
- 	++top.samples;
-@@ -748,13 +756,29 @@ static void perf_event__process_sample(const union perf_event *event,
- 		evsel = perf_evlist__id2evsel(top.evlist, sample->id);
- 		assert(evsel != NULL);
- 
-+		if ((sort__has_parent || symbol_conf.use_callchain) &&
-+		    sample->callchain) {
-+			err = perf_session__resolve_callchain(session, al.thread,
-+							      sample->callchain, &parent);
-+			if (err)
-+				return;
-+		}
-+
- 		he = perf_session__add_hist_entry(session, &al, sample, evsel);
- 		if (he == NULL) {
- 			pr_err("Problem incrementing symbol period, skipping event\n");
- 			return;
- 		}
- 
--		record_precise_ip(he, evsel->idx, ip);
-+		if (symbol_conf.use_callchain) {
-+			err = callchain_append(he->callchain, &session->callchain_cursor,
-+					       sample->period);
-+			if (err)
-+				return;
-+		}
-+
-+		if (sort_has_symbols)
-+			record_precise_ip(he, evsel->idx, ip);
- 	}
- 
- 	return;
-@@ -808,6 +832,9 @@ static void start_counters(struct perf_evlist *evlist)
- 			attr->read_format |= PERF_FORMAT_ID;
- 		}
- 
-+		if (symbol_conf.use_callchain)
-+			attr->sample_type |= PERF_SAMPLE_CALLCHAIN;
-+
- 		attr->mmap = 1;
- 		attr->comm = 1;
- 		attr->inherit = inherit;
-@@ -864,10 +891,27 @@ out_err:
- 	exit(0);
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 39e3d38..24db9d2 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -114,7 +114,8 @@ static int hist_entry__tty_annotate(struct hist_entry *he, int evidx)
+ 				    print_line, full_paths, 0, 0);
  }
  
-+static int setup_sample_type(void)
-+{
-+	if (!sort_has_symbols) {
-+		if (symbol_conf.use_callchain) {
-+			ui__warning("Selected -g but \"sym\" not present in --sort/-s.");
-+			return -EINVAL;
-+		}
-+	} else if (!dont_use_callchains && callchain_param.mode != CHAIN_NONE) {
-+		if (callchain_register_param(&callchain_param) < 0) {
-+			ui__warning("Can't register callchain params.\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int __cmd_top(void)
+-static void hists__find_annotations(struct hists *self, int evidx)
++static void hists__find_annotations(struct hists *self, int evidx,
++				    int nr_events)
  {
- 	pthread_t thread;
--	int ret __used;
-+	int ret;
+ 	struct rb_node *nd = rb_first(&self->entries), *next;
+ 	int key = KEY_RIGHT;
+@@ -137,7 +138,8 @@ find_next:
+ 		}
+ 
+ 		if (use_browser > 0) {
+-			key = hist_entry__tui_annotate(he, evidx, NULL, NULL, 0);
++			key = hist_entry__tui_annotate(he, evidx, nr_events,
++						       NULL, NULL, 0);
+ 			switch (key) {
+ 			case KEY_RIGHT:
+ 				next = rb_next(nd);
+@@ -215,7 +217,8 @@ static int __cmd_annotate(void)
+ 			total_nr_samples += nr_samples;
+ 			hists__collapse_resort(hists);
+ 			hists__output_resort(hists);
+-			hists__find_annotations(hists, pos->idx);
++			hists__find_annotations(hists, pos->idx,
++						session->evlist->nr_entries);
+ 		}
+ 	}
+ 
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index aafbc7e..d907252 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -99,7 +99,7 @@ static inline int symbol__tui_annotate(struct symbol *sym __used,
+ }
+ #else
+ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 void(*timer)(void *arg), void *arg,
++			 int nr_events, void(*timer)(void *arg), void *arg,
+ 			 int delay_secs);
+ #endif
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f87677b..7ea1e56 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -110,7 +110,7 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __used,
+ }
+ 
+ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+-					   int evidx __used,
++					   int evidx __used, int nr_events __used,
+ 					   void(*timer)(void *arg) __used,
+ 					   void *arg __used, int delay_secs __used);
+ {
+@@ -120,7 +120,7 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+ #define KEY_RIGHT -2
+ #else
+ #include <newt.h>
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx, int nr_events,
+ 			     void(*timer)(void *arg), void *arg, int delay_secs);
+ 
+ #define KEY_LEFT NEWT_KEY_LEFT
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 76c1d08..77421ba 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -20,6 +20,7 @@ struct annotate_browser {
+ 	struct ui_browser b;
+ 	struct rb_root	  entries;
+ 	struct rb_node	  *curr_hot;
++	struct objdump_line *selection;
+ };
+ 
+ struct objdump_line_rb_node {
+@@ -36,6 +37,7 @@ struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
+ 
+ static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
+ {
++	struct annotate_browser *ab = container_of(self, struct annotate_browser, b);
+ 	struct objdump_line *ol = rb_entry(entry, struct objdump_line, node);
+ 	bool current_entry = ui_browser__is_current_entry(self, row);
+ 	int width = self->width;
+@@ -58,6 +60,8 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
+ 
+ 	if (!current_entry)
+ 		ui_browser__set_color(self, HE_COLORSET_CODE);
++	else
++		ab->selection = ol;
+ }
+ 
+ static double objdump_line__calc_percent(struct objdump_line *self,
+@@ -141,7 +145,8 @@ static void annotate_browser__set_top(struct annotate_browser *self,
+ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+ 					   int evidx)
+ {
+-	struct symbol *sym = browser->b.priv;
++	struct map_symbol *ms = browser->b.priv;
++	struct symbol *sym = ms->sym;
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	struct objdump_line *pos;
+ 
+@@ -164,17 +169,18 @@ static void annotate_browser__calc_percent(struct annotate_browser *browser,
+ }
+ 
+ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+-				 void(*timer)(void *arg) __used, void *arg __used,
+-				 int delay_secs)
++				 int nr_events, void(*timer)(void *arg),
++				 void *arg, int delay_secs)
+ {
+ 	struct rb_node *nd = NULL;
+-	struct symbol *sym = self->b.priv;
++	struct map_symbol *ms = self->b.priv;
++	struct symbol *sym = ms->sym;
  	/*
- 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
- 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
-@@ -876,6 +920,10 @@ static int __cmd_top(void)
- 	if (top.session == NULL)
- 		return -ENOMEM;
+ 	 * RIGHT To allow builtin-annotate to cycle thru multiple symbols by
+ 	 * examining the exit key for this function.
+ 	 */
+ 	int exit_keys[] = { 'H', NEWT_KEY_TAB, NEWT_KEY_UNTAB,
+-			    NEWT_KEY_RIGHT, 0 };
++			    NEWT_KEY_RIGHT, NEWT_KEY_ENTER, 0 };
+ 	int key;
  
-+	ret = setup_sample_type();
-+	if (ret)
-+		goto out_delete;
+ 	if (ui_browser__show(&self->b, sym->name,
+@@ -238,6 +244,42 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 		case 'H':
+ 			nd = self->curr_hot;
+ 			break;
++		case NEWT_KEY_ENTER:
++			if (self->selection != NULL) {
++				char *s = strstr(self->selection->line, "callq ");
++				struct annotation *notes;
++				struct symbol *target;
++				u64 ip;
 +
- 	if (top.target_tid != -1)
- 		perf_event__synthesize_thread_map(top.evlist->threads,
- 						  perf_event__process, top.session);
-@@ -916,6 +964,90 @@ static int __cmd_top(void)
- 			ret = poll(top.evlist->pollfd, top.evlist->nr_fds, 100);
- 	}
- 
-+out_delete:
-+	perf_session__delete(top.session);
-+	top.session = NULL;
++				if (s == NULL)
++					continue;
 +
-+	return 0;
-+}
++				s = strchr(s, ' ');
++				if (s++ == NULL)
++					continue;
 +
-+static int
-+parse_callchain_opt(const struct option *opt __used, const char *arg,
-+		    int unset)
-+{
-+	char *tok, *tok2;
-+	char *endptr;
++				ip = strtoull(s, NULL, 16);
++				ip = ms->map->map_ip(ms->map, ip);
++				target = map__find_symbol(ms->map, ip, NULL);
++				if (target == NULL)
++					continue;
 +
-+	/*
-+	 * --no-call-graph
-+	 */
-+	if (unset) {
-+		dont_use_callchains = true;
-+		return 0;
-+	}
++				notes = symbol__annotation(target);
++				pthread_mutex_lock(&notes->lock);
 +
-+	symbol_conf.use_callchain = true;
++				if (notes->src == NULL &&
++				    symbol__alloc_hist(target, nr_events) < 0) {
++					pthread_mutex_unlock(&notes->lock);
++					ui__warning("Not enough memory for annotating '%s' symbol!\n",
++						    target->name);
++					continue;
++				}
 +
-+	if (!arg)
-+		return 0;
-+
-+	tok = strtok((char *)arg, ",");
-+	if (!tok)
-+		return -1;
-+
-+	/* get the output mode */
-+	if (!strncmp(tok, "graph", strlen(arg)))
-+		callchain_param.mode = CHAIN_GRAPH_ABS;
-+
-+	else if (!strncmp(tok, "flat", strlen(arg)))
-+		callchain_param.mode = CHAIN_FLAT;
-+
-+	else if (!strncmp(tok, "fractal", strlen(arg)))
-+		callchain_param.mode = CHAIN_GRAPH_REL;
-+
-+	else if (!strncmp(tok, "none", strlen(arg))) {
-+		callchain_param.mode = CHAIN_NONE;
-+		symbol_conf.use_callchain = false;
-+
-+		return 0;
-+	}
-+
-+	else
-+		return -1;
-+
-+	/* get the min percentage */
-+	tok = strtok(NULL, ",");
-+	if (!tok)
-+		goto setup;
-+
-+	callchain_param.min_percent = strtod(tok, &endptr);
-+	if (tok == endptr)
-+		return -1;
-+
-+	/* get the print limit */
-+	tok2 = strtok(NULL, ",");
-+	if (!tok2)
-+		goto setup;
-+
-+	if (tok2[0] != 'c') {
-+		callchain_param.print_limit = strtod(tok2, &endptr);
-+		tok2 = strtok(NULL, ",");
-+		if (!tok2)
-+			goto setup;
-+	}
-+
-+	/* get the call chain order */
-+	if (!strcmp(tok2, "caller"))
-+		callchain_param.order = ORDER_CALLER;
-+	else if (!strcmp(tok2, "callee"))
-+		callchain_param.order = ORDER_CALLEE;
-+	else
-+		return -1;
-+setup:
-+	if (callchain_register_param(&callchain_param) < 0) {
-+		fprintf(stderr, "Can't register callchain params\n");
-+		return -1;
-+	}
- 	return 0;
++				pthread_mutex_unlock(&notes->lock);
++				symbol__tui_annotate(target, ms->map, evidx, nr_events,
++						     timer, arg, delay_secs);
++			}
++			break;
+ 		default:
+ 			goto out;
+ 		}
+@@ -250,25 +292,29 @@ out:
+ 	return key;
  }
  
-@@ -973,6 +1105,10 @@ static const struct option options[] = {
- 		   "sort by key(s): pid, comm, dso, symbol, parent"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
-+	OPT_CALLBACK_DEFAULT('G', "call-graph", NULL, "output_type,min_percent, call_order",
-+		     "Display callchains using output_type (graph, flat, fractal, or none), min percent threshold and callchain order. "
-+		     "Default: fractal,0.5,callee", &parse_callchain_opt,
-+		     callchain_default_opt),
- 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
- 		    "Show a column with the sum of periods"),
- 	OPT_STRING(0, "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-@@ -1082,6 +1218,12 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
- 	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx, int nr_events,
+ 			     void(*timer)(void *arg), void *arg, int delay_secs)
+ {
+-	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx,
++	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx, nr_events,
+ 				    timer, arg, delay_secs);
+ }
  
-+	/*
-+	 * Avoid annotation data structures overhead when symbols aren't on the
-+	 * sort list.
-+	 */
-+	sort_has_symbols = sort_sym.list.next != NULL;
-+
- 	get_term_dimensions(&winsize);
- 	if (top.print_entries == 0) {
- 		update_print_entries(&winsize);
+ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			void(*timer)(void *arg), void *arg,
+-			int delay_secs)
++			 int nr_events, void(*timer)(void *arg), void *arg,
++			 int delay_secs)
+ {
+ 	struct objdump_line *pos, *n;
+ 	struct annotation *notes;
++	struct map_symbol ms = {
++		.map = map,
++		.sym = sym,
++	};
+ 	struct annotate_browser browser = {
+ 		.b = {
+ 			.refresh = ui_browser__list_head_refresh,
+ 			.seek	 = ui_browser__list_head_seek,
+ 			.write	 = annotate_browser__write,
+-			.priv	 = sym,
++			.priv	 = &ms,
+ 		},
+ 	};
+ 	int ret;
+@@ -300,7 +346,8 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 
+ 	browser.b.entries = &notes->src->source,
+ 	browser.b.width += 18; /* Percentage */
+-	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
++	ret = annotate_browser__run(&browser, evidx, nr_events,
++				    timer, arg, delay_secs);
+ 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
+ 		list_del(&pos->node);
+ 		objdump_line__free(pos);
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 6244d19..f0515cb 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -825,7 +825,7 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
+ 	return printed;
+ }
+ 
+-static int perf_evsel__hists_browse(struct perf_evsel *evsel,
++static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+ 				    void(*timer)(void *arg), void *arg,
+@@ -968,7 +968,7 @@ do_annotate:
+ 			if (he == NULL)
+ 				continue;
+ 
+-			hist_entry__tui_annotate(he, evsel->idx,
++			hist_entry__tui_annotate(he, evsel->idx, nr_events,
+ 						 timer, arg, delay_secs);
+ 		} else if (choice == browse_map)
+ 			map__browse(browser->selection->map);
+@@ -1042,7 +1042,8 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 		menu->selection = evsel;
+ }
+ 
+-static int perf_evsel_menu__run(struct perf_evsel_menu *menu, const char *help,
++static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
++				int nr_events, const char *help,
+ 				void(*timer)(void *arg), void *arg, int delay_secs)
+ {
+ 	int exit_keys[] = { NEWT_KEY_ENTER, NEWT_KEY_RIGHT, 0, };
+@@ -1077,8 +1078,9 @@ static int perf_evsel_menu__run(struct perf_evsel_menu *menu, const char *help,
+ 			perf_evlist__set_selected(evlist, pos);
+ browse_hists:
+ 			ev_name = event_name(pos);
+-			key = perf_evsel__hists_browse(pos, help, ev_name, true,
+-						       timer, arg, delay_secs);
++			key = perf_evsel__hists_browse(pos, nr_events, help,
++						       ev_name, true, timer,
++						       arg, delay_secs);
+ 			ui_browser__show_title(&menu->b, title);
+ 			break;
+ 		case NEWT_KEY_LEFT:
+@@ -1150,7 +1152,8 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
+ 			pos->name = strdup(ev_name);
+ 	}
+ 
+-	return perf_evsel_menu__run(&menu, help, timer, arg, delay_secs);
++	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
++				    arg, delay_secs);
+ }
+ 
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+@@ -1162,8 +1165,9 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+ 		struct perf_evsel *first = list_entry(evlist->entries.next,
+ 						      struct perf_evsel, node);
+ 		const char *ev_name = event_name(first);
+-		return perf_evsel__hists_browse(first, help, ev_name, false,
+-						timer, arg, delay_secs);
++		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
++						ev_name, false, timer, arg,
++						delay_secs);
+ 	}
+ 
+ 	return __perf_evlist__tui_browse_hists(evlist, help,
 -- 
 1.6.2.5
 
