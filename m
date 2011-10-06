@@ -1,19 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab1JFNy7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 09:54:59 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:63612 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758293Ab1JFNy4 (ORCPT
+	id S1758628Ab1JFN4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 09:56:06 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62231 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758348Ab1JFNy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 09:54:56 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 06 Oct 2011 15:54:41 +0200
+	Thu, 6 Oct 2011 09:54:59 -0400
+Date: Thu, 06 Oct 2011 15:54:48 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 1/9] mm: move some functions from memory_hotplug.c to
- page_isolation.c
+Subject: [PATCH 7/9] X86: integrate CMA with DMA-mapping subsystem
 In-reply-to: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -31,305 +27,174 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Shariq Hasnain <shariq.hasnain@linaro.org>,
         Chunsang Jeong <chunsang.jeong@linaro.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>
-Message-id: <1317909290-29832-2-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1317909290-29832-9-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.6.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+This patch adds support for CMA to dma-mapping subsystem for x86
+architecture that uses common pci-dma/pci-nommu implementation. This
+allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
 
-Memory hotplug is a logic for making pages unused in the specified
-range of pfn. So, some of core logics can be used for other purpose
-as allocating a very large contigous memory block.
-
-This patch moves some functions from mm/memory_hotplug.c to
-mm/page_isolation.c. This helps adding a function for large-alloc in
-page_isolation.c with memory-unplug technique.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-[m.nazarewicz: reworded commit message]
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-[m.szyprowski: rebased and updated to Linux v3.0-rc1]
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 CC: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- include/linux/page-isolation.h |    7 +++
- mm/memory_hotplug.c            |  111 --------------------------------------
- mm/page_isolation.c            |  114 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 121 insertions(+), 111 deletions(-)
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/dma-contiguous.h |   13 +++++++++++++
+ arch/x86/include/asm/dma-mapping.h    |    4 ++++
+ arch/x86/kernel/pci-dma.c             |   18 ++++++++++++++++--
+ arch/x86/kernel/pci-nommu.c           |    8 +-------
+ arch/x86/kernel/setup.c               |    2 ++
+ 6 files changed, 37 insertions(+), 9 deletions(-)
+ create mode 100644 arch/x86/include/asm/dma-contiguous.h
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 051c1b1..58cdbac 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -33,5 +33,12 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
- 
-+/*
-+ * For migration.
-+ */
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 82830ef..b120c80 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -29,6 +29,7 @@ config X86
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	select HAVE_DMA_ATTRS
++	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+diff --git a/arch/x86/include/asm/dma-contiguous.h b/arch/x86/include/asm/dma-contiguous.h
+new file mode 100644
+index 0000000..8fb117d
+--- /dev/null
++++ b/arch/x86/include/asm/dma-contiguous.h
+@@ -0,0 +1,13 @@
++#ifndef ASMX86_DMA_CONTIGUOUS_H
++#define ASMX86_DMA_CONTIGUOUS_H
 +
-+int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn);
-+unsigned long scan_lru_pages(unsigned long start, unsigned long end);
-+int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
- 
- #endif
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 6e7d8b2..3419dd6 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -707,117 +707,6 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
- }
- 
- /*
-- * Confirm all pages in a range [start, end) is belongs to the same zone.
-- */
--static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
--{
--	unsigned long pfn;
--	struct zone *zone = NULL;
--	struct page *page;
--	int i;
--	for (pfn = start_pfn;
--	     pfn < end_pfn;
--	     pfn += MAX_ORDER_NR_PAGES) {
--		i = 0;
--		/* This is just a CONFIG_HOLES_IN_ZONE check.*/
--		while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
--			i++;
--		if (i == MAX_ORDER_NR_PAGES)
--			continue;
--		page = pfn_to_page(pfn + i);
--		if (zone && page_zone(page) != zone)
--			return 0;
--		zone = page_zone(page);
--	}
--	return 1;
--}
--
--/*
-- * Scanning pfn is much easier than scanning lru list.
-- * Scan pfn from start to end and Find LRU page.
-- */
--static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
--{
--	unsigned long pfn;
--	struct page *page;
--	for (pfn = start; pfn < end; pfn++) {
--		if (pfn_valid(pfn)) {
--			page = pfn_to_page(pfn);
--			if (PageLRU(page))
--				return pfn;
--		}
--	}
--	return 0;
--}
--
--static struct page *
--hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
--{
--	/* This should be improooooved!! */
--	return alloc_page(GFP_HIGHUSER_MOVABLE);
--}
--
--#define NR_OFFLINE_AT_ONCE_PAGES	(256)
--static int
--do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
--{
--	unsigned long pfn;
--	struct page *page;
--	int move_pages = NR_OFFLINE_AT_ONCE_PAGES;
--	int not_managed = 0;
--	int ret = 0;
--	LIST_HEAD(source);
--
--	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
--		if (!pfn_valid(pfn))
--			continue;
--		page = pfn_to_page(pfn);
--		if (!get_page_unless_zero(page))
--			continue;
--		/*
--		 * We can skip free pages. And we can only deal with pages on
--		 * LRU.
--		 */
--		ret = isolate_lru_page(page);
--		if (!ret) { /* Success */
--			put_page(page);
--			list_add_tail(&page->lru, &source);
--			move_pages--;
--			inc_zone_page_state(page, NR_ISOLATED_ANON +
--					    page_is_file_cache(page));
--
--		} else {
--#ifdef CONFIG_DEBUG_VM
--			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
--			       pfn);
--			dump_page(page);
--#endif
--			put_page(page);
--			/* Because we don't have big zone->lock. we should
--			   check this again here. */
--			if (page_count(page)) {
--				not_managed++;
--				ret = -EBUSY;
--				break;
--			}
--		}
--	}
--	if (!list_empty(&source)) {
--		if (not_managed) {
--			putback_lru_pages(&source);
--			goto out;
--		}
--		/* this function returns # of failed pages */
--		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
--								true, true);
--		if (ret)
--			putback_lru_pages(&source);
--	}
--out:
--	return ret;
--}
--
--/*
-  * remove from free_area[] and mark all as Reserved.
-  */
- static int
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 4ae42bb..270a026 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -5,6 +5,9 @@
- #include <linux/mm.h>
- #include <linux/page-isolation.h>
- #include <linux/pageblock-flags.h>
-+#include <linux/memcontrol.h>
-+#include <linux/migrate.h>
-+#include <linux/mm_inline.h>
- #include "internal.h"
- 
- static inline struct page *
-@@ -139,3 +142,114 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
- 	spin_unlock_irqrestore(&zone->lock, flags);
- 	return ret ? 0 : -EBUSY;
- }
++#ifdef __KERNEL__
 +
++#include <linux/device.h>
++#include <linux/dma-contiguous.h>
++#include <asm-generic/dma-contiguous.h>
 +
-+/*
-+ * Confirm all pages in a range [start, end) is belongs to the same zone.
-+ */
-+int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long pfn;
-+	struct zone *zone = NULL;
-+	struct page *page;
-+	int i;
-+	for (pfn = start_pfn;
-+	     pfn < end_pfn;
-+	     pfn += MAX_ORDER_NR_PAGES) {
-+		i = 0;
-+		/* This is just a CONFIG_HOLES_IN_ZONE check.*/
-+		while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
-+			i++;
-+		if (i == MAX_ORDER_NR_PAGES)
-+			continue;
-+		page = pfn_to_page(pfn + i);
-+		if (zone && page_zone(page) != zone)
-+			return 0;
-+		zone = page_zone(page);
-+	}
-+	return 1;
-+}
++static inline void dma_contiguous_early_fixup(phys_addr_t base, unsigned long size) { }
 +
-+/*
-+ * Scanning pfn is much easier than scanning lru list.
-+ * Scan pfn from start to end and Find LRU page.
-+ */
-+unsigned long scan_lru_pages(unsigned long start, unsigned long end)
-+{
-+	unsigned long pfn;
-+	struct page *page;
-+	for (pfn = start; pfn < end; pfn++) {
-+		if (pfn_valid(pfn)) {
-+			page = pfn_to_page(pfn);
-+			if (PageLRU(page))
-+				return pfn;
-+		}
-+	}
-+	return 0;
-+}
-+
-+struct page *
-+hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
-+{
-+	/* This should be improooooved!! */
-+	return alloc_page(GFP_HIGHUSER_MOVABLE);
-+}
-+
-+#define NR_OFFLINE_AT_ONCE_PAGES	(256)
-+int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long pfn;
-+	struct page *page;
-+	int move_pages = NR_OFFLINE_AT_ONCE_PAGES;
-+	int not_managed = 0;
-+	int ret = 0;
-+	LIST_HEAD(source);
-+
-+	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
-+		if (!pfn_valid(pfn))
-+			continue;
-+		page = pfn_to_page(pfn);
-+		if (!get_page_unless_zero(page))
-+			continue;
-+		/*
-+		 * We can skip free pages. And we can only deal with pages on
-+		 * LRU.
-+		 */
-+		ret = isolate_lru_page(page);
-+		if (!ret) { /* Success */
-+			put_page(page);
-+			list_add_tail(&page->lru, &source);
-+			move_pages--;
-+			inc_zone_page_state(page, NR_ISOLATED_ANON +
-+					    page_is_file_cache(page));
-+
-+		} else {
-+#ifdef CONFIG_DEBUG_VM
-+			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
-+			       pfn);
-+			dump_page(page);
 +#endif
-+			put_page(page);
-+			/* Because we don't have big zone->lock. we should
-+			   check this again here. */
-+			if (page_count(page)) {
-+				not_managed++;
-+				ret = -EBUSY;
-+				break;
-+			}
-+		}
-+	}
-+	if (!list_empty(&source)) {
-+		if (not_managed) {
-+			putback_lru_pages(&source);
-+			goto out;
-+		}
-+		/* this function returns # of failed pages */
-+		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
-+								true, true);
-+		if (ret)
-+			putback_lru_pages(&source);
-+	}
-+out:
-+	return ret;
++#endif
+diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
+index ed3065f..90ac6f0 100644
+--- a/arch/x86/include/asm/dma-mapping.h
++++ b/arch/x86/include/asm/dma-mapping.h
+@@ -13,6 +13,7 @@
+ #include <asm/io.h>
+ #include <asm/swiotlb.h>
+ #include <asm-generic/dma-coherent.h>
++#include <linux/dma-contiguous.h>
+ 
+ #ifdef CONFIG_ISA
+ # define ISA_DMA_BIT_MASK DMA_BIT_MASK(24)
+@@ -61,6 +62,9 @@ extern int dma_set_mask(struct device *dev, u64 mask);
+ extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 					dma_addr_t *dma_addr, gfp_t flag);
+ 
++extern void dma_generic_free_coherent(struct device *dev, size_t size,
++				      void *vaddr, dma_addr_t dma_addr);
++
+ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+ {
+ 	if (!dev->dma_mask)
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index 80dc793..f4abafc 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -90,14 +90,18 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 				 dma_addr_t *dma_addr, gfp_t flag)
+ {
+ 	unsigned long dma_mask;
+-	struct page *page;
++	struct page *page = NULL;
++	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+ 	dma_addr_t addr;
+ 
+ 	dma_mask = dma_alloc_coherent_mask(dev, flag);
+ 
+ 	flag |= __GFP_ZERO;
+ again:
+-	page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
++	if (!(flag & GFP_ATOMIC))
++		page = dma_alloc_from_contiguous(dev, count, get_order(size));
++	if (!page)
++		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
+ 	if (!page)
+ 		return NULL;
+ 
+@@ -117,6 +121,16 @@ again:
+ 	return page_address(page);
+ }
+ 
++void dma_generic_free_coherent(struct device *dev, size_t size, void *vaddr,
++			       dma_addr_t dma_addr)
++{
++	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
++	struct page *page = virt_to_page(vaddr);
++
++	if (!dma_release_from_contiguous(dev, page, count))
++		free_pages((unsigned long)vaddr, get_order(size));
 +}
++
+ /*
+  * See <Documentation/x86/x86_64/boot-options.txt> for the iommu kernel
+  * parameter documentation.
+diff --git a/arch/x86/kernel/pci-nommu.c b/arch/x86/kernel/pci-nommu.c
+index 3af4af8..656566f 100644
+--- a/arch/x86/kernel/pci-nommu.c
++++ b/arch/x86/kernel/pci-nommu.c
+@@ -74,12 +74,6 @@ static int nommu_map_sg(struct device *hwdev, struct scatterlist *sg,
+ 	return nents;
+ }
+ 
+-static void nommu_free_coherent(struct device *dev, size_t size, void *vaddr,
+-				dma_addr_t dma_addr)
+-{
+-	free_pages((unsigned long)vaddr, get_order(size));
+-}
+-
+ static void nommu_sync_single_for_device(struct device *dev,
+ 			dma_addr_t addr, size_t size,
+ 			enum dma_data_direction dir)
+@@ -97,7 +91,7 @@ static void nommu_sync_sg_for_device(struct device *dev,
+ 
+ struct dma_map_ops nommu_dma_ops = {
+ 	.alloc_coherent		= dma_generic_alloc_coherent,
+-	.free_coherent		= nommu_free_coherent,
++	.free_coherent		= dma_generic_free_coherent,
+ 	.map_sg			= nommu_map_sg,
+ 	.map_page		= nommu_map_page,
+ 	.sync_single_for_device = nommu_sync_single_for_device,
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index afaf384..6c9efb5 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -50,6 +50,7 @@
+ #include <asm/pci-direct.h>
+ #include <linux/init_ohci1394_dma.h>
+ #include <linux/kvm_para.h>
++#include <linux/dma-contiguous.h>
+ 
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -944,6 +945,7 @@ void __init setup_arch(char **cmdline_p)
+ 	}
+ #endif
+ 	memblock.current_limit = get_max_mapped();
++	dma_contiguous_reserve(0);
+ 
+ 	/*
+ 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
 -- 
 1.7.1.569.g6f426
 
