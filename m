@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935897Ab1JGIu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 04:50:28 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:47738 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab1JGIu0 (ORCPT
+	id S935930Ab1JGIvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 04:51:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48694 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759610Ab1JGIvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 04:50:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAJe8jk5bdWOb/2dsb2JhbABEhHSkS4FUAQUjBAsBIyMQJQImAgI5AxsGE4gApj+RZYEthHGBFASTb4hfiGo
-X-IronPort-AV: E=Sophos;i="4.68,501,1312149600"; 
-   d="scan'208";a="421780801"
-From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
-	<vjaquez@igalia.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, "Timo Teras" <timo.teras@solidboot.com>
-Subject: [PATCH v3] omap: dmtimer: convert printk to pr_err
-Date: Fri,  7 Oct 2011 10:50:16 +0200
-Message-Id: <1317977417-17874-1-git-send-email-vjaquez@igalia.com>
-X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <20111006201827.GT6324@atomide.com>
-References: <20111006201827.GT6324@atomide.com>
+	Fri, 7 Oct 2011 04:51:36 -0400
+Date: Fri, 7 Oct 2011 09:51:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jason Chagas <jason.chagas@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 13/26] ARM: pxa: use correct __iomem annotations
+Message-ID: <20111007085114.GE21464@n2100.arm.linux.org.uk>
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-14-git-send-email-arnd@arndb.de> <CAMPhdO_CGvoc8GZQS3TWpv0gqOXhmHyEbamcQr28K5iLgOBnuw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMPhdO_CGvoc8GZQS3TWpv0gqOXhmHyEbamcQr28K5iLgOBnuw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert a printk(KERN_ERR) message in the driver to pr_err().
+On Fri, Oct 07, 2011 at 04:11:01PM +0800, Eric Miao wrote:
+> To be honest, I'd really like to keep the *_VIRT_BASE definitions to be
+> type independent.
+> 
+> And have the actual register definitions to be casted to void __iomem *
+> when being defined, e.g.
+> 
+> #define APBC_REG(x)	IOMEM(APBC_VIRT_BASE + (x))
+> 
+> #define APBC_UART1	APBC_REG(0x000)
+> 
+> Arnd, do we have some standard guidelines on this for all SoCs
+> to follow? As I know, it's currently still being a mess.
 
-v2:
-* Replaced dump_stack() with WARN()
-
-v3:
-* Rebased against omap/master
-
-Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
----
- arch/arm/plat-omap/dmtimer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index de7896f..5492ae1 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -111,7 +111,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
- 	while (!(__raw_readl(timer->sys_stat) & 1)) {
- 		c++;
- 		if (c > 100000) {
--			printk(KERN_ERR "Timer failed to reset\n");
-+			pr_err("Timer failed to reset\n");
- 			return;
- 		}
- 	}
--- 
-1.7.6.3
-
+It makes much more sense for the base address to be correctly typed (even
+though it does mean a cast in the map_desc tables).  It avoids type
+problems if someone does readl(APBC_VIRT_BASE + reg) somewhere, and
+also avoids type problems should someone decide to pass the base address
+around.
