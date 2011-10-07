@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760147Ab1JGQWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:22:39 -0400
+	id S1760186Ab1JGQWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:22:55 -0400
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:50139 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760129Ab1JGQWe (ORCPT
+	with ESMTP id S1760168Ab1JGQWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:22:34 -0400
+	Fri, 7 Oct 2011 12:22:50 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 06/11] rcu: Make srcu_read_lock_held() call common lockdep-enabled function
-Date: Fri,  7 Oct 2011 18:22:05 +0200
-Message-Id: <1318004530-705-7-git-send-email-fweisbec@gmail.com>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 11/11] rcu: Fix early call to rcu_idle_enter()
+Date: Fri,  7 Oct 2011 18:22:10 +0200
+Message-Id: <1318004530-705-12-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
 References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
@@ -21,39 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A common debug_lockdep_rcu_enabled() function is used to check whether
-RCU lockdep splats should be reported, but srcu_read_lock() does not
-use it.  This commit therefore brings srcu_read_lock_held() up to date.
+On the irq exit path, tick_nohz_irq_exit()
+may raise a softirq, which action leads to the wake up
+path and select_task_rq_fair() that makes use of rcu
+to iterate the domains.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+This is an illegal use of RCU because we may be in RCU
+extended quiescent state if we interrupted an RCU-idle
+window in the idle loop:
+
+[  132.978883] ===============================
+[  132.978883] [ INFO: suspicious RCU usage. ]
+[  132.978883] -------------------------------
+[  132.978883] kernel/sched_fair.c:1707 suspicious rcu_dereference_check() usage!
+[  132.978883]
+[  132.978883] other info that might help us debug this:
+[  132.978883]
+[  132.978883]
+[  132.978883] rcu_scheduler_active = 1, debug_locks = 0
+[  132.978883] RCU used illegally from extended quiescent state!
+[  132.978883] 2 locks held by swapper/0:
+[  132.978883]  #0:  (&p->pi_lock){-.-.-.}, at: [<ffffffff8105a729>] try_to_wake_up+0x39/0x2f0
+[  132.978883]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8105556a>] select_task_rq_fair+0x6a/0xec0
+[  132.978883]
+[  132.978883] stack backtrace:
+[  132.978883] Pid: 0, comm: swapper Tainted: G        W   3.0.0+ #178
+[  132.978883] Call Trace:
+[  132.978883]  <IRQ>  [<ffffffff810a01f6>] lockdep_rcu_suspicious+0xe6/0x100
+[  132.978883]  [<ffffffff81055c49>] select_task_rq_fair+0x749/0xec0
+[  132.978883]  [<ffffffff8105556a>] ? select_task_rq_fair+0x6a/0xec0
+[  132.978883]  [<ffffffff812fe494>] ? do_raw_spin_lock+0x54/0x150
+[  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
+[  132.978883]  [<ffffffff8105a7c3>] try_to_wake_up+0xd3/0x2f0
+[  132.978883]  [<ffffffff81094f98>] ? ktime_get+0x68/0xf0
+[  132.978883]  [<ffffffff8105aa35>] wake_up_process+0x15/0x20
+[  132.978883]  [<ffffffff81069dd5>] raise_softirq_irqoff+0x65/0x110
+[  132.978883]  [<ffffffff8108eb65>] __hrtimer_start_range_ns+0x415/0x5a0
+[  132.978883]  [<ffffffff812fe3ee>] ? do_raw_spin_unlock+0x5e/0xb0
+[  132.978883]  [<ffffffff8108ed08>] hrtimer_start+0x18/0x20
+[  132.978883]  [<ffffffff8109c9c3>] tick_nohz_stop_sched_tick+0x393/0x450
+[  132.978883]  [<ffffffff810694f2>] irq_exit+0xd2/0x100
+[  132.978883]  [<ffffffff81829e96>] do_IRQ+0x66/0xe0
+[  132.978883]  [<ffffffff81820d53>] common_interrupt+0x13/0x13
+[  132.978883]  <EOI>  [<ffffffff8103434b>] ? native_safe_halt+0xb/0x10
+[  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
+[  132.978883]  [<ffffffff810144ea>] default_idle+0xba/0x370
+[  132.978883]  [<ffffffff810147fe>] amd_e400_idle+0x5e/0x130
+[  132.978883]  [<ffffffff8100a9f6>] cpu_idle+0xb6/0x120
+[  132.978883]  [<ffffffff817f217f>] rest_init+0xef/0x150
+[  132.978883]  [<ffffffff817f20e2>] ? rest_init+0x52/0x150
+[  132.978883]  [<ffffffff81ed9cf3>] start_kernel+0x3da/0x3e5
+[  132.978883]  [<ffffffff81ed9346>] x86_64_start_reservations+0x131/0x135
+[  132.978883]  [<ffffffff81ed944d>] x86_64_start_kernel+0x103/0x112
+
+Fix this by calling rcu_idle_enter() after tick_nohz_irq_exit().
+
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/srcu.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ kernel/softirq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-index 553c003..05d34cf 100644
---- a/include/linux/srcu.h
-+++ b/include/linux/srcu.h
-@@ -84,6 +84,9 @@ long srcu_batches_completed(struct srcu_struct *sp);
-  * this assumes we are in an SRCU read-side critical section unless it can
-  * prove otherwise.
-  *
-+ * Checks debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-+ *
-  * Note that if the CPU is in the idle loop from an RCU point of view
-  * (ie: that we are in the section between rcu_idle_enter() and rcu_idle_exit())
-  * then srcu_read_lock_held() returns false even if the CPU did an srcu_read_lock().
-@@ -101,7 +104,7 @@ static inline int srcu_read_lock_held(struct srcu_struct *sp)
- 	if (rcu_is_cpu_idle())
- 		return 0;
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 5c11dab..cca87e9 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -347,12 +347,12 @@ void irq_exit(void)
+ 	if (!in_interrupt() && local_softirq_pending())
+ 		invoke_softirq();
  
--	if (!debug_locks)
-+	if (!debug_lockdep_rcu_enabled())
- 		return 1;
+-	rcu_idle_enter();
+ #ifdef CONFIG_NO_HZ
+ 	/* Make sure that timer wheel updates are propagated */
+ 	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
+ 		tick_nohz_irq_exit();
+ #endif
++	rcu_idle_enter();
+ 	preempt_enable_no_resched();
+ }
  
- 	return lock_is_held(&sp->dep_map);
 -- 
 1.7.5.4
 
