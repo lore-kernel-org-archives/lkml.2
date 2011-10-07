@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab1JGGVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 02:21:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20903 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758619Ab1JGGVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 02:21:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,500,1312182000"; 
-   d="scan'208";a="59719527"
-Subject: Re: [PATCH] pch_dma: Fix suspend issue
-From: Vinod Koul <vinod.koul@intel.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-In-Reply-To: <4E8E940E.7040701@dsn.lapis-semi.com>
-References: <1317713279-2774-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-	 <1317963658.1573.2229.camel@vkoul-udesk3>
-	 <4E8E940E.7040701@dsn.lapis-semi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 11:44:40 +0530
-Message-ID: <1317968080.1573.2266.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758424Ab1JGGaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 02:30:46 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:48821 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752364Ab1JGGap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 02:30:45 -0400
+MIME-Version: 1.0
+Message-Id: <111007153043J3.00500@mail.play-mail.info>
+Date: Fri, 7 Oct 2011 15:30:43 +0900
+From: =?UTF-8?B?c2hpZnQ5ODc2NUBnbWFpbC5jb20=?= <shift98765@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?44GZ44GQ5L2/44GI44Gq44GP44Gq44KK44G+44GZ44CC5pep44GP44GK6L+U5LqL44GM5qyy44GX44GE44Gn44GZ44CC?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p976Uved005381
 
-On Fri, 2011-10-07 at 14:54 +0900, Tomoya MORINAGA wrote:
-> (2011/10/07 14:00), Vinod Koul wrote:
-> > How would changing the max number of descriptors fix the memory
-> > violation?
-> >
-> 
-> In probe of pch_dma,  you can see the following code.
-> 
-> 	for (i = 0; i < nr_channels; i++) {
-> 
-> snip...
-> 
-> 		pd_chan->membase = &regs->desc[i];
-> 
-> snip...
-> 
-> 	}
-> 
-> Max value of nr_channels is 12 defined at pci_table.
-> So, this caused memory access violation.
-This is all is due to not saving nr_channels in probe and using that
-instead.
+ゆうこです。何度もごめんなさい。
+この前から送ってる仮のメールアドレスですけど
+まだ貴方からメッセージが届いていないみたいで…。
 
-Looking deeper, struct pch_dma defines array of length MAX_CHAN_NR for
-channels. Then why do you allocate memory in probe as 
-         pd = kzalloc(sizeof(struct pch_dma)+
-                 sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
-what is the point in allocating additional memory for each channel?
+lkasdhflkashflkahsldkfh@yahoo.co.jp
+とりあえずこのメールアドレスが使えるみたいなので
+ここにお返事いただけませんか？
 
-Given this, why should there be predefined channel array in pcm_dma?
 
-It would be great if we could fix this by dynamically allocating memory
-for channels based on nr_channels and not wasting due to a static array.
+今頃後悔しても遅いのかもしれませんけど
+こうやってまた連絡を取れるようになったことで
+もう一度だけ頑張ってみようという気持ちになっています。
 
--- 
-~Vinod
+この一通のメールからまた私を思い出してくれたら…
+そして次こそはもっと私を近くで感じてくれたら…
+そこまでは気が早いかもしれませんけど
+それくらい今度は自分に素直になろうと思っています。
 
+あの時私にここまでやる勇気があれば
+こんなに手間がかかっていなかったかもしれませんものね。
+積極的になれなかったのは照れがあっからだと反省しています。
+
+
+lkasdhflkashflkahsldkfh@yahoo.co.jp
+このメールアドレスは仮のものですけど
+連絡もらえたら今度はしっかりやり取り出来るように
+ちゃんとした私の連絡先も控えておいて欲しいと思っています。
+
+離れてみて貴方の存在の大切さに改めて気付きました。
+だからもう離れ離れにはなりたくありません。
+
+
+
+  ���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
