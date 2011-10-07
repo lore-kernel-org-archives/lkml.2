@@ -1,119 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab1JGNm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 09:42:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52686 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1JGNm5 (ORCPT
+	id S1760077Ab1JGNnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 09:43:35 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35468 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760028Ab1JGNne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 09:42:57 -0400
-Subject: [PATCH v3 06/10] ASoC: wm8940: Convert to snd_soc_cache_sync
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1317994508.9906.1.camel@phoenix>
-References: <1317994508.9906.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 21:42:49 +0800
-Message-ID: <1317994969.9906.11.camel@phoenix>
+	Fri, 7 Oct 2011 09:43:34 -0400
+Date: Fri, 7 Oct 2011 14:40:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, david@fubar.dk, greg@kroah.com,
+        lennart@poettering.net, linux-kernel@vger.kernel.org,
+        harald@redhat.com
+Subject: Re: A =?UTF-8?B?UGx1bWJlcuKAmXM=?= Wish List for Linux
+Message-ID: <20111007144027.3c785c76@lxorguk.ukuu.org.uk>
+In-Reply-To: <CAE2SPAZci=u__d58phePCftVr_e+i+N2YU-JYjGDG_b3TmYTSQ@mail.gmail.com>
+References: <CAE2SPAZci=u__d58phePCftVr_e+i+N2YU-JYjGDG_b3TmYTSQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to snd_soc_cache_sync for sync reg_cache with the hardware.
+On Fri, 7 Oct 2011 15:09:16 +0200
+Bastien ROUCARIES <roucaries.bastien@gmail.com> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8940.c |   46 +++++++++++++++++++++-----------------------
- 1 files changed, 22 insertions(+), 24 deletions(-)
+> For fat a special xattr for root inode ?
 
-diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-index 7e0f54c..a4abfdf 100644
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -45,6 +45,17 @@ struct wm8940_priv {
- 	enum snd_soc_control_type control_type;
- };
- 
-+static int wm8940_volatile_register(struct snd_soc_codec *codec,
-+				    unsigned int reg)
-+{
-+	switch (reg) {
-+	case WM8940_SOFTRESET:
-+		return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
- static u16 wm8940_reg_defaults[] = {
- 	0x8940, /* Soft Reset */
- 	0x0000, /* Power 1 */
-@@ -459,6 +470,14 @@ static int wm8940_set_bias_level(struct snd_soc_codec *codec,
- 		ret = snd_soc_write(codec, WM8940_POWER1, pwr_reg | 0x1);
- 		break;
- 	case SND_SOC_BIAS_STANDBY:
-+		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
-+			ret = snd_soc_cache_sync(codec);
-+			if (ret < 0) {
-+				dev_err(codec->dev, "Failed to sync cache: %d\n", ret);
-+				return ret;
-+			}
-+		}
-+
- 		/* ensure bufioen and biasen */
- 		pwr_reg |= (1 << 2) | (1 << 3);
- 		/* set vmid to 300k for standby */
-@@ -659,30 +678,8 @@ static int wm8940_suspend(struct snd_soc_codec *codec, pm_message_t state)
- 
- static int wm8940_resume(struct snd_soc_codec *codec)
- {
--	int i;
--	int ret;
--	u8 data[3];
--	u16 *cache = codec->reg_cache;
--
--	/* Sync reg_cache with the hardware
--	 * Could use auto incremented writes to speed this up
--	 */
--	for (i = 0; i < ARRAY_SIZE(wm8940_reg_defaults); i++) {
--		data[0] = i;
--		data[1] = (cache[i] & 0xFF00) >> 8;
--		data[2] = cache[i] & 0x00FF;
--		ret = codec->hw_write(codec->control_data, data, 3);
--		if (ret < 0)
--			goto error_ret;
--		else if (ret != 3) {
--			ret = -EIO;
--			goto error_ret;
--		}
--	}
--	ret = wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
--
--error_ret:
--	return ret;
-+	wm8940_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-+	return 0;
- }
- 
- static int wm8940_probe(struct snd_soc_codec *codec)
-@@ -742,6 +739,7 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8940 = {
- 	.reg_cache_size = ARRAY_SIZE(wm8940_reg_defaults),
- 	.reg_word_size = sizeof(u16),
- 	.reg_cache_default = wm8940_reg_defaults,
-+	.volatile_register = wm8940_volatile_register,
- };
- 
- #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
--- 
-1.7.4.1
+If it's as Kay says a specific magic part of the directory and we need
+this just as a fixup for FAT and NTFS then probably an ioctl on it will
+do the job nicely. Sometimes stretching existing API's in semi-sane ways
+actually gets to produce worse special cases (like tar restoring the
+volume label by accident depending upon its settings)
 
-
-
+Alan
