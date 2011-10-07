@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab1JGVvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 17:51:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:61253 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab1JGVvP convert rfc822-to-8bit (ORCPT
+	id S1757013Ab1JGVwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 17:52:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48917 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab1JGVwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 17:51:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=cswvRyEOvXoIo94yjTvhJ8IoA+2f1F70CDZVdialb+/iklPlzi3pkMlG0KR4YvdWf
-	ue6Eevz6NtcYSliFTaeHA==
-MIME-Version: 1.0
-In-Reply-To: <1314845309-3277-1-git-send-email-dczhu@mips.com>
-References: <1314845309-3277-1-git-send-email-dczhu@mips.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 7 Oct 2011 15:50:49 -0600
-Message-ID: <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 0/2] Pass resources to pci_create_bus() and fix
- MIPS PCI resources
-To: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, monstr@monstr.eu,
-        benh@kernel.crashing.org, paulus@samba.org, davem@davemloft.net,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
-        dengcheng.zhu@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 7 Oct 2011 17:52:53 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 1/4] staging: et131x: Removing Olaf Hartmann's email as it bounces
+Date: Fri,  7 Oct 2011 22:51:27 +0100
+Message-Id: <1318024287-10221-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 8:48 PM, Deng-Cheng Zhu <dczhu@mips.com> wrote:
-> (Resending the patch set to include more arch maintainers.)
->
-> Change the pci_create_bus() interface to pass in available resources to get them
-> settled down early. This is to avoid possible resource conflicts while doing
-> pci_scan_slot() in pci_scan_child_bus(). Note that pcibios_fixup_bus() can get
-> rid of such conflicts, but it's done AFTER scanning slots.
->
-> In addition, MIPS PCI resources are now fixed using this new interface.
+On 3 October 2011 18:51, Uwe Ranft <uwe.ranft@telozo.com> wrote:
+> Hello,
+> olaf is not more longer owner of this e-mailadress. he has left our
+> company.
+> Please remove olaf fron the mailing list!
+> Best Regards
+> Uwe
 
-Jesse, I assume these are headed for the 3.2 merge window, right?
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/README |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-Do you have a git tree anywhere where we could check without having to
-bother you?
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+index b262ec7..d383e80 100644
+--- a/drivers/staging/et131x/README
++++ b/drivers/staging/et131x/README
+@@ -2,7 +2,7 @@ This is a driver for the ET1310 network device.
+ 
+ Based on the driver found at https://sourceforge.net/projects/et131x/
+ 
+-Cleaned up immensely by Olaf Hartman <o.hartmann@telovital.com> and Christoph
++Cleaned up immensely by Olaf Hartman and Christoph
+ Hellwig <hch@infradead.org>
+ 
+ Note, the powermanagement options were removed from the vendor provided
+@@ -14,6 +14,3 @@ Please send patches to:
+ 	Greg Kroah-Hartman <gregkh@suse.de>
+ 	Mark Einon <mark.einon@gmail.com>
+ 
+-And Cc: Olaf Hartmann <o.hartmann@telovital.com> as he has this device and can
+-test any changes.
+-
+-- 
+1.7.6.4
 
-Bjorn
-
-> -- Changes --
-> v3 - v2:
-> o Do not do fixups for root buses in pcibios_fixup_bus().
-> o Skip bus creation when bus resources cannot be allocated.
-> o PCI domain/bus numbers added to the error info in controller_resources().
->
-> v2 - v1:
-> o Merge [PATCH 1/3] to [PATCH 3/3], so now 2 patches in total.
-> o Add more info to patch description.
-> o Fix arch breaks in default resource setup discovered by Bjorn Helgaas.
->
-> Deng-Cheng Zhu (2):
->  PCI: Pass available resources into pci_create_bus()
->  MIPS: PCI: Pass controller's resources to pci_create_bus() in
->    pcibios_scanbus()
->
->  arch/microblaze/pci/pci-common.c |    3 +-
->  arch/mips/pci/pci.c              |   61 +++++++++++++++++++++++++++++++++-----
->  arch/powerpc/kernel/pci-common.c |    3 +-
->  arch/sparc/kernel/pci.c          |    3 +-
->  arch/x86/pci/acpi.c              |    2 +-
->  drivers/pci/probe.c              |   15 +++++++--
->  include/linux/pci.h              |    3 +-
->  7 files changed, 73 insertions(+), 17 deletions(-)
->
->
