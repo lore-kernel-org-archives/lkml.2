@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759422Ab1JGAZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 20:25:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265Ab1JGAZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 20:25:34 -0400
-Subject: Re: Including C6X in linux-next
-From: Mark Salter <msalter@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, linux-next@vger.kernel.org
-Date: Thu, 06 Oct 2011 20:25:30 -0400
-In-Reply-To: <20111007102953.7b533ec58dd613b9fd78a198@canb.auug.org.au>
-References: <1317917085.2703.16.camel@deneb.redhat.com>
-	 <20111007102953.7b533ec58dd613b9fd78a198@canb.auug.org.au>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317947131.2300.6.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1759379Ab1JGAjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 20:39:06 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54818 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1JGAjF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 20:39:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E8DA415.8090007@russia.ru>
+References: <4E8DA415.8090007@russia.ru>
+Date: Thu, 6 Oct 2011 17:39:03 -0700
+X-Google-Sender-Auth: dHiRnodUGDjNcu2OTMEfKPtLmf0
+Message-ID: <CAA9_cmfSTgF5WxcAFMa+TgfN1166a=XZziToF1mSyP2LqX9ctQ@mail.gmail.com>
+Subject: Re: BUG: spinlock lockup while performing FS operations
+From: Dan Williams <dan.j.williams@intel.com>
+To: =?KOI8-R?B?98HMxdLJyg==?= <paramonov@russia.ru>
+Cc: linux-kernel@vger.kernel.org, neilb@suse.de, linux-raid@vger.kernel.org,
+        axboe@kernel.dk, duaneg@dghda.com
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 10:29 +1100, Stephen Rothwell wrote:
-> Hi Mark,
-> 
-> On Thu, 06 Oct 2011 12:04:44 -0400 Mark Salter <msalter@redhat.com> wrote:
-> >
-> > All of the patches in the latest C6X patch set have gotten Acked-bys, so
-> > I guess its time to include it in the linux-next tree. The patches are
-> > available on the "for-linux-next" branch at:
-> > 
-> >    http://linux-c6x.org/git/projects/linux-c6x-upstreaming.git
-> 
-> I had a look at this and unfortunately you have based it on linux-next.
-> I cannot use it like that.  You need to rebase this onto Linus' tree,
-> sorry.  (Also, I used the git://... version of the URL as that is more
-> efficient than http://.. for updting git trees).
-> 
+On Thu, Oct 6, 2011 at 5:50 AM, ˜¡Ã≈“…  <paramonov@russia.ru> wrote:
+> Hi!
+>
+> Faced with this problem. There are RAID5, assembled by mdadm (/dev/md127),
+> which is divided into 2 partitions (md127p1 and md127p2). In both reiserfs.
+> The
+> second partition is exported via NFS. Everything works, the array is intact
+> and
+> fully synchronized. SMART says disks are healthy. But when copy too many
+> files
+> all hangs and saves only the reset. After a reset of course runs fsck, and
+> then
+> synchronize the array.
+>
+> I have a brand new computer. Sleaze is not set. Motherboard gigabyte
+> 870-UD3,
+> Power Supply FSP 700W, memory 16Gb Kingston, CPU Phenom II X6 1090T.
+>
+> I öreported an error öon öbugs.gentoo.org:
+> https://bugs.gentoo.org/show_bug.cgi?id=385047
+> Was öcompiling a custom kernel öwith support for ödebugging and ödebug
+> messages are öreceived.
+> Duane Griffin öthen ösent me öupstream.
+>
+> Now I have have BUG spinlock lockup on screen:
+>
+> Nov 26 13:34:46 localhost kernel: BUG: spinlock lockup on CPU#2, mc/7609,
+> ffff880419c37200
+> Oct ö4 15:55:50 localhost kernel: BUG: spinlock lockup on CPU#3,
+> flush-9:127/2391, ffff880419c37200
+>
+> Full log from /var/log/messages:
 
-Okay, it is now rebased on Linus' tree.
+This is the full log?  I see other /var/log/messages excerpts from the
+gentoo bugzilla.  Just wondering if there were any other warnings in
+the log that precede the failure?
 
+Can you attach the kernel configuration file to that bugzilla as well.
 
+It sounds like you can reproduce it reliably.  Is this a recent
+upgrade, or a new install?  If it was working before an upgrade we
+might be able to bisect.
+
+--
+Dan
