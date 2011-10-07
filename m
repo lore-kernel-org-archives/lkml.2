@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759924Ab1JGLZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:25:52 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39589 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759876Ab1JGLZv (ORCPT
+	id S1759934Ab1JGL1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 07:27:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64524 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759832Ab1JGL1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 07:25:51 -0400
-X-AuditID: b753bd60-a0aaaba0000019f4-5d-4e8ee1bcab34
-X-AuditID: b753bd60-a0aaaba0000019f4-5d-4e8ee1bcab34
-Message-ID: <4E8EE1B6.1030907@hitachi.com>
-Date: Fri, 07 Oct 2011 20:25:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 7 Oct 2011 07:27:04 -0400
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
- Intel X86
-References: <1317912555-9559-1-git-send-email-eranian@google.com> <1317912555-9559-8-git-send-email-eranian@google.com> <20111006153229.GJ14482@one.firstfloor.org> <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
-In-Reply-To: <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1317966346.1573.2252.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+Date: Fri, 7 Oct 2011 16:57:03 +0530
+Message-ID: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/07 19:38), Stephane Eranian wrote:
-> On Thu, Oct 6, 2011 at 5:32 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>> +     kernel_insn_init(&insn, kaddr);
->>> +     insn_get_opcode(&insn);
->>
->> This makes me uncomfortable. AFAIK that's the first use of the opcode
->> decoder being used directly for user space. It has a quite large attack
->> surface. Who says it cannot be exploited?
->>
-> This is not new, it's already used for the PEBS fixups and that includes
-> user level fixups, if possible.
+On 7 October 2011 11:15, Vinod Koul <vinod.koul@intel.com> wrote:
 
-Oops, I've thought existing code is only for kernel. Hmm, I guess
-this could cause a problem when running 32bit binary on x86-64.
+> Thru this patch Jassi gave a very good try at merging DMA_SLAVE and
+> memcpy, but more we debate this, I am still not convinced about merging
+> memcpy and DMA_SLAVE yet.
+>
+Nobody is merging memcpy and DMA_SLAVE right away.
+The api's primary purpose is to support interleave transfers.
+Possibility to merge other prepares into this is a side-effect.
 
-As you know, there are differences between decoding routines of
-x86-64 and -32. So insn_init() has the third parameter to give
-a flag for changing it.
-However, since the kernel itself runs on the native mode, I've added
-kernel_insn_init() only for the kernel decoding.
-
-----
-/* Init insn for kernel text */
-static inline void kernel_insn_init(struct insn *insn, const void *kaddr)
-{
-#ifdef CONFIG_X86_64
-        insn_init(insn, kaddr, 1);
-#else /* CONFIG_X86_32 */
-        insn_init(insn, kaddr, 0);
-#endif
-}
-----
-
-Thus, I strongly recommend you to check the target instruction bitwidth
-on x86-64 as (probably) below;
-
-if (kernel_ip(addr) || !test_tsk_thread_flag(current, TIF_IA32))
-	kernel_insn_init(insn, addr);
-else
-	insn_init(insn, addr, 0);
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> I would still argue that if we split this on same lines as current
+> mechanism, we have clean way to convey all details for both cases.
+>
+Do you mean to have separate interleaved transfer apis for Slave
+and Mem->Mem ? Please clarify.
