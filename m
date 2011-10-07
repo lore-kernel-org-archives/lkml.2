@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab1JGTOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 15:14:21 -0400
-Received: from fep34.mx.upcmail.net ([62.179.121.52]:36254 "EHLO
-	fep34.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab1JGTOU (ORCPT
+	id S1754085Ab1JGTPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 15:15:52 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35135 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753281Ab1JGTPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 15:14:20 -0400
-X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Oct 2011 15:14:19 EDT
-X-SourceIP: 14.99.40.52
-X-Authenticated-Sender: francine.sicard@hispeed.ch
-Reply-To: <accountscreening@cybergal.com>
-From: "C-SERVICE" <web@user.nl>
-Subject: Thank you.
-Date: Sat, 8 Oct 2011 00:33:37 +0530
+	Fri, 7 Oct 2011 15:15:51 -0400
+X-Sasl-enc: mr0On9rGqhS1nyY9Yuh0qChz1LMjuj+ax9erl1CIXU9z 1318014950
+Date: Fri, 7 Oct 2011 11:59:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
+        david@fubar.dk
+Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?= =?utf-8?Q?s?= Wish List for Linux
+Message-ID: <20111007185905.GA29127@kroah.com>
+References: <1317943022.1095.25.camel@mop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111007190341.DVMK1724.viefep12-int.chello.at@edge05.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=7AjrSHUygkxmgKj9+ZdWPzZoKYzIcpgZMIt1Yxqn8hE= c=1 sm=0 a=Dyoqhi_TatcA:10 a=id7X4Gu5GxwA:10 a=8EU9Q7FnrCoA:10 a=xh9vihcSp4YA:10 a=Cfj4BQAnxiAA:10 a=MjCUx3vYnvqIKF2THSoA:9 a=NzTDdaHNhbSHYyCqJeEA:7 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1317943022.1095.25.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message is from the Mail Administrator  IT Service 
-to all our e-mail account subscribers.You to provide us with the information
-below to re-validate your account due to spam and better quality service of the new 
+On Fri, Oct 07, 2011 at 01:17:02AM +0200, Kay Sievers wrote:
+> * CPU modaliases in /sys/devices/system/cpu/cpuX/modalias:
+> useful to allow module auto-loading of e.g. cpufreq drivers and KVM
+> modules. Andy Kleen has a patch to create the alias file itself. CPU
+> ‘struct sysdev’ needs to be converted to ‘struct device’ and a ‘struct
+> bus_type cpu’ needs to be introduced to allow proper CPU coldplug event
+> replay at bootup. This is one of the last remaining places where
+> automatic hardware-triggered module auto-loading is not available. And
+> we’d like to see that fix to make numerous ugly userspace work-arounds
+> to achieve the same go away.
 
-month version of spam, as a 
-subscriber you're are advice to send us the informaion below within 48hour: 
+I need to get off my ass and fix this properly, now that Rafael has done
+all of the hard work for sysdev already.  Thanks for reminding me.
 
-Username: 
-Password: 
-Confirm password: 
-Alternative Email:
+> * export ‘struct device_type fb/fbcon’ of ‘struct class graphics’
+> Userspace wants to easily distinguish ‘fb’ and ‘fbcon’ from each other
+> without the need to match on the device name.
 
-To avoid deleting your valid account for our 
-database
-Failure to do this will immediately render us that your email address is deactivated 
+Can't we just export a "type" file for the device for these devices?
+Is it really just that simple?
 
-from our database. Thank you for using 
+> * module-init-tools: provide a proper libmodprobe.so from
+> module-init-tools:
+> Early boot tools, installers, driver install disks want to access
+> information about available modules to optimize bootup handling.
 
-Thank You. 
-webmail Administrator 
+What information do they want to know?
+
+> * allow user xattrs to be set on files in the cgroupfs (and maybe
+> procfs?)
+
+This shouldn't be that difficult, right?
+
+Thanks for the list, much appreciated.
+
+greg k-h
