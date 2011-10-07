@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166Ab1JGQbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:31:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42099 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab1JGQbM (ORCPT
+	id S1760189Ab1JGQbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:31:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55343 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab1JGQbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:31:12 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Jon Masters <jonathan@jonmasters.org>, Adrian Bunk <bunk@stusta.de>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-In-Reply-To: Your message of "Fri, 07 Oct 2011 00:16:01 +0200."
-             <m34nzlbwbi.fsf@intrepid.localdomain>
-From: Valdis.Kletnieks@vt.edu
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi> <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi> <34045.1317760188@turing-police.cc.vt.edu> <1317916702.19519.1.camel@constitution.bos.jonmasters.org> <14191.1317930659@turing-police.cc.vt.edu>
-            <m34nzlbwbi.fsf@intrepid.localdomain>
+	Fri, 7 Oct 2011 12:31:35 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=5E__mjtSOyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=aAkNUmraqOYxgMmGptwA:9 a=awOwS7Qm2PKECuXWuOsA:7 a=PUjeQqilurYA:10 a=XNN-oNMjSfgA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH] kbuild: let object files depend on recordmcount instead
+ of its sources
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Date: Fri, 07 Oct 2011 12:31:33 -0400
+In-Reply-To: <1317993561-16242-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1317993561-16242-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1318005094.4729.40.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318004953_9306P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 07 Oct 2011 12:29:14 -0400
-Message-ID: <15324.1318004954@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4E8F28E1.00A8,ss=1,fgs=0,
-	ip=71.62.120.57,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318004953_9306P
-Content-Type: text/plain; charset=us-ascii
-
-On Fri, 07 Oct 2011 00:16:01 +0200, Krzysztof Halasa said:
-
-> > Wouldn't the fact that I attend the keysigning party and claim that I was
-> > the owner of key B4D3D7B0, and then subsequently signing your key with
-> > that same key, prove that I actually controlled key B4D3D7B0?
+On Fri, 2011-10-07 at 15:19 +0200, Uwe Kleine-König wrote:
+> This has the upside that distributions only have to ship the recordmcount
+> binary to allow building modules instead of recordmcount and it's sources.
 > 
-> I don't think it's needed. Alice claims ownership of key B4D3D7B0, gets
-> signatures on B4D3D7B0 public key. Bob (who actually controls B4D3D7B0)
-> reads Alice's mail and signs something "in Alice's name". Alice loses.
+> Make still notices that the object files need to be rebuilt when
+> recordmcount's sources change.
 
-You got that 180 degrees out of phase.  Jon said he wanted a keysigning party
-where I would prove that I own key B4D3D7B0 (which is, in fact, my key) by
-signing something random. My claim is that if I can take Jon's key and sign it
-with B4D3D7B0, that's already proving I control the key, and another signing
-of something else doesn't prove anything regarding my control of the key.
+This doesn't work. Try it on a clean build:
 
-Now mind you, it *does* have its uses - for example, "sign the random string
-I just e-mailed you" will verify that I have control of the e-mail address that the
-key claims to be attached to.  But that's different from proving I have control
-of the actual key.
+  HOSTCC  scripts/basic/fixdep
+  GEN     /home/rostedt/work/git/tmp/Makefile
+  HOSTCC  scripts/kconfig/conf.o
+  SHIPPED scripts/kconfig/zconf.tab.c
+  SHIPPED scripts/kconfig/lex.zconf.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+scripts/kconfig/conf --silentoldconfig Kconfig
+  Using /home/rostedt/work/git/linux-rt.git as source for kernel
+  GEN     /home/rostedt/work/git/tmp/Makefile
+  CHK     include/linux/version.h
+  UPD     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  UPD     include/generated/utsrelease.h
+  CC      kernel/bounds.s
+  GEN     include/generated/bounds.h
+  CC      arch/x86/kernel/asm-offsets.s
+  GEN     include/generated/asm-offsets.h
+  CALL    /home/rostedt/work/git/linux-rt.git/scripts/checksyscalls.sh
+make[3]: *** No rule to make target `scripts/mod/empty.o', needed by `scripts/mod/elfconfig.h'.  Stop.
+make[2]: *** [scripts/mod] Error 2
+make[1]: *** [scripts] Error 2
+make: *** [sub-make] Error 2
 
+-- Steve
 
---==_Exmh_1318004953_9306P
-Content-Type: application/pgp-signature
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  scripts/Makefile.build |    9 ++++-----
+>  1 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> index a0fd502..bc83e94 100644
+> --- a/scripts/Makefile.build
+> +++ b/scripts/Makefile.build
+> @@ -271,8 +271,7 @@ sub_cmd_record_mcount =					\
+>  	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+>  		$(objtree)/scripts/recordmcount $(RECORDMCOUNT_FLAGS) "$(@)";	\
+>  	fi;
+> -recordmcount_source := $(srctree)/scripts/recordmcount.c \
+> -		    $(srctree)/scripts/recordmcount.h
+> +recordmcount_exec := $(objtree)/scripts/recordmcount
+>  else
+>  sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+>  	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+> @@ -280,7 +279,7 @@ sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH
+>  	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+>  	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+>  	"$(if $(part-of-module),1,0)" "$(@)";
+> -recordmcount_source := $(srctree)/scripts/recordmcount.pl
+> +recordmcount_exec := $(srctree)/scripts/recordmcount.pl
+>  endif
+>  cmd_record_mcount = 						\
+>  	if [ "$(findstring -pg,$(_c_flags))" = "-pg" ]; then	\
+> @@ -301,13 +300,13 @@ define rule_cc_o_c
+>  endef
+>  
+>  # Built-in and composite module parts
+> -$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+> +$(obj)/%.o: $(src)/%.c $(recordmcount_exec) FORCE
+>  	$(call cmd,force_checksrc)
+>  	$(call if_changed_rule,cc_o_c)
+>  
+>  # Single-part modules are special since we need to mark them in $(MODVERDIR)
+>  
+> -$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
+> +$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_exec) FORCE
+>  	$(call cmd,force_checksrc)
+>  	$(call if_changed_rule,cc_o_c)
+>  	@{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOjyjZcC3lWbTT17ARAgVQAJ4l7xue8SoXR6SIs0pF7clBZZP6HgCdF4WP
-PaLF3MdikCqSc9/vCjDCBRc=
-=5r3g
------END PGP SIGNATURE-----
-
---==_Exmh_1318004953_9306P--
 
