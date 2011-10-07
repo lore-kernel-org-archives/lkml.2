@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab1JGD3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 23:29:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46606 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab1JGD3y convert rfc822-to-8bit (ORCPT
+	id S1759518Ab1JGDay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 23:30:54 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59955 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1JGDax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 23:29:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <87lisype1v.fsf@faui43f.informatik.uni-erlangen.de>
-References: <87lisype1v.fsf@faui43f.informatik.uni-erlangen.de>
-Date: Thu, 6 Oct 2011 23:29:50 -0400
-Message-ID: <CACqU3MWZuqgpxG7FSvr2LkqTqwF-gQM8hQSnTTpHpcWT2LHGNA@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Fix checking return value of 'fwrite'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
-Cc: linux-kbuild@vger.kernel.org, Jean Sacren <sakiwit@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Oct 2011 23:30:53 -0400
+Date: Fri, 7 Oct 2011 05:30:48 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "hpanvin@gmail.com" <hpa@zytor.com>
+Cc: Josh Stone <jistone@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH] x86: Make variable_test_bit reference all of *addr
+Message-ID: <20111007033048.GA14482@one.firstfloor.org>
+References: <1317945508-19575-1-git-send-email-jistone@redhat.com> <990b8719-066b-4e1d-892f-6a3ea4241fb2@email.android.com> <m2d3e936fn.fsf@firstfloor.org> <4E8E690C.9010206@redhat.com> <84050df0-7a6c-4dbe-85b7-ed9e98a813aa@email.android.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <84050df0-7a6c-4dbe-85b7-ed9e98a813aa@email.android.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Oct 06, 2011 at 08:12:48PM -0700, hpanvin@gmail.com wrote:
+> I mean the volatile in "asm volatile".
 
-2011/10/6 Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>:
-> fwrite indicates '1' written member if a zero-length string is written.
-you forgot the "Signed-off-by: " part :)
+That volatile has nothing to do with memory. It just means "don't move
+much". It's actually quite vague, because the rest of the function
+can still move around.
 
- - Arnaud
-
-> ---
->  scripts/kconfig/lkc.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
-> index b633bdb..727d265 100644
-> --- a/scripts/kconfig/lkc.h
-> +++ b/scripts/kconfig/lkc.h
-> @@ -90,7 +90,7 @@ struct conf_printer {
->  /* confdata.c and expr.c */
->  static inline void xfwrite(const void *str, size_t len, size_t count, FILE *out)
->  {
-> -       if (fwrite(str, len, count, out) < count)
-> +       if (len > 0 && fwrite(str, len, count, out) < count)
->                fprintf(stderr, "\nError in writing or end of file.\n");
->  }
->
-> --
-> 1.7.0.4
->
-> --
-> Reinhard Tartler                     Department of Computer Science IV
-> Martensstr 1, 91058 Erlangen Germany, University of Erlangen-Nuremberg
->            http://www4.informatik.uni-erlangen.de/~tartler
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-Andi
