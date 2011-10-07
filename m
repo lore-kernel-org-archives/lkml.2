@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759719Ab1JGKHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:07:04 -0400
-Received: from mail.infrascan.de ([188.40.84.136]:50309 "EHLO infrascan.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759653Ab1JGKHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:07:03 -0400
-Message-ID: <4E8ECF44.7060506@sensortherm.de>
-Date: Fri, 07 Oct 2011 12:07:00 +0200
-From: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
-References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de> <20111006120830.GN1714@legolas.emea.dhcp.ti.com> <4E8EB6EE.8040700@sensortherm.de> <20111007083856.GB10910@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111007083856.GB10910@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S965128Ab1JGKHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:07:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55139 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759641Ab1JGKHr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 06:07:47 -0400
+Date: Fri, 7 Oct 2011 11:06:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "G, Manjunath Kondaiah" <manjugk@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 4/5] gpiolib: handle deferral probe error
+Message-ID: <20111007110615.7638e905@lxorguk.ukuu.org.uk>
+In-Reply-To: <1317963790-29426-5-git-send-email-manjugk@ti.com>
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+	<1317963790-29426-5-git-send-email-manjugk@ti.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 07 Oct 2011 10:33:09 +0500
+"G, Manjunath Kondaiah" <manjugk@ti.com> wrote:
 
+> 
+> The gpio library should return -EPROBE_DEFER in gpio_request
+> if gpio driver is not ready.
 
-Am 07.10.2011 10:38, schrieb Felipe Balbi:
+Why not use the perfectly good existing error codes we have for this ?
 
->>>> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
->>>> index dd1571d..f623f3d 100644
->>>> --- a/include/linux/usb/gadget.h
->>>> +++ b/include/linux/usb/gadget.h
->>>> @@ -15,6 +15,7 @@
->>>>   #ifndef __LINUX_USB_GADGET_H
->>>>   #define __LINUX_USB_GADGET_H
->>>>
->>>> +#include<linux/device.h>
->>>
->>> this is not part of $SUBJECT
->>>
->>
->> changed git message
->
-> not enough. adding another header is not part of this patch. You need to
-> let us know why you need this new header there and you need add proper
-> spacing there.
->
-
-
-There is a space in the orginal patch.
-
-Should i make a seperate patch for this?
-
-In the header gadget.h are some stuff used, but not declared.
-
-My compile errors without device.h:
-
-   CC      drivers/usb/gadget/acm_ms.o
-In file included from include/linux/usb/composite.h:38,
-                  from drivers/usb/gadget/u_serial.h:15,
-                  from drivers/usb/gadget/acm_ms.c:20:
-include/linux/usb/gadget.h:491: error: field ‘dev’ has incomplete type
-include/linux/usb/gadget.h: In function ‘set_gadget_data’:
-include/linux/usb/gadget.h:495: error: implicit declaration of function 
-‘dev_set_drvdata’
-include/linux/usb/gadget.h: In function ‘get_gadget_data’:
-include/linux/usb/gadget.h:497: error: implicit declaration of function 
-‘dev_get_drvdata’
-include/linux/usb/gadget.h: In function ‘dev_to_usb_gadget’:
-include/linux/usb/gadget.h:500: warning: type defaults to ‘int’ in 
-declaration of ‘__mptr’
-include/linux/usb/gadget.h:500: warning: initialization from 
-incompatible pointer type
-include/linux/usb/gadget.h: At top level:
-include/linux/usb/gadget.h:781: error: field ‘driver’ has incomplete type
-In file included from drivers/usb/gadget/composite.c:26,
-                  from drivers/usb/gadget/acm_ms.c:44:
-include/linux/device.h:705: error: conflicting types for ‘dev_get_drvdata’
-include/linux/usb/gadget.h:497: note: previous implicit declaration of 
-‘dev_get_drvdata’ was here
-In file included from drivers/usb/gadget/acm_ms.c:44:
-drivers/usb/gadget/composite.c:1261: error: field name not in record or 
-union initializer
-drivers/usb/gadget/composite.c:1261: error: (near initialization for 
-‘composite_driver.driver’)
-make[3]: *** [drivers/usb/gadget/acm_ms.o] Error 1
-make[2]: *** [drivers/usb/gadget] Error 2
-make[1]: *** [drivers/usb] Error 2
-make: *** [drivers] Error 2
-
+We have EAGAIN and EUNATCH both of which look sensible.
