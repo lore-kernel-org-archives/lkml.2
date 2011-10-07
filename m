@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab1JGEzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 00:55:14 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52308 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab1JGEzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 00:55:12 -0400
-X-AuditID: b753bd60-9f483ba000000655-92-4e8e862ee2a1
-X-AuditID: b753bd60-9f483ba000000655-92-4e8e862ee2a1
-Message-ID: <4E8E862A.8020705@hitachi.com>
-Date: Fri, 07 Oct 2011 13:55:06 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Josh Stone <jistone@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "hpanvin@gmail.com" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH] x86: Make variable_test_bit reference all of *addr
-References: <1317945508-19575-1-git-send-email-jistone@redhat.com> <990b8719-066b-4e1d-892f-6a3ea4241fb2@email.android.com> <m2d3e936fn.fsf@firstfloor.org> <4E8E690C.9010206@redhat.com>
-In-Reply-To: <4E8E690C.9010206@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1759517Ab1JGFEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 01:04:24 -0400
+Received: from [117.192.88.236] ([117.192.88.236]:43378 "EHLO manju-desktop"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750960Ab1JGFEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 01:04:23 -0400
+To: linux-arm-kernel@lists.infradead.org
+Date: Fri, 07 Oct 2011 10:33:05 +0500
+Subject: [PATCH 0/5] Driver Probe Deferral Mechanism
+CC: linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Message-ID: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Josh,
 
-Thank you for reporting details :)
+Original patch posted at:
+http://comments.gmane.org/gmane.linux.kernel/1194346
 
-(2011/10/07 11:50), Josh Stone wrote:
-> We can make twobyte_is_boostable[] volatile instead, which does the
-> trick, but that seems a kludge to me.
+Enhancements done to above patch:
+ - checkpatch warning fixes
+ - added Kconfig symbol CONFIG_PROBE_DEFER
+ - replacing normal workqueue with singlethread_workqueue
+ - handling -EPROBE_DEFER error
 
-I think this time we'd better to do this (with comments),
-since this may not affect most of bitmap users using it for
-checking dynamically allocated bit-flags. kprobe's bitmap
-usage seems a special case.
+Apart from that, OMAP HSMMC and GPIO drivers are adopted to use
+deferral probe mechanism and successfully tested on omap3 beagle
+board.
 
-Thank you,
+Applies cleanly on top of v3.1-rc8
+
+G, Manjunath Kondaiah (3):
+  drivercore: add new error value for deferred probe
+  gpiolib: handle deferral probe error
+  omap: hsmmc: use platform_driver_register
+
+Grant Likely (1):
+  drivercore: Add driver probe deferral mechanism
+
+Mark Brown (1):
+  regulator: Support driver probe deferral
+
+ drivers/base/Kconfig          |   11 +++
+ drivers/base/base.h           |    3 +
+ drivers/base/core.c           |    6 ++
+ drivers/base/dd.c             |  145 +++++++++++++++++++++++++++++++++++++++++
+ drivers/gpio/gpiolib.c        |    6 +-
+ drivers/mmc/host/omap_hsmmc.c |    7 +-
+ drivers/regulator/core.c      |    4 +-
+ include/linux/device.h        |    7 ++
+ include/linux/errno.h         |    1 +
+ 9 files changed, 183 insertions(+), 7 deletions(-)
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Cc: linux-omap@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Dilan Lee <dilee@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+
+1.7.4.1
+
