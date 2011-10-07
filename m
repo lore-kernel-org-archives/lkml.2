@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759605Ab1JGFK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 01:10:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55574 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759556Ab1JGFKW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 01:10:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317499438-14058-8-git-send-email-arnd@arndb.de>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-8-git-send-email-arnd@arndb.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 7 Oct 2011 13:10:02 +0800
-Message-ID: <CAMPhdO8cX7e1NbxoJ_qVvmhMxkeURuw8akMY17j9_csskW+p6A@mail.gmail.com>
-Subject: Re: [PATCH 07/26] ARM: pxa: mbxfb: disable broken debugfs code
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759608Ab1JGFLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 01:11:39 -0400
+Received: from [117.192.88.236] ([117.192.88.236]:42530 "EHLO manju-desktop"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759367Ab1JGFLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 01:11:38 -0400
+To: linux-arm-kernel@lists.infradead.org
+Date: Fri, 07 Oct 2011 10:33:10 +0500
+Subject: [PATCH 5/5] omap: hsmmc: use platform_driver_register
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+CC: linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Message-ID: <1317963790-29426-6-git-send-email-manjugk@ti.com>
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> This code has not worked for a long time, and even the
-> Makefile entry for building the file was misspelled.
-> Mark it as broken.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Existing omap hsmmc driver uses "platform_driver_probe" in init
+function. Change it to use "platform_driver_register" in order to
+use deferral probe mechanism.
 
-> ---
->  drivers/video/Kconfig      |    2 +-
->  drivers/video/mbx/Makefile |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 549b960..45494c0 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -1932,7 +1932,7 @@ config FB_MBX
->
->  config FB_MBX_DEBUG
->        bool "Enable debugging info via debugfs"
-> -       depends on FB_MBX && DEBUG_FS
-> +       depends on FB_MBX && DEBUG_FS && BROKEN
->        default n
->        ---help---
->          Enable this if you want debugging information using the debug
-> diff --git a/drivers/video/mbx/Makefile b/drivers/video/mbx/Makefile
-> index 16c1165..a315abc 100644
-> --- a/drivers/video/mbx/Makefile
-> +++ b/drivers/video/mbx/Makefile
-> @@ -1,4 +1,4 @@
->  # Makefile for the 2700G controller driver.
->
->  obj-$(CONFIG_FB_MBX)      += mbxfb.o
-> -obj-$(CONFIG_FB_MBX_DEBUG) += mbxfbdebugfs.o
-> +obj-$(CONFIG_FB_MBX_DEBUG) += mbxdebugfs.o
-> --
-> 1.7.5.4
->
->
+Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
+Reported-by: Grant Likely <grant.likely@secretlab.ca>
+---
+Cc: linux-omap@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Dilan Lee <dilee@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+
+ drivers/mmc/host/omap_hsmmc.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 21e4a79..8dd2e7c 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -1862,7 +1862,7 @@ static void omap_hsmmc_debugfs(struct mmc_host *mmc)
+ 
+ #endif
+ 
+-static int __init omap_hsmmc_probe(struct platform_device *pdev)
++static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
+ {
+ 	struct omap_mmc_platform_data *pdata = pdev->dev.platform_data;
+ 	struct mmc_host *mmc;
+@@ -2077,6 +2077,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	pm_runtime_mark_last_busy(host->dev);
+ 	pm_runtime_put_autosuspend(host->dev);
+ 
++	dev_dbg(mmc_dev(host->mmc), "Probe success...\n");
+ 	return 0;
+ 
+ err_slot_name:
+@@ -2270,6 +2271,7 @@ static struct dev_pm_ops omap_hsmmc_dev_pm_ops = {
+ };
+ 
+ static struct platform_driver omap_hsmmc_driver = {
++	.probe		= omap_hsmmc_probe,
+ 	.remove		= omap_hsmmc_remove,
+ 	.driver		= {
+ 		.name = DRIVER_NAME,
+@@ -2280,8 +2282,7 @@ static struct platform_driver omap_hsmmc_driver = {
+ 
+ static int __init omap_hsmmc_init(void)
+ {
+-	/* Register the MMC driver */
+-	return platform_driver_probe(&omap_hsmmc_driver, omap_hsmmc_probe);
++	return platform_driver_register(&omap_hsmmc_driver);
+ }
+ 
+ static void __exit omap_hsmmc_cleanup(void)
+-- 
+1.7.4.1
+
