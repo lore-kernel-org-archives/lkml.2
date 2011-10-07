@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab1JGEU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 00:20:26 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64807 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab1JGEUZ (ORCPT
+	id S1752564Ab1JGEbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 00:31:41 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5007 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750699Ab1JGEbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 00:20:25 -0400
-Subject: [PATCH] ARM: SAMSUNG: s3c-dma-ops needs export.h for EXPORT_SYMBOL
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 12:20:14 +0800
-Message-ID: <1317961214.16109.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Oct 2011 00:31:39 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH] 8250_pci: Fix kernel panic when pch_uart is disabled
+Date: Fri,  7 Oct 2011 13:39:49 +0900
+Message-Id: <1317962389-21786-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build warning:
-  CC      arch/arm/plat-samsung/s3c-dma-ops.o
-arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: data definition has no type or storage class
-arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: parameter names (without types) in function declaration
+Currently, ".setup" function is not set. 
+As a result, when detecting our IOH's uart device without pch_uart, kernel panic
+occurs at the following of pciserial_init_ports().
 
-And fix the build error:
-ERROR: "s3c_dma_get_ops" [drivers/spi/spi-s3c64xx.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+	for (i = 0; i < nr_ports; i++) {
+		if (quirk->setup(priv, board, &serial_port, i))
+			break;
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+So, this patch adds the ".setup" function.
+We can use pci_default_setup because our IOH's uart is compatible with 16550.
+
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 ---
-This can be reproduced by "make s3c6400_defconfig;make" on linux-next 20111006.
- arch/arm/plat-samsung/s3c-dma-ops.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/tty/serial/8250_pci.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/plat-samsung/s3c-dma-ops.c b/arch/arm/plat-samsung/s3c-dma-ops.c
-index 582333c..7814949 100644
---- a/arch/arm/plat-samsung/s3c-dma-ops.c
-+++ b/arch/arm/plat-samsung/s3c-dma-ops.c
-@@ -14,6 +14,7 @@
- #include <linux/errno.h>
- #include <linux/slab.h>
- #include <linux/types.h>
-+#include <linux/export.h>
- 
- #include <mach/dma.h>
- 
+diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+index 3abeca2..55677b9 100644
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -1558,46 +1558,55 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8811,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8812,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8813,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8814,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8027,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8028,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8029,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x800C,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x800D,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	/*
+ 	 * Cronyx Omega PCI (PLX-chip based)
 -- 
-1.7.4.1
-
-
+1.7.4.4
 
