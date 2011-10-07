@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab1JGUeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57933 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab1JGUeI (ORCPT
+	id S1758824Ab1JGUeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37612 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758717Ab1JGUeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:08 -0400
+	Fri, 7 Oct 2011 16:34:18 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 02/26] dynamic_debug: make dynamic-debug supersede DEBUG ccflag
-Date: Fri,  7 Oct 2011 14:33:08 -0600
-Message-Id: <1318019612-20068-3-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 06/26] dynamic_debug: add trim_prefix() to provide source-root relative paths
+Date: Fri,  7 Oct 2011 14:33:12 -0600
+Message-Id: <1318019612-20068-7-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,108 +24,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-if CONFIG_DYNAMIC_DEBUG is defined, honor it over DEBUG, so that
-pr_debug()s are controllable, instead of always-on.  When DEBUG is
-also defined, change _DPRINTK_FLAGS_DEFAULT to enable printing by
-default.
+trim_prefix(path) skips past the absolute source path root, and returns
+the pointer to the relative path from there.  Use it to shorten displayed
+path in ddebug_change() and in ddebug_proc_show().  Function insures
+common prefix, so out-of-tree module paths are preserved as absolute paths.
 
-Also adding _DPRINTK_FLAGS_INCL_MODNAME would be nice, but there are
-numerous cases of pr_debug(NAME ": ...), which would result in double
-printing of module-name.  So defer this until things settle.
+For example:
+  kernel/freezer.c:128 [freezer]cancel_freezing - "  clean up: %s\012"
 
-CC: Joe Perches <joe@perches.com>
+Use trim_prefix() in ddebug_change to allow use of a relative pathname
+in a file match-spec, in addition to basename and full-path.
+
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- include/linux/device.h        |    8 ++++----
- include/linux/dynamic_debug.h |    4 ++++
- include/linux/netdevice.h     |    8 ++++----
- include/linux/printk.h        |    8 ++++----
- 4 files changed, 16 insertions(+), 12 deletions(-)
+ lib/dynamic_debug.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 4639419..2e16503 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -857,14 +857,14 @@ static inline int _dev_info(const struct device *dev, const char *fmt, ...)
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index e7090f2..2d26c10 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -69,6 +69,17 @@ static inline const char *basename(const char *path)
+ 	return tail ? tail+1 : path;
+ }
  
- #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
++/* Return the path relative to source root */
++static inline const char *trim_prefix(const char *path)
++{
++	int skip = strlen(__FILE__) - strlen("lib/dynamic_debug.c");
++
++	if (strncmp(path, __FILE__, skip))
++		skip = 0; /* prefix mismatch, don't skip */
++
++	return path + skip;
++}
++
+ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
+ 	{ _DPRINTK_FLAGS_PRINT, 'p' },
+ 	{ _DPRINTK_FLAGS_INCL_MODNAME, 'm' },
+@@ -125,7 +136,8 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			/* match against the source filename */
+ 			if (query->filename != NULL &&
+ 			    strcmp(query->filename, dp->filename) &&
+-			    strcmp(query->filename, basename(dp->filename)))
++			    strcmp(query->filename, basename(dp->filename)) &&
++			    strcmp(query->filename, trim_prefix(dp->filename)))
+ 				continue;
  
--#if defined(DEBUG)
--#define dev_dbg(dev, format, arg...)		\
--	dev_printk(KERN_DEBUG, dev, format, ##arg)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define dev_dbg(dev, format, ...)		     \
- do {						     \
- 	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
- } while (0)
-+#elif defined(DEBUG)
-+#define dev_dbg(dev, format, arg...)		\
-+	dev_printk(KERN_DEBUG, dev, format, ##arg)
- #else
- #define dev_dbg(dev, format, arg...)				\
- ({								\
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index ed7df3d..12ef233 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -26,7 +26,11 @@ struct _ddebug {
- #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
- #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
- #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
-+#if defined DEBUG
-+#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
-+#else
- #define _DPRINTK_FLAGS_DEFAULT 0
-+#endif
- 	unsigned int flags:8;
- } __attribute__((aligned(8)));
+ 			/* match against the function */
+@@ -154,7 +166,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			dp->flags = newflags;
+ 			if (verbose)
+ 				pr_info("changed %s:%d [%s]%s %s\n",
+-					dp->filename, dp->lineno,
++					trim_prefix(dp->filename), dp->lineno,
+ 					dt->mod_name, dp->function,
+ 					ddebug_describe_flags(dp, flagbuf,
+ 							sizeof(flagbuf)));
+@@ -682,9 +694,9 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 	}
  
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 2797260..8c08fe0 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2641,14 +2641,14 @@ extern int netdev_info(const struct net_device *dev, const char *format, ...)
- #define MODULE_ALIAS_NETDEV(device) \
- 	MODULE_ALIAS("netdev-" device)
+ 	seq_printf(m, "%s:%u [%s]%s %s \"",
+-		   dp->filename, dp->lineno,
+-		   iter->table->mod_name, dp->function,
+-		   ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
++		trim_prefix(dp->filename), dp->lineno,
++		iter->table->mod_name, dp->function,
++		ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
+ 	seq_escape(m, dp->format, "\t\r\n\"");
+ 	seq_puts(m, "\"\n");
  
--#if defined(DEBUG)
--#define netdev_dbg(__dev, format, args...)			\
--	netdev_printk(KERN_DEBUG, __dev, format, ##args)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define netdev_dbg(__dev, format, args...)			\
- do {								\
- 	dynamic_netdev_dbg(__dev, format, ##args);		\
- } while (0)
-+#elif defined(DEBUG)
-+#define netdev_dbg(__dev, format, args...)			\
-+	netdev_printk(KERN_DEBUG, __dev, format, ##args)
- #else
- #define netdev_dbg(__dev, format, args...)			\
- ({								\
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 0101d55..1224b1d 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -180,13 +180,13 @@ extern void dump_stack(void) __cold;
- #endif
- 
- /* If you are writing a driver, please use dev_dbg instead */
--#if defined(DEBUG)
--#define pr_debug(fmt, ...) \
--	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
- #define pr_debug(fmt, ...) \
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-+#elif defined(DEBUG)
-+#define pr_debug(fmt, ...) \
-+	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
 -- 
 1.7.4.4
 
