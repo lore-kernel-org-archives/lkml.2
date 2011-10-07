@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab1JGWHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 18:07:23 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54664 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662Ab1JGWHU convert rfc822-to-8bit (ORCPT
+	id S1758811Ab1JGWKC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 18:10:02 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37500 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab1JGWKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 18:07:20 -0400
+	Fri, 7 Oct 2011 18:10:00 -0400
 MIME-Version: 1.0
-From: Mark Einon <mark.einon@gmail.com>
-Date: Fri, 7 Oct 2011 23:07:00 +0100
-Message-ID: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
-Subject: et131x: Moving the et131x driver out of staging? (a.k.a. filling up
- the TODO list again)
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linville@tuxdriver.com, davem@davemloft.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20111007110615.7638e905@lxorguk.ukuu.org.uk>
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+ <1317963790-29426-5-git-send-email-manjugk@ti.com> <20111007110615.7638e905@lxorguk.ukuu.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 7 Oct 2011 16:09:38 -0600
+X-Google-Sender-Auth: DvkMkLI9TqMhpYYdngGhiKMEY7Y
+Message-ID: <CACxGe6tmjQGw77NMNYLWJHMAtmF9fk_9HnHtbrMhzkKEC1HG=Q@mail.gmail.com>
+Subject: Re: [PATCH 4/5] gpiolib: handle deferral probe error
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, Dilan Lee <dilee@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Fri, Oct 7, 2011 at 4:06 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Fri, 07 Oct 2011 10:33:09 +0500
+> "G, Manjunath Kondaiah" <manjugk@ti.com> wrote:
+>
+>>
+>> The gpio library should return -EPROBE_DEFER in gpio_request
+>> if gpio driver is not ready.
+>
+> Why not use the perfectly good existing error codes we have for this ?
+>
+> We have EAGAIN and EUNATCH both of which look sensible.
 
-I've managed to clear out the current TODO list for the staging/et131x
-driver, and hopefully its looking in a much better shape because of
-it.
+I want a distinct error code for probe deferral so that a) it doesn't
+overlap with something a driver is already doing, and b) so that all
+the users can be found again at a later date.
 
-I'd like to propose moving it out of the staging area, or at least
-getting some review comments regarding what work is still needed.
+That said, I'm not in agreement with this patch.  It is fine for gpio
+lib to have a code that means the pin doesn't exist (yet), but the
+device driver needs to be the one to decide whether or not it is
+appropriate to use probe deferral.
 
-Is it a good time to propose this bearing in mind the reorganisation
-of drivers/net/ and the fallout from the kernel.org issues?
-
-The only outstanding issue I know of, which is yet to hit your staging tree is:
-
-On 1 October 2011 20:58, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->... the driver doesn't
-> compile any more.  The Kconfig file says it "depends on NETDEV_1000"
-> but NETDEV_1000 isn't around any more since f860b0522f65d3
-> "drivers/net: Kconfig and Makefile cleanup" was merged.
-
-Cheers,
-
-Mark
+g.
