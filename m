@@ -1,102 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174Ab1JGQWu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:22:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50139 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760137Ab1JGQWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:22:45 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 09/11] x86: Enter rcu extended qs after idle notifier call
-Date: Fri,  7 Oct 2011 18:22:08 +0200
-Message-Id: <1318004530-705-10-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
-References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
+	id S1760199Ab1JGQXD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:23:03 -0400
+Received: from ezo.ezono.com ([50.22.105.208]:39583 "EHLO ezo.ezono.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760168Ab1JGQW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 12:22:58 -0400
+Message-ID: <4E8F2758.3040408@ezono.com>
+Date: Fri, 07 Oct 2011 18:22:48 +0200
+From: Abdelghani Ouchabane <abdelghani@ezono.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
+References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com>
+In-Reply-To: <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - ezo.ezono.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - ezono.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idle notifier, called by enter_idle(), enters into rcu read
-side critical section but at that time we already switched into
-the RCU-idle window (rcu_idle_enter() has been called). And it's
-illegal to use rcu_read_lock() in that state.
+Bjorn Helgaas wrote:
+> [added cc: linux-pci@vger.kernel.org]
+>
+> On Fri, Oct 7, 2011 at 1:16 AM, Abdelghani Ouchabane
+> <abdelghani@ezono.com> wrote:
+>   
+>> Hallo,
+>>
+>>  We are developing a FPGA board connected to a Fedora 15 PC host over PCIe.
+>> Right now, in the implementation and debug phase, I often need to power off
+>> and
+>> power on the device or try different boards. This causes a problem with the
+>> Fedora 15 running on the AMD PC.
+>>
+>> Typically the PC is booted when I need to insert the device under test. As
+>> expected, the Linux doesn't find the device and the software app cannot talk
+>> to it.
+>>
+>> * If I do "lspci -v" then it does not list our device.
+>>     
+>
+> Do you have pciehp enabled and loaded?  I would think a PCIe hot-add
+> should automatically rescan the bus.  Does dmesg say anything when you
+> do the hot-add?
+>   
+Thanks Bjorn,
 
-This results in rcu reporting its bad mood:
+Yes, I have them :
 
-[    1.275635] WARNING: at include/linux/rcupdate.h:194 __atomic_notifier_call_chain+0xd2/0x110()
-[    1.275635] Hardware name: AMD690VM-FMH
-[    1.275635] Modules linked in:
-[    1.275635] Pid: 0, comm: swapper Not tainted 3.0.0-rc6+ #252
-[    1.275635] Call Trace:
-[    1.275635]  [<ffffffff81051c8a>] warn_slowpath_common+0x7a/0xb0
-[    1.275635]  [<ffffffff81051cd5>] warn_slowpath_null+0x15/0x20
-[    1.275635]  [<ffffffff817d6f22>] __atomic_notifier_call_chain+0xd2/0x110
-[    1.275635]  [<ffffffff817d6f71>] atomic_notifier_call_chain+0x11/0x20
-[    1.275635]  [<ffffffff810018a0>] enter_idle+0x20/0x30
-[    1.275635]  [<ffffffff81001995>] cpu_idle+0xa5/0x110
-[    1.275635]  [<ffffffff817a7465>] rest_init+0xe5/0x140
-[    1.275635]  [<ffffffff817a73c8>] ? rest_init+0x48/0x140
-[    1.275635]  [<ffffffff81cc5ca3>] start_kernel+0x3d1/0x3dc
-[    1.275635]  [<ffffffff81cc5321>] x86_64_start_reservations+0x131/0x135
-[    1.275635]  [<ffffffff81cc5412>] x86_64_start_kernel+0xed/0xf4
-[    1.275635] ---[ end trace a22d306b065d4a66 ]---
+****************************************************************************************************
+lsmod :
 
-Fix this by entering rcu extended quiescent state later, just before
-the CPU goes to sleep.
+pciehp                 20282  0
+cgosdrv                17632  0
+****************************************************************************************************
+/etc/modprobe.d/pciehp.conf
+alias pci:v00001234d00000002sv00001234sd00000001bc11sc80i00 pciehp
+options pciehp pciehp_force=1 pciehp_debug=1
+****************************************************************************************************
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/process_64.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+After I plug my board in,  I executed  echo 1 > /sys/bus/pci/rescan
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index e72daf9..4a1535a 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -121,7 +121,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_idle_enter_norcu();
-+		tick_nohz_idle_enter();
- 		while (!need_resched()) {
- 
- 			rmb();
-@@ -137,8 +137,14 @@ void cpu_idle(void)
- 			enter_idle();
- 			/* Don't trace irqs off for idle */
- 			stop_critical_timings();
-+
-+			/* enter_idle() needs rcu for notifiers */
-+			rcu_idle_enter();
-+
- 			if (cpuidle_idle_call())
- 				pm_idle();
-+
-+			rcu_idle_exit();
- 			start_critical_timings();
- 
- 			/* In many cases the interrupt that ended idle
-@@ -147,7 +153,7 @@ void cpu_idle(void)
- 			__exit_idle();
- 		}
- 
--		tick_nohz_idle_exit_norcu();
-+		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
--- 
-1.7.5.4
+dmesg:
 
+[   73.203895] pci 0000:02:00.0: [1234:0002] type 0 class 0x001180
+[   73.203895] pci 0000:02:00.0: reg 10: [mem 0x00000000-0x00000fff 
+64bit pref]
+[   73.204083] pci 0000:02:00.0: reg 18: [mem 0x00000000-0x0003ffff 
+64bit pref]
+[   73.204114] pci 0000:02:00.0: reg 20: [mem 0x00000000-0x00000fff 
+64bit pref]
+[   73.206190] pci 0000:00:01.0: BAR 6: [??? 0x00000000 flags 0x2] has 
+bogus alignment
+[   73.206215] pci 0000:02:00.0: BAR 2: assigned [mem 
+0x40200000-0x4023ffff 64bit pref]
+[   73.206236] pci 0000:02:00.0: BAR 2: set to [mem 
+0x40200000-0x4023ffff 64bit pref] (PCI address [0x40200000-0x4023ffff])
+[   73.206247] pci 0000:02:00.0: BAR 0: assigned [mem 
+0x40240000-0x40240fff 64bit pref]
+[   73.206266] pci 0000:02:00.0: BAR 0: set to [mem 
+0x40240000-0x40240fff 64bit pref] (PCI address [0x40240000-0x40240fff])
+[   73.206277] pci 0000:02:00.0: BAR 4: assigned [mem 
+0x40241000-0x40241fff 64bit pref]
+[   73.206295] pci 0000:02:00.0: BAR 4: set to [mem 
+0x40241000-0x40241fff 64bit pref] (PCI address [0x40241000-0x40241fff])
+
+****************************************************************************************************
+  
+>   
+>> * Then I execute "echo 1 > /sys/bus/pci/rescan"
+>>
+>> * Now "lspci -v" lists our device.
+>>     
+>
+> That means config space accesses to your device seem to work fine.
+>
+>   
+>> * But our software returns : 0xFFFFFFFF
+>>     
+>
+> Your device is on bus 02.  Did you confirm that there are host bridge
+> and P2P bridge apertures containing the BARs, e.g,. the [mem
+> 0x40241000-0x40241fff] region?  The dmesg log should show all this
+> information.
+>   
+Yes, it is on the bus 02.
+
+Here is the log of dmesg :
+
+[   69.806322] pci 0000:02:00.0: [1234:0002] type 0 class 0x001180
+[   69.806426] pci 0000:02:00.0: reg 10: [mem 0x00000000-0x00000fff 
+64bit pref]
+[   69.806506] pci 0000:02:00.0: reg 18: [mem 0x00000000-0x0003ffff 
+64bit pref]
+[   69.806585] pci 0000:02:00.0: reg 20: [mem 0x00000000-0x00000fff 
+64bit pref]
+[   69.808194] pci 0000:00:01.0: BAR 6: [??? 0x00000000 flags 0x2] has 
+bogus alignment
+[   69.808271] pci 0000:02:00.0: BAR 2: assigned [mem 
+0x40200000-0x4023ffff 64bit pref]
+[   69.808343] pci 0000:02:00.0: BAR 2: set to [mem 
+0x40200000-0x4023ffff 64bit pref] (PCI address [0x40200000-0x4023ffff])
+[   69.808412] pci 0000:02:00.0: BAR 0: assigned [mem 
+0x40240000-0x40240fff 64bit pref]
+[   69.808650] pci 0000:02:00.0: BAR 0: set to [mem 
+0x40240000-0x40240fff 64bit pref] (PCI address [0x40240000-0x40240fff])
+[   69.808888] pci 0000:02:00.0: BAR 4: assigned [mem 
+0x40241000-0x40241fff 64bit pref]
+[   69.810805] pci 0000:02:00.0: BAR 4: set to [mem 
+0x40241000-0x40241fff 64bit pref] (PCI address [0x40241000-0x40241fff])
+[   84.309870] pci 0000:02:00.0: enabling device (0000 -> 0002)
+[   84.310082] pci 0000:02:00.0: PCI INT A -> Link[LNKB] -> GSI 7 
+(level, low) -> IRQ 7
+[   85.581946] pci 0000:02:00.0: [1234:0002] type 0 class 0x001180
+[   85.582300] pci 0000:02:00.0: reg 10: [mem 0x40240000-0x40240fff 
+64bit pref]
+[   85.582467] pci 0000:02:00.0: reg 18: [mem 0x40200000-0x4023ffff 
+64bit pref]
+[   85.582631] pci 0000:02:00.0: reg 20: [mem 0x40241000-0x40241fff 
+64bit pref]
+[   85.584195] pci 0000:00:01.0: BAR 6: [??? 0x00000000 flags 0x2] has 
+bogus alignment
+[   85.584442] pci 0000:02:00.0: BAR 2: assigned [mem 
+0x40200000-0x4023ffff 64bit pref]
+[   85.584682] pci 0000:02:00.0: BAR 2: set to [mem 
+0x40200000-0x4023ffff 64bit pref] (PCI address [0x40200000-0x4023ffff])
+[   85.584921] pci 0000:02:00.0: BAR 0: assigned [mem 
+0x40240000-0x40240fff 64bit pref]
+[   85.585346] pci 0000:02:00.0: BAR 0: set to [mem 
+0x40240000-0x40240fff 64bit pref] (PCI address [0x40240000-0x40240fff])
+[   85.585587] pci 0000:02:00.0: BAR 4: assigned [mem 
+0x40241000-0x40241fff 64bit pref]
+[   85.585826] pci 0000:02:00.0: BAR 4: set to [mem 
+0x40241000-0x40241fff 64bit pref] (PCI address [0x40241000-0x40241fff])
+[   86.915177] pci 0000:02:00.0: PCI INT A -> Link[LNKB] -> GSI 7 
+(level, low) -> IRQ 7
+
+****************************************************************************************************
+
+Many thanks in advance.
+
+Cheers,
+Ghani
