@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357Ab1JGHhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 03:37:20 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:47650 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751833Ab1JGHhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 03:37:18 -0400
-Date: Fri, 7 Oct 2011 13:07:00 +0530
-From: "G, Manjunath Kondaiah" <manjugk@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 0/5] Driver Probe Deferral Mechanism
-Message-ID: <20111007073700.GA30978@manju-desktop>
-References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
- <20111007065042.GF27508@kroah.com>
+	id S1759550Ab1JGHiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 03:38:11 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:35376 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759182Ab1JGHiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 03:38:09 -0400
+In-Reply-To: <20111006202042.GD12447@tux1.beaverton.ibm.com>
+References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111006202042.GD12447@tux1.beaverton.ibm.com>
+Subject: Re: [PATCH v5 0/4] crc32c: Add faster algorithm and self-test code
+X-KeepSent: 47136962:36AF976D-C1257922:0029A6FB;
+ type=4; name=$KeepSent
+To: djwong@us.ibm.com
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Mingming Cao <cmm@us.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-ext4@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Theodore Tso <tytso@mit.edu>
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF47136962.36AF976D-ONC1257922.0029A6FB-C1257922.0029EF1C@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Fri, 7 Oct 2011 09:38:01 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 10/07/2011 09:38:03
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007065042.GF27508@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/10/06 22:20:42:
+> Subject: Re: [PATCH v5 0/4] crc32c: Add faster algorithm and self-test code
+>
+> On Tue, Oct 04, 2011 at 04:53:57PM -0700, Darrick J. Wong wrote:
+> > Hi all,
+> >
+> > This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+> > software crc32c implementation.  It requires that all ten of his patches (at
+> > least the ones dated 31 Aug 2011) be applied.  It removes the crc32c
+> > implementation in crypto/ in favor of using the stamped-out one in lib/.  There
+> > is also a change to Kconfig so that the kernel builder can pick an
+> > implementation best suited for the hardware.
+> >
+> > The motivation for this patchset is that I am working on adding full metadata
+> > checksumming to ext4.  As far as performance impact of adding checksumming
+> > goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+> > test that involves only file creation and deletion and extent tree writes, I
+> > see a drop of about 50 pcercent with the current kernel crc32c implementation;
+> > this improves to a drop of about 20 percent with the enclosed crc32c code.
+> >
+> > When metadata is usually a small fraction of total IO, this new implementation
+> > doesn't help much because metadata is usually a small fraction of total IO.
+> > However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+> > tree), then this patch speeds up the operation substantially.
+> >
+> > Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+> > should improve their speed as well.  I have not yet quantified that, however.
+>
+> As for Mr. Tjernlund's unresolved questions regarding the v4 patch, I have
+> tested this new code on x64/x32/ppc32/ppc64 and it seems to work fine, both
+> with the crc32c selftest and also on a practical level with ext4 metadata
+> checksumming enabled.  Updating to Bob's newest calculation code brings about a
+> 10-15% speedup on the ppc64 box.  I also see that slice-by-8 is about 20%
+> faster than slice-by-4 on my ppc32 box.
+>
+> I did _not_ see any failures on ppc32 when running an extended ext4+checksum
+> test suite.
 
-On Thu, Oct 06, 2011 at 11:50:42PM -0700, Greg KH wrote:
-> On Fri, Oct 07, 2011 at 10:33:05AM +0500, G, Manjunath Kondaiah wrote:
-> 
-> Why did you send this series of patches out twice?  Were they different?
-> 
-> confused,
+Hi Darrick, I finally had some time to look this series over and I like
+this much better. Thank you for your patience with me :)
 
-Looks like this patch series has reached only individual recepients and 
-not the mailing lists hence it was posted once again.
+Acked-By: Joakim Tjernlund <joakim.tjernlund@transmode.se>
 
-Sorry for the spam.
+ Jocke
 
--Manjunath
