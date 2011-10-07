@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1JGQBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:01:20 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:36072 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab1JGQBU (ORCPT
+	id S1760061Ab1JGQFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:05:25 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42847 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab1JGQFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:01:20 -0400
-Date: Fri, 7 Oct 2011 18:01:14 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Biederman Eric Biederman <ebiederm@xmission.com>
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?=
-	=?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111007160113.GB14201@tango.0pointer.de>
-References: <1317943022.1095.25.camel@mop>
- <20111007074904.GC16723@count0.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007074904.GC16723@count0.beaverton.ibm.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Fri, 7 Oct 2011 12:05:24 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: virtualbox tainting.
+In-Reply-To: Your message of "Fri, 07 Oct 2011 10:01:32 +0200."
+             <alpine.LRH.2.00.1110070959470.14853@twin.jikos.cz>
+From: Valdis.Kletnieks@vt.edu
+References: <20111006190526.GA13883@redhat.com> <20111006194432.GA21642@kroah.com> <20111006195007.GA24900@redhat.com> <20111006195824.GA22033@kroah.com> <20111006200440.GB25681@redhat.com>
+            <alpine.LRH.2.00.1110070959470.14853@twin.jikos.cz>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1318003445_9306P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 07 Oct 2011 12:04:05 -0400
+Message-ID: <14168.1318003445@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4E8F22F9.0207,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07.10.11 00:49, Matt Helsley (matthltc@us.ibm.com) wrote:
+--==_Exmh_1318003445_9306P
+Content-Type: text/plain; charset=us-ascii
 
-> 
-> On Fri, Oct 07, 2011 at 01:17:02AM +0200, Kay Sievers wrote:
-> 
-> <snip>
-> 
-> > * simple, reliable and future-proof way to detect whether a specific pid
-> > is running in a CLONE_NEWPID container, i.e. not in the root PID
-> > namespace. Currently, there are available a few ugly hacks to detect
-> 
-> Is that precisely what's needed or would it be sufficient to know
-> that the pid is running in a child pid namespace of the current pid
-> namespace? If so, I think this could eventually be done by comparing
-> the inode numbers assigned to /proc/<pid>/ns/pid to those of
-> /proc/1/ns/pid.
+On Fri, 07 Oct 2011 10:01:32 +0200, Jiri Kosina said:
+> On Thu, 6 Oct 2011, Dave Jones wrote:
 
-I think the most interesting test would be to figure out for a process
-if itself is running in a PID namespace. And for that comparing inodes
-wouldn't work since the namespace process would never get access to the
-inode of the outside init.
+> > what stops an out of tree module from setting that flag ?
+> 
+> What stops virtualbox developers from renaming the module in every 
+> release? That's the same story.
+> 
+> The only fool-proof way of doing is indeed is the GPG-signing thing.
 
-Lennart
+It would also be a second in-tree user for the kernel MPI library code that
+somebody posted recently... Just sayin' ;)
 
--- 
-Lennart Poettering - Red Hat, Inc.
+--==_Exmh_1318003445_9306P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOjyL1cC3lWbTT17ARAiKEAJwMYKxCzI2aVTkbv6h06FEN9HjmdQCgyhYE
+uiOd2Ae3H78nt0Fyihmnb7Y=
+=57Fs
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1318003445_9306P--
+
