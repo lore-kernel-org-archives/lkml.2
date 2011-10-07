@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935652Ab1JGUhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:37:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58642 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934769Ab1JGUey (ORCPT
+	id S1759245Ab1JGUew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51628 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab1JGUeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:54 -0400
+	Fri, 7 Oct 2011 16:34:46 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 19/26] dynamic_debug: add flags filtering to flags spec
-Date: Fri,  7 Oct 2011 14:33:25 -0600
-Message-Id: <1318019612-20068-20-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 16/26] dynamic_debug: save 'a' queries to pending-list for later (re)application.
+Date: Fri,  7 Oct 2011 14:33:22 -0600
+Message-Id: <1318019612-20068-17-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,183 +24,302 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Change definition of flags spec to [pmflta_]*[-+=][pmflta_]*
-The flags preceding the op are optional filter-flags; if provided,
-they add an additional constraint to call-site matching done
-by ddebug_change; call-sites which do not have all specified flags
-are skipped (additional flags are allowed).
+Save queries with 'a' flag to pending-queries after applying them.
+When a module is loaded later, ddebug_add_module() calls
+apply_pending_queries() to scan pending_queries list and call
+ddebug_change to apply them.
 
-This allows query/rules like "p+t" to turn on TID logging for all
-currently enabled call-sites, while leaving the others alone.
-This also allows rules like "a-a" to select pending queries and
-remove them from the list.
+With this change, the loaded module's pr_debug()s are enabled before
+its module_init is invoked, allowing use of pr_debug()s during
+initialization.
 
-Also allow 0 flags byte, so that active rules can be completely
-reset by writing "p=" or "p=_".
+Behavior:
+If pending query matches existing one, the existing one is updated.
+Pending queries stay on list through rmmod, modprobe cycles.
+If the updated query has 0 flags, it is removed.
+If pending query has 0 flags, it is discarded, not added.
 
-Patch factors flag-scanning into ddebug_parse_flag_settings(),
-and uses it for both filter-flags and new flags, and adds pr_err()
-where useful.
+Patch adds:
+'a' flag to dynamic_debug.h
+struct pending_query: like ddebug_query, but with storage for match specs.
+ddebug_save_pending():
+  checks new pending query against existing, to update or remove
+  discards new do-nothing pending queries.
+  copies ddebug_query, saving match specs from stack.
+  adds new pending query to end of pending list (fifo)
+apply_pending_queries():
+  called from ddebug_add_module()
+  (re)applies queries on newly loaded modules.
+queries_match() - helper for ddebug_save_pending
+ddebug_remove_all_tables() - clear pending-queries here.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   85 +++++++++++++++++++++++++++++++--------------------
- 1 files changed, 52 insertions(+), 33 deletions(-)
+ include/linux/dynamic_debug.h |    1 +
+ lib/dynamic_debug.c           |  154 +++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 150 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 12ef233..2c9c476 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -26,6 +26,7 @@ struct _ddebug {
+ #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
+ #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
+ #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
++#define _DPRINTK_FLAGS_APPEND		(1<<5)  /* add query to pending list */
+ #if defined DEBUG
+ #define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
+ #else
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 29dbf69..3c9244d 100644
+index 4c8e178..a59d48c 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -191,7 +191,8 @@ static bool query_matches_callsite(struct _ddebug *dp,
+@@ -53,6 +53,12 @@ struct ddebug_query {
+ 	unsigned int first_lineno, last_lineno;
+ };
+ 
++struct pending_query {
++	struct list_head link;
++	struct ddebug_query query;
++	unsigned int flags, mask;
++};
++
+ struct ddebug_iter {
+ 	struct ddebug_table *table;
+ 	unsigned int idx;
+@@ -65,6 +71,9 @@ static int verbose = 0;
+ #define VERBOSE_PROC_SHOW 11	/* enable per-line msgs on control file reads */
+ module_param(verbose, int, 0644);
+ 
++/* legal but inapplicable queries, save and test against new modules */
++static LIST_HEAD(pending_queries);
++
+ /* Return the last part of a pathname */
+ static inline const char *basename(const char *path)
+ {
+@@ -89,6 +98,7 @@ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
+ 	{ _DPRINTK_FLAGS_INCL_FUNCNAME, 'f' },
+ 	{ _DPRINTK_FLAGS_INCL_LINENO, 'l' },
+ 	{ _DPRINTK_FLAGS_INCL_TID, 't' },
++	{ _DPRINTK_FLAGS_APPEND, 'a' },
+ };
+ 
+ /* format a string into buf[] which describes the _ddebug's flags */
+@@ -125,6 +135,25 @@ do {									\
+ 			q->first_lineno, q->last_lineno);		\
+ } while (0)
+ 
++#define vpr_info_pq(pq, msg)						\
++do {									\
++	struct ddebug_query *q = &pq->query;				\
++	if (verbose)							\
++		/* trim last char off format print */			\
++		pr_info("%s: func=\"%s\" file=\"%s\" "			\
++			"module=\"%s\" format=\"%.*s\" "		\
++			"lineno=%u-%u "					\
++			"flags=0x%x mask=0x%x",				\
++			msg,						\
++			q->function ? q->function : "",			\
++			q->filename ? q->filename : "",			\
++			q->module ? q->module : "",			\
++			(int)(q->format ? strlen(q->format) - 1 : 0),	\
++			q->format ? q->format : "",			\
++			q->first_lineno, q->last_lineno,		\
++			pq->flags, pq->mask);				\
++} while (0)
++
+ static bool query_matches_callsite(struct _ddebug *dp,
+ 				const struct ddebug_query *query)
+ {
+@@ -159,7 +188,7 @@ static bool query_matches_callsite(struct _ddebug *dp,
+  * the user which ddebug's were changed, or whether none
   * were matched.  Called with ddebug_lock held.
   */
- static int ddebug_change(const struct ddebug_query *query,
--			unsigned int flags, unsigned int mask)
-+			unsigned int flags, unsigned int mask,
-+			unsigned int filter)
+-static void ddebug_change(const struct ddebug_query *query,
++static int ddebug_change(const struct ddebug_query *query,
+ 			unsigned int flags, unsigned int mask)
  {
  	int i;
- 	struct ddebug_table *dt;
-@@ -213,6 +214,9 @@ static int ddebug_change(const struct ddebug_query *query,
- 			if (!query_matches_callsite(dp, query))
- 				continue;
+@@ -196,8 +225,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 							sizeof(flagbuf)));
+ 		}
+ 	}
+-	if (!nfound && verbose)
+-		pr_info("no matches for query\n");
++	return nfound;
+ }
  
-+			if (filter && (dp->flags & filter) != filter)
-+				continue;
-+
- 			nfound++;
- 
- 			newflags = (dp->flags & mask) | flags;
-@@ -406,29 +410,9 @@ static int ddebug_parse_query(char *words[], int nwords,
+ /*
+@@ -435,6 +463,95 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
  	return 0;
  }
  
--/*
-- * Parse `str' as a flags specification, format [-+=][p]+.
-- * Sets up *maskp and *flagsp to be used when changing the
-- * flags fields of matched _ddebug's.  Returns 0 on success
-- * or <0 on error.
-- */
--static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
--			       unsigned int *maskp)
-+static int ddebug_parse_flag_settings(const char *str)
- {
--	unsigned flags = 0;
--	int op = '=', i;
--
--	switch (*str) {
--	case '+':
--	case '-':
--	case '=':
--		op = *str++;
--		break;
--	default:
--		return -EINVAL;
--	}
--	if (verbose)
--		pr_info("op='%c'\n", op);
-+	int i, flags = 0;
- 
- 	for ( ; *str ; ++str) {
- 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
-@@ -437,13 +421,46 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
- 				break;
- 			}
- 		}
--		if (i < 0)
-+		if (i < 0 && *str) {
-+			pr_err("unknown flag: %c\n", *str);
- 			return -EINVAL;
-+		}
- 	}
--	if (flags == 0)
-+	return flags;
++/* check if new query exactly matches existing one */
++static bool queries_match(struct ddebug_query *qnew, struct ddebug_query *qcur)
++{
++	if (!qnew->module != !qcur->module ||
++		!qnew->filename != !qcur->filename ||
++		!qnew->function != !qcur->function ||
++		!qnew->format != !qcur->format)
++		return false;  /* a match-spec set/unset state differs */
++
++	if (qnew->last_lineno != qcur->last_lineno ||
++		qnew->first_lineno != qcur->first_lineno)
++		return false;
++
++	if ((qnew->module && strcmp(qnew->module, qcur->module)) ||
++		(qnew->filename && strcmp(qnew->filename, qcur->filename)) ||
++		(qnew->function && strcmp(qnew->function, qcur->function)) ||
++		(qnew->format && strcmp(qnew->format, qcur->format)))
++		return false;
++
++	return true;
 +}
 +
-+/*
-+ * Parse `str' as a flags filter and specification, with format
-+ * [pmflta_]*[-+=][pmflta_]+.  Sets up *maskp, *flagsp and *filterp to
-+ * be used when changing the flags fields of matched _ddebug's.
-+ * Returns 0 on success or <0 on error.
-+ */
-+static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
-+			unsigned int *maskp, unsigned int *filterp)
++static void pqfree(struct pending_query *pq)
 +{
-+	int flags, filter;
-+	int op = '=';
-+	char *s = strpbrk(str, "+-=");
++	if (pq->query.module)
++		kfree(pq->query.module);
++	if (pq->query.function)
++		kfree(pq->query.function);
++	if (pq->query.filename)
++		kfree(pq->query.filename);
++	if (pq->query.format)
++		kfree(pq->query.format);
++	kfree(pq);
++}
 +
-+	if (!s) {
-+		pr_err("flags spec missing op, expecting [+-=]\n");
- 		return -EINVAL;
--	if (verbose)
--		pr_info("flags=0x%x\n", flags);
-+	} else {
-+		op = *s;
-+		*s++ = '\0';
-+	}
-+	filter = ddebug_parse_flag_settings(str);
-+	if (filter < 0) {
-+		pr_err("flags_filter=0x%x\n", filter);
-+		return -EINVAL;
-+	}
-+	*filterp = filter;
++/* copy query off stack, save flags & mask, and store or update in
++   pending-list.  Called with ddebug_lock held.
++ */
++static int ddebug_save_pending(struct ddebug_query *query,
++				unsigned int flags, unsigned int mask)
++{
++	struct pending_query *pq, *pqnext;
 +
-+	flags = ddebug_parse_flag_settings(s);
-+	if (flags < 0) {
-+		pr_err("flags=0x%x\n", flags);
-+		return -EINVAL;
++	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
++		if (queries_match(query, &pq->query)) {
++			/* query already in list, update flags */
++			if (pq->flags != flags)
++				pq->flags = flags;
++			if (pq->mask != mask)
++				pq->mask = mask;
++			vpr_info_pq(pq, "already pending, updated it");
++			return 0;
++		}
 +	}
- 
- 	/* calculate final *flagsp, *maskp according to mask and op */
- 	switch (op) {
-@@ -461,7 +478,9 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
- 		break;
- 	}
- 	if (verbose)
--		pr_info("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
-+		pr_info("filter=0x%x op='%c' flags=0x%x *flagsp=0x%x *maskp=0x%x\n",
-+			filter, op, flags, *flagsp, *maskp);
++	if (!flags) {
++		vpr_info_pq(pq, "pending query has 0 flags, discarding");
++		return 0;
++	}
++	vpr_info_dq(query, "add to pending");
 +
- 	return 0;
- }
- 
-@@ -563,7 +582,7 @@ static int ddebug_save_pending(struct ddebug_query *query,
- 
++	pq = kzalloc(sizeof(struct pending_query), GFP_KERNEL);
++	if (pq == NULL)
++		return -ENOMEM;
++
++	/* copy non-null match-specs into allocd mem, update pointers */
++	if (query->module)
++		if (!(pq->query.module = kstrdup(query->module, GFP_KERNEL)))
++			return -ENOMEM;
++	if (query->function)
++		if (!(pq->query.function = kstrdup(query->function, GFP_KERNEL)))
++			return -ENOMEM;
++	if (query->filename)
++		if (!(pq->query.filename = kstrdup(query->filename, GFP_KERNEL)))
++			return -ENOMEM;
++	if (query->format)
++		if (!(pq->query.format = kstrdup(query->format, GFP_KERNEL)))
++			return -ENOMEM;
++
++	pq->flags = flags;
++	pq->mask = mask;
++
++	list_add_tail(&pq->link, &pending_queries);
++
++	if (verbose)
++		pr_info("query saved as pending, in %ld bytes\n",
++			sizeof(struct pending_query));
++	return 0;
++}
++
  static int ddebug_exec_query(char *query_string)
  {
--	unsigned int flags = 0, mask = 0;
-+	unsigned int flags = 0, mask = 0, filter = 0;
- 	struct ddebug_query query;
+ 	unsigned int flags = 0, mask = 0;
+@@ -442,6 +559,7 @@ static int ddebug_exec_query(char *query_string)
  #define MAXWORDS 9
  	int nwords;
-@@ -575,14 +594,14 @@ static int ddebug_exec_query(char *query_string)
- 		return -EINVAL;
- 	if (ddebug_parse_query(words, nwords-1, &query))
- 		return -EINVAL;
--	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
-+	if (ddebug_parse_flags(words[nwords-1], &flags, &mask, &filter))
+ 	char *words[MAXWORDS];
++	int nfound, rc = 0;
+ 
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+ 	if (nwords <= 0)
+@@ -452,8 +570,13 @@ static int ddebug_exec_query(char *query_string)
  		return -EINVAL;
  
  	/* actually go and implement the change */
--	nfound = ddebug_change(&query, flags, mask);
-+	nfound = ddebug_change(&query, flags, mask, filter);
- 	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
+-	ddebug_change(&query, flags, mask);
+-	return 0;
++	nfound = ddebug_change(&query, flags, mask);
++	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
++
++	if (flags & _DPRINTK_FLAGS_APPEND)
++		rc = ddebug_save_pending(&query, flags, mask);
++
++	return rc;
+ }
  
--	if (flags & _DPRINTK_FLAGS_APPEND)
-+	if (flags & _DPRINTK_FLAGS_APPEND || filter & _DPRINTK_FLAGS_APPEND)
- 		rc = ddebug_save_pending(&query, flags, mask);
+ /* handle multiple queries, continue on error, return last error */
+@@ -811,6 +934,19 @@ static const struct file_operations ddebug_proc_fops = {
+ 	.write = ddebug_proc_write
+ };
  
- 	return rc;
-@@ -950,7 +969,7 @@ static void apply_pending_queries(struct ddebug_table *dt)
- 	int nfound;
++/* apply matching queries in pending-queries list */
++static void apply_pending_queries(struct ddebug_table *dt)
++{
++	struct pending_query *pq, *pqnext;
++	int nfound;
++
++	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
++		nfound = ddebug_change(&pq->query, pq->flags, pq->mask);
++		vpr_info_pq(pq, (nfound) ?
++			"applied pending" : "no-match on pending");
++	}
++}
++
+ /*
+  * Allocate a new ddebug_table for the given module
+  * and add it to the global list.
+@@ -835,6 +971,7 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
  
- 	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
--		nfound = ddebug_change(&pq->query, pq->flags, pq->mask);
-+		nfound = ddebug_change(&pq->query, pq->flags, pq->mask, 0);
- 		vpr_info_pq(pq, (nfound) ?
- 			"applied pending" : "no-match on pending");
+ 	mutex_lock(&ddebug_lock);
+ 	list_add_tail(&dt->link, &ddebug_tables);
++	apply_pending_queries(dt);
+ 	mutex_unlock(&ddebug_lock);
+ 
+ 	if (verbose)
+@@ -876,6 +1013,8 @@ EXPORT_SYMBOL_GPL(ddebug_remove_module);
+ 
+ static void ddebug_remove_all_tables(void)
+ {
++	struct pending_query *pq, *pqnext;
++
+ 	mutex_lock(&ddebug_lock);
+ 	while (!list_empty(&ddebug_tables)) {
+ 		struct ddebug_table *dt = list_entry(ddebug_tables.next,
+@@ -883,6 +1022,11 @@ static void ddebug_remove_all_tables(void)
+ 						      link);
+ 		ddebug_table_free(dt);
  	}
++	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
++		vpr_info_pq(pq, "delete pending");
++		list_del_init(&pq->link);
++		pqfree(pq);
++	}
+ 	mutex_unlock(&ddebug_lock);
+ }
+ 
 -- 
 1.7.4.4
 
