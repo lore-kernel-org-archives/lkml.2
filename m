@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760055Ab1JGPrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:47:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64085 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab1JGPrJ convert rfc822-to-8bit (ORCPT
+	id S1760097Ab1JGPrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:47:36 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36688 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760007Ab1JGPre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:47:09 -0400
+	Fri, 7 Oct 2011 11:47:34 -0400
+X-Sasl-enc: ZL7JXZPTvouc26c0snjNTB2A/63jRbP2hX0lCQeXjFvc 1318002453
+Date: Fri, 7 Oct 2011 08:46:27 -0700
+From: Greg KH <greg@kroah.com>
+To: Himanshu Chauhan <hschauhan@nulltrace.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a
+ device number
+Message-ID: <20111007154627.GA941@kroah.com>
+References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
+ <20111005193359.GB26664@kroah.com>
+ <20111006041011.GB2125@ubuntu.ubuntu-domain>
+ <20111006182500.GA18607@kroah.com>
+ <20111006190752.GA28455@ericsson.com>
+ <20111007064240.GA2944@ubuntu.ubuntu-domain>
+ <20111007065237.GA27805@kroah.com>
+ <20111007095621.GB2944@ubuntu.ubuntu-domain>
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4wfpsTMEhs_-N1itXcJB03nvdfyjj+ksWG5g9YRB6Trgw@mail.gmail.com>
-References: <1317288548-19560-1-git-send-email-Barry.Song@csr.com>
- <CAKPcRGr3EzjS2es6HniuQziEivpsfH2r=d_Y=nkrsFW59g6xSw@mail.gmail.com>
- <CAGsJ_4zjRpEx_yLwXx74uipPN-Q2hun3AdLxKw2EYOy00cDm3Q@mail.gmail.com>
- <20111006175818.GB9886@atrey.karlin.mff.cuni.cz> <CAGsJ_4wfpsTMEhs_-N1itXcJB03nvdfyjj+ksWG5g9YRB6Trgw@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 7 Oct 2011 23:46:47 +0800
-Message-ID: <CAGsJ_4yf2B5=xwMMD-VpGmWKwZh8PxWT4ePm8ysjyQdc5OX+Bw@mail.gmail.com>
-Subject: Re: [PATCH] PM: HIBERNATION: add resume_wait param to support
- MMC-like devices as resume file
-To: Pavel Machek <pavel@ucw.cz>
-Cc: rjw@sisk.pl, Luca Tettamanti <kronos.it@gmail.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, frank.hofmann@tomtom.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Barry Song <Barry.Song@csr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111007095621.GB2944@ubuntu.ubuntu-domain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/7 Barry Song <21cnbao@gmail.com>:
-> 2011/10/7 Pavel Machek <pavel@ucw.cz>:
->>> 2011/9/29 Luca Tettamanti <kronos.it@gmail.com>:
->>> > On Thu, Sep 29, 2011 at 11:29 AM, Barry Song <Barry.Song@csr.com> wrote:
->>> >> From: Barry Song <baohua.song@csr.com>
->>> >>
->>> >> Some devices like mmc are async detected very slow. For example,
->>> >> drivers/mmc/host/sdhci.c launchs a 200ms delayed work to detect
->>> >> mmc partitions then add disk.
->>> >>
->>> >> we do have wait_for_device_probe and scsi_complete_async_scans
->>> >> before calling swsusp_check, but it is not enough to wait mmc.
->>> >>
->>> >> This patch adds resumewait kernel param just like rootwait so
->>> >> that we have enough time to wait mmc ready. The differene is
->>> >> here we wait for resume partition but rootwait waits for rootfs
->>> >> partition.
->>> >
->>> > I assume that such a device would need "rootwait" to boot in the first
->>> > place; why don't you "overload" the param to also enable waiting in
->>> > the resume path?
->>>
->>> not real. for an embedded product, the type of the rootfs, the place
->>> of the rootfs  and the way to mount rootfs are pretty flexible.
->>> even though both rootfs and resume file use mmc, they will be in
->>> different partitions at least. so i don't think rootwait can overload
->>> resumewait.
->>
->> It would be good to at least model it the same way. rootdelay allows
->> you to specify time, which is important for USB devices...
->
-> actually i considered resumedelay before i sent this resumewait patch.
-> now resumedelay is not an indispensable feature to my application and
-> most other systems since they are able to wait for the swap devices
-> ready by resumewait.
-> but of course we can have the resumedelay param as well just like
-> rootdelay. since Rafael has applied this resumedelay patch,  i can
+On Fri, Oct 07, 2011 at 03:26:21PM +0530, Himanshu Chauhan wrote:
+> On Thu, Oct 06, 2011 at 11:52:37PM -0700, Greg KH wrote:
+> > On Fri, Oct 07, 2011 at 12:12:40PM +0530, Himanshu Chauhan wrote:
+> > > On Thu, Oct 06, 2011 at 12:07:52PM -0700, Guenter Roeck wrote:
+> > > > And why, and what for.
+> > > 
+> > > The initial idea of posting to kernelnewbies was to get a hint on how
+> > > the patch would be taken as. I wanted to know if developers will like
+> > > the idea behind it or not. I guess, Guenter is not convinced with
+> > > any of my reasoning. I am willing to clean it up further only if
+> > > I get a positive hint. But it doesn't seem to be going anywhere.
+> > > 
+> > > Thanks Guenter, Alan, and Greg for taking your time and reviewing it.
+> > > 
+> > > Greg: To answer your last question, if this was taken positively, I
+> > > was thinking of having functionality similar to misc device registration.
+> > 
+> > But why?  What is that device node going to be used for?  Who would be
+> > using it in userspace and where would it be tied into in the kernel?
+> > 
+> The device node, as I said earlier, can be used for doing IOCTLS.
 
- sorry for typo.  -> since Rafael has applied this *resumewait* patch
+It can?  Which ones?  New ones you want to propose?  If so, why use an
+ioctl?
 
-> treat resumedelay as one new seperate patch.
->
->>
->> --
->> (english) http://www.livejournal.com/~pavelmachek
->> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
->>
-> -barry
->
+> In user space, applications that manage and monitor system environment
+> will need to use this interface for querying the sensor's location,
+> for example. In side the kernel, the driver that is driving the
+> particular hardware sensor can register a char interface for all this
+> and then register with hwmon with the same major/minor for usual sysfs
+> export of data.
+
+So you are creating a new user/kernel api here, right?  If so, you need
+to document it in Documentation/API and we need to be able to approve
+that BEFORE we could ever accept the creation of new device nodes like
+this, that at the moment, do not do anything.
+
+In other words, you need to prove you need a new ioctl interface before
+you can get a patch accepted that implements this.
+
+greg k-h
