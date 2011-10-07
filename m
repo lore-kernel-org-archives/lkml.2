@@ -1,39 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1JGP1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:27:52 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50091 "EHLO
+	id S1760089Ab1JGP2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:28:44 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50118 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab1JGP1u (ORCPT
+	with ESMTP id S1753091Ab1JGP1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:27:50 -0400
+	Fri, 7 Oct 2011 11:27:51 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: EDAC devel <linux-edac@vger.kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 0/4] x86 RAS: Reorganize functionality
-Date: Fri,  7 Oct 2011 17:27:35 +0200
-Message-Id: <1318001259-1720-1-git-send-email-bp@amd64.org>
+Subject: [PATCH 3/4] x86, RAS: Move MCE decoding code into ras/
+Date: Fri,  7 Oct 2011 17:27:38 +0200
+Message-Id: <1318001259-1720-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1318001259-1720-1-git-send-email-bp@amd64.org>
+References: <1318001259-1720-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Hi all,
+As part of collecting AMD RAS features at a single place, move the MCE
+decoding code there.
 
-this is a first attempt at reorganizing and concentrating x86 RAS
-features under arch/x86/. The idea is to put them close to the MCA code
-so that code reuse and extending functionality can be done much more
-easily.
+No functionality change.
 
-This first attempt deals only with AMD RAS features but I expect that we
-can put all into one unified menu entry in Kconfig after we've agreed on
-the structure.
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ .../x86/include/ras/amd/mce-decode.h               |    0
+ arch/x86/kernel/cpu/ras/Kconfig                    |   14 +++++++++++++-
+ arch/x86/kernel/cpu/ras/amd/Makefile               |    3 +++
+ .../x86/kernel/cpu/ras/amd/mce-decode.c            |    2 +-
+ drivers/edac/Kconfig                               |   12 ------------
+ drivers/edac/Makefile                              |    3 ---
+ drivers/edac/amd64_edac.h                          |    2 +-
+ drivers/edac/mce_amd_inj.c                         |    3 +--
+ 8 files changed, 19 insertions(+), 20 deletions(-)
+ rename drivers/edac/mce_amd.h => arch/x86/include/ras/amd/mce-decode.h (100%)
+ rename drivers/edac/mce_amd.c => arch/x86/kernel/cpu/ras/amd/mce-decode.c (99%)
 
-As always, all comments are welcome.
+diff --git a/drivers/edac/mce_amd.h b/arch/x86/include/ras/amd/mce-decode.h
+similarity index 100%
+rename from drivers/edac/mce_amd.h
+rename to arch/x86/include/ras/amd/mce-decode.h
+diff --git a/arch/x86/kernel/cpu/ras/Kconfig b/arch/x86/kernel/cpu/ras/Kconfig
+index a0d96b9..440d6a1 100644
+--- a/arch/x86/kernel/cpu/ras/Kconfig
++++ b/arch/x86/kernel/cpu/ras/Kconfig
+@@ -1,5 +1,5 @@
+ menu "AMD RAS features"
+-	depends on X86_MCE
++	depends on X86_MCE && CPU_SUP_AMD
+ 
+ config X86_AMD_ERROR_THRESHOLDING
+ 	def_bool y
+@@ -11,6 +11,18 @@ config X86_AMD_ERROR_THRESHOLDING
+ 	   detailed information see the section on Error Thresholding in
+ 	   the respective AMD BKDG.
+ 
++config X86_AMD_DECODE_MCE
++	tristate "Decode MCEs in human-readable form"
++	default y
++	---help---
++	  Enable this option if you want to decode Machine Check Exceptions
++	  occurring on your machine in a human-readable form.
++
++	  You should definitely say Y here in case you want to decode MCEs
++	  which occur really early upon boot, before the module infrastructure
++	  has been initialized.
++
++
+ endmenu
+ 
+ 
+diff --git a/arch/x86/kernel/cpu/ras/amd/Makefile b/arch/x86/kernel/cpu/ras/amd/Makefile
+index 3c1678f..a18207b 100644
+--- a/arch/x86/kernel/cpu/ras/amd/Makefile
++++ b/arch/x86/kernel/cpu/ras/amd/Makefile
+@@ -1 +1,4 @@
+ obj-$(CONFIG_X86_AMD_ERROR_THRESHOLDING)	+= thresholding.o
++
++amd_mce_decode-y				:= mce-decode.o
++obj-$(CONFIG_X86_AMD_DECODE_MCE)		+= amd_mce_decode.o
+diff --git a/drivers/edac/mce_amd.c b/arch/x86/kernel/cpu/ras/amd/mce-decode.c
+similarity index 99%
+rename from drivers/edac/mce_amd.c
+rename to arch/x86/kernel/cpu/ras/amd/mce-decode.c
+index d0864d9..052ee9a 100644
+--- a/drivers/edac/mce_amd.c
++++ b/arch/x86/kernel/cpu/ras/amd/mce-decode.c
+@@ -1,7 +1,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ 
+-#include "mce_amd.h"
++#include <ras/amd/mce-decode.h>
+ 
+ static struct amd_decoder_ops *fam_ops;
+ 
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index af1a17d..8de46e7 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -39,18 +39,6 @@ config EDAC_DEBUG
+ 	  there're four debug levels (x=0,1,2,3 from low to high).
+ 	  Usually you should select 'N'.
+ 
+-config EDAC_DECODE_MCE
+-	tristate "Decode MCEs in human-readable form (only on AMD for now)"
+-	depends on CPU_SUP_AMD && X86_MCE
+-	default y
+-	---help---
+-	  Enable this option if you want to decode Machine Check Exceptions
+-	  occurring on your machine in human-readable form.
+-
+-	  You should definitely say Y here in case you want to decode MCEs
+-	  which occur really early upon boot, before the module infrastructure
+-	  has been initialized.
+-
+ config EDAC_MCE_INJ
+ 	tristate "Simple MCE injection interface over /sysfs"
+ 	depends on EDAC_DECODE_MCE
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index 3e23913..a6f10c2 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -19,9 +19,6 @@ endif
+ 
+ obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
+ 
+-edac_mce_amd-y				:= mce_amd.o
+-obj-$(CONFIG_EDAC_DECODE_MCE)		+= edac_mce_amd.o
+-
+ obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
+ obj-$(CONFIG_EDAC_CPC925)		+= cpc925_edac.o
+ obj-$(CONFIG_EDAC_I5000)		+= i5000_edac.o
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index 9a666cb..cd4232a 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -71,8 +71,8 @@
+ #include <linux/mmzone.h>
+ #include <linux/edac.h>
+ #include <asm/msr.h>
++#include <ras/amd/mce-decode.h>
+ #include "edac_core.h"
+-#include "mce_amd.h"
+ 
+ #define amd64_debug(fmt, arg...) \
+ 	edac_printk(KERN_DEBUG, "amd64", fmt, ##arg)
+diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
+index a4987e0..a38806a 100644
+--- a/drivers/edac/mce_amd_inj.c
++++ b/drivers/edac/mce_amd_inj.c
+@@ -14,8 +14,7 @@
+ #include <linux/sysdev.h>
+ #include <linux/edac.h>
+ #include <asm/mce.h>
+-
+-#include "mce_amd.h"
++#include <ras/amd/mce-decode.h>
+ 
+ struct edac_mce_attr {
+ 	struct attribute attr;
+-- 
+1.7.4.rc2
 
-Thanks.
