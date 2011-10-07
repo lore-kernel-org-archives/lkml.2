@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760119Ab1JGQWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:22:30 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37783 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab1JGQW0 (ORCPT
+	id S1760133Ab1JGQWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:22:34 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41062 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760108Ab1JGQWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:22:26 -0400
+	Fri, 7 Oct 2011 12:22:30 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 02/11] rcu: Inform the user about extended quiescent state on PROVE_RCU warning
-Date: Fri,  7 Oct 2011 18:22:01 +0200
-Message-Id: <1318004530-705-3-git-send-email-fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/11] rcu: Remove one layer of abstraction from PROVE_RCU checking
+Date: Fri,  7 Oct 2011 18:22:03 +0200
+Message-Id: <1318004530-705-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
 References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
@@ -24,58 +20,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inform the user if an RCU usage error is detected by lockdep while in
-an extended quiescent state (in this case, the RCU-free window in idle).
-This is accomplished by adding a line to the RCU lockdep splat indicating
-whether or not the splat occurred in extended quiescent state.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Uses of RCU from within extended quiescent state mode are totally ignored
-by RCU, hence the importance of this diagnostic.
+Simplify things a bit by substituting the definitions of the single-line
+rcu_read_acquire(), rcu_read_release(), rcu_read_acquire_bh(),
+rcu_read_release_bh(), rcu_read_acquire_sched(), and
+rcu_read_release_sched() functions at their call points.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/lockdep.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ include/linux/rcupdate.h |   53 +++++++---------------------------------------
+ 1 files changed, 8 insertions(+), 45 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 1e48f1c..8873f6e 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -4026,6 +4026,28 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
- 	printk("%s:%d %s!\n", file, line, s);
- 	printk("\nother info that might help us debug this:\n\n");
- 	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
-+
-+	/*
-+	 * If a CPU is in the RCU-free window in idle (ie: in the section
-+	 * between rcu_idle_enter() and rcu_idle_exit(), then RCU
-+	 * considers that CPU to be in an "extended quiescent state",
-+	 * which means that RCU will be completely ignoring that CPU.
-+	 * Therefore, rcu_read_lock() and friends have absolutely no
-+	 * effect on a CPU running in that state. In other words, even if
-+	 * such an RCU-idle CPU has called rcu_read_lock(), RCU might well
-+	 * delete data structures out from under it.  RCU really has no
-+	 * choice here: we need to keep an RCU-free window in idle where
-+	 * the CPU may possibly enter into low power mode. This way we can
-+	 * notice an extended quiescent state to other CPUs that started a grace
-+	 * period. Otherwise we would delay any grace period as long as we run
-+	 * in the idle task.
-+	 *
-+	 * So complain bitterly if someone does call rcu_read_lock(),
-+	 * rcu_read_lock_bh() and so on from extended quiescent states.
-+	 */
-+	if (rcu_is_cpu_idle())
-+		printk("RCU used illegally from extended quiescent state!\n");
-+
- 	lockdep_print_held_locks(curr);
- 	printk("\nstack backtrace:\n");
- 	dump_stack();
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index fe4f8976..e550f2a 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -240,41 +240,8 @@ static inline void rcu_lock_release(struct lockdep_map *map)
+ }
+ 
+ extern struct lockdep_map rcu_lock_map;
+-
+-static inline void rcu_read_acquire(void)
+-{
+-	rcu_lock_acquire(&rcu_lock_map);
+-}
+-
+-static inline void rcu_read_release(void)
+-{
+-	rcu_lock_release(&rcu_lock_map);
+-}
+-
+ extern struct lockdep_map rcu_bh_lock_map;
+-
+-static inline void rcu_read_acquire_bh(void)
+-{
+-	rcu_lock_acquire(&rcu_bh_lock_map);
+-}
+-
+-static inline void rcu_read_release_bh(void)
+-{
+-	rcu_lock_release(&rcu_bh_lock_map);
+-}
+-
+ extern struct lockdep_map rcu_sched_lock_map;
+-
+-static inline void rcu_read_acquire_sched(void)
+-{
+-	rcu_lock_acquire(&rcu_sched_lock_map);
+-}
+-
+-static inline void rcu_read_release_sched(void)
+-{
+-	rcu_lock_release(&rcu_sched_lock_map);
+-}
+-
+ extern int debug_lockdep_rcu_enabled(void);
+ 
+ /**
+@@ -357,12 +324,8 @@ static inline int rcu_read_lock_sched_held(void)
+ 
+ #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+-# define rcu_read_acquire()		do { } while (0)
+-# define rcu_read_release()		do { } while (0)
+-# define rcu_read_acquire_bh()		do { } while (0)
+-# define rcu_read_release_bh()		do { } while (0)
+-# define rcu_read_acquire_sched()	do { } while (0)
+-# define rcu_read_release_sched()	do { } while (0)
++# define rcu_lock_acquire(a)		do { } while (0)
++# define rcu_lock_release(a)		do { } while (0)
+ 
+ static inline int rcu_read_lock_held(void)
+ {
+@@ -683,7 +646,7 @@ static inline void rcu_read_lock(void)
+ {
+ 	__rcu_read_lock();
+ 	__acquire(RCU);
+-	rcu_read_acquire();
++	rcu_lock_acquire(&rcu_lock_map);
+ }
+ 
+ /*
+@@ -703,7 +666,7 @@ static inline void rcu_read_lock(void)
+  */
+ static inline void rcu_read_unlock(void)
+ {
+-	rcu_read_release();
++	rcu_lock_release(&rcu_lock_map);
+ 	__release(RCU);
+ 	__rcu_read_unlock();
+ }
+@@ -724,7 +687,7 @@ static inline void rcu_read_lock_bh(void)
+ {
+ 	local_bh_disable();
+ 	__acquire(RCU_BH);
+-	rcu_read_acquire_bh();
++	rcu_lock_acquire(&rcu_bh_lock_map);
+ }
+ 
+ /*
+@@ -734,7 +697,7 @@ static inline void rcu_read_lock_bh(void)
+  */
+ static inline void rcu_read_unlock_bh(void)
+ {
+-	rcu_read_release_bh();
++	rcu_lock_release(&rcu_bh_lock_map);
+ 	__release(RCU_BH);
+ 	local_bh_enable();
+ }
+@@ -751,7 +714,7 @@ static inline void rcu_read_lock_sched(void)
+ {
+ 	preempt_disable();
+ 	__acquire(RCU_SCHED);
+-	rcu_read_acquire_sched();
++	rcu_lock_acquire(&rcu_sched_lock_map);
+ }
+ 
+ /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
+@@ -768,7 +731,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
+  */
+ static inline void rcu_read_unlock_sched(void)
+ {
+-	rcu_read_release_sched();
++	rcu_lock_release(&rcu_sched_lock_map);
+ 	__release(RCU_SCHED);
+ 	preempt_enable();
+ }
 -- 
 1.7.5.4
 
