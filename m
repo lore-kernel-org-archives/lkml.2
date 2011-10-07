@@ -1,99 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab1JGPRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:17:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48480 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1JGPR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:17:27 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        akpm@linux-foundation.org
-Cc: Josh Boyer <jwboyer@redhat.com>, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mm: Abort reclaim/compaction if compaction can proceed
-Date: Fri,  7 Oct 2011 16:17:23 +0100
-Message-Id: <1318000643-27996-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1318000643-27996-1-git-send-email-mgorman@suse.de>
-References: <1318000643-27996-1-git-send-email-mgorman@suse.de>
+	id S1753415Ab1JGPVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:21:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46780 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab1JGPVS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 11:21:18 -0400
+From: Mihai Maruseac <mihai.maruseac@gmail.com>
+To: davem@davemloft.net
+Cc: eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl, therbert@google.com,
+        jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
+        Mihai Maruseac <mmaruseac@ixiacom.com>
+Subject: [PATCH] dev: use name hash for dev_seq_ops.
+Date: Fri,  7 Oct 2011 18:20:49 +0300
+Message-Id: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If compaction can proceed, shrink_zones() stops doing any work but
-the callers still shrink_slab(), raises the priority and potentially
-sleeps.  This patch aborts direct reclaim/compaction entirely if
-compaction can proceed.
+Instead of using the dev->next chain and trying to resync at each call to
+dev_seq_start, use this hash and store bucket number and bucket offset in
+seq->private field.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Tests revealed the following results for ifconfig > /dev/null
+	* 1000 interfaces:
+		* 0.114s without patch
+		* 0.020s with patch
+	* 3000 interfaces:
+		* 0.489s without patch
+		* 0.048s with patch
+	* 5000 interfaces:
+		* 1.363s without patch
+		* 0.131s with patch
+
+As one can notice the improvement is of 1 order of magnitude.
+
+Signed-off-by: Mihai Maruseac <mmaruseac@ixiacom.com>
 ---
- mm/vmscan.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+ net/core/dev.c |   73 +++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 56 insertions(+), 17 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3817fa9..522f205 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2044,14 +2044,19 @@ restart:
-  *
-  * If a zone is deemed to be full of pinned pages then just give it a light
-  * scan then give up on it.
-+ *
-+ * This function returns true if a zone is being reclaimed for a costly
-+ * high-order allocation and compaction is either ready to begin or deferred.
-+ * This indicates to the caller that it should retry the allocation or fail.
-  */
--static void shrink_zones(int priority, struct zonelist *zonelist,
-+static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
-+	bool should_abort_reclaim = false;
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
-@@ -2069,12 +2074,15 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 			if (COMPACTION_BUILD) {
- 				/*
- 				 * If we already have plenty of memory free
--				 * for compaction, don't free any more.
-+				 * for compaction in this zone , don't free any
-+				 * more.
- 				 */
- 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
- 					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone)))
-+					 compaction_deferred(zone))) {
-+					should_abort_reclaim = true;
- 					continue;
-+				}
- 			}
- 			/*
- 			 * This steals pages from memory cgroups over softlimit
-@@ -2093,6 +2101,8 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 
- 		shrink_zone(priority, zone, sc);
- 	}
-+
-+	return should_abort_reclaim;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index bf49a47..2d0f126 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4034,6 +4034,51 @@ static int dev_ifconf(struct net *net, char __user *arg)
  }
  
- static bool zone_reclaimable(struct zone *zone)
-@@ -2157,7 +2167,9 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		sc->nr_scanned = 0;
- 		if (!priority)
- 			disable_swap_token(sc->mem_cgroup);
--		shrink_zones(priority, zonelist, sc);
-+		if (shrink_zones(priority, zonelist, sc))
-+			break;
+ #ifdef CONFIG_PROC_FS
 +
- 		/*
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
++struct dev_iter_state {
++	struct seq_net_private p;
++	int bucket;
++	int offset;
++};
++
++static inline struct net_device *dev_from_same_bucket(struct seq_file *seq)
++{
++	struct net_device *dev = NULL;
++	struct net *net = seq_file_net(seq);
++	struct dev_iter_state *state = seq->private;
++	struct hlist_node *p;
++	struct hlist_head *h;
++	int count;
++
++	h = &net->dev_name_head[state->bucket];
++	count = 0;
++	hlist_for_each_entry_rcu(dev, p, h, name_hlist) {
++		if (count++ == state->offset) {
++			state->offset = count;
++			return dev;
++		}
++	}
++
++	return NULL;
++}
++
++static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
++{
++	struct dev_iter_state *state = seq->private;
++	struct net_device *dev = NULL;
++
++	while (state->bucket < NETDEV_HASHENTRIES) {
++		dev = dev_from_same_bucket(seq);
++		if (dev)
++			return dev;
++
++		state->bucket++;
++		state->offset = 0;
++	}
++
++	return NULL;
++}
++
+ /*
+  *	This is invoked by the /proc filesystem handler to display a device
+  *	in detail.
+@@ -4041,33 +4086,27 @@ static int dev_ifconf(struct net *net, char __user *arg)
+ void *dev_seq_start(struct seq_file *seq, loff_t *pos)
+ 	__acquires(RCU)
+ {
+-	struct net *net = seq_file_net(seq);
+-	loff_t off;
+-	struct net_device *dev;
+-
+ 	rcu_read_lock();
+ 	if (!*pos)
+ 		return SEQ_START_TOKEN;
+ 
+-	off = 1;
+-	for_each_netdev_rcu(net, dev)
+-		if (off++ == *pos)
+-			return dev;
+-
+-	return NULL;
++	return dev_from_new_bucket(seq);
+ }
+ 
+ void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ {
+-	struct net_device *dev = v;
++	struct net_device *dev = NULL;
++
++	++*pos;
+ 
+ 	if (v == SEQ_START_TOKEN)
+-		dev = first_net_device_rcu(seq_file_net(seq));
+-	else
+-		dev = next_net_device_rcu(dev);
++		return dev_from_new_bucket(seq);
+ 
+-	++*pos;
+-	return dev;
++	dev = dev_from_same_bucket(seq);
++	if (dev)
++		return dev;
++
++	return dev_from_new_bucket(seq);
+ }
+ 
+ void dev_seq_stop(struct seq_file *seq, void *v)
+@@ -4166,7 +4205,7 @@ static const struct seq_operations dev_seq_ops = {
+ static int dev_seq_open(struct inode *inode, struct file *file)
+ {
+ 	return seq_open_net(inode, file, &dev_seq_ops,
+-			    sizeof(struct seq_net_private));
++			    sizeof(struct dev_iter_state));
+ }
+ 
+ static const struct file_operations dev_seq_fops = {
 -- 
-1.7.3.4
+1.7.4.1
 
