@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072Ab1JGNwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 09:52:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51107 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab1JGNwt (ORCPT
+	id S1760086Ab1JGNxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 09:53:47 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41310 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760029Ab1JGNxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 09:52:49 -0400
-Subject: [PATCH v3 09/10] ASoC: wm8974: Convert to snd_soc_cache_sync
+	Fri, 7 Oct 2011 09:53:46 -0400
+Subject: [PATCH v3 10/10] ASoC: wm8988: Convert to snd_soc_cache_sync
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -17,8 +17,8 @@ Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
 In-Reply-To: <1317994508.9906.1.camel@phoenix>
 References: <1317994508.9906.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 21:52:42 +0800
-Message-ID: <1317995562.9906.16.camel@phoenix>
+Date: Fri, 07 Oct 2011 21:53:39 +0800
+Message-ID: <1317995619.9906.17.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -30,37 +30,48 @@ Convert to snd_soc_cache_sync for sync reg_cache with the hardware.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/wm8974.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+ sound/soc/codecs/wm8988.c |   17 ++---------------
+ 1 files changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8974.c b/sound/soc/codecs/wm8974.c
-index 8e3bfc1..9352f1e 100644
---- a/sound/soc/codecs/wm8974.c
-+++ b/sound/soc/codecs/wm8974.c
-@@ -530,6 +530,8 @@ static int wm8974_set_bias_level(struct snd_soc_codec *codec,
- 		power1 |= WM8974_POWER1_BIASEN | WM8974_POWER1_BUFIOEN;
+diff --git a/sound/soc/codecs/wm8988.c b/sound/soc/codecs/wm8988.c
+index 1c6f8bf..2e9eba7 100644
+--- a/sound/soc/codecs/wm8988.c
++++ b/sound/soc/codecs/wm8988.c
+@@ -55,7 +55,6 @@ struct wm8988_priv {
+ 	struct snd_pcm_hw_constraint_list *sysclk_constraints;
+ };
  
+-
+ #define wm8988_reset(c)	snd_soc_write(c, WM8988_RESET, 0)
+ 
+ /*
+@@ -676,6 +675,8 @@ static int wm8988_set_bias_level(struct snd_soc_codec *codec,
+ 
+ 	case SND_SOC_BIAS_STANDBY:
  		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
 +			snd_soc_cache_sync(codec);
 +
- 			/* Initial cap charge at VMID 5k */
- 			snd_soc_write(codec, WM8974_POWER1, power1 | 0x3);
- 			mdelay(100);
-@@ -589,18 +591,7 @@ static int wm8974_suspend(struct snd_soc_codec *codec, pm_message_t state)
+ 			/* VREF, VMID=2x5k */
+ 			snd_soc_write(codec, WM8988_PWR1, pwr_reg | 0x1c1);
  
- static int wm8974_resume(struct snd_soc_codec *codec)
+@@ -736,21 +737,7 @@ static int wm8988_suspend(struct snd_soc_codec *codec, pm_message_t state)
+ 
+ static int wm8988_resume(struct snd_soc_codec *codec)
  {
 -	int i;
 -	u8 data[2];
 -	u16 *cache = codec->reg_cache;
 -
 -	/* Sync reg_cache with the hardware */
--	for (i = 0; i < ARRAY_SIZE(wm8974_reg); i++) {
+-	for (i = 0; i < WM8988_NUM_REG; i++) {
+-		if (i == WM8988_RESET)
+-			continue;
 -		data[0] = (i << 1) | ((cache[i] >> 8) & 0x0001);
 -		data[1] = cache[i] & 0x00ff;
 -		codec->hw_write(codec->control_data, data, 2);
 -	}
- 	wm8974_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+-
+ 	wm8988_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 -
  	return 0;
  }
