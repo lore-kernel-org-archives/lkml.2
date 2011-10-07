@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab1JGXdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 19:33:44 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:49977 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759384Ab1JGXdm (ORCPT
+	id S1754775Ab1JGX7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 19:59:54 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27653 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab1JGX7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 19:33:42 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Date: Sat, 08 Oct 2011 10:33:40 +1100
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	 <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl>
-	 <201110062045.48689.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318030420.2057.0.camel@shrek.rexursive.com>
-Mime-Version: 1.0
+	Fri, 7 Oct 2011 19:59:52 -0400
+Date: Sat, 8 Oct 2011 02:56:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linville@tuxdriver.com,
+        davem@davemloft.net
+Subject: Re: et131x: Moving the et131x driver out of staging? (a.k.a. filling
+ up the TODO list again)
+Message-ID: <20111007235644.GK18470@longonot.mountain>
+References: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E8F9267.000D:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 09:23 +1100, Bojan Smojver wrote:
-> On Thu, 2011-10-06 at 20:45 +0200, Rafael J. Wysocki wrote:
-> 
-> > > I get a kernel panic on a test box using a x86_64 kernel with this patch
-> > > applied.
-> > 
-> > The panic happens during late resume, when trying to switch to the hibernated
-> > kernel.
-> 
-> Do you have a dump by any chance? Is it always at the same spot or
-> random?
+There are some trivial static checker things that could be cleaned
+up.
 
-Ping...
+drivers/staging/et131x/et131x_initpci.c +489 et131x_adjust_link(45) error: we previously assumed 'phydev' could be null (see line 475)
+drivers/staging/et131x/et131x_initpci.c +505 et131x_adjust_link(61) warn: variable dereferenced before check 'phydev' (see line 498)
 
--- 
-Bojan
+(probably the null check should be removed?)
 
+drivers/staging/et131x/et1310_mac.c:376:44: warning: incorrect type in initializer (different address spaces)
+drivers/staging/et131x/et1310_mac.c:376:44:    expected struct txmac_regs *txmac
+drivers/staging/et131x/et1310_mac.c:376:44:    got struct txmac_regs [noderef] <asn:2>*<noident>
+drivers/staging/et131x/et1310_mac.c:383:28: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et1310_mac.c:383:28:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et1310_mac.c:383:28:    got unsigned int *<noident>
+drivers/staging/et131x/et1310_mac.c:385:31: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/et131x/et1310_mac.c:385:31:    expected void volatile [noderef] <asn:2>*addr
+drivers/staging/et131x/et1310_mac.c:385:31:    got unsigned int *<noident>
+
+(it just needs an __iomem anotation).
+
+drivers/staging/et131x/et131x_initpci.c:556:5: warning: symbol 'et131x_mii_probe' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:246:5: warning: symbol 'et131x_ioctl' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:264:5: warning: symbol 'et131x_set_packet_filter' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:326:6: warning: symbol 'et131x_multicast' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:399:5: warning: symbol 'et131x_tx' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:432:6: warning: symbol 'et131x_tx_timeout' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:490:5: warning: symbol 'et131x_change_mtu' was not declared. Should it be static?
+drivers/staging/et131x/et131x_netdev.c:543:5: warning: symbol 'et131x_set_mac_addr' was not declared. Should it be static?
+
+regards,
+dan carpenter
