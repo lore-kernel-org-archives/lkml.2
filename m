@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab1JGKdm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:33:42 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:36890 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759827Ab1JGKdk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:33:40 -0400
+	id S965244Ab1JGKey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:34:54 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5386 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759786Ab1JGKew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 06:34:52 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=YvLF0Tfjyp+HQAxLEfyDi17dzbk/7FJV39LwrQpiTd10jCF2VSj5EghxMZz6t352W
+	YISf85pK3XZdqYXvn9MJw==
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
-References: <1317901099-2519-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1110070305040.4611@utopia.booyaka.com>
-	<CAP05o4J39MotDTOv-O2ahvWfxL-7jC-L3FGsNXbmDy8HNg=W3g@mail.gmail.com>
-	<alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
-Date: Fri, 7 Oct 2011 16:03:39 +0530
-Message-ID: <CAP05o4KLAnNHcvNbNWqJFN710JMNAy2emYzCt2xHF+m-Kvwveg@mail.gmail.com>
-Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1317921909.29658.16.camel@twins>
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	<1317912555-9559-5-git-send-email-eranian@google.com>
+	<1317921909.29658.16.camel@twins>
+Date: Fri, 7 Oct 2011 12:34:50 +0200
+Message-ID: <CABPqkBTWU8AO_t4CNRbQVdGU3OnkAT9W=Ngj+x4dL5hpAHz=2g@mail.gmail.com>
+Subject: Re: [PATCH 04/12] perf_events: sync branch stack sampling with X86 precise_sampling
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
+        ravitillo@lbl.gov
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 3:05 PM, Paul Walmsley <paul@pwsan.com> wrote:
-> On Fri, 7 Oct 2011, Munegowda, Keshava wrote:
+On Thu, Oct 6, 2011 at 7:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
+>>
+>> On Intel X86 PERF_SAMPLE_BRANCH_STACK is implemented using LBR,
+>> therefore both features must be coordinated as they may not
+>> configure LBR the same way.
 >
->> Thanks Paul;
->> yes, I can your changes in the patches.
->> so, you don't need v14 from me right? please confirm.
->> I am preparing/validating next version patches with  OCPIF_SWSUP_IDLE removed.
->> Thanks for guiding me and helping on the finalizing the hwmod configurations.
+> Differently, you mean? Both wanting the same configuration seems fine.
 >
-> The first two patches of the series -- the OMAP3/4 hwmod data patches --
-> have been queued for 3.2 in the 'hwmod_devel_3.2' branch of
-> git://git.pwsan.com/linux-2.6
->
-> So we don't need new versions of those two.
->
-> But we need to figure out what to do about the remaining three
-> patches.  I still think that the TLL and UHH hwmods should have
-> separate drivers.  Looks like Felipe has a question pending about that
-> but it's unlikely that I'll have time to dig into it for at least a
-> few days.  So I'd encourage you to try splitting those UHH and TLL
-> drivers in the meantime.
+No, I meant you can allow LBR + precise_sampling>1 ONLY when
+users set LBR to record ALL branches and at the same priv levels. In
+other words,
+you're exposing the LBR content used by the fixup code.
 
-some time last week; I had a discussion with Felipe and he is ok to
-have current design as it is
-for now; But, he wants to redesign this driver with UHH and TLL as two
-platform drivers.
-I will have discussion with Felipe and Partha to redesign it soon.
-
-regards
-keshava
+One could argue, that if LBR is set to filter certain branches, it may
+also be okay,
+it's just that you won't necessarily get the same number of successful
+fixups. The
+samples are tagged when fixups were successful, so that may also be an viable
+option. Best effort given the content of the LBR. Depending on the
+code, that might
+be slightly better than dropping to precise_sampling=1 (no fixups).
