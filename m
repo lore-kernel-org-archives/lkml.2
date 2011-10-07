@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933264Ab1JGWDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 18:03:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59597 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662Ab1JGWDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 18:03:49 -0400
-Message-ID: <4E8F772D.20408@zytor.com>
-Date: Fri, 07 Oct 2011 15:03:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1758717Ab1JGWHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 18:07:23 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54664 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662Ab1JGWHU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 18:07:20 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Richard Henderson <rth@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH][RFC] jump_labels/x86: Use either 5 byte or 2 byte jumps
-References: <4E8CF385.2080804@zytor.com> <4E8DEB19.1050509@goop.org>   <20111006181055.GA2505@redhat.com>   <1317925615.4729.14.camel@gandalf.stny.rr.com>   <4E8DF870.6010000@redhat.com>   <1317929321.4729.17.camel@gandalf.stny.rr.com> <4E8E20CD.5030207@goop.org>   <1317938775.4729.29.camel@gandalf.stny.rr.com> <4E8E275F.6010801@goop.org>   <1318007374.4729.58.camel@gandalf.stny.rr.com>   <20111007185214.GD2978@redhat.com>  <1318015311.4729.69.camel@gandalf.stny.rr.com> <4E8F73A3.5080904@zytor.com> <1318024853.4729.88.camel@gandalf.stny.rr.com>
-In-Reply-To: <1318024853.4729.88.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Mark Einon <mark.einon@gmail.com>
+Date: Fri, 7 Oct 2011 23:07:00 +0100
+Message-ID: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
+Subject: et131x: Moving the et131x driver out of staging? (a.k.a. filling up
+ the TODO list again)
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linville@tuxdriver.com, davem@davemloft.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2011 03:00 PM, Steven Rostedt wrote:
->
-> Ouch, quite shaken by k.org? I guess I should have substituted go blind
-> with being hacked.
->
+Hello Greg,
 
-Well, yes, but I would have said exactly the same thing before.
+I've managed to clear out the current TODO list for the staging/et131x
+driver, and hopefully its looking in a much better shape because of
+it.
 
-> The thing is, it may be as simple as an out of tree module screwing up
-> the jump table. Or worse, gcc not doing things that we did not expect.
-> If this is the case, jump labels can be disabled from modifying code.
->
-> But if we just want to do the BUG() case, this will be a big hammer to
-> the code and we just prevent any further progress until the issue is
-> addressed. Which may be tell people to disable jump labels in their
-> code, or use a different compiler.
+I'd like to propose moving it out of the staging area, or at least
+getting some review comments regarding what work is still needed.
 
-That is EXACTLY what should happen.  Something is wrong to the point of 
-the kernel is *known* to be executing the wrong code.  That is an 
-extremely serious condition and should be treated as such.
+Is it a good time to propose this bearing in mind the reorganisation
+of drivers/net/ and the fallout from the kernel.org issues?
 
-If you want, you could have a debug option to demote this to WARN, but I 
-really don't want to see it by default.
+The only outstanding issue I know of, which is yet to hit your staging tree is:
 
-	-hpa
+On 1 October 2011 20:58, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>... the driver doesn't
+> compile any more.  The Kconfig file says it "depends on NETDEV_1000"
+> but NETDEV_1000 isn't around any more since f860b0522f65d3
+> "drivers/net: Kconfig and Makefile cleanup" was merged.
+
+Cheers,
+
+Mark
