@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1JGSr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 14:47:59 -0400
-Received: from mx.binnacle.cx ([74.95.187.105]:7585 "EHLO mx.binnacle.cx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab1JGSr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 14:47:56 -0400
-Message-Id: <6.2.5.6.2.20111007143050.039bd578@binnacle.cx>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Fri, 07 Oct 2011 14:37:47 -0400
-To: chetan loke <loke.chetan@gmail.com>
-From: starlight@binnacle.cx
-Subject: Re: big picture UDP/IP performance question re 2.6.18
-  -> 2.6.32
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@gentwo.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@elte.hu>,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Joe Perches <joe@perches.com>,
-        lokechetan@gmail.com, Con Kolivas <conman@kolivas.org>,
-        Serge Belyshev <belyshev@depni.sinp.msu.ru>
-In-Reply-To: <CAAsGZS4s1wTWW1j7FRUWW9jqpPUVF3Q46AMa7+njvE1ckX0Snw
- @mail.gmail.com>
-References: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
- <1317966007.3457.47.camel@edumazet-laptop>
- <6.2.5.6.2.20111007020308.039be248@binnacle.cx>
- <CAAsGZS4s1wTWW1j7FRUWW9jqpPUVF3Q46AMa7+njvE1ckX0Snw@mail.gmail.com>
+	id S1756959Ab1JGSwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 14:52:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63833 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab1JGSwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 14:52:46 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=5E__mjtSOyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=g9ZA9j1XRvxJFiV1iagA:9 a=jSg2Qn4Y7NbMdUMkT0wA:7 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.83.30
+Subject: Re: [PATCH] kbuild: let object files depend on recordmcount instead
+ of its sources
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Date: Fri, 07 Oct 2011 14:52:44 -0400
+In-Reply-To: <20111007180415.GW6949@pengutronix.de>
+References: <1317993561-16242-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <1318005094.4729.40.camel@gandalf.stny.rr.com>
+	 <20111007180415.GW6949@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1318013565.4729.61.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 02:09 PM 10/7/2011 -0400, chetan loke wrote:
->I'm a little confused. Seems like there are
->conflicting goals. If you want to bypass the
->kernel-protocol-stack then you have the following
->options: a) kernel af_packet. This is where we
->would get a chance to test all the kernel features
->etc.
+On Fri, 2011-10-07 at 20:04 +0200, Uwe Kleine-König wrote:
 
-Perhaps I haven't been sufficiently clear.
-The "packet socket" mode I refer to in the
-earlier post was using AF/PF_PACKET mode sockets
-as in
+> Works for me with 3ee72ca + my patch doing:
+> 
+> 	make -C /path/to/my/linux/src/dir defconfig O=$(pwd)
+> 	make -j 6
+> 
+> If you tell me your exact setup I'll try to reproduce and fix.
 
-   socket(PF_PACKET, SOCK_RAW, eth_p_all);
+I just tried again with the same results. Here:
 
-Have run it in both normal and memory mapped
-modes.  MMAP mode is a slight bit more expensive
-due to the cache pressure from the additional
-copy.  On the 6174 MMAP seems to be a smidgen
-better in certain tests, but in the end both
-read() and mapped approaches are effectively
-identical on performance--and generally match
-the cost of UDP sockets almost exactly.
+$ cd git
+$ git clone nobackup/linus.git -s -l tmp.git
+Cloning into tmp.git...
+done.
+$ cd tmp.git/
+$ mkdir /tmp/build
+$ patch -p1 < /tmp/rm.patch
+patching file scripts/Makefile.build
+$ make O=/tmp/build allyesconfig
+  HOSTCC  scripts/basic/fixdep
+  GEN     /tmp/build/Makefile
+  HOSTCC  scripts/kconfig/conf.o
+  SHIPPED scripts/kconfig/zconf.tab.c
+  SHIPPED scripts/kconfig/zconf.lex.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+scripts/kconfig/conf --allyesconfig Kconfig
+#
+# configuration written to .config
+#
+$ make O=/tmp/build
+  GEN     /tmp/build/Makefile
+scripts/kconfig/conf --silentoldconfig Kconfig
+/home/pub/git/tmp.git/arch/x86/Makefile:81: stack protector enabled but
+no compiler support
+  Using /home/pub/git/tmp.git as source for kernel
+  GEN     /tmp/build/Makefile
+  CHK     include/linux/version.h
+  UPD     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  UPD     include/generated/utsrelease.h
+  CC      kernel/bounds.s
+  GEN     include/generated/bounds.h
+  CC      arch/x86/kernel/asm-offsets.s
+  GEN     include/generated/asm-offsets.h
+  CALL    /home/pub/git/tmp.git/scripts/checksyscalls.sh
+  HOSTCC  scripts/genksyms/genksyms.o
+  SHIPPED scripts/genksyms/lex.lex.c
+  SHIPPED scripts/genksyms/keywords.hash.c
+  SHIPPED scripts/genksyms/parse.tab.h
+  HOSTCC  scripts/genksyms/lex.lex.o
+  SHIPPED scripts/genksyms/parse.tab.c
+  HOSTCC  scripts/genksyms/parse.tab.o
+  HOSTLD  scripts/genksyms/genksyms
+make[3]: *** No rule to make target `scripts/mod/empty.o', needed by
+`scripts/mod/elfconfig.h'.  Stop.
+make[2]: *** [scripts/mod] Error 2
+make[1]: *** [scripts] Error 2
+make: *** [sub-make] Error 2
 
-b) Use non-commodity(?) NICs(from vendors
->you mentioned): where it might have some on-board
->memory(cushion) and so it can absorb the spikes
->and can also smoothen out too many
->PCI-transactions for bursty (and small payload -
->as in 64 byte traffic). But wait, when you use the
->libs provided by these vendors, then their
->driver(especially the Rx path) is not so much
->working in inline mode as NIC drivers in case a)
->above. This driver with a special Rx-path purely
->exists for managing your mmap'd queues.So
->of-course it's going to be faster that the
->traditional inline drivers. In this partial-inline
->mode, the adapter might i) batch the packets and
->ii) send a single notification to the
->host-side. With that single event you are now
->processing 1+ packets.
 
-Kernel bypass is probably the best answer for
-what we do.  Problem has been lack of maturity
-in their driver software.  Looks like it's reaching
-a point where they cover our use case.  As mentioned
-earlier, Solarflare could not match the Intel
-82599 + ixgbe for this app last year.  Was a
-disaster.  Myricom is focused on UDP (better
-for us), but only just added multi-core IRQ
-doorbell wakeups in recent months.  Previously
-one had to accept all IRQs on a single core or
-poll, neither of which works for us.
+It needs to be a real clean repo, not a make clean.
 
->You got it. In case of tilera there are two modes:
->tile-cpu in device mode: beats most of the
->non-COTS NICs. It runs linux on the adapter
->side. Imagine having the flexibility/power to
->program the ASIC using your favorite OS. Its
->orgasmic. So go for it!  tile-cpu in host-mode:
->Yes, it could be a game changer.
+-- Steve
 
-We almost went for the 1st gen Tile64 outboard
-NIC approach, but were concerned about whether
-they would survive--still are.  Intel has
-crushed more than a few competitors along
-the way.  If Google or Facebook buys into the
-Tile-Gx it becomes a safe choice overnight.
 
