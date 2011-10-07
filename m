@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965447Ab1JGLhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:37:10 -0400
-Received: from 8bytes.org ([88.198.83.132]:39103 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965366Ab1JGLhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 07:37:09 -0400
-Date: Fri, 7 Oct 2011 13:37:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        "younglak1004.kim@samsung.com" <younglak1004.kim@samsung.com>
-Subject: Re: [PATCH v2 5/5] iommu/exynos: Use bus_set_iommu instead of
-	register_iommu
-Message-ID: <20111007113701.GC1512@8bytes.org>
-References: <017001cc7f43$04a2db60$0de89220$%kim@samsung.com> <20110930134643.GS2138@amd.com> <CAHQjnOPiAOA_RiHnF-aVEYnWcdkwNzVD1BTNua+-ztZrW_+6_A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHQjnOPiAOA_RiHnF-aVEYnWcdkwNzVD1BTNua+-ztZrW_+6_A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S965456Ab1JGLkm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 07:40:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52879 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965416Ab1JGLkl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 07:40:41 -0400
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+From: Peter Zijlstra <peterz@infradead.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov
+Date: Fri, 07 Oct 2011 13:40:22 +0200
+In-Reply-To: <4E8EE1B6.1030907@hitachi.com>
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	 <1317912555-9559-8-git-send-email-eranian@google.com>
+	 <20111006153229.GJ14482@one.firstfloor.org>
+	 <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
+	 <4E8EE1B6.1030907@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317987622.31132.15.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 01, 2011 at 08:52:45AM +0900, KyongHo Cho wrote:
-> On Fri, Sep 30, 2011 at 10:46 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> > On Fri, Sep 30, 2011 at 03:31:49AM -0400, Kukjin Kim wrote:
-> >> From: KyongHo Cho <pullip.cho@samsung.com>
-> >>
-> >> This replaces register_iommu() with bus_set_iommu() according to the
-> >> suggestion of Joerg Roedel.
-> >
-> > This should be part of patch 3 already when the bus_set_iommu() change
-> > is merged. Otherwise it breaks bisectability too.
-> >
-> Ok.
-> Should I include fault handling feature (patch 4) in the patch 3 also?
+On Fri, 2011-10-07 at 20:25 +0900, Masami Hiramatsu wrote:
+> Oops, I've thought existing code is only for kernel. Hmm, I guess
+> this could cause a problem when running 32bit binary on x86-64.
+> 
+I queued below.
+> 
+---
+Subject: perf, x86: Fix PEBS instruction unwind
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri Oct 07 13:36:40 CEST 2011
 
-Yes, makes sense to include patch 4 too.
+Masami spotted that we always try to decode the instruction stream as
+64bit instructions when running a 64bit kernel, this doesn't work for
+ia32-compat proglets.
+
+Use TIF_IA32 to detect if we need to use the 32bit instruction
+decoder.
+
+Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -493,6 +493,7 @@ static int intel_pmu_pebs_fixup_ip(struc
+ 	unsigned long from = cpuc->lbr_entries[0].from;
+ 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
+ 	unsigned long ip = regs->ip;
++	int is_64bit = 0;
+ 
+ 	/*
+ 	 * We don't need to fixup if the PEBS assist is fault like
+@@ -544,7 +545,10 @@ static int intel_pmu_pebs_fixup_ip(struc
+ 		} else
+ 			kaddr = (void *)to;
+ 
+-		kernel_insn_init(&insn, kaddr);
++#ifdef CONFIG_X86_64
++		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
++#endif
++		insn_init(&insn, kaddr, is_64bit);
+ 		insn_get_length(&insn);
+ 		to += insn.length;
+ 	} while (to < ip);
 
