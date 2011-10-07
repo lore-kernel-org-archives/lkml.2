@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab1JGGxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 02:53:37 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57451 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751389Ab1JGGxg (ORCPT
+	id S1758682Ab1JGHG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 03:06:56 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:39549 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1JGHGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 02:53:36 -0400
-X-Sasl-enc: 42lhZ+7WrNvZiDKkT7PuPMSlfLDhWJoOvq994yKG1PPp 1317970415
-Date: Thu, 6 Oct 2011 23:52:37 -0700
-From: Greg KH <greg@kroah.com>
-To: Himanshu Chauhan <hschauhan@nulltrace.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>
-Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a
- device number
-Message-ID: <20111007065237.GA27805@kroah.com>
-References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
- <20111005193359.GB26664@kroah.com>
- <20111006041011.GB2125@ubuntu.ubuntu-domain>
- <20111006182500.GA18607@kroah.com>
- <20111006190752.GA28455@ericsson.com>
- <20111007064240.GA2944@ubuntu.ubuntu-domain>
+	Fri, 7 Oct 2011 03:06:54 -0400
+X-AuditID: b753bd60-a1c87ba000000655-83-4e8ea50b389d
+X-AuditID: b753bd60-a1c87ba000000655-83-4e8ea50b389d
+Message-ID: <4E8EA505.5050701@hitachi.com>
+Date: Fri, 07 Oct 2011 16:06:45 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007064240.GA2944@ubuntu.ubuntu-domain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Stephane Eranian <eranian@google.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+References: <1317912555-9559-1-git-send-email-eranian@google.com>  <1317912555-9559-8-git-send-email-eranian@google.com>  <20111006153229.GJ14482@one.firstfloor.org> <1317919424.29658.13.camel@twins>
+In-Reply-To: <1317919424.29658.13.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 12:12:40PM +0530, Himanshu Chauhan wrote:
-> On Thu, Oct 06, 2011 at 12:07:52PM -0700, Guenter Roeck wrote:
-> > And why, and what for.
+(2011/10/07 1:43), Peter Zijlstra wrote:
+> On Thu, 2011-10-06 at 17:32 +0200, Andi Kleen wrote:
+>>> +	kernel_insn_init(&insn, kaddr);
+>>> +	insn_get_opcode(&insn);
+>>
+>> This makes me uncomfortable. AFAIK that's the first use of the opcode
+>> decoder being used directly for user space. It has a quite large attack
+>> surface. Who says it cannot be exploited?
 > 
-> The initial idea of posting to kernelnewbies was to get a hint on how
-> the patch would be taken as. I wanted to know if developers will like
-> the idea behind it or not. I guess, Guenter is not convinced with
-> any of my reasoning. I am willing to clean it up further only if
-> I get a positive hint. But it doesn't seem to be going anywhere.
+> You mean:
+> arch/x86/kernel/cpu/perf_event_intel_ds.c:intel_pmu_pebs_fixup_ip()
+> doesn't use the opcode decoder on user space code?
 > 
-> Thanks Guenter, Alan, and Greg for taking your time and reviewing it.
-> 
-> Greg: To answer your last question, if this was taken positively, I
-> was thinking of having functionality similar to misc device registration.
+> ISTR Masami telling me they ran fuzzers on it, feeding it bad
+> instructions etc. But maybe he can tell more.
 
-But why?  What is that device node going to be used for?  Who would be
-using it in userspace and where would it be tied into in the kernel?
+I've tested it by decoding userspace libraries and binaries.
+It is also easy to test decoding with random binaries too :)
+I'll try to do that.
 
-still confused,
+Thanks,
 
-greg k-h
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
