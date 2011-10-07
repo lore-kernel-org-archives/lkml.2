@@ -1,44 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab1JGUeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:05 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab1JGUeC (ORCPT
+	id S1758715Ab1JGUeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57933 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754447Ab1JGUeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:02 -0400
+	Fri, 7 Oct 2011 16:34:08 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 00/26] dynamic_debug: add pending queries, etc (~resend)
-Date: Fri,  7 Oct 2011 14:33:06 -0600
-Message-Id: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 02/26] dynamic_debug: make dynamic-debug supersede DEBUG ccflag
+Date: Fri,  7 Oct 2011 14:33:08 -0600
+Message-Id: <1318019612-20068-3-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+ <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is essentially a rebase, resend, with trivial changes:
-- drops scx200 - off topic
-- adds pr_cont_once tweak - remove pr_fmt
-as before, it has:
-- Doc tweaks per Randy Dunlap
-- pr_fmt_$severity, suggested by Joe Perches
-- does not change pr_fmt() default, per Joe
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Rebased onto git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git
-+ Jason's 8-12/12 which havent made it into driver-core
-Ive not resent them here.
+if CONFIG_DYNAMIC_DEBUG is defined, honor it over DEBUG, so that
+pr_debug()s are controllable, instead of always-on.  When DEBUG is
+also defined, change _DPRINTK_FLAGS_DEFAULT to enable printing by
+default.
 
-[jimc@groucho linux-2.6]$ git diff --stat jb-on-driver-core 
- Documentation/dynamic-debug-howto.txt |  334 +++++++++++------
- include/linux/device.h                |    8 +-
- include/linux/dynamic_debug.h         |   23 +-
- include/linux/netdevice.h             |    8 +-
- include/linux/printk.h                |   95 +++--
- lib/dynamic_debug.c                   |  685 +++++++++++++++++++++++++++------
- 6 files changed, 866 insertions(+), 287 deletions(-)
+Also adding _DPRINTK_FLAGS_INCL_MODNAME would be nice, but there are
+numerous cases of pr_debug(NAME ": ...), which would result in double
+printing of module-name.  So defer this until things settle.
+
+CC: Joe Perches <joe@perches.com>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ include/linux/device.h        |    8 ++++----
+ include/linux/dynamic_debug.h |    4 ++++
+ include/linux/netdevice.h     |    8 ++++----
+ include/linux/printk.h        |    8 ++++----
+ 4 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 4639419..2e16503 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -857,14 +857,14 @@ static inline int _dev_info(const struct device *dev, const char *fmt, ...)
+ 
+ #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+ 
+-#if defined(DEBUG)
+-#define dev_dbg(dev, format, arg...)		\
+-	dev_printk(KERN_DEBUG, dev, format, ##arg)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ #define dev_dbg(dev, format, ...)		     \
+ do {						     \
+ 	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
+ } while (0)
++#elif defined(DEBUG)
++#define dev_dbg(dev, format, arg...)		\
++	dev_printk(KERN_DEBUG, dev, format, ##arg)
+ #else
+ #define dev_dbg(dev, format, arg...)				\
+ ({								\
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index ed7df3d..12ef233 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -26,7 +26,11 @@ struct _ddebug {
+ #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
+ #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
+ #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
++#if defined DEBUG
++#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
++#else
+ #define _DPRINTK_FLAGS_DEFAULT 0
++#endif
+ 	unsigned int flags:8;
+ } __attribute__((aligned(8)));
+ 
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 2797260..8c08fe0 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2641,14 +2641,14 @@ extern int netdev_info(const struct net_device *dev, const char *format, ...)
+ #define MODULE_ALIAS_NETDEV(device) \
+ 	MODULE_ALIAS("netdev-" device)
+ 
+-#if defined(DEBUG)
+-#define netdev_dbg(__dev, format, args...)			\
+-	netdev_printk(KERN_DEBUG, __dev, format, ##args)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ #define netdev_dbg(__dev, format, args...)			\
+ do {								\
+ 	dynamic_netdev_dbg(__dev, format, ##args);		\
+ } while (0)
++#elif defined(DEBUG)
++#define netdev_dbg(__dev, format, args...)			\
++	netdev_printk(KERN_DEBUG, __dev, format, ##args)
+ #else
+ #define netdev_dbg(__dev, format, args...)			\
+ ({								\
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 0101d55..1224b1d 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -180,13 +180,13 @@ extern void dump_stack(void) __cold;
+ #endif
+ 
+ /* If you are writing a driver, please use dev_dbg instead */
+-#if defined(DEBUG)
+-#define pr_debug(fmt, ...) \
+-	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+ #define pr_debug(fmt, ...) \
+ 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
++#elif defined(DEBUG)
++#define pr_debug(fmt, ...) \
++	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ #else
+ #define pr_debug(fmt, ...) \
+ 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+-- 
+1.7.4.4
 
