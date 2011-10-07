@@ -1,157 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1JGPVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:21:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46780 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1JGPVS (ORCPT
+	id S1753514Ab1JGPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:22:09 -0400
+Received: from frost.carfax.org.uk ([212.13.194.111]:57217 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab1JGPWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:21:18 -0400
-From: Mihai Maruseac <mihai.maruseac@gmail.com>
-To: davem@davemloft.net
-Cc: eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl, therbert@google.com,
-        jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
-        Mihai Maruseac <mmaruseac@ixiacom.com>
-Subject: [PATCH] dev: use name hash for dev_seq_ops.
-Date: Fri,  7 Oct 2011 18:20:49 +0300
-Message-Id: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 7 Oct 2011 11:22:07 -0400
+Date: Fri, 7 Oct 2011 16:21:37 +0100
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
+        Btrfs mailing list <linux-btrfs@vger.kernel.org>
+Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?=
+	=?utf-8?Q?s?= Wish List for Linux
+Message-ID: <20111007152137.GE28351@carfax.org.uk>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	Kay Sievers <kay.sievers@vrfy.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+	lennart@poettering.net, harald@redhat.com, david@fubar.dk,
+	greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
+	Btrfs mailing list <linux-btrfs@vger.kernel.org>
+References: <1317943022.1095.25.camel@mop>
+ <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
+ <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
+ <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
+ <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UnaWdueM1EBWVRzC"
+Content-Disposition: inline
+In-Reply-To: <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using the dev->next chain and trying to resync at each call to
-dev_seq_start, use this hash and store bucket number and bucket offset in
-seq->private field.
 
-Tests revealed the following results for ifconfig > /dev/null
-	* 1000 interfaces:
-		* 0.114s without patch
-		* 0.020s with patch
-	* 3000 interfaces:
-		* 0.489s without patch
-		* 0.048s with patch
-	* 5000 interfaces:
-		* 1.363s without patch
-		* 0.131s with patch
+--UnaWdueM1EBWVRzC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-As one can notice the improvement is of 1 order of magnitude.
+On Fri, Oct 07, 2011 at 02:46:23PM +0200, Kay Sievers wrote:
+> On Fri, Oct 7, 2011 at 12:38, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > On Fri, 7 Oct 2011 12:28:46 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >
+> >> What do you mean would be ugly?
+> >
+> > I have an ext4fs. It supports every possible file name allowed by POSIX
+> > and SuS. What name are you going to use for your 'hidden directory' that
+> > won't clash with a real file ?
+> 
+> Ah, no. The label on FAT (similar on NTFS) are 'magic entries' in the
+> root dir list, not a real file in the root dir.
+> 
+> We need kernel support for changing a mounted fs, because, unlike
+> ext4, the blocks containing the strings are inside the fs, which the
+> kernel might change any time.
 
-Signed-off-by: Mihai Maruseac <mmaruseac@ixiacom.com>
----
- net/core/dev.c |   73 +++++++++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 56 insertions(+), 17 deletions(-)
+   It's worth noting that there are similar issues with btrfs around
+changing label. A common API for it would make sense. The only btrfs
+patches I've seen to change label after mkfs-time work either as:
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index bf49a47..2d0f126 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4034,6 +4034,51 @@ static int dev_ifconf(struct net *net, char __user *arg)
- }
- 
- #ifdef CONFIG_PROC_FS
-+
-+struct dev_iter_state {
-+	struct seq_net_private p;
-+	int bucket;
-+	int offset;
-+};
-+
-+static inline struct net_device *dev_from_same_bucket(struct seq_file *seq)
-+{
-+	struct net_device *dev = NULL;
-+	struct net *net = seq_file_net(seq);
-+	struct dev_iter_state *state = seq->private;
-+	struct hlist_node *p;
-+	struct hlist_head *h;
-+	int count;
-+
-+	h = &net->dev_name_head[state->bucket];
-+	count = 0;
-+	hlist_for_each_entry_rcu(dev, p, h, name_hlist) {
-+		if (count++ == state->offset) {
-+			state->offset = count;
-+			return dev;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
-+static inline struct net_device *dev_from_new_bucket(struct seq_file *seq)
-+{
-+	struct dev_iter_state *state = seq->private;
-+	struct net_device *dev = NULL;
-+
-+	while (state->bucket < NETDEV_HASHENTRIES) {
-+		dev = dev_from_same_bucket(seq);
-+		if (dev)
-+			return dev;
-+
-+		state->bucket++;
-+		state->offset = 0;
-+	}
-+
-+	return NULL;
-+}
-+
- /*
-  *	This is invoked by the /proc filesystem handler to display a device
-  *	in detail.
-@@ -4041,33 +4086,27 @@ static int dev_ifconf(struct net *net, char __user *arg)
- void *dev_seq_start(struct seq_file *seq, loff_t *pos)
- 	__acquires(RCU)
- {
--	struct net *net = seq_file_net(seq);
--	loff_t off;
--	struct net_device *dev;
--
- 	rcu_read_lock();
- 	if (!*pos)
- 		return SEQ_START_TOKEN;
- 
--	off = 1;
--	for_each_netdev_rcu(net, dev)
--		if (off++ == *pos)
--			return dev;
--
--	return NULL;
-+	return dev_from_new_bucket(seq);
- }
- 
- void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- {
--	struct net_device *dev = v;
-+	struct net_device *dev = NULL;
-+
-+	++*pos;
- 
- 	if (v == SEQ_START_TOKEN)
--		dev = first_net_device_rcu(seq_file_net(seq));
--	else
--		dev = next_net_device_rcu(dev);
-+		return dev_from_new_bucket(seq);
- 
--	++*pos;
--	return dev;
-+	dev = dev_from_same_bucket(seq);
-+	if (dev)
-+		return dev;
-+
-+	return dev_from_new_bucket(seq);
- }
- 
- void dev_seq_stop(struct seq_file *seq, void *v)
-@@ -4166,7 +4205,7 @@ static const struct seq_operations dev_seq_ops = {
- static int dev_seq_open(struct inode *inode, struct file *file)
- {
- 	return seq_open_net(inode, file, &dev_seq_ops,
--			    sizeof(struct seq_net_private));
-+			    sizeof(struct dev_iter_state));
- }
- 
- static const struct file_operations dev_seq_fops = {
+ * unmounted only, single underlying device only, pure userspace
+   implementation
+ * mounted only, multiple underlying devices, kernel support needed
+
+   The kernel-side patches never got integrated, so we're still unable
+to change the label on the majority of btrfs filesystems.
+
+   Changing the UUID for the filesystem is even harder, as I think
+it's written to every metadata block. I'm not sure we can do that
+sanely on a mounted filesystem.
+
+   Hugo (just a spear-carrier from the btrfs chorus).
+
 -- 
-1.7.4.1
+=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+    --- Anyone using a computer to generate random numbers is, of ---    
+                       course,  in a state of sin.                       
 
+--UnaWdueM1EBWVRzC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFOjxkBIKyzvlFcI40RAgIDAJ4vnYgjZebmA0wpEQzy1qi44MwNZQCghJ5b
+41HHyafRYZchbGY+XaFpOjc=
+=0xMq
+-----END PGP SIGNATURE-----
+
+--UnaWdueM1EBWVRzC--
