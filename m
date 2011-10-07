@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759739Ab1JGKA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:00:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34362 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752039Ab1JGKAY (ORCPT
+	id S965059Ab1JGKEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:04:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53824 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752157Ab1JGKEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:00:24 -0400
-Date: Fri, 7 Oct 2011 11:00:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, Dilan Lee <dilee@nvidia.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] drivercore: add new error value for deferred probe
-Message-ID: <20111007100022.GB19080@opensource.wolfsonmicro.com>
-References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
- <1317963790-29426-2-git-send-email-manjugk@ti.com>
- <20111007064349.GD27508@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007064349.GD27508@kroah.com>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Oct 2011 06:04:51 -0400
+Date: Fri, 7 Oct 2011 11:02:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: virtualbox tainting.
+Message-ID: <20111007110243.05115778@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LRH.2.00.1110070959470.14853@twin.jikos.cz>
+References: <20111006190526.GA13883@redhat.com>
+	<20111006194432.GA21642@kroah.com>
+	<20111006195007.GA24900@redhat.com>
+	<20111006195824.GA22033@kroah.com>
+	<20111006200440.GB25681@redhat.com>
+	<alpine.LRH.2.00.1110070959470.14853@twin.jikos.cz>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 11:43:49PM -0700, Greg KH wrote:
-> On Fri, Oct 07, 2011 at 10:33:06AM +0500, G, Manjunath Kondaiah wrote:
+> What stops virtualbox developers from renaming the module in every 
+> release? That's the same story.
+> 
+> The only fool-proof way of doing is indeed is the GPG-signing thing.
 
-> > +#define EPROBE_DEFER	517	/* restart probe again after some time */
+If you want to get into a sophisticated fight with someone over hiding
+the presence of a module then that's a pointless exercise.
 
-> Can we really do this?  Isn't this some user/kernel api here?
+If you want to just make it easier to sort and detect out of tree modules
+then fine but the only actual pressure you have controlling its
+effectiveness is going to be the embarrasment of a vendor who gets caught
+out. GPG is thus I think over-engineering it somewhat.
 
-> What's wrong with just "overloading" on top of an existing error code?
-> Surely one of the other 516 types could be used here, right?
-
-There was some discussion of this in the previous patch round before the
-code was changed - it does end up adding an externally visible error
-code but it doesn't really make any difference, especially if we don't
-propagate it externally.  We've already got some other codes in a
-similar style, though I can't remember the examples that were quoted
-offhand.  Adding the new code avoids confusion about exactly what the
-intent of the driver is.
+Alan
