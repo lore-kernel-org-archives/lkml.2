@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab1JGVVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 17:21:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55131 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751209Ab1JGVVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 17:21:07 -0400
-Message-ID: <1318022466.11045.18.camel@Joe-Laptop>
-Subject: Re: [PATCH 05/26] dynamic_debug: pr_err() call should not depend
- upon verbosity
-From: Joe Perches <joe@perches.com>
-To: jim.cromie@gmail.com
-Cc: jbaron@redhat.com, greg@kroah.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Oct 2011 14:21:06 -0700
-In-Reply-To: <1318019612-20068-6-git-send-email-jim.cromie@gmail.com>
-References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
-	 <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
-	 <1318019612-20068-6-git-send-email-jim.cromie@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754622Ab1JGVVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 17:21:43 -0400
+Received: from na3sys010aog113.obsmtp.com ([74.125.245.94]:42956 "HELO
+	na3sys010aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751209Ab1JGVVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 17:21:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E8F683D.9020604@xenotime.net>
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au> <4E8F683D.9020604@xenotime.net>
+From: Roland Dreier <roland@purestorage.com>
+Date: Fri, 7 Oct 2011 14:21:19 -0700
+Message-ID: <CAL1RGDXoiRfR1Ku67tRgbhxzyWQmDrjKCztnVd6wbwi0Uud90Q@mail.gmail.com>
+Subject: Re: [PATCH -next] infiniband: fix ipath_chip_init.c build errors
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mike Marciniszyn <infinipath@qlogic.com>, linux-rdma@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 14:33 -0600, jim.cromie@gmail.com wrote:
-> Also convert to pr_err(), which supplies __func__ via pr_fmt.
+On Fri, Oct 7, 2011 at 1:59 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> Add <linux/stat.h> to fix build errors:
 
-Just a note on the changelog.
-The original code already uses pr_err.
+When did this break?  I build ipath in my test config all the time...
 
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-[]
-> @@ -334,8 +334,7 @@ static int ddebug_parse_query(char *words[], int nwords,
->  				query->last_lineno = query->first_lineno;
->  			}
->  		} else {
-> -			if (verbose)
-> -				pr_err("unknown keyword \"%s\"\n", words[i]);
-> +			pr_err("unknown keyword \"%s\"\n", words[i]);
-
-
+ - R.
