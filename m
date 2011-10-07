@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935466Ab1JGUe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60374 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759220Ab1JGUev (ORCPT
+	id S935603Ab1JGUfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:35:08 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60398 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935541Ab1JGUfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:51 -0400
+	Fri, 7 Oct 2011 16:35:02 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 18/26] dynamic_debug: describe_flags with '=[pmflta_]*'
-Date: Fri,  7 Oct 2011 14:33:24 -0600
-Message-Id: <1318019612-20068-19-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 22/26] dynamic_debug: early return if _ddebug table is empty
+Date: Fri,  7 Oct 2011 14:33:28 -0600
+Message-Id: <1318019612-20068-23-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,70 +24,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Change describe_flags() to emit '=[pmflta_]+' for current callsite
-flags, or just '=_' when they're disabled.  Having '=' in output
-allows a more selective grep expression, in contrast '-' may appear
-in filenames, line-ranges, and format-strings.  '=' also has better
-mnemonics, saying; "the current setting is equal to <flags>".
-
-The default allows grep "=_" <dbgfs>/dynamic_debug/control
-to see disabled callsites while avoiding the many occurrences of " = "
-seen in format strings.
-
-Enlarge flagsbufs to handle additional flag chars, "=a_"
+if _ddebug table is empty (which shouldn't happen in a CONFIG_DYNAMIC_DEBUG
+build), then warn (BUILD_BUG??) and return early.  This skips empty
+table scan and parsing of setup-string, including the pr_info call
+noting the parse.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ lib/dynamic_debug.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 0c9e53a..29dbf69 100644
+index 80b5322..1a8941e 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -99,6 +99,7 @@ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
- 	{ _DPRINTK_FLAGS_INCL_LINENO, 'l' },
- 	{ _DPRINTK_FLAGS_INCL_TID, 't' },
- 	{ _DPRINTK_FLAGS_APPEND, 'a' },
-+	{ _DPRINTK_FLAGS_DEFAULT, '_' },
- };
+@@ -1272,23 +1272,25 @@ static int __init dynamic_debug_init(void)
+ 	int ret = 0;
+ 	int n = 0;
  
- /* format a string into buf[] which describes the _ddebug's flags */
-@@ -108,12 +109,13 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
- 	char *p = buf;
- 	int i;
+-	if (__start___verbose != __stop___verbose) {
+-		iter = __start___verbose;
+-		modname = iter->modname;
+-		iter_start = iter;
+-		for (; iter < __stop___verbose; iter++) {
+-			if (strcmp(modname, iter->modname)) {
+-				ret = ddebug_add_module(iter_start, n, modname);
+-				if (ret)
+-					goto out_free;
+-				n = 0;
+-				modname = iter->modname;
+-				iter_start = iter;
+-			}
+-			n++;
++	if (__start___verbose == __stop___verbose) {
++		pr_warn("_ddebug table is empty in a CONFIG_DYNAMIC_DEBUG build");
++		return 1;
++	}
++	iter = __start___verbose;
++	modname = iter->modname;
++	iter_start = iter;
++	for (; iter < __stop___verbose; iter++) {
++		if (strcmp(modname, iter->modname)) {
++			ret = ddebug_add_module(iter_start, n, modname);
++			if (ret)
++				goto out_free;
++			n = 0;
++			modname = iter->modname;
++			iter_start = iter;
+ 		}
+-		ret = ddebug_add_module(iter_start, n, modname);
++		n++;
+ 	}
++	ret = ddebug_add_module(iter_start, n, modname);
  
--	BUG_ON(maxlen < 4);
-+	BUG_ON(maxlen < 10);
-+	*p++ = '=';
- 	for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
- 		if (dp->flags & opt_array[i].flag)
- 			*p++ = opt_array[i].opt_char;
--	if (p == buf)
--		*p++ = '-';
-+	if (*(p-1) == '=')
-+		*p++ = '_';
- 	*p = '\0';
- 
- 	return buf;
-@@ -195,7 +197,7 @@ static int ddebug_change(const struct ddebug_query *query,
- 	struct ddebug_table *dt;
- 	unsigned int newflags;
- 	unsigned int nfound = 0;
--	char flagbuf[8];
-+	char flagbuf[10];
- 
- 	/* search for matching ddebugs */
- 	list_for_each_entry(dt, &ddebug_tables, link) {
-@@ -866,7 +868,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
- {
- 	struct ddebug_iter *iter = m->private;
- 	struct _ddebug *dp = p;
--	char flagsbuf[8];
-+	char flagsbuf[10];
- 
- 	if (verbose >= VERBOSE_PROC_SHOW)
- 		pr_info("called m=%p p=%p\n", m, p);
+ 	/* ddebug_query boot param got passed -> set it up */
+ 	if (ddebug_setup_string[0] != '\0') {
 -- 
 1.7.4.4
 
