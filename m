@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965401Ab1JGKoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:44:39 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:7956 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965118Ab1JGKoh convert rfc822-to-8bit (ORCPT
+	id S1759841Ab1JGKrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:47:03 -0400
+Received: from smtp4.mundo-r.com ([212.51.32.151]:39844 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab1JGKrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:44:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=xQyovh367e/lMWHr7wnAdx/zoK9+42dfvZylVfMoA7BfUQSbpbC+xUBasPUGAiYnR
-	tmkLCDtBUprxy+dFB5rnQ==
+	Fri, 7 Oct 2011 06:47:00 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap0EAJXXjk5bdWOb/2dsb2JhbABEqUCBUwEBBScLASMXDBALGC4UJQMhiBO4BYZRYQScTohq
+X-IronPort-AV: E=Sophos;i="4.68,501,1312149600"; 
+   d="scan'208";a="421844923"
+Date: Fri, 7 Oct 2011 12:46:56 +0200
+From: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Timo Teras <timo.teras@solidboot.com>
+Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
+Message-ID: <20111007104656.GB20440@lit.local.igalia.com>
+References: <20111006201827.GT6324@atomide.com>
+ <1317977417-17874-1-git-send-email-vjaquez@igalia.com>
+ <20111007092243.GC27281@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1317983533.31132.3.camel@twins>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	<1317912555-9559-2-git-send-email-eranian@google.com>
-	<1317920241.29658.14.camel@twins>
-	<CABPqkBSNyD0R7o7f_X4u9QD+1G=XXc6mwTmeQbeJzFam=4v_Cg@mail.gmail.com>
-	<1317983533.31132.3.camel@twins>
-Date: Fri, 7 Oct 2011 12:44:34 +0200
-Message-ID: <CABPqkBRmgTNzTx8STQuW4M+tMmD-L+6V+aX-Jf1Bh75nBb_TwA@mail.gmail.com>
-Subject: Re: [PATCH 01/12] perf_events: add generic taken branch sampling support
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
-        ravitillo@lbl.gov
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111007092243.GC27281@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 12:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2011-10-07 at 12:28 +0200, Stephane Eranian wrote:
->> On Thu, Oct 6, 2011 at 6:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
->> >>  struct perf_branch_entry {
->> >>         __u64                           from;
->> >>         __u64                           to;
->> >> +       struct {
->> >> +               __u64                   mispred:1,  /* target mispredicted */
->> >> +                                       predicted:1,/* target predicted */
->> >> +                                       reserved:62;
->> >> +       };
->> >>  };
->> >
->> > Why that anonymous structure?
->> >
->> The interface can return more than source/destination, it can also
->> return prediction infos.
->> Prediction is boolean, thus we only need a couple of bits. The reason
->> there are two bits
->> and not just one is to disambiguate between: predicted correctly and
->> 'prediction reporting
->> unsupported'. For instance, prediction is also supported since
->> Nehalem, Core2/Atom do
->> not have it.
->
-> Right, I got that.
->
->> But maybe you're just commenting of the anonymous vs. named struct for
->> that?
->
-> I don't see the need for any struct, why can't the bitfield live in
-> perf_branch_entry proper?
->
->> It is just for convenience. Isn't that the same argument for the
->> anonymous bitfield
->> in struct perf_event_attr?
->
-> But that isn't wrapped in a structure either is it..
->
-> I guess I'm asking, what's wrong with:
->
-> struct perf_branch_entry {
->        __u64           from;
->        __u64           to;
->        __u64           mispred:1,
->                        predicted:1,
->                        reserved:62;
-> };
->
-Ok, I think I missed your original point about the anonymous
-struct. What you're suggesting above is certainly fine with me.
-I am not just used to bitfields mixed with other fields in a struct.
-I'll fix that.
+On Fri, Oct 07, 2011 at 10:22:43AM +0100, Russell King - ARM Linux wrote:
+> On Fri, Oct 07, 2011 at 10:50:16AM +0200, V�ctor Manuel J�quez Leal wrote:
+> > Convert a printk(KERN_ERR) message in the driver to pr_err().
+> ...
+> > @@ -111,7 +111,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
+> >  	while (!(__raw_readl(timer->sys_stat) & 1)) {
+> >  		c++;
+> >  		if (c > 100000) {
+> > -			printk(KERN_ERR "Timer failed to reset\n");
+> > +			pr_err("Timer failed to reset\n");
+> 
+> What is the reason behind this change?  It looks like it's to use the
+> latest and greatest function.
+> 
+> If so, please don't make these changes - we have on many occasions been
+> blamed for size of diffstat, churn, needless change, and this patch is
+> exactly that.
+> 
+> By all means fix printk's without KERN_ constants, possibly converting
+> them to pr_*, but don't go around replacing printk(KERN_* with pr_*(
+> without ensuring that there's a real benefit to the change.
+> 
+
+Thanks a lot Russell, and sorry for the noise. I'm still learning how to
+collaborate in the kernel.
+
+vmjl
