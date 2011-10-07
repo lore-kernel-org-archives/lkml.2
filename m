@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab1JGENn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 00:13:43 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:8082
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750809Ab1JGENl (ORCPT
+	id S1752293Ab1JGEU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 00:20:26 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64807 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1JGEUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 00:13:41 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzzz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E8E7C5F.4090902@am.sony.com>
-Date: Thu, 6 Oct 2011 21:13:19 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0.6-rt17
-References: <alpine.LFD.2.02.1110070046270.3240@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110070046270.3240@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 7 Oct 2011 00:20:25 -0400
+Subject: [PATCH] ARM: SAMSUNG: s3c-dma-ops needs export.h for EXPORT_SYMBOL
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Oct 2011 12:20:14 +0800
+Message-ID: <1317961214.16109.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/11 18:15, Thomas Gleixner wrote:
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.0.6-rt17 release.
+Fix below build warning:
+  CC      arch/arm/plat-samsung/s3c-dma-ops.o
+arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: data definition has no type or storage class
+arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: parameter names (without types) in function declaration
 
-Builds and boots on my usual array of ARM boards for:
+And fix the build error:
+ERROR: "s3c_dma_get_ops" [drivers/spi/spi-s3c64xx.ko] undefined!
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-  - SMP, PREEMPT_RT_FULL
-  - SMP, PREEMPT_NONE
-  - UP, PREEMPT_RT_FULL
-  - UP, PREEMPT_NONE
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This can be reproduced by "make s3c6400_defconfig;make" on linux-next 20111006.
+ arch/arm/plat-samsung/s3c-dma-ops.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
--Frank
+diff --git a/arch/arm/plat-samsung/s3c-dma-ops.c b/arch/arm/plat-samsung/s3c-dma-ops.c
+index 582333c..7814949 100644
+--- a/arch/arm/plat-samsung/s3c-dma-ops.c
++++ b/arch/arm/plat-samsung/s3c-dma-ops.c
+@@ -14,6 +14,7 @@
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+ #include <linux/types.h>
++#include <linux/export.h>
+ 
+ #include <mach/dma.h>
+ 
+-- 
+1.7.4.1
+
 
 
