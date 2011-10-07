@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965498Ab1JGQiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:38:19 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35138 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760142Ab1JGQiR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:38:17 -0400
-Date: Fri, 7 Oct 2011 22:06:00 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
-        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111007163600.GB2297@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004150417.GA23604@elliptictech.com>
+	id S965520Ab1JGQkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:40:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35995 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965451Ab1JGQkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 12:40:02 -0400
+Date: Fri, 7 Oct 2011 11:40:00 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, UV: UV2 fix for hub part number
+Message-ID: <20111007164000.GA15248@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111004150417.GA23604@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11100707-3568-0000-0000-0000007BFBBF
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 04, 2011 at 11:04:17AM -0400, Nick Bowler wrote:
-> On 2011-10-03 13:02 +0530, K.Prasad wrote:
-> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > index 08363b0..483b2fc 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > @@ -238,6 +238,34 @@ static atomic_t mce_paniced;
-> >  static int fake_panic;
-> >  static atomic_t mce_fake_paniced;
-> >  
-> > +void arch_add_nocoredump_note(u32 *buf)
-> > +{
-> > +	struct elf_note note;
-> > +	const char note_name[] = "PANIC_MCE";
-> 
->         static const ...
-> 
-> > +	const char desc_msg[] = "Crash induced due to a fatal machine "
-> > +				"check error";
-> 
->         likewise.
-> 
+There was a mixup when the SGI UV2 hub chip was sent to be fabricated, and it
+ended up with the wrong part number in the HRP_NODE_ID mmr. Future versions
+of the chip will (may) have the correct part number. Change the UV infrastructure
+to recognize both part numbers as valid IDs of a UV2 hub chip.
 
-Not sure why you wanted them to be defined as static. These strings are
-going to be copied into respective elf-note buffers just a few lines
-below their definitions.
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-> Please don't break string literals onto multiple lines like this, since
-> it prevents users from finding the string using "grep".
 
-We could do so, hoping that checkpatch.pl doesn't complain if we crossed
-the 80-column width :-)
+---
+ arch/x86/include/asm/uv/uv_mmrs.h  |    1 +
+ arch/x86/kernel/apic/x2apic_uv_x.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
-Thanks,
-K.Prasad
-
+Index: linux/arch/x86/include/asm/uv/uv_mmrs.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_mmrs.h	2011-10-07 11:17:23.000000000 -0500
++++ linux/arch/x86/include/asm/uv/uv_mmrs.h	2011-10-07 11:21:07.555566441 -0500
+@@ -57,6 +57,7 @@
+ 
+ #define UV1_HUB_PART_NUMBER	0x88a5
+ #define UV2_HUB_PART_NUMBER	0x8eb8
++#define UV2_HUB_PART_NUMBER_X	0x1111
+ 
+ /* Compat: if this #define is present, UV headers support UV2 */
+ #define UV2_HUB_IS_SUPPORTED	1
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2011-10-07 11:20:28.000000000 -0500
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2011-10-07 11:21:56.574608699 -0500
+@@ -93,6 +93,8 @@ static int __init early_get_pnodeid(void
+ 
+ 	if (node_id.s.part_number == UV2_HUB_PART_NUMBER)
+ 		uv_min_hub_revision_id += UV2_HUB_REVISION_BASE - 1;
++	if (node_id.s.part_number == UV2_HUB_PART_NUMBER_X)
++		uv_min_hub_revision_id += UV2_HUB_REVISION_BASE - 1;
+ 
+ 	uv_hub_info->hub_revision = uv_min_hub_revision_id;
+ 	pnode = (node_id.s.node_id >> 1) & ((1 << m_n_config.s.n_skt) - 1);
