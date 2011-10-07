@@ -1,114 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965468Ab1JGOlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 10:41:09 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:64291 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1JGOlH (ORCPT
+	id S965476Ab1JGOoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 10:44:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35926 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab1JGOoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 10:41:07 -0400
-From: Frank Mehnert <frank.mehnert@oracle.com>
-Organization: Oracle Corporation
-To: Dave Jones <davej@redhat.com>
-Subject: Re: RFC: virtualbox tainting.
-Date: Fri, 7 Oct 2011 16:40:53 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.4; KDE/4.6.5; x86_64; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andy Hall <andy.hall@oracle.com>
-References: <20111006190526.GA13883@redhat.com>
-In-Reply-To: <20111006190526.GA13883@redhat.com>
+	Fri, 7 Oct 2011 10:44:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2300306.AgImnlUFgV";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110071640.53827.frank.mehnert@oracle.com>
-X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
-X-CT-RefId: str=0001.0A090205.4E8F0F81.005D,ss=1,re=0.000,fgs=0
+In-Reply-To: <1317997177.1573.2275.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	<1317200618.1573.1765.camel@vkoul-udesk3>
+	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	<1317295068.1573.1780.camel@vkoul-udesk3>
+	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	<20111003161349.GB28287@flint.arm.linux.org.uk>
+	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	<1317966346.1573.2252.camel@vkoul-udesk3>
+	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	<1317997177.1573.2275.camel@vkoul-udesk3>
+Date: Fri, 7 Oct 2011 20:08:03 +0530
+Message-ID: <CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2300306.AgImnlUFgV
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On 7 October 2011 19:49, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Fri, 2011-10-07 at 16:57 +0530, Jassi Brar wrote:
 
-Dave,
-
-On Thursday 06 October 2011 21:05:27 Dave Jones wrote:
-> The number of bug reports we get from people with virtualbox loaded are
-> truly astonishing.  It's GPL, but sadly that doesn't mean it's good.
-> Nearly all of these bugs look like random corruption. (corrupt linked
-> lists, corrupt page tables, and just plain 'weird' crashes).
->=20
-> This diff adds tainting to the module loader to treat it as we do with
-> stuff from staging/ (crap). With this tainting in place, automatic bug
-> filing tools can opt out of automatically filing kernel bugs, and inform
-> the user to file bugs somewhere more appropriate.
->=20
-> Signed-off-by: Dave Jones <davej@redhat.com>
->=20
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 04379f92..d26c9a3 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2653,6 +2653,10 @@ static int check_module_license_and_versions(struct
-> module *mod) if (strcmp(mod->name, "ndiswrapper") =3D=3D 0)
->  		add_taint(TAINT_PROPRIETARY_MODULE);
->=20
-> +	/* vbox is garbage. */
-> +	if (strcmp(mod->name, "vboxdrv") =3D=3D 0)
-> +		add_taint(TAINT_CRAP);
-> +
->  	/* driverloader was caught wrongly pretending to be under GPL */
->  	if (strcmp(mod->name, "driverloader") =3D=3D 0)
->  		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
-
-I can understand that you would rather ignore bug reports from external
-kernel modules. On the other hand I don't like the TAINT_CRAP flag as
-you can probably imagine.
-
-Why not just mark external modules like Bastian Blank suggested? I can
-assure that we will not try circumvent a TAINT_OOT_MODULE flag.
-
-Please also note that we always have good relations to the open source
-community so feel free to point me an archive where all these kernel
-panic reports arrive which you've got. We fixed some bugs in our kernel
-modules in the past and it is even possible that some of the current
-bug reports are from older versions of VirtualBox which might have been
-fixed in the meantime.
-
-And of course, helpful and constructive critism is always appreciated.
-
-Thanks,
-
-=46rank
-=2D-=20
-Dr.-Ing. Frank Mehnert
-Senior Manager Software Development Desktop Virtualization, VirtualBox
-ORACLE Deutschland B.V. & Co. KG | Werkstr. 24 | 71384 Weinstadt, Germany
-
-Hauptverwaltung: Riesstr. 25, D-80992 M=FCnchen
-Registergericht: Amtsgericht M=FCnchen, HRA 95603
-
-Komplement=E4rin: ORACLE Deutschland Verwaltung B.V.
-Hertogswetering 163/167, 3543 AS Utrecht, Niederlande
-Handelsregister der Handelskammer Midden-Niederlande, Nr. 30143697
-Gesch=E4ftsf=FChrer: J=FCrgen Kunz, Marcel van de Molen, Alexander van der =
-Ven
-
---nextPart2300306.AgImnlUFgV
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk6PD3UACgkQ6z8pigLf3EcdkgCfYzS4hqAuOjaUkUygRwQPD3vI
-MFMAni7SvLhik+DXv6saT0EQ8oHgEof5
-=+zLg
------END PGP SIGNATURE-----
-
---nextPart2300306.AgImnlUFgV--
+>> > I would still argue that if we split this on same lines as current
+>> > mechanism, we have clean way to convey all details for both cases.
+>> >
+>> Do you mean to have separate interleaved transfer apis for Slave
+>> and Mem->Mem ? Please clarify.
+> If we can make API cleaner and well defined that way then Yes :)
+>
+I assume if you suggest you already have an idea....
+Please do tell roughly how the api should look for Slave and for Mem->Mem ?
