@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759437Ab1JGAqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 20:46:04 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:39463 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758402Ab1JGAqD (ORCPT
+	id S965348Ab1JGAs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 20:48:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33441 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759096Ab1JGAs5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 20:46:03 -0400
-Date: Fri, 7 Oct 2011 11:45:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] bio: use a static inline function for
- bio_integrity_clone
-Message-Id: <20111007114548.e003f8b1d62cb81eb2fe6096@canb.auug.org.au>
-In-Reply-To: <20111006162219.b629eabb.akpm@linux-foundation.org>
-References: <20110826120900.cdc6e4c3597c88ad45015a9b@canb.auug.org.au>
-	<20111006162219.b629eabb.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__7_Oct_2011_11_45_48_+1100_9lKIeXndi0Dv.xgS"
+	Thu, 6 Oct 2011 20:48:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+References: <20111003090846.GA25136@localhost.pp.htv.fi> <CAObL_7GSQFr_PRtKY=H7r=yD7Qk-xvgbg5bV1=nU-qayG-mJdw@mail.gmail.com>
+ <20111003173359.GA3072@localhost.pp.htv.fi> <CAObL_7Fi3mw5Azyhxx-vsdNuhJm8RewmYS97QvWa0F=cbYvegg@mail.gmail.com>
+ <CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com>
+ <20111005223055.GG14406@localhost.pp.htv.fi> <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+ <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+ <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+ <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
+ <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com> <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 6 Oct 2011 17:48:36 -0700
+X-Google-Sender-Auth: SJwqel4YunJ-qsmLZUII3ks-wsI
+Message-ID: <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+Subject: Re: [3.1 patch] x86: default to vsyscall=native
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__7_Oct_2011_11_45_48_+1100_9lKIeXndi0Dv.xgS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Andrew,
-
-On Thu, 6 Oct 2011 16:22:19 -0700 Andrew Morton <akpm@linux-foundation.org>=
- wrote:
+On Thu, Oct 6, 2011 at 11:34 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Oct 6, 2011 at 11:16 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>> Fixing it will be annoying because the attached fancier version needs
+>> to work, too.  I could implement the whole mess in software, but it
+>> might be nicer to arrange for uaccess errors to stash some information
+>> somewhere (like in the thread_struct cr2 variable).
 >
-> grumble@lazybones.  All those other vile macros should be similarly
-> converted, for this reason and for all the others.
->=20
-> Am too lazy to do it myself, so let's at least fix this warning until
-> some others turn up.
+> That should be easy enough to do. Just add it to the
+> "fixup_exception()" case in no_context().
 
-That was my feeling as well.  I will apply this to (the akpm part of)
-linux-next today (since you have added it to the -mm tree).
+This code is rather messy.  We stash the cr2, err, and trap fields of
+sigcontext in thread_struct and we *never* reset them until the next
+segfault.  So userspace sees stale garbage on every signal that isn't
+a (genuine) segfault.  I can imagine this breaking UML is remarkably
+bizarre ways even without vsyscall emulation because UML actually
+seems to rely on that stuff to determine the source of a signal.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The nice fix would be to move this information into siginfo.  cr2
+appears to be duplicated by sa_addr.  trap_no is apparently redundant
+except for SIGTRAP.  error_code is interesting.  Any objection to
+using some padding bytes to move this into siginfo and remove the
+fields (except for uaccess) from thread_struct?  Better ideas?
 
---Signature=_Fri__7_Oct_2011_11_45_48_+1100_9lKIeXndi0Dv.xgS
-Content-Type: application/pgp-signature
+Without some kind of cleanup, I'm a bit worried about breakage if a
+uaccess fault happens between something else setting the flags and a
+signal getting delivered, resulting in corruption of the sigcontext,
+unless I add more crud to thread_struct and waste memory for every
+process.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOjku8AAoJEECxmPOUX5FEDWkP/RGa3e4mngfL3uWBtFWuK0S+
-YKWEScxh2Ip4+0O/gu9dKl6FRAXPcTgzZc6hA74VDgmT0IBGUqhBtaLc+axPX3ql
-DNGnNaxDLrTNOirT8IpmRUTJGcpbtMdldJZ75WqLu8ZApBjcGJIcczvpoZH2tkpR
-knliVZm00+7NpMQmJWZuHZTP8XdkwS0wOhgzg5MsNofyPGssuFZnuW1SkFt2M1WY
-YUL8Bpclq1VFktdA1dRsTECVKHlsJdERJk1/6wUL7//acHhpz3jqtD7MncuIekJb
-pXQrFR4cFDrImwPSk9I6O2Qqs4X8ERFte7HIckW6t8Ac0NjLCavEcyHNEs2dpHr9
-c0RtsAcVUmdN9sK8SmVMl6nLGQWfbBgSzrfmIde9G4qfr+dDpUAPsixgOnc9juy0
-q9gIrhjtzKTm0PePwGPS1lQMoO53pZ1bzrC9lgIKb/G68usrr7rJx3v5V4lGWWFS
-cgLI74yc5112Ay1B5eQd9ziqE9kfmZSXxk43PNuHONXT+zHcrwzsXccK9uI5Oa3M
-pZJebNBixGQqz5Q0BmNtLpn5EXVloOdewzWGSOQ7isD0n3UUpN/rWbC+S+HS8Qlr
-aG72i6CLg3vVp146qXO7LccpA7maTmB0dOyJe/2JU2aaJf7wFHJdpf56E8zl1Qan
-/L7WFyCOSz5wXuWaDUXg
-=5fzU
------END PGP SIGNATURE-----
-
---Signature=_Fri__7_Oct_2011_11_45_48_+1100_9lKIeXndi0Dv.xgS--
+--Andy
