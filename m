@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759931Ab1JGLyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:54:51 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43900 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1JGLyu (ORCPT
+	id S1759941Ab1JGMAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 08:00:10 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37065 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759897Ab1JGMAI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 07:54:50 -0400
-X-AuditID: b753bd60-a14abba0000019f4-0e-4e8ee887594d
-X-AuditID: b753bd60-a14abba0000019f4-0e-4e8ee887594d
-Message-ID: <4E8EE885.9040703@hitachi.com>
-Date: Fri, 07 Oct 2011 20:54:45 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 7 Oct 2011 08:00:08 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, robert.richter@amd.com, ravitillo@lbl.gov
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
- Intel X86
-References: <1317912555-9559-1-git-send-email-eranian@google.com>  <1317912555-9559-8-git-send-email-eranian@google.com>  <20111006153229.GJ14482@one.firstfloor.org>  <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>  <CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>  <1317984122.31132.6.camel@twins>  <CABPqkBTxxS-vuAycDJO-aJNE4EpCLF8xyPtJ1Jzv26f15HJC8A@mail.gmail.com> <1317986519.31132.13.camel@twins>
-In-Reply-To: <1317986519.31132.13.camel@twins>
+In-Reply-To: <20111007111831.GA5472@nameofcomputer>
+References: <20111007111831.GA5472@nameofcomputer>
+Date: Fri, 7 Oct 2011 07:54:24 -0400
+Message-ID: <CAMzpN2j5sYh9MNsfwvr+R7YdaGy1y13ZHh2fvhe0jQiYkT0fEg@mail.gmail.com>
+Subject: Re: x86: gdt_page and debugging from gdb against /proc
+From: Brian Gerst <brgerst@gmail.com>
+To: 33user@gmail.com
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/07 20:21), Peter Zijlstra wrote:
-> On Fri, 2011-10-07 at 13:18 +0200, Peter Zijlstra wrote:
->>> Yeah, depending on the depth of the LBR. But then what happens, you
->>> decode an instruction that is not what was executed. 
->>
->> Right, and Andi's concern is that this might cause our instruction
->> decoder to blow up, or worse. 
-> 
-> That is, we have a fair confidence that its capable of correctly
-> decoding correct streams, but I understood from Masami that they haven't
-> actually tried feeding it crap.
+On Fri, Oct 7, 2011 at 7:18 AM, myname <33user@gmail.com> wrote:
+> in kernel/cpu/kernel/common.c, the initialization for the gdt_table symbol is like the following:
+>
+>        [GDT_ENTRY_KERNEL_CS]           = GDT_ENTRY_INIT(0xc09a, 0, 0xfffff),
+>        [GDT_ENTRY_KERNEL_DS]           = GDT_ENTRY_INIT(0xc092, 0, 0xfffff),
+>        [GDT_ENTRY_DEFAULT_USER_CS]     = GDT_ENTRY_INIT(0xc0fa, 0, 0xfffff),
+>        [GDT_ENTRY_DEFAULT_USER_DS]     = GDT_ENTRY_INIT(0xc0f2, 0, 0xfffff),
+>
+>        so, that the gtd_page[12] should have base = 0, and limit = 0xffffff, and so on for the next 3 slots in the array.
+>
+> now if i do: `sudo gdb -q ~/linux-3.0.3/vmlinux /proc/kcore' and in gdb ask for the command p/t gdt_table, i get, which obviously if you check for base and limit in member 12, 13 and so on, doesn't fit the above description. why?
 
-OK, I'll do hardening it.
+gdt_page is a per-cpu variable, so you are looking at the original
+location in init mem that has been overwritten with other data.
 
-Thanks,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--
+Brian Gerst
