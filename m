@@ -1,174 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab1JGRkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 13:40:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754435Ab1JGRku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 13:40:50 -0400
-Date: Fri, 7 Oct 2011 19:36:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
-	mmap/munmap.
-Message-ID: <20111007173623.GC32319@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com> <20111003133710.GA28118@redhat.com> <20111006110531.GE17591@linux.vnet.ibm.com>
+	id S935368Ab1JGRla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 13:41:30 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48704 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934828Ab1JGRl0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 13:41:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111006110531.GE17591@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1317721043.11231.2.camel@jmachine>
+References: <1317721043.11231.2.camel@jmachine>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 7 Oct 2011 10:41:06 -0700
+Message-ID: <CAB=NE6X81KPvx-yt33MghmoftUznoP-jYO8sBxoeW_0fzQ1pdA@mail.gmail.com>
+Subject: Re: Using spdiff for backporting
+To: Jesper Andersen <jespera@gmail.com>
+Cc: julia@diku.dk, linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06, Srikar Dronamraju wrote:
+On Tue, Oct 4, 2011 at 2:37 AM, Jesper Andersen <jespera@gmail.com> wrote:
+> Hi
 >
-> * Oleg Nesterov <oleg@redhat.com> [2011-10-03 15:37:10]:
+> Somehow, I think the email below was never sent? Could either of you confirm my suspicion?
+
+I just checked and I did get the original e-mail. Apologies for the
+late reply. Below my reply.
+
+> ====== Original email ======
 >
-> > On 09/20, Srikar Dronamraju wrote:
-> > >
-> > > @@ -739,6 +740,10 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
-> > >  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> > >  	mm->pmd_huge_pte = NULL;
-> > >  #endif
-> > > +#ifdef CONFIG_UPROBES
-> > > +	atomic_set(&mm->mm_uprobes_count,
-> > > +			atomic_read(&oldmm->mm_uprobes_count));
-> >
-> > Hmm. Why this can't race with install_breakpoint/remove_breakpoint
-> > between _read and _set ?
+> Here are a two results that I have found using spdiff on some of the
+> patches from compat-wireless.
 >
-> At this time the child vmas are not yet created, so I dont see a
-> install_breakpoints/remove_breakpoints from child affecting.
-
-I meant oldmm.
-
-> However if install_breakpoints/remove_breakpoints happen from a parent
-> context, from now on till we do a vma_prio_tree_add (actually down_write(oldmm->mmap_sem)
-> in dup_mmap()),  then the count in the child may not be the right one.
-> If you are pointing to this race, then its probably bigger than just between read and set.
-
-Yes, this too. IOW, atomic_read/set(mm_uprobes_count) looks always
-wrong without down_write(mmap_sem).
-
-> > > +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
-> > >  {
-> > >  	/* Placeholder: Yet to be implemented */
-> > > +	if (!uprobe->consumers)
-> > > +		return 0;
-> >
-> > How it is possible to see ->consumers == NULL?
+> 01-netdev:
+> @@
+> struct net_device *  X5;
+> const struct net_device_ops X6;
+> @@
+> - X5->netdev_ops=&X6;
+> + netdev_attach_ops(X5,&X6);
 >
-> consumers == NULL check is mostly for the mmap_uprobe path.
-
-mmap_uprobe() explicitely checks ->consumers != NULL before
-install_breakpoint().
-
-> _register_uprobe and _unregister_uprobe() use the same lock to serialize
-> so they can check consumers after taking the lock.
-
-Yes,
-
-> > OK, afaics it _is_ possible, but only because unregister does del_consumer()
-> > without ->i_mutex, but this is bug afaics (see the previous email).
+> 27-hermes-read-pda:
+> @@
+> struct hermes *  X0;
+> @@
+> - X0->ops->read_pda
+> + X0->ops->read_pda_h
 >
-> We have discussed this in the other thread.
-
-Yes. So afaics we can remove this check if unregister() does del_consumer()
-under mutex.
-
-Note: I am not saying you should do this ;) I just tried to understand
-this code.
-
-> > > +int mmap_uprobe(struct vm_area_struct *vma)
-> > > +{
-> > > +	struct list_head tmp_list;
-> > > +	struct uprobe *uprobe, *u;
-> > > +	struct inode *inode;
-> > > +	int ret = 0;
-> > > +
-> > > +	if (!valid_vma(vma))
-> > > +		return ret;	/* Bail-out */
-> > > +
-> > > +	inode = igrab(vma->vm_file->f_mapping->host);
-> > > +	if (!inode)
-> > > +		return ret;
-> > > +
-> > > +	INIT_LIST_HEAD(&tmp_list);
-> > > +	mutex_lock(&uprobes_mmap_mutex);
-> > > +	build_probe_list(inode, &tmp_list);
-> > > +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-> > > +		loff_t vaddr;
-> > > +
-> > > +		list_del(&uprobe->pending_list);
-> > > +		if (!ret && uprobe->consumers) {
-> > > +			vaddr = vma->vm_start + uprobe->offset;
-> > > +			vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> > > +			if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
-> > > +				continue;
-> > > +			ret = install_breakpoint(vma->vm_mm, uprobe);
-> >
-> > So. We are adding the new mapping, we should find all breakpoints this
-> > file has in the start/end range.
-> >
-> > We are holding ->mmap_sem... this seems enough to protect against the
-> > races with register/unregister. Except, what if __register_uprobe()
-> > fails? In this case __unregister_uprobe() does delete_uprobe() at the
-> > very end. What if mmap mmap_uprobe() is called right before delete_?
-> >
+> Basically, I have done the following
 >
-> Because consumers would be NULL before _unregister_uprobe kicks in, we
-> shouldnt have a problem here.
+> - clone the linux-next tree
+> - apply a patch from compat-wireless/patches
+> - git commit
+> - extract pairs of original and modified files affected by the commit
+>  (I call this set of pairs a "change set")
+> - apply spdiff to the extracted pairs
+> - adjust parameters to spdiff until something reasonable comes out
+>
+> For spdiff to work in its current form we need a change set with at
+> least two similar modifications. For the netdev-ops case we actually
+> have many changes matching "X5->netdev_ops=&X6" and seemingly those
+> locations are all rewritten into: "netdev_attach_ops(X5,&X6)".
+>
+> For many of the patches in compat-wireless/patches, however such a
+> scenario is not present. For example 03-rfkill consists of just one
+> change of the string "rfkill" to "rfkill_backport". In this case spdiff
+> cannot really infer anything useful.
 
-Hmm. But it is not NULL.
+Ah I see.
 
-Once again, I didn't mean unregister_uprobe(). I meant register_uprobe().
-In this case, if __register_uprobe() fails, we are doing __unregister
-but uprobe->consumer != NULL.
+> The question is: given that spdiff in its current form really needs at
+> least two example changes, could you perhaps point me at which of the
+> patches in compat-wireless/patches should contain such things?
 
-Just suppose that the caller of register_uprobe() gets a (long) preemption
-right before __unregister_uprobe()->delete_uprobe(). What if mmap() is
-called at this time?
+Sure thing. I'll review that and get back to you.
 
-> Am I missing something?
+> Also, in the slides from the plumbers-conf. I think I saw it mentioned
+> that there's also an alsa-compat git-tree somewhere. Maybe that is a
+> more compelling usecase? I was unable to find it though so I'd
+> appreciate a link.
 
-May be you, may be me. Please recheck ;)
+It was on kernel.org, but if it got rm -rf'd then its gone as I do not
+have a local copy. The compat-alsa stuff though was determined to be
+superflous with the ALSA's team's own backport work which is currently
+independent. My hope though is to unify these through the compat.git /
+compat-kernel (currently just called compat-wireless) effort.
 
-> > Also, truncate() obviously changes ->i_size. Doesn't this mean
-> > unregister_uprobe() should return if offset > i_size ? We need to
-> > free uprobes anyway.
+> A way that we maybe could get some more similar changes would be to
+> focus on finding a patch for a specific version. E.g. for
+> 09-threaded-irq there's a lot if #ifdefs for versions less than 2.6.31.
+> In that case it seems for the lower version numbers, some code is added
+> and for higher versions some other code has to be present. Instead, we
+> could try to find a patch from the changes between >2.6.31 and <2.6.31
+> perhaps?
 
-Argh, I meant "should NOT return if offset > i_size".
+Not sure I get this, could you elaborate a bit more? Are you saying to
+cheat and double up the ifdef's for at least two older kernels or
+newer kernels so that spatch gets two "change sets"?
 
-> Do you mean we shouldnt check for the offset in unregister_uprobe() and
-> just search in the rbtree for the matching uprobe?
-> Thats also possible to do.
+> Or maybe you (Luis) have a better suggestion for how spdiff could be
+> used. I am very open to modifications required specifically for doing
+> backports work, I just need to get an idea for what would be useful to
+> be able to infer. :-)
 
-Yes, we can't trust this check afaics.
+I'm perfectly happy with living with spdiff only helping with large
+"change sets", and dealing with the rest of the patches manually.
+Likely spdiff can help when we decide we want to add backport support
+for a new subsystem, so we'd just apply the spatch's generated to the
+new directories we want to consider, and then just require manual work
+for what is left.
 
-> I think this would be taken care of if we move the munmap_uprobe() hook
-> from unmap_vmas to unlink_file_vma().
-
-Probably yes, we should rely on prio_tree locking/changes.
-
-> The other thing that I need to investigate a bit more is if I have
-> handle all cases of mremap correctly.
-
-Yes. May be mmap_uprobe() should be "closer" to vma_prio_tree_add/insert
-too, but I am not sure.
-
-Oleg.
-
+  Luis
