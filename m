@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab1JGLUo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:20:44 -0400
-Received: from mail.de.keymile.com ([195.8.104.1]:34875 "HELO
-	mail.de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759808Ab1JGLUn (ORCPT
+	id S1759911Ab1JGLWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 07:22:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46509 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759808Ab1JGLWT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 07:20:43 -0400
-X-Greylist: delayed 646 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Oct 2011 07:20:42 EDT
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>
-Subject: [PATCH] CIFS: fix automount for DFS shares
-Date: Fri,  7 Oct 2011 13:09:31 +0200
-Message-Id: <1317985771-28876-2-git-send-email-gerlando.falauto@keymile.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1317985771-28876-1-git-send-email-gerlando.falauto@keymile.com>
-References: <1317985771-28876-1-git-send-email-gerlando.falauto@keymile.com>
-X-ESAFE-STATUS: [srvhellgate.de.keymile.net] Mail clean
+	Fri, 7 Oct 2011 07:22:19 -0400
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
+        robert.richter@amd.com, ravitillo@lbl.gov,
+        "masami.hiramatsu.pt" <masami.hiramatsu.pt@hitachi.com>
+Date: Fri, 07 Oct 2011 13:21:59 +0200
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	 <1317912555-9559-8-git-send-email-eranian@google.com>
+	 <20111006153229.GJ14482@one.firstfloor.org>
+	 <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
+	 <CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>
+	 <1317984122.31132.6.camel@twins>
+	 <CABPqkBTxxS-vuAycDJO-aJNE4EpCLF8xyPtJ1Jzv26f15HJC8A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317986519.31132.13.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Automounting directories are now invalidated by .d_revalidate()
-so to be d_instantiate()d again with the right DCACHE_NEED_AUTOMOUNT
-flag
+On Fri, 2011-10-07 at 13:18 +0200, Peter Zijlstra wrote:
+> > Yeah, depending on the depth of the LBR. But then what happens, you
+> > decode an instruction that is not what was executed. 
+> 
+> Right, and Andi's concern is that this might cause our instruction
+> decoder to blow up, or worse. 
 
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
----
- fs/cifs/dir.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 9ea65cf..67f54d3 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -637,8 +637,13 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
- 	if (direntry->d_inode) {
- 		if (cifs_revalidate_dentry(direntry))
- 			return 0;
--		else
-+		else {
-+			/* We want automonting inodes to be
-+			 * considered invalid or so */
-+			if (IS_AUTOMOUNT(direntry->d_inode))
-+				return 0;
- 			return 1;
-+		}
- 	}
- 
- 	/*
--- 
-1.7.1
-
+That is, we have a fair confidence that its capable of correctly
+decoding correct streams, but I understood from Masami that they haven't
+actually tried feeding it crap.
