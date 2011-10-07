@@ -1,109 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965316Ab1JGFeo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 01:34:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60555 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758214Ab1JGFen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 01:34:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="59999759"
-Subject: RE: [RFC PATCH 1/2] RapidIO: Add DMA Engine support for RIO data
- transfers
-From: Vinod Koul <vinod.koul@intel.com>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: Dan <dan.j.williams@intel.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55202291E40@CORPEXCH1.na.ads.idt.com>
-References: <1317418715-9666-1-git-send-email-alexandre.bounine@idt.com>
-	 <1317492077.1573.1839.camel@vkoul-udesk3>
-	 <0CE8B6BE3C4AD74AB97D9D29BD24E55202291E40@CORPEXCH1.na.ads.idt.com>
+	id S1759557Ab1JGFkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 01:40:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36433 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab1JGFkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 01:40:14 -0400
+Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: starlight@binnacle.cx
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@gentwo.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@elte.hu>,
+        Stephen Hemminger <stephen.hemminger@vyatta.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Joe Perches <joe@perches.com>,
+        Chetan Loke <Chetan.Loke@netscout.com>,
+        Con Kolivas <conman@kolivas.org>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>
+In-Reply-To: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
+References: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 10:57:32 +0530
-Message-ID: <1317965252.1573.2238.camel@vkoul-udesk3>
+Date: Fri, 07 Oct 2011 07:40:07 +0200
+Message-ID: <1317966007.3457.47.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 09:52 -0700, Bounine, Alexandre wrote:
-> Vinod Koul wrote:
-> > 
-> > On Fri, 2011-09-30 at 17:38 -0400, Alexandre Bounine wrote:
-> > Please CC *maintainers* on your patches, get_maintainers.pl will tell
-> > you who. Adding Dan here
+Le jeudi 06 octobre 2011 à 23:27 -0400, starlight@binnacle.cx a écrit :
+> After writing the last post, the large
+> difference in IRQ rate between the older
+> and newer kernels caught my eye.
 > 
-> Based on https://lkml.org/lkml/2011/2/14/67 and use of DMA_SLAVE in this
-> patch I decided that you are the best match among two and there is no reason
-> to disturb Dan ;) 
-I don't think he minds :) and we can all benefit from his wisdom
+> I wonder if the hugely lower rate in the older
+> kernels reflects a more agile shifting
+> into and out of NAPI mode by the network
+> bottom-half.
+> 
+> In this test the sending system
+> pulses data out on millisecond boundaries
+> due to the behavior of nsleep(), which
+> is used to establish the playback pace.
+> 
+> If the older kernels are switching to NAPI
+> for much of surge and the switching out
+> once the pulse falls off, it might
+> conceivably result in much better latency
+> and overall performance.
+> 
+> All tests were run with Intel 82571 
+> network interfaces and the 'e1000e'
+> device driver.  Some used the driver
+> packaged with the kernel, some used
+> Intel driver compiled from the source
+> found on sourceforge.net.  Never could
+> detected any difference between the two.
+> 
+> Since data in the production environment
+> also tends to arrive in bursts, I don't find
+> the pulsing playback behavior a detriment.
+> 
 
-> 
-> > > Adds DMA Engine framework support into RapidIO subsystem.
-> > > Uses DMA Engine DMA_SLAVE interface to generate data transfers to/from remote
-> > > RapidIO target devices. Uses scatterlist to describe local data buffer and
-> > > dma_chan.private member to pass target specific information. Supports flat
-> > > data buffer only for a remote side.
-> > The way dmaengine works today is that it doesn't know anything about
-> > client subsystem. But this brings in a subsystem details to dmaengine
-> > which I don't agree with yet.
-> > Why can't we abstract this out??
-> 
-> The only thing that brings subsystem knowledge into dmaengine is DMA_RAPIDIO flag.
-> I am actually on the fence about this. From RapidIO side point of view I do not
-> need that flag at all.
-> RapidIO uses a filter routine that is sufficient to identify dmaengine channels
-> associated with specific RapidIO mport. Use of DMA_SLAVE flag is safe here.
-> Use of private member of dma_chan is "private" business of RapidIO and does
-> not break anything. 
-> 
-> My concern here is that other subsystems may use/request DMA_SLAVE channel(s) as well
-> and wrongfully acquire one that belongs to RapidIO. In this case separation with another
-> flag may have a sense - it is possible to have a system that uses RapidIO
-> and other "traditional" DMA slave channel.
-Nope that will never happen in current form.
-Every controller driver today "magically" ensures that it doesn't get
-any other dma controllers channel. We use filter function for that.
-Although it is not clean yet and we are working to fix that but that's
-another discussion.
-Even specifying plain DMA_SLAVE should work if you code your filter
-function properly :)
+Thats exactly the opposite : Your old kernel is not fast enough to
+enter/exit NAPI on every incoming frame.
 
-> 
-> This is why I put that proposed interface for discussion instead of keeping everything
-> inside of RapidIO.
-> If you think that situation above will not happen I will be happy to remove
-> that subsystem knowledge from dmaengine files.
-> 
-> My most recent test implementation runs without DMA_RAPIDIO flag though.
-> 
-> > 
-> > After going thru the patch, I do not believe that this this is case of
-> > SLAVE transfers, Dan can you please take a look at this patch
-> 
-> I agree, this is not a case of "pure" slave transfers but existing DMA_SLAVE
-> interface fits well into the RapidIO operations.
-> 
-> First, we have only one memory mapped location on the host side. We transfer
-> data to/from location that is not mapped into memory on the same side.  
-> 
-> Second, having ability to pass private target information allows me to pass
-> information about remote target device on per-transfer basis.
-Okay, then why not pass the dma address and make your dma driver
-transparent (i saw you passed RIO address, IIRC 64+2 bits)
-Currently using dma_slave_config we pass channel specific information,
-things like peripheral address and config don't change typically between
-transfers and if you have some controller specific properties you can
-pass them by embedding dma_slave_config in your specific structure.
-Worst case, you can configure slave before every prepare
+Instead of one IRQ per incoming frame, you have less interrupts :
+A napi run processes more than 1 frame.
 
+Now increase your incoming rate, and you'll discover a new kernel will
+be able to process more frames without losses.
 
--- 
-~Vinod
+About your thread model :
+
+You have one thread that reads the incoming frame, and do a distribution
+on several queues based on some flow parameters. Then you wakeup a
+second thread.
+
+This kind of model is very expensive and triggers lot of false sharing.
+
+New kernels are able to perform this fanout in kernel land.
+
+You really should take a look at Documentation/networking/scaling.txt
+
+[ An other way of doing this fanout is using some iptables rules :
+check following commit changelog for an idea ]
+
+commit e8648a1fdb54da1f683784b36a17aa65ea56e931
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Fri Jul 23 12:59:36 2010 +0200
+
+    netfilter: add xt_cpu match
+    
+    In some situations a CPU match permits a better spreading of
+    connections, or select targets only for a given cpu.
+    
+    With Remote Packet Steering or multiqueue NIC and appropriate IRQ
+    affinities, we can distribute trafic on available cpus, per session.
+    (all RX packets for a given flow is handled by a given cpu)
+    
+    Some legacy applications being not SMP friendly, one way to scale a
+    server is to run multiple copies of them.
+    
+    Instead of randomly choosing an instance, we can use the cpu number as a
+    key so that softirq handler for a whole instance is running on a single
+    cpu, maximizing cache effects in TCP/UDP stacks.
+    
+    Using NAT for example, a four ways machine might run four copies of
+    server application, using a separate listening port for each instance,
+    but still presenting an unique external port :
+    
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 0 \
+            -j REDIRECT --to-port 8080
+    
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 1 \
+            -j REDIRECT --to-port 8081
+    
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 2 \
+            -j REDIRECT --to-port 8082
+    
+    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 3 \
+            -j REDIRECT --to-port 8083
+    
+
 
