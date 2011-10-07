@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935603Ab1JGUfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:35:08 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60398 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935541Ab1JGUfC (ORCPT
+	id S1759305Ab1JGUfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:35:31 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51628 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758533Ab1JGUfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:35:02 -0400
+	Fri, 7 Oct 2011 16:35:12 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 22/26] dynamic_debug: early return if _ddebug table is empty
-Date: Fri,  7 Oct 2011 14:33:28 -0600
-Message-Id: <1318019612-20068-23-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 26/26] printk.h: fix pr_cont_once() to not use pr_fmt()
+Date: Fri,  7 Oct 2011 14:33:32 -0600
+Message-Id: <1318019612-20068-27-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,61 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-if _ddebug table is empty (which shouldn't happen in a CONFIG_DYNAMIC_DEBUG
-build), then warn (BUILD_BUG??) and return early.  This skips empty
-table scan and parsing of setup-string, including the pr_info call
-noting the parse.
+pr_cont() doesnt use pr_fmt(), since it continues printing a single
+line, and the prefix has already been done.  Fix pr_cont_once() to do
+the same.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   32 +++++++++++++++++---------------
- 1 files changed, 17 insertions(+), 15 deletions(-)
+ include/linux/printk.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 80b5322..1a8941e 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -1272,23 +1272,25 @@ static int __init dynamic_debug_init(void)
- 	int ret = 0;
- 	int n = 0;
- 
--	if (__start___verbose != __stop___verbose) {
--		iter = __start___verbose;
--		modname = iter->modname;
--		iter_start = iter;
--		for (; iter < __stop___verbose; iter++) {
--			if (strcmp(modname, iter->modname)) {
--				ret = ddebug_add_module(iter_start, n, modname);
--				if (ret)
--					goto out_free;
--				n = 0;
--				modname = iter->modname;
--				iter_start = iter;
--			}
--			n++;
-+	if (__start___verbose == __stop___verbose) {
-+		pr_warn("_ddebug table is empty in a CONFIG_DYNAMIC_DEBUG build");
-+		return 1;
-+	}
-+	iter = __start___verbose;
-+	modname = iter->modname;
-+	iter_start = iter;
-+	for (; iter < __stop___verbose; iter++) {
-+		if (strcmp(modname, iter->modname)) {
-+			ret = ddebug_add_module(iter_start, n, modname);
-+			if (ret)
-+				goto out_free;
-+			n = 0;
-+			modname = iter->modname;
-+			iter_start = iter;
- 		}
--		ret = ddebug_add_module(iter_start, n, modname);
-+		n++;
- 	}
-+	ret = ddebug_add_module(iter_start, n, modname);
- 
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index e21de7e..4ba6cde 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -255,7 +255,7 @@ extern void dump_stack(void) __cold;
+ #define pr_info_once(fmt, ...)					\
+ 	printk_once(KERN_INFO pr_fmt_info(fmt), ##__VA_ARGS__)
+ #define pr_cont_once(fmt, ...)					\
+-	printk_once(KERN_CONT pr_fmt(fmt), ##__VA_ARGS__)
++	printk_once(KERN_CONT fmt, ##__VA_ARGS__)
+ /* If you are writing a driver, please use dev_dbg instead */
+ #if defined(DEBUG)
+ #define pr_debug_once(fmt, ...)					\
 -- 
 1.7.4.4
 
