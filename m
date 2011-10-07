@@ -1,144 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab1JGVxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 17:53:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab1JGVxt convert rfc822-to-8bit (ORCPT
+	id S1758077Ab1JGVyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 17:54:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50458 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754703Ab1JGVyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 17:53:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=hdzeGOtoOloEgT+fq71g/gztutgnnY0cE39NJ0XVGBWxB3PhmGqQGQzG9lzjl88d5
-	T6ca4s8HrwxTjkmlQWDPA==
-MIME-Version: 1.0
-In-Reply-To: <20111007204521.GA7813@ghostprotocols.net>
-References: <20110906150024.GA18192@quad>
-	<CABPqkBQv9R1R7GPBMHf1V4BVmTyYopmdeKVCfy6-OZFiFX1CWw@mail.gmail.com>
-	<20111007204521.GA7813@ghostprotocols.net>
-Date: Fri, 7 Oct 2011 23:53:47 +0200
-Message-ID: <CABPqkBRNJ4C5tbVnZdJB7UtySrQse2WsdC=t6kP-TQH1=7EU4w@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix uninitialized variable in thread__set_comm()
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        dsahern@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 7 Oct 2011 17:54:13 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: romieu@fr.zoreil.com, rjw@sisk.pl, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 2/4] staging: et131x: Remove error path from suspend/resume code
+Date: Fri,  7 Oct 2011 22:52:50 +0100
+Message-Id: <1318024371-10294-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 10:45 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Fri, Oct 07, 2011 at 12:14:18PM +0200, Stephane Eranian escreveu:
->> Arnaldo,
->>
->> Did you also integrate this patch?
->>
->>
->> On Tue, Sep 6, 2011 at 5:00 PM, Stephane Eranian <eranian@google.com> wrote:
->> >
->> > In thread__set_comm(), a command string could be freed and then
->> > reused to point to a new command. Yet, the length was never reset
->> > nor recomputed. This could lead to bogus column formatting.
->
-> Perhaps I'm out of coffee right now, but how can it be reused in such a
-> way?
->
-you come into thread__set_comm() with self->com != NULL,
-you free() self->comm, you strdup() the new command, as far as I know it
-may have a different length from what you just freed, err = 0, set comm_set
-to skip strlen() later on. And you have a stale self->comm_len.
-At least that's my understanding of the code. I got there because I noticed
-there was something wrong with column formatting.
+Removing an error path from et131x suspend/resume functions.
 
+Also added a call to phy_stop() to complement the phy_start() call
+during device start/stop routine.
 
-> I don't have a problem in doing the strlen in thread__set_comm, just
-> want to understand the sequence of events that lead to this
-> inconsistency.
->
-> - Arnaldo
->
->> > This patch below fixes the problem by having thread__set_comm()
->> > immediately compute the string length in thread->comm_len. It
->> > gets rid of thread__comm_len() which is not needed anymore.
->> > It was doing the lazy eval of strlen() which could cause the
->> > issue.
->> >
->> > Signed-off-by: Stephane Eranian <eranian@google.com>
->> > ---
->> >
->> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> > index 677e1da..b883821 100644
->> > --- a/tools/perf/util/hist.c
->> > +++ b/tools/perf/util/hist.c
->> > @@ -61,7 +61,7 @@ static void hists__calc_col_len(struct hists *self, struct hist_entry *h)
->> >                                           unresolved_col_width);
->> >        }
->> >
->> > -       len = thread__comm_len(h->thread);
->> > +       len = h->thread->comm_len;
->> >        if (hists__new_col_len(self, HISTC_COMM, len))
->> >                hists__set_col_len(self, HISTC_THREAD, len + 6);
->> >
->> > @@ -731,7 +731,7 @@ static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
->> >                struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
->> >                                                         typeof(*se), list);
->> >                left_margin = hists__col_len(hists, se->se_width_idx);
->> > -               left_margin -= thread__comm_len(self->thread);
->> > +               left_margin -= self->thread->comm_len;
->> >        }
->> >
->> >        return hist_entry_callchain__fprintf(fp, self, session_total,
->> > diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
->> > index d5d3b22..3ce2a80 100644
->> > --- a/tools/perf/util/thread.c
->> > +++ b/tools/perf/util/thread.c
->> > @@ -35,26 +35,18 @@ int thread__set_comm(struct thread *self, const char *comm)
->> >
->> >        if (self->comm)
->> >                free(self->comm);
->> > +
->> >        self->comm = strdup(comm);
->> > +
->> >        err = self->comm == NULL ? -ENOMEM : 0;
->> >        if (!err) {
->> >                self->comm_set = true;
->> > +               self->comm_len = strlen(self->comm);
->> >                map_groups__flush(&self->mg);
->> >        }
->> >        return err;
->> >  }
->> >
->> > -int thread__comm_len(struct thread *self)
->> > -{
->> > -       if (!self->comm_len) {
->> > -               if (!self->comm)
->> > -                       return 0;
->> > -               self->comm_len = strlen(self->comm);
->> > -       }
->> > -
->> > -       return self->comm_len;
->> > -}
->> > -
->> >  static size_t thread__fprintf(struct thread *self, FILE *fp)
->> >  {
->> >        return fprintf(fp, "Thread %d %s\n", self->pid, self->comm) +
->> > diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
->> > index e5f2401..701ea09 100644
->> > --- a/tools/perf/util/thread.h
->> > +++ b/tools/perf/util/thread.h
->> > @@ -23,7 +23,6 @@ struct perf_session;
->> >  void thread__delete(struct thread *self);
->> >
->> >  int thread__set_comm(struct thread *self, const char *comm);
->> > -int thread__comm_len(struct thread *self);
->> >  struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
->> >  void thread__insert_map(struct thread *self, struct map *map);
->> >  int thread__fork(struct thread *self, struct thread *parent);
->> >
->
+Thanks to Francois Romieu <romieu@fr.zoreil.com> for pointing this out.
+
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.h         |    2 +
+ drivers/staging/et131x/et131x_initpci.c |   35 +++++++++-----------------
+ drivers/staging/et131x/et131x_netdev.c  |   40 ++++++++++++++++++++++++-------
+ 3 files changed, 45 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
+index c8f5ab1..e832234 100644
+--- a/drivers/staging/et131x/et131x.h
++++ b/drivers/staging/et131x/et131x.h
+@@ -85,6 +85,8 @@ void et1310_setup_device_for_unicast(struct et131x_adapter *adapter);
+ /* et131x_netdev.c */
+ int et131x_open(struct net_device *netdev);
+ int et131x_close(struct net_device *netdev);
++void et131x_up(struct net_device *netdev);
++void et131x_down(struct net_device *netdev);
+ struct net_device *et131x_device_alloc(void);
+ void et131x_enable_txrx(struct net_device *netdev);
+ void et131x_disable_txrx(struct net_device *netdev);
+diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
+index 9795310..95a1aff 100644
+--- a/drivers/staging/et131x/et131x_initpci.c
++++ b/drivers/staging/et131x/et131x_initpci.c
+@@ -874,14 +874,12 @@ static int et131x_pci_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	struct net_device *netdev = pci_get_drvdata(pdev);
+ 
+-	if (!netif_running(netdev))
+-		return 0;
+-
+-	et131x_close(netdev);
+-	netif_device_detach(netdev);
+-
+-	pci_save_state(pdev);
+-	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++	if (netif_running(netdev)) {
++		netif_device_detach(netdev);
++		et131x_down(netdev);
++		pci_save_state(pdev);
++		pci_set_power_state(pdev, pci_choose_state(pdev, state));
++	}
+ 
+ 	return 0;
+ }
+@@ -889,24 +887,15 @@ static int et131x_pci_suspend(struct pci_dev *pdev, pm_message_t state)
+ static int et131x_pci_resume(struct pci_dev *pdev)
+ {
+ 	struct net_device *netdev = pci_get_drvdata(pdev);
+-	int err = 0;
+ 
+-	if (!netif_running(netdev))
+-		return 0;
+-
+-	pci_set_power_state(pdev, PCI_D0);
+-	pci_restore_state(pdev);
+-
+-	err = et131x_open(netdev);
+-	if (err) {
+-		dev_err(&pdev->dev, "Can't resume interface!\n");
+-		goto out;
++	if (netif_running(netdev)) {
++		pci_set_power_state(pdev, PCI_D0);
++		pci_restore_state(pdev);
++		et131x_up(netdev);
++		netif_device_attach(netdev);
+ 	}
+ 
+-	netif_device_attach(netdev);
+-
+-out:
+-	return err;
++	return 0;
+ }
+ 
+ static struct pci_device_id et131x_pci_table[] __devinitdata = {
+diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
+index 79127de..16373bb 100644
+--- a/drivers/staging/et131x/et131x_netdev.c
++++ b/drivers/staging/et131x/et131x_netdev.c
+@@ -178,6 +178,18 @@ void et131x_disable_txrx(struct net_device *netdev)
+ }
+ 
+ /**
++ * et131x_up - Bring up a device for use.
++ * @netdev: device to be opened
++ */
++void et131x_up(struct net_device *netdev)
++{
++	struct et131x_adapter *adapter = netdev_priv(netdev);
++
++	et131x_enable_txrx(netdev);
++	phy_start(adapter->phydev);
++}
++
++/**
+  * et131x_open - Open the device for use.
+  * @netdev: device to be opened
+  *
+@@ -205,13 +217,28 @@ int et131x_open(struct net_device *netdev)
+ 	}
+ 
+ 	adapter->flags |= fMP_ADAPTER_INTERRUPT_IN_USE;
+-	et131x_enable_txrx(netdev);
+-	phy_start(adapter->phydev);
++
++	et131x_up(netdev);
+ 
+ 	return result;
+ }
+ 
+ /**
++ * et131x_down - Bring down the device
++ * @netdev: device to be broght down
++ */
++void et131x_down(struct net_device *netdev)
++{
++	struct et131x_adapter *adapter = netdev_priv(netdev);
++
++	/* Save the timestamp for the TX watchdog, prevent a timeout */
++	netdev->trans_start = jiffies;
++
++	phy_stop(adapter->phydev);
++	et131x_disable_txrx(netdev);
++}
++
++/**
+  * et131x_close - Close the device
+  * @netdev: device to be closed
+  *
+@@ -221,18 +248,13 @@ int et131x_close(struct net_device *netdev)
+ {
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+-	/* Save the timestamp for the TX watchdog, prevent a timeout */
+-	netdev->trans_start = jiffies;
+-
+-	et131x_disable_txrx(netdev);
++	et131x_down(netdev);
+ 
+-	/* Deregistering ISR */
+ 	adapter->flags &= ~fMP_ADAPTER_INTERRUPT_IN_USE;
+ 	free_irq(netdev->irq, netdev);
+ 
+ 	/* Stop the error timer */
+-	del_timer_sync(&adapter->error_timer);
+-	return 0;
++	return del_timer_sync(&adapter->error_timer);
+ }
+ 
+ /**
+-- 
+1.7.6.4
+
