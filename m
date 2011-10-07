@@ -1,104 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab1JGPWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:22:09 -0400
-Received: from frost.carfax.org.uk ([212.13.194.111]:57217 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab1JGPWH (ORCPT
+	id S1759898Ab1JGP1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:27:55 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50112 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab1JGP1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:22:07 -0400
-Date: Fri, 7 Oct 2011 16:21:37 +0100
-From: Hugo Mills <hugo-lkml@carfax.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
-        Btrfs mailing list <linux-btrfs@vger.kernel.org>
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?=
-	=?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111007152137.GE28351@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
-	Kay Sievers <kay.sievers@vrfy.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-	lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-	greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
-	Btrfs mailing list <linux-btrfs@vger.kernel.org>
-References: <1317943022.1095.25.camel@mop>
- <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
- <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
- <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
- <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UnaWdueM1EBWVRzC"
-Content-Disposition: inline
-In-Reply-To: <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
-X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
-X-GPG-Key: 515C238D
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-frost.carfax.org.uk-Spam-Score: 0.0 (/)
+	Fri, 7 Oct 2011 11:27:51 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: EDAC devel <linux-edac@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 4/4] x86, RAS: Move MCE injection code into ras/
+Date: Fri,  7 Oct 2011 17:27:39 +0200
+Message-Id: <1318001259-1720-5-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1318001259-1720-1-git-send-email-bp@amd64.org>
+References: <1318001259-1720-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Borislav Petkov <borislav.petkov@amd.com>
 
---UnaWdueM1EBWVRzC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is the code collecting all AMD MCE injection methods.
 
-On Fri, Oct 07, 2011 at 02:46:23PM +0200, Kay Sievers wrote:
-> On Fri, Oct 7, 2011 at 12:38, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > On Fri, 7 Oct 2011 12:28:46 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
-> >
-> >> What do you mean would be ugly?
-> >
-> > I have an ext4fs. It supports every possible file name allowed by POSIX
-> > and SuS. What name are you going to use for your 'hidden directory' that
-> > won't clash with a real file ?
-> 
-> Ah, no. The label on FAT (similar on NTFS) are 'magic entries' in the
-> root dir list, not a real file in the root dir.
-> 
-> We need kernel support for changing a mounted fs, because, unlike
-> ext4, the blocks containing the strings are inside the fs, which the
-> kernel might change any time.
+No functionality change.
 
-   It's worth noting that there are similar issues with btrfs around
-changing label. A common API for it would make sense. The only btrfs
-patches I've seen to change label after mkfs-time work either as:
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/ras/Kconfig                    |    9 +++++++--
+ arch/x86/kernel/cpu/ras/amd/Makefile               |    3 +++
+ .../x86/kernel/cpu/ras/amd/mce-inject.c            |    0
+ drivers/edac/Kconfig                               |   10 ----------
+ drivers/edac/Makefile                              |    2 --
+ 5 files changed, 10 insertions(+), 14 deletions(-)
+ rename drivers/edac/mce_amd_inj.c => arch/x86/kernel/cpu/ras/amd/mce-inject.c (100%)
 
- * unmounted only, single underlying device only, pure userspace
-   implementation
- * mounted only, multiple underlying devices, kernel support needed
-
-   The kernel-side patches never got integrated, so we're still unable
-to change the label on the majority of btrfs filesystems.
-
-   Changing the UUID for the filesystem is even harder, as I think
-it's written to every metadata block. I'm not sure we can do that
-sanely on a mounted filesystem.
-
-   Hugo (just a spear-carrier from the btrfs chorus).
-
+diff --git a/arch/x86/kernel/cpu/ras/Kconfig b/arch/x86/kernel/cpu/ras/Kconfig
+index 440d6a1..39dd0af 100644
+--- a/arch/x86/kernel/cpu/ras/Kconfig
++++ b/arch/x86/kernel/cpu/ras/Kconfig
+@@ -22,7 +22,12 @@ config X86_AMD_DECODE_MCE
+ 	  which occur really early upon boot, before the module infrastructure
+ 	  has been initialized.
+ 
++config X86_AMD_MCE_INJECT
++	tristate "Simple MCE injection interface over /sysfs"
++	depends on X86_AMD_DECODE_MCE
++	default n
++	help
++	  This is a simple interface to inject MCEs over /sysfs and test
++	  the MCE decoding code.
+ 
+ endmenu
+-
+-
+diff --git a/arch/x86/kernel/cpu/ras/amd/Makefile b/arch/x86/kernel/cpu/ras/amd/Makefile
+index a18207b..3a01e3a 100644
+--- a/arch/x86/kernel/cpu/ras/amd/Makefile
++++ b/arch/x86/kernel/cpu/ras/amd/Makefile
+@@ -2,3 +2,6 @@ obj-$(CONFIG_X86_AMD_ERROR_THRESHOLDING)	+= thresholding.o
+ 
+ amd_mce_decode-y				:= mce-decode.o
+ obj-$(CONFIG_X86_AMD_DECODE_MCE)		+= amd_mce_decode.o
++
++amd_mce_inject-y				:= mce-inject.o
++obj-$(CONFIG_X86_AMD_MCE_INJECT)		+= amd_mce_inject.o
+diff --git a/drivers/edac/mce_amd_inj.c b/arch/x86/kernel/cpu/ras/amd/mce-inject.c
+similarity index 100%
+rename from drivers/edac/mce_amd_inj.c
+rename to arch/x86/kernel/cpu/ras/amd/mce-inject.c
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index 8de46e7..9c9b319 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -39,16 +39,6 @@ config EDAC_DEBUG
+ 	  there're four debug levels (x=0,1,2,3 from low to high).
+ 	  Usually you should select 'N'.
+ 
+-config EDAC_MCE_INJ
+-	tristate "Simple MCE injection interface over /sysfs"
+-	depends on EDAC_DECODE_MCE
+-	default n
+-	help
+-	  This is a simple interface to inject MCEs over /sysfs and test
+-	  the MCE decoding code in EDAC.
+-
+-	  This is currently AMD-only.
+-
+ config EDAC_MM_EDAC
+ 	tristate "Main Memory EDAC (Error Detection And Correction) reporting"
+ 	help
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index a6f10c2..5444512 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -17,8 +17,6 @@ ifdef CONFIG_PCI
+ edac_core-y	+= edac_pci.o edac_pci_sysfs.o
+ endif
+ 
+-obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
+-
+ obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
+ obj-$(CONFIG_EDAC_CPC925)		+= cpc925_edac.o
+ obj-$(CONFIG_EDAC_I5000)		+= i5000_edac.o
 -- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-    --- Anyone using a computer to generate random numbers is, of ---    
-                       course,  in a state of sin.                       
+1.7.4.rc2
 
---UnaWdueM1EBWVRzC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iD8DBQFOjxkBIKyzvlFcI40RAgIDAJ4vnYgjZebmA0wpEQzy1qi44MwNZQCghJ5b
-41HHyafRYZchbGY+XaFpOjc=
-=0xMq
------END PGP SIGNATURE-----
-
---UnaWdueM1EBWVRzC--
