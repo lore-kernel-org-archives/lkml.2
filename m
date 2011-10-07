@@ -1,29 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760040Ab1JGOZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 10:25:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52429 "EHLO mga02.intel.com"
+	id S1760058Ab1JGO0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 10:26:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6439 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab1JGOZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 10:25:20 -0400
+	id S1752664Ab1JGO0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 10:26:52 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="60915677"
-Subject: Re: [PATCH] pch_dma: Fix suspend issue
+X-IronPort-AV: E=Sophos;i="4.68,502,1312182000"; 
+   d="scan'208";a="24179156"
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
 From: Vinod Koul <vinod.koul@intel.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-In-Reply-To: <4E8ED574.8040609@dsn.lapis-semi.com>
-References: <1317713279-2774-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-	 <1317963658.1573.2229.camel@vkoul-udesk3>
-	 <4E8E940E.7040701@dsn.lapis-semi.com>
-	 <1317968080.1573.2266.camel@vkoul-udesk3>
-	 <4E8ED574.8040609@dsn.lapis-semi.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1317200618.1573.1765.camel@vkoul-udesk3>
+	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	 <1317295068.1573.1780.camel@vkoul-udesk3>
+	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	 <20111003161349.GB28287@flint.arm.linux.org.uk>
+	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	 <1317966346.1573.2252.camel@vkoul-udesk3>
+	 <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 19:48:05 +0530
-Message-ID: <1317997085.1573.2273.camel@vkoul-udesk3>
+Date: Fri, 07 Oct 2011 19:49:37 +0530
+Message-ID: <1317997177.1573.2275.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -31,29 +43,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 19:33 +0900, Tomoya MORINAGA wrote:
-> (2011/10/07 15:14), Vinod Koul wrote:
-> > This is all is due to not saving nr_channels in probe and using that
-> > instead.
-> >
-> > Looking deeper, struct pch_dma defines array of length MAX_CHAN_NR for
-> > channels. Then why do you allocate memory in probe as
-> >           pd = kzalloc(sizeof(struct pch_dma)+
-> >                   sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
-> > what is the point in allocating additional memory for each channel?
-> >
-> > Given this, why should there be predefined channel array in pcm_dma?
-> >
-> > It would be great if we could fix this by dynamically allocating memory
-> > for channels based on nr_channels and not wasting due to a static array.
+On Fri, 2011-10-07 at 16:57 +0530, Jassi Brar wrote:
+> On 7 October 2011 11:15, Vinod Koul <vinod.koul@intel.com> wrote:
 > 
-> You are right.
-> Current pch_dma driver looks like wasting memory.
+> > Thru this patch Jassi gave a very good try at merging DMA_SLAVE and
+> > memcpy, but more we debate this, I am still not convinced about merging
+> > memcpy and DMA_SLAVE yet.
+> >
+> Nobody is merging memcpy and DMA_SLAVE right away.
+> The api's primary purpose is to support interleave transfers.
+> Possibility to merge other prepares into this is a side-effect.
+For interleaved isn't that what you are trying?
 > 
-> We must review pch_dma driver again.
-Okay, can you update the changelog to indicate how it is fixing the
-suspend issue, original change log doesn't help
-
+> > I would still argue that if we split this on same lines as current
+> > mechanism, we have clean way to convey all details for both cases.
+> >
+> Do you mean to have separate interleaved transfer apis for Slave
+> and Mem->Mem ? Please clarify.
+If we can make API cleaner and well defined that way then Yes :)
 
 -- 
 ~Vinod
