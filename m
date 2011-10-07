@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935385Ab1JGHtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 03:49:22 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:51296 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1JGHtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 03:49:21 -0400
-Date: Fri, 7 Oct 2011 00:49:04 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
-        david@fubar.dk, greg@kroah.com,
-        Biederman Eric Biederman <ebiederm@xmission.com>
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?= =?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111007074904.GC16723@count0.beaverton.ibm.com>
-References: <1317943022.1095.25.camel@mop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317943022.1095.25.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11100707-5112-0000-0000-000000DA08DB
+	id S1759182Ab1JGHyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 03:54:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60656 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab1JGHyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 03:54:36 -0400
+Subject: [PATCH] ASoC: wm_hubs: Remove unneeded count variable in
+ wait_for_dc_servo
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Oct 2011 15:54:25 +0800
+Message-ID: <1317974065.16830.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 01:17:02AM +0200, Kay Sievers wrote:
+The count variable is not required, decrement timeout in the while loop
+can achieve the same effect.
 
-<snip>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm_hubs.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-> * simple, reliable and future-proof way to detect whether a specific pid
-> is running in a CLONE_NEWPID container, i.e. not in the root PID
-> namespace. Currently, there are available a few ugly hacks to detect
+diff --git a/sound/soc/codecs/wm_hubs.c b/sound/soc/codecs/wm_hubs.c
+index 84f33d4..6e2e122 100644
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -66,7 +66,6 @@ static void wait_for_dc_servo(struct snd_soc_codec *codec, unsigned int op)
+ {
+ 	struct wm_hubs_data *hubs = snd_soc_codec_get_drvdata(codec);
+ 	unsigned int reg;
+-	int count = 0;
+ 	int timeout;
+ 	unsigned int val;
+ 
+@@ -83,7 +82,7 @@ static void wait_for_dc_servo(struct snd_soc_codec *codec, unsigned int op)
+ 		timeout = 400;
+ 
+ 	do {
+-		count++;
++		timeout--;
+ 
+ 		if (hubs->dcs_done_irq)
+ 			wait_for_completion_timeout(&hubs->dcs_done,
+@@ -93,9 +92,9 @@ static void wait_for_dc_servo(struct snd_soc_codec *codec, unsigned int op)
+ 
+ 		reg = snd_soc_read(codec, WM8993_DC_SERVO_0);
+ 		dev_dbg(codec->dev, "DC servo: %x\n", reg);
+-	} while (reg & op && count < timeout);
++	} while ((reg & op) && timeout);
+ 
+-	if (reg & op)
++	if (timeout == 0)
+ 		dev_err(codec->dev, "Timed out waiting for DC Servo %x\n",
+ 			op);
+ }
+-- 
+1.7.4.1
 
-Is that precisely what's needed or would it be sufficient to know
-that the pid is running in a child pid namespace of the current pid
-namespace? If so, I think this could eventually be done by comparing
-the inode numbers assigned to /proc/<pid>/ns/pid to those of
-/proc/1/ns/pid.
 
-> * Add a timerslack cgroup controller, to allow increasing the timer
-> slack of user session cgroups when the machine is idle.
-
-There were patches for a timerslack cgroup controller but for some
-reason (I don't recall why) they stalled. It might be worth digging
-through the containers mailing list archives.
-
-Cheers,
-	-Matt Helsley
 
