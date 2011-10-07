@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab1JGRUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 13:20:50 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37844 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1JGRUr convert rfc822-to-8bit (ORCPT
+	id S1753708Ab1JGRZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 13:25:36 -0400
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:53224 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750753Ab1JGRZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 13:20:47 -0400
+	Fri, 7 Oct 2011 13:25:33 -0400
+Message-ID: <4E8F3605.6060104@localhost>
+Date: Fri, 07 Oct 2011 10:25:25 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
-References: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
-Date: Fri, 7 Oct 2011 10:20:46 -0700
-Message-ID: <CAO3ZPq2RUjW7VQQSoN-S7QDuTYdCMuDfoykHSeXwr19MTnCb_A@mail.gmail.com>
-Subject: Re: MODULE_LICENSE("GPL") not working for me
-From: Stephen Williams <steveicarus@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Subject: Re: [ANNOUNCE] 3.0.6-rt17
+References: <alpine.LFD.2.02.1110070046270.3240@ionos>
+In-Reply-To: <alpine.LFD.2.02.1110070046270.3240@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 6, 2011 at 3:30 PM, Stephen Williams <steveicarus@gmail.com> wrote:
-> I have some large drivers for use in embedded arm systems, and
-> I want them to be GPL, because I want to use some symbols exported
-> as GPL, and also because I just wanna. But it is not working for
-> me. I've attached my Makefile. I'm building from outside the kernel
-> tree, but that should be OK. (right?) I'm using the following script to
-> actually build:
+On 10/06/2011 06:15 PM, Thomas Gleixner wrote:
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.0.6-rt17 release.
 
-More information: I can see that the vidfor.o object file, indeed
-none of my *.o files, have a .modinfo section. In other situations
-where the licens stamp works, the .modinfo section is present.
-I'm using the CodeSourcery build of the arm toolchain, and in
-the simple cases (module that is a single source file) the
-modinfo information works. Hmm...
+Hi and thanks again. So far this one is not hanging which is very good 
+news. But I still see the hrtimer_fixup_activate warnings I reported for 
+rt16...
+
+-- Fernando
 
 
--- 
-Steve Williams                "The woods are lovely, dark and deep.
-steve at icarus.com           But I have promises to keep,
-http://www.icarus.com         and lines to code before I sleep,
-http://www.picturel.com       And lines to code before I sleep."
+> After chasing weird RCU stalls and hung task messages for quite some
+> time a massive collaborative effort was able to track down and fix
+> this showstopper. Explanation from the changelog:
+...
