@@ -1,133 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab1JGGqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 02:46:12 -0400
-Received: from mx.binnacle.cx ([74.95.187.105]:22107 "EHLO mx.binnacle.cx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab1JGGqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 02:46:10 -0400
-Message-Id: <6.2.5.6.2.20111007020308.039be248@binnacle.cx>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Fri, 07 Oct 2011 02:13:42 -0400
-To: Eric Dumazet <eric.dumazet@gmail.com>
-From: starlight@binnacle.cx
-Subject: Re: big picture UDP/IP performance question re 2.6.18 
-  -> 2.6.32
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@gentwo.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@elte.hu>,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Joe Perches <joe@perches.com>,
-        Chetan Loke <Chetan.Loke@netscout.com>,
-        Con Kolivas <conman@kolivas.org>,
-        Serge Belyshev <belyshev@depni.sinp.msu.ru>
-In-Reply-To: <1317966007.3457.47.camel@edumazet-laptop>
-References: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
- <1317966007.3457.47.camel@edumazet-laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S935561Ab1JGGvZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 02:51:25 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46358 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758262Ab1JGGvX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 02:51:23 -0400
+X-Sasl-enc: /ThfGQQjnBlOzSGAG+epXB7+KcebjOxp5a5e7hsZ9mSI 1317970281
+Date: Thu, 6 Oct 2011 23:49:28 -0700
+From: Greg KH <greg@kroah.com>
+To: "G, Manjunath Kondaiah" <manjugk@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111007064928.GE27508@kroah.com>
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+ <1317963790-29426-3-git-send-email-manjugk@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317963790-29426-3-git-send-email-manjugk@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07:40 AM 10/7/2011 +0200, Eric Dumazet wrote:
->
->Thats exactly the opposite : Your old kernel is not fast enough 
->to enter/exit NAPI on every incoming frame.
->
->Instead of one IRQ per incoming frame, you have less interrupts:
->A napi run processes more than 1 frame.
+On Fri, Oct 07, 2011 at 10:33:07AM +0500, G, Manjunath Kondaiah wrote:
+> 
+> From: Grant Likely <grant.likely@secretlab.ca>
+> 
+> Allow drivers to report at probe time that they cannot get all the 
+> resources required by the device, and should be retried at a
+> later time.
+> 
+> This should completely solve the problem of getting devices
+> initialized in the right order.  Right now this is mostly handled by
+> mucking about with initcall ordering which is a complete hack, and
+> doesn't even remotely handle the case where device drivers are in
+> modules.  This approach completely sidesteps the issues by allowing
+> driver registration to occur in any order, and any driver can request
+> to be retried after a few more other drivers get probed.
+> 
+> Original patch posted by Grant Likely <grant.likely@secretlab.ca> at:
+> http://lwn.net/Articles/460522/
+> 
+> Enhancements to original patch by G, Manjunath Kondaiah <manjugk@ti.com>
+>  - checkpatch warning fixes
+>  - added Kconfig symbol CONFIG_PROBE_DEFER
+>  - replacing normal workqueue with singlethread_workqueue
+>  - handling -EPROBE_DEFER error
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
+> ---
+> Cc: linux-omap@vger.kernel.org
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Greg Kroah-Hartman <greg@kroah.com>
+> Cc: Dilan Lee <dilee@nvidia.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> 
+>  drivers/base/Kconfig   |   11 ++++
+>  drivers/base/base.h    |    3 +
+>  drivers/base/core.c    |    6 ++
+>  drivers/base/dd.c      |  145 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/device.h |    7 ++
+>  5 files changed, 172 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 21cf46f..b412a71 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -172,6 +172,17 @@ config SYS_HYPERVISOR
+>  	bool
+>  	default n
+>  
+> +config PROBE_DEFER
+> +	bool "Deferred Driver Probe"
+> +	default y
+> +	help
+> +	  This option provides deferring driver probe if it has dependency on
+> +	  other driver. Without this feature, initcall ordering should be done
+> +	  manually to resolve driver dependencies. This feature completely side
+> +	  steps the issues by allowing driver registration to occur in any
+> +	  order, and any driver can request to be retried after a few more other
+> +	  drivers get probed.
 
-Please look at the data I posted.  Batching
-appears to give 80us *better* latency in this
-case--with the old kernel.
+Why is this even an option?  Why would you ever want it disabled?  Why
+does it need to be selected?
 
->Now increase your incoming rate, and you'll discover a new 
->kernel will be able to process more frames without losses.
+If you are going to default something to 'y' then just make it so it
+can't be turned off any other way by just not making it an option at
+all.
 
-Data loss happens mainly in relation to CPU
-utilization-per-message-rate as buffers are
-configured huge at all points.  So newer
-kernels break down at significantly lower
-message rates than older kernels.  Determined
-this last year when testing SLES 11 and
-unmodified 2.6.27.
+It also cleans up this diff a lot, as you really don't want #ifdef in .c
+files.
 
-I can run a max-rate comparison for 2.6.39.4
-if you like.
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -28,6 +28,136 @@
+>  #include "base.h"
+>  #include "power/power.h"
+>  
+> +#if defined CONFIG_PROBE_DEFER
+> +/*
+> + * Deferred Probe infrastructure.
 
->About your thread model :
->
->You have one thread that reads the incoming
->frame, and do a distribution on several queues
->based on some flow parameters. Then you wakeup 
->a second thread.
->
->This kind of model is very expensive and triggers
->lot of false sharing.
+Why not use kerneldoc?
 
-Please note my use of the word "nominal" and the
-overall context.  Both thread-per-socket and
-dual-thread handoff handling tests were performed
-with the clear observation that the former is
-the production model and works best at maximum
-load.
+> + *
+> + * Sometimes driver probe order matters, but the kernel doesn't always have
+> + * dependency information which means some drivers will get probed before a
+> + * resource it depends on is available.  For example, an SDHCI driver may
+> + * first need a GPIO line from an i2c GPIO controller before it can be
+> + * initialized.  If a required resource is not available yet, a driver can
+> + * request probing to be deferred by returning -EPROBE_DEFER from its probe hook
+> + *
+> + * Deferred probe maintains two lists of devices, a pending list and an active
+> + * list.  A driver returning -EPROBE_DEFER causes the device to be added to the
+> + * pending list.
+> + *
+> + * The deferred_probe_mutex *must* be held any time the deferred_probe_*_list
+> + * of the (struct device*)->deferred_probe pointers are manipulated
+> + */
+> +static DEFINE_MUTEX(deferred_probe_mutex);
+> +static LIST_HEAD(deferred_probe_pending_list);
+> +static LIST_HEAD(deferred_probe_active_list);
+> +static struct workqueue_struct *deferred_wq;
+> +
+> +/**
+> + * deferred_probe_work_func() - Retry probing devices in the active list.
+> + */
+> +static void deferred_probe_work_func(struct work_struct *work)
+> +{
+> +	struct device *dev;
+> +	/*
 
-However at 50% load (the test here), the
-dual-thread handoff model is the clear winner
-over *all* other scenarios.
+Extra blank line please.
 
->New kernels are able to perform this fanout in kernel land.
+> +	 * This bit is tricky.  We want to process every device in the
+> +	 * deferred list, but devices can be removed from the list at any
+> +	 * time while inside this for-each loop.  There are two things that
+> +	 * need to be protected against:
 
-Yes, of course I am interested in Intel's flow
-director and similar solutions, netfilter especially.
-2.6.32 is only recently available in commercial
-deployment and I will be looking at that next up.
-Mainly I'll be looking at complete kernel bypass
-with 10G.  Myricom looks like it might be good.
-Tested Solarflare last year and it was a bust
-for high volume UDP (one thread) but I've heard
-that they fixed that and will revisit.
+That's what the klist structure is supposed to make easier, why not use
+that here?
 
-In relation to the above observation that
-less CPU-per-packet is best for avoiding
-data loss, it also correlates somewhat
-(though not always) with better latency.
+> +	 * - if the device is removed from the deferred_probe_list, then we
+> +	 *   loose our place in the loop.  Since any device can be removed
+> +	 *   asynchronously, list_for_each_entry_safe() wouldn't make things
+> +	 *   much better.  Simplest solution is to restart walking the list
+> +	 *   whenever the current device gets removed.  Not the most efficient,
+> +	 *   but is simple to implement and easy to audit for correctness.
+> +	 * - if the device is unregistered, and freed, then there is a risk
+> +	 *   of a null pointer dereference.  This code uses get/put_device()
+> +	 *   to ensure the device cannot disappear from under our feet.
 
-I've used the 'e1000e' 1G network interfaces
-for these tests because they work better than
-the multi-queue 'igb' (Intel 82576) and
-'ixgbe' (Intel 82599) in all scenarios other
-than maximum-stress load.  The reason is
-apparently that the old 'e1000e' driver has
-shorter, more efficient code paths while
-'igb' and 'ixgbe' use significantly more
-CPU to process the same number of packets.
-I can quantify that if it is of interest.
+Ick, use a klist, it was created to handle this exact problem in the
+driver core, so to not use it would be wrong, right?
 
-At present the only place where multi-queue
-NICs best four 1G NICs is at breaking-point
-traffic loads where asymmetries in the traffic
-can't be easily redistributed by the kernel
-and the resulting hot-spots are weakest-link
-breakpoints.
+> +	 */
+> +	mutex_lock(&deferred_probe_mutex);
+> +	while (!list_empty(&deferred_probe_active_list)) {
+> +		dev = list_first_entry(&deferred_probe_active_list,
+> +					typeof(*dev), deferred_probe);
+> +		list_del_init(&dev->deferred_probe);
+> +
+> +		get_device(dev);
+> +
+> +		/* Drop the mutex while probing each device; the probe path
+> +		 * may manipulate the deferred list */
 
-Please understand that I am not a curmudgeonly
-Luddite.  I realize that sometimes it is
-necessary to trade efficiency for scalability.
-All I'm doing here is trying to quantify the
-current state of affairs and make recommendations
-in a commercial environment.  For the moment
-all the excellent enhancements designed to
-permit extreme scalability are costing too
-much in efficiency to be worth using in
-production.  When/if Tilera delivers their
-100 core CPU in volume this state of affairs
-will likely change.  I imagine both Intel
-and AMD have many-core solutions in the pipe
-as well, though it will be interesting to see
-if Tilera has the essential patents and can
-surpass the two majors in the market and the
-courts.
+Use proper kernel multi-line comment format.  This needs to be done in a
+number of places in this patch, please fix them all.
 
+thanks,
+
+greg k-h
