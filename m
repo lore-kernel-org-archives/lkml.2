@@ -1,164 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab1JGTy0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 15:54:26 -0400
-Received: from smtp4.Stanford.EDU ([171.67.219.84]:59567 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751070Ab1JGTyX (ORCPT
+	id S1754204Ab1JGT5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 15:57:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51065 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab1JGT5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 15:54:23 -0400
-Message-ID: <4E8F58ED.9060702@localhost>
-Date: Fri, 07 Oct 2011 12:54:21 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+	Fri, 7 Oct 2011 15:57:50 -0400
+Date: Fri, 7 Oct 2011 20:57:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: =?iso-8859-1?Q?V=EDctor_Manuel_J=E1quez?= Leal 
+	<vjaquez@igalia.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Timo Teras <timo.teras@solidboot.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
+Message-ID: <20111007195714.GB26805@n2100.arm.linux.org.uk>
+References: <20111006201827.GT6324@atomide.com> <1317977417-17874-1-git-send-email-vjaquez@igalia.com> <20111007092243.GC27281@n2100.arm.linux.org.uk> <1318009239.1644.38.camel@Joe-Laptop> <20111007191822.GA26805@n2100.arm.linux.org.uk> <1318016901.11045.9.camel@Joe-Laptop>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0.6-rt17
-References: <alpine.LFD.2.02.1110070046270.3240@ionos> <4E8F3605.6060104@localhost>
-In-Reply-To: <4E8F3605.6060104@localhost>
-Content-Type: multipart/mixed;
- boundary="------------000506070309060100060101"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318016901.11045.9.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000506070309060100060101
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Oct 07, 2011 at 12:48:21PM -0700, Joe Perches wrote:
+> On Fri, 2011-10-07 at 20:18 +0100, Russell King - ARM Linux wrote:
+> > On Fri, Oct 07, 2011 at 10:40:39AM -0700, Joe Perches wrote:
+> > > At some point in the next couple of years, I want
+> > > to convert all of, or as many as possible of, the
+> > > remaining printk uses to pr_<level>.
+> > If the idea is also to get rid of printk() too (which IMHO would be a
+> > good thing as it kills off the constant need to continually patch for
+> > missing KERN_ prefixes) then that's a good reason (provided Linus
+> > accepts the idea.)
+> 
+> I don't accept that idea yet.
+> 
+> There are about 50K printks vs 20K pr_<level>s
+> in kernel source.
+> 
+> I think 50K lines is _way_ too many to convert
+> in a couple of years.
+> 
+> I think it needs to be done subsystem by subsystem,
+> arch by arch, as maintainers accept.
 
-On 10/07/2011 10:25 AM, Fernando Lopez-Lezcano wrote:
-> On 10/06/2011 06:15 PM, Thomas Gleixner wrote:
->> Dear RT Folks,
->>
->> I'm pleased to announce the 3.0.6-rt17 release.
->
-> Hi and thanks again. So far this one is not hanging which is very good
-> news. But I still see the hrtimer_fixup_activate warnings I reported for
-> rt16...
+Agreed - but doing one instance here, maybe another instance somewhere
+else, and come the merge window having several of these patches
+scattered around with no real coherent "this is what we're doing, and
+its all done for this bit of the tree" kind of story is not the way to
+do it.
 
-I tried rt17 on my workstation and it froze after a few minutes (quad 
-core intel based desktop). Reset button freeze. Then I set up my serial 
-console and tried it out. I could not get it to freeze permanently but I 
-got _many_ hrtimer_fixup_activate warnings and while the console is 
-sending those the gnome interface freezes (this is on fc14). So it is 
-not very usable for debugging...
-
-Just tried again after another reboot (@ 115200 baud) and it worked for 
-a while. Then it started spewing messages again and it is again 
-unusable. I'm attaching a trace of what was sent to the serial console 
-while the machine froze temporarily.
-
--- Fernando
-
---------------000506070309060100060101
-Content-Type: application/x-bzip;
- name="trace.output.bz2"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="trace.output.bz2"
-
-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
-Jqk3kwVuiYk5kxtJvJuJok+akyTJO0n0mKTJME8CaE3yak2JgnGTEmCdidpPiT8xOZP7iZUd
-foqqqq9nZAT1iO19wR/KXu+gR8ysScKT6I+qT6JOZuVS5k3lcCfAnpSfAmIoZJoTEqr/pJ8x
-MpME1J8OOYnzk2Jkn75PwJoqX7pME3yYiesnQndE95OIVknA+H9JMyaRMUn0E7lKvIrcT5ib
-rkT/UnmTriTFSGDupdKX9EDzEvJS05UvIE9EnzayZk+2T3SfAL3yYk/OamTkThJ9tHqcpOhM
-E2J89J8oo/jqlwSyl6UunCXm8qWJeWl8CMExmThvJuzJu/PzJxK+qT/8pJ9kngqtisSYifjJ
-5nxk4HVUu8naJ9MTfJ7ZOMniSYk8JPbzo8ScaFbExJ9JMxN8mChiTCC8yYJyk90K3k+/PMm4
-ntJpJikxoVjMpK7iYkyT6ZOimMXvSaJNJOhNibE/hwpOqFaE3ybpPq8fZnf+iTb6pNJNNJPT
-Untk0J+Q6SZk3pO0m6lSzJgTwJiT2mCtxPAmSZSeRO+kwTJNYmCfrJ4k0JzSbyb4nGTUn1k4
-ydpOXs7pNJPPzzJ11xU9ZMqaEzpn5eqnWTcpjGsnGTBOxMUbpMSa43e1T9YtqXPdLfYS4SxL
-mlzCbpc5NxPrN5PskxE1pNSZk/85k8joFZkyTqV/ak0+eTuk3E75OMmYmx8ibE6nfUt8TQn9
-3uk2JxJmTw8VMVMY5kxfPJp2iecq5E2J0k0JjMmZMSdisVSdZNxNKlg7dEmKH6sKrSJwJroT
-KpaeyTrE2ME2id3lJ7fb0k+EmPCj7ZOskp+WTHAnGJihWVSz3SecTOkThJkm3mTBMExJmTEn
-zbfOTMTxpNCZJik4GCaniTdE0k6kwT47+RMSbRMybQrEmJMExSctCcCaJMxNJOJMydCYk+6T
-WhWZMSYkwT3E3ybyciewm4m6ou+TJMxOMTuk9SaxOtJ6k1k1J2J/GTUm6T8+ScCZJwIVwqlx
-k9Cab5VaonmTlJoT1SbX0m8nKJxompNxMoKxKl+SJ5ydInUnU9vIWgmyu6liXZS6oHNA4Jci
-bc7EnmTCO6TKmMWCYk3ldFLaVTelgkYlvR0VzgyJ0JlSuBPZ1k9pOJMGZMVL0J+JPEntk7yT
-jJ0JknnJ13HeTrSesnhjgTKnf4xMYJiT4m+TlJhJsTwJsTeTB4yecnak1k8omsK8iciefWTE
-nu2JpmTnJ6SZJsk4k7omCdxME++43OTaThJlVK7E9xME3k0ql5QraTYnbxk5kxmTJNt5NSew
-nkTQm7a6ExQ5SdCd1JoTrJvUleROEmAS3RNivImpNCaSb6l3E3k5yYJijjJKbciZomN8kxJw
-J+GUldpOZME6ROBFVyk2Jvk3E0Cs0miTdFDbWTST0J7ImSYJ3E9hNqTETJO+J/6k0lWpOMm3
-jSbgrhcyYPNJoVwkxQqv2+XvJoKr2FcYnAnJUvEnO5SdSYpNSfImPLu1UwI+lUeRGQayBcEZ
-RsEcUdZJmTpE2k2VLFSak0k0JwJ0pOETJPsSdTlE6Sak/TJgnLkTNJuJyJ7ToTWJoTBJ1J8N
-KSfwwpOfCJyJyk9hNqJ57iYUwT36yeHnqeuKkbExVJknWT65MRQ1JwiYJ0J2pVc4nQngTjJy
-kxRmT3xMxNom6k8cH9tJOVW6TBrJuJrE5ScScYmpXrE5yaUmtS8yaE7t9E7vEnMnx58iYSfl
-pMiHvkDuS7q1R18us8+0l2pdtLNKTWTBNKTWTuJrsTBPWk9pO8ncTSTvJ5E8icEmhNKFYk7E
-yTJPeTlJlStCdDMTGJO8nUmCZVLFqTMKxILETFHsJtJ3ExtE5mTdJuMEZkyVkmKME1Jk4cN3
-fu1k0J7unEnEm/EmJMEzJvk1k3ybkmNxN8nhhGpMqZUxJv20jWk98TyJgmFJiJiT5EyTMnST
-MmSdCZqpZJtJrJrE1icowTJNYzRO4mKJtJiTWJrSZpOBMosk0JpJgmYmCYkwVcCcKpdSd3Kl
-L/PHpJrJ3E2kyTPBCuyTJPMmsTxJtSeBNJN8mJMfdknfSqvb49uRMyquJOapbE9qpe3aTeTG
-YmSYScSc5O4UME4YJ+UnsJzusnQnCTkkyTJOEn7ZPnpORPWTpJ6k7yak9CY9ZVWSenTiTGhP
-GTf5SdiZ8CdomlE8ZVXiaHiTBME8om+44qYU4JOxNiczxk0pNCcImxPaTgTiVik8CfsVSmIm
-CTcThAp1lVaxP1E/RE3k8JO8rkTu3k2J4pOqTPO//i7kinChIDk3t6A=
---------------000506070309060100060101--
+It would be good to get core code done, or a sub-arch, and then say
+"we're not accepting any patch which re-introduces the problem"...
+It's a little late in the cycle for that now though.
