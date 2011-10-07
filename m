@@ -1,351 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab1JGIRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 04:17:11 -0400
-Received: from mail.infrascan.de ([188.40.84.136]:54288 "EHLO infrascan.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758795Ab1JGIRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 04:17:08 -0400
-From: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-To: balbi@ti.com, gregkh@suse.de
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-Subject: [PATCH v2] usb: add new usb gadget for ACM and mass storage
-Date: Fri,  7 Oct 2011 10:16:34 +0200
-Message-Id: <1317975394-5781-1-git-send-email-schwarzkopf@sensortherm.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
-References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+	id S1759556Ab1JGISk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 04:18:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52383 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab1JGISi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 04:18:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1317499438-14058-14-git-send-email-arnd@arndb.de>
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-14-git-send-email-arnd@arndb.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 7 Oct 2011 16:11:01 +0800
+Message-ID: <CAMPhdO_CGvoc8GZQS3TWpv0gqOXhmHyEbamcQr28K5iLgOBnuw@mail.gmail.com>
+Subject: Re: [PATCH 13/26] ARM: pxa: use correct __iomem annotations
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Chagas <jason.chagas@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p978IlFf005906
 
-This driver provides two functions in one configuration:
-a mass storage, and a CDC ACM (serial port) link.
-Heavily based on multi.c and cdc2.c
+On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> This tries to clear up the confusion between integers and iomem pointers
+> in the marvell pxa platform. MMIO addresses are supposed to be __iomem*
+> values, in order to let the Linux type checking work correctly. This
+> patch moves the cast to __iomem as far back as possible, to the place
+> where the MMIO virtual address windows are defined.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/include/asm/hardware/it8152.h    |    2 +-
+>  arch/arm/mach-mmp/clock.h                 |    8 ++++----
+>  arch/arm/mach-mmp/common.c                |    4 ++--
+>  arch/arm/mach-mmp/include/mach/addr-map.h |   10 ++++++++--
+>  arch/arm/mach-mmp/mmp2.c                  |    3 ++-
+>  arch/arm/mach-pxa/balloon3.c              |   10 +++++-----
+>  arch/arm/mach-pxa/cm-x2xx-pci.c           |    2 +-
+>  arch/arm/mach-pxa/cm-x2xx.c               |    4 ++--
+>  arch/arm/mach-pxa/include/mach/addr-map.h |    8 ++++----
+>  arch/arm/mach-pxa/include/mach/balloon3.h |    2 +-
+>  arch/arm/mach-pxa/include/mach/hardware.h |    9 +++++----
+>  arch/arm/mach-pxa/include/mach/lpd270.h   |    4 ++--
+>  arch/arm/mach-pxa/include/mach/mtd-xip.h  |    1 -
+>  arch/arm/mach-pxa/include/mach/palmtx.h   |    6 +++---
+>  arch/arm/mach-pxa/include/mach/smemc.h    |    2 +-
+>  arch/arm/mach-pxa/include/mach/zeus.h     |    4 ++--
+>  arch/arm/mach-pxa/irq.c                   |    4 ++--
+>  arch/arm/mach-pxa/lpd270.c                |    2 +-
+>  arch/arm/mach-pxa/palmtx.c                |    8 ++++----
+>  arch/arm/mach-pxa/pxa25x.c                |    2 +-
+>  arch/arm/mach-pxa/pxa27x.c                |    2 +-
+>  arch/arm/mach-pxa/pxa3xx.c                |    2 +-
+>  arch/arm/mach-pxa/zeus.c                  |    8 ++++----
+>  arch/arm/plat-pxa/gpio.c                  |    2 +-
+>  arch/arm/plat-pxa/include/plat/mfp.h      |    2 +-
+>  arch/arm/plat-pxa/mfp.c                   |    4 ++--
+>  drivers/pcmcia/pxa2xx_balloon3.c          |    2 +-
+>  drivers/video/mbx/mbxfb.c                 |    6 +++---
+>  28 files changed, 65 insertions(+), 58 deletions(-)
+>
+> diff --git a/arch/arm/include/asm/hardware/it8152.h b/arch/arm/include/asm/hardware/it8152.h
+> index b3fea38..43cab49 100644
+> --- a/arch/arm/include/asm/hardware/it8152.h
+> +++ b/arch/arm/include/asm/hardware/it8152.h
+> @@ -9,7 +9,7 @@
+>
+>  #ifndef __ASM_HARDWARE_IT8152_H
+>  #define __ASM_HARDWARE_IT8152_H
+> -extern unsigned long it8152_base_address;
+> +extern void __iomem *it8152_base_address;
+>
+>  #define IT8152_IO_BASE                 (it8152_base_address + 0x03e00000)
+>  #define IT8152_CFGREG_BASE             (it8152_base_address + 0x03f00000)
+> diff --git a/arch/arm/mach-mmp/clock.h b/arch/arm/mach-mmp/clock.h
+> index 3143e99..149b30c 100644
+> --- a/arch/arm/mach-mmp/clock.h
+> +++ b/arch/arm/mach-mmp/clock.h
+> @@ -30,7 +30,7 @@ extern struct clkops apmu_clk_ops;
+>
+>  #define APBC_CLK(_name, _reg, _fnclksel, _rate)                        \
+>  struct clk clk_##_name = {                                     \
+> -               .clk_rst        = (void __iomem *)APBC_##_reg,  \
+> +               .clk_rst        = APBC_##_reg,                  \
+>                .fnclksel       = _fnclksel,                    \
+>                .rate           = _rate,                        \
+>                .ops            = &apbc_clk_ops,                \
+> @@ -38,7 +38,7 @@ struct clk clk_##_name = {                                    \
+>
+>  #define APBC_CLK_OPS(_name, _reg, _fnclksel, _rate, _ops)      \
+>  struct clk clk_##_name = {                                     \
+> -               .clk_rst        = (void __iomem *)APBC_##_reg,  \
+> +               .clk_rst        = APBC_##_reg,                  \
+>                .fnclksel       = _fnclksel,                    \
+>                .rate           = _rate,                        \
+>                .ops            = _ops,                         \
+> @@ -46,7 +46,7 @@ struct clk clk_##_name = {                                    \
+>
+>  #define APMU_CLK(_name, _reg, _eval, _rate)                    \
+>  struct clk clk_##_name = {                                     \
+> -               .clk_rst        = (void __iomem *)APMU_##_reg,  \
+> +               .clk_rst        = APMU_##_reg,                  \
+>                .enable_val     = _eval,                        \
+>                .rate           = _rate,                        \
+>                .ops            = &apmu_clk_ops,                \
+> @@ -54,7 +54,7 @@ struct clk clk_##_name = {                                    \
+>
+>  #define APMU_CLK_OPS(_name, _reg, _eval, _rate, _ops)          \
+>  struct clk clk_##_name = {                                     \
+> -               .clk_rst        = (void __iomem *)APMU_##_reg,  \
+> +               .clk_rst        = APMU_##_reg,                  \
+>                .enable_val     = _eval,                        \
+>                .rate           = _rate,                        \
+>                .ops            = _ops,                         \
+> diff --git a/arch/arm/mach-mmp/common.c b/arch/arm/mach-mmp/common.c
+> index 0ec0ca8..5720674 100644
+> --- a/arch/arm/mach-mmp/common.c
+> +++ b/arch/arm/mach-mmp/common.c
+> @@ -27,12 +27,12 @@ EXPORT_SYMBOL(mmp_chip_id);
+>  static struct map_desc standard_io_desc[] __initdata = {
+>        {
+>                .pfn            = __phys_to_pfn(APB_PHYS_BASE),
+> -               .virtual        = APB_VIRT_BASE,
+> +               .virtual        = (unsigned long)APB_VIRT_BASE,
+>                .length         = APB_PHYS_SIZE,
+>                .type           = MT_DEVICE,
+>        }, {
+>                .pfn            = __phys_to_pfn(AXI_PHYS_BASE),
+> -               .virtual        = AXI_VIRT_BASE,
+> +               .virtual        = (unsigned long)AXI_VIRT_BASE,
+>                .length         = AXI_PHYS_SIZE,
+>                .type           = MT_DEVICE,
+>        },
+> diff --git a/arch/arm/mach-mmp/include/mach/addr-map.h b/arch/arm/mach-mmp/include/mach/addr-map.h
+> index 3254089..3e404ac 100644
+> --- a/arch/arm/mach-mmp/include/mach/addr-map.h
+> +++ b/arch/arm/mach-mmp/include/mach/addr-map.h
+> @@ -11,6 +11,12 @@
+>  #ifndef __ASM_MACH_ADDR_MAP_H
+>  #define __ASM_MACH_ADDR_MAP_H
+>
+> +#ifndef __ASSEMBLER__
+> +#define IOMEM(x)       ((void __iomem *)(x))
+> +#else
+> +#define IOMEM(x)       (x)
+> +#endif
+> +
+>  /* APB - Application Subsystem Peripheral Bus
+>  *
+>  * NOTE: the DMA controller registers are actually on the AXI fabric #1
+> @@ -18,11 +24,11 @@
+>  * peripherals on APB, let's count it into the ABP mapping area.
+>  */
+>  #define APB_PHYS_BASE          0xd4000000
+> -#define APB_VIRT_BASE          0xfe000000
+> +#define APB_VIRT_BASE          IOMEM(0xfe000000)
 
-fixed missing header in include/linux/usb/gadget.h
+To be honest, I'd really like to keep the *_VIRT_BASE definitions to be
+type independent.
 
-Signed-off-by: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
----
- drivers/usb/gadget/Kconfig  |   10 ++
- drivers/usb/gadget/Makefile |    2 +
- drivers/usb/gadget/acm_ms.c |  255 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/usb/gadget.h  |    1 +
- 4 files changed, 268 insertions(+), 0 deletions(-)
- create mode 100644 drivers/usb/gadget/acm_ms.c
+And have the actual register definitions to be casted to void __iomem *
+when being defined, e.g.
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 029e288..2592ba7 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -959,6 +959,16 @@ config USB_G_NOKIA
- 	  It's only really useful for N900 hardware. If you're building
- 	  a kernel for N900, say Y or M here. If unsure, say N.
- 
-+config USB_G_ACM_MS
-+	tristate "CDC Composite Device (ACM and mass storage)"
-+	depends on BLOCK
-+	help
-+	  This driver provides two functions in one configuration:
-+	  a mass storage, and a CDC ACM (serial port) link.
-+
-+	  Say "y" to link the driver statically, or "m" to build a
-+	  dynamically linked module called "g_acm_ms".
-+
- config USB_G_MULTI
- 	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
- 	depends on BLOCK && NET
-diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
-index 4fe92b1..3876d8c 100644
---- a/drivers/usb/gadget/Makefile
-+++ b/drivers/usb/gadget/Makefile
-@@ -49,6 +49,7 @@ g_dbgp-y			:= dbgp.o
- g_nokia-y			:= nokia.o
- g_webcam-y			:= webcam.o
- g_ncm-y				:= ncm.o
-+g_acm_ms-y			:= acm_ms.o
- 
- obj-$(CONFIG_USB_ZERO)		+= g_zero.o
- obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
-@@ -67,3 +68,4 @@ obj-$(CONFIG_USB_G_MULTI)	+= g_multi.o
- obj-$(CONFIG_USB_G_NOKIA)	+= g_nokia.o
- obj-$(CONFIG_USB_G_WEBCAM)	+= g_webcam.o
- obj-$(CONFIG_USB_G_NCM)		+= g_ncm.o
-+obj-$(CONFIG_USB_G_ACM_MS)	+= g_acm_ms.o
-diff --git a/drivers/usb/gadget/acm_ms.c b/drivers/usb/gadget/acm_ms.c
-new file mode 100644
-index 0000000..28280c4
---- /dev/null
-+++ b/drivers/usb/gadget/acm_ms.c
-@@ -0,0 +1,255 @@
-+/*
-+ * cdc2.c -- CDC Composite driver, with ACM and mass storage support
-+ *
-+ * Copyright (C) 2008 David Brownell
-+ * Copyright (C) 2008 Nokia Corporation
-+ * Author: David Brownell
-+ * Modified: Klaus Schwarzkopf
-+ *
-+ * Heavily based on multi.c and cdc2.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/utsname.h>
-+
-+#include "u_serial.h"
-+
-+#define DRIVER_DESC		"CDC Composite Gadget (ACM + MS)"
-+#define DRIVER_VERSION		"2011/10/07"
-+
-+/*-------------------------------------------------------------------------*/
-+
-+/*
-+ * DO NOT REUSE THESE IDs with a protocol-incompatible driver!!  Ever!!
-+ * Instead:  allocate your own, using normal USB-IF procedures.
-+ */
-+#define CDC_VENDOR_NUM	0x1d6b	/* Linux Foundation */
-+#define CDC_PRODUCT_NUM	0x0106	/* CDC Composite: ACM + MS*/
-+
-+/*-------------------------------------------------------------------------*/
-+
-+/*
-+ * Kbuild is not very cooperative with respect to linking separately
-+ * compiled library objects into one module.  So for now we won't use
-+ * separate compilation ... ensuring init/exit sections work to shrink
-+ * the runtime footprint, and giving us at least some parts of what
-+ * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
-+ */
-+
-+#include "composite.c"
-+#include "usbstring.c"
-+#include "config.c"
-+#include "epautoconf.c"
-+#include "u_serial.c"
-+#include "f_acm.c"
-+#include "f_mass_storage.c"
-+
-+/*-------------------------------------------------------------------------*/
-+
-+static struct usb_device_descriptor device_desc = {
-+	.bLength =		sizeof device_desc,
-+	.bDescriptorType =	USB_DT_DEVICE,
-+
-+	.bcdUSB =		cpu_to_le16(0x0200),
-+
-+	.bDeviceClass =		USB_CLASS_COMM,
-+	.bDeviceSubClass =	0,
-+	.bDeviceProtocol =	0,
-+	/* .bMaxPacketSize0 = f(hardware) */
-+
-+	/* Vendor and product id can be overridden by module parameters.  */
-+	.idVendor =		cpu_to_le16(CDC_VENDOR_NUM),
-+	.idProduct =		cpu_to_le16(CDC_PRODUCT_NUM),
-+	/* .bcdDevice = f(hardware) */
-+	/* .iManufacturer = DYNAMIC */
-+	/* .iProduct = DYNAMIC */
-+	/* NO SERIAL NUMBER */
-+	.bNumConfigurations =	1,
-+};
-+
-+static struct usb_otg_descriptor otg_descriptor = {
-+	.bLength =		sizeof otg_descriptor,
-+	.bDescriptorType =	USB_DT_OTG,
-+
-+	/*
-+	 * REVISIT SRP-only hardware is possible, although
-+	 * it would not be called "OTG" ...
-+	 */
-+	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
-+};
-+
-+static const struct usb_descriptor_header *otg_desc[] = {
-+	(struct usb_descriptor_header *) &otg_descriptor,
-+	NULL,
-+};
-+
-+
-+/* string IDs are assigned dynamically */
-+
-+#define STRING_MANUFACTURER_IDX		0
-+#define STRING_PRODUCT_IDX		1
-+
-+static char manufacturer[50];
-+
-+static struct usb_string strings_dev[] = {
-+	[STRING_MANUFACTURER_IDX].s = manufacturer,
-+	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
-+	{  } /* end of list */
-+};
-+
-+static struct usb_gadget_strings stringtab_dev = {
-+	.language	= 0x0409,	/* en-us */
-+	.strings	= strings_dev,
-+};
-+
-+static struct usb_gadget_strings *dev_strings[] = {
-+	&stringtab_dev,
-+	NULL,
-+};
-+
-+/****************************** Configurations ******************************/
-+
-+static struct fsg_module_parameters fsg_mod_data = { .stall = 1 };
-+FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
-+
-+static struct fsg_common fsg_common;
-+
-+/*-------------------------------------------------------------------------*/
-+
-+/*
-+ * We _always_ have both CDC ACM and mass storage functions.
-+ */
-+static int __init cdc_do_config(struct usb_configuration *c)
-+{
-+	int	status;
-+
-+	if (gadget_is_otg(c->cdev->gadget)) {
-+		c->descriptors = otg_desc;
-+		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
-+	}
-+
-+
-+	status = acm_bind_config(c, 0);
-+	if (status < 0)
-+		return status;
-+
-+	status = fsg_bind_config(c->cdev, c, &fsg_common);
-+	if (status < 0)
-+		return status;
-+
-+	return 0;
-+}
-+
-+static struct usb_configuration cdc_config_driver = {
-+	.label			= DRIVER_DESC,
-+	.bConfigurationValue	= 1,
-+	/* .iConfiguration = DYNAMIC */
-+	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-+};
-+
-+/*-------------------------------------------------------------------------*/
-+
-+static int __init cdc_bind(struct usb_composite_dev *cdev)
-+{
-+	int			gcnum;
-+	struct usb_gadget	*gadget = cdev->gadget;
-+	int			status;
-+	void			*retp;
-+
-+	/* set up serial link layer */
-+	status = gserial_setup(cdev->gadget, 1);
-+	if (status < 0)
-+		return status;
-+
-+	/* set up mass storage function */
-+	retp = fsg_common_from_params(&fsg_common, cdev, &fsg_mod_data);
-+	if (IS_ERR(retp)) {
-+		status = PTR_ERR(retp);
-+		goto fail0;
-+	}
-+
-+	/* set bcdDevice */
-+	gcnum = usb_gadget_controller_number(gadget);
-+	if (gcnum >= 0) {
-+		device_desc.bcdDevice = cpu_to_le16(0x0300 | gcnum);
-+	} else {
-+		WARNING(cdev, "controller '%s' not recognized; trying %s\n",
-+				gadget->name,
-+				cdc_config_driver.label);
-+		device_desc.bcdDevice =
-+			cpu_to_le16(0x0300 | 0x0099);
-+	}
-+
-+	/*
-+	 * Allocate string descriptor numbers ... note that string
-+	 * contents can be overridden by the composite_dev glue.
-+	 */
-+
-+	/* device descriptor strings: manufacturer, product */
-+	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
-+		init_utsname()->sysname, init_utsname()->release,
-+		gadget->name);
-+	status = usb_string_id(cdev);
-+	if (status < 0)
-+		goto fail1;
-+	strings_dev[STRING_MANUFACTURER_IDX].id = status;
-+	device_desc.iManufacturer = status;
-+
-+	status = usb_string_id(cdev);
-+	if (status < 0)
-+		goto fail1;
-+	strings_dev[STRING_PRODUCT_IDX].id = status;
-+	device_desc.iProduct = status;
-+
-+	/* register our configuration */
-+	status = usb_add_config(cdev, &cdc_config_driver, cdc_do_config);
-+	if (status < 0)
-+		goto fail1;
-+
-+	dev_info(&gadget->dev, "%s, version: " DRIVER_VERSION "\n",
-+			DRIVER_DESC);
-+	fsg_common_put(&fsg_common);
-+	return 0;
-+
-+	/* error recovery */
-+fail1:
-+	fsg_common_put(&fsg_common);
-+fail0:
-+	gserial_cleanup();
-+	return status;
-+}
-+
-+static int __exit cdc_unbind(struct usb_composite_dev *cdev)
-+{
-+	gserial_cleanup();
-+
-+	return 0;
-+}
-+
-+static struct usb_composite_driver cdc_driver = {
-+	.name		= "g_acm_ms",
-+	.dev		= &device_desc,
-+	.strings	= dev_strings,
-+	.unbind		= __exit_p(cdc_unbind),
-+};
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_AUTHOR("Klaus Schwarzkopf");
-+MODULE_LICENSE("GPL");
-+
-+static int __init init(void)
-+{
-+	return usb_composite_probe(&cdc_driver, cdc_bind);
-+}
-+module_init(init);
-+
-+static void __exit cleanup(void)
-+{
-+	usb_composite_unregister(&cdc_driver);
-+}
-+module_exit(cleanup);
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index dd1571d..f623f3d 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -15,6 +15,7 @@
- #ifndef __LINUX_USB_GADGET_H
- #define __LINUX_USB_GADGET_H
- 
-+#include <linux/device.h>
- #include <linux/slab.h>
- 
- struct usb_ep;
--- 
-1.7.0.4
+#define APBC_REG(x)	IOMEM(APBC_VIRT_BASE + (x))
 
+#define APBC_UART1	APBC_REG(0x000)
+
+Arnd, do we have some standard guidelines on this for all SoCs
+to follow? As I know, it's currently still being a mess.
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
