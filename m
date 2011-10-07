@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab1JGUhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:37:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37612 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759114Ab1JGUek (ORCPT
+	id S1759317Ab1JGUhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:37:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759146Ab1JGUen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:40 -0400
+	Fri, 7 Oct 2011 16:34:43 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 14/26] dynamic_debug: refactor query_matches_callsite out of ddebug_change
-Date: Fri,  7 Oct 2011 14:33:20 -0600
-Message-Id: <1318019612-20068-15-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 15/26] dynamic_debug: drop explicit foo != NULL checks.
+Date: Fri,  7 Oct 2011 14:33:21 -0600
+Message-Id: <1318019612-20068-16-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,90 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-This makes no behavioral change, its just a code-move/refactor
-to encapsulate matching behavior.
-
-If this function is reused, note that it excludes check of the module;
-that is done once for the table, this code refactors the test inside
-the loop over the module's ddebug callsites.
+Reduce != NULL relational tests to their 0/1 equivalents.
+Done separately to preserve code-move character of previous patch.
+No generated code difference.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   54 +++++++++++++++++++++++++++++---------------------
- 1 files changed, 31 insertions(+), 23 deletions(-)
+ lib/dynamic_debug.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 2f39b2f..329e18d 100644
+index 329e18d..4c8e178 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -125,6 +125,36 @@ do {									\
- 			q->first_lineno, q->last_lineno);		\
- } while (0)
+@@ -129,20 +129,18 @@ static bool query_matches_callsite(struct _ddebug *dp,
+ 				const struct ddebug_query *query)
+ {
+ 	/* match against the source filename */
+-	if (query->filename != NULL &&
++	if (query->filename &&
+ 		strcmp(query->filename, dp->filename) &&
+ 		strcmp(query->filename, basename(dp->filename)) &&
+ 		strcmp(query->filename, trim_prefix(dp->filename)))
+ 		return false;
  
-+static bool query_matches_callsite(struct _ddebug *dp,
-+				const struct ddebug_query *query)
-+{
-+	/* match against the source filename */
-+	if (query->filename != NULL &&
-+		strcmp(query->filename, dp->filename) &&
-+		strcmp(query->filename, basename(dp->filename)) &&
-+		strcmp(query->filename, trim_prefix(dp->filename)))
-+		return false;
-+
-+	/* match against the function */
-+	if (query->function != NULL &&
-+		strcmp(query->function, dp->function))
-+		return false;
-+
-+	/* match against the format */
-+	if (query->format != NULL &&
-+		strstr(dp->format, query->format) == NULL)
-+		return false;
-+
-+	/* match against the line number range */
-+	if (query->first_lineno && dp->lineno < query->first_lineno)
-+		return false;
-+
-+	if (query->last_lineno && dp->lineno > query->last_lineno)
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * Search the tables for _ddebug's which match the given
-  * `query' and apply the `flags' and `mask' to them.  Tells
-@@ -151,29 +181,7 @@ static void ddebug_change(const struct ddebug_query *query,
- 		for (i = 0 ; i < dt->num_ddebugs ; i++) {
- 			struct _ddebug *dp = &dt->ddebugs[i];
+ 	/* match against the function */
+-	if (query->function != NULL &&
+-		strcmp(query->function, dp->function))
++	if (query->function && strcmp(query->function, dp->function))
+ 		return false;
  
--			/* match against the source filename */
--			if (query->filename != NULL &&
--			    strcmp(query->filename, dp->filename) &&
--			    strcmp(query->filename, basename(dp->filename)) &&
--			    strcmp(query->filename, trim_prefix(dp->filename)))
--				continue;
--
--			/* match against the function */
--			if (query->function != NULL &&
--			    strcmp(query->function, dp->function))
--				continue;
--
--			/* match against the format */
--			if (query->format != NULL &&
--			    strstr(dp->format, query->format) == NULL)
--				continue;
--
--			/* match against the line number range */
--			if (query->first_lineno &&
--			    dp->lineno < query->first_lineno)
--				continue;
--			if (query->last_lineno &&
--			    dp->lineno > query->last_lineno)
-+			if (!query_matches_callsite(dp, query))
- 				continue;
+ 	/* match against the format */
+-	if (query->format != NULL &&
+-		strstr(dp->format, query->format) == NULL)
++	if (query->format && !strstr(dp->format, query->format))
+ 		return false;
  
- 			nfound++;
+ 	/* match against the line number range */
 -- 
 1.7.4.4
 
