@@ -1,137 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab1JGKO0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:14:26 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:38894 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965019Ab1JGKOX (ORCPT
+	id S1759780Ab1JGKPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:15:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33129 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759751Ab1JGKPL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:14:23 -0400
-Date: Fri, 7 Oct 2011 13:14:15 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-Cc: balbi@ti.com, gregkh@suse.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
-Message-ID: <20111007101414.GN10910@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
- <20111006120830.GN1714@legolas.emea.dhcp.ti.com>
- <4E8EB6EE.8040700@sensortherm.de>
- <20111007083856.GB10910@legolas.emea.dhcp.ti.com>
- <4E8ECF44.7060506@sensortherm.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jnYfR+Q8IWTs8BNa"
-Content-Disposition: inline
-In-Reply-To: <4E8ECF44.7060506@sensortherm.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Oct 2011 06:15:11 -0400
+Date: Fri, 7 Oct 2011 11:12:31 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
+        david@fubar.dk, greg@kroah.com
+Subject: Re: A =?UTF-8?B?UGx1bWJlcuKAmXM=?= Wish List for Linux
+Message-ID: <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
+In-Reply-To: <1317943022.1095.25.camel@mop>
+References: <1317943022.1095.25.camel@mop>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> * (ioctl based?) interface to query and modify the label of a mounted
+> FAT volume:
 
---jnYfR+Q8IWTs8BNa
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Seems sensible - or it could go in sysfs ?
 
-Hi,
+> A FAT labels is implemented as a hidden directory entry in the file
+> system which need to be renamed when changing the file system label,
 
-On Fri, Oct 07, 2011 at 12:07:00PM +0200, Klaus Schwarzkopf wrote:
-> Hi,
->=20
->=20
-> Am 07.10.2011 10:38, schrieb Felipe Balbi:
->=20
-> >>>>diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> >>>>index dd1571d..f623f3d 100644
-> >>>>--- a/include/linux/usb/gadget.h
-> >>>>+++ b/include/linux/usb/gadget.h
-> >>>>@@ -15,6 +15,7 @@
-> >>>>  #ifndef __LINUX_USB_GADGET_H
-> >>>>  #define __LINUX_USB_GADGET_H
-> >>>>
-> >>>>+#include<linux/device.h>
-> >>>
-> >>>this is not part of $SUBJECT
-> >>>
-> >>
-> >>changed git message
-> >
-> >not enough. adding another header is not part of this patch. You need to
-> >let us know why you need this new header there and you need add proper
-> >spacing there.
-> >
->=20
->=20
-> There is a space in the orginal patch.
->=20
-> Should i make a seperate patch for this?
->=20
-> In the header gadget.h are some stuff used, but not declared.
->=20
-> My compile errors without device.h:
->=20
->   CC      drivers/usb/gadget/acm_ms.o
-> In file included from include/linux/usb/composite.h:38,
->                  from drivers/usb/gadget/u_serial.h:15,
->                  from drivers/usb/gadget/acm_ms.c:20:
-> include/linux/usb/gadget.h:491: error: field =E2=80=98dev=E2=80=99 has in=
-complete type
-> include/linux/usb/gadget.h: In function =E2=80=98set_gadget_data=E2=80=99:
-> include/linux/usb/gadget.h:495: error: implicit declaration of
-> function =E2=80=98dev_set_drvdata=E2=80=99
-> include/linux/usb/gadget.h: In function =E2=80=98get_gadget_data=E2=80=99:
-> include/linux/usb/gadget.h:497: error: implicit declaration of
-> function =E2=80=98dev_get_drvdata=E2=80=99
-> include/linux/usb/gadget.h: In function =E2=80=98dev_to_usb_gadget=E2=80=
-=99:
-> include/linux/usb/gadget.h:500: warning: type defaults to =E2=80=98int=E2=
-=80=99 in
-> declaration of =E2=80=98__mptr=E2=80=99
-> include/linux/usb/gadget.h:500: warning: initialization from
-> incompatible pointer type
-> include/linux/usb/gadget.h: At top level:
-> include/linux/usb/gadget.h:781: error: field =E2=80=98driver=E2=80=99 has=
- incomplete type
-> In file included from drivers/usb/gadget/composite.c:26,
->                  from drivers/usb/gadget/acm_ms.c:44:
-> include/linux/device.h:705: error: conflicting types for =E2=80=98dev_get=
-_drvdata=E2=80=99
-> include/linux/usb/gadget.h:497: note: previous implicit declaration
-> of =E2=80=98dev_get_drvdata=E2=80=99 was here
-> In file included from drivers/usb/gadget/acm_ms.c:44:
-> drivers/usb/gadget/composite.c:1261: error: field name not in record
-> or union initializer
-> drivers/usb/gadget/composite.c:1261: error: (near initialization for
-> =E2=80=98composite_driver.driver=E2=80=99)
-> make[3]: *** [drivers/usb/gadget/acm_ms.o] Error 1
-> make[2]: *** [drivers/usb/gadget] Error 2
-> make[1]: *** [drivers/usb] Error 2
-> make: *** [drivers] Error 2
+That would be ugly - it works for FAT as you can create an imaginary name
+which is not possible on the fs, but that isn't true for say ext4. Sysfs
+sounds the logic way, it means adding chunks of code to various file
+systems.
 
-I believe Sergei had that patch already, but it wasn't applied for some
-reason. Sergei, do you happen to remember the outcome of that patch ?
+> * expose CAP_LAST_CAP somehow in the running kernel at runtime:
+> Userspace needs to know the highest valid capability of the running
+> kernel, which right now cannot reliably be retrieved from header files
+> only. The fact that this value cannot be detected properly right now
+> creates various problems for libraries compiled on newer header files
+> which are run on older kernels. They assume capabilities are available
+> which actually aren’t. Specifically, libcap-ng claims that all running
+> processes retain the higher capabilities in this case due to the
+> “inverted” semantics of CapBnd in /proc/$PID/status.
 
---=20
-balbi
+You can probably deduce this by poking around but to me it seems like a
+very sensible idea.
 
---jnYfR+Q8IWTs8BNa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> * allow changing argv[] of a process without mucking with environ[]:
+> Something like setproctitle() or a prctl() would be ideal. Of course it
+> is questionable if services like sendmail make use of this, but otoh for
+> services which fork but do not immediately exec() another binary being
+> able to rename this child processes in ps is of importance.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Yes, its a real valuable tool for r00tkits, worms and general purpose
+deception.
 
-iQEcBAEBAgAGBQJOjtD1AAoJEAv8Txj19kN1CWAH/i0VBldwR0QeE/CzpsCdaBZM
-tSNDMHbdYmmtqvcFR4valF3rIgzXC5QCD0SAEWsSJGP4uafZLAOlpAcXI+k1gqj3
-qFPvLK0vAWxvv/nvgcRmARSHl9ZeYECBqf89qRbTKLid60NDV2hmZ+/znIqMTimQ
-3KJ/oNuoMivOUmxkGSu195HT65srm4c0CiHFDcIEUUUBGh1LF8e0h5lnjCyLlFaT
-omR+XPoNsNX72Gs71v7de2wRusfp9yISEaPwSDzqGP/hqJFeDF61+wrjDW3KAbMd
-BelL1gXor4kSCagMhPM31GgK4GI4QCjgWThXiOkRppNi6A0s+HdpT8IqE2d9GF4=
-=VXF+
------END PGP SIGNATURE-----
-
---jnYfR+Q8IWTs8BNa--
