@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759835Ab1JGKiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:38:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53438 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759820Ab1JGKiN convert rfc822-to-8bit (ORCPT
+	id S965379Ab1JGKiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:38:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5694 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759825Ab1JGKio convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:38:13 -0400
-Subject: Re: [PATCH 04/12] perf_events: sync branch stack sampling with X86
- precise_sampling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
-        ravitillo@lbl.gov
-Date: Fri, 07 Oct 2011 12:37:59 +0200
-In-Reply-To: <CABPqkBTWU8AO_t4CNRbQVdGU3OnkAT9W=Ngj+x4dL5hpAHz=2g@mail.gmail.com>
+	Fri, 7 Oct 2011 06:38:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Rc87bRh3oLW+1c+ZxpsZU6iEpaWswyLJtM22ZCWal/luE4nDcXy7WndP+i4NVmAs8
+	Q/dIPXO0eMmqkp0Ht4ZPA==
+MIME-Version: 1.0
+In-Reply-To: <20111006153229.GJ14482@one.firstfloor.org>
 References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	 <1317912555-9559-5-git-send-email-eranian@google.com>
-	 <1317921909.29658.16.camel@twins>
-	 <CABPqkBTWU8AO_t4CNRbQVdGU3OnkAT9W=Ngj+x4dL5hpAHz=2g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	<1317912555-9559-8-git-send-email-eranian@google.com>
+	<20111006153229.GJ14482@one.firstfloor.org>
+Date: Fri, 7 Oct 2011 12:38:40 +0200
+Message-ID: <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, ming.m.lin@intel.com, robert.richter@amd.com,
+        ravitillo@lbl.gov
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317983879.31132.5.camel@twins>
-Mime-Version: 1.0
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 12:34 +0200, Stephane Eranian wrote:
-> On Thu, Oct 6, 2011 at 7:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
-> >>
-> >> On Intel X86 PERF_SAMPLE_BRANCH_STACK is implemented using LBR,
-> >> therefore both features must be coordinated as they may not
-> >> configure LBR the same way.
-> >
-> > Differently, you mean? Both wanting the same configuration seems fine.
-> >
-> No, I meant you can allow LBR + precise_sampling>1 ONLY when
-> users set LBR to record ALL branches and at the same priv levels. In
-> other words,
-> you're exposing the LBR content used by the fixup code.
+On Thu, Oct 6, 2011 at 5:32 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> +     kernel_insn_init(&insn, kaddr);
+>> +     insn_get_opcode(&insn);
+>
+> This makes me uncomfortable. AFAIK that's the first use of the opcode
+> decoder being used directly for user space. It has a quite large attack
+> surface. Who says it cannot be exploited?
+>
+This is not new, it's already used for the PEBS fixups and that includes
+user level fixups, if possible.
 
-Right. 
+We are not executing the instruction here, just decoding it to filter it out
+from a buffer if necessary.
 
-> One could argue, that if LBR is set to filter certain branches, it may
-> also be okay,
-> it's just that you won't necessarily get the same number of successful
-> fixups. The
-> samples are tagged when fixups were successful, so that may also be an viable
-> option. Best effort given the content of the LBR. Depending on the
-> code, that might
-> be slightly better than dropping to precise_sampling=1 (no fixups).
-
-Possible, but I imagine it might surprise some people.
+> -Andi
+> --
+> ak@linux.intel.com -- Speaking for myself only.
+>
