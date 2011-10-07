@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935545Ab1JGUfC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:35:02 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935243Ab1JGUe4 (ORCPT
+	id S1759276Ab1JGUfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:35:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51628 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935597Ab1JGUfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:56 -0400
+	Fri, 7 Oct 2011 16:35:08 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 20/26] dynamic_debug: make ddebug_describe_flags more generic
-Date: Fri,  7 Oct 2011 14:33:26 -0600
-Message-Id: <1318019612-20068-21-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 24/26] dynamic_debug: reduce lineno field to a saner 18 bits
+Date: Fri,  7 Oct 2011 14:33:30 -0600
+Message-Id: <1318019612-20068-25-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,55 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Alter fn-sig to accept flags arg directly, instead of a ptr to
-structure containing it.  This lets us reuse it for pending-queries.
+lineno:24 allows files with 4 million lines, an insane file-size, even
+for never-to-get-in-tree machine generated code.  Reduce this to 18
+bits, which still allows 256k lines.  This is still insanely big, but
+its not raving mad.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ include/linux/dynamic_debug.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 3c9244d..d7b71a6 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -103,7 +103,7 @@ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
- };
- 
- /* format a string into buf[] which describes the _ddebug's flags */
--static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
-+static char *ddebug_describe_flags(unsigned int flags, char *buf,
- 				    size_t maxlen)
- {
- 	char *p = buf;
-@@ -112,7 +112,7 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
- 	BUG_ON(maxlen < 10);
- 	*p++ = '=';
- 	for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
--		if (dp->flags & opt_array[i].flag)
-+		if (flags & opt_array[i].flag)
- 			*p++ = opt_array[i].opt_char;
- 	if (*(p-1) == '=')
- 		*p++ = '_';
-@@ -227,7 +227,8 @@ static int ddebug_change(const struct ddebug_query *query,
- 				pr_info("changed %s:%d [%s]%s %s\n",
- 					trim_prefix(dp->filename), dp->lineno,
- 					dt->mod_name, dp->function,
--					ddebug_describe_flags(dp, flagbuf,
-+					ddebug_describe_flags(dp->flags,
-+							flagbuf,
- 							sizeof(flagbuf)));
- 		}
- 	}
-@@ -901,7 +902,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
- 	seq_printf(m, "%s:%u [%s]%s %s \"",
- 		trim_prefix(dp->filename), dp->lineno,
- 		iter->table->mod_name, dp->function,
--		ddebug_describe_flags(dp, flagsbuf, sizeof(flagsbuf)));
-+		ddebug_describe_flags(dp->flags, flagsbuf, sizeof(flagsbuf)));
- 	seq_escape(m, dp->format, "\t\r\n\"");
- 	seq_puts(m, "\"\n");
- 
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 2c9c476..5622e04 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -15,7 +15,7 @@ struct _ddebug {
+ 	const char *function;
+ 	const char *filename;
+ 	const char *format;
+-	unsigned int lineno:24;
++	unsigned int lineno:18;
+ 	/*
+  	 * The flags field controls the behaviour at the callsite.
+  	 * The bits here are changed dynamically when the user
 -- 
 1.7.4.4
 
