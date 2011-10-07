@@ -1,89 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935930Ab1JGAAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 20:00:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759363Ab1JGAAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 20:00:36 -0400
-From: Josh Stone <jistone@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Josh Stone <jistone@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: [PATCH] x86: Make variable_test_bit reference all of *addr
-Date: Thu,  6 Oct 2011 16:58:28 -0700
-Message-Id: <1317945508-19575-1-git-send-email-jistone@redhat.com>
+	id S1759406Ab1JGARJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 20:17:09 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50416 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab1JGARI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 20:17:08 -0400
+Date: Thu, 6 Oct 2011 20:17:03 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH/RFC] mm: add vm_area_add_early()
+In-Reply-To: <20111006161056.e1cf56ec.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1110062012250.9106@xanadu.home>
+References: <alpine.LFD.2.00.1109141427340.20358@xanadu.home> <20111006161056.e1cf56ec.akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E7A89D5.4000001@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This casts the addr that's fed to asm into a struct-array pointer, so
-gcc knows that more than just the first long is needed.  Since there's
-no fixed size for all callers, an arbitrary size is chosen just to
-ensure that it's probably good enough.
+On Thu, 6 Oct 2011, Andrew Morton wrote:
 
-I noticed this warning on i686, with gcc-4.6.1-9.fc15:
+> On Wed, 14 Sep 2011 14:35:21 -0400 (EDT)
+> Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> 
+> > 
+> > The existing vm_area_register_early() allows for early vmalloc space
+> > allocation.  However upcoming cleanups in the ARM architecture require
+> > that some fixed locations in the vmalloc area be reserved also very early.
+> > 
+> > The name "vm_area_register_early" would have been a good name for the
+> > reservation part without the allocation.  Since it is already in use with
+> > different semantics, let's create vm_area_add_early() instead.
+> > 
+> > Both vm_area_register_early() and vm_area_add_early() can be used together
+> > meaning that the former is now implemented using the later where it is
+> > ensured that no conflicting areas are added, but no attempt is made to
+> > make the allocation scheme in vm_area_register_early() more sophisticated.
+> > After all, you must know what you're doing when using those functions.
+> > 
+> > Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> > ---
+> > 
+> > Comments / ACKs appreciated.
+> 
+> Deafening silence?
 
-  CC      arch/x86/kernel/kprobes.o
-In file included from include/linux/bitops.h:22:0,
-                 from include/linux/kernel.h:17,
-                 from [...]/arch/x86/include/asm/percpu.h:44,
-                 from [...]/arch/x86/include/asm/current.h:5,
-                 from [...]/arch/x86/include/asm/processor.h:15,
-                 from [...]/arch/x86/include/asm/atomic.h:6,
-                 from include/linux/atomic.h:4,
-                 from include/linux/mutex.h:18,
-                 from include/linux/notifier.h:13,
-                 from include/linux/kprobes.h:34,
-                 from arch/x86/kernel/kprobes.c:43:
-[...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
-[...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input without lvalue in asm operand 1 is deprecated [enabled by default]
+I interpreted it as "no objections".
 
-In investigating the impact of this warning, I discovered that only the
-first long of the 32-byte twobyte_is_boostable[] was making into the
-object file.
+> > diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+> > index 9332e52ea8..e7d2cba995 100644
+> > --- a/include/linux/vmalloc.h
+> > +++ b/include/linux/vmalloc.h
+> > @@ -130,6 +130,7 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
+> >   */
+> >  extern rwlock_t vmlist_lock;
+> >  extern struct vm_struct *vmlist;
+> > +extern __init void vm_area_add_early(struct vm_struct *vm);
+> >  extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
+> >  
+> >  #ifdef CONFIG_SMP
+> > diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> > index 7ef0903058..bf20a0ff95 100644
+> > --- a/mm/vmalloc.c
+> > +++ b/mm/vmalloc.c
+> > @@ -1118,6 +1118,31 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
+> >  EXPORT_SYMBOL(vm_map_ram);
+> >  
+> >  /**
+> > + * vm_area_add_early - add vmap area early during boot
+> > + * @vm: vm_struct to add
+> > + *
+> > + * This function is used to add fixed kernel vm area to vmlist before
+> > + * vmalloc_init() is called.  @vm->addr, @vm->size, and @vm->flags
+> > + * should contain proper values and the other fields should be zero.
+> > + *
+> > + * DO NOT USE THIS FUNCTION UNLESS YOU KNOW WHAT YOU'RE DOING.
+> > + */
+> > +void __init vm_area_add_early(struct vm_struct *vm)
+> > +{
+> > +	struct vm_struct *tmp, **p;
+> > +
+> > +	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
+> > +		if (tmp->addr >= vm->addr) {
+> > +			BUG_ON(tmp->addr < vm->addr + vm->size);
+> > +			break;
+> > +		} else
+> > +			BUG_ON(tmp->addr + tmp->size > vm->addr);
+> > +	}
+> > +	vm->next = *p;
+> > +	*p = vm;
+> > +}
+> > +
+> > +/**
+> >   * vm_area_register_early - register vmap area early during boot
+> >   * @vm: vm_struct to register
+> >   * @align: requested alignment
+> > @@ -1139,8 +1164,7 @@ void __init vm_area_register_early(struct vm_struct *vm, size_t align)
+> >  
+> >  	vm->addr = (void *)addr;
+> >  
+> > -	vm->next = vmlist;
+> > -	vmlist = vm;
+> > +	vm_area_add_early(vm);
+> >  }
+> >  
+> >  void __init vmalloc_init(void)
+> 
+> I tossed this into my tree for a bit of testing, assuming it's
+> up-to-date and still desired?
 
-Jakub advised that variable_test_bit is incorrectly telling gcc that its
-asm only uses a single long from the addr pointer, and he suggested the
-struct-array cast to broaden the memory reference.
+Yes it is, on both counts.
 
-Signed-off-by: Josh Stone <jistone@redhat.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
+> Feel free to add it to some ARM tree.  I'll drop my copy when that
+> turns up in linux-next.
 
----
+So I did, however I'm postponing the whole series that depend on this to 
+the next cycle because of other prerequisite cleanups that are going in 
+this cycle from different paths.
 
-An alternate fix would be to make kprobes' twobyte_is_boostable[]
-volatile, which forces gcc to keep it around.  I feel that's treating
-the symptom though, rather than the cause in variable_test_bit().
+> Yes, the naming scheme in there is gruseome.
 
-IMO this is also a good candidate for -stable, for fixing the obviously bad
-data behavior, but I'll let others judge...
+I didn't want to go as far as renaming it across the tree, in case other 
+people are relying on the current name in their own tree.
 
----
- arch/x86/include/asm/bitops.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 1775d6e..0565371 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -319,7 +319,8 @@ static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
- 	asm volatile("bt %2,%1\n\t"
- 		     "sbb %0,%0"
- 		     : "=r" (oldbit)
--		     : "m" (*(unsigned long *)addr), "Ir" (nr));
-+		     : "m" (*(struct { unsigned long _[0x10000]; } *)addr),
-+		       "Ir" (nr));
- 
- 	return oldbit;
- }
--- 
-1.7.6.4
-
+Nicolas
