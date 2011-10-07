@@ -1,74 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab1JGIa7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 04:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759308Ab1JGIa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 04:30:57 -0400
-Date: Fri, 7 Oct 2011 10:30:46 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Joe Perches <joe@perches.com>
-cc: Fabrice Jouhaud <yargil@free.fr>, linux-ext4@vger.kernel.org,
-        tytso@mit.edu, adilger.kernel@dilger.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] [SIGNED-OFF] ext4: don't work without procfs
-In-Reply-To: <1317916878.1823.2.camel@Joe-Laptop>
-Message-ID: <alpine.LFD.2.00.1110071028240.7183@dhcp-27-109.brq.redhat.com>
-References: <1317916276-2509-1-git-send-email-yargil@free.fr> <1317916878.1823.2.camel@Joe-Laptop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759602Ab1JGIjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 04:39:06 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:56581 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759515Ab1JGIjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 04:39:04 -0400
+Date: Fri, 7 Oct 2011 11:38:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
+Cc: balbi@ti.com, gregkh@suse.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+Message-ID: <20111007083856.GB10910@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <20111006120830.GN1714@legolas.emea.dhcp.ti.com>
+ <4E8EB6EE.8040700@sensortherm.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vGgW1X5XWziG23Ko"
+Content-Disposition: inline
+In-Reply-To: <4E8EB6EE.8040700@sensortherm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Oct 2011, Joe Perches wrote:
 
-> On Thu, 2011-10-06 at 17:51 +0200, Fabrice Jouhaud wrote:
-> > From: Yargil <yargil@free.fr>
-> 
-> It would be better to use your full name on the "From: " line
-> 
-> > Regression from commit dd68314ccf3fb918c1fb6471817edbc60ece4b52
-> > The problem come from the test of the return value of proc_mkdir
-> > that is always false without procfs and abort the init of ext4.
-> > 
-> > Signed-off-by: Fabrice Jouhaud <yargil@free.fr>
-> > ---
-> >  fs/ext4/super.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> > index 44d0c8d..9b51b17 100644
-> > --- a/fs/ext4/super.c
-> > +++ b/fs/ext4/super.c
-> > @@ -4985,8 +4985,10 @@ static int __init ext4_init_fs(void)
-> >  	if (!ext4_kset)
-> >  		goto out6;
-> >  	ext4_proc_root = proc_mkdir("fs/ext4", NULL);
-> > +#ifdef CONFIG_PROC_FS
-> >  	if (!ext4_proc_root)
-> >  		goto out5;
-> > +#endif
-> 
-> It would make more sense as:
-> 
-> +#ifdef CONFIG_PROC_FS
-> 	ext4_proc_root = proc_mkdir("fs/ext4", NULL);
->   	if (!ext4_proc_root)
->  		goto out5;
-> +#endif
+--vGgW1X5XWziG23Ko
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Actually it does not really matter, important is not to check the
-condition in case that proc is not configured in.
+Hi,
 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+On Fri, Oct 07, 2011 at 10:23:10AM +0200, Klaus Schwarzkopf wrote:
+> Hi,
+>=20
+> thanks for your comments. See my patch v2.
+>=20
+> Am 06.10.2011 14:08, schrieb Felipe Balbi:
+>=20
+> >
+> >>+#define CDC_VENDOR_NUM	0x1d6b	/* Linux Foundation */
+> >>+#define CDC_PRODUCT_NUM	0x0106	/* CDC Composite: ACM + MS*/
+> >
+> >did you ask Greg for this ?
+> >
+>=20
+> Greg wrote:
+>=20
+> I'll do that when I accept the patch for merging into the kernel, and
+> not before.
 
--- 
+ok.
+
+> >>+/*--------------------------------------------------------------------=
+-----*/
+> >>+
+> >>+/*
+> >>+ * Kbuild is not very cooperative with respect to linking separately
+> >>+ * compiled library objects into one module.  So for now we won't use
+> >>+ * separate compilation ... ensuring init/exit sections work to shrink
+> >>+ * the runtime footprint, and giving us at least some parts of what
+> >>+ * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
+> >>+ */
+> >>+
+> >>+#include "composite.c"
+> >>+#include "usbstring.c"
+> >>+#include "config.c"
+> >>+#include "epautoconf.c"
+> >>+#include "u_serial.c"
+> >>+#include "f_acm.c"
+> >>+#include "f_mass_storage.c"
+> >>+
+> >>+/*--------------------------------------------------------------------=
+-----*/
+> >>+
+> >>+static struct usb_device_descriptor device_desc =3D {
+> >>+	.bLength =3D		sizeof device_desc,
+> >>+	.bDescriptorType =3D	USB_DT_DEVICE,
+> >>+
+> >>+	.bcdUSB =3D		cpu_to_le16(0x0200),
+> >>+
+> >>+	.bDeviceClass =3D		USB_CLASS_COMM,
+> >>+	.bDeviceSubClass =3D	0,
+> >>+	.bDeviceProtocol =3D	0,
+> >>+	/* .bMaxPacketSize0 =3D f(hardware) */
+> >>+
+> >>+	/* Vendor and product id can be overridden by module parameters.  */
+> >>+	.idVendor =3D		cpu_to_le16(CDC_VENDOR_NUM),
+> >>+	.idProduct =3D		cpu_to_le16(CDC_PRODUCT_NUM),
+> >>+	/* .bcdDevice =3D f(hardware) */
+> >>+	/* .iManufacturer =3D DYNAMIC */
+> >>+	/* .iProduct =3D DYNAMIC */
+> >>+	/* NO SERIAL NUMBER */
+> >
+> >why not ? If someone wants to make a product out of this, they will need
+> >a serial number.
+> >
+>=20
+> If an developer want a serial number, he can change this.
+
+ok.
+
+> >>diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+> >>index dd1571d..f623f3d 100644
+> >>--- a/include/linux/usb/gadget.h
+> >>+++ b/include/linux/usb/gadget.h
+> >>@@ -15,6 +15,7 @@
+> >>  #ifndef __LINUX_USB_GADGET_H
+> >>  #define __LINUX_USB_GADGET_H
+> >>
+> >>+#include<linux/device.h>
+> >
+> >this is not part of $SUBJECT
+> >
+>=20
+> changed git message
+
+not enough. adding another header is not part of this patch. You need to
+let us know why you need this new header there and you need add proper
+spacing there.
+
+--=20
+balbi
+
+--vGgW1X5XWziG23Ko
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOjrqgAAoJEAv8Txj19kN1FeoH/25YbaHPh9AAaGR1dy5RMz6p
+Z0fqAYr0nOWIJ436WQ1og8d4rw03SAVSPKx0koJlsspDPdyhC8DvGvxJWYMtj4qf
+tmC//Lr4DorAnOT+GMJpAbrGqcaMf8Qf9ZVK+Ya3Gxl57ffV3foDQYIBVD56HOMl
+m648lBr/3CfkqtTEhODJr4nWPws83MMgFl8j34AqJyQYkMSahDxnDKvJSJj07h8H
+Go9JnashugAuVTwmqla9ZgCsKUQ0YFCjB7cvheVzhiKosaZpS0V/QDiGQkXQFO3s
+etj9xhJwcRVr46jQRP1g/rWsDj08hm3McoRO5vaL9gm4Ldmn46usu+ZpihRtwqk=
+=4zUn
+-----END PGP SIGNATURE-----
+
+--vGgW1X5XWziG23Ko--
