@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab1JGSdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 14:33:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1JGSdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 14:33:07 -0400
-Date: Fri, 7 Oct 2011 20:28:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 12/26]   Uprobes: Handle breakpoint
-	and Singlestep
-Message-ID: <20111007182834.GA1655@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120221.25326.74714.sendpatchset@srdronam.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110920120221.25326.74714.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753753Ab1JGSdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 14:33:40 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47438 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab1JGSdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 14:33:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Frank Mehnert <frank.mehnert@oracle.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andy Hall <andy.hall@oracle.com>
+Subject: Re: RFC: virtualbox tainting.
+In-Reply-To: Your message of "Fri, 07 Oct 2011 14:10:18 EDT."
+             <CA+5PVA7iFDm17faPowUNNh3BnYMxUGPXRzbu9vkbVWW1m9Hvfg@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20111006190526.GA13883@redhat.com> <201110071640.53827.frank.mehnert@oracle.com> <CA+5PVA4v0D_ppnjN_k_6AcDEfH_U0Nn9WLfb3J84JGBGBOFBsg@mail.gmail.com> <14824.1318004546@turing-police.cc.vt.edu>
+            <CA+5PVA7iFDm17faPowUNNh3BnYMxUGPXRzbu9vkbVWW1m9Hvfg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1318012410_9306P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 07 Oct 2011 14:33:30 -0400
+Message-ID: <19981.1318012410@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E8F45FE.0057,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/20, Srikar Dronamraju wrote:
->
-> @@ -1285,6 +1286,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  	INIT_LIST_HEAD(&p->pi_state_list);
->  	p->pi_state_cache = NULL;
->  #endif
-> +#ifdef CONFIG_UPROBES
-> +	p->utask = NULL;
-> +#endif
+--==_Exmh_1318012410_9306P
+Content-Type: text/plain; charset=us-ascii
 
-I am not sure I understand this all right, but I am not sure this
-is enough...
+On Fri, 07 Oct 2011 14:10:18 EDT, Josh Boyer said:
 
-What if the forking task (current) is in UTASK_BP_HIT state?
+> (Somehow the distributions get the brunt of the blame from the users,
+> but I'm not going to go down that path.  I'm trying to be productive.)
 
-IOW, uprobe replaces the original syscall insn with "int3", then we
-enter the kernel from the xol_vma. The new child has the same
-modified instruction pointer (pointing to nowhere without CLONE_VM)
-and in any case it doesn't have TIF_SINGLESTEP.
-
-No?
-
-> +void uprobe_notify_resume(struct pt_regs *regs)
-> +{
-> +	struct vm_area_struct *vma;
-> +	struct uprobe_task *utask;
-> +	struct mm_struct *mm;
-> +	struct uprobe *u = NULL;
-> +	unsigned long probept;
-> +
-> +	utask = current->utask;
-> +	mm = current->mm;
-> +	if (!utask || utask->state == UTASK_BP_HIT) {
-> +		probept = get_uprobe_bkpt_addr(regs);
-> +		down_read(&mm->mmap_sem);
-> +		vma = find_vma(mm, probept);
-> +		if (vma && valid_vma(vma))
-> +			u = find_uprobe(vma->vm_file->f_mapping->host,
-> +					probept - vma->vm_start +
-> +					(vma->vm_pgoff << PAGE_SHIFT));
-> +		up_read(&mm->mmap_sem);
-> +		if (!u)
-> +			/* No matching uprobe; signal SIGTRAP. */
-> +			goto cleanup_ret;
-> +		if (!utask) {
-> +			utask = add_utask();
-> +			/* Cannot Allocate; re-execute the instruction. */
-> +			if (!utask)
-> +				goto cleanup_ret;
-> +		}
-> +		/* TODO Start queueing signals. */
-> +		utask->active_uprobe = u;
-> +		handler_chain(u, regs);
-> +		utask->state = UTASK_SSTEP;
-> +		if (!pre_ssout(u, regs, probept))
-> +			user_enable_single_step(current);
-
-Oooh. Playing with user_*_single_step() is obviously not very nice...
-But I guess you have no choice. Although I _hope_ we can do something
-else later.
-
-And what if we step into a syscall insn? I do not understand this
-low level code, but it seems that in this case we trap in kernel mode
-and do_debug() doesn't clear X86_EFLAGS_TF because uprobes hook
-DIE_DEBUG. IOW, the task will trap again and again inside this syscall,
-no?
-
-> +	} else if (utask->state == UTASK_SSTEP) {
-> +		u = utask->active_uprobe;
-> +		if (sstep_complete(u, regs)) {
-
-It is not clear to me if it is correct to simply return if
-sstep_complete() returns false... What if X86_EFLAGS_TF was "lost"
-somehow?
+The problem is that stuff like kerneloops and the RedHat 'abrtd' daemon tend to
+forward to the distro, not the third-party vendor.  But I'm suspecting that if
+Dave Jones and Frank have a nice discussion and work something out, we'll *all*
+be better off. I'd not be surprised if Dave has bug reports for stuff Frank
+hasn't seen, because the reports go to RedHat and Oracle never got a copy before.
 
 
-Again, I am not saying I understand this magic. Not at all ;)
-Please simply ignore my email if you think everything is fine.
+--==_Exmh_1318012410_9306P
+Content-Type: application/pgp-signature
 
-Oleg.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOj0X6cC3lWbTT17ARAt6eAJ4sT8o/NINp81FB6Xg6VRxF0BjLsQCgve5e
+zLCPyQb/c0J161JJpFFA6qo=
+=Hxl/
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1318012410_9306P--
 
