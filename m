@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935875Ab1JGIoe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 04:44:34 -0400
-Received: from nm10.bullet.mail.sp2.yahoo.com ([98.139.91.80]:22629 "HELO
-	nm10.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759515Ab1JGIoc convert rfc822-to-8bit
+	id S1759617Ab1JGIr3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 04:47:29 -0400
+Received: from nm10.bullet.mail.ac4.yahoo.com ([98.139.52.207]:31551 "HELO
+	nm10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758587Ab1JGIr2 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 04:44:32 -0400
+	Fri, 7 Oct 2011 04:47:28 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Oct 2011 04:47:28 EDT
 X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 585406.15381.bm@omp1043.mail.sp2.yahoo.com
+X-Yahoo-Newman-Id: 285815.98866.bm@omp1034.mail.ac4.yahoo.com
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=qJUfbCtYKFJO7RsoaU4PtSLtkaQujnMUAw1pt/G+jm2wDnafsUHTvICXYtLyz2Qn27nCR0ywOWQa0u6EEtFVBoEuzNE6Vzw40PrYjMb9bDhmMJ2MsAyJQWrskxdMBAR9UwW6Av2hUwYANAy2pDyKjkGaGg0bvPB9Poki2aDPBSY=;
-X-YMail-OSG: cy57FoEVM1l9Qx36Rxwx97ojFcxowIK1lgjZYn3jqenxUN6
- Zj5UlU0c.MLhNx8CFfxGSVgh.LQe4zkl5wbfQQ2dzObqPecx3j1Pojvgxsw6
- AJOg7gdQquaJGZGu34mHziFH5PdDk097Ryc.0wd4_pusXdtrwRGdw8Ej6WJi
- L1h6Ammn1c1cpbZhNAskv4OQg4vOLxLHF8x4lPAuccOaiNw2tRKVfhulUYGE
- W2NhaEtz6RC4L8fFSXlYVTWaibzEFzAePz_1w5NNPGmdJL83USriy7tU6zYq
- 4gh2mThVLPkdzjHZbvjRHo.D.FVna_M7AiJY7hWA1HOmFIgOVCeOhzRe0.6X
- BYtEtS119iU6IZUCQE7SgzPHdNWJPyMJjH.0mYVEWULg0w9fgavFXTWhvkhO
- nUkolTzDvWIU3XiukIjv_mshXWmbtg6EEPn8797yRcPxGL.bF8ESvrlMmEqD
- oMU0QDpoCDbbC3kdSxyGtFtPyhgCiK2gflHmRt3seN28_simmXDrtl2jTHki
- 6Am09CfJRjCLqVvH7CTt4_16ayK3R0DQfotg0uUKN6_StWr56Ilo1sB1g7Ku
- 9lLt2rBUMMWkrn_klFyddwFsqtLG9zdKvr3VCxv0LsSIq
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=BDam3V3I/2YgHkEv/bGNFwZzhLn0RbcFz7/sgq5JWDr3z41xF7lk3yOTHpMCoOja/ctrKB5gQVwiRVSu2g+yOgImJqW5MoK/DQxWtw7oFrySbVKjAHWlAAHju60R88K8wXxwaJ741CpgxD8ZHLDftzDU+hgbKeZKWKL8gOKzoOU=;
+X-YMail-OSG: phBw8uIVM1lZTjuYD9VuIDfgg6R5hrfbbGCJLTRUOnm4DW8
+ pSGhhwPDWKU98u3tz.yNuledH2764q3YEqFw9L3Qc8U.7uYz32scU0jMF6gs
+ XEHtp2V0gMkLs8Bp2zEfahanYyJzrUqEVL7X4TC3YITvDrBTQYFzZBxwGdzj
+ iBJaeEf_V42Quzz9t6GndlRglrheGYdwlPT09P1Oucf1nFCASSYAuKYJBB1Y
+ rFZG6fukn3EeSa87pm1S7ckoCnNMxhlfZDofiEqv_p0626Cu8IrxBhP7FMd8
+ 9gi.YLfQ..y7.Fz3AdM5TplF7NBv.cAnXYoy2_IRpt29rcIsp.L.jb5h_7XE
+ Y5tYK.UXUKMxyuRQiTlDMUeV1TMMymermify72tsq.JxZ8njsZMU8spBPhoe
+ gye2Vmq39exRE4PFaon6l3NKk0e8Emzmq64wWKn7ldtKECIXD7y43J3Z.Vng
+ SHQuoUR8DpGslR8K65Q8SDkdON1lEqEo.I5A69GmvpFm1WZiJYYPXpca_ODQ
+ s4E12zafoMy4nq_71YKKfTrG8UmNotgUB5XNB2Xilbo.RY00sJMZwKnKEj82
+ X9.6ORBFzLDFbUIstGBmCp7FZJJUWBnAS5tOFrzc-
 X-Mailer: YahooMailWebService/0.8.114.317681
-References: <1317976819.47237.YahooMailNeo@web30304.mail.mud.yahoo.com>
-Message-ID: <1317977071.75134.YahooMailNeo@web30307.mail.mud.yahoo.com>
-Date: Fri, 7 Oct 2011 01:44:31 -0700 (PDT)
+Message-ID: <1317976819.47237.YahooMailNeo@web30304.mail.mud.yahoo.com>
+Date: Fri, 7 Oct 2011 01:40:19 -0700 (PDT)
 From: AW <arne_woerner@yahoo.com>
 Reply-To: AW <arne_woerner@yahoo.com>
-Subject: Re: acm/ttyACM0/cdc_acm does not deliver data
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Greg KH <greg@kroah.com>, Josh Boyer <jwboyer@gmail.com>
-In-Reply-To: <1317976819.47237.YahooMailNeo@web30304.mail.mud.yahoo.com>
+Cc: Greg KH <greg@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -41,22 +39,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  Can you try a kernel.org release instead of a Fedora kernel?
-
+> Can you try a kernel.org release instead of a Fedora kernel?
 >
 never tried that... can i just download a rpm and install it?
 
->  If not, please post the output of running the usbmon [...]
+> If not, please post the output of running the usbmon [...]
+
 >
 I did that:
 On the 2.6.38 kernel: each try works fine...
 http://www.wgboome.org/cmd:Z-L-0,2.6.38.8-35.fc15.x86_64.usbmon
 
-On the 2.6.40 kernel (=3.0.6?): both tries failed (but the 2nd try with slightly 
-different beginning):
+On the 2.6.40 kernel (=3.0.6?): both tries failed (but the 2nd try with slightly different beginning):
 http://www.wgboome.org/cmd:Z-L-0,1st-try,2.6.40.6-0.fc15.x86_64.usbmon
+
 http://www.wgboome.org/cmd:Z-L-0,2nd-try,2.6.40.6-0.fc15.x86_64.usbmon
 
 
 -arne
-
