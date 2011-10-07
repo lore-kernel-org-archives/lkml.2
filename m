@@ -1,57 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965481Ab1JGQYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:24:52 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:46612 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760121Ab1JGQYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:24:49 -0400
-Date: Fri, 7 Oct 2011 09:24:45 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Mihai Maruseac <mihai.maruseac@gmail.com>
-Cc: davem@davemloft.net, eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
-        therbert@google.com, jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
-        Mihai Maruseac <mmaruseac@ixiacom.com>
-Subject: Re: [PATCH] dev: use name hash for dev_seq_ops.
-Message-ID: <20111007092445.4f097ed9@nehalam.linuxnetplumber.net>
-In-Reply-To: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
-References: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965496Ab1JGQZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:25:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50139 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759955Ab1JGQW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 12:22:28 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 03/11] rcu: Warn when rcu_read_lock() is used in extended quiescent state
+Date: Fri,  7 Oct 2011 18:22:02 +0200
+Message-Id: <1318004530-705-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
+References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Oct 2011 18:20:49 +0300
-Mihai Maruseac <mihai.maruseac@gmail.com> wrote:
+We are currently able to detect uses of rcu_dereference_check() inside
+extended quiescent states (such as the RCU-free window in idle).
+But rcu_read_lock() and friends can be used without rcu_dereference(),
+so that the earlier commit checking for use of rcu_dereference() and
+friends while in RCU idle mode miss some error conditions.  This commit
+therefore adds extended quiescent state checking to rcu_read_lock() and
+friends.
 
-> Instead of using the dev->next chain and trying to resync at each call to
-> dev_seq_start, use this hash and store bucket number and bucket offset in
-> seq->private field.
-> 
-> Tests revealed the following results for ifconfig > /dev/null
-> 	* 1000 interfaces:
-> 		* 0.114s without patch
-> 		* 0.020s with patch
-> 	* 3000 interfaces:
-> 		* 0.489s without patch
-> 		* 0.048s with patch
-> 	* 5000 interfaces:
-> 		* 1.363s without patch
-> 		* 0.131s with patch
-> 
-> As one can notice the improvement is of 1 order of magnitude.
+Uses of RCU from within RCU-idle mode are totally ignored by
+RCU, hence the importance of these checks.
 
-Good idea,
-This will change the ordering of entries in /proc which may upset
-some program, not a critical flaw but worth noting.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ include/linux/rcupdate.h |   52 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 42 insertions(+), 10 deletions(-)
 
-Rather than recording the bucket and offset of last entry, another
-alternative would be to just record the ifindex.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 2f8e0a4..fe4f8976 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -227,21 +227,53 @@ static inline int rcu_is_cpu_idle(void)
+ }
+ #endif /* else !CONFIG_PROVE_RCU */
+ 
++static inline void rcu_lock_acquire(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_is_cpu_idle());
++	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
++}
++
++static inline void rcu_lock_release(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_is_cpu_idle());
++	lock_release(map, 1, _THIS_IP_);
++}
++
+ extern struct lockdep_map rcu_lock_map;
+-# define rcu_read_acquire() \
+-		lock_acquire(&rcu_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release()	lock_release(&rcu_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire(void)
++{
++	rcu_lock_acquire(&rcu_lock_map);
++}
++
++static inline void rcu_read_release(void)
++{
++	rcu_lock_release(&rcu_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_bh_lock_map;
+-# define rcu_read_acquire_bh() \
+-		lock_acquire(&rcu_bh_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_bh()	lock_release(&rcu_bh_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_bh(void)
++{
++	rcu_lock_acquire(&rcu_bh_lock_map);
++}
++
++static inline void rcu_read_release_bh(void)
++{
++	rcu_lock_release(&rcu_bh_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_sched_lock_map;
+-# define rcu_read_acquire_sched() \
+-		lock_acquire(&rcu_sched_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_sched() \
+-		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_sched(void)
++{
++	rcu_lock_acquire(&rcu_sched_lock_map);
++}
++
++static inline void rcu_read_release_sched(void)
++{
++	rcu_lock_release(&rcu_sched_lock_map);
++}
+ 
+ extern int debug_lockdep_rcu_enabled(void);
+ 
+-- 
+1.7.5.4
 
-Also ifconfig is considered deprecated and replaced by ip commands
-for general use.
