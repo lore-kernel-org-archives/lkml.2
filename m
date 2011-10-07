@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759838Ab1JGKtt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:49:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11970 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab1JGKts convert rfc822-to-8bit (ORCPT
+	id S1759858Ab1JGK7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:59:34 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:60609 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759767Ab1JGK7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:49:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=e7xe6qhhW8MHHWAM1mDPsrF5Vbxr0VbgneShi2CgDp1mfvJppSSCr8iKFUUHlMFTT
-	13Eys6bCPiwGIGCd4YoZQ==
+	Fri, 7 Oct 2011 06:59:32 -0400
+X-SENDER-IP: [85.230.171.1]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnBNAFzbjk5V5qsBPGdsb2JhbABEiTuefxkBAQEBNzKBUwEBBAE6HCMFCwgDRhQlChqIEQK3cQ6GQ2EEmSWMEw
+X-IronPort-AV: E=Sophos;i="4.68,501,1312149600"; 
+   d="scan'208";a="490508533"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 7 Oct 2011 13:05:42 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chasedouglas@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: evdev - use monotonic clock for event timestamps
+Message-ID: <20111007110542.GA5333@polaris.bitmath.org>
+References: <1317624200-9762-1-git-send-email-djkurtz@chromium.org>
+ <20111003090641.GA5615@polaris.bitmath.org>
+ <CAGS+omAj9z2-Au2HABtDKHQGRBNVxXygF2cz+L8UMeTHRrMjbA@mail.gmail.com>
+ <20111005092341.GB6840@polaris.bitmath.org>
+ <4E8C6B1F.4090904@gmail.com>
+ <20111006034202.GC20217@core.coreip.homeip.net>
+ <CAGS+omDF3mi_tXXxHR2XOyjJMfuc=j2rWBMctJRGr7GeeE+yRg@mail.gmail.com>
+ <20111007063617.GA6167@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1317984122.31132.6.camel@twins>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	<1317912555-9559-8-git-send-email-eranian@google.com>
-	<20111006153229.GJ14482@one.firstfloor.org>
-	<CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
-	<CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>
-	<1317984122.31132.6.camel@twins>
-Date: Fri, 7 Oct 2011 12:49:44 +0200
-Message-ID: <CABPqkBTxxS-vuAycDJO-aJNE4EpCLF8xyPtJ1Jzv26f15HJC8A@mail.gmail.com>
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
- Intel X86
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
-        robert.richter@amd.com, ravitillo@lbl.gov
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111007063617.GA6167@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 12:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2011-10-07 at 12:40 +0200, Stephane Eranian wrote:
->> On Fri, Oct 7, 2011 at 12:38 PM, Stephane Eranian <eranian@google.com> wrote:
->> > On Thu, Oct 6, 2011 at 5:32 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> >>> +     kernel_insn_init(&insn, kaddr);
->> >>> +     insn_get_opcode(&insn);
->> >>
->> >> This makes me uncomfortable. AFAIK that's the first use of the opcode
->> >> decoder being used directly for user space. It has a quite large attack
->> >> surface. Who says it cannot be exploited?
->> >>
->> > This is not new, it's already used for the PEBS fixups and that includes
->> > user level fixups, if possible.
->> >
->> > We are not executing the instruction here, just decoding it to filter it out
->> > from a buffer if necessary.
->> >
->> I would add that in this particular usage, the source address is coming
->> straight from LBR, it's not made up my SW. That means it corresponds
->> to a point where there was a control flow change. But it can certainly
->> be any x86 opcode (not just branches). LBR captures control flow changes
->> due to traps, faults, interrupts.
->
-> You could still fuzz it after the cpu passed through and before the
-> kernel reads the LBR. Its a narrow window, but quite feasible.
->
-Yeah, depending on the depth of the LBR. But then what happens, you
-decode an instruction that is not what was executed. In this scenario,
-either that new instruction matches the user LBR filter or it does not.
-In the latter situation, the LBR record is not copied into the sampling
-buffer. In the former case, it is included and all you've done is generate
-a false profile. I think this can happen even without being malicious but
-just with self-modifying (JIT) code, though the depth of LBR is such that
-this is very unlikely (it must happen in the last 16 branches before the
-PMU interrupt).
+> > if the values don't change.  The timestamp axis
+> > would always change, hence it would always be sent, even if no other
+> > axes change.  Of course, we can mitigate this with special-case
+> > handling of the ABS_TIMESTAMP in the evdev layer.
+> > 
+> 
+> I'd prefer if we go this route then:
+> 
+> 1. Have input core emit this event. Then we could decide if we should
+> suppress it when suppressing entire packet.
+
+If we go this route, we could also make use of the time stamps of the
+hardware, when existent.
+
+> 2. Make it MSC_ event.
+> 3. Turn it on and off via ioctl since not all users are interested in
+> this facility.
+
+Perhaps it is time for the per-file-descriptor event filters.
+
+> OTOH if we do ioctl why don't we simply allow usres select monotnic vs
+> wall time in event structure.
+> 
+> Still, why does your clock fluctuate so much that it matters?
+
+Yes, some actual experimental timing data would be most interesting.
+
+Thanks,
+Henrik
