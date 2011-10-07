@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab1JGPJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 11:09:20 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39902 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab1JGPJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 11:09:18 -0400
-Date: Fri, 7 Oct 2011 17:09:17 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, ming.m.lin@intel.com, robert.richter@amd.com,
-        ravitillo@lbl.gov
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for Intel X86
-Message-ID: <20111007150917.GD14482@one.firstfloor.org>
-References: <1317912555-9559-1-git-send-email-eranian@google.com> <1317912555-9559-8-git-send-email-eranian@google.com> <20111006153229.GJ14482@one.firstfloor.org> <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com> <4E8EE1B6.1030907@hitachi.com>
-Mime-Version: 1.0
+	id S1753322Ab1JGPKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 11:10:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64723 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab1JGPKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 11:10:09 -0400
+Date: Fri, 7 Oct 2011 11:10:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frank Mehnert <frank.mehnert@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andy Hall <andy.hall@oracle.com>
+Subject: Re: RFC: virtualbox tainting.
+Message-ID: <20111007151003.GA26358@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frank Mehnert <frank.mehnert@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Andy Hall <andy.hall@oracle.com>
+References: <20111006190526.GA13883@redhat.com>
+ <201110071640.53827.frank.mehnert@oracle.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E8EE1B6.1030907@hitachi.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <201110071640.53827.frank.mehnert@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> if (kernel_ip(addr) || !test_tsk_thread_flag(current, TIF_IA32))
+On Fri, Oct 07, 2011 at 04:40:53PM +0200, Frank Mehnert wrote:
+ 
+ > I can understand that you would rather ignore bug reports from external
+ > kernel modules. On the other hand I don't like the TAINT_CRAP flag as
+ > you can probably imagine.
+ > 
+ > Why not just mark external modules like Bastian Blank suggested? I can
+ > assure that we will not try circumvent a TAINT_OOT_MODULE flag.
 
-That's not good, a 64bit process can do 32bit syscalls.
+Sure. The exact mechanism used doesn't matter to me.
 
-The only fully working way is to check the code segment, unfortunately
-that requires checking the LDT to be fully correct :-(
+ > Please also note that we always have good relations to the open source
+ > community so feel free to point me an archive where all these kernel
+ > panic reports arrive which you've got.
 
-In 2.4 we had some code for that if you want to copy, but it disappeared
-later.
+Search through the fedora kernel bugs at bugzilla.redhat.com for 'vboxdrv'
+or 'virtual box' (note to search for closed bugs as well as open ones).
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+ > We fixed some bugs in our kernel
+ > modules in the past and it is even possible that some of the current
+ > bug reports are from older versions of VirtualBox which might have been
+ > fixed in the meantime.
+ > 
+ > And of course, helpful and constructive critism is always appreciated.
+
+If you'd like to be cc'd on those reports, I can add you to the bugs
+when we go through them if you create a bugzilla account. 
+
+	Dave
+
