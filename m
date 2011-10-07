@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab1JGLOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:14:41 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:55248 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759826Ab1JGLOk (ORCPT
+	id S1759908Ab1JGLRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 07:17:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39132 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759808Ab1JGLRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 07:14:40 -0400
-Message-ID: <4E8EDEEE.2090907@ru.mvista.com>
-Date: Fri, 07 Oct 2011 15:13:50 +0400
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 7 Oct 2011 07:17:11 -0400
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
-References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de> <20111006120830.GN1714@legolas.emea.dhcp.ti.com> <4E8EB6EE.8040700@sensortherm.de> <20111007083856.GB10910@legolas.emea.dhcp.ti.com> <4E8ECF44.7060506@sensortherm.de> <20111007101414.GN10910@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111007101414.GN10910@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Fri, 7 Oct 2011 13:10:52 +0200
+Message-ID: <CAB5oZtBbd7N5vK-5ZxmnHcRATsZaTRFwonckTeJZrAaUV0VPZw@mail.gmail.com>
+Subject: [PATCH] accessfs: move get_sb to mount
+From: Harro Haan <hrhaan@gmail.com>
+To: Olaf Dietsche <olaf+list.linux-kernel@olafdietsche.de>
+Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+        Remy Bohmer <linux@bohmer.net>
+Content-Type: multipart/mixed; boundary=000e0ce0f59897cee504aeb37e37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.10.2011 14:14, Felipe Balbi wrote:
+--000e0ce0f59897cee504aeb37e37
+Content-Type: text/plain; charset=UTF-8
 
->>>>>> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
->>>>>> index dd1571d..f623f3d 100644
->>>>>> --- a/include/linux/usb/gadget.h
->>>>>> +++ b/include/linux/usb/gadget.h
->>>>>> @@ -15,6 +15,7 @@
->>>>>>   #ifndef __LINUX_USB_GADGET_H
->>>>>>   #define __LINUX_USB_GADGET_H
->>>>>>
->>>>>> +#include<linux/device.h>
+Olaf,
 
->>>>> this is not part of $SUBJECT
+Accessfs did not work anymore for recent kernels, because there have
+been a few vfs changes. This is already described by Randy Dunlap:
+https://lkml.org/lkml/2011/4/24/65
 
+The attached patch will fix this.
 
->>>> changed git message
+Regards,
 
->>> not enough. adding another header is not part of this patch. You need to
->>> let us know why you need this new header there and you need add proper
->>> spacing there.
+Harro
 
+On 21 August 2011 11:22, Remy Bohmer <linux@bohmer.net> wrote:
+> Hi Olaf,
+>
+> Attached I have put 2 patches:
+> - accessfs-2.6.38-0.25.patch : Patch has been forward ported to 3.0
+> - accessfs-2.6.38-0.25-fix-build.patch: This patch has to be applied
+> to make it compile on 3.0 when CONFIG_NET_HOOKS and CONFIG_ACCESS_FS
+> both are NOT set.
+> I expect that this fix-build patch has to be applied to the 2.6.38
+> edition as well, since it results in unresolved externals that should
+> be there on 2.6.38 as well.
+>
+> Kind regards,
+>
+> Remy
+>
 
+--000e0ce0f59897cee504aeb37e37
+Content-Type: application/octet-stream; 
+	name="accessfs-move-get_sb-to-mount.patch"
+Content-Disposition: attachment; 
+	filename="accessfs-move-get_sb-to-mount.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gth2n2h72
 
->> There is a space in the orginal patch.
-
->> Should i make a seperate patch for this?
-
->> In the header gadget.h are some stuff used, but not declared.
-
->> My compile errors without device.h:
-
->>    CC      drivers/usb/gadget/acm_ms.o
->> In file included from include/linux/usb/composite.h:38,
->>                   from drivers/usb/gadget/u_serial.h:15,
->>                   from drivers/usb/gadget/acm_ms.c:20:
->> include/linux/usb/gadget.h:491: error: field ‘dev’ has incomplete type
->> include/linux/usb/gadget.h: In function ‘set_gadget_data’:
->> include/linux/usb/gadget.h:495: error: implicit declaration of
->> function ‘dev_set_drvdata’
->> include/linux/usb/gadget.h: In function ‘get_gadget_data’:
->> include/linux/usb/gadget.h:497: error: implicit declaration of
->> function ‘dev_get_drvdata’
->> include/linux/usb/gadget.h: In function ‘dev_to_usb_gadget’:
->> include/linux/usb/gadget.h:500: warning: type defaults to ‘int’ in
->> declaration of ‘__mptr’
->> include/linux/usb/gadget.h:500: warning: initialization from
->> incompatible pointer type
->> include/linux/usb/gadget.h: At top level:
->> include/linux/usb/gadget.h:781: error: field ‘driver’ has incomplete type
->> In file included from drivers/usb/gadget/composite.c:26,
->>                   from drivers/usb/gadget/acm_ms.c:44:
->> include/linux/device.h:705: error: conflicting types for ‘dev_get_drvdata’
->> include/linux/usb/gadget.h:497: note: previous implicit declaration
->> of ‘dev_get_drvdata’ was here
->> In file included from drivers/usb/gadget/acm_ms.c:44:
->> drivers/usb/gadget/composite.c:1261: error: field name not in record
->> or union initializer
->> drivers/usb/gadget/composite.c:1261: error: (near initialization for
->> ‘composite_driver.driver’)
->> make[3]: *** [drivers/usb/gadget/acm_ms.o] Error 1
->> make[2]: *** [drivers/usb/gadget] Error 2
->> make[1]: *** [drivers/usb] Error 2
->> make: *** [drivers] Error 2
-
-> I believe Sergei had that patch already, but it wasn't applied for some
-> reason. Sergei, do you happen to remember the outcome of that patch ?
-
-    It has been apllied allright to 3.1-rc1. :-)
-
-WBR, Sergei
-
+RnJvbSA2NGIxN2ZkOTc0YTFiNmNlNDI2NTVkNDRiZjVhMzA4ODM3MzZlNmRhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBIYXJybyBIYWFuIDxocmhhYW5AZ21haWwuY29tPgpEYXRlOiBU
+dWUsIDQgT2N0IDIwMTEgMTY6NTY6MDggKzAyMDAKU3ViamVjdDogW1BBVENIXSBhY2Nlc3Nmczog
+bW92ZSBnZXRfc2IgdG8gbW91bnQKCkFjY2Vzc2ZzIGRpZCBub3QgYnVpbGQgYW55bW9yZSBmb3Ig
+cmVjZW50IGtlcm5lbHMsCmJlY2F1c2UgdGhlcmUgaGF2ZSBiZWVuIGEgZmV3IHZmcyBjaGFuZ2Vz
+LiBGb3IgZGV0YWlscyBzZWU6Cmh0dHBzOi8vbGttbC5vcmcvbGttbC8yMDExLzQvMjQvNjUKCkFm
+dGVyIHJlYWRpbmcgdGhlIHRocmVhZCAidmZzOiB3aGVyZSBpcyBnZXRfc2Jfc2luZ2xlKCk/Igpp
+cyB3YXMgZWFzeSB0byBmaXg6IGh0dHBzOi8vbGttbC5vcmcvbGttbC8yMDExLzUvMjUvMjE3CgpU
+aGlzIHBhdGNoIGhhcyBiZWVuIHRlc3RlZCBvbiBsaW51eC0zLjAuNAoKU2lnbmVkLW9mZi1ieTog
+SGFycm8gSGFhbiA8aHJoYWFuQGdtYWlsLmNvbT4KLS0tCiBmcy9hY2Nlc3Nmcy9pbm9kZS5jIHwg
+ICAgOSArKysrLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCA1IGRlbGV0
+aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2FjY2Vzc2ZzL2lub2RlLmMgYi9mcy9hY2Nlc3Nmcy9p
+bm9kZS5jCmluZGV4IDgzMjg2N2EuLmEyMjQ3ZTIgMTAwNjQ0Ci0tLSBhL2ZzL2FjY2Vzc2ZzL2lu
+b2RlLmMKKysrIGIvZnMvYWNjZXNzZnMvaW5vZGUuYwpAQCAtMzU2LDExICszNTYsMTAgQEAgc3Rh
+dGljIGludCBhY2Nlc3Nmc19maWxsX3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9jayAqc2IsIHZvaWQg
+KmRhdGEsIGludCBzaWxlbnQpCiAJcmV0dXJuIDA7CiB9CiAKLXN0YXRpYyBpbnQgYWNjZXNzZnNf
+Z2V0X3NiKHN0cnVjdCBmaWxlX3N5c3RlbV90eXBlICpmc190eXBlLAotCQkJICAgaW50IGZsYWdz
+LCBjb25zdCBjaGFyICpkZXZfbmFtZSwKLQkJCSAgIHZvaWQgKmRhdGEsIHN0cnVjdCB2ZnNtb3Vu
+dCAqbW50KQorc3RhdGljIHN0cnVjdCBkZW50cnkgKmFjY2Vzc2ZzX21vdW50KHN0cnVjdCBmaWxl
+X3N5c3RlbV90eXBlICpmc190eXBlLAorCQkJICAgaW50IGZsYWdzLCBjb25zdCBjaGFyICpkZXZf
+bmFtZSwgdm9pZCAqZGF0YSkKIHsKLQlyZXR1cm4gZ2V0X3NiX3NpbmdsZShmc190eXBlLCBmbGFn
+cywgZGF0YSwgYWNjZXNzZnNfZmlsbF9zdXBlciwgbW50KTsKKwlyZXR1cm4gbW91bnRfc2luZ2xl
+KGZzX3R5cGUsIGZsYWdzLCBkYXRhLCBhY2Nlc3Nmc19maWxsX3N1cGVyKTsKIH0KIAogaW50IGFj
+Y2Vzc2ZzX3Blcm1pdHRlZChzdHJ1Y3QgYWNjZXNzX2F0dHIgKnAsIGludCBtYXNrKQpAQCAtNDAx
+LDcgKzQwMCw3IEBAIHZvaWQgYWNjZXNzZnNfdW5yZWdpc3RlcihzdHJ1Y3QgYWNjZXNzZnNfZGly
+ZW50cnkgKmRpciwgY29uc3QgY2hhciAqbmFtZSkKIHN0YXRpYyBzdHJ1Y3QgZmlsZV9zeXN0ZW1f
+dHlwZSBhY2Nlc3Nmc19mc190eXBlID0gewogCS5vd25lciA9CVRISVNfTU9EVUxFLAogCS5uYW1l
+ID0JCSJhY2Nlc3NmcyIsCi0JLmdldF9zYiA9CWFjY2Vzc2ZzX2dldF9zYiwKKwkubW91bnQgPQlh
+Y2Nlc3Nmc19tb3VudCwKIAkua2lsbF9zYiA9CWtpbGxfYW5vbl9zdXBlciwKIH07CiAKLS0gCjEu
+Ny4wLjQKCg==
+--000e0ce0f59897cee504aeb37e37--
