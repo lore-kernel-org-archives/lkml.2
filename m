@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab1JGUSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:18:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35232 "EHLO mx2.suse.de"
+	id S1758198Ab1JGUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:22:26 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54952 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400Ab1JGUSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:18:53 -0400
-Date: Fri, 7 Oct 2011 21:18:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
-        Josh Boyer <jwboyer@redhat.com>, aarcange@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: vmscan: Limit direct reclaim for higher order
- allocations
-Message-ID: <20111007201849.GC6418@suse.de>
-References: <1318000643-27996-1-git-send-email-mgorman@suse.de>
- <1318000643-27996-2-git-send-email-mgorman@suse.de>
- <4E8F53CD.9000609@redhat.com>
+	id S1754350Ab1JGUWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 16:22:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] New location of the linux-pm mailing list
+Date: Fri, 7 Oct 2011 22:24:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org,
+        "Len Brown (Intel)" <len.brown@intel.com>,
+        Paul Walmsley <paul@pwsan.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jean Pihet <jean.pihet@newoldbits.com>, Kevin Hilman <khilman@ti.com>,
+        magnus.damm@gmail.com, Bojan Smojver <bojan@rexursive.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>, tom.leiming@gmail.com,
+        Linux PM <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>, Pavel Machek <pavel@ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4E8F53CD.9000609@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110072224.41228.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 03:32:29PM -0400, Rik van Riel wrote:
-> On 10/07/2011 11:17 AM, Mel Gorman wrote:
-> >From: Rik van Riel<riel@redhat.com>
-> >
-> >When suffering from memory fragmentation due to unfreeable pages,
-> >THP page faults will repeatedly try to compact memory.  Due to the
-> >unfreeable pages, compaction fails.
-> 
-> I believe Andrew just merged this one :)
-> 
+Hi,
 
-It's not the end of the world, this is not going to be the one mail that
-bursts the inbox at the seams :)
+Due to the continuing outage of lists.linux-foundation.org the linux-pm
+mailing list is going to be hosted at vger.kernel.org from now on.  The
+new address of the list is linux-pm@vger.kernel.org .
 
--- 
-Mel Gorman
-SUSE Labs
+Sorry for the inconvenience and please subscribe to the new list
+by sending
+
+subscribe linux-pm
+
+in the *message* *body* to majordomo@vger.kernel.org .
+
+Thanks,
+Rafael
