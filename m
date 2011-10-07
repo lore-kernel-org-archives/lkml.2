@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965403Ab1JGL14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 07:27:56 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:35948 "EHLO
+	id S965387Ab1JGL1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 07:27:55 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:35965 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759950Ab1JGL1w (ORCPT
+	with ESMTP id S1759953Ab1JGL1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Oct 2011 07:27:52 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 08/12] drbd: Refer to resync-rate consistently throughout the code
-Date: Fri,  7 Oct 2011 13:27:41 +0200
-Message-Id: <1317986865-3706-9-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 09/12] drbd: Refer to connect-int consistently throughout the code
+Date: Fri,  7 Oct 2011 13:27:42 +0200
+Message-Id: <1317986865-3706-10-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1317986865-3706-1-git-send-email-philipp.reisner@linbit.com>
 References: <1317986865-3706-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,108 +25,81 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h      |    6 +++---
- drivers/block/drbd/drbd_main.c     |    4 ++--
- drivers/block/drbd/drbd_receiver.c |    2 +-
+ drivers/block/drbd/drbd_receiver.c |   12 ++++++------
  include/linux/drbd_genl.h          |    2 +-
- include/linux/drbd_limits.h        |    7 ++++---
- 5 files changed, 11 insertions(+), 10 deletions(-)
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index fa36757..8026ada 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -389,21 +389,21 @@ struct p_barrier_ack {
- } __packed;
- 
- struct p_rs_param {
--	u32 rate;
-+	u32 resync_rate;
- 
- 	      /* Since protocol version 88 and higher. */
- 	char verify_alg[0];
- } __packed;
- 
- struct p_rs_param_89 {
--	u32 rate;
-+	u32 resync_rate;
-         /* protocol version 89: */
- 	char verify_alg[SHARED_SECRET_MAX];
- 	char csums_alg[SHARED_SECRET_MAX];
- } __packed;
- 
- struct p_rs_param_95 {
--	u32 rate;
-+	u32 resync_rate;
- 	char verify_alg[SHARED_SECRET_MAX];
- 	char csums_alg[SHARED_SECRET_MAX];
- 	u32 c_plan_ahead;
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index a3154be..939d31b 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -888,14 +888,14 @@ int drbd_send_sync_param(struct drbd_conf *mdev)
- 
- 	if (get_ldev(mdev)) {
- 		dc = rcu_dereference(mdev->ldev->disk_conf);
--		p->rate = cpu_to_be32(dc->resync_rate);
-+		p->resync_rate = cpu_to_be32(dc->resync_rate);
- 		p->c_plan_ahead = cpu_to_be32(dc->c_plan_ahead);
- 		p->c_delay_target = cpu_to_be32(dc->c_delay_target);
- 		p->c_fill_target = cpu_to_be32(dc->c_fill_target);
- 		p->c_max_rate = cpu_to_be32(dc->c_max_rate);
- 		put_ldev(mdev);
- 	} else {
--		p->rate = cpu_to_be32(DRBD_RATE_DEF);
-+		p->resync_rate = cpu_to_be32(DRBD_RESYNC_RATE_DEF);
- 		p->c_plan_ahead = cpu_to_be32(DRBD_C_PLAN_AHEAD_DEF);
- 		p->c_delay_target = cpu_to_be32(DRBD_C_DELAY_TARGET_DEF);
- 		p->c_fill_target = cpu_to_be32(DRBD_C_FILL_TARGET_DEF);
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index e4e8f8a..684f795 100644
+index 684f795..7deade1 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3221,7 +3221,7 @@ static int receive_SyncParam(struct drbd_tconn *tconn, struct packet_info *pi)
- 		old_disk_conf = mdev->ldev->disk_conf;
- 		*new_disk_conf = *old_disk_conf;
+@@ -617,7 +617,7 @@ static struct socket *drbd_try_connect(struct drbd_tconn *tconn)
+ 	struct sockaddr_in6 peer_in6;
+ 	struct net_conf *nc;
+ 	int err, peer_addr_len, my_addr_len;
+-	int sndbuf_size, rcvbuf_size, try_connect_int;
++	int sndbuf_size, rcvbuf_size, connect_int;
+ 	int disconnect_on_error = 1;
  
--		new_disk_conf->resync_rate = be32_to_cpu(p->rate);
-+		new_disk_conf->resync_rate = be32_to_cpu(p->resync_rate);
+ 	rcu_read_lock();
+@@ -629,7 +629,7 @@ static struct socket *drbd_try_connect(struct drbd_tconn *tconn)
+ 
+ 	sndbuf_size = nc->sndbuf_size;
+ 	rcvbuf_size = nc->rcvbuf_size;
+-	try_connect_int = nc->try_connect_int;
++	connect_int = nc->connect_int;
+ 
+ 	my_addr_len = min_t(int, nc->my_addr_len, sizeof(src_in6));
+ 	memcpy(&src_in6, nc->my_addr, my_addr_len);
+@@ -653,7 +653,7 @@ static struct socket *drbd_try_connect(struct drbd_tconn *tconn)
  	}
  
- 	if (apv >= 88) {
+ 	sock->sk->sk_rcvtimeo =
+-	sock->sk->sk_sndtimeo = try_connect_int * HZ;
++	sock->sk->sk_sndtimeo = connect_int * HZ;
+ 	drbd_setbufsize(sock, sndbuf_size, rcvbuf_size);
+ 
+        /* explicitly bind to the configured IP as source IP
+@@ -702,7 +702,7 @@ out:
+ static struct socket *drbd_wait_for_connect(struct drbd_tconn *tconn)
+ {
+ 	int timeo, err, my_addr_len;
+-	int sndbuf_size, rcvbuf_size, try_connect_int;
++	int sndbuf_size, rcvbuf_size, connect_int;
+ 	struct socket *s_estab = NULL, *s_listen;
+ 	struct sockaddr_in6 my_addr;
+ 	struct net_conf *nc;
+@@ -717,7 +717,7 @@ static struct socket *drbd_wait_for_connect(struct drbd_tconn *tconn)
+ 
+ 	sndbuf_size = nc->sndbuf_size;
+ 	rcvbuf_size = nc->rcvbuf_size;
+-	try_connect_int = nc->try_connect_int;
++	connect_int = nc->connect_int;
+ 
+ 	my_addr_len = min_t(int, nc->my_addr_len, sizeof(struct sockaddr_in6));
+ 	memcpy(&my_addr, nc->my_addr, my_addr_len);
+@@ -731,7 +731,7 @@ static struct socket *drbd_wait_for_connect(struct drbd_tconn *tconn)
+ 		goto out;
+ 	}
+ 
+-	timeo = try_connect_int * HZ;
++	timeo = connect_int * HZ;
+ 	timeo += (random32() & 1) ? timeo / 7 : -timeo / 7; /* 28.5% random jitter */
+ 
+ 	s_listen->sk->sk_reuse    = 1; /* SO_REUSEADDR */
 diff --git a/include/linux/drbd_genl.h b/include/linux/drbd_genl.h
-index 1d707f9..4d76d0a 100644
+index 4d76d0a..07b4f4a 100644
 --- a/include/linux/drbd_genl.h
 +++ b/include/linux/drbd_genl.h
-@@ -115,7 +115,7 @@ GENL_struct(DRBD_NLA_DISK_CONF, 3, disk_conf,
- 	__u32_field_def(6, GENLA_F_MANDATORY,	on_io_error, DRBD_ON_IO_ERROR_DEF)
- 	__u32_field_def(7, GENLA_F_MANDATORY,	fencing, DRBD_FENCING_DEF)
- 
--	__u32_field_def(8,	GENLA_F_MANDATORY,	resync_rate, DRBD_RATE_DEF)
-+	__u32_field_def(8,	GENLA_F_MANDATORY,	resync_rate, DRBD_RESYNC_RATE_DEF)
- 	__u32_field_def(9,	GENLA_F_MANDATORY,	resync_after, DRBD_AFTER_DEF)
- 	__u32_field_def(10,	GENLA_F_MANDATORY,	al_extents, DRBD_AL_EXTENTS_DEF)
- 	__u32_field_def(11,	GENLA_F_MANDATORY,	c_plan_ahead, DRBD_C_PLAN_AHEAD_DEF)
-diff --git a/include/linux/drbd_limits.h b/include/linux/drbd_limits.h
-index f44a0b3..27f5a13 100644
---- a/include/linux/drbd_limits.h
-+++ b/include/linux/drbd_limits.h
-@@ -96,10 +96,11 @@
- 
- /* syncer { */
-   /* FIXME allow rate to be zero? */
--#define DRBD_RATE_MIN 1
-+#define DRBD_RESYNC_RATE_MIN 1
- /* channel bonding 10 GbE, or other hardware */
--#define DRBD_RATE_MAX (4 << 20)
--#define DRBD_RATE_DEF 250  /* kb/second */
-+#define DRBD_RESYNC_RATE_MAX (4 << 20)
-+#define DRBD_RESYNC_RATE_DEF 250
-+#define DRBD_RESYNC_RATE_SCALE 'k'  /* kilobytes */
- 
-   /* less than 7 would hit performance unnecessarily.
-    * 919 slots context information per transaction,
+@@ -145,7 +145,7 @@ GENL_struct(DRBD_NLA_NET_CONF, 5, net_conf,
+ 	__str_field_def(6,	GENLA_F_MANDATORY,	verify_alg,     SHARED_SECRET_MAX)
+ 	__str_field_def(7,	GENLA_F_MANDATORY,	csums_alg,	SHARED_SECRET_MAX)
+ 	__u32_field_def(8,	GENLA_F_MANDATORY,	wire_protocol, DRBD_PROTOCOL_DEF)
+-	__u32_field_def(9,	GENLA_F_MANDATORY,	try_connect_int, DRBD_CONNECT_INT_DEF)
++	__u32_field_def(9,	GENLA_F_MANDATORY,	connect_int, DRBD_CONNECT_INT_DEF)
+ 	__u32_field_def(10,	GENLA_F_MANDATORY,	timeout, DRBD_TIMEOUT_DEF)
+ 	__u32_field_def(11,	GENLA_F_MANDATORY,	ping_int, DRBD_PING_INT_DEF)
+ 	__u32_field_def(12,	GENLA_F_MANDATORY,	ping_timeo, DRBD_PING_TIMEO_DEF)
 -- 
 1.7.4.1
 
