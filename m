@@ -1,176 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab1JGISk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 04:18:40 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52383 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab1JGISi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 04:18:38 -0400
+	id S935808Ab1JGIUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 04:20:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40530 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751525Ab1JGIUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 04:20:39 -0400
+Message-ID: <4E8EB634.9090208@parallels.com>
+Date: Fri, 7 Oct 2011 12:20:04 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <1317499438-14058-14-git-send-email-arnd@arndb.de>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-14-git-send-email-arnd@arndb.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 7 Oct 2011 16:11:01 +0800
-Message-ID: <CAMPhdO_CGvoc8GZQS3TWpv0gqOXhmHyEbamcQr28K5iLgOBnuw@mail.gmail.com>
-Subject: Re: [PATCH 13/26] ARM: pxa: use correct __iomem annotations
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=UTF-8
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>
+Subject: Re: [PATCH v5 0/8] per-cgroup tcp buffer pressure settings
+References: <1317730680-24352-1-git-send-email-glommer@parallels.com> <20111005092954.718a0c29.kamezawa.hiroyu@jp.fujitsu.com> <4E8C067E.6040203@parallels.com> <20111007170522.624fab3d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111007170522.624fab3d.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p978IlFf005906
 
-On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> This tries to clear up the confusion between integers and iomem pointers
-> in the marvell pxa platform. MMIO addresses are supposed to be __iomem*
-> values, in order to let the Linux type checking work correctly. This
-> patch moves the cast to __iomem as far back as possible, to the place
-> where the MMIO virtual address windows are defined.
+On 10/07/2011 12:05 PM, KAMEZAWA Hiroyuki wrote:
 >
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/include/asm/hardware/it8152.h    |    2 +-
->  arch/arm/mach-mmp/clock.h                 |    8 ++++----
->  arch/arm/mach-mmp/common.c                |    4 ++--
->  arch/arm/mach-mmp/include/mach/addr-map.h |   10 ++++++++--
->  arch/arm/mach-mmp/mmp2.c                  |    3 ++-
->  arch/arm/mach-pxa/balloon3.c              |   10 +++++-----
->  arch/arm/mach-pxa/cm-x2xx-pci.c           |    2 +-
->  arch/arm/mach-pxa/cm-x2xx.c               |    4 ++--
->  arch/arm/mach-pxa/include/mach/addr-map.h |    8 ++++----
->  arch/arm/mach-pxa/include/mach/balloon3.h |    2 +-
->  arch/arm/mach-pxa/include/mach/hardware.h |    9 +++++----
->  arch/arm/mach-pxa/include/mach/lpd270.h   |    4 ++--
->  arch/arm/mach-pxa/include/mach/mtd-xip.h  |    1 -
->  arch/arm/mach-pxa/include/mach/palmtx.h   |    6 +++---
->  arch/arm/mach-pxa/include/mach/smemc.h    |    2 +-
->  arch/arm/mach-pxa/include/mach/zeus.h     |    4 ++--
->  arch/arm/mach-pxa/irq.c                   |    4 ++--
->  arch/arm/mach-pxa/lpd270.c                |    2 +-
->  arch/arm/mach-pxa/palmtx.c                |    8 ++++----
->  arch/arm/mach-pxa/pxa25x.c                |    2 +-
->  arch/arm/mach-pxa/pxa27x.c                |    2 +-
->  arch/arm/mach-pxa/pxa3xx.c                |    2 +-
->  arch/arm/mach-pxa/zeus.c                  |    8 ++++----
->  arch/arm/plat-pxa/gpio.c                  |    2 +-
->  arch/arm/plat-pxa/include/plat/mfp.h      |    2 +-
->  arch/arm/plat-pxa/mfp.c                   |    4 ++--
->  drivers/pcmcia/pxa2xx_balloon3.c          |    2 +-
->  drivers/video/mbx/mbxfb.c                 |    6 +++---
->  28 files changed, 65 insertions(+), 58 deletions(-)
 >
-> diff --git a/arch/arm/include/asm/hardware/it8152.h b/arch/arm/include/asm/hardware/it8152.h
-> index b3fea38..43cab49 100644
-> --- a/arch/arm/include/asm/hardware/it8152.h
-> +++ b/arch/arm/include/asm/hardware/it8152.h
-> @@ -9,7 +9,7 @@
->
->  #ifndef __ASM_HARDWARE_IT8152_H
->  #define __ASM_HARDWARE_IT8152_H
-> -extern unsigned long it8152_base_address;
-> +extern void __iomem *it8152_base_address;
->
->  #define IT8152_IO_BASE                 (it8152_base_address + 0x03e00000)
->  #define IT8152_CFGREG_BASE             (it8152_base_address + 0x03f00000)
-> diff --git a/arch/arm/mach-mmp/clock.h b/arch/arm/mach-mmp/clock.h
-> index 3143e99..149b30c 100644
-> --- a/arch/arm/mach-mmp/clock.h
-> +++ b/arch/arm/mach-mmp/clock.h
-> @@ -30,7 +30,7 @@ extern struct clkops apmu_clk_ops;
->
->  #define APBC_CLK(_name, _reg, _fnclksel, _rate)                        \
->  struct clk clk_##_name = {                                     \
-> -               .clk_rst        = (void __iomem *)APBC_##_reg,  \
-> +               .clk_rst        = APBC_##_reg,                  \
->                .fnclksel       = _fnclksel,                    \
->                .rate           = _rate,                        \
->                .ops            = &apbc_clk_ops,                \
-> @@ -38,7 +38,7 @@ struct clk clk_##_name = {                                    \
->
->  #define APBC_CLK_OPS(_name, _reg, _fnclksel, _rate, _ops)      \
->  struct clk clk_##_name = {                                     \
-> -               .clk_rst        = (void __iomem *)APBC_##_reg,  \
-> +               .clk_rst        = APBC_##_reg,                  \
->                .fnclksel       = _fnclksel,                    \
->                .rate           = _rate,                        \
->                .ops            = _ops,                         \
-> @@ -46,7 +46,7 @@ struct clk clk_##_name = {                                    \
->
->  #define APMU_CLK(_name, _reg, _eval, _rate)                    \
->  struct clk clk_##_name = {                                     \
-> -               .clk_rst        = (void __iomem *)APMU_##_reg,  \
-> +               .clk_rst        = APMU_##_reg,                  \
->                .enable_val     = _eval,                        \
->                .rate           = _rate,                        \
->                .ops            = &apmu_clk_ops,                \
-> @@ -54,7 +54,7 @@ struct clk clk_##_name = {                                    \
->
->  #define APMU_CLK_OPS(_name, _reg, _eval, _rate, _ops)          \
->  struct clk clk_##_name = {                                     \
-> -               .clk_rst        = (void __iomem *)APMU_##_reg,  \
-> +               .clk_rst        = APMU_##_reg,                  \
->                .enable_val     = _eval,                        \
->                .rate           = _rate,                        \
->                .ops            = _ops,                         \
-> diff --git a/arch/arm/mach-mmp/common.c b/arch/arm/mach-mmp/common.c
-> index 0ec0ca8..5720674 100644
-> --- a/arch/arm/mach-mmp/common.c
-> +++ b/arch/arm/mach-mmp/common.c
-> @@ -27,12 +27,12 @@ EXPORT_SYMBOL(mmp_chip_id);
->  static struct map_desc standard_io_desc[] __initdata = {
->        {
->                .pfn            = __phys_to_pfn(APB_PHYS_BASE),
-> -               .virtual        = APB_VIRT_BASE,
-> +               .virtual        = (unsigned long)APB_VIRT_BASE,
->                .length         = APB_PHYS_SIZE,
->                .type           = MT_DEVICE,
->        }, {
->                .pfn            = __phys_to_pfn(AXI_PHYS_BASE),
-> -               .virtual        = AXI_VIRT_BASE,
-> +               .virtual        = (unsigned long)AXI_VIRT_BASE,
->                .length         = AXI_PHYS_SIZE,
->                .type           = MT_DEVICE,
->        },
-> diff --git a/arch/arm/mach-mmp/include/mach/addr-map.h b/arch/arm/mach-mmp/include/mach/addr-map.h
-> index 3254089..3e404ac 100644
-> --- a/arch/arm/mach-mmp/include/mach/addr-map.h
-> +++ b/arch/arm/mach-mmp/include/mach/addr-map.h
-> @@ -11,6 +11,12 @@
->  #ifndef __ASM_MACH_ADDR_MAP_H
->  #define __ASM_MACH_ADDR_MAP_H
->
-> +#ifndef __ASSEMBLER__
-> +#define IOMEM(x)       ((void __iomem *)(x))
-> +#else
-> +#define IOMEM(x)       (x)
-> +#endif
-> +
->  /* APB - Application Subsystem Peripheral Bus
->  *
->  * NOTE: the DMA controller registers are actually on the AXI fabric #1
-> @@ -18,11 +24,11 @@
->  * peripherals on APB, let's count it into the ABP mapping area.
->  */
->  #define APB_PHYS_BASE          0xd4000000
-> -#define APB_VIRT_BASE          0xfe000000
-> +#define APB_VIRT_BASE          IOMEM(0xfe000000)
+> Sorry for lazy answer.
+Hi Kame,
 
-To be honest, I'd really like to keep the *_VIRT_BASE definitions to be
-type independent.
+Now matter how hard you try, you'll never be as lazy as I am. So that's 
+okay.
 
-And have the actual register definitions to be casted to void __iomem *
-when being defined, e.g.
+>
+> On Wed, 5 Oct 2011 11:25:50 +0400
+> Glauber Costa<glommer@parallels.com>  wrote:
+>
+>> On 10/05/2011 04:29 AM, KAMEZAWA Hiroyuki wrote:
+>>> On Tue,  4 Oct 2011 16:17:52 +0400
+>>> Glauber Costa<glommer@parallels.com>   wrote:
+>>>
+>
+>>> At this stage, my concern is view of interfaces and documenation, and future plans.
+>>
+>> Okay. I will try to address them as well as I can.
+>>
+>>> * memory.independent_kmem_limit
+>>>    If 1, kmem_limit_in_bytes/kmem_usage_in_bytes works.
+>>>    If 0, kmem_limit_in_bytes/kmem_usage_in_bytes doesn't work and all kmem
+>>>       usages are controlled under memory.limit_in_bytes.
+>>
+>> Correct. For the questions below, I won't even look at the code not to
+>> get misguided. Let's settle on the desired behavior, and everything that
+>> deviates from it, is a bug.
+>>
+>>> Question:
+>>>    - What happens when parent/chidlren cgroup has different indepedent_kmem_limit ?
+>> I think it should be forbidden. It was raised by Kirill before, and
+>> IIRC, he specifically requested it to be. (Okay: Saying it now, makes me
+>> realizes that the child can have set it to 1 while parent was 1. But
+>> then parent sets it to 0... I don't think I am handling this case).
+>>
+>
+> ok, please put it into TODO list ;)
 
-#define APBC_REG(x)	IOMEM(APBC_VIRT_BASE + (x))
+Done.
 
-#define APBC_UART1	APBC_REG(0x000)
+>
+>
+>>>    In future plan, kmem.usage_in_bytes should includes tcp.kmem_usage_in_bytes.
+>>>    And kmem.limit_in_bytes should be the limiation of sum of all kmem.xxxx.limit_in_bytes.
+>>
+>> I am not sure there will be others xxx.limit_in_bytes. (see below)
+>>
+>
+> ok.
+>
+>
+>>>
+>>> Question:
+>>>    - Why this integration is difficult ?
+>> It is not that it is difficult.
+>> What happens is that there are two things taking place here:
+>> One of them is allocation.
+>> The other, is tcp-specific pressure thresholds. Bear with me with the
+>> following example code: (from sk_stream_alloc_skb, net/ipv4/tcp.c)
+>>
+>> 1:      skb = alloc_skb_fclone(size + sk->sk_prot->max_header, gfp);
+>>           if (skb) {
+>> 3:              if (sk_wmem_schedule(sk, skb->truesize)) {
+>>                           /*
+>>                            * Make sure that we have exactly size bytes
+>>                            * available to the caller, no more, no less.
+>>                            */
+>>                           skb_reserve(skb, skb_tailroom(skb) - size);
+>>                           return skb;
+>>                   }
+>>                   __kfree_skb(skb);
+>>           } else {
+>>                   sk->sk_prot->enter_memory_pressure(sk);
+>>                   sk_stream_moderate_sndbuf(sk);
+>>           }
+>>
+>> In line 1, an allocation takes place. This allocs memory from the skbuff
+>> slab cache.
+>> But then, pressure thresholds are applied in 3. If it fails, we drop the
+>> memory buffer even if the allocation succeeded.
+>>
+>
+> Sure.
+>
+>
+>> So this patchset, as I've stated already, cares about pressure
+>> conditions only. It is enough to guarantee that no more memory will be
+>> pinned that we specified, because we'll free the allocation in case
+>> pressure is reached.
+>>
+>> There is work in progress from guys at google (and I have my very own
+>> PoCs as well), to include all slab allocations in kmem.usage_in_bytes.
+>>
+>
+> ok.
+>
+>
+>> So what I really mean here with "will integrate later", is that I think
+>> that we'd be better off tracking the allocations themselves at the slab
+>> level.
+>>
+>>>      Can't tcp-limit-code borrows some amount of charges in batch from kmem_limit
+>>>      and use it ?
+>> Sorry, I don't know what exactly do you mean. Can you clarify?
+>>
+> Now, tcp-usage is independent from kmem-usage.
+>
+> My idea is
+>
+>    1. when you account tcp usage, charge kmem, too.
 
-Arnd, do we have some standard guidelines on this for all SoCs
-to follow? As I know, it's currently still being a mess.
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Absolutely.
+>    Now, your work is
+>       a) tcp use new xxxx bytes.
+>       b) account it to tcp.uage and check tcp limit
+>
+>    To ingegrate kmem,
+>       a) tcp use new xxxx bytes.
+>       b) account it to tcp.usage and check tcp limit
+>       c) account it to kmem.usage
+>
+> ? 2 counters may be slow ?
+
+Well, the way I see it, 1 counter is slow already =)
+I honestly think we need some optimizations here. But
+that is a side issue.
+
+To begin with: The new patchset that I intend to spin
+today or Monday, depending on my progress, uses res_counters,
+as you and Kirill requested.
+
+So what makes res_counters slow IMHO, is two things:
+
+1) interrupts are always disabled.
+2) All is done under a lock.
+
+Now, we are starting to have resources that are billed to multiple
+counters. One simple way to work around it, is to have child counters
+that has to be accounted for as well everytime a resource is counted.
+
+Like this:
+
+1) tcp has kmem as child. When we bill to tcp, we bill to kmem as well.
+    For protocols that do memory pressure, we then don't bill kmem from
+    the slab.
+2) When kmem_independent_account is set to 0, kmem has mem as child.
+
+>
+>
+>>>    - Don't you need a stat file to indicate "tcp memory pressure works!" ?
+>>>      It can be obtained already ?
+>>
+>> Not 100 % clear as well. We can query the amount of buffer used, and the
+>> amount of buffer allowed. What else do we need?
+>>
+>
+> IIUC, we can see the fact tcp.usage is near to tcp.limit but never can see it
+> got memory pressure and how many numbers of failure happens.
+> I'm sorry if I don't read codes correctly.
+
+IIUC, With res_counters being used, we get at least failcnt for free, right?
+
