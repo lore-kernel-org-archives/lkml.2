@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965449Ab1JGMU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 08:20:58 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:48507
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752407Ab1JGMU5 (ORCPT
+	id S965453Ab1JGMWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 08:22:55 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:22030
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759749Ab1JGMWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 08:20:57 -0400
+	Fri, 7 Oct 2011 08:22:54 -0400
 X-SpamScore: 10
-X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h)
+X-BigFish: VPS10(zzc8kzz1202h10d2nzz8275bhz32i2a8h668h839h93fh)
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-FB-SS: 0,
 Subject: [Patch 5/11] Regulator: DA9052/53 regulator support v4
 From: ashishj3 <ashish.jangam@kpitcummins.com>
 Reply-To: <ashish.jangam@kpitcummins.com>
@@ -17,9 +18,9 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: <linaro-dev@lists.linaro.org>, <lrg@slimlogic.co.uk>,
         <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
         <paul.liu@linaro.org>
-Content-Type: text/plain; charset="cp1252"
-Date: Fri, 7 Oct 2011 17:50:50 +0530
-Message-ID: <1317990050.5372.7.camel@L-0761.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 7 Oct 2011 17:50:38 +0530
+Message-ID: <1317990038.5372.6.camel@L-0761.kpit.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.10.38.37]
