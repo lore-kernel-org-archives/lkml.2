@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526Ab1JGDU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 23:20:29 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:52416 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758353Ab1JGDU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 23:20:28 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Date: Fri, 07 Oct 2011 14:20:26 +1100
-In-Reply-To: <201110062045.48689.rjw@sisk.pl>
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	 <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl>
-	 <201110062045.48689.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1317957626.2008.2.camel@shrek.rexursive.com>
-Mime-Version: 1.0
+	id S1759524Ab1JGD1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 23:27:24 -0400
+Received: from void.printf.net ([89.145.121.20]:40158 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752432Ab1JGD1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 23:27:23 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Andrei Warkentin <awarkentin@vmware.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        adrian hunter <adrian.hunter@intel.com>,
+        linus walleij <linus.walleij@linaro.org>,
+        james p freyensee <james_p_freyensee@linux.intel.com>,
+        sebras@gmail.com, Ulf Hansson <Ulf.Hansson@stericsson.com>,
+        stefan xk nilsson <stefan.xk.nilsson@stericsson.com>,
+        per forlin <per.forlin@stericsson.com>,
+        johan rudholm <johan.rudholm@stericsson.com>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v12] mmc : general purpose partition support.
+References: <1559008816.102998.1317915129522.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Date: Thu, 06 Oct 2011 23:26:58 -0400
+In-Reply-To: <1559008816.102998.1317915129522.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+	(Andrei Warkentin's message of "Thu, 6 Oct 2011 08:32:09 -0700 (PDT)")
+Message-ID: <m2r52pqy65.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-06 at 20:45 +0200, Rafael J. Wysocki wrote:
-> > I get a kernel panic on a test box using a x86_64 kernel with this
-> patch applied.
-> 
-> The panic happens during late resume, when trying to switch to the
-> hibernated kernel. 
+Hi,
 
-I'm working on a version of the patch that will produce a SHA1 checksum
-of the image pages on save/load. This will then eliminate problems
-related to pages not being saved/loaded correctly by threads etc.
+On Thu, Oct 06 2011, Andrei Warkentin wrote:
+>> Subject: [PATCH v12] mmc : general purpose partition support.
+>> 
+>> It allows gerneral purpose partitions in MMC Device.
+>> And I try to simpliy make mmc_blk_alloc_parts using mmc_part
+>> structure suggested by Andrei Warkentin.
+>> After patching, we can see general purpose partitions like this.
+>> > cat /proc/partitions
+>>           179 0 847872 mmcblk0
+>>           179 192 4096 mmcblk0gp3
+>>           179 160 4096 mmcblk0gp2
+>>           179 128 4096 mmcblk0gp1
+>>           179 96  1052672 mmcblk0gp0
+>>           179 64  1024 mmcblk0boot1
+>>           179 32  1024 mmcblk0boot0
+>> 
+>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>> ---
+>
+> Acked-by: Andrei Warkentin <andrey.warkentin@gmail.com>
 
-I'll send you that when I test it. If that still panics your kernel
-after the checksums have been verified, then we have another problem
-somewhere.
+Thanks very much!  Pushed to mmc-next for 3.2 now.
 
+- Chris.
 -- 
-Bojan
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
