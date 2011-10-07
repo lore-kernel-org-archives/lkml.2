@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab1JGMov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 08:44:51 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46891 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759951Ab1JGMou (ORCPT
+	id S1759997Ab1JGMqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 08:46:46 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36851 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759951Ab1JGMqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 08:44:50 -0400
-X-AuditID: b753bd60-a2688ba000000655-5c-4e8ef4401672
-X-AuditID: b753bd60-a2688ba000000655-5c-4e8ef4401672
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [RFC PATCH net 2/2] [BUGFIX] bonding: use flush_delayed_work_sync in
- bond_close
-To: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>
-Date: Fri, 07 Oct 2011 21:50:06 +0900
-Message-ID: <20111007125006.7089.9539.stgit@ltc219.sdl.hitachi.co.jp>
-In-Reply-To: <20111007124925.7089.27260.stgit@ltc219.sdl.hitachi.co.jp>
-References: <20111007124925.7089.27260.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Fri, 7 Oct 2011 08:46:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
+References: <1317943022.1095.25.camel@mop> <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
+ <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com> <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 7 Oct 2011 14:46:23 +0200
+Message-ID: <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
+Subject: =?UTF-8?Q?Re=3A_A_Plumber=E2=80=99s_Wish_List_for_Linux?=
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
+        david@fubar.dk, greg@kroah.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bond_close() calls cancel_delayed_work() to cancel delayed works.
-It, however, cannot cancel works that were already queued in workqueue.
-The bond_open() initializes work->data, and proccess_one_work() refers
-get_work_cwq(work)->wq->flags. The get_work_cwq() returns NULL when
-work->data has been initialized. Thus, a panic occurs.
+[]sorry, need to resend. I tried to reply with the cell phone but it bounces]
 
-This patch uses flush_delayed_work_sync() instead of cancel_delayed_work()
-in bond_close(). It cancels delayed timer and waits for work to finish
-execution. So, it can avoid the null pointer dereference due to the
-parallel executions of proccess_one_work() and initializing proccess
-of bond_open().
+On Fri, Oct 7, 2011 at 12:38, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Fri, 7 Oct 2011 12:28:46 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
+>
+>> What do you mean would be ugly?
+>
+> I have an ext4fs. It supports every possible file name allowed by POSIX
+> and SuS. What name are you going to use for your 'hidden directory' that
+> won't clash with a real file ?
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
----
+Ah, no. The label on FAT (similar on NTFS) are 'magic entries' in the
+root dir list, not a real file in the root dir.
 
- drivers/net/bonding/bond_main.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+We need kernel support for changing a mounted fs, because, unlike
+ext4, the blocks containing the strings are inside the fs, which the
+kernel might change any time.
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index f1baec5..cd490b7 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3504,27 +3504,27 @@ static int bond_close(struct net_device *bond_dev)
- 	write_unlock_bh(&bond->lock);
- 
- 	if (bond->params.miimon) {  /* link check interval, in milliseconds. */
--		cancel_delayed_work(&bond->mii_work);
-+		flush_delayed_work_sync(&bond->mii_work);
- 	}
- 
- 	if (bond->params.arp_interval) {  /* arp interval, in milliseconds. */
--		cancel_delayed_work(&bond->arp_work);
-+		flush_delayed_work_sync(&bond->arp_work);
- 	}
- 
- 	switch (bond->params.mode) {
- 	case BOND_MODE_8023AD:
--		cancel_delayed_work(&bond->ad_work);
-+		flush_delayed_work_sync(&bond->ad_work);
- 		break;
- 	case BOND_MODE_TLB:
- 	case BOND_MODE_ALB:
--		cancel_delayed_work(&bond->alb_work);
-+		flush_delayed_work_sync(&bond->alb_work);
- 		break;
- 	default:
- 		break;
- 	}
- 
- 	if (delayed_work_pending(&bond->mcast_work))
--		cancel_delayed_work(&bond->mcast_work);
-+		flush_delayed_work_sync(&bond->mcast_work);
- 
- 	if (bond_is_lb(bond)) {
- 		/* Must be called only after all
-
+Kay
