@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab1JGEwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 00:52:13 -0400
-Received: from [117.192.88.236] ([117.192.88.236]:60585 "EHLO manju-desktop"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755872Ab1JGEwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 00:52:12 -0400
-To: linux-arm-kernel@lists.infradead.org
-Date: Fri, 07 Oct 2011 10:05:25 +0500
-Subject: [PATCH 3/5] regulator: Support driver probe deferral
-References: <1317962127-29003-1-git-send-email-manjugk@ti.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Message-ID: <1317962127-29003-4-git-send-email-manjugk@ti.com>
-From: "G, Manjunath Kondaiah" <manjugk@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756310Ab1JGEzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 00:55:14 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:52308 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab1JGEzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 00:55:12 -0400
+X-AuditID: b753bd60-9f483ba000000655-92-4e8e862ee2a1
+X-AuditID: b753bd60-9f483ba000000655-92-4e8e862ee2a1
+Message-ID: <4E8E862A.8020705@hitachi.com>
+Date: Fri, 07 Oct 2011 13:55:06 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Josh Stone <jistone@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "hpanvin@gmail.com" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH] x86: Make variable_test_bit reference all of *addr
+References: <1317945508-19575-1-git-send-email-jistone@redhat.com> <990b8719-066b-4e1d-892f-6a3ea4241fb2@email.android.com> <m2d3e936fn.fsf@firstfloor.org> <4E8E690C.9010206@redhat.com>
+In-Reply-To: <4E8E690C.9010206@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Josh,
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thank you for reporting details :)
 
-If we fail to locate a requested regulator return -EPROBE_DEFER. If drivers
-pass this error code through to their caller (which they really should)
-then this will ensure that the probe is retried later when further devices
-become available.
+(2011/10/07 11:50), Josh Stone wrote:
+> We can make twobyte_is_boostable[] volatile instead, which does the
+> trick, but that seems a kludge to me.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-[manjugk@ti.com: changed error value from EAGAIN to EPROBE_DEFER]
-Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Liam Girdwood <lrg@ti.com>
----
-Cc: linux-omap@vger.kernel.org
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Dilan Lee <dilee@nvidia.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
+I think this time we'd better to do this (with comments),
+since this may not affect most of bitmap users using it for
+checking dynamically allocated bit-flags. kprobe's bitmap
+usage seems a special case.
 
- drivers/regulator/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thank you,
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index d8e6a42..95dfd21 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1153,7 +1153,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- {
- 	struct regulator_dev *rdev;
- 	struct regulator_map *map;
--	struct regulator *regulator = ERR_PTR(-ENODEV);
-+	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
- 	const char *devname = NULL;
- 	int ret;
- 
-@@ -2668,7 +2668,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 		if (!found) {
- 			dev_err(dev, "Failed to find supply %s\n",
- 				init_data->supply_regulator);
--			ret = -ENODEV;
-+			ret = -EPROBE_DEFER;
- 			goto scrub;
- 		}
- 
 -- 
-1.7.4.1
-
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
