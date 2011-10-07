@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab1JGUeb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:31 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758872Ab1JGUe0 (ORCPT
+	id S1759133Ab1JGUel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60374 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759061Ab1JGUef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:26 -0400
+	Fri, 7 Oct 2011 16:34:35 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 09/26] dynamic_debug: process multiple commands on a line
-Date: Fri,  7 Oct 2011 14:33:15 -0600
-Message-Id: <1318019612-20068-10-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 12/26] dynamic_debug: dont kill entire facility on error parsing ddebug_query
+Date: Fri,  7 Oct 2011 14:33:18 -0600
+Message-Id: <1318019612-20068-13-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,98 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Process multiple commands per line, separated by ';' or '\n'.
-All commands are processed, independent of errors, allowing individual
-commands to fail, for example when a module is not installed.  Errors
-are counted, and last error code is returned.
+Currently, a parsing error on ddebug_query results in effective loss
+of the facility; all tables are removed, and the init-call returns error.
+This is way too severe, especially when an innocent quoting error can
+be the cause:
 
-With this, extensive command sets can be given on the boot-line.
+Kernel command line: ... ddebug_query='file char_dev.c +p'
+yields:
 
-Splitting on '\n' allows "cat cmd-file > /dbg/dynamic_debug/control"
-where cmd-file contains multiple queries, one per line.  Empty commands
-are skipped, allowing ";\n\n" to not count as errors.
+ddebug_exec_queries: query 0: "'file"
+query before parse <'file>
+ddebug_exec_queries: processed 1 queries, with 1 errs
+Invalid ddebug boot param 'file
 
-Splitting on '\n' prevents its use in a format-spec, but thats not very
-useful anyway, searching for meaningful and selective substrings is typical.
-
-Also allow comment lines, starting with '#', with optional leading whitespace.
-Trailing comments are allowed, if preceded by ';' which terminates
-the command on the line.  For example:
-
-root@voyage:~# cat debugfs-file
-
-  # blank lines ok, comments too
-  module foo +p
-  # multiple cmds on line, with ; to separate them
-  module bar +p ; module buz +p ; # trailing comments need cmd terminator too
-
-root@voyage:~# cat debugfs-file > /dbg/dynamic_debug/control
+Fix this by zeroing return-code for query parse errors before
+returning from dynamic_debug_init().
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   35 +++++++++++++++++++++++++++++++++--
- 1 files changed, 33 insertions(+), 2 deletions(-)
+ lib/dynamic_debug.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index b88f918..4bf27f3 100644
+index 0676de0..3f37b5e 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -444,6 +444,35 @@ static int ddebug_exec_query(char *query_string)
- 	return 0;
- }
- 
-+/* handle multiple queries, continue on error, return last error */
-+static int ddebug_exec_queries(char *query)
-+{
-+	char *split;
-+	int i, errs = 0, exitcode = 0, rc;
-+
-+	for (i = 0; query; query = split) {
-+		split = strpbrk(query, ";\n");
-+		if (split)
-+			*split++ = '\0';
-+
-+		query = skip_spaces(query);
-+		if (!*query || *query == '#')
-+			continue;
-+		if (verbose)
-+			pr_info("query %d: \"%s\"\n", i, query);
-+
-+		rc = ddebug_exec_query(query);
-+		if (rc) {
-+			errs++;
-+			exitcode = rc;
+@@ -922,12 +922,10 @@ static int __init dynamic_debug_init(void)
+ 		pr_info("ddebug initializing with string \"%s\"",
+ 			ddebug_setup_string);
+ 		ret = ddebug_exec_queries(ddebug_setup_string);
+-		if (ret)
+-			pr_warn("Invalid ddebug boot param %s",
+-				ddebug_setup_string);
+-		else
+-			pr_info("ddebug initialized with string %s",
+-				ddebug_setup_string);
++		if (ret) {
++			ret = 0; /* make this non-fatal */
++			pr_warn("invalid ddebug_query\n");
 +		}
-+		i++;
-+	}
-+	pr_info("processed %d queries, with %d errs\n", i, errs);
-+
-+	return exitcode;
-+}
-+
- #define PREFIX_SIZE 64
- #define LEFT(wrote) ((PREFIX_SIZE - wrote) > 0) ? (PREFIX_SIZE - wrote) : 0
+ 	}
  
-@@ -578,7 +607,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 	if (verbose)
- 		pr_info("read %d bytes from userspace\n", (int)len);
- 
--	ret = ddebug_exec_query(tmpbuf);
-+	ret = ddebug_exec_queries(tmpbuf);
- 	if (ret)
- 		return ret;
- 
-@@ -883,7 +912,9 @@ static int __init dynamic_debug_init(void)
- 
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
--		ret = ddebug_exec_query(ddebug_setup_string);
-+		pr_info("ddebug initializing with string \"%s\"",
-+			ddebug_setup_string);
-+		ret = ddebug_exec_queries(ddebug_setup_string);
- 		if (ret)
- 			pr_warn("Invalid ddebug boot param %s",
- 				ddebug_setup_string);
+ out_free:
 -- 
 1.7.4.4
 
