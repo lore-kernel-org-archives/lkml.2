@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366Ab1JGKce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:32:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53362 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964862Ab1JGKcd convert rfc822-to-8bit (ORCPT
+	id S1759812Ab1JGKda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:33:30 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23753 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752316Ab1JGKd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:32:33 -0400
-Subject: Re: [PATCH 01/12] perf_events: add generic taken branch sampling
- support
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
-        ravitillo@lbl.gov
-Date: Fri, 07 Oct 2011 12:32:13 +0200
-In-Reply-To: <CABPqkBSNyD0R7o7f_X4u9QD+1G=XXc6mwTmeQbeJzFam=4v_Cg@mail.gmail.com>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	 <1317912555-9559-2-git-send-email-eranian@google.com>
-	 <1317920241.29658.14.camel@twins>
-	 <CABPqkBSNyD0R7o7f_X4u9QD+1G=XXc6mwTmeQbeJzFam=4v_Cg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1317983533.31132.3.camel@twins>
-Mime-Version: 1.0
+	Fri, 7 Oct 2011 06:33:29 -0400
+Message-ID: <4E8ED574.8040609@dsn.lapis-semi.com>
+Date: Fri, 07 Oct 2011 19:33:24 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH] pch_dma: Fix suspend issue
+References: <1317713279-2774-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>	 <1317963658.1573.2229.camel@vkoul-udesk3>	 <4E8E940E.7040701@dsn.lapis-semi.com> <1317968080.1573.2266.camel@vkoul-udesk3>
+In-Reply-To: <1317968080.1573.2266.camel@vkoul-udesk3>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 12:28 +0200, Stephane Eranian wrote:
-> On Thu, Oct 6, 2011 at 6:57 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2011-10-06 at 16:49 +0200, Stephane Eranian wrote:
-> >>  struct perf_branch_entry {
-> >>         __u64                           from;
-> >>         __u64                           to;
-> >> +       struct {
-> >> +               __u64                   mispred:1,  /* target mispredicted */
-> >> +                                       predicted:1,/* target predicted */
-> >> +                                       reserved:62;
-> >> +       };
-> >>  };
-> >
-> > Why that anonymous structure?
-> >
-> The interface can return more than source/destination, it can also
-> return prediction infos.
-> Prediction is boolean, thus we only need a couple of bits. The reason
-> there are two bits
-> and not just one is to disambiguate between: predicted correctly and
-> 'prediction reporting
-> unsupported'. For instance, prediction is also supported since
-> Nehalem, Core2/Atom do
-> not have it.
+(2011/10/07 15:14), Vinod Koul wrote:
+> This is all is due to not saving nr_channels in probe and using that
+> instead.
+>
+> Looking deeper, struct pch_dma defines array of length MAX_CHAN_NR for
+> channels. Then why do you allocate memory in probe as
+>           pd = kzalloc(sizeof(struct pch_dma)+
+>                   sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
+> what is the point in allocating additional memory for each channel?
+>
+> Given this, why should there be predefined channel array in pcm_dma?
+>
+> It would be great if we could fix this by dynamically allocating memory
+> for channels based on nr_channels and not wasting due to a static array.
 
-Right, I got that.
+You are right.
+Current pch_dma driver looks like wasting memory.
 
-> But maybe you're just commenting of the anonymous vs. named struct for
-> that?
+We must review pch_dma driver again.
 
-I don't see the need for any struct, why can't the bitfield live in
-perf_branch_entry proper?
-
-> It is just for convenience. Isn't that the same argument for the
-> anonymous bitfield
-> in struct perf_event_attr? 
-
-But that isn't wrapped in a structure either is it..
-
-I guess I'm asking, what's wrong with:
-
-struct perf_branch_entry {
-	__u64		from;
-	__u64		to;
-	__u64		mispred:1,
-			predicted:1,
-			reserved:62;
-};
-
-?
+Thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
