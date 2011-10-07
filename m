@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1JGOyZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 10:54:25 -0400
-Received: from lo.gmane.org ([80.91.229.12]:55600 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab1JGOyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 10:54:24 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-Subject: Re: A =?UTF-8?B?UGx1bWJlcuKAmXMgV2lzaCBMaXN0IGZvciBMaW51eA==?=
-Date: Fri, 07 Oct 2011 20:57:35 +0600
-Message-ID: <4E8F135F.2060301@gmail.com>
-References: <CAE2SPAZci=u__d58phePCftVr_e+i+N2YU-JYjGDG_b3TmYTSQ@mail.gmail.com> <20111007144027.3c785c76@lxorguk.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, david@fubar.dk, greg@kroah.com,
-        lennart@poettering.net, harald@redhat.com
-X-Gmane-NNTP-Posting-Host: 31.162.103.209
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110925 Lightning/1.0b3pre Thunderbird/3.1.12
-In-Reply-To: <20111007144027.3c785c76@lxorguk.ukuu.org.uk>
+	id S1752974Ab1JGO7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 10:59:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:22932 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab1JGO7g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 10:59:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=rpNoLQIW8BnAHoQFUi9xNeEb7XsYuSsbw1BdnZRricdpH07V/OJWvzA+lcyiPHocg
+	NjefQk+Io4J6sdjfiJTiA==
+MIME-Version: 1.0
+In-Reply-To: <20111007070504.3d5cc1f5@jbarnes-e6510>
+References: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
+ <20111007123133.GD1512@8bytes.org> <20111007070504.3d5cc1f5@jbarnes-e6510>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Oct 2011 08:59:12 -0600
+Message-ID: <CAErSpo5Z39_sSF16PxWf_KKxB7UO9i9ZFxD9tcse1029DZEAPQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4 v2] PCI: Add support for PASID capability
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07.10.2011 19:40, Alan Cox пишет:
-> On Fri, 7 Oct 2011 15:09:16 +0200
-> Bastien ROUCARIES<roucaries.bastien@gmail.com>  wrote:
+On Fri, Oct 7, 2011 at 8:05 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Fri, 7 Oct 2011 14:31:33 +0200
+> Joerg Roedel <joro@8bytes.org> wrote:
 >
->> For fat a special xattr for root inode ?
+>> On Tue, Sep 27, 2011 at 03:57:12PM +0200, Joerg Roedel wrote:
+>> > Hi,
+>> >
+>> > here is the second version of the patch-set implementing support
+>> > for the PRI and PASID capabilities into the Linux kernel. �These
+>> > capabilities of a PCIe device are tightly coupled with ATS, but not
+>> > with IOV. So these patches start by moving the ATS code into its
+>> > own file: ats.c.
+>> >
+>> > Support for the other two capabilities is based on that change.
 >
-> If it's as Kay says a specific magic part of the directory and we need
-> this just as a fixup for FAT and NTFS then probably an ioctl on it will
-> do the job nicely. Sometimes stretching existing API's in semi-sane ways
-> actually gets to produce worse special cases (like tar restoring the
-> volume label by accident depending upon its settings)
+> I've got this one queued up, but would definitely appreciate some
+> reviewed-bys on it.
 
-I'd say that we also need to consider EXFAT which is available only for 
-FUSE, and the fact that the FUSE-based NTFS driver has more features 
-than the kernel driver. And, frankly speaking, I don't think that FAT 
-belongs to the kernel at all. So any proposed solution has to be 
-extensible enough to also cover FUSE.
+For patches 1-4:
 
--- 
-Alexander E. Patrakov
-
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
