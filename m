@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759841Ab1JGKrD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:47:03 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:39844 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab1JGKrA (ORCPT
+	id S1759838Ab1JGKtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:49:49 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:11970 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab1JGKts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:47:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0EAJXXjk5bdWOb/2dsb2JhbABEqUCBUwEBBScLASMXDBALGC4UJQMhiBO4BYZRYQScTohq
-X-IronPort-AV: E=Sophos;i="4.68,501,1312149600"; 
-   d="scan'208";a="421844923"
-Date: Fri, 7 Oct 2011 12:46:56 +0200
-From: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Timo Teras <timo.teras@solidboot.com>
-Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
-Message-ID: <20111007104656.GB20440@lit.local.igalia.com>
-References: <20111006201827.GT6324@atomide.com>
- <1317977417-17874-1-git-send-email-vjaquez@igalia.com>
- <20111007092243.GC27281@n2100.arm.linux.org.uk>
+	Fri, 7 Oct 2011 06:49:48 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=e7xe6qhhW8MHHWAM1mDPsrF5Vbxr0VbgneShi2CgDp1mfvJppSSCr8iKFUUHlMFTT
+	13Eys6bCPiwGIGCd4YoZQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111007092243.GC27281@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1317984122.31132.6.camel@twins>
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	<1317912555-9559-8-git-send-email-eranian@google.com>
+	<20111006153229.GJ14482@one.firstfloor.org>
+	<CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
+	<CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>
+	<1317984122.31132.6.camel@twins>
+Date: Fri, 7 Oct 2011 12:49:44 +0200
+Message-ID: <CABPqkBTxxS-vuAycDJO-aJNE4EpCLF8xyPtJ1Jzv26f15HJC8A@mail.gmail.com>
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
+        robert.richter@amd.com, ravitillo@lbl.gov
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 10:22:43AM +0100, Russell King - ARM Linux wrote:
-> On Fri, Oct 07, 2011 at 10:50:16AM +0200, V�ctor Manuel J�quez Leal wrote:
-> > Convert a printk(KERN_ERR) message in the driver to pr_err().
-> ...
-> > @@ -111,7 +111,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
-> >  	while (!(__raw_readl(timer->sys_stat) & 1)) {
-> >  		c++;
-> >  		if (c > 100000) {
-> > -			printk(KERN_ERR "Timer failed to reset\n");
-> > +			pr_err("Timer failed to reset\n");
-> 
-> What is the reason behind this change?  It looks like it's to use the
-> latest and greatest function.
-> 
-> If so, please don't make these changes - we have on many occasions been
-> blamed for size of diffstat, churn, needless change, and this patch is
-> exactly that.
-> 
-> By all means fix printk's without KERN_ constants, possibly converting
-> them to pr_*, but don't go around replacing printk(KERN_* with pr_*(
-> without ensuring that there's a real benefit to the change.
-> 
-
-Thanks a lot Russell, and sorry for the noise. I'm still learning how to
-collaborate in the kernel.
-
-vmjl
+On Fri, Oct 7, 2011 at 12:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2011-10-07 at 12:40 +0200, Stephane Eranian wrote:
+>> On Fri, Oct 7, 2011 at 12:38 PM, Stephane Eranian <eranian@google.com> wrote:
+>> > On Thu, Oct 6, 2011 at 5:32 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >>> +     kernel_insn_init(&insn, kaddr);
+>> >>> +     insn_get_opcode(&insn);
+>> >>
+>> >> This makes me uncomfortable. AFAIK that's the first use of the opcode
+>> >> decoder being used directly for user space. It has a quite large attack
+>> >> surface. Who says it cannot be exploited?
+>> >>
+>> > This is not new, it's already used for the PEBS fixups and that includes
+>> > user level fixups, if possible.
+>> >
+>> > We are not executing the instruction here, just decoding it to filter it out
+>> > from a buffer if necessary.
+>> >
+>> I would add that in this particular usage, the source address is coming
+>> straight from LBR, it's not made up my SW. That means it corresponds
+>> to a point where there was a control flow change. But it can certainly
+>> be any x86 opcode (not just branches). LBR captures control flow changes
+>> due to traps, faults, interrupts.
+>
+> You could still fuzz it after the cpu passed through and before the
+> kernel reads the LBR. Its a narrow window, but quite feasible.
+>
+Yeah, depending on the depth of the LBR. But then what happens, you
+decode an instruction that is not what was executed. In this scenario,
+either that new instruction matches the user LBR filter or it does not.
+In the latter situation, the LBR record is not copied into the sampling
+buffer. In the former case, it is included and all you've done is generate
+a false profile. I think this can happen even without being malicious but
+just with self-modifying (JIT) code, though the depth of LBR is such that
+this is very unlikely (it must happen in the last 16 branches before the
+PMU interrupt).
