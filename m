@@ -1,608 +1,750 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab1JGBOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Oct 2011 21:14:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33873 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab1JGBOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Oct 2011 21:14:21 -0400
-Date: Fri, 7 Oct 2011 12:14:10 +1100
-From: NeilBrown <neilb@suse.de>
-To: =?UTF-8?B?0JLQsNC70LXRgNC40Lk=?= <paramonov@russia.ru>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-        duaneg@dghda.com
-Subject: Re: BUG: spinlock lockup while performing FS operations
-Message-ID: <20111007121410.53948c42@notabene.brown>
-In-Reply-To: <4E8DA415.8090007@russia.ru>
-References: <4E8DA415.8090007@russia.ru>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/hNgepwMnoJReQeP6W6us2Op"; protocol="application/pgp-signature"
+	id S1759443Ab1JGBPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Oct 2011 21:15:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39391 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab1JGBPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Oct 2011 21:15:23 -0400
+Date: Fri, 7 Oct 2011 03:15:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 3.0.6-rt17
+Message-ID: <alpine.LFD.2.02.1110070046270.3240@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/hNgepwMnoJReQeP6W6us2Op
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Dear RT Folks,
 
-On Thu, 06 Oct 2011 19:50:29 +0700 =D0=92=D0=B0=D0=BB=D0=B5=D1=80=D0=B8=D0=
-=B9 <paramonov@russia.ru> wrote:
+I'm pleased to announce the 3.0.6-rt17 release.
 
-> Hi!
->=20
-> Faced with this problem. There are RAID5, assembled by mdadm (/dev/md127),
-> which is divided into 2 partitions (md127p1 and md127p2). In both reiserf=
-s. The
-> second partition is exported via NFS. Everything works, the array is inta=
-ct and
-> fully synchronized. SMART says disks are healthy. But when copy too many =
-files
-> all hangs and saves only the reset. After a reset of course runs fsck, an=
-d then
-> synchronize the array.
->=20
-> I have a brand new computer. Sleaze is not set. Motherboard gigabyte 870-=
-UD3,
-> Power Supply FSP 700W, memory 16Gb Kingston, CPU Phenom II X6 1090T.
->=20
-> I  reported an error  on  bugs.gentoo.org: https://bugs.gentoo.org/show_b=
-ug.cgi?id=3D385047
-> Was  compiling a custom kernel  with support for  debugging and  debug me=
-ssages are  received.
-> Duane Griffin  then  sent me  upstream.
->=20
-> Now I have have BUG spinlock lockup on screen:
->=20
-> Nov 26 13:34:46 localhost kernel: BUG: spinlock lockup on CPU#2, mc/7609,=
- ffff880419c37200
-> Oct  4 15:55:50 localhost kernel: BUG: spinlock lockup on CPU#3, flush-9:=
-127/2391, ffff880419c37200
+After chasing weird RCU stalls and hung task messages for quite some
+time a massive collaborative effort was able to track down and fix
+this showstopper. Explanation from the changelog:
 
-Nov 26 ???
-Why are there dates from last year in the middle of you log?  Have you
-edited the log at all, or joined different bits together??
+   net: Avoid livelock in net_tx_action() on RT
 
+   qdisc_lock is taken w/o disabling interrupts or bottom halfs. So code
+   holding a qdisc_lock() can be interrupted and softirqs can run on the
+   return of interrupt in !RT.
 
-Please make sure that you provide complete logs, including where possible a
-few lines before and after the bit that you think is important.
+   The spin_trylock() in net_tx_action() makes sure, that the softirq
+   does not deadlock. When the lock can't be acquired q is requeued and
+   the NET_TX softirq is raised. That causes the softirq to run over and
+   over.
 
-If the clock is really jumping around, then maybe that is confusing some
-timing for the measuring of whether a task has 'hung' or not.
+   That works in mainline as do_softirq() has a retry loop limit and
+   leaves the softirq processing in the interrupt return path and
+   schedules ksoftirqd. The task which holds qdisc_lock cannot be
+   preempted, so the lock is released and either ksoftirqd or the next
+   softirq in the return from interrupt path can proceed. Though it's a
+   bit strange to actually run MAX_SOFTIRQ_RESTART (10) loops before it
+   decides to bail out even if it's clear in the first iteration :)
 
-Can you get a complete trace without any sudden changes in the system time?
+   On RT all softirq processing is done in a FIFO thread and we don't
+   have a loop limit, so ksoftirqd preempts the lock holder forever and
+   unqueues and requeues until the reset button is hit.
 
-NeilBrown
+   Due to the forced threading of ksoftirqd on RT we actually cannot
+   deadlock on qdisc_lock because it's a "sleeping lock". So it's safe to
+   replace the spin_trylock() with a spin_lock(). When contended,
+   ksoftirqd is scheduled out and the lock holder can proceed.
 
+Thanks to all involved in chasing that nasty issue down, which was
+unfortunately hard to reproduce. Thanks go to
 
+    - Carsten Emde for providing the initial debug data to narrow it
+      down, coming up with great ways of debugging it and happily
+      testing whatever we came up with
 
->=20
-> Full log from /var/log/messages:
->=20
-> Oct  4 15:53:09 localhost kernel: INFO: rcu_preempt_state detected stalls=
- on CPUs/tasks: { 0 2} (detected by 5, t=3D60028 jiffies)
-> Oct  4 15:53:15 localhost kernel: INFO: rcu_bh_state detected stalls on C=
-PUs/tasks: { 0 2 3} (detected by 5, t=3D60025 jiffies)
-> Oct  4 15:55:25 localhost kernel: INFO: task sync_supers:151 blocked for =
-more than 120 seconds.
-> Oct  4 15:55:25 localhost kernel: "echo 0>  /proc/sys/kernel/hung_task_ti=
-meout_secs" disables this message.
-> Oct  4 15:55:25 localhost kernel: sync_supers     D 0000000000000000     =
-0   151      2 0x00000000
-> Oct  4 15:55:25 localhost kernel: ffff88042dba5740 0000000000000046 fffff=
-fff81493e95 0000000000000008
-> Oct  4 15:55:25 localhost kernel: ffff88042dba8000 00000000000001ec 00000=
-00000010b40 ffff88042dba8000
-> Oct  4 15:55:25 localhost kernel: 0000000000010b40 ffff88042dba5fd8 ffff8=
-8042dba4000 0000000000004000
-> Oct  4 15:55:25 localhost kernel: Call Trace:
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81493e95>] ? schedule+0x695/0=
-xa10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8107b462>] ? mark_held_locks+=
-0x72/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8103fa41>] ? get_parent_ip+0x=
-11/0x50
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8138de22>] get_active_stripe+=
-0x312/0x6f0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8103e7f0>] ? try_to_wake_up+0=
-x2d0/0x2d0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81391bb8>] make_request+0x1a8=
-/0x720
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81064430>] ? wake_up_bit+0x40=
-/0x40
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8139c6be>] md_make_request+0x=
-16e/0x2f0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8139c5a8>] ? md_make_request+=
-0x58/0x2f0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810fcbb3>] ? kmem_cache_alloc=
-+0x33/0xc0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81242dac>] generic_make_reque=
-st+0x14c/0x2f0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81242fb1>] submit_bio+0x61/0x=
-d0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81131e26>] submit_bh+0xe6/0x1=
-20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81192c8b>] write_ordered_chun=
-k+0x5b/0x90
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81192bfc>] add_to_chunk+0x4c/=
-0x80
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81192c30>] ? add_to_chunk+0x8=
-0/0x80
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8119407d>] write_ordered_buff=
-ers.clone.31+0x8d/0x2a0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8107b60d>] ? trace_hardirqs_o=
-n+0xd/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8119444f>] flush_commit_list+=
-0x1bf/0x6e0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff811984d4>] do_journal_end.clo=
-ne.34+0xdb4/0xf20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810d4b90>] ? bdi_sched_wait+0=
-x10/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81198f54>] journal_end_sync+0=
-x64/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81186178>] reiserfs_sync_fs+0=
-x58/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8149608f>] ? down_read+0x2f/0=
-x50
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8118619e>] reiserfs_write_sup=
-er+0xe/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81109cca>] sync_supers+0xfa/0=
-x100
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810d4bd1>] bdi_sync_supers+0x=
-41/0x60
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810d4b90>] ? bdi_sched_wait+0=
-x10/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063f36>] kthread+0x96/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499194>] kernel_thread_help=
-er+0x4/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810368b0>] ? finish_task_swit=
-ch+0x80/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814978c4>] ? retint_restore_a=
-rgs+0xe/0xe
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063ea0>] ? __init_kthread_w=
-orker+0x70/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499190>] ? gs_change+0xb/0xb
-> Oct  4 15:55:25 localhost kernel: 2 locks held by sync_supers/151:
-> Oct  4 15:55:25 localhost kernel: #0:  (&type->s_umount_key#18){+++++.}, =
-at: [<ffffffff81109c53>] sync_supers+0x83/0x100
-> Oct  4 15:55:25 localhost kernel: #1:  (&jl->j_commit_mutex){+.+...}, at:=
- [<ffffffff811943c8>] flush_commit_list+0x138/0x6e0
-> Oct  4 15:55:25 localhost kernel: INFO: task md127_resync:3773 blocked fo=
-r more than 120 seconds.
-> Oct  4 15:55:25 localhost kernel: "echo 0>  /proc/sys/kernel/hung_task_ti=
-meout_secs" disables this message.
-> Oct  4 15:55:25 localhost kernel: md127_resync    D 0000000000000000     =
-0  3773      2 0x00000000
-> Oct  4 15:55:25 localhost kernel: ffff88041880fbb0 0000000000000046 fffff=
-fff81493e95 0000000000000000
-> Oct  4 15:55:25 localhost kernel: 0000000000000000 ffff88041822e158 00000=
-00000010b40 ffff88042d935b20
-> Oct  4 15:55:25 localhost kernel: 0000000000010b40 ffff88041880ffd8 ffff8=
-8041880e000 0000000000004000
-> Oct  4 15:55:25 localhost kernel: Call Trace:
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81493e95>] ? schedule+0x695/0=
-xa10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8103fa41>] ? get_parent_ip+0x=
-11/0x50
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81494742>] schedule_timeout+0=
-x152/0x220
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81053490>] ? run_timer_softir=
-q+0x2c0/0x2c0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81494829>] schedule_timeout_u=
-ninterruptible+0x19/0x20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81053d58>] msleep+0x18/0x20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8139dc7c>] md_do_sync+0x93c/0=
-xd60
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8149743b>] ? _raw_spin_unlock=
-_irq+0x2b/0x60
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81064430>] ? wake_up_bit+0x40=
-/0x40
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81054676>] ? recalc_sigpendin=
-g+0x16/0x40
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8139e3e6>] md_thread+0x116/0x=
-150
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814974ad>] ? _raw_spin_unlock=
-_irqrestore+0x3d/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8139e2d0>] ? md_register_thre=
-ad+0x110/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063f36>] kthread+0x96/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499194>] kernel_thread_help=
-er+0x4/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810368b0>] ? finish_task_swit=
-ch+0x80/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814978c4>] ? retint_restore_a=
-rgs+0xe/0xe
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063ea0>] ? __init_kthread_w=
-orker+0x70/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499190>] ? gs_change+0xb/0xb
-> Oct  4 15:55:25 localhost kernel: no locks held by md127_resync/3773.
-> Oct  4 15:55:25 localhost kernel: INFO: task mc:7609 blocked for more tha=
-n 120 seconds.
-> Oct  4 15:55:25 localhost kernel: "echo 0>  /proc/sys/kernel/hung_task_ti=
-meout_secs" disables this message.
-> Oct  4 15:55:25 localhost kernel: mc              D 00000000000213da     =
-0  7609   7603 0x00000000
-> Oct  4 15:55:25 localhost kernel: 0000000091827364 ffff880418bb9af0 ffff8=
-80418bb9af0 ffff880418bb9b00
-> Oct  4 15:55:25 localhost kernel: ffff880418bb9b00 ffffffff00000000 00000=
-00000000087 0000000000521e7f
-> Oct  4 15:55:25 localhost kernel: 00000000000000ca 00000000000000cb 00000=
-00000000133 ffff880418bb9bd8
-> Oct  4 15:55:25 localhost kernel: Call Trace:
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8117b5a8>] ? reiserfs_readpag=
-es+0x18/0x20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810c75ad>] ? __do_page_cache_=
-readahead+0x20d/0x2c0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810c7455>] ? __do_page_cache_=
-readahead+0xb5/0x2c0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff812cc920>] ? fbcon_decor_curs=
-or+0x150/0x1e0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810c798c>] ? ra_submit+0x1c/0=
-x20
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810c7a96>] ? ondemand_readahe=
-ad+0x106/0x2b0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810c7d0c>] ? page_cache_sync_=
-readahead+0x2c/0x40
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810be8d8>] ? generic_file_aio=
-_read+0x428/0x770
-> Oct  4 15:55:25 localhost kernel: [<ffffffff811064c2>] ? do_sync_read+0xd=
-2/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8123266c>] ? security_file_pe=
-rmission+0x8c/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81106c33>] ? vfs_read+0xc3/0x=
-170
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81106d2c>] ? sys_read+0x4c/0x=
-90
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8149803b>] ? system_call_fast=
-path+0x16/0x1b
-> Oct  4 15:55:25 localhost kernel: 1 lock held by mc/7609:
-> Oct  4 15:55:25 localhost kernel: #0:  (&(&conf->device_lock)->rlock){..-=
-...}, at: [<ffffffff8138c862>] release_stripe+0x32/0x60
-> Oct  4 15:55:25 localhost kernel: INFO: task kworker/1:2:7644 blocked for=
- more than 120 seconds.
-> Oct  4 15:55:25 localhost kernel: "echo 0>  /proc/sys/kernel/hung_task_ti=
-meout_secs" disables this message.
-> Oct  4 15:55:25 localhost kernel: kworker/1:2     D 0000000000000000     =
-0  7644      2 0x00000000
-> Oct  4 15:55:25 localhost kernel: ffff88041b761c50 0000000000000046 fffff=
-fff81493e95 0000000000000002
-> Oct  4 15:55:25 localhost kernel: ffff88041b761c10 0000000000000046 00000=
-00000010b40 ffff88041b57ad90
-> Oct  4 15:55:25 localhost kernel: 0000000000010b40 ffff88041b761fd8 ffff8=
-8041b760000 0000000000004000
-> Oct  4 15:55:25 localhost kernel: Call Trace:
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81493e95>] ? schedule+0x695/0=
-xa10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8103d861>] ? load_balance+0xd=
-1/0x830
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8107b462>] ? mark_held_locks+=
-0x72/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814959d7>] mutex_lock_nested+=
-0x167/0x380
-> Oct  4 15:55:25 localhost kernel: [<ffffffff811943c8>] ? flush_commit_lis=
-t+0x138/0x6e0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8107b5bd>] ? trace_hardirqs_o=
-n_caller+0x12d/0x170
-> Oct  4 15:55:25 localhost kernel: [<ffffffff811943c8>] flush_commit_list+=
-0x138/0x6e0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8119532a>] flush_async_commit=
-s+0x5a/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8105cdcb>] process_one_work+0=
-x18b/0x440
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8105cd6a>] ? process_one_work=
-+0x12a/0x440
-> Oct  4 15:55:25 localhost kernel: [<ffffffff811952d0>] ? get_list_bitmap+=
-0xc0/0xc0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8105f062>] worker_thread+0x16=
-2/0x340
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8105ef00>] ? manage_workers.c=
-lone.25+0x230/0x230
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8105ef00>] ? manage_workers.c=
-lone.25+0x230/0x230
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063f36>] kthread+0x96/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499194>] kernel_thread_help=
-er+0x4/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810368b0>] ? finish_task_swit=
-ch+0x80/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814978c4>] ? retint_restore_a=
-rgs+0xe/0xe
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063ea0>] ? __init_kthread_w=
-orker+0x70/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499190>] ? gs_change+0xb/0xb
-> Oct  4 15:55:25 localhost kernel: 3 locks held by kworker/1:2/7644:
-> Oct  4 15:55:25 localhost kernel: #0:  (reiserfs){.+.+..}, at: [<ffffffff=
-8105cd6a>] process_one_work+0x12a/0x440
-> Oct  4 15:55:25 localhost kernel: #1:  ((&(&journal->j_work)->work)){+.+.=
-..}, at: [<ffffffff8105cd6a>] process_one_work+0x12a/0x440
-> Oct  4 15:55:25 localhost kernel: #2:  (&jl->j_commit_mutex){+.+...}, at:=
- [<ffffffff811943c8>] flush_commit_list+0x138/0x6e0
-> Oct  4 15:55:25 localhost kernel: INFO: task flush-9:127:2391 blocked for=
- more than 120 seconds.
-> Oct  4 15:55:25 localhost kernel: "echo 0>  /proc/sys/kernel/hung_task_ti=
-meout_secs" disables this message.
-> Oct  4 15:55:25 localhost kernel: flush-9:127     D ffffffff8112b988     =
-0  2391      2 0x00000000
-> Oct  4 15:55:25 localhost kernel: 0000000000000000 ffffffff81897e00 ffff8=
-804184bd808 ffff880419c2c980
-> Oct  4 15:55:25 localhost kernel: ffff88040367fc80 ffff88042f019800 ffff8=
-80419c2c8e0 ffff880419c2c970
-> Oct  4 15:55:25 localhost kernel: ffff88040367fd00 ffff88042f019868 ffff8=
-8040367fcd0 ffffffff8112c4b3
-> Oct  4 15:55:25 localhost kernel: Call Trace:
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8112c4b3>] ? writeback_inodes=
-_wb+0x83/0x180
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8112c86b>] ? wb_writeback+0x2=
-bb/0x330
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8103fb15>] ? sub_preempt_coun=
-t+0x95/0xd0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8112cb20>] ? wb_do_writeback+=
-0x240/0x250
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8112cbc2>] ? bdi_writeback_th=
-read+0x92/0x180
-> Oct  4 15:55:25 localhost kernel: [<ffffffff8112cb30>] ? wb_do_writeback+=
-0x250/0x250
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063f36>] ? kthread+0x96/0xa0
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499194>] ? kernel_thread_he=
-lper+0x4/0x10
-> Oct  4 15:55:25 localhost kernel: [<ffffffff810368b0>] ? finish_task_swit=
-ch+0x80/0x110
-> Oct  4 15:55:25 localhost kernel: [<ffffffff814978c4>] ? retint_restore_a=
-rgs+0xe/0xe
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81063ea0>] ? __init_kthread_w=
-orker+0x70/0x70
-> Oct  4 15:55:25 localhost kernel: [<ffffffff81499190>] ? gs_change+0xb/0xb
-> Oct  4 15:55:25 localhost kernel: 2 locks held by flush-9:127/2391:
-> Oct  4 15:55:25 localhost kernel: #0:  (&type->s_umount_key#24){.+.+..}, =
-at: [<ffffffff8112c52c>] writeback_inodes_wb+0xfc/0x180
-> Oct  4 15:55:25 localhost kernel: #1:  (&(&conf->device_lock)->rlock){..-=
-...}, at: [<ffffffff8138db45>] get_active_stripe+0x35/0x6f0
-> Nov 26 13:34:46 localhost -- MARK --
-> Nov 26 13:34:46 localhost kernel: BUG: spinlock lockup on CPU#2, mc/7609,=
- ffff880419c37200
-> Nov 26 13:34:46 localhost kernel: Pid: 7609, comm: mc Tainted: G        W=
-   3.0.4-gentoo-r1 #7
-> Nov 26 13:34:46 localhost kernel: Call Trace:
-> Nov 26 13:34:46 localhost kernel:<IRQ>   [<ffffffff81267866>] do_raw_spin=
-_lock+0x156/0x170
-> Nov 26 13:34:46 localhost kernel: [<ffffffff81496cc9>] _raw_spin_lock_irq=
-save+0x49/0x60
-> Nov 26 13:34:46 localhost kernel: [<ffffffff8138c862>] ? release_stripe+0=
-x32/0x60
-> Nov 26 13:34:46 localhost kernel: [<ffffffff814974ad>] ? _raw_spin_unlock=
-_irqrestore+0x3d/0x70
-> Nov 26 13:34:46 localhost kernel: [<ffffffff8138c862>] release_stripe+0x3=
-2/0x60
-> Nov 26 13:34:46 localhost kernel: [<ffffffff8138e80f>] raid5_end_write_re=
-quest+0xcf/0x120
-> Nov 26 13:34:46 localhost kernel: [<ffffffff81136318>] bio_endio+0x18/0x30
-> Nov 26 13:34:46 localhost syslog-ng[6446]: Log statistics; processed=3D'c=
-enter(received)=3D0', processed=3D'center(queued)=3D0', processed=3D'source=
-(src)=3D999', processed=3D'destination(console_all)=3D999', processed=3D'de=
-stination(messages)=3D999', processed=3D'global(payload_reallocs)=3D0', pro=
-cessed=3D'global(sdata_updates)=3D0', processed=3D'src.internal(src#1)=3D2'=
-, stamp=3D'src.internal(src#1)=3D2584593286', processed=3D'global(msg_clone=
-s)=3D0'
-> Nov 26 13:36:43 localhost kernel: [<ffffffff812444fb>] req_bio_endio.clon=
-e.39+0x8b/0xd0
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81244633>] blk_update_request=
-+0xf3/0x500
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81244869>] ? blk_update_reque=
-st+0x329/0x500
-> Nov 26 13:36:43 localhost kernel: [<ffffffff8132f765>] ? ata_scsi_qc_comp=
-lete+0x65/0x460
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81244a6f>] blk_update_bidi_re=
-quest+0x2f/0x90
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81244c3a>] blk_end_bidi_reque=
-st+0x2a/0x80
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81244ccb>] blk_end_request+0x=
-b/0x10
-> Nov 26 13:36:43 localhost kernel: [<ffffffff81319ab7>] scsi_io_completion=
-+0x97/0x5d0
-> Nov 26 13:36:43 localhost kernel: [<ffffffff813124c2>] scsi_finish_comman=
-d+0xb2/0xe0
-> Nov 26 13:36:43 localhost kernel: [<ffffffff813198ad>] scsi_softirq_done+=
-0x9d/0x130
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81249b4d>] blk_done_softirq+0=
-x7d/0x90
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8104cbf8>] __do_softirq+0xa8/=
-0x140
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8149928c>] call_softirq+0x1c/=
-0x30
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810047b5>] do_softirq+0x85/0x=
-c0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8104cf9e>] irq_exit+0x9e/0xc0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810043d1>] do_IRQ+0x61/0xd0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81497813>] common_interrupt+0=
-x13/0x13
-> Oct  4 15:55:50 localhost kernel:<EOI>   [<ffffffff81497441>] ? _raw_spin=
-_unlock_irq+0x31/0x60
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8149743b>] ? _raw_spin_unlock=
-_irq+0x2b/0x60
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8131958e>] scsi_request_fn+0x=
-34e/0x400
-> Oct  4 15:55:50 localhost kernel: [<ffffffff812424a9>] __blk_run_queue+0x=
-19/0x20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff812537b5>] cfq_insert_request=
-+0x345/0x4d0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81241a56>] __elv_add_request+=
-0x126/0x1e0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81245880>] blk_flush_plug_lis=
-t+0x1b0/0x200
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81493c32>] schedule+0x432/0xa=
-10
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103fa41>] ? get_parent_ip+0x=
-11/0x50
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103fb15>] ? sub_preempt_coun=
-t+0x95/0xd0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8138de22>] get_active_stripe+=
-0x312/0x6f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103e7f0>] ? try_to_wake_up+0=
-x2d0/0x2d0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81391bb8>] make_request+0x1a8=
-/0x720
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81064430>] ? wake_up_bit+0x40=
-/0x40
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8139c6be>] md_make_request+0x=
-16e/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8139c5a8>] ? md_make_request+=
-0x58/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81242dac>] generic_make_reque=
-st+0x14c/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8113741a>] ? bvec_alloc_bs+0x=
-6a/0x100
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81242fb1>] submit_bio+0x61/0x=
-d0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8113c3f7>] do_mpage_readpage+=
-0x317/0x650
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c8c46>] ? __lru_cache_add+=
-0x76/0xc0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8113c89c>] mpage_readpages+0x=
-fc/0x150
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8117d7a0>] ? restart_transact=
-ion+0xb0/0xb0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8117d7a0>] ? restart_transact=
-ion+0xb0/0xb0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8117b5a8>] reiserfs_readpages=
-+0x18/0x20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c75ad>] __do_page_cache_re=
-adahead+0x20d/0x2c0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c7455>] ? __do_page_cache_=
-readahead+0xb5/0x2c0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff812cc920>] ? fbcon_decor_curs=
-or+0x150/0x1e0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c798c>] ra_submit+0x1c/0x20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c7a96>] ondemand_readahead=
-+0x106/0x2b0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c7d0c>] page_cache_sync_re=
-adahead+0x2c/0x40
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810be8d8>] generic_file_aio_r=
-ead+0x428/0x770
-> Oct  4 15:55:50 localhost kernel: [<ffffffff811064c2>] do_sync_read+0xd2/=
-0x110
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8123266c>] ? security_file_pe=
-rmission+0x8c/0xa0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81106c33>] vfs_read+0xc3/0x170
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81106d2c>] sys_read+0x4c/0x90
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8149803b>] system_call_fastpa=
-th+0x16/0x1b
-> Oct  4 15:55:50 localhost kernel: BUG: spinlock lockup on CPU#3, flush-9:=
-127/2391, ffff880419c37200
-> Oct  4 15:55:50 localhost kernel: Pid: 2391, comm: flush-9:127 Tainted: G=
-        W   3.0.4-gentoo-r1 #7
-> Oct  4 15:55:50 localhost kernel: Call Trace:
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81267866>] do_raw_spin_lock+0=
-x156/0x170
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81496c74>] _raw_spin_lock_irq=
-+0x44/0x50
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8138db45>] ? get_active_strip=
-e+0x35/0x6f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8138db45>] get_active_stripe+=
-0x35/0x6f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8107b462>] ? mark_held_locks+=
-0x72/0xa0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103fa41>] ? get_parent_ip+0x=
-11/0x50
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103fb15>] ? sub_preempt_coun=
-t+0x95/0xd0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff814974ad>] ? _raw_spin_unlock=
-_irqrestore+0x3d/0x70
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810646cb>] ? prepare_to_wait+=
-0x5b/0x90
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81391bb8>] make_request+0x1a8=
-/0x720
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81064430>] ? wake_up_bit+0x40=
-/0x40
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8139c6be>] md_make_request+0x=
-16e/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8139c5a8>] ? md_make_request+=
-0x58/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810fcbb3>] ? kmem_cache_alloc=
-+0x33/0xc0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81242dac>] generic_make_reque=
-st+0x14c/0x2f0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81242fb1>] submit_bio+0x61/0x=
-d0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81131e26>] submit_bh+0xe6/0x1=
-20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff811352c7>] __block_write_full=
-_page+0x1f7/0x370
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81133db0>] ? block_read_full_=
-page+0x3b0/0x3b0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81138040>] ? I_BDEV+0x10/0x10
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81138040>] ? I_BDEV+0x10/0x10
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8113552e>] block_write_full_p=
-age_endio+0xee/0x130
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8107b462>] ? mark_held_locks+=
-0x72/0xa0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81135580>] block_write_full_p=
-age+0x10/0x20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81138ef3>] blkdev_writepage+0=
-x13/0x20
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c5925>] __writepage+0x15/0=
-x50
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c60a1>] write_cache_pages+=
-0x1f1/0x420
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c5910>] ? set_page_dirty+0=
-x70/0x70
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c6318>] generic_writepages=
-+0x48/0x60
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810c71ff>] do_writepages+0x1f=
-/0x40
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112b5a9>] writeback_single_i=
-node+0xf9/0x260
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112b988>] writeback_sb_inode=
-s+0xe8/0x1c0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112c4b3>] writeback_inodes_w=
-b+0x83/0x180
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112c86b>] wb_writeback+0x2bb=
-/0x330
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8103fb15>] ? sub_preempt_coun=
-t+0x95/0xd0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112cb20>] wb_do_writeback+0x=
-240/0x250
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112cbc2>] bdi_writeback_thre=
-ad+0x92/0x180
-> Oct  4 15:55:50 localhost kernel: [<ffffffff8112cb30>] ? wb_do_writeback+=
-0x250/0x250
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81063f36>] kthread+0x96/0xa0
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81499194>] kernel_thread_help=
-er+0x4/0x10
-> Oct  4 15:55:50 localhost kernel: [<ffffffff810368b0>] ? finish_task_swit=
-ch+0x80/0x110
-> Oct  4 15:55:50 localhost kernel: [<ffffffff814978c4>] ? retint_restore_a=
-rgs+0xe/0xe
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81063ea0>] ? __init_kthread_w=
-orker+0x70/0x70
-> Oct  4 15:55:50 localhost kernel: [<ffffffff81499190>] ? gs_change+0xb/0xb
->=20
-> Why  date  a failure  to  report?What next?
-> Thanks.
->=20
-> ---
-> ParamonovValery.
+    - Steven Rostedt for coming up with the final debug patches which
+      gave me a clue for decoding the issue and the now applied patch
+      which is much more cleaner than what I hacked together
+
+    - Paul McKenney for spending tons of time to discuss the RCU_BH
+      semantics in the light of RT with me and his findings that we
+      need to bring back my initial patch (with a proper changelog -
+      written by Paul) and some additional fixups
+
+    - Peter Zijlstra for bearing with my bad mood and helping
+      analyzing all the findings. Peter finally decoded the mistery
+      why the RT throttling mechanism did not detect that ksoftirqd
+      went into an infinite loop. As a result he provided an amazingly
+      simple mechanism to make the RT overload detector going from
+      system wide to per cpu. We can now simply set the scheduler
+      feature RT_RUNTIME_SHARE to 0 which enables us to debug cpu
+      local RT hogs.
+
+    - Luis Claudio Goncalves for running whatever tests we came up
+      with on his reproducer machine
+
+Additional thanks go to
+
+     - Frank Rowand who diligently runs each RT release through his
+       seemingly endless supply of configs and testbeds and comes
+       forth with fixes and enhancements with amazing speed!
+
+     - OSADL and Carsten Emde for providing the invaluable service of
+       the RT QA farm
+       (https://www.osadl.org/QA-Farm-Realtime.qa-farm-about.0.html)
+       which provides longterm statistical data and when problems
+       arise always competent and helpful assistance for tracking them
+       down and providing fixes as his times allows.
+
+     - Mike Galbraith for analyzing and decoding itty details all over
+       the place.
+
+     - all those who reported problems and provided debug data and
+       fixes
 
 
---Sig_/hNgepwMnoJReQeP6W6us2Op
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+That said, here are the changes from 3.0.6-rt16 to 3.0.6-rt17 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+  * Fix a livelock in net_tx_action (Steven Rostedt, myself)
 
-iQIVAwUBTo5SYjnsnt1WYoG5AQJzEg//U+whEzbYI3IK2l1Zc13dfY32LHXFertr
-NBdpgW1I0kd4XblaJVVAG3XnpmXU1oxdL1SAUxrSO095YNOiTy9DRqipgUbIkC6g
-G1SmMtzowXkLwnTnww0eAGxOAFe0lyEgcEOgOZR8SQMAILSuOW/0yQ7nf0V6ehXV
-L4iWVh5VJceQqtj6xR2WrihTiGVLIao9/Ud4GTDW6905kzoo8DzZKuvnn4BYfIH8
-dDhAPI0Li4ly1nSSoZp8aPaVsVJhZ3oZt4p/VfhqtL822+wzOR4jbzfl1ZSR+Vbo
-yaSMrhLfjlEo1224wAF3/tRXKopwRtIJcvOwdg8vCugCtcgTKfxX4MJdEKye9TkT
-1pYR4dQacwlI+wzIiAD3s1waXXuQ5K6F2NpkrxpxntUjaU9DINxGd83pp1S1BZJg
-PpvRAoHJz6TiAcuZl3lZMoj9JumWF9sHhZYdUQesFJevhWYqAFcLuD8tHSEP9wHq
-1ezQ3nosG2SgfqcwdvY5154I61ffjD1IptFDvEBdUrBfvI9nVK7vr/QG9G+u+F8I
-/D0RMvCuGpQVQqwn/GfcOYtKuHkdP8nxtaYeki2r4n1LDWPCK6JzYXMK+7C/SZcK
-YcAAd1ahB0PLuA0Mtc61O7owSyrimW8BoIW4qqJ+zDnRLQjNJcN7fMqJDl0XeSSH
-xXUWzRwuujA=
-=Y9i4
------END PGP SIGNATURE-----
+  * Bring back RCU_bh modifications with further fixups (Paul McKenney)
 
---Sig_/hNgepwMnoJReQeP6W6us2Op--
+  * Fix PF_THREAD_BOUND asymetry in workqueues
+
+  * UP compile fix (Frank Rowand)
+
+  * RT overload debug patch (Peter Zijlstra)
+
+  * Dropped a obsolete RCU protection fixup
+
+  * More IRQF_NO_THREAD annotations for powerpc
+
+Delta patch against 3.0.6-rt16
+
+  https://tglx.de/~tglx/rt/patch-3.0.6-rt16-rt17.patch.gz
+
+also appended below.
+
+
+Patch against 3.0.6 can be found here:
+
+  https://tglx.de/~tglx/rt/patch-3.0.6-rt17.patch.gz
+
+
+The split quilt queue is available at:
+
+  https://tglx.de/~tglx/rt/patches-3.0.6-rt17.tar.gz
+
+Enjoy,
+
+	tglx
+
+--------------->
+Index: linux-2.6/fs/ioprio.c
+===================================================================
+--- linux-2.6.orig/fs/ioprio.c
++++ linux-2.6/fs/ioprio.c
+@@ -226,7 +226,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, 
+ 			if (!user)
+ 				break;
+ 
+-			rcu_read_lock();
+ 			do_each_thread(g, p) {
+ 				if (__task_cred(p)->uid != user->uid)
+ 					continue;
+@@ -238,7 +237,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, 
+ 				else
+ 					ret = ioprio_best(ret, tmpio);
+ 			} while_each_thread(g, p);
+-			rcu_read_unlock();
+ 
+ 			if (who)
+ 				free_uid(user);
+Index: linux-2.6/include/linux/rcupdate.h
+===================================================================
+--- linux-2.6.orig/include/linux/rcupdate.h
++++ linux-2.6/include/linux/rcupdate.h
+@@ -78,7 +78,13 @@ struct rcu_head {
+ extern void call_rcu_sched(struct rcu_head *head,
+ 			   void (*func)(struct rcu_head *rcu));
+ extern void synchronize_sched(void);
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++# define rcu_barrier_bh		rcu_barrier
++#else
+ extern void rcu_barrier_bh(void);
++#endif
++
+ extern void rcu_barrier_sched(void);
+ 
+ static inline void __rcu_read_lock_bh(void)
+@@ -229,7 +235,14 @@ static inline int rcu_read_lock_held(voi
+  * rcu_read_lock_bh_held() is defined out of line to avoid #include-file
+  * hell.
+  */
++#ifdef CONFIG_PREEMPT_RT_FULL
++static inline int rcu_read_lock_bh_held(void)
++{
++	return rcu_read_lock_held();
++}
++#else
+ extern int rcu_read_lock_bh_held(void);
++#endif
+ 
+ /**
+  * rcu_read_lock_sched_held() - might we be in RCU-sched read-side critical section?
+@@ -638,8 +651,13 @@ static inline void rcu_read_unlock(void)
+ static inline void rcu_read_lock_bh(void)
+ {
+ 	__rcu_read_lock_bh();
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++	rcu_read_lock();
++#else
+ 	__acquire(RCU_BH);
+ 	rcu_read_acquire_bh();
++#endif
+ }
+ 
+ /*
+@@ -649,8 +667,12 @@ static inline void rcu_read_lock_bh(void
+  */
+ static inline void rcu_read_unlock_bh(void)
+ {
++#ifdef CONFIG_PREEMPT_RT_FULL
++	rcu_read_unlock();
++#else
+ 	rcu_read_release_bh();
+ 	__release(RCU_BH);
++#endif
+ 	__rcu_read_unlock_bh();
+ }
+ 
+@@ -757,6 +779,9 @@ extern void call_rcu(struct rcu_head *he
+ 
+ #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++#define call_rcu_bh	call_rcu
++#else
+ /**
+  * call_rcu_bh() - Queue an RCU for invocation after a quicker grace period.
+  * @head: structure to be used for queueing the RCU updates.
+@@ -777,6 +802,7 @@ extern void call_rcu(struct rcu_head *he
+  */
+ extern void call_rcu_bh(struct rcu_head *head,
+ 			void (*func)(struct rcu_head *head));
++#endif
+ 
+ /*
+  * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
+Index: linux-2.6/kernel/rcutree.c
+===================================================================
+--- linux-2.6.orig/kernel/rcutree.c
++++ linux-2.6/kernel/rcutree.c
+@@ -166,6 +166,12 @@ void rcu_sched_qs(int cpu)
+ 	rdp->passed_quiesc = 1;
+ }
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++void rcu_bh_qs(int cpu)
++{
++	rcu_preempt_qs(cpu);
++}
++#else
+ void rcu_bh_qs(int cpu)
+ {
+ 	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
+@@ -174,6 +180,7 @@ void rcu_bh_qs(int cpu)
+ 	barrier();
+ 	rdp->passed_quiesc = 1;
+ }
++#endif
+ 
+ /*
+  * Note a context switch.  This is a quiescent state for RCU-sched,
+@@ -216,6 +223,7 @@ long rcu_batches_completed_sched(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_batches_completed_sched);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /*
+  * Return the number of RCU BH batches processed thus far for debug & stats.
+  */
+@@ -233,6 +241,7 @@ void rcu_bh_force_quiescent_state(void)
+ 	force_quiescent_state(&rcu_bh_state, 0);
+ }
+ EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
++#endif
+ 
+ /*
+  * Record the number of times rcutorture tests have been initiated and
+@@ -1579,6 +1588,7 @@ void call_rcu_sched(struct rcu_head *hea
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_sched);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /*
+  * Queue an RCU for invocation after a quicker grace period.
+  */
+@@ -1587,6 +1597,7 @@ void call_rcu_bh(struct rcu_head *head, 
+ 	__call_rcu(head, func, &rcu_bh_state);
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_bh);
++#endif
+ 
+ /**
+  * synchronize_sched - wait until an rcu-sched grace period has elapsed.
+@@ -1628,6 +1639,7 @@ void synchronize_sched(void)
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /**
+  * synchronize_rcu_bh - wait until an rcu_bh grace period has elapsed.
+  *
+@@ -1653,6 +1665,7 @@ void synchronize_rcu_bh(void)
+ 	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
++#endif
+ 
+ /*
+  * Check to see if there is any immediate RCU-related work to be done
+@@ -1806,6 +1819,7 @@ static void _rcu_barrier(struct rcu_stat
+ 	mutex_unlock(&rcu_barrier_mutex);
+ }
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /**
+  * rcu_barrier_bh - Wait until all in-flight call_rcu_bh() callbacks complete.
+  */
+@@ -1814,6 +1828,7 @@ void rcu_barrier_bh(void)
+ 	_rcu_barrier(&rcu_bh_state, call_rcu_bh);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_bh);
++#endif
+ 
+ /**
+  * rcu_barrier_sched - Wait for in-flight call_rcu_sched() callbacks.
+Index: linux-2.6/kernel/rcutree.h
+===================================================================
+--- linux-2.6.orig/kernel/rcutree.h
++++ linux-2.6/kernel/rcutree.h
+@@ -422,6 +422,7 @@ DECLARE_PER_CPU(struct rcu_data, rcu_pre
+ /* Forward declarations for rcutree_plugin.h */
+ static void rcu_bootup_announce(void);
+ long rcu_batches_completed(void);
++static void rcu_preempt_qs(int cpu);
+ static void rcu_preempt_note_context_switch(int cpu);
+ static int rcu_preempt_blocked_readers_cgp(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+Index: linux-2.6/kernel/rcutree_plugin.h
+===================================================================
+--- linux-2.6.orig/kernel/rcutree_plugin.h
++++ linux-2.6/kernel/rcutree_plugin.h
+@@ -1892,7 +1892,7 @@ EXPORT_SYMBOL_GPL(synchronize_sched_expe
+ 
+ #endif /* #else #ifndef CONFIG_SMP */
+ 
+-#if !defined(CONFIG_RCU_FAST_NO_HZ)
++#if 1 /* !defined(CONFIG_RCU_FAST_NO_HZ) */
+ 
+ /*
+  * Check to see if any future RCU-related work will need to be done
+Index: linux-2.6/kernel/rtmutex-debug.h
+===================================================================
+--- linux-2.6.orig/kernel/rtmutex-debug.h
++++ linux-2.6/kernel/rtmutex-debug.h
+@@ -17,17 +17,17 @@ extern void debug_rt_mutex_free_waiter(s
+ extern void debug_rt_mutex_init(struct rt_mutex *lock, const char *name);
+ extern void debug_rt_mutex_lock(struct rt_mutex *lock);
+ extern void debug_rt_mutex_unlock(struct rt_mutex *lock);
+-extern void
+-debug_rt_mutex_proxy_lock(struct rt_mutex *lock, struct task_struct *powner);
++extern void debug_rt_mutex_proxy_lock(struct rt_mutex *lock,
++				      struct task_struct *powner);
+ extern void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock);
+ extern void debug_rt_mutex_deadlock(int detect, struct rt_mutex_waiter *waiter,
+ 				    struct rt_mutex *lock);
+ extern void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter);
+-# define debug_rt_mutex_reset_waiter(w) \
++# define debug_rt_mutex_reset_waiter(w)			\
+ 	do { (w)->deadlock_lock = NULL; } while (0)
+ 
+-static inline int
+-debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter, int detect)
++static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
++						 int detect)
+ {
+-	return waiter != NULL;
++	return (waiter != NULL);
+ }
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -2822,7 +2822,7 @@ static void __sched_fork(struct task_str
+ void sched_fork(struct task_struct *p)
+ {
+ 	unsigned long flags;
+-	int cpu;
++	int cpu = get_cpu();
+ 
+ 	__sched_fork(p);
+ 	/*
+@@ -2862,7 +2862,6 @@ void sched_fork(struct task_struct *p)
+ 	if (!rt_prio(p->prio))
+ 		p->sched_class = &fair_sched_class;
+ 
+-	cpu = get_cpu();
+ 	if (p->sched_class->task_fork)
+ 		p->sched_class->task_fork(p);
+ 
+@@ -2874,9 +2873,8 @@ void sched_fork(struct task_struct *p)
+ 	 * Silence PROVE_RCU.
+ 	 */
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	set_task_cpu(p, smp_processor_id());
++	set_task_cpu(p, cpu);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+-	put_cpu();
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ 	if (likely(sched_info_on()))
+@@ -2892,6 +2890,8 @@ void sched_fork(struct task_struct *p)
+ #ifdef CONFIG_SMP
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
+ #endif
++
++	put_cpu();
+ }
+ 
+ /*
+@@ -4207,7 +4207,7 @@ static inline void schedule_debug(struct
+ 	schedstat_inc(this_rq(), sched_count);
+ }
+ 
+-#ifdef CONFIG_PREEMPT_RT_FULL
++#if defined(CONFIG_PREEMPT_RT_FULL) && defined(CONFIG_SMP)
+ #define MIGRATE_DISABLE_SET_AFFIN	(1<<30) /* Can't make a negative */
+ #define migrate_disabled_updated(p)	((p)->migrate_disable & MIGRATE_DISABLE_SET_AFFIN)
+ #define migrate_disable_count(p)	((p)->migrate_disable & ~MIGRATE_DISABLE_SET_AFFIN)
+Index: linux-2.6/kernel/sched_features.h
+===================================================================
+--- linux-2.6.orig/kernel/sched_features.h
++++ linux-2.6/kernel/sched_features.h
+@@ -76,3 +76,4 @@ SCHED_FEAT(TTWU_QUEUE, 0)
+ #endif
+ 
+ SCHED_FEAT(FORCE_SD_OVERLAP, 0)
++SCHED_FEAT(RT_RUNTIME_SHARE, 1)
+Index: linux-2.6/kernel/sched_rt.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_rt.c
++++ linux-2.6/kernel/sched_rt.c
+@@ -536,6 +536,9 @@ static int balance_runtime(struct rt_rq 
+ {
+ 	int more = 0;
+ 
++	if (!sched_feat(RT_RUNTIME_SHARE))
++		return more;
++
+ 	if (rt_rq->rt_time > rt_rq->rt_runtime) {
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		more = do_balance_runtime(rt_rq);
+Index: linux-2.6/kernel/softirq.c
+===================================================================
+--- linux-2.6.orig/kernel/softirq.c
++++ linux-2.6/kernel/softirq.c
+@@ -138,7 +138,7 @@ static void wakeup_softirqd(void)
+ 		wake_up_process(tsk);
+ }
+ 
+-static void handle_pending_softirqs(u32 pending, int cpu)
++static void handle_pending_softirqs(u32 pending, int cpu, int need_rcu_bh_qs)
+ {
+ 	struct softirq_action *h = softirq_vec;
+ 	unsigned int prev_count = preempt_count();
+@@ -161,7 +161,8 @@ static void handle_pending_softirqs(u32 
+ 			       prev_count, (unsigned int) preempt_count());
+ 			preempt_count() = prev_count;
+ 		}
+-		rcu_bh_qs(cpu);
++		if (need_rcu_bh_qs)
++			rcu_bh_qs(cpu);
+ 	}
+ 	local_irq_disable();
+ }
+@@ -313,7 +314,7 @@ restart:
+ 	/* Reset the pending bitmask before enabling irqs */
+ 	set_softirq_pending(0);
+ 
+-	handle_pending_softirqs(pending, cpu);
++	handle_pending_softirqs(pending, cpu, 1);
+ 
+ 	pending = local_softirq_pending();
+ 	if (pending && --max_restart)
+@@ -383,7 +384,12 @@ static inline void ksoftirqd_clr_sched_p
+ static DEFINE_LOCAL_IRQ_LOCK(local_softirq_lock);
+ static DEFINE_PER_CPU(struct task_struct *, local_softirq_runner);
+ 
+-static void __do_softirq(void);
++static void __do_softirq_common(int need_rcu_bh_qs);
++
++void __do_softirq(void)
++{
++	__do_softirq_common(0);
++}
+ 
+ void __init softirq_early_init(void)
+ {
+@@ -446,7 +452,7 @@ int in_serving_softirq(void)
+  * Called with bh and local interrupts disabled. For full RT cpu must
+  * be pinned.
+  */
+-static void __do_softirq(void)
++static void __do_softirq_common(int need_rcu_bh_qs)
+ {
+ 	u32 pending = local_softirq_pending();
+ 	int cpu = smp_processor_id();
+@@ -460,7 +466,7 @@ static void __do_softirq(void)
+ 
+ 	lockdep_softirq_enter();
+ 
+-	handle_pending_softirqs(pending, cpu);
++	handle_pending_softirqs(pending, cpu, need_rcu_bh_qs);
+ 
+ 	pending = local_softirq_pending();
+ 	if (pending)
+@@ -499,7 +505,7 @@ static int __thread_do_softirq(int cpu)
+ 	 * schedule!
+ 	 */
+ 	if (local_softirq_pending())
+-		__do_softirq();
++		__do_softirq_common(cpu >= 0);
+ 	local_unlock(local_softirq_lock);
+ 	unpin_current_cpu();
+ 	preempt_disable();
+Index: linux-2.6/kernel/workqueue.c
+===================================================================
+--- linux-2.6.orig/kernel/workqueue.c
++++ linux-2.6/kernel/workqueue.c
+@@ -1277,22 +1277,22 @@ __acquires(&gcwq->lock)
+ 		 * it races with cpu hotunplug operation.  Verify
+ 		 * against GCWQ_DISASSOCIATED.
+ 		 */
+-		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
+-			/*
+-			 * Since we're binding to a particular cpu and need to
+-			 * stay there for correctness, mark us PF_THREAD_BOUND.
+-			 */
+-			task->flags |= PF_THREAD_BOUND;
++		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
+ 			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
+-		}
+ 
+ 		spin_lock_irq(&gcwq->lock);
+ 		if (gcwq->flags & GCWQ_DISASSOCIATED)
+ 			return false;
+ 		if (task_cpu(task) == gcwq->cpu &&
+ 		    cpumask_equal(&current->cpus_allowed,
+-				  get_cpu_mask(gcwq->cpu)))
++				  get_cpu_mask(gcwq->cpu))) {
++			/*
++			 * Since we're binding to a particular cpu and need to
++			 * stay there for correctness, mark us PF_THREAD_BOUND.
++			 */
++			task->flags |= PF_THREAD_BOUND;
+ 			return true;
++		}
+ 		spin_unlock_irq(&gcwq->lock);
+ 
+ 		/*
+Index: linux-2.6/localversion-rt
+===================================================================
+--- linux-2.6.orig/localversion-rt
++++ linux-2.6/localversion-rt
+@@ -1 +1 @@
+--rt16
++-rt17
+Index: linux-2.6/net/core/dev.c
+===================================================================
+--- linux-2.6.orig/net/core/dev.c
++++ linux-2.6/net/core/dev.c
+@@ -2912,6 +2912,36 @@ int netif_rx_ni(struct sk_buff *skb)
+ }
+ EXPORT_SYMBOL(netif_rx_ni);
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++/*
++ * RT runs ksoftirqd as a real time thread and the root_lock is a
++ * "sleeping spinlock". If the trylock fails then we can go into an
++ * infinite loop when ksoftirqd preempted the task which actually
++ * holds the lock, because we requeue q and raise NET_TX softirq
++ * causing ksoftirqd to loop forever.
++ *
++ * It's safe to use spin_lock on RT here as softirqs run in thread
++ * context and cannot deadlock against the thread which is holding
++ * root_lock.
++ *
++ * On !RT the trylock might fail, but there we bail out from the
++ * softirq loop after 10 attempts which we can't do on RT. And the
++ * task holding root_lock cannot be preempted, so the only downside of
++ * that trylock is that we need 10 loops to decide that we should have
++ * given up in the first one :)
++ */
++static inline int take_root_lock(spinlock_t *lock)
++{
++	spin_lock(lock);
++	return 1;
++}
++#else
++static inline int take_root_lock(spinlock_t *lock)
++{
++	return spin_trylock(lock);
++}
++#endif
++
+ static void net_tx_action(struct softirq_action *h)
+ {
+ 	struct softnet_data *sd = &__get_cpu_var(softnet_data);
+@@ -2950,7 +2980,7 @@ static void net_tx_action(struct softirq
+ 			head = head->next_sched;
+ 
+ 			root_lock = qdisc_lock(q);
+-			if (spin_trylock(root_lock)) {
++			if (take_root_lock(root_lock)) {
+ 				smp_mb__before_clear_bit();
+ 				clear_bit(__QDISC_STATE_SCHED,
+ 					  &q->state);
+Index: linux-2.6/arch/powerpc/platforms/wsp/opb_pic.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/platforms/wsp/opb_pic.c
++++ linux-2.6/arch/powerpc/platforms/wsp/opb_pic.c
+@@ -320,7 +320,8 @@ void __init opb_pic_init(void)
+ 		}
+ 
+ 		/* Attach opb interrupt handler to new virtual IRQ */
+-		rc = request_irq(virq, opb_irq_handler, 0, "OPB LS Cascade", opb);
++		rc = request_irq(virq, opb_irq_handler, IRQF_NO_THREAD,
++				 "OPB LS Cascade", opb);
+ 		if (rc) {
+ 			printk("opb: request_irq failed: %d\n", rc);
+ 			continue;
+Index: linux-2.6/arch/powerpc/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/kernel/smp.c
++++ linux-2.6/arch/powerpc/kernel/smp.c
+@@ -170,7 +170,7 @@ int smp_request_message_ipi(int virq, in
+ 		return 1;
+ 	}
+ #endif
+-	err = request_irq(virq, smp_ipi_action[msg], IRQF_DISABLED|IRQF_PERCPU,
++	err = request_irq(virq, smp_ipi_action[msg], IRQF_NO_THREAD|IRQF_PERCPU,
+ 			  smp_ipi_name[msg], 0);
+ 	WARN(err < 0, "unable to request_irq %d for %s (rc %d)\n",
+ 		virq, smp_ipi_name[msg], err);
+Index: linux-2.6/arch/powerpc/platforms/powermac/smp.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/platforms/powermac/smp.c
++++ linux-2.6/arch/powerpc/platforms/powermac/smp.c
+@@ -200,7 +200,7 @@ static int psurge_secondary_ipi_init(voi
+ 
+ 	if (psurge_secondary_virq)
+ 		rc = request_irq(psurge_secondary_virq, psurge_ipi_intr,
+-			IRQF_DISABLED|IRQF_PERCPU, "IPI", NULL);
++			IRQF_NO_THREAD|IRQF_PERCPU, "IPI", NULL);
+ 
+ 	if (rc)
+ 		pr_err("Failed to setup secondary cpu IPI\n");
+@@ -408,7 +408,7 @@ static int __init smp_psurge_kick_cpu(in
+ 
+ static struct irqaction psurge_irqaction = {
+ 	.handler = psurge_ipi_intr,
+-	.flags = IRQF_DISABLED|IRQF_PERCPU,
++	.flags = IRQF_NO_THREAD|IRQF_PERCPU,
+ 	.name = "primary IPI",
+ };
+ 
+Index: linux-2.6/arch/powerpc/sysdev/xics/xics-common.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/sysdev/xics/xics-common.c
++++ linux-2.6/arch/powerpc/sysdev/xics/xics-common.c
+@@ -134,11 +134,11 @@ static void xics_request_ipi(void)
+ 	BUG_ON(ipi == NO_IRQ);
+ 
+ 	/*
+-	 * IPIs are marked IRQF_DISABLED as they must run with irqs
+-	 * disabled, and PERCPU.  The handler was set in map.
++	 * IPIs are marked PERCPU and also IRQF_NO_THREAD as they must
++	 * run in hard interrupt context. The handler was set in map.
+ 	 */
+ 	BUG_ON(request_irq(ipi, icp_ops->ipi_action,
+-			   IRQF_DISABLED|IRQF_PERCPU, "IPI", NULL));
++			   IRQF_NO_THREAD|IRQF_PERCPU, "IPI", NULL));
+ }
+ 
+ int __init xics_smp_probe(void)
+Index: linux-2.6/include/linux/rcutree.h
+===================================================================
+--- linux-2.6.orig/include/linux/rcutree.h
++++ linux-2.6/include/linux/rcutree.h
+@@ -57,7 +57,11 @@ static inline void exit_rcu(void)
+ 
+ #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ extern void synchronize_rcu_bh(void);
++#else
++# define synchronize_rcu_bh()	synchronize_rcu()
++#endif
+ extern void synchronize_sched_expedited(void);
+ extern void synchronize_rcu_expedited(void);
+ 
+@@ -71,13 +75,19 @@ extern void rcu_barrier(void);
+ extern unsigned long rcutorture_testseq;
+ extern unsigned long rcutorture_vernum;
+ extern long rcu_batches_completed(void);
+-extern long rcu_batches_completed_bh(void);
+ extern long rcu_batches_completed_sched(void);
+ 
+ extern void rcu_force_quiescent_state(void);
+-extern void rcu_bh_force_quiescent_state(void);
+ extern void rcu_sched_force_quiescent_state(void);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++extern void rcu_bh_force_quiescent_state(void);
++extern long rcu_batches_completed_bh(void);
++#else
++# define rcu_bh_force_quiescent_state	rcu_force_quiescent_state
++# define rcu_batches_completed_bh	rcu_batches_completed
++#endif
++
+ /* A context switch is a grace period for RCU-sched and RCU-bh. */
+ static inline int rcu_blocking_is_gp(void)
+ {
+Index: linux-2.6/kernel/rcupdate.c
+===================================================================
+--- linux-2.6.orig/kernel/rcupdate.c
++++ linux-2.6/kernel/rcupdate.c
+@@ -72,6 +72,7 @@ int debug_lockdep_rcu_enabled(void)
+ }
+ EXPORT_SYMBOL_GPL(debug_lockdep_rcu_enabled);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /**
+  * rcu_read_lock_bh_held() - might we be in RCU-bh read-side critical section?
+  *
+@@ -91,6 +92,7 @@ int rcu_read_lock_bh_held(void)
+ 	return in_softirq() || irqs_disabled();
+ }
+ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
++#endif
+ 
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
