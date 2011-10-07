@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab1JGO0x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 10:26:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6439 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752664Ab1JGO0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 10:26:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,502,1312182000"; 
-   d="scan'208";a="24179156"
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-In-Reply-To: <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1317200618.1573.1765.camel@vkoul-udesk3>
-	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	 <1317295068.1573.1780.camel@vkoul-udesk3>
-	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	 <20111003161349.GB28287@flint.arm.linux.org.uk>
-	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	 <1317966346.1573.2252.camel@vkoul-udesk3>
-	 <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 19:49:37 +0530
-Message-ID: <1317997177.1573.2275.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1760079Ab1JGO1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 10:27:21 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:37372 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752663Ab1JGO1T convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 10:27:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAP05o4LMjfwGMtYH02XTv9UqO7nEPSu2fijnOPceVjK-dyUgwg@mail.gmail.com>
+References: <1317901099-2519-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1110070305040.4611@utopia.booyaka.com>
+	<CAP05o4J39MotDTOv-O2ahvWfxL-7jC-L3FGsNXbmDy8HNg=W3g@mail.gmail.com>
+	<alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
+	<CAP05o4LMjfwGMtYH02XTv9UqO7nEPSu2fijnOPceVjK-dyUgwg@mail.gmail.com>
+Date: Fri, 7 Oct 2011 19:57:18 +0530
+Message-ID: <CAP05o4+KMrFc6QHVdzuw6qR6BzkHxsSDssA=B0A_TS8fWp-mbg@mail.gmail.com>
+Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>, sameo@linux.intel.com, balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
+        gadiyar@ti.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 16:57 +0530, Jassi Brar wrote:
-> On 7 October 2011 11:15, Vinod Koul <vinod.koul@intel.com> wrote:
-> 
-> > Thru this patch Jassi gave a very good try at merging DMA_SLAVE and
-> > memcpy, but more we debate this, I am still not convinced about merging
-> > memcpy and DMA_SLAVE yet.
-> >
-> Nobody is merging memcpy and DMA_SLAVE right away.
-> The api's primary purpose is to support interleave transfers.
-> Possibility to merge other prepares into this is a side-effect.
-For interleaved isn't that what you are trying?
-> 
-> > I would still argue that if we split this on same lines as current
-> > mechanism, we have clean way to convey all details for both cases.
-> >
-> Do you mean to have separate interleaved transfer apis for Slave
-> and Mem->Mem ? Please clarify.
-If we can make API cleaner and well defined that way then Yes :)
+On Fri, Oct 7, 2011 at 4:13 PM, Munegowda, Keshava
+<keshava_mgowda@ti.com> wrote:
+> On Fri, Oct 7, 2011 at 3:05 PM, Paul Walmsley <paul@pwsan.com> wrote:
+>> On Fri, 7 Oct 2011, Munegowda, Keshava wrote:
+>>
+>>> Thanks Paul;
+>>> yes, I can your changes in the patches.
+>>> so, you don't need v14 from me right? please confirm.
+>>> I am preparing/validating next version patches with  OCPIF_SWSUP_IDLE removed.
+>>> Thanks for guiding me and helping on the finalizing the hwmod configurations.
+>>
+>> The first two patches of the series -- the OMAP3/4 hwmod data patches --
+>> have been queued for 3.2 in the 'hwmod_devel_3.2' branch of
+>> git://git.pwsan.com/linux-2.6
+>
+> Ok, then I will host a tree for remaining three patches and another
+> last patch for MFD tree.
 
--- 
-~Vinod
+Hi Felipe and Sameo
 
+The patches are available in the branch kmg-usbhs-pm of
+git repository: git@gitorious.org:~kmg/mirrors/kmg-usbhs-pm.git
+
+if you have review comment on v13 of these series; please let me know.
+so I that I will make the changes in time.
+
+ regards
+ keshava
+
+
+>
+>> So we don't need new versions of those two.
+>>
+>> But we need to figure out what to do about the remaining three
+>> patches.  I still think that the TLL and UHH hwmods should have
+>> separate drivers.  Looks like Felipe has a question pending about that
+>> but it's unlikely that I'll have time to dig into it for at least a
+>> few days.  So I'd encourage you to try splitting those UHH and TLL
+>> drivers in the meantime.
+>>
+>>
+>> - Paul
+>>
+>
