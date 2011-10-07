@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759737Ab1JGJwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 05:52:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61916 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab1JGJwo (ORCPT
+	id S1759631Ab1JGJ4P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 05:56:15 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:37559 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab1JGJ4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 05:52:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Williams <steveicarus@gmail.com>
-Subject: Re: MODULE_LICENSE("GPL") not working for me
-Date: Fri, 7 Oct 2011 11:52:41 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
-In-Reply-To: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110071152.41357.arnd@arndb.de>
-X-Provags-ID: V02:K0:+apONKq6BdDiwb+cAuf38Fa6Cp4DtSp07i4ER8q8uZC
- wCprtBXPOqEDb8LNU0kWC2CZR/wr5KyH8zBrkjcglOVTqGukZ4
- Dk0x6dMlXPkbmmN/QlAMZZPG7JSsICqBvVWMOmKyauaW4WxnRH
- ANCvzZaHPASD9eo+WoNJJGRAvhdtvq44Sg/g8zj1mSypo0l8bs
- H7WbMhZFHQjIHAlSvdERTUjlJV0AGWeOJJRlRvssuFgG1hhlVh
- rwNLtGwSplLdACY05/G/svYLMbey8K6v6yeV97RE2q5IQ1BGlt
- 9FAwWLqa6IujVMLEC/6vf8/xB9yU/aWQq15qlV5RU3uSMjj/95
- qCNEuQz8aRYnqCm7+JUE=
+	Fri, 7 Oct 2011 05:56:13 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-fb-4e8eccbcde8e
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>, joerg.roedel@amd.com,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        younglak1004.kim@samsung.com, "'Kukjin Kim'" <kgene.kim@samsung.com>
+Subject: [PATCH v3 0/2] iommu/exynos: Add IOMMU and Enhance System MMU driver
+ for Exynos4
+Date: Fri, 07 Oct 2011 18:56:11 +0900
+Message-id: <01df01cc84d7$5866d0f0$093472d0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyE11f7ItinSQSLSSm5c91emzZT6w==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 October 2011, Stephen Williams wrote:
-> 
-> I have some large drivers for use in embedded arm systems, and
-> I want them to be GPL, because I want to use some symbols exported
-> as GPL, and also because I just wanna. But it is not working for
-> me. I've attached my Makefile. I'm building from outside the kernel
-> tree, but that should be OK. (right?) I'm using the following script to
-> actually build:
+Hi.
 
-It's usually much easier to build from within the kernel tree.
-Just put the driver into the drivers/staging directory and use
-the regular Makefile/Kconfig logic to hook it up with the build
-system.
+This is the third try of submitting patches about IOMMU/System MMU
 
-	Arnd
+Patch Summary:
+[PATCH v3 1/2] ARM: EXYNOS4: Change System MMU device definition
+[PATCH v3 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
+
+The first patche enhances System MMU platform device definition:
+ - Removed System MMU for MDMA0 in LCD block because it is not used.
+  Use MDMA2 in TOP block. 
+ - Removed System MMU ID. Instead a System MMU is bound to a device that
+  the System MMU is dedicated during machin initialization. If a device
+  driver wants to handle System MMU, it must bind its device with System
+  MMU with sysmmu_set_owner().
+ - clkdev
+
+The last patch implements IOMMU API:
+ - System MMU device driver is removed from arch/arm/plat-s5p to move it
+   to driver/iommu directory.
+ - Implements IOMMU API and System MMU driver that is moved from
+   arch/arm/plat-s5p.
+ - Implements fault handling that is suggested by Ohad.
+ - Used bus_set_iommu instead of register_iommu that is suggested by Joerg.
+
+NOTE: the my git --compose has some problems so I'm sending without it.
+
+Changes since v2:
+- Add lock for System MMU private data.
+ And fixes the following problems pointed by Joerg Rodel:
+- Fix wrong argument to kmalloc() and get_free_pages()
+- Merged patches into 2 due to bisectability
+
+Changes since v1:
+Fixes of the following problems pointed by Russell King.:
+ - Missing unlocking a spinlock in exynos_iommu_attach_dev().
+ - atomic_t -> int in sysmmu_drvdata.activations
+ - sysmmu_platdata -> sysmmu_drvdata
+ - Change in error messages in irq handler 
+ - Removed casting in format of error message
+ - omap_iommu_ops -> exynos_iommu_ops in the last patch.
+
+arch/arm/mach-exynos4/Kconfig               |    2 -
+arch/arm/mach-exynos4/clock.c               |   43 +-
+arch/arm/mach-exynos4/dev-sysmmu.c          |  267 ++------
+arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
+arch/arm/mach-exynos4/include/mach/map.h    |    1 -
+arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
+arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
+arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
+arch/arm/plat-s5p/Kconfig                   |    8 -
+arch/arm/plat-s5p/Makefile                  |    1 -
+arch/arm/plat-s5p/include/plat/sysmmu.h     |   95 ---
+arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
+drivers/iommu/Kconfig                       |   14 +
+drivers/iommu/Makefile                      |    1 +
+drivers/iommu/exynos_iommu.c                |  963
++++++++++++++++++++++++++++
+15 files changed, 1161 insertions(+), 684 deletions(-)
+
