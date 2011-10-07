@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879Ab1JGUgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:36:39 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60398 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935486Ab1JGUfA (ORCPT
+	id S935652Ab1JGUhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:37:00 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58642 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934769Ab1JGUey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:35:00 -0400
+	Fri, 7 Oct 2011 16:34:54 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 21/26] dynamic_debug: add $DBGFS/dynamic_debug/pending file
-Date: Fri,  7 Oct 2011 14:33:27 -0600
-Message-Id: <1318019612-20068-22-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 19/26] dynamic_debug: add flags filtering to flags spec
+Date: Fri,  7 Oct 2011 14:33:25 -0600
+Message-Id: <1318019612-20068-20-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,245 +24,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Add pending file so user can see queries that are pending.  Output
-format imitates that used to submit commands/queries.  This simplifies
-cut-paste-edit to delete pending queries when they're no longer wanted.
+Change definition of flags spec to [pmflta_]*[-+=][pmflta_]*
+The flags preceding the op are optional filter-flags; if provided,
+they add an additional constraint to call-site matching done
+by ddebug_change; call-sites which do not have all specified flags
+are skipped (additional flags are allowed).
+
+This allows query/rules like "p+t" to turn on TID logging for all
+currently enabled call-sites, while leaving the others alone.
+This also allows rules like "a-a" to select pending queries and
+remove them from the list.
+
+Also allow 0 flags byte, so that active rules can be completely
+reset by writing "p=" or "p=_".
+
+Patch factors flag-scanning into ddebug_parse_flag_settings(),
+and uses it for both filter-flags and new flags, and adds pr_err()
+where useful.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |  191 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 188 insertions(+), 3 deletions(-)
+ lib/dynamic_debug.c |   85 +++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 52 insertions(+), 33 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d7b71a6..80b5322 100644
+index 29dbf69..3c9244d 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -64,6 +64,10 @@ struct ddebug_iter {
- 	unsigned int idx;
- };
- 
-+struct pending_iter {
-+	struct pending_query *elem;
-+};
-+
- static DEFINE_MUTEX(ddebug_lock);
- static LIST_HEAD(ddebug_tables);
- static int verbose = 0;
-@@ -842,7 +846,8 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
- 	int n = *pos;
- 
- 	if (verbose >= VERBOSE_PROC)
--		pr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
-+		pr_info("called m=%p *pos=%lld\n",
-+			m, (unsigned long long)*pos);
- 
- 	mutex_lock(&ddebug_lock);
- 
-@@ -963,7 +968,180 @@ static const struct file_operations ddebug_proc_fops = {
- 	.write = ddebug_proc_write
- };
- 
--/* apply matching queries in pending-queries list */
-+/*
-+ * Set the iterator to point to the first pending_query object
-+ * and return a pointer to that first object.  Returns
-+ * NULL if there are no pending_querys at all.
-+ */
-+static struct pending_query *pending_iter_first(struct pending_iter *iter)
-+{
-+	if (list_empty(&pending_queries)) {
-+		iter->elem = NULL;
-+		return NULL;
-+	}
-+	iter->elem = list_entry(pending_queries.next,
-+				 struct pending_query, link);
-+	return iter->elem;
-+}
-+
-+/*
-+ * Advance the iterator to point to the next pending_query
-+ * object from the one the iterator currently points at,
-+ * and returns a pointer to the new pending_query.  Returns
-+ * NULL if the iterator has seen all the pending_querys.
-+ */
-+static struct pending_query *pending_iter_next(struct pending_iter *iter)
-+{
-+	if (iter->elem == NULL)
-+		return NULL;
-+	if (list_is_last(&iter->elem->link, &pending_queries)) {
-+		iter->elem = NULL;
-+		return NULL;
-+	}
-+	iter->elem = list_entry(iter->elem->link.next,
-+				struct pending_query, link);
-+	return iter->elem;
-+}
-+
-+/*
-+ * Seq_ops start method.  Called at the start of every read() call on
-+ * pending file from userspace.  Takes the ddebug_lock and seeks the
-+ * seq_file's iterator to the given position.
-+ */
-+static void *pending_proc_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct pending_iter *iter = m->private;
-+	struct pending_query *pq;
-+	int n = *pos;
-+
-+	if (verbose >= VERBOSE_PROC)
-+		pr_info("called m=%p *pos=%lld\n",
-+			m, (unsigned long long)*pos);
-+
-+	mutex_lock(&ddebug_lock);
-+
-+	if (!n)
-+		return SEQ_START_TOKEN;
-+	if (n < 0)
-+		return NULL;
-+	pq = pending_iter_first(iter);
-+	while (pq != NULL && --n > 0)
-+		pq = pending_iter_next(iter);
-+	return pq;
-+}
-+
-+/*
-+ * Seq_ops next method.  Called several times within a read()
-+ * call from userspace, with pending_lock held.  Walks to the
-+ * next pending_query object with a special case for the header line.
-+ */
-+static void *pending_proc_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	struct pending_iter *iter = m->private;
-+	struct pending_query *pq;
-+
-+	if (verbose >= VERBOSE_PROC_SHOW)
-+		pr_info("called m=%p p=%p *pos=%lld\n",
-+			m, p, (unsigned long long)*pos);
-+
-+	if (p == SEQ_START_TOKEN)
-+		pq = pending_iter_first(iter);
-+	else
-+		pq = pending_iter_next(iter);
-+	++*pos;
-+	return pq;
-+}
-+
-+/*
-+ * Seq_ops show method.  Called several times within a read()
-+ * call from userspace, with pending_lock held.  Formats the
-+ * current pending_query as a single human-readable line, with a
-+ * special case for the header line.
-+ */
-+static int pending_proc_show(struct seq_file *m, void *p)
-+{
-+	struct pending_iter *iter = m->private;
-+	struct pending_query *pq = iter->elem;
-+	struct ddebug_query *q = &pq->query;
-+	char flagsbuf[10];
-+
-+	if (verbose >= VERBOSE_PROC_SHOW)
-+		pr_info("called m=%p p=%p\n", m, p);
-+
-+	if (p == SEQ_START_TOKEN) {
-+		seq_puts(m, "# func file module format line flags mask\n");
-+		return 0;
-+	}
-+
-+	seq_printf(m, "%s%s%s%s%s%s%s%s line %d-%d %s\n",
-+		q->module ? "module " : "",
-+		q->module ? q->module : "",
-+		q->function ? " func " : "",
-+		q->function ? q->function : "",
-+		q->filename ? " file " : "",
-+		q->filename ? q->filename : "",
-+		q->format ? " format " : "",
-+		q->format ? q->format : "",
-+		q->first_lineno, q->last_lineno,
-+		ddebug_describe_flags(pq->flags, flagsbuf, sizeof(flagsbuf)));
-+
-+	return 0;
-+}
-+
-+/*
-+ * Seq_ops stop method.  Called at the end of each read()
-+ * call from userspace.  Drops pending_lock.
-+ */
-+static void pending_proc_stop(struct seq_file *m, void *p)
-+{
-+	if (verbose >= VERBOSE_PROC)
-+		pr_info("called m=%p p=%p\n", m, p);
-+	mutex_unlock(&ddebug_lock);
-+}
-+
-+static const struct seq_operations pending_proc_seqops = {
-+	.start = pending_proc_start,
-+	.next = pending_proc_next,
-+	.show = pending_proc_show,
-+	.stop = pending_proc_stop
-+};
-+
-+/*
-+ * File_ops->open method for <debugfs>/dynamic_debug/control.  Does the seq_file
-+ * setup dance, and also creates an iterator to walk the pending_querys.
-+ * Note that we create a seq_file always, even for O_WRONLY files
-+ * where it's not needed, as doing so simplifies the ->release method.
-+ */
-+static int pending_proc_open(struct inode *inode, struct file *file)
-+{
-+	struct pending_iter *iter;
-+	int err;
-+
-+	if (verbose)
-+		pr_info("called\n");
-+
-+	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-+	if (iter == NULL)
-+		return -ENOMEM;
-+
-+	err = seq_open(file, &pending_proc_seqops);
-+	if (err) {
-+		kfree(iter);
-+		return err;
-+	}
-+	((struct seq_file *) file->private_data)->private = iter;
-+	return 0;
-+}
-+
-+static const struct file_operations pending_proc_fops = {
-+	.owner = THIS_MODULE,
-+	.open = pending_proc_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release_private,
-+};
-+
-+/* apply matching queries in pending-queries list. Called with lock held */
- static void apply_pending_queries(struct ddebug_table *dt)
+@@ -191,7 +191,8 @@ static bool query_matches_callsite(struct _ddebug *dp,
+  * were matched.  Called with ddebug_lock held.
+  */
+ static int ddebug_change(const struct ddebug_query *query,
+-			unsigned int flags, unsigned int mask)
++			unsigned int flags, unsigned int mask,
++			unsigned int filter)
  {
- 	struct pending_query *pq, *pqnext;
-@@ -1063,7 +1241,7 @@ static __initdata int ddebug_init_success;
+ 	int i;
+ 	struct ddebug_table *dt;
+@@ -213,6 +214,9 @@ static int ddebug_change(const struct ddebug_query *query,
+ 			if (!query_matches_callsite(dp, query))
+ 				continue;
  
- static int __init dynamic_debug_init_debugfs(void)
- {
--	struct dentry *dir, *file;
-+	struct dentry *dir, *file, *file2;
++			if (filter && (dp->flags & filter) != filter)
++				continue;
++
+ 			nfound++;
  
- 	if (!ddebug_init_success)
- 		return -ENODEV;
-@@ -1077,6 +1255,13 @@ static int __init dynamic_debug_init_debugfs(void)
- 		debugfs_remove(dir);
- 		return -ENOMEM;
- 	}
-+	file2 = debugfs_create_file("pending", 0444, dir, NULL,
-+					&pending_proc_fops);
-+	if (!file2) {
-+		debugfs_remove(file);
-+		debugfs_remove(dir);
-+		return -ENOMEM;
-+	}
+ 			newflags = (dp->flags & mask) | flags;
+@@ -406,29 +410,9 @@ static int ddebug_parse_query(char *words[], int nwords,
  	return 0;
  }
  
+-/*
+- * Parse `str' as a flags specification, format [-+=][p]+.
+- * Sets up *maskp and *flagsp to be used when changing the
+- * flags fields of matched _ddebug's.  Returns 0 on success
+- * or <0 on error.
+- */
+-static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+-			       unsigned int *maskp)
++static int ddebug_parse_flag_settings(const char *str)
+ {
+-	unsigned flags = 0;
+-	int op = '=', i;
+-
+-	switch (*str) {
+-	case '+':
+-	case '-':
+-	case '=':
+-		op = *str++;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-	if (verbose)
+-		pr_info("op='%c'\n", op);
++	int i, flags = 0;
+ 
+ 	for ( ; *str ; ++str) {
+ 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
+@@ -437,13 +421,46 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 				break;
+ 			}
+ 		}
+-		if (i < 0)
++		if (i < 0 && *str) {
++			pr_err("unknown flag: %c\n", *str);
+ 			return -EINVAL;
++		}
+ 	}
+-	if (flags == 0)
++	return flags;
++}
++
++/*
++ * Parse `str' as a flags filter and specification, with format
++ * [pmflta_]*[-+=][pmflta_]+.  Sets up *maskp, *flagsp and *filterp to
++ * be used when changing the flags fields of matched _ddebug's.
++ * Returns 0 on success or <0 on error.
++ */
++static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
++			unsigned int *maskp, unsigned int *filterp)
++{
++	int flags, filter;
++	int op = '=';
++	char *s = strpbrk(str, "+-=");
++
++	if (!s) {
++		pr_err("flags spec missing op, expecting [+-=]\n");
+ 		return -EINVAL;
+-	if (verbose)
+-		pr_info("flags=0x%x\n", flags);
++	} else {
++		op = *s;
++		*s++ = '\0';
++	}
++	filter = ddebug_parse_flag_settings(str);
++	if (filter < 0) {
++		pr_err("flags_filter=0x%x\n", filter);
++		return -EINVAL;
++	}
++	*filterp = filter;
++
++	flags = ddebug_parse_flag_settings(s);
++	if (flags < 0) {
++		pr_err("flags=0x%x\n", flags);
++		return -EINVAL;
++	}
+ 
+ 	/* calculate final *flagsp, *maskp according to mask and op */
+ 	switch (op) {
+@@ -461,7 +478,9 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		break;
+ 	}
+ 	if (verbose)
+-		pr_info("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
++		pr_info("filter=0x%x op='%c' flags=0x%x *flagsp=0x%x *maskp=0x%x\n",
++			filter, op, flags, *flagsp, *maskp);
++
+ 	return 0;
+ }
+ 
+@@ -563,7 +582,7 @@ static int ddebug_save_pending(struct ddebug_query *query,
+ 
+ static int ddebug_exec_query(char *query_string)
+ {
+-	unsigned int flags = 0, mask = 0;
++	unsigned int flags = 0, mask = 0, filter = 0;
+ 	struct ddebug_query query;
+ #define MAXWORDS 9
+ 	int nwords;
+@@ -575,14 +594,14 @@ static int ddebug_exec_query(char *query_string)
+ 		return -EINVAL;
+ 	if (ddebug_parse_query(words, nwords-1, &query))
+ 		return -EINVAL;
+-	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
++	if (ddebug_parse_flags(words[nwords-1], &flags, &mask, &filter))
+ 		return -EINVAL;
+ 
+ 	/* actually go and implement the change */
+-	nfound = ddebug_change(&query, flags, mask);
++	nfound = ddebug_change(&query, flags, mask, filter);
+ 	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
+ 
+-	if (flags & _DPRINTK_FLAGS_APPEND)
++	if (flags & _DPRINTK_FLAGS_APPEND || filter & _DPRINTK_FLAGS_APPEND)
+ 		rc = ddebug_save_pending(&query, flags, mask);
+ 
+ 	return rc;
+@@ -950,7 +969,7 @@ static void apply_pending_queries(struct ddebug_table *dt)
+ 	int nfound;
+ 
+ 	list_for_each_entry_safe(pq, pqnext, &pending_queries, link) {
+-		nfound = ddebug_change(&pq->query, pq->flags, pq->mask);
++		nfound = ddebug_change(&pq->query, pq->flags, pq->mask, 0);
+ 		vpr_info_pq(pq, (nfound) ?
+ 			"applied pending" : "no-match on pending");
+ 	}
 -- 
 1.7.4.4
 
