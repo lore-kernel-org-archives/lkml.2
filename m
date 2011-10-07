@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068Ab1JGUeg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:36 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758985Ab1JGUec (ORCPT
+	id S1759197Ab1JGUeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37612 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758985Ab1JGUei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:32 -0400
+	Fri, 7 Oct 2011 16:34:38 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 11/26] dynamic_debug: hoist locking in ddebug_change to callers
-Date: Fri,  7 Oct 2011 14:33:17 -0600
-Message-Id: <1318019612-20068-12-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 13/26] dynamic_debug: factor vpr_info_dq out of ddebug_parse_query
+Date: Fri,  7 Oct 2011 14:33:19 -0600
+Message-Id: <1318019612-20068-14-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,68 +24,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Hoist locking out of ddebug_change() into ddebug_exec_queries().
-This reduces lock fiddling, but will increase hold-times slightly,
-at least when many queries are submitted.
-
-With verbose off, on a 266 MHz, takes, I get a reasonable:
-
- #> time cat query-file-w-300-pending-queries > $CONTROL
- real	0m0.508s
- user	0m0.009s
- sys	0m0.290s
+Factor pr_info(query) out of ddebug_parse_query, into pr_info_dq(),
+for reuse later.  Also change the printed labels: file, func to agree
+with the query-spec keywords accepted in the control file.  Pass ""
+when string is null, to avoid "(null)" output from sprintf.  For
+format print, use precision to skip last char, assuming its '\n', no
+great harm if not, its a debug msg,
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ lib/dynamic_debug.c |   27 ++++++++++++++++++---------
+ 1 files changed, 18 insertions(+), 9 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 2b3393f..0676de0 100644
+index 3f37b5e..2f39b2f 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -113,7 +113,7 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+@@ -109,6 +109,22 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+ 	return buf;
+ }
+ 
++#define vpr_info_dq(q, msg)						\
++do {									\
++	if (verbose)							\
++		/* trim last char off format print */			\
++		pr_info("%s: func=\"%s\" file=\"%s\" "			\
++			"module=\"%s\" format=\"%.*s\" "		\
++			"lineno=%u-%u",					\
++			msg,						\
++			q->function ? q->function : "",			\
++			q->filename ? q->filename : "",			\
++			q->module ? q->module : "",			\
++			(int)(q->format ? strlen(q->format) - 1 : 0),	\
++			q->format ? q->format : "",			\
++			q->first_lineno, q->last_lineno);		\
++} while (0)
++
+ /*
   * Search the tables for _ddebug's which match the given
   * `query' and apply the `flags' and `mask' to them.  Tells
-  * the user which ddebug's were changed, or whether none
-- * were matched.
-+ * were matched.  Called with ddebug_lock held.
+@@ -116,7 +132,7 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+  * were matched.  Called with ddebug_lock held.
   */
  static void ddebug_change(const struct ddebug_query *query,
- 			   unsigned int flags, unsigned int mask)
-@@ -125,7 +125,6 @@ static void ddebug_change(const struct ddebug_query *query,
- 	char flagbuf[8];
- 
- 	/* search for matching ddebugs */
--	mutex_lock(&ddebug_lock);
- 	list_for_each_entry(dt, &ddebug_tables, link) {
- 
- 		/* match against the module name */
-@@ -175,8 +174,6 @@ static void ddebug_change(const struct ddebug_query *query,
- 							sizeof(flagbuf)));
+-			   unsigned int flags, unsigned int mask)
++			unsigned int flags, unsigned int mask)
+ {
+ 	int i;
+ 	struct ddebug_table *dt;
+@@ -350,14 +366,7 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			return -EINVAL;
  		}
  	}
--	mutex_unlock(&ddebug_lock);
 -
- 	if (!nfound && verbose)
- 		pr_info("no matches for query\n");
+-	if (verbose)
+-		pr_info("q->function=\"%s\" q->filename=\"%s\" "
+-			"q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
+-			query->function, query->filename,
+-			query->module, query->format, query->first_lineno,
+-			query->last_lineno);
+-
++	vpr_info_dq(query, "parsed");
+ 	return 0;
  }
-@@ -450,6 +447,7 @@ static int ddebug_exec_queries(char *query)
- 	char *split;
- 	int i, errs = 0, exitcode = 0, rc;
  
-+	mutex_lock(&ddebug_lock);
- 	for (i = 0; query; query = split) {
- 		split = strpbrk(query, ";\n");
- 		if (split)
-@@ -468,6 +466,7 @@ static int ddebug_exec_queries(char *query)
- 		}
- 		i++;
- 	}
-+	mutex_unlock(&ddebug_lock);
- 	pr_info("processed %d queries, with %d errs\n", i, errs);
- 
- 	return exitcode;
 -- 
 1.7.4.4
 
