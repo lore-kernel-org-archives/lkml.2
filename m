@@ -1,179 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab1JGQzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:55:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394Ab1JGQzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:55:32 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i7300_edac: Fix error cleanup logic
-Date: Fri,  7 Oct 2011 13:55:21 -0300
-Message-Id: <1318006521-14539-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1758111Ab1JGQ7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:59:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45276 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1JGQ7b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 12:59:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <15324.1318004954@turing-police.cc.vt.edu>
+References: <4E8655CD.90107@zytor.com>
+	<201110020304.28288.rjw@sisk.pl>
+	<4E87B885.50005@zytor.com>
+	<201110021354.57995.rjw@sisk.pl>
+	<4E88A537.4010008@zytor.com>
+	<20111003093239.GB25136@localhost.pp.htv.fi>
+	<y0mobxyjazi.fsf@fche.csb>
+	<20111003180441.GD3072@localhost.pp.htv.fi>
+	<34045.1317760188@turing-police.cc.vt.edu>
+	<1317916702.19519.1.camel@constitution.bos.jonmasters.org>
+	<14191.1317930659@turing-police.cc.vt.edu>
+	<m34nzlbwbi.fsf@intrepid.localdomain>
+	<15324.1318004954@turing-police.cc.vt.edu>
+Date: Fri, 7 Oct 2011 12:59:30 -0400
+Message-ID: <CACqU3MUhn-cb+Xg2GwR0qZNY18O3nsNsMRXs=zqE9quzr3VMGA@mail.gmail.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Krzysztof Halasa <khc@pm.waw.pl>, Jon Masters <jonathan@jonmasters.org>,
+        Adrian Bunk <bunk@stusta.de>, "Frank Ch. Eigler" <fche@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The error cleanup logic was broken. Due to that, one error is generated for
-every error polling.
+Hi,
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i7300_edac.c |   51 +++++++++++++++++++++++----------------------
- 1 files changed, 26 insertions(+), 25 deletions(-)
+On Fri, Oct 7, 2011 at 12:29 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Fri, 07 Oct 2011 00:16:01 +0200, Krzysztof Halasa said:
+>
+>> > Wouldn't the fact that I attend the keysigning party and claim that I was
+>> > the owner of key B4D3D7B0, and then subsequently signing your key with
+>> > that same key, prove that I actually controlled key B4D3D7B0?
+>>
+>> I don't think it's needed. Alice claims ownership of key B4D3D7B0, gets
+>> signatures on B4D3D7B0 public key. Bob (who actually controls B4D3D7B0)
+>> reads Alice's mail and signs something "in Alice's name". Alice loses.
+>
+> You got that 180 degrees out of phase.  Jon said he wanted a keysigning party
+> where I would prove that I own key B4D3D7B0 (which is, in fact, my key) by
+> signing something random. My claim is that if I can take Jon's key and sign it
+> with B4D3D7B0, that's already proving I control the key, and another signing
+> of something else doesn't prove anything regarding my control of the key.
+>
+> Now mind you, it *does* have its uses - for example, "sign the random string
+> I just e-mailed you" will verify that I have control of the e-mail address that the
+> key claims to be attached to.  But that's different from proving I have control
+> of the actual key.
+>
+How so ? The public key BOb has is mathematically tied to the private
+key Alice has. If Bob sends Alice a mail, and then, she send a reply
+signed with her key, which is tied to the mail address used by Bob.
+Then, Bob successfully verifies the signature. This proves Alice has
+control over the key tied and the mail address, don't it ? Alice
+cannot successfully sign the mail without both having control over the
+key and the mail address.
 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index a76fe83..6104dba 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -372,7 +372,7 @@ static const char *get_err_from_table(const char *table[], int size, int pos)
- static void i7300_process_error_global(struct mem_ctl_info *mci)
- {
- 	struct i7300_pvt *pvt;
--	u32 errnum, value;
-+	u32 errnum, error_reg;
- 	unsigned long errors;
- 	const char *specific;
- 	bool is_fatal;
-@@ -381,9 +381,9 @@ static void i7300_process_error_global(struct mem_ctl_info *mci)
- 
- 	/* read in the 1st FATAL error register */
- 	pci_read_config_dword(pvt->pci_dev_16_2_fsb_err_regs,
--			      FERR_GLOBAL_HI, &value);
--	if (unlikely(value)) {
--		errors = value;
-+			      FERR_GLOBAL_HI, &error_reg);
-+	if (unlikely(error_reg)) {
-+		errors = error_reg;
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_global_hi_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_global_hi_name, errnum);
-@@ -391,15 +391,15 @@ static void i7300_process_error_global(struct mem_ctl_info *mci)
- 
- 		/* Clear the error bit */
- 		pci_write_config_dword(pvt->pci_dev_16_2_fsb_err_regs,
--				       FERR_GLOBAL_HI, value);
-+				       FERR_GLOBAL_HI, error_reg);
- 
- 		goto error_global;
- 	}
- 
- 	pci_read_config_dword(pvt->pci_dev_16_2_fsb_err_regs,
--			      FERR_GLOBAL_LO, &value);
--	if (unlikely(value)) {
--		errors = value;
-+			      FERR_GLOBAL_LO, &error_reg);
-+	if (unlikely(error_reg)) {
-+		errors = error_reg;
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_global_lo_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_global_lo_name, errnum);
-@@ -407,7 +407,7 @@ static void i7300_process_error_global(struct mem_ctl_info *mci)
- 
- 		/* Clear the error bit */
- 		pci_write_config_dword(pvt->pci_dev_16_2_fsb_err_regs,
--				       FERR_GLOBAL_LO, value);
-+				       FERR_GLOBAL_LO, error_reg);
- 
- 		goto error_global;
- 	}
-@@ -427,7 +427,7 @@ error_global:
- static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- {
- 	struct i7300_pvt *pvt;
--	u32 errnum, value;
-+	u32 errnum, value, error_reg;
- 	u16 val16;
- 	unsigned branch, channel, bank, rank, cas, ras;
- 	u32 syndrome;
-@@ -440,14 +440,14 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 
- 	/* read in the 1st FATAL error register */
- 	pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
--			      FERR_FAT_FBD, &value);
--	if (unlikely(value & FERR_FAT_FBD_ERR_MASK)) {
--		errors = value & FERR_FAT_FBD_ERR_MASK ;
-+			      FERR_FAT_FBD, &error_reg);
-+	if (unlikely(error_reg & FERR_FAT_FBD_ERR_MASK)) {
-+		errors = error_reg & FERR_FAT_FBD_ERR_MASK ;
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_fat_fbd_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_fat_fbd_name, errnum);
-+		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
- 
--		branch = (GET_FBD_FAT_IDX(value) == 2) ? 1 : 0;
- 		pci_read_config_word(pvt->pci_dev_16_1_fsb_addr_map,
- 				     NRECMEMA, &val16);
- 		bank = NRECMEMA_BANK(val16);
-@@ -455,11 +455,14 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 				NRECMEMB, &value);
--
- 		is_wr = NRECMEMB_IS_WR(value);
- 		cas = NRECMEMB_CAS(value);
- 		ras = NRECMEMB_RAS(value);
- 
-+		/* Clean the error register */
-+		pci_write_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
-+				FERR_FAT_FBD, error_reg);
-+
- 		snprintf(pvt->tmp_prt_buffer, PAGE_SIZE,
- 			"FATAL (Branch=%d DRAM-Bank=%d %s "
- 			"RAS=%d CAS=%d Err=0x%lx (%s))",
-@@ -476,21 +479,17 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 
- 	/* read in the 1st NON-FATAL error register */
- 	pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
--			      FERR_NF_FBD, &value);
--	if (unlikely(value & FERR_NF_FBD_ERR_MASK)) {
--		errors = value & FERR_NF_FBD_ERR_MASK;
-+			      FERR_NF_FBD, &error_reg);
-+	if (unlikely(error_reg & FERR_NF_FBD_ERR_MASK)) {
-+		errors = error_reg & FERR_NF_FBD_ERR_MASK;
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_nf_fbd_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_nf_fbd_name, errnum);
--
--		/* Clear the error bit */
--		pci_write_config_dword(pvt->pci_dev_16_2_fsb_err_regs,
--				       FERR_GLOBAL_LO, value);
-+		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 			REDMEMA, &syndrome);
- 
--		branch = (GET_FBD_FAT_IDX(value) == 2) ? 1 : 0;
- 		pci_read_config_word(pvt->pci_dev_16_1_fsb_addr_map,
- 				     RECMEMA, &val16);
- 		bank = RECMEMA_BANK(val16);
-@@ -498,18 +497,20 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 				RECMEMB, &value);
--
- 		is_wr = RECMEMB_IS_WR(value);
- 		cas = RECMEMB_CAS(value);
- 		ras = RECMEMB_RAS(value);
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 				     REDMEMB, &value);
--
- 		channel = (branch << 1);
- 		if (IS_SECOND_CH(value))
- 			channel++;
- 
-+		/* Clear the error bit */
-+		pci_write_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
-+				FERR_NF_FBD, error_reg);
-+
- 		/* Form out message */
- 		snprintf(pvt->tmp_prt_buffer, PAGE_SIZE,
- 			"Corrected error (Branch=%d, Channel %d), "
--- 
-1.7.6.4
-
+ - Arnaud
