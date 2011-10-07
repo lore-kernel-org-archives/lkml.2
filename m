@@ -1,129 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759557Ab1JGFkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 01:40:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36433 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab1JGFkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 01:40:14 -0400
-Subject: Re: big picture UDP/IP performance question re 2.6.18  -> 2.6.32
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: starlight@binnacle.cx
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@gentwo.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@elte.hu>,
-        Stephen Hemminger <stephen.hemminger@vyatta.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Joe Perches <joe@perches.com>,
-        Chetan Loke <Chetan.Loke@netscout.com>,
-        Con Kolivas <conman@kolivas.org>,
-        Serge Belyshev <belyshev@depni.sinp.msu.ru>
-In-Reply-To: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
-References: <6.2.5.6.2.20111006231958.039bb570@binnacle.cx>
+	id S965373Ab1JGFw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 01:52:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17127 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812Ab1JGFw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 01:52:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="60797239"
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1317200618.1573.1765.camel@vkoul-udesk3>
+	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	 <1317295068.1573.1780.camel@vkoul-udesk3>
+	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	 <20111003161349.GB28287@flint.arm.linux.org.uk>
+	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 07 Oct 2011 07:40:07 +0200
-Message-ID: <1317966007.3457.47.camel@edumazet-laptop>
+Date: Fri, 07 Oct 2011 11:15:46 +0530
+Message-ID: <1317966346.1573.2252.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 06 octobre 2011 à 23:27 -0400, starlight@binnacle.cx a écrit :
-> After writing the last post, the large
-> difference in IRQ rate between the older
-> and newer kernels caught my eye.
-> 
-> I wonder if the hugely lower rate in the older
-> kernels reflects a more agile shifting
-> into and out of NAPI mode by the network
-> bottom-half.
-> 
-> In this test the sending system
-> pulses data out on millisecond boundaries
-> due to the behavior of nsleep(), which
-> is used to establish the playback pace.
-> 
-> If the older kernels are switching to NAPI
-> for much of surge and the switching out
-> once the pulse falls off, it might
-> conceivably result in much better latency
-> and overall performance.
-> 
-> All tests were run with Intel 82571 
-> network interfaces and the 'e1000e'
-> device driver.  Some used the driver
-> packaged with the kernel, some used
-> Intel driver compiled from the source
-> found on sourceforge.net.  Never could
-> detected any difference between the two.
-> 
-> Since data in the production environment
-> also tends to arrive in bursts, I don't find
-> the pulsing playback behavior a detriment.
-> 
+On Wed, 2011-10-05 at 11:14 -0700, Williams, Dan J wrote:
+> This new operation type strikes me as being in a similar vein to
+> commit a08abd8c "async_tx: structify submission arguments, add
+> scribble", in that we convert multiple submission arguments into one
+> description template.  With some tweaks it could probably even cover
+> the DMA_CYCLIC, but probably could not cover the raid ops.  In general
+> I'm concerned about operation type proliferation, so if we added this
+> one I'd like to see others removed. 
+For slave cases, we have DMA_SLAVE, DMA_CYCLIC and some support memcpy
+as well.
 
-Thats exactly the opposite : Your old kernel is not fast enough to
-enter/exit NAPI on every incoming frame.
+I think we should have kept DMA_CYCLIC as a special case of DMA_SLAVE
+(thru a flag perhaps) not a new API, if all agree i can fix that up for
+3.3
 
-Instead of one IRQ per incoming frame, you have less interrupts :
-A napi run processes more than 1 frame.
+Thru this patch Jassi gave a very good try at merging DMA_SLAVE and
+memcpy, but more we debate this, I am still not convinced about merging
+memcpy and DMA_SLAVE yet.
 
-Now increase your incoming rate, and you'll discover a new kernel will
-be able to process more frames without losses.
+I would still argue that if we split this on same lines as current
+mechanism, we have clean way to convey all details for both cases.
 
-About your thread model :
+maybe I am being pessimist, but my vote goes for simpler things
 
-You have one thread that reads the incoming frame, and do a distribution
-on several queues based on some flow parameters. Then you wakeup a
-second thread.
+Thoughts...?
 
-This kind of model is very expensive and triggers lot of false sharing.
+For other memcpy cases like xor, etc, I don't think I have looked at
+finer detail to comment on it, but if we can make a generic mempy API
+with ops specified for what "type" of memcpy we could reduce it :)
 
-New kernels are able to perform this fanout in kernel land.
-
-You really should take a look at Documentation/networking/scaling.txt
-
-[ An other way of doing this fanout is using some iptables rules :
-check following commit changelog for an idea ]
-
-commit e8648a1fdb54da1f683784b36a17aa65ea56e931
-Author: Eric Dumazet <eric.dumazet@gmail.com>
-Date:   Fri Jul 23 12:59:36 2010 +0200
-
-    netfilter: add xt_cpu match
-    
-    In some situations a CPU match permits a better spreading of
-    connections, or select targets only for a given cpu.
-    
-    With Remote Packet Steering or multiqueue NIC and appropriate IRQ
-    affinities, we can distribute trafic on available cpus, per session.
-    (all RX packets for a given flow is handled by a given cpu)
-    
-    Some legacy applications being not SMP friendly, one way to scale a
-    server is to run multiple copies of them.
-    
-    Instead of randomly choosing an instance, we can use the cpu number as a
-    key so that softirq handler for a whole instance is running on a single
-    cpu, maximizing cache effects in TCP/UDP stacks.
-    
-    Using NAT for example, a four ways machine might run four copies of
-    server application, using a separate listening port for each instance,
-    but still presenting an unique external port :
-    
-    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 0 \
-            -j REDIRECT --to-port 8080
-    
-    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 1 \
-            -j REDIRECT --to-port 8081
-    
-    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 2 \
-            -j REDIRECT --to-port 8082
-    
-    iptables -t nat -A PREROUTING -p tcp --dport 80 -m cpu --cpu 3 \
-            -j REDIRECT --to-port 8083
-    
-
+-- 
+~Vinod
 
