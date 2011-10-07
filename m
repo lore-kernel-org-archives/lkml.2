@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759678Ab1JGJH5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 05:07:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29371 "EHLO mx1.redhat.com"
+	id S1759650Ab1JGJKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 05:10:10 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:2085 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab1JGJHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 05:07:55 -0400
-Date: Fri, 7 Oct 2011 11:07:41 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, akpm@linux-foundation.org,
-        Johannes Weiner <hannes@cmpxchg.org>, aarcange@redhat.com
-Subject: Re: [PATCH v2 -mm] limit direct reclaim for higher order allocations
-Message-ID: <20111007090741.GB2608@redhat.com>
-References: <20110927105246.164e2fc7@annuminas.surriel.com>
- <20110927160648.GA16878@redhat.com>
+	id S1751875Ab1JGJKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 05:10:07 -0400
+Message-ID: <4E8EC1D8.4070200@atmel.com>
+Date: Fri, 07 Oct 2011 11:09:44 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110927160648.GA16878@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+References: <20111004112623.aa04e959d29cb19af8053739@canb.auug.org.au> <201110040940.12876.arnd@arndb.de> <20111006111317.531e6fcc1829fc9927d4924d@canb.auug.org.au>
+In-Reply-To: <20111006111317.531e6fcc1829fc9927d4924d@canb.auug.org.au>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 27, 2011 at 06:06:48PM +0200, Johannes Weiner wrote:
-> On Tue, Sep 27, 2011 at 10:52:46AM -0400, Rik van Riel wrote:
-> > When suffering from memory fragmentation due to unfreeable pages,
-> > THP page faults will repeatedly try to compact memory.  Due to
-> > the unfreeable pages, compaction fails.
-> > 
-> > Needless to say, at that point page reclaim also fails to create
-> > free contiguous 2MB areas.  However, that doesn't stop the current
-> > code from trying, over and over again, and freeing a minimum of
-> > 4MB (2UL << sc->order pages) at every single invocation.
-> > 
-> > This resulted in my 12GB system having 2-3GB free memory, a
-> > corresponding amount of used swap and very sluggish response times.
-> > 
-> > This can be avoided by having the direct reclaim code not reclaim
-> > from zones that already have plenty of free memory available for
-> > compaction.
-> > 
-> > If compaction still fails due to unmovable memory, doing additional
-> > reclaim will only hurt the system, not help.
-> > 
-> > Signed-off-by: Rik van Riel <riel@redhat.com>
-> > 
-> > ---
-> > -v2: shrink_zones now uses the same thresholds as used by compaction itself,
-> >      not only is this conceptually nicer, it also results in kswapd doing
-> >      some actual work; before all the page freeing work was done by THP
-> >      allocators, I seem to see fewer application stalls after this change.
-> > 
-> >  mm/vmscan.c |   10 ++++++++++
-> >  1 files changed, 10 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index b7719ec..117eb4d 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2083,6 +2083,16 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
-> >  				continue;
-> >  			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-> >  				continue;	/* Let kswapd poll it */
-> > +			if (COMPACTION_BUILD) {
-> > +				/*
-> > +				 * If we already have plenty of memory free
-> > +				 * for compaction, don't free any more.
-> > +				 */
-> > +				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
-> > +					(compaction_suitable(zone, sc->order) ||
-> > +					 compaction_deferred(zone)))
-> > +					continue;
-> > +			}
+On 10/06/2011 02:13 AM, Stephen Rothwell :
+> Hi Arnd,
 > 
-> I don't think the comment is complete in combination with the check
-> for order > PAGE_ALLOC_COSTLY_ORDER, as compaction is invoked for all
-> non-zero orders.
+> On Tue, 4 Oct 2011 09:40:12 +0200 Arnd Bergmann <arnd@arndb.de>
+> wrote:
+>> 
+>> On Tuesday 04 October 2011, Stephen Rothwell wrote:
+>>> After merging the arm-soc tree, today's linux-next build
+>>> (x86_64 allmodconfig) failed like this:
+>>> 
+>>> ERROR: "clk_enable" [drivers/misc/atmel_pwm.ko] undefined! 
+>>> ERROR: "clk_disable" [drivers/misc/atmel_pwm.ko] undefined! 
+>>> ERROR: "clk_put" [drivers/misc/atmel_pwm.ko] undefined! ERROR:
+>>> "clk_get_rate" [drivers/misc/atmel_pwm.ko] undefined! ERROR:
+>>> "clk_get" [drivers/misc/atmel_pwm.ko] undefined!
+>>> 
+>>> Caused by commit 9dccc010c816 ("ARM: at91: remove dependency
+>>> for Atmel PWM driver selector in Kconfig").
+>>> 
+>>> I have used the arm-soc tree from next-20110930 for today.
+>> 
+>> Ah, thanks for tracking this down. I actually noticed the same 
+>> problem on an ARM build but did not realize it was from one of 
+>> the patches I had jut put in there myself.
+>> 
+>> I'm really glad I didn't send this to Linus cc:stable yet then. 
+>> Nicolas, in my randconfig branch, I've fixed this by adding
+>> 
+>> depends on HAVE_CLK
+>> 
+>> which I think is the right solution. I'll replace your patch with
+>> one that does this if you don't mind.
+>> 
+>> I'd also remove the stable tag for this patch, because it can 
+>> have unintended side-effects on other architectures.
 > 
-> But the traditional behaviour does less harm if the orders are small
-> and your problem was triggered by THP allocations, so I agree with the
-> code itself.
+> I am still getting the failure ...
 
-FWIW, an incremental patch to explain the order check.  What do you
-think?
+Well, on my side, applying Arnd's correction, I can run a x86_64
+allmodconfig without this error.
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- mm/vmscan.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+With this new dependency it seems impossible to even select the driver.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3817fa9..930085a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2068,8 +2068,14 @@ static void shrink_zones(int priority, struct zonelist *zonelist,
- 				continue;	/* Let kswapd poll it */
- 			if (COMPACTION_BUILD) {
- 				/*
--				 * If we already have plenty of memory free
--				 * for compaction, don't free any more.
-+				 * If we already have plenty of memory
-+				 * free for compaction, don't free any
-+				 * more.  Even though compaction is
-+				 * invoked for any non-zero order,
-+				 * only frequent costly order
-+				 * reclamation is disruptive enough to
-+				 * become a noticable problem, like
-+				 * transparent huge page allocations.
- 				 */
- 				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
- 					(compaction_suitable(zone, sc->order) ||
+Do you have a link to a log of this failure? Have the .config been
+re-generated?
+
+Best regards,
 -- 
-1.7.6.4
+Nicolas Ferre
