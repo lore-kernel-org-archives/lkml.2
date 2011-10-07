@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759755Ab1JGJ4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 05:56:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49978 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759736Ab1JGJ4l (ORCPT
+	id S1759721Ab1JGJ4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 05:56:32 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47258 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759685Ab1JGJ4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 05:56:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH 08/26] ARM: pxa: move z2 to generic cpu_suspend
-Date: Fri, 7 Oct 2011 11:56:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-9-git-send-email-arnd@arndb.de> <CAMPhdO-tz2HgBYQGOUW6hrA6fC=x+CQJ3dwbW_0AazFB=cjvbA@mail.gmail.com>
-In-Reply-To: <CAMPhdO-tz2HgBYQGOUW6hrA6fC=x+CQJ3dwbW_0AazFB=cjvbA@mail.gmail.com>
+	Fri, 7 Oct 2011 05:56:30 -0400
+Date: Fri, 7 Oct 2011 15:26:21 +0530
+From: Himanshu Chauhan <hschauhan@nulltrace.org>
+To: Greg KH <greg@kroah.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a
+ device number
+Message-ID: <20111007095621.GB2944@ubuntu.ubuntu-domain>
+References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
+ <20111005193359.GB26664@kroah.com>
+ <20111006041011.GB2125@ubuntu.ubuntu-domain>
+ <20111006182500.GA18607@kroah.com>
+ <20111006190752.GA28455@ericsson.com>
+ <20111007064240.GA2944@ubuntu.ubuntu-domain>
+ <20111007065237.GA27805@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110071156.38283.arnd@arndb.de>
-X-Provags-ID: V02:K0:hfHL1mLYZ19TpsqtpCLwYcJyIbQJDrWu0a1LMX7nObB
- brmBjppEqFTLLe49bgjJ5X7p6nQXauflxV90/VVZEzFyHKp3oZ
- b9Cbk6F9SOxAsIDt0q4yp77RIY1iAtetp9pWIk6sV9P33zulQq
- KVKF6FzlxYMMAGPvVQer/0Vqcg0KYwWck3P55wFjwAPzTmlpI2
- 0Eo2EtNJkjhIAAN7NhuCTA4puhLwGF+YoxYpBjZjqGCj8EKT5B
- TZEw3pgqdZtGzJ1QRxXPSgpNdETRcGRIdN3TyAwwdqIn6fmTE4
- f+SOHHfNXumVLAdpF7t4OYWfQmDIztySPuolJt5s1okw4OgXrA
- x22AHaeRbkSSIPgo9JVY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111007065237.GA27805@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 October 2011, Eric Miao wrote:
-> commit 3f7961cbd3428c8639d42d1a51870466e4cbb0eb
-> Author: Eric Miao <eric.y.miao@gmail.com>
-> Date:   Sun Sep 11 17:19:11 2011 +0800
+On Thu, Oct 06, 2011 at 11:52:37PM -0700, Greg KH wrote:
+> On Fri, Oct 07, 2011 at 12:12:40PM +0530, Himanshu Chauhan wrote:
+> > On Thu, Oct 06, 2011 at 12:07:52PM -0700, Guenter Roeck wrote:
+> > > And why, and what for.
+> > 
+> > The initial idea of posting to kernelnewbies was to get a hint on how
+> > the patch would be taken as. I wanted to know if developers will like
+> > the idea behind it or not. I guess, Guenter is not convinced with
+> > any of my reasoning. I am willing to clean it up further only if
+> > I get a positive hint. But it doesn't seem to be going anywhere.
+> > 
+> > Thanks Guenter, Alan, and Greg for taking your time and reviewing it.
+> > 
+> > Greg: To answer your last question, if this was taken positively, I
+> > was thinking of having functionality similar to misc device registration.
 > 
->     ARM: pxa/z2: fix building error of pxa27x_cpu_suspend() no longer available
+> But why?  What is that device node going to be used for?  Who would be
+> using it in userspace and where would it be tied into in the kernel?
 > 
->     Cc: Vasily Khoruzhick <anarsoul@gmail.com>
->     Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-> 
-> diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
-> index 6c9275a..6fa4e74 100644
-> --- a/arch/arm/mach-pxa/z2.c
-> +++ b/arch/arm/mach-pxa/z2.c
-> @@ -679,6 +679,8 @@ static inline void z2_pmic_init(void) {}
->  #endif
-> 
->  #ifdef CONFIG_PM
-> +extern void pxa27x_cpu_pm_enter(suspend_state_t state);
-> +
->  static void z2_power_off(void)
->  {
->         /* We're using deep sleep as poweroff, so clear PSPR to ensure that
+The device node, as I said earlier, can be used for doing IOCTLS. In user space,
+applications that manage and monitor system environment will need to use this
+interface for querying the sensor's location, for example. In side the kernel,
+the driver that is driving the particular hardware sensor can register a char
+interface for all this and then register with hwmon with the same major/minor
+for usual sysfs export of data.
 
-You really shouldn't have an extern declaration in a .c file. Otherwise
-looks good to me.
-
-	Arnd
+-Himanshu
