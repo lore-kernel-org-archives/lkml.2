@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504Ab1JGUiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:38:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35643 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759038Ab1JGUef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:35 -0400
-Date: Fri, 7 Oct 2011 22:34:30 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Temporary location for hid, apm and trivial trees
-In-Reply-To: <20110915000759.44ec63c0f9a3d68239886de5@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1110072228400.14901@pobox.suse.cz>
-References: <alpine.LNX.2.00.1109141520450.13109@pobox.suse.cz> <20110915000759.44ec63c0f9a3d68239886de5@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S935442Ab1JGUjD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:39:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58642 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758717Ab1JGUe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 16:34:29 -0400
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 10/26] dynamic_debug: enlarge command/query write buffer
+Date: Fri,  7 Oct 2011 14:33:16 -0600
+Message-Id: <1318019612-20068-11-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+ <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Sep 2011, Stephen Rothwell wrote:
+From: Jim Cromie <jim.cromie@gmail.com>
 
-> > temporary locations for hid, apm and trivial trees until kernel.org 
-> > reappears, are
-> > 
-> > 	git://twin.jikos.cz/jikos/hid
-> > 	git://twin.jikos.cz/jikos/apm
-> > 	git://twin.jikos.cz/jikos/trivial
-> 
-> I am assuming the for-next branch of each.  However, fetching the trivial
-> tree fails with:
-> 
-> fatal: The remote end hung up unexpectedly
-> 
-> I will switch to these tomorrow (assuming that you fix the trivial tree).
+Current write buffer is 256 bytes, on stack.  Allocate it off heap,
+and enlarge it to 4096 bytes, big enough for ~100 queries (at 40 bytes
+each), and error out if not.  This should be enough for most uses, and
+others can be split into 2 writes.
 
-Hi Stephen,
+This makes it play nicely with:
+ $> cat debug-queries-file > /dbg/dynamic_debug/control
 
-I have now switched back to kernel.org with my trees. So please from now 
-on, use again
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/jikos/apm.git
-	git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git
-	git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
-
-particularly for-next branch of those.
-
-I will keep pushing both to kernel.org and the temporary location at my 
-sever for some time still, but I'd like to make kernel.org ones the 
-'correct' ones from now on.
-
-Thanks,
-
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 4bf27f3..2b3393f 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -590,24 +590,32 @@ __setup("ddebug_query=", ddebug_setup_query);
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
+  */
++#define USER_BUF_PAGE 4095
+ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 				  size_t len, loff_t *offp)
+ {
+-	char tmpbuf[256];
++	char *tmpbuf;
+ 	int ret;
+ 
+ 	if (len == 0)
+ 		return 0;
+-	/* we don't check *offp -- multiple writes() are allowed */
+-	if (len > sizeof(tmpbuf)-1)
++	if (len > USER_BUF_PAGE - 1) {
++		pr_warn("expected <%d bytes into control \n", USER_BUF_PAGE);
+ 		return -E2BIG;
+-	if (copy_from_user(tmpbuf, ubuf, len))
++	}
++	tmpbuf = kmalloc(len + 1, GFP_KERNEL);
++	if (!tmpbuf)
++		return -ENOMEM;
++	if (copy_from_user(tmpbuf, ubuf, len)) {
++		kfree(tmpbuf);
+ 		return -EFAULT;
++	}
+ 	tmpbuf[len] = '\0';
+ 	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
+ 
+ 	ret = ddebug_exec_queries(tmpbuf);
++	kfree(tmpbuf);
+ 	if (ret)
+ 		return ret;
+ 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.4.4
+
