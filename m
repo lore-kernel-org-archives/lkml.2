@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab1JGVs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 17:48:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59496 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab1JGVs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 17:48:57 -0400
-Message-ID: <4E8F73A3.5080904@zytor.com>
-Date: Fri, 07 Oct 2011 14:48:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1756010Ab1JGVvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 17:51:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61253 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab1JGVvP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 17:51:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=cswvRyEOvXoIo94yjTvhJ8IoA+2f1F70CDZVdialb+/iklPlzi3pkMlG0KR4YvdWf
+	ue6Eevz6NtcYSliFTaeHA==
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Richard Henderson <rth@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH][RFC] jump_labels/x86: Use either 5 byte or 2 byte jumps
-References: <4E8CF385.2080804@zytor.com> <4E8DEB19.1050509@goop.org>  <20111006181055.GA2505@redhat.com>  <1317925615.4729.14.camel@gandalf.stny.rr.com>  <4E8DF870.6010000@redhat.com>  <1317929321.4729.17.camel@gandalf.stny.rr.com> <4E8E20CD.5030207@goop.org>  <1317938775.4729.29.camel@gandalf.stny.rr.com> <4E8E275F.6010801@goop.org>  <1318007374.4729.58.camel@gandalf.stny.rr.com>  <20111007185214.GD2978@redhat.com> <1318015311.4729.69.camel@gandalf.stny.rr.com>
-In-Reply-To: <1318015311.4729.69.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1314845309-3277-1-git-send-email-dczhu@mips.com>
+References: <1314845309-3277-1-git-send-email-dczhu@mips.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Oct 2011 15:50:49 -0600
+Message-ID: <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
+Subject: Re: [RESEND PATCH v3 0/2] Pass resources to pci_create_bus() and fix
+ MIPS PCI resources
+To: Deng-Cheng Zhu <dczhu@mips.com>
+Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, monstr@monstr.eu,
+        benh@kernel.crashing.org, paulus@samba.org, davem@davemloft.net,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
+        dengcheng.zhu@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2011 12:21 PM, Steven Rostedt wrote:
->>
->> same here, at least WARN, more likely BUG()
+On Wed, Aug 31, 2011 at 8:48 PM, Deng-Cheng Zhu <dczhu@mips.com> wrote:
+> (Resending the patch set to include more arch maintainers.)
 >
-> I just don't like using BUG(). BUG() means that if we continue we will
-> corrupt the filesystem or make you go blind. WARN and returning here
-> should not cause any harm and will even let those with X terminals see
-> oops in /var/log/messages.
+> Change the pci_create_bus() interface to pass in available resources to get them
+> settled down early. This is to avoid possible resource conflicts while doing
+> pci_scan_slot() in pci_scan_child_bus(). Note that pcibios_fixup_bus() can get
+> rid of such conflicts, but it's done AFTER scanning slots.
 >
+> In addition, MIPS PCI resources are now fixed using this new interface.
 
-Uh, NO.
+Jesse, I assume these are headed for the 3.2 merge window, right?
 
-If this is wrong something in the kernel code stream is corrupted (heck, 
-you might just have caught a rootkit!)
+Do you have a git tree anywhere where we could check without having to
+bother you?
 
-Die.  NOW.
+Bjorn
 
-	-hpa
+> -- Changes --
+> v3 - v2:
+> o Do not do fixups for root buses in pcibios_fixup_bus().
+> o Skip bus creation when bus resources cannot be allocated.
+> o PCI domain/bus numbers added to the error info in controller_resources().
+>
+> v2 - v1:
+> o Merge [PATCH 1/3] to [PATCH 3/3], so now 2 patches in total.
+> o Add more info to patch description.
+> o Fix arch breaks in default resource setup discovered by Bjorn Helgaas.
+>
+> Deng-Cheng Zhu (2):
+>  PCI: Pass available resources into pci_create_bus()
+>  MIPS: PCI: Pass controller's resources to pci_create_bus() in
+>    pcibios_scanbus()
+>
+>  arch/microblaze/pci/pci-common.c |    3 +-
+>  arch/mips/pci/pci.c              |   61 +++++++++++++++++++++++++++++++++-----
+>  arch/powerpc/kernel/pci-common.c |    3 +-
+>  arch/sparc/kernel/pci.c          |    3 +-
+>  arch/x86/pci/acpi.c              |    2 +-
+>  drivers/pci/probe.c              |   15 +++++++--
+>  include/linux/pci.h              |    3 +-
+>  7 files changed, 73 insertions(+), 17 deletions(-)
+>
+>
