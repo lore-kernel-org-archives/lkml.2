@@ -1,43 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab1JGRZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 13:25:36 -0400
-Received: from smtp2.Stanford.EDU ([171.67.219.82]:53224 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750753Ab1JGRZd (ORCPT
+	id S1754981Ab1JGR1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 13:27:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34402 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab1JGR1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 13:25:33 -0400
-Message-ID: <4E8F3605.6060104@localhost>
-Date: Fri, 07 Oct 2011 10:25:25 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Subject: Re: [ANNOUNCE] 3.0.6-rt17
-References: <alpine.LFD.2.02.1110070046270.3240@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110070046270.3240@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Oct 2011 13:27:01 -0400
+From: Nasir Abed <nasirabed@gmail.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        venki@google.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 0/1] x86: removed deprecated IRQF_DISABLED
+Date: Fri,  7 Oct 2011 19:26:19 +0200
+Message-Id: <1318008380-3379-1-git-send-email-nasirabed+kernel@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2011 06:15 PM, Thomas Gleixner wrote:
-> Dear RT Folks,
->
-> I'm pleased to announce the 3.0.6-rt17 release.
+This removed IRQF_DISABLED which is deprecated and is ignored anyway since 2.6.36.
 
-Hi and thanks again. So far this one is not hanging which is very good 
-news. But I still see the hrtimer_fixup_activate warnings I reported for 
-rt16...
-
--- Fernando
-
-
-> After chasing weird RCU stalls and hung task messages for quite some
-> time a massive collaborative effort was able to track down and fix
-> this showstopper. Explanation from the changelog:
-...
+[PATCH 1/1] x86: removed deprecated IRQF_DISABLED
