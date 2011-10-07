@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab1JGEKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 00:10:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33952 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1JGEKU (ORCPT
+	id S1751590Ab1JGENn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 00:13:43 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:8082
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750809Ab1JGENl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 00:10:20 -0400
-Date: Thu, 6 Oct 2011 21:10:16 -0700
-From: Cyclonus J <cyclonusj@gmail.com>
-To: david@lang.hm
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: intercommunications between Linux kernel modules
-Message-ID: <20111007041016.GA18814@gmail.com>
-References: <CAOzbF4dvtM5WJ9-LkP4tFROA_gnT-gh-+-3qJLSqtUKOp0SvMg@mail.gmail.com>
- <m28vox36cm.fsf@firstfloor.org>
- <CAOzbF4d+4cZNu_jTPuWcxves2QvidczcfzMzspMKYkGHi-mFxA@mail.gmail.com>
- <alpine.DEB.2.02.1110062056490.5597@asgard.lang.hm>
+	Fri, 7 Oct 2011 00:13:41 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E8E7C5F.4090902@am.sony.com>
+Date: Thu, 6 Oct 2011 21:13:19 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1110062056490.5597@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0.6-rt17
+References: <alpine.LFD.2.02.1110070046270.3240@ionos>
+In-Reply-To: <alpine.LFD.2.02.1110070046270.3240@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 09:00:13PM -0700, david@lang.hm wrote:
-> On Thu, 6 Oct 2011, Cyclonus J wrote:
+On 10/06/11 18:15, Thomas Gleixner wrote:
+> Dear RT Folks,
 > 
-> >On Thu, Oct 6, 2011 at 7:04 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >>Cyclonus J <cyclonusj@gmail.com> writes:
-> >>
-> >>>I am looking for a way to do an IPC-like communications between two
-> >>>linux kernel modules, such as mqueue or shared memory. After searching
-> >>>for a while, I can't find such information available inside existing
-> >>>linux kernel or online.
-> >>>
-> >>>So, my question is if this is something discussed before here and gets
-> >>>rejected or still might be accepted in the mainstream kernel tree?
-> >>
-> >>All kernel memory is shared in Linux, so the concept doesn't make sense.
-> >>
-> >>If you want to send messages or communicate inside the kernel there are
-> >>lots of different facilities available.
-> >
-> >Andi,
-> >
-> >That would be great! Could you point me to some facilities that can do
-> >this message passing between kernels?
-> 
-> what you are missing is that there aren't two different kernels.
-> it's one big process. think multi-threaded programming instead of
-> inter-process communication. You don't even have well defined
-> threads to work with so you can't say "I'm in thread 1 and need to
-> communicate with thread 2", you need to think "I'm in this routine
-> and I need to set a message in a way that another routine will read
-> it", this can be as simple as just setting a variable (although you
-> do need to make it the equivalent of 'thread safe' through
-> appropriate locking or lock-free protection)
+> I'm pleased to announce the 3.0.6-rt17 release.
 
-David,
+Builds and boots on my usual array of ARM boards for:
 
-Yes, it is multi-threaded. I have two kernel modules and each of them will
-create its own kernel thread just for communication purpose (message passing).
+  - SMP, PREEMPT_RT_FULL
+  - SMP, PREEMPT_NONE
+  - UP, PREEMPT_RT_FULL
+  - UP, PREEMPT_NONE
 
-Do you know if there is any message primitves I can use to achieve this inside
-kernel?
+-Frank
 
-Thanks,
-CJ
 
-> 
-> David Lang
