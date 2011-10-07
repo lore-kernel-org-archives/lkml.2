@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab1JGGvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 02:51:23 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56110 "EHLO
+	id S1758285Ab1JGGxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 02:53:37 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57451 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751071Ab1JGGvV (ORCPT
+	by vger.kernel.org with ESMTP id S1751389Ab1JGGxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 02:51:21 -0400
-X-Sasl-enc: vNr0ealBCC5+udxSgWUlrGXbEdLjVkYHtZ/Fr2zNMr54 1317970279
-Date: Thu, 6 Oct 2011 23:43:49 -0700
+	Fri, 7 Oct 2011 02:53:36 -0400
+X-Sasl-enc: 42lhZ+7WrNvZiDKkT7PuPMSlfLDhWJoOvq994yKG1PPp 1317970415
+Date: Thu, 6 Oct 2011 23:52:37 -0700
 From: Greg KH <greg@kroah.com>
-To: "G, Manjunath Kondaiah" <manjugk@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] drivercore: add new error value for deferred probe
-Message-ID: <20111007064349.GD27508@kroah.com>
-References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
- <1317963790-29426-2-git-send-email-manjugk@ti.com>
+To: Himanshu Chauhan <hschauhan@nulltrace.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernelnewbies@kernelnewbies.org" <kernelnewbies@kernelnewbies.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon class driver registration with a
+ device number
+Message-ID: <20111007065237.GA27805@kroah.com>
+References: <1317834791-2803-1-git-send-email-hschauhan@nulltrace.org>
+ <20111005193359.GB26664@kroah.com>
+ <20111006041011.GB2125@ubuntu.ubuntu-domain>
+ <20111006182500.GA18607@kroah.com>
+ <20111006190752.GA28455@ericsson.com>
+ <20111007064240.GA2944@ubuntu.ubuntu-domain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317963790-29426-2-git-send-email-manjugk@ti.com>
+In-Reply-To: <20111007064240.GA2944@ubuntu.ubuntu-domain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 10:33:06AM +0500, G, Manjunath Kondaiah wrote:
+On Fri, Oct 07, 2011 at 12:12:40PM +0530, Himanshu Chauhan wrote:
+> On Thu, Oct 06, 2011 at 12:07:52PM -0700, Guenter Roeck wrote:
+> > And why, and what for.
 > 
-> Add new error value so that drivers can request deferred probe
-> from drivercore.
+> The initial idea of posting to kernelnewbies was to get a hint on how
+> the patch would be taken as. I wanted to know if developers will like
+> the idea behind it or not. I guess, Guenter is not convinced with
+> any of my reasoning. I am willing to clean it up further only if
+> I get a positive hint. But it doesn't seem to be going anywhere.
 > 
-> Signed-off-by: G, Manjunath Kondaiah <manjugk@ti.com>
-> Reported-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-mmc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Greg Kroah-Hartman <greg@kroah.com>
-> Cc: Dilan Lee <dilee@nvidia.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+> Thanks Guenter, Alan, and Greg for taking your time and reviewing it.
 > 
->  include/linux/errno.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/errno.h b/include/linux/errno.h
-> index 4668583..83d8fcf 100644
-> --- a/include/linux/errno.h
-> +++ b/include/linux/errno.h
-> @@ -16,6 +16,7 @@
->  #define ERESTARTNOHAND	514	/* restart if no handler.. */
->  #define ENOIOCTLCMD	515	/* No ioctl command */
->  #define ERESTART_RESTARTBLOCK 516 /* restart by calling sys_restart_syscall */
-> +#define EPROBE_DEFER	517	/* restart probe again after some time */
+> Greg: To answer your last question, if this was taken positively, I
+> was thinking of having functionality similar to misc device registration.
 
-Can we really do this?  Isn't this some user/kernel api here?
+But why?  What is that device node going to be used for?  Who would be
+using it in userspace and where would it be tied into in the kernel?
 
-What's wrong with just "overloading" on top of an existing error code?
-Surely one of the other 516 types could be used here, right?
+still confused,
 
 greg k-h
