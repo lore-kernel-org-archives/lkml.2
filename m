@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab1JGUe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:34:28 -0400
+	id S1759068Ab1JGUeg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:34:36 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:37085 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758717Ab1JGUeX (ORCPT
+	with ESMTP id S1758985Ab1JGUec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:34:23 -0400
+	Fri, 7 Oct 2011 16:34:32 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 08/26] dynamic_debug: define several levels of verbosity
-Date: Fri,  7 Oct 2011 14:33:14 -0600
-Message-Id: <1318019612-20068-9-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 11/26] dynamic_debug: hoist locking in ddebug_change to callers
+Date: Fri,  7 Oct 2011 14:33:17 -0600
+Message-Id: <1318019612-20068-12-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1318019612-20068-1-git-send-email-jim.cromie@gmail.com>
 References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
@@ -24,67 +24,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-define verbose levels 10, 11 to turn on noisy pr_info()s selectively
-10: ddebug_proc_(start|stop) - once each per page of output
-11: ddebug_proc_(show|next) - once each for every call-site
-1-9: are unspecified, may be used for other pr_info()s
+Hoist locking out of ddebug_change() into ddebug_exec_queries().
+This reduces lock fiddling, but will increase hold-times slightly,
+at least when many queries are submitted.
 
-No MODULE_PARM_DESC added, as modinfo doesnt report it for built-ins.
+With verbose off, on a 266 MHz, takes, I get a reasonable:
+
+ #> time cat query-file-w-300-pending-queries > $CONTROL
+ real	0m0.508s
+ user	0m0.009s
+ sys	0m0.290s
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ lib/dynamic_debug.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 74b395b..b88f918 100644
+index 2b3393f..0676de0 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -61,6 +61,8 @@ struct ddebug_iter {
- static DEFINE_MUTEX(ddebug_lock);
- static LIST_HEAD(ddebug_tables);
- static int verbose = 0;
-+#define VERBOSE_PROC 10		/* enable per-page msgs on control file reads */
-+#define VERBOSE_PROC_SHOW 11	/* enable per-line msgs on control file reads */
- module_param(verbose, int, 0644);
- 
- /* Return the last part of a pathname */
-@@ -636,7 +638,7 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
- 	struct _ddebug *dp;
- 	int n = *pos;
- 
--	if (verbose)
-+	if (verbose >= VERBOSE_PROC)
- 		pr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
- 
- 	mutex_lock(&ddebug_lock);
-@@ -661,7 +663,7 @@ static void *ddebug_proc_next(struct seq_file *m, void *p, loff_t *pos)
- 	struct ddebug_iter *iter = m->private;
- 	struct _ddebug *dp;
- 
--	if (verbose)
-+	if (verbose >= VERBOSE_PROC_SHOW)
- 		pr_info("called m=%p p=%p *pos=%lld\n",
- 			m, p, (unsigned long long)*pos);
- 
-@@ -685,7 +687,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
- 	struct _ddebug *dp = p;
- 	char flagsbuf[8];
- 
--	if (verbose)
-+	if (verbose >= VERBOSE_PROC_SHOW)
- 		pr_info("called m=%p p=%p\n", m, p);
- 
- 	if (p == SEQ_START_TOKEN) {
-@@ -710,7 +712,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+@@ -113,7 +113,7 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+  * Search the tables for _ddebug's which match the given
+  * `query' and apply the `flags' and `mask' to them.  Tells
+  * the user which ddebug's were changed, or whether none
+- * were matched.
++ * were matched.  Called with ddebug_lock held.
   */
- static void ddebug_proc_stop(struct seq_file *m, void *p)
- {
--	if (verbose)
-+	if (verbose >= VERBOSE_PROC)
- 		pr_info("called m=%p p=%p\n", m, p);
- 	mutex_unlock(&ddebug_lock);
+ static void ddebug_change(const struct ddebug_query *query,
+ 			   unsigned int flags, unsigned int mask)
+@@ -125,7 +125,6 @@ static void ddebug_change(const struct ddebug_query *query,
+ 	char flagbuf[8];
+ 
+ 	/* search for matching ddebugs */
+-	mutex_lock(&ddebug_lock);
+ 	list_for_each_entry(dt, &ddebug_tables, link) {
+ 
+ 		/* match against the module name */
+@@ -175,8 +174,6 @@ static void ddebug_change(const struct ddebug_query *query,
+ 							sizeof(flagbuf)));
+ 		}
+ 	}
+-	mutex_unlock(&ddebug_lock);
+-
+ 	if (!nfound && verbose)
+ 		pr_info("no matches for query\n");
  }
+@@ -450,6 +447,7 @@ static int ddebug_exec_queries(char *query)
+ 	char *split;
+ 	int i, errs = 0, exitcode = 0, rc;
+ 
++	mutex_lock(&ddebug_lock);
+ 	for (i = 0; query; query = split) {
+ 		split = strpbrk(query, ";\n");
+ 		if (split)
+@@ -468,6 +466,7 @@ static int ddebug_exec_queries(char *query)
+ 		}
+ 		i++;
+ 	}
++	mutex_unlock(&ddebug_lock);
+ 	pr_info("processed %d queries, with %d errs\n", i, errs);
+ 
+ 	return exitcode;
 -- 
 1.7.4.4
 
