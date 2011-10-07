@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1JGUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:00:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51884 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab1JGUA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:00:26 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=5E__mjtSOyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=3Ogy38lQgbLud3jf1FQA:9 a=PUjeQqilurYA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH] kbuild: let object files depend on recordmcount instead
- of its sources
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Date: Fri, 07 Oct 2011 16:00:25 -0400
-In-Reply-To: <20111007194750.GX6949@pengutronix.de>
-References: <1317993561-16242-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <20111007194750.GX6949@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1318017625.4729.80.camel@gandalf.stny.rr.com>
+	id S1754277Ab1JGUCr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:02:47 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54571 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754089Ab1JGUCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 16:02:46 -0400
+Message-ID: <1318017765.11045.12.camel@Joe-Laptop>
+Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: =?ISO-8859-1?Q?V=EDctor?= Manuel =?ISO-8859-1?Q?J=E1quez?=
+	 Leal <vjaquez@igalia.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Timo Teras <timo.teras@solidboot.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 07 Oct 2011 13:02:45 -0700
+In-Reply-To: <20111007195714.GB26805@n2100.arm.linux.org.uk>
+References: <20111006201827.GT6324@atomide.com>
+	 <1317977417-17874-1-git-send-email-vjaquez@igalia.com>
+	 <20111007092243.GC27281@n2100.arm.linux.org.uk>
+	 <1318009239.1644.38.camel@Joe-Laptop>
+	 <20111007191822.GA26805@n2100.arm.linux.org.uk>
+	 <1318016901.11045.9.camel@Joe-Laptop>
+	 <20111007195714.GB26805@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 21:47 +0200, Uwe Kleine-König wrote:
+On Fri, 2011-10-07 at 20:57 +0100, Russell King - ARM Linux wrote:
+> On Fri, Oct 07, 2011 at 12:48:21PM -0700, Joe Perches wrote:
+> > I think it needs to be done subsystem by subsystem,
+> > arch by arch, as maintainers accept.
+> Agreed - but doing one instance here, maybe another instance somewhere
+> else, and come the merge window having several of these patches
+> scattered around with no real coherent "this is what we're doing, and
+> its all done for this bit of the tree" kind of story is not the way to
+> do it.
+> It would be good to get core code done, or a sub-arch, and then say
+> "we're not accepting any patch which re-introduces the problem"...
+> It's a little late in the cycle for that now though.
 
-> I could reproduce the build failure Steve is seeing now (enabling
-> CONFIG_FUNCTION_TRACER helps, stupid me). I think the problem is that
-> with my change empty.o depends on recordmcount and in a way that I don't
-> understand recordmcount depends on empty.o. I wonder if it's possible to
-> get rid of the latter dependency?!
+Well, if you want it done for arch/arm, just let me
+know when it would be convenient for you and I'll
+do them all as a single patch.
 
-It may be possible but probably not worth it. When I stumbled on empty.o
-I talked with some of the kbuild folks, and IIRC, it is pretty core to
-the dependency structure. Changing it may break other things easily.
-
--- Steve
 
 
