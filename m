@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab1JGTPw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 15:15:52 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35135 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753281Ab1JGTPv (ORCPT
+	id S1754107Ab1JGTS7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 15:18:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60804 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab1JGTS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 15:15:51 -0400
-X-Sasl-enc: mr0On9rGqhS1nyY9Yuh0qChz1LMjuj+ax9erl1CIXU9z 1318014950
-Date: Fri, 7 Oct 2011 11:59:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
-        david@fubar.dk
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99?= =?utf-8?Q?s?= Wish List for Linux
-Message-ID: <20111007185905.GA29127@kroah.com>
-References: <1317943022.1095.25.camel@mop>
+	Fri, 7 Oct 2011 15:18:56 -0400
+Date: Fri, 7 Oct 2011 20:18:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: =?iso-8859-1?Q?V=EDctor_Manuel_J=E1quez?= Leal 
+	<vjaquez@igalia.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Timo Teras <timo.teras@solidboot.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
+Message-ID: <20111007191822.GA26805@n2100.arm.linux.org.uk>
+References: <20111006201827.GT6324@atomide.com> <1317977417-17874-1-git-send-email-vjaquez@igalia.com> <20111007092243.GC27281@n2100.arm.linux.org.uk> <1318009239.1644.38.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1317943022.1095.25.camel@mop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318009239.1644.38.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 01:17:02AM +0200, Kay Sievers wrote:
-> * CPU modaliases in /sys/devices/system/cpu/cpuX/modalias:
-> useful to allow module auto-loading of e.g. cpufreq drivers and KVM
-> modules. Andy Kleen has a patch to create the alias file itself. CPU
-> ‘struct sysdev’ needs to be converted to ‘struct device’ and a ‘struct
-> bus_type cpu’ needs to be introduced to allow proper CPU coldplug event
-> replay at bootup. This is one of the last remaining places where
-> automatic hardware-triggered module auto-loading is not available. And
-> we’d like to see that fix to make numerous ugly userspace work-arounds
-> to achieve the same go away.
+On Fri, Oct 07, 2011 at 10:40:39AM -0700, Joe Perches wrote:
+> At some point in the next couple of years, I want
+> to convert all of, or as many as possible of, the
+> remaining printk uses to pr_<level>.
 
-I need to get off my ass and fix this properly, now that Rafael has done
-all of the hard work for sysdev already.  Thanks for reminding me.
+If the idea is also to get rid of printk() too (which IMHO would be a
+good thing as it kills off the constant need to continually patch for
+missing KERN_ prefixes) then that's a good reason (provided Linus
+accepts the idea.)  At that point having such patches as part of a
+progressive series of patches also makes sense.
 
-> * export ‘struct device_type fb/fbcon’ of ‘struct class graphics’
-> Userspace wants to easily distinguish ‘fb’ and ‘fbcon’ from each other
-> without the need to match on the device name.
-
-Can't we just export a "type" file for the device for these devices?
-Is it really just that simple?
-
-> * module-init-tools: provide a proper libmodprobe.so from
-> module-init-tools:
-> Early boot tools, installers, driver install disks want to access
-> information about available modules to optimize bootup handling.
-
-What information do they want to know?
-
-> * allow user xattrs to be set on files in the cgroupfs (and maybe
-> procfs?)
-
-This shouldn't be that difficult, right?
-
-Thanks for the list, much appreciated.
-
-greg k-h
+Doing it piecemeal when we've already had frequent complaints from
+Linus about useless churn with no apparant reasoning behind it doesn't
+help relieve us of those accusations.
