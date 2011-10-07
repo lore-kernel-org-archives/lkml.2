@@ -1,121 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464Ab1JGHmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 03:42:06 -0400
-Received: from ezo.ezono.com ([50.22.105.208]:45328 "EHLO ezo.ezono.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1JGHmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 03:42:05 -0400
-X-Greylist: delayed 1537 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Oct 2011 03:42:05 EDT
-Message-ID: <4E8EA746.6030103@ezono.com>
-Date: Fri, 07 Oct 2011 09:16:22 +0200
-From: Abdelghani Ouchabane <abdelghani@ezono.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	id S1759577Ab1JGHnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 03:43:18 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:39000 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751652Ab1JGHnQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 03:43:16 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Abdelghani Ouchabane <abdelghani@ezono.com>
-Subject: PCIe can not rescan for new PCIe device ( FPGA board )
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ezo.ezono.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - ezono.com
+In-Reply-To: <alpine.DEB.2.00.1110061030490.4611@utopia.booyaka.com>
+References: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
+	<alpine.DEB.2.00.1110061030490.4611@utopia.booyaka.com>
+Date: Fri, 7 Oct 2011 13:13:15 +0530
+Message-ID: <CAP05o4Kfo2fjkaSmhu1wERN4BsznMo3EFe9VMLm9gVA9iXcBzg@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap3
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
+        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo,
+On Thu, Oct 6, 2011 at 10:05 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> Hi Keshava,
+>
+> On Thu, 6 Oct 2011, Keshava Munegowda wrote:
+>
+>> Following 2 hwmod structures are added
+>>     1. usb_host_hs
+>>          The hwmod of usbhs with uhh, ehci and ohci base addresses
+>>          functional clock and ehci, ohci irqs
+>>
+>>     2. usb_tll_hs
+>>           hwmod of usbhs with the TLL base address and irq.
+>>
+>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+>> Reviewed-by: Partha Basak <parthab@india.ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
+>>  1 files changed, 227 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> index 59fdb9f..b8ca690 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+>> @@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+>
+> ...
+>
+>> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__ick = {
+>> +     .master         = &omap3xxx_l4_core_hwmod,
+>> +     .slave          = &omap34xx_usb_host_hs_hwmod,
+>> +     .clk            = "usbhost_ick",
+>> +     .addr           = omap34xx_usb_host_hs_addrs,
+>> +     .user           = OCP_USER_MPU | OCP_USER_SDMA,
+>> +/*
+>> + * This clock should be on/off only with main clock; If auto idle is set,
+>> + * the usbhs controller prevents the omap to enter in to low power mode,
+>> + * hence don't use auto idle here.
+>> + */
+>> +     .flags          = OCPIF_SWSUP_IDLE,
+>
+> This is still unclear to me.  Doesn't this interface clock support
+> interface clock auto-idle?  If so, then when the UHH's target port is
+> forced idle and its initiator port is forced to standby, then shouldn't
+> the PRCM automatically idle this interface clock?
 
-   We are developing a FPGA board connected to a Fedora 15 PC host over PCIe. Right now, in the implementation and debug phase, I often need to power off and
-power on the device or try different boards. This causes a problem with the Fedora 15 running on the AMD PC.
+Thanks paul;
+Now I am seeing that  without  OCPIF_SWSUP_IDLE the system is going to
+low power mode but after
+adding HWMOD_INIT_NO_RESET flag ;  After adding this flag; I dint
+check the system without this flag;
+so, PRCM automatically idle this interface clock if UHH target port is
+forced idle and force standby.
+I can remove it now.  :-)
 
-Typically the PC is booted when I need to insert the device under test. As expected, the Linux doesn't find the device and the software app cannot talk to it.
+> Or is there some hardware problem where the PRCM won't auto-idle this
+> clock when the UHH is in idle + standby?
+>
+>> +};
+>> +
+>
+> ...
+>
+>> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
+>> +     .clk            = "usbtll_ick",
+>> +     .addr           = omap34xx_usb_tll_hs_addrs,
+>> +     .user           = OCP_USER_MPU | OCP_USER_SDMA,
+>> +/*
+>> + * This clock should be on/off only with main clock; If auto idle is set,
+>> + * the usbhs controller prevents the omap to enter in to low power mode,
+>> + * hence don't use auto idle here.
+>> + */
+>> +     .flags          = OCPIF_SWSUP_IDLE,
+>
+> Same comment here, with the exception of the part about standby since the
+> TLL doesn't have an initiator port.
 
- * If I do "lspci -v" then it does not list our device.
+I will remove this also;
 
- * Then I execute "echo 1 > /sys/bus/pci/rescan"
-
- * Now "lspci -v" lists our device.
-
- * But our software returns : 0xFFFFFFFF
-
-************************************************************************************************************************************************************
-[root@localhost ~]# show_regs
-resource file = /sys/bus/pci/devices/0000:02:00.0/resource
-base address  = 0x40241000
-    0x40241000    0x00000000    0xFFFFFFFF    0xFFFFFFFF
-    0x40241008    0x00000008    0xFFFFFFFF    0xFFFFFFFF
-    0x40241010    0x00000010    0xFFFFFFFF    0xFFFFFFFF
-    0x40241018    0x00000018    0xFFFFFFFF    0xFFFFFFFF
-    0x40241020    0x00000020    0xFFFFFFFF    0xFFFFFFFF
-    0x40241028    0x00000028    0xFFFFFFFF    0xFFFFFFFF
-    0x40241030    0x00000030    0xFFFFFFFF    0xFFFFFFFF
-    0x40241038    0x00000038    0xFFFFFFFF    0xFFFFFFFF
-    0x40241040    0x00000040    0xFFFFFFFF    0xFFFFFFFF
-    0x40241048    0x00000048    0xFFFFFFFF    0xFFFFFFFF
-    0x40241050    0x00000050    0xFFFFFFFF    0xFFFFFFFF
-    0x40241058    0x00000058    0xFFFFFFFF    0xFFFFFFFF
-
-
-************************************************************************************************************************************************************
-lspci -vvv
-
-02:00.0 Signal processing controller: eZono AG eZono Malta - 32 channels ultrasound front end (rev 01)
-	Subsystem: eZono AG Device 0001
-	Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Interrupt: pin A routed to IRQ 7
-	Region 0: Memory at 40240000 (64-bit, prefetchable) [size=4K]
-	Region 2: Memory at 40200000 (64-bit, prefetchable) [size=256K]
-	Region 4: Memory at 40241000 (64-bit, prefetchable) [size=4K]
-	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Capabilities: [78] Power Management version 3
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [80] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 2048 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-		LnkCap:	Port #1, Speed 2.5GT/s, Width x1, ASPM L0s, Latency L0 <1us, L1 <1us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM L0s Enabled; RCB 64 bytes Disabled- Retrain- CommClk-
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk- DLActive- BWMgmt- ABWMgmt-
-
-
-************************************************************************************************************************************************************
-lspci -xxx
-
-02:00.0 Signal processing controller: eZono AG eZono Malta - 32 channels ultrasound front end (rev 01)
-00: 34 12 02 00 02 00 10 00 01 00 80 11 00 00 00 00
-10: 0c 00 24 40 00 00 00 00 0c 00 20 40 00 00 00 00
-20: 0c 10 24 40 00 00 00 00 00 00 00 00 34 12 01 00
-30: 00 00 00 00 50 00 00 00 00 00 00 00 00 01 00 00
-40: 00 00 00 00 70 61 62 01 00 00 00 00 00 00 00 00
-50: 05 78 80 00 00 00 00 00 00 00 00 00 00 00 00 00
-60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-70: 00 00 00 00 00 00 00 00 01 80 03 00 00 00 00 00
-80: 10 00 01 00 04 80 2c 01 10 28 00 00 11 44 00 01
-90: 01 00 11 00 00 00 00 00 00 00 00 00 00 00 00 00
-a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-************************************************************************************************************************************************************
-
-It looks that 'rescan' is not enough to handle cases like this? Or, is there a
-way to "insert" the FPGAs later after the kernel boots up?
-
-
-Many thanks in advance, 
-Ghani
-
-
+regards
+keshava
