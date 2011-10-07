@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391Ab1JGUXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:23:03 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:53897 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab1JGUXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:23:00 -0400
-Date: Fri, 7 Oct 2011 23:20:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] trace: cleanup: make some types unsigned
-Message-ID: <20111007202004.GI18470@longonot.mountain>
-References: <20111007132744.GC31424@elgon.mountain>
- <1317994732.4729.39.camel@gandalf.stny.rr.com>
+	id S1758572Ab1JGUYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:24:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35396 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab1JGUYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 16:24:21 -0400
+Date: Fri, 7 Oct 2011 21:24:17 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
+        Josh Boyer <jwboyer@redhat.com>, aarcange@redhat.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm: Abort reclaim/compaction if compaction can
+ proceed
+Message-ID: <20111007202417.GD6418@suse.de>
+References: <1318000643-27996-1-git-send-email-mgorman@suse.de>
+ <1318000643-27996-3-git-send-email-mgorman@suse.de>
+ <4E8F5BEA.3040502@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1317994732.4729.39.camel@gandalf.stny.rr.com>
+In-Reply-To: <4E8F5BEA.3040502@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E8F5FA1.00A7:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 09:38:51AM -0400, Steven Rostedt wrote:
-> On Fri, 2011-10-07 at 16:27 +0300, Dan Carpenter wrote:
-> > The problem here is that I'm trying to silence a static checker
-> > warning.  In replace_preds() we cap n_preds at MAX_FILTER_PRED but
-> > we don't check for negative values.  It can't actually be negative
-> > values, but the static checkers get confused.
+On Fri, Oct 07, 2011 at 04:07:06PM -0400, Rik van Riel wrote:
+> On 10/07/2011 11:17 AM, Mel Gorman wrote:
+> >If compaction can proceed, shrink_zones() stops doing any work but
+> >the callers still shrink_slab(), raises the priority and potentially
+> >sleeps.  This patch aborts direct reclaim/compaction entirely if
+> >compaction can proceed.
+> >
+> >Signed-off-by: Mel Gorman<mgorman@suse.de>
 > 
-> I really hate to uglify code for the sake of static checkers.
+> This patch makes sense to me, but I have not tested it like
+> the first one.
 > 
-> This code may change in the near future, and the possibility that
-> n_preds may become a possibility. Perhaps we should add a:
+
+Do if you can.
+
+> Mel, have you tested this patch?
+
+Yes.
+
+> Did you see any changed
+> behaviour vs. just the first patch?
 > 
-> WARN_ON(n_preds < 0);
+
+It's marginal and could be confirmation bias on my part. Basically,
+there is noise when this path is being exercised but there were fewer
+slabs scanned.  However, I don't know what the variances are and
+whether the reduction was within the noise or not but it makes sense
+that it would scan less.  If I profiled carefully, I might be able
+to show that a few additional cycles are spent raising the priority
+but it would be marginal.
+
+While patch 1 is very clear, patch 2 depends on reviewers deciding it
+"makes sense".
+
+> Having said that, I'm pretty sure the patch is ok :)
 > 
-> If in the future the count_preds() changes and incorrectly produces a
-> negative number, or perhaps even overflows int, we wont catch it with
-> unsigned.
 
-I've sent a couple type changes to silence static checker warnings,
-but I haven't been pushing it, because I'm interested to see what
-people think about them first.  I didn't think unsigned int was
-particularly ugly, but now that you point it out I guess it is
-needlessly pedantic and longer to type.  So it's fine if you ignore
-the patch.
+Care to ack?
 
-Please don't add the WARN_ON().  WARN_ON()s are uglier than unsigned
-ints.  WARN_ON() don't solve any problems, they just make debugging
-the crash easier.  Are we going to crash here, and if so, do we
-expect that debugging it will be difficult?  Probably not.
-
-In theory, static checkers should be able to look at this code and
-know that n_preds can't overflow.  So yeah.  Let's call this a
-static checker bug and move on.
-
-regards,
-dan carpenter
+-- 
+Mel Gorman
+SUSE Labs
