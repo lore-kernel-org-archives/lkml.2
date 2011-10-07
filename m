@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1JGShL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 14:37:11 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:54180 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752642Ab1JGShI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 14:37:08 -0400
-Date: Fri, 7 Oct 2011 14:19:06 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, crash-utility@redhat.com,
-        kexec@lists.infradead.org, Vivek Goyal <vgoyal@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp
-Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
- NT_NOCOREDUMP to capture slimdump
-Message-ID: <20111007181906.GA13172@elliptictech.com>
-References: <20111003070735.GJ2223@in.ibm.com>
- <20111003073203.GA22694@in.ibm.com>
- <20111004150417.GA23604@elliptictech.com>
- <20111007163600.GB2297@in.ibm.com>
+	id S1753888Ab1JGSl7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 14:41:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab1JGSlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 14:41:55 -0400
+Date: Fri, 7 Oct 2011 20:37:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 18/26]   uprobes: slot allocation.
+Message-ID: <20111007183740.GC1655@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111007163600.GB2297@in.ibm.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110920120335.25326.50673.sendpatchset@srdronam.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-07 22:06 +0530, K.Prasad wrote:
-> On Tue, Oct 04, 2011 at 11:04:17AM -0400, Nick Bowler wrote:
-> > On 2011-10-03 13:02 +0530, K.Prasad wrote:
-> > > +	const char note_name[] = "PANIC_MCE";
-> > 
-> >         static const ...
-> > 
-> > > +	const char desc_msg[] = "Crash induced due to a fatal machine "
-> > > +				"check error";
-> > 
-> >         likewise.
-> 
-> Not sure why you wanted them to be defined as static. These strings are
-> going to be copied into respective elf-note buffers just a few lines
-> below their definitions.
+On 09/20, Srikar Dronamraju wrote:
+>
+> - * valid_vma: Verify if the specified vma is an executable vma
+> + * valid_vma: Verify if the specified vma is an executable vma,
+> + * but not an XOL vma.
+>   *	- Return 1 if the specified virtual address is in an
+> - *	  executable vma.
+> + *	  executable vma, but not in an XOL vma.
+>   */
+>  static bool valid_vma(struct vm_area_struct *vma)
+>  {
+> +	struct uprobes_xol_area *area = vma->vm_mm->uprobes_xol_area;
+> +
+>  	if (!vma->vm_file)
+>  		return false;
+>
+> +	if (area && (area->vaddr == vma->vm_start))
+> +			return false;
 
-It's possible that GCC's optimizer will do the right thing in either
-case and it won't matter at all.  I haven't tried compiling this patch
-so I've not looked at the compiler output.  But for the most part, using
-"static" will save the few bytes of code needed to copy these strings
-onto the stack (as well as the corresponding reduction in stack usage).
+Could you explain why do we need this "but not an XOL vma" check?
+xol_vma->vm_file is always NULL, no?
 
-> > Please don't break string literals onto multiple lines like this, since
-> > it prevents users from finding the string using "grep".
-> 
-> We could do so, hoping that checkpatch.pl doesn't complain if we crossed
-> the 80-column width :-)
+> +static struct uprobes_xol_area *xol_alloc_area(void)
+> +{
+> +	struct uprobes_xol_area *area = NULL;
+> +
+> +	area = kzalloc(sizeof(*area), GFP_KERNEL);
+> +	if (unlikely(!area))
+> +		return NULL;
+> +
+> +	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
+> +								GFP_KERNEL);
+> +
+> +	if (!area->bitmap)
+> +		goto fail;
+> +
+> +	init_waitqueue_head(&area->wq);
+> +	spin_lock_init(&area->slot_lock);
+> +	if (!xol_add_vma(area) && !current->mm->uprobes_xol_area) {
+> +		task_lock(current);
+> +		if (!current->mm->uprobes_xol_area) {
+> +			current->mm->uprobes_xol_area = area;
+> +			task_unlock(current);
+> +			return area;
+> +		}
+> +		task_unlock(current);
 
-If it does, the error is in checkpatch.pl rather than your code. :)
+But you can't rely on task_lock(), you can race with another thread
+with the same ->mm. I guess you need mmap_sem or xchg().
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+>  static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
+>  				unsigned long vaddr)
+>  {
+> -	/* TODO: Yet to be implemented */
+> +	if (xol_get_insn_slot(uprobe, vaddr) && !pre_xol(uprobe, regs)) {
+> +		set_instruction_pointer(regs, current->utask->xol_vaddr);
+
+set_instruction_pointer() looks unneded, pre_xol() has already changed
+regs->ip.
+
+Oleg.
+
