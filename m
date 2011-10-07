@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550Ab1JGHiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 03:38:11 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:35376 "EHLO gw1.transmode.se"
+	id S1759562Ab1JGHip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 03:38:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26831 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759182Ab1JGHiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 03:38:09 -0400
-In-Reply-To: <20111006202042.GD12447@tux1.beaverton.ibm.com>
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111006202042.GD12447@tux1.beaverton.ibm.com>
-Subject: Re: [PATCH v5 0/4] crc32c: Add faster algorithm and self-test code
-X-KeepSent: 47136962:36AF976D-C1257922:0029A6FB;
- type=4; name=$KeepSent
-To: djwong@us.ibm.com
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Mingming Cao <cmm@us.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Theodore Tso <tytso@mit.edu>
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF47136962.36AF976D-ONC1257922.0029A6FB-C1257922.0029EF1C@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Fri, 7 Oct 2011 09:38:01 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 10/07/2011 09:38:03
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+	id S1751525Ab1JGHio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 03:38:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="60027255"
+Subject: Re: [PATCH 1/2] leds: save the delay values after a successful
+ call to blink_set()
+From: Johannes Berg <johannes.berg@intel.com>
+To: Antonio Ospite <ospite@studenti.unina.it>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1317938611-4418-2-git-send-email-ospite@studenti.unina.it>
+References: <1317938611-4418-1-git-send-email-ospite@studenti.unina.it>
+	 <1317938611-4418-2-git-send-email-ospite@studenti.unina.it>
+Date: Fri, 07 Oct 2011 09:38:38 +0200
+Message-ID: <1317973118.3988.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p977csOR005685
 
-"Darrick J. Wong" <djwong@us.ibm.com> wrote on 2011/10/06 22:20:42:
-> Subject: Re: [PATCH v5 0/4] crc32c: Add faster algorithm and self-test code
->
-> On Tue, Oct 04, 2011 at 04:53:57PM -0700, Darrick J. Wong wrote:
-> > Hi all,
-> >
-> > This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
-> > software crc32c implementation.  It requires that all ten of his patches (at
-> > least the ones dated 31 Aug 2011) be applied.  It removes the crc32c
-> > implementation in crypto/ in favor of using the stamped-out one in lib/.  There
-> > is also a change to Kconfig so that the kernel builder can pick an
-> > implementation best suited for the hardware.
-> >
-> > The motivation for this patchset is that I am working on adding full metadata
-> > checksumming to ext4.  As far as performance impact of adding checksumming
-> > goes, I see nearly no change with a standard mail server ffsb simulation.  On a
-> > test that involves only file creation and deletion and extent tree writes, I
-> > see a drop of about 50 pcercent with the current kernel crc32c implementation;
-> > this improves to a drop of about 20 percent with the enclosed crc32c code.
-> >
-> > When metadata is usually a small fraction of total IO, this new implementation
-> > doesn't help much because metadata is usually a small fraction of total IO.
-> > However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
-> > tree), then this patch speeds up the operation substantially.
-> >
-> > Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
-> > should improve their speed as well.  I have not yet quantified that, however.
->
-> As for Mr. Tjernlund's unresolved questions regarding the v4 patch, I have
-> tested this new code on x64/x32/ppc32/ppc64 and it seems to work fine, both
-> with the crc32c selftest and also on a practical level with ext4 metadata
-> checksumming enabled.  Updating to Bob's newest calculation code brings about a
-> 10-15% speedup on the ppc64 box.  I also see that slice-by-8 is about 20%
-> faster than slice-by-4 on my ppc32 box.
->
-> I did _not_ see any failures on ppc32 when running an extended ext4+checksum
-> test suite.
+On Thu, 2011-10-06 at 22:03 +0000, Antonio Ospite wrote:
+> When calling the hardware blinking function implemented by blink_set(),
+> the delay_on and delay_off values are not preserved across calls.
+> 
+> Fix that and make the "timer" trigger work as expected when hardware
+> blinking is available.
+> 
+> BEFORE the fix:
+>   $ cd /sys/class/leds/someled
+>   $ echo timer > trigger
+>   $ cat delay_on delay_off
+>   0
+>   0
+>   $ echo 100 > delay_on
+>   $ cat delay_on delay_off
+>   0
+>   0
+>   $ echo 100 > delay_off
+>   $ cat delay_on delay_off
+>   0
+>   0
+> 
+> AFTER the fix:
+>   $ cd /sys/class/leds/someled
+>   $ echo timer > trigger
+>   $ cat delay_on delay_off
+>   0
+>   0
+>   $ echo 100 > delay_on
+>   $ cat delay_on delay_off
+>   100
+>   0
+>   $ echo 100 > delay_off
+>   $ cat delay_on delay_off
+>   100
+>   100
+> 
+> Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+> ---
+>  drivers/leds/led-class.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index d5a4ade..939f24a 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -267,8 +267,11 @@ void led_blink_set(struct led_classdev *led_cdev,
+>                    unsigned long *delay_off)
+>  {
+>         if (led_cdev->blink_set &&
+> -           !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+> +           !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
+> +               led_cdev->blink_delay_on = *delay_on;
+> +               led_cdev->blink_delay_off = *delay_off;
+>                 return;
+> +       }
 
-Hi Darrick, I finally had some time to look this series over and I like
-this much better. Thank you for your patience with me :)
+Looks good to me. I suspect I created this bug because originally it
+might have put the values into there first and then called blink_set().
 
-Acked-By: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
 
- Jocke
+johannes
 
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
