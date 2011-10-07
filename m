@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188Ab1JGWru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 18:47:50 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52362 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753487Ab1JGWrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 18:47:48 -0400
-Date: Fri, 7 Oct 2011 15:47:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH 02/11] rcu: Inform the user about extended quiescent
- state on PROVE_RCU warning
-Message-ID: <20111007224744.GH2696@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
- <1318004530-705-3-git-send-email-fweisbec@gmail.com>
+	id S1759364Ab1JGXFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 19:05:46 -0400
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:44747 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754769Ab1JGXFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 19:05:45 -0400
+Message-ID: <4E8F85C6.6010309@ccrma.stanford.edu>
+Date: Fri, 07 Oct 2011 16:05:42 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318004530-705-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Subject: Re: [ANNOUNCE] 3.0.6-rt17
+References: <alpine.LFD.2.02.1110070046270.3240@ionos> <4E8F3605.6060104@localhost> <4E8F58ED.9060702@localhost> <alpine.LFD.2.02.1110080000400.3240@ionos>
+In-Reply-To: <alpine.LFD.2.02.1110080000400.3240@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 06:22:01PM +0200, Frederic Weisbecker wrote:
-> Inform the user if an RCU usage error is detected by lockdep while in
-> an extended quiescent state (in this case, the RCU-free window in idle).
-> This is accomplished by adding a line to the RCU lockdep splat indicating
-> whether or not the splat occurred in extended quiescent state.
-> 
-> Uses of RCU from within extended quiescent state mode are totally ignored
-> by RCU, hence the importance of this diagnostic.
+On 10/07/2011 03:02 PM, Thomas Gleixner wrote:
+> On Fri, 7 Oct 2011, Fernando Lopez-Lezcano wrote:
+>> On 10/07/2011 10:25 AM, Fernando Lopez-Lezcano wrote:
+>>> On 10/06/2011 06:15 PM, Thomas Gleixner wrote:
+>>>> I'm pleased to announce the 3.0.6-rt17 release.
+>>>
+>>> Hi and thanks again. So far this one is not hanging which is very good
+>>> news. But I still see the hrtimer_fixup_activate warnings I reported for
+>>> rt16...
+>>
+>> I tried rt17 on my workstation and it froze after a few minutes (quad core
+>> intel based desktop). Reset button freeze. Then I set up my serial console and
+>> tried it out. I could not get it to freeze permanently but I got _many_
+>> hrtimer_fixup_activate warnings and while the console is sending those the
+>> gnome interface freezes (this is on fc14). So it is not very usable for
+>> debugging...
+>>
+>> Just tried again after another reboot (@ 115200 baud) and it worked for a
+>> while. Then it started spewing messages again and it is again unusable. I'm
+>> attaching a trace of what was sent to the serial console while the machine
+>> froze temporarily.
+>
+> Does adding nohz=off to the kernel commandline solve it?
+>
+> You probably posted your .config before, but could you please send it
+> again (private mail is fine).
 
-Looks good!
+(config sent privately)
 
-At some point, we may need to add an additional argument to
-lockdep_rcu_suspicious() to suppress this new message, but let's
-worry about that when and if we come to it.
+"nohz=off" makes the warnings disappear! It appears to work normally but 
+it has not been long :-)
 
-(An example would be an rcu_dereference_protected() that checks for
-a lock being held, and thus can be legally called from an extended
-quiescent state.  But the message would print only if the lock was
-not held, so this could not be a false positive, only a possible
-source of confusion.  Not worth worrying about yet.)
-
-							Thanx, Paul
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/lockdep.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 1e48f1c..8873f6e 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -4026,6 +4026,28 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
->  	printk("%s:%d %s!\n", file, line, s);
->  	printk("\nother info that might help us debug this:\n\n");
->  	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
-> +
-> +	/*
-> +	 * If a CPU is in the RCU-free window in idle (ie: in the section
-> +	 * between rcu_idle_enter() and rcu_idle_exit(), then RCU
-> +	 * considers that CPU to be in an "extended quiescent state",
-> +	 * which means that RCU will be completely ignoring that CPU.
-> +	 * Therefore, rcu_read_lock() and friends have absolutely no
-> +	 * effect on a CPU running in that state. In other words, even if
-> +	 * such an RCU-idle CPU has called rcu_read_lock(), RCU might well
-> +	 * delete data structures out from under it.  RCU really has no
-> +	 * choice here: we need to keep an RCU-free window in idle where
-> +	 * the CPU may possibly enter into low power mode. This way we can
-> +	 * notice an extended quiescent state to other CPUs that started a grace
-> +	 * period. Otherwise we would delay any grace period as long as we run
-> +	 * in the idle task.
-> +	 *
-> +	 * So complain bitterly if someone does call rcu_read_lock(),
-> +	 * rcu_read_lock_bh() and so on from extended quiescent states.
-> +	 */
-> +	if (rcu_is_cpu_idle())
-> +		printk("RCU used illegally from extended quiescent state!\n");
-> +
->  	lockdep_print_held_locks(curr);
->  	printk("\nstack backtrace:\n");
->  	dump_stack();
-> -- 
-> 1.7.5.4
-> 
+-- Fernando
