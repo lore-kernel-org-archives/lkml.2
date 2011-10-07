@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759966Ab1JGMat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 08:30:49 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:54865 "EHLO d1.icnet.pl"
+	id S1759973Ab1JGMbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 08:31:36 -0400
+Received: from 8bytes.org ([88.198.83.132]:59073 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab1JGMar convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 08:30:47 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH 3.1-rc3] gpio/omap: fix build error with certain OMAP1 configs
-Date: Fri, 7 Oct 2011 14:30:14 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-References: <201108231342.25101.jkrzyszt@tis.icnet.pl> <87sjoshx2k.fsf@ti.com>
-In-Reply-To: <87sjoshx2k.fsf@ti.com>
+	id S1752496Ab1JGMbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 08:31:35 -0400
+Date: Fri, 7 Oct 2011 14:31:33 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 0/4 v2] PCI: Add support for PASID capability
+Message-ID: <20111007123133.GD1512@8bytes.org>
+References: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Message-Id: <201110071430.14420.jkrzyszt@tis.icnet.pl>
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dnia wtorek, 23 sierpnia 2011 o 19:11:47 Kevin Hilman napisał(a):
-> Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> writes:
+On Tue, Sep 27, 2011 at 03:57:12PM +0200, Joerg Roedel wrote:
+> Hi,
 > 
-> > With commit f64ad1a0e21a, "gpio/omap: cleanup _set_gpio_wakeup(), remove 
-> > ifdefs", access to build time conditionally omitted 'suspend_wakeup' 
-> > member of the 'gpio_bank' structure has been placed unconditionally in 
-> > function _set_gpio_wakeup(), which is always built. This resulted in the 
-> > driver compilation broken for certain OMAP1, i.e., non-OMAP16xx, 
-> > configurations.
-> >
-> > Really required or not in previously excluded cases, define this 
-> > structure member unconditionally as a fix.
-> >
-> > Tested with a custom OMAP1510 only configuration.
-> >
-> > Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> here is the second version of the patch-set implementing support for the
+> PRI and PASID capabilities into the Linux kernel.  These capabilities of
+> a PCIe device are tightly coupled with ATS, but not with IOV. So these
+> patches start by moving the ATS code into its own file: ats.c.
 > 
-> Verified that this fixes a build problem when building for OMAP1
-> (730/850 only)
+> Support for the other two capabilities is based on that change.
 > 
-> Acked-by: Kevin Hilman <khilman@ti.com>
+> Regards,
 > 
-> Grant, can you queue this as a fix for 3.1-rc?
+> 	Joerg
+> 
+> Changes to v1:
+> 
+> 	* Improved Kconfig help-text for PASID
+> 	* Some editing in the commit messages
+> 
+> Diffstat:
+> 
+>  drivers/pci/Kconfig      |   26 +++
+>  drivers/pci/Makefile     |    1 +
+>  drivers/pci/ats.c        |  438 ++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/pci/iov.c        |  142 ---------------
+>  include/linux/pci-ats.h  |   75 ++++++++
+>  include/linux/pci_regs.h |   20 ++
+>  6 files changed, 560 insertions(+), 142 deletions(-)
 
-Hi,
-Sorry for being so late with checking this, but it looks like this patch 
-never got into 3.1-rc, as it should, leaving the issue not fixed.
-Any chance for it still being pushed into 3.1?
+Ping?
 
-Thanks,
-Janusz
