@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760133Ab1JGQWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 12:22:34 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:41062 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760108Ab1JGQWa (ORCPT
+	id S1760174Ab1JGQWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 12:22:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50139 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760137Ab1JGQWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 12:22:30 -0400
+	Fri, 7 Oct 2011 12:22:45 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/11] rcu: Remove one layer of abstraction from PROVE_RCU checking
-Date: Fri,  7 Oct 2011 18:22:03 +0200
-Message-Id: <1318004530-705-5-git-send-email-fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 09/11] x86: Enter rcu extended qs after idle notifier call
+Date: Fri,  7 Oct 2011 18:22:08 +0200
+Message-Id: <1318004530-705-10-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
 References: <1318004530-705-1-git-send-email-fweisbec@gmail.com>
@@ -20,133 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+The idle notifier, called by enter_idle(), enters into rcu read
+side critical section but at that time we already switched into
+the RCU-idle window (rcu_idle_enter() has been called). And it's
+illegal to use rcu_read_lock() in that state.
 
-Simplify things a bit by substituting the definitions of the single-line
-rcu_read_acquire(), rcu_read_release(), rcu_read_acquire_bh(),
-rcu_read_release_bh(), rcu_read_acquire_sched(), and
-rcu_read_release_sched() functions at their call points.
+This results in rcu reporting its bad mood:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[    1.275635] WARNING: at include/linux/rcupdate.h:194 __atomic_notifier_call_chain+0xd2/0x110()
+[    1.275635] Hardware name: AMD690VM-FMH
+[    1.275635] Modules linked in:
+[    1.275635] Pid: 0, comm: swapper Not tainted 3.0.0-rc6+ #252
+[    1.275635] Call Trace:
+[    1.275635]  [<ffffffff81051c8a>] warn_slowpath_common+0x7a/0xb0
+[    1.275635]  [<ffffffff81051cd5>] warn_slowpath_null+0x15/0x20
+[    1.275635]  [<ffffffff817d6f22>] __atomic_notifier_call_chain+0xd2/0x110
+[    1.275635]  [<ffffffff817d6f71>] atomic_notifier_call_chain+0x11/0x20
+[    1.275635]  [<ffffffff810018a0>] enter_idle+0x20/0x30
+[    1.275635]  [<ffffffff81001995>] cpu_idle+0xa5/0x110
+[    1.275635]  [<ffffffff817a7465>] rest_init+0xe5/0x140
+[    1.275635]  [<ffffffff817a73c8>] ? rest_init+0x48/0x140
+[    1.275635]  [<ffffffff81cc5ca3>] start_kernel+0x3d1/0x3dc
+[    1.275635]  [<ffffffff81cc5321>] x86_64_start_reservations+0x131/0x135
+[    1.275635]  [<ffffffff81cc5412>] x86_64_start_kernel+0xed/0xf4
+[    1.275635] ---[ end trace a22d306b065d4a66 ]---
+
+Fix this by entering rcu extended quiescent state later, just before
+the CPU goes to sleep.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
 ---
- include/linux/rcupdate.h |   53 +++++++---------------------------------------
- 1 files changed, 8 insertions(+), 45 deletions(-)
+ arch/x86/kernel/process_64.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index fe4f8976..e550f2a 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -240,41 +240,8 @@ static inline void rcu_lock_release(struct lockdep_map *map)
- }
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index e72daf9..4a1535a 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -121,7 +121,7 @@ void cpu_idle(void)
  
- extern struct lockdep_map rcu_lock_map;
--
--static inline void rcu_read_acquire(void)
--{
--	rcu_lock_acquire(&rcu_lock_map);
--}
--
--static inline void rcu_read_release(void)
--{
--	rcu_lock_release(&rcu_lock_map);
--}
--
- extern struct lockdep_map rcu_bh_lock_map;
--
--static inline void rcu_read_acquire_bh(void)
--{
--	rcu_lock_acquire(&rcu_bh_lock_map);
--}
--
--static inline void rcu_read_release_bh(void)
--{
--	rcu_lock_release(&rcu_bh_lock_map);
--}
--
- extern struct lockdep_map rcu_sched_lock_map;
--
--static inline void rcu_read_acquire_sched(void)
--{
--	rcu_lock_acquire(&rcu_sched_lock_map);
--}
--
--static inline void rcu_read_release_sched(void)
--{
--	rcu_lock_release(&rcu_sched_lock_map);
--}
--
- extern int debug_lockdep_rcu_enabled(void);
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_idle_enter_norcu();
++		tick_nohz_idle_enter();
+ 		while (!need_resched()) {
  
- /**
-@@ -357,12 +324,8 @@ static inline int rcu_read_lock_sched_held(void)
+ 			rmb();
+@@ -137,8 +137,14 @@ void cpu_idle(void)
+ 			enter_idle();
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
++
++			/* enter_idle() needs rcu for notifiers */
++			rcu_idle_enter();
++
+ 			if (cpuidle_idle_call())
+ 				pm_idle();
++
++			rcu_idle_exit();
+ 			start_critical_timings();
  
- #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 			/* In many cases the interrupt that ended idle
+@@ -147,7 +153,7 @@ void cpu_idle(void)
+ 			__exit_idle();
+ 		}
  
--# define rcu_read_acquire()		do { } while (0)
--# define rcu_read_release()		do { } while (0)
--# define rcu_read_acquire_bh()		do { } while (0)
--# define rcu_read_release_bh()		do { } while (0)
--# define rcu_read_acquire_sched()	do { } while (0)
--# define rcu_read_release_sched()	do { } while (0)
-+# define rcu_lock_acquire(a)		do { } while (0)
-+# define rcu_lock_release(a)		do { } while (0)
- 
- static inline int rcu_read_lock_held(void)
- {
-@@ -683,7 +646,7 @@ static inline void rcu_read_lock(void)
- {
- 	__rcu_read_lock();
- 	__acquire(RCU);
--	rcu_read_acquire();
-+	rcu_lock_acquire(&rcu_lock_map);
- }
- 
- /*
-@@ -703,7 +666,7 @@ static inline void rcu_read_lock(void)
-  */
- static inline void rcu_read_unlock(void)
- {
--	rcu_read_release();
-+	rcu_lock_release(&rcu_lock_map);
- 	__release(RCU);
- 	__rcu_read_unlock();
- }
-@@ -724,7 +687,7 @@ static inline void rcu_read_lock_bh(void)
- {
- 	local_bh_disable();
- 	__acquire(RCU_BH);
--	rcu_read_acquire_bh();
-+	rcu_lock_acquire(&rcu_bh_lock_map);
- }
- 
- /*
-@@ -734,7 +697,7 @@ static inline void rcu_read_lock_bh(void)
-  */
- static inline void rcu_read_unlock_bh(void)
- {
--	rcu_read_release_bh();
-+	rcu_lock_release(&rcu_bh_lock_map);
- 	__release(RCU_BH);
- 	local_bh_enable();
- }
-@@ -751,7 +714,7 @@ static inline void rcu_read_lock_sched(void)
- {
- 	preempt_disable();
- 	__acquire(RCU_SCHED);
--	rcu_read_acquire_sched();
-+	rcu_lock_acquire(&rcu_sched_lock_map);
- }
- 
- /* Used by lockdep and tracing: cannot be traced, cannot call lockdep. */
-@@ -768,7 +731,7 @@ static inline notrace void rcu_read_lock_sched_notrace(void)
-  */
- static inline void rcu_read_unlock_sched(void)
- {
--	rcu_read_release_sched();
-+	rcu_lock_release(&rcu_sched_lock_map);
- 	__release(RCU_SCHED);
- 	preempt_enable();
- }
+-		tick_nohz_idle_exit_norcu();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
 -- 
 1.7.5.4
 
