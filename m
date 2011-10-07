@@ -1,82 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212Ab1JGRkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 13:40:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42351 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753716Ab1JGRkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 13:40:40 -0400
-Message-ID: <1318009239.1644.38.camel@Joe-Laptop>
-Subject: Re: [PATCH v3] omap: dmtimer: convert printk to pr_err
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: =?ISO-8859-1?Q?V=EDctor?= Manuel =?ISO-8859-1?Q?J=E1quez?=
-	 Leal <vjaquez@igalia.com>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Timo Teras <timo.teras@solidboot.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 07 Oct 2011 10:40:39 -0700
-In-Reply-To: <20111007092243.GC27281@n2100.arm.linux.org.uk>
-References: <20111006201827.GT6324@atomide.com>
-	 <1317977417-17874-1-git-send-email-vjaquez@igalia.com>
-	 <20111007092243.GC27281@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1758279Ab1JGRkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 13:40:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754435Ab1JGRku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 13:40:50 -0400
+Date: Fri, 7 Oct 2011 19:36:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 4/26]   uprobes: Define hooks for
+	mmap/munmap.
+Message-ID: <20111007173623.GC32319@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120040.25326.63549.sendpatchset@srdronam.in.ibm.com> <20111003133710.GA28118@redhat.com> <20111006110531.GE17591@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111006110531.GE17591@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 10:22 +0100, Russell King - ARM Linux wrote:
-> On Fri, Oct 07, 2011 at 10:50:16AM +0200, Víctor Manuel Jáquez Leal wrote:
-> > Convert a printk(KERN_ERR) message in the driver to pr_err().
-> ...
-> > @@ -111,7 +111,7 @@ static void omap_dm_timer_wait_for_reset(struct omap_dm_timer *timer)
-> >  	while (!(__raw_readl(timer->sys_stat) & 1)) {
-> >  		c++;
-> >  		if (c > 100000) {
-> > -			printk(KERN_ERR "Timer failed to reset\n");
-> > +			pr_err("Timer failed to reset\n");
-> 
-> What is the reason behind this change?  It looks like it's to use the
-> latest and greatest function.
+On 10/06, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2011-10-03 15:37:10]:
+>
+> > On 09/20, Srikar Dronamraju wrote:
+> > >
+> > > @@ -739,6 +740,10 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+> > >  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > >  	mm->pmd_huge_pte = NULL;
+> > >  #endif
+> > > +#ifdef CONFIG_UPROBES
+> > > +	atomic_set(&mm->mm_uprobes_count,
+> > > +			atomic_read(&oldmm->mm_uprobes_count));
+> >
+> > Hmm. Why this can't race with install_breakpoint/remove_breakpoint
+> > between _read and _set ?
+>
+> At this time the child vmas are not yet created, so I dont see a
+> install_breakpoints/remove_breakpoints from child affecting.
 
-Hi Russell
+I meant oldmm.
 
-I'm not promoting this patch, just commenting.
+> However if install_breakpoints/remove_breakpoints happen from a parent
+> context, from now on till we do a vma_prio_tree_add (actually down_write(oldmm->mmap_sem)
+> in dup_mmap()),  then the count in the child may not be the right one.
+> If you are pointing to this race, then its probably bigger than just between read and set.
 
-At some point in the next couple of years, I want
-to convert all of, or as many as possible of, the
-remaining printk uses to pr_<level>.
+Yes, this too. IOW, atomic_read/set(mm_uprobes_count) looks always
+wrong without down_write(mmap_sem).
 
-This would allow finer grained control over the
-prefixing of KBUILD_MODNAME and __func__, and
-could possibly make the kernel image smaller.
+> > > +static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe)
+> > >  {
+> > >  	/* Placeholder: Yet to be implemented */
+> > > +	if (!uprobe->consumers)
+> > > +		return 0;
+> >
+> > How it is possible to see ->consumers == NULL?
+>
+> consumers == NULL check is mostly for the mmap_uprobe path.
 
-Today, arch/arm has ~3:1 ratio of printk to pr_<level>.
-grep shows 1427 printks, 468 pr_<level>, 405 pr_debug's.
+mmap_uprobe() explicitely checks ->consumers != NULL before
+install_breakpoint().
 
-> If so, please don't make these changes - we have on many occasions been
-> blamed for size of diffstat, churn, needless change, and this patch is
-> exactly that.
+> _register_uprobe and _unregister_uprobe() use the same lock to serialize
+> so they can check consumers after taking the lock.
 
-True.
+Yes,
 
-These trivial changes could wait until arch/arm settles
-down a bit more.
+> > OK, afaics it _is_ possible, but only because unregister does del_consumer()
+> > without ->i_mutex, but this is bug afaics (see the previous email).
+>
+> We have discussed this in the other thread.
 
-> By all means fix printk's without KERN_ constants,
+Yes. So afaics we can remove this check if unregister() does del_consumer()
+under mutex.
 
-There's still more than 250 of those in arch/arm.
-Even more with the uses of secondary things like:
-#define PRINTK(x...) (foo && printk(x))
+Note: I am not saying you should do this ;) I just tried to understand
+this code.
 
-> possibly converting
-> them to pr_*, but don't go around replacing printk(KERN_* with pr_*(
-> without ensuring that there's a real benefit to the change.
+> > > +int mmap_uprobe(struct vm_area_struct *vma)
+> > > +{
+> > > +	struct list_head tmp_list;
+> > > +	struct uprobe *uprobe, *u;
+> > > +	struct inode *inode;
+> > > +	int ret = 0;
+> > > +
+> > > +	if (!valid_vma(vma))
+> > > +		return ret;	/* Bail-out */
+> > > +
+> > > +	inode = igrab(vma->vm_file->f_mapping->host);
+> > > +	if (!inode)
+> > > +		return ret;
+> > > +
+> > > +	INIT_LIST_HEAD(&tmp_list);
+> > > +	mutex_lock(&uprobes_mmap_mutex);
+> > > +	build_probe_list(inode, &tmp_list);
+> > > +	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> > > +		loff_t vaddr;
+> > > +
+> > > +		list_del(&uprobe->pending_list);
+> > > +		if (!ret && uprobe->consumers) {
+> > > +			vaddr = vma->vm_start + uprobe->offset;
+> > > +			vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > > +			if (vaddr < vma->vm_start || vaddr >= vma->vm_end)
+> > > +				continue;
+> > > +			ret = install_breakpoint(vma->vm_mm, uprobe);
+> >
+> > So. We are adding the new mapping, we should find all breakpoints this
+> > file has in the start/end range.
+> >
+> > We are holding ->mmap_sem... this seems enough to protect against the
+> > races with register/unregister. Except, what if __register_uprobe()
+> > fails? In this case __unregister_uprobe() does delete_uprobe() at the
+> > very end. What if mmap mmap_uprobe() is called right before delete_?
+> >
+>
+> Because consumers would be NULL before _unregister_uprobe kicks in, we
+> shouldnt have a problem here.
 
-Style consistency patches do need to be governed by
-acceptable churn rate.
+Hmm. But it is not NULL.
 
+Once again, I didn't mean unregister_uprobe(). I meant register_uprobe().
+In this case, if __register_uprobe() fails, we are doing __unregister
+but uprobe->consumer != NULL.
+
+Just suppose that the caller of register_uprobe() gets a (long) preemption
+right before __unregister_uprobe()->delete_uprobe(). What if mmap() is
+called at this time?
+
+> Am I missing something?
+
+May be you, may be me. Please recheck ;)
+
+> > Also, truncate() obviously changes ->i_size. Doesn't this mean
+> > unregister_uprobe() should return if offset > i_size ? We need to
+> > free uprobes anyway.
+
+Argh, I meant "should NOT return if offset > i_size".
+
+> Do you mean we shouldnt check for the offset in unregister_uprobe() and
+> just search in the rbtree for the matching uprobe?
+> Thats also possible to do.
+
+Yes, we can't trust this check afaics.
+
+> I think this would be taken care of if we move the munmap_uprobe() hook
+> from unmap_vmas to unlink_file_vma().
+
+Probably yes, we should rely on prio_tree locking/changes.
+
+> The other thing that I need to investigate a bit more is if I have
+> handle all cases of mremap correctly.
+
+Yes. May be mmap_uprobe() should be "closer" to vma_prio_tree_add/insert
+too, but I am not sure.
+
+Oleg.
 
