@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab1JGSSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 14:18:31 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:38267 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab1JGSS3 (ORCPT
+	id S1756307Ab1JGSXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 14:23:46 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49115 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab1JGSXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 14:18:29 -0400
-Date: Fri, 7 Oct 2011 20:18:26 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Stephen Williams <steveicarus@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: MODULE_LICENSE("GPL") not working for me
-Message-ID: <20111007181826.GA20210@merkur.ravnborg.org>
-References: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com> <CAO3ZPq2RUjW7VQQSoN-S7QDuTYdCMuDfoykHSeXwr19MTnCb_A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAO3ZPq2RUjW7VQQSoN-S7QDuTYdCMuDfoykHSeXwr19MTnCb_A@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 7 Oct 2011 14:23:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>, Jon Masters <jonathan@jonmasters.org>,
+        Adrian Bunk <bunk@stusta.de>, "Frank Ch. Eigler" <fche@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+In-Reply-To: Your message of "Fri, 07 Oct 2011 12:59:30 EDT."
+             <CACqU3MUhn-cb+Xg2GwR0qZNY18O3nsNsMRXs=zqE9quzr3VMGA@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi> <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi> <34045.1317760188@turing-police.cc.vt.edu> <1317916702.19519.1.camel@constitution.bos.jonmasters.org> <14191.1317930659@turing-police.cc.vt.edu> <m34nzlbwbi.fsf@intrepid.localdomain> <15324.1318004954@turing-police.cc.vt.edu>
+            <CACqU3MUhn-cb+Xg2GwR0qZNY18O3nsNsMRXs=zqE9quzr3VMGA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1318011772_9306P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 07 Oct 2011 14:22:52 -0400
+Message-ID: <19583.1318011772@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E8F4380.014D,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 10:20:46AM -0700, Stephen Williams wrote:
-> On Thu, Oct 6, 2011 at 3:30 PM, Stephen Williams <steveicarus@gmail.com> wrote:
-> > I have some large drivers for use in embedded arm systems, and
-> > I want them to be GPL, because I want to use some symbols exported
-> > as GPL, and also because I just wanna. But it is not working for
-> > me. I've attached my Makefile. I'm building from outside the kernel
-> > tree, but that should be OK. (right?) I'm using the following script to
-> > actually build:
-> 
-> More information: I can see that the vidfor.o object file, indeed
-> none of my *.o files, have a .modinfo section. In other situations
-> where the licens stamp works, the .modinfo section is present.
-> I'm using the CodeSourcery build of the arm toolchain, and in
-> the simple cases (module that is a single source file) the
-> modinfo information works. Hmm...
+--==_Exmh_1318011772_9306P
+Content-Type: text/plain; charset=us-ascii
 
-I lost the original mail...
-Could you try to post the output of make V=2 when you build your module
-and the Makefile fragment again.
+On Fri, 07 Oct 2011 12:59:30 EDT, Arnaud Lacombe said:
 
-	Sam
+> How so ? The public key BOb has is mathematically tied to the private
+> key Alice has. If Bob sends Alice a mail, and then, she send a reply
+> signed with her key, which is tied to the mail address used by Bob.
+> Then, Bob successfully verifies the signature. This proves Alice has
+> control over the key tied and the mail address, don't it ? 
+
+As I said - yes, that *DOES* prove control over key and email address.
+
+The point is that signing something random does not prove anything about
+control of the *KEY ONLY* that isn't also proved by using the key to sign
+another key.
+
+
+--==_Exmh_1318011772_9306P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOj0N8cC3lWbTT17ARAuKZAKC/cWbOZZsm9g2jBFYE/kcjEZc0KQCfU5Qb
+YqjvOgm89AGmanGuG1sj/ys=
+=l6Db
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1318011772_9306P--
+
