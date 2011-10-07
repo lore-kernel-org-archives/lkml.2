@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965098Ab1JGJnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 05:43:39 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:49959 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964896Ab1JGJnh (ORCPT
+	id S1759737Ab1JGJwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 05:52:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61916 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab1JGJwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 05:43:37 -0400
-Date: Fri, 7 Oct 2011 12:43:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Schwebel <r.schwebel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] at91_udc: change french comments to english
-Message-ID: <20111007094332.GM10910@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1317929786-27744-1-git-send-email-r.schwebel@pengutronix.de>
+	Fri, 7 Oct 2011 05:52:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Williams <steveicarus@gmail.com>
+Subject: Re: MODULE_LICENSE("GPL") not working for me
+Date: Fri, 7 Oct 2011 11:52:41 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
+In-Reply-To: <CAO3ZPq18MfYTu_6_RLZvvB0_0aFwTR3AfzKbKMRp5Bzt62Frnw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rpGc+ACYPE+RMC+Z"
-Content-Disposition: inline
-In-Reply-To: <1317929786-27744-1-git-send-email-r.schwebel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110071152.41357.arnd@arndb.de>
+X-Provags-ID: V02:K0:+apONKq6BdDiwb+cAuf38Fa6Cp4DtSp07i4ER8q8uZC
+ wCprtBXPOqEDb8LNU0kWC2CZR/wr5KyH8zBrkjcglOVTqGukZ4
+ Dk0x6dMlXPkbmmN/QlAMZZPG7JSsICqBvVWMOmKyauaW4WxnRH
+ ANCvzZaHPASD9eo+WoNJJGRAvhdtvq44Sg/g8zj1mSypo0l8bs
+ H7WbMhZFHQjIHAlSvdERTUjlJV0AGWeOJJRlRvssuFgG1hhlVh
+ rwNLtGwSplLdACY05/G/svYLMbey8K6v6yeV97RE2q5IQ1BGlt
+ 9FAwWLqa6IujVMLEC/6vf8/xB9yU/aWQq15qlV5RU3uSMjj/95
+ qCNEuQz8aRYnqCm7+JUE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 07 October 2011, Stephen Williams wrote:
+> 
+> I have some large drivers for use in embedded arm systems, and
+> I want them to be GPL, because I want to use some symbols exported
+> as GPL, and also because I just wanna. But it is not working for
+> me. I've attached my Makefile. I'm building from outside the kernel
+> tree, but that should be OK. (right?) I'm using the following script to
+> actually build:
 
---rpGc+ACYPE+RMC+Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's usually much easier to build from within the kernel tree.
+Just put the driver into the drivers/staging directory and use
+the regular Makefile/Kconfig logic to hook it up with the build
+system.
 
-On Thu, Oct 06, 2011 at 09:36:26PM +0200, Robert Schwebel wrote:
-> While being there, change C++ style comments to /* */.
->=20
-> Signed-off-by: Robert Schwebel <r.schwebel@pengutronix.de>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-usb@vger.kernel.org
-
-applied, thanks
-
---=20
-balbi
-
---rpGc+ACYPE+RMC+Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOjsnEAAoJEAv8Txj19kN1ViEIAKyu3ZLEOt1L1DzFxA++qIFu
-G+CD1TV+/Q8SZ/oWrexlwwIW6//K8lcp3VtcAOI+FkjirmL60Kl41lACF3zp/a97
-cBjZFi3DkUXe13hXubNUn5IGCLhu2dMyWCxjjXs4x9quJzrYWW4i800CnUWhTv2R
-3jlf7Mg7IoJJeM7pzf97kBDo5GBXi/cjM5LNqN6R8AJLhyynIYPl0sKy4qwR5cYv
-YvLXnVdbkkZurZgW3huiEO6rC6ioV0by/9F+tl7hxCbcuQff8JQ2senHfwNQJ7J4
-vDgiP33B5WAtxmy19eo82QT4xDwmx3GqF1FAY05x3To/TPaBj8qspOatLgC3ohA=
-=4ykf
------END PGP SIGNATURE-----
-
---rpGc+ACYPE+RMC+Z--
+	Arnd
