@@ -1,128 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab1JGSCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 14:02:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40091 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab1JGSCQ convert rfc822-to-8bit (ORCPT
+	id S1753789Ab1JGSEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 14:04:20 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43320 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1JGSES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 14:02:16 -0400
-Subject: Re: Linux 3.1-rc9
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 07 Oct 2011 20:01:55 +0200
-In-Reply-To: <20111007174848.GA11011@hostway.ca>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	 <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318010515.398.8.camel@twins>
-Mime-Version: 1.0
+	Fri, 7 Oct 2011 14:04:18 -0400
+Date: Fri, 7 Oct 2011 20:04:15 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: let object files depend on recordmcount instead
+ of its sources
+Message-ID: <20111007180415.GW6949@pengutronix.de>
+References: <1317993561-16242-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1318005094.4729.40.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1318005094.4729.40.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 10:48 -0700, Simon Kirby wrote:
+On Fri, Oct 07, 2011 at 12:31:33PM -0400, Steven Rostedt wrote:
+> On Fri, 2011-10-07 at 15:19 +0200, Uwe Kleine-König wrote:
+> > This has the upside that distributions only have to ship the recordmcount
+> > binary to allow building modules instead of recordmcount and it's sources.
+> > 
+> > Make still notices that the object files need to be rebuilt when
+> > recordmcount's sources change.
+> 
+> This doesn't work. Try it on a clean build:
+> 
+>   HOSTCC  scripts/basic/fixdep
+>   GEN     /home/rostedt/work/git/tmp/Makefile
+>   HOSTCC  scripts/kconfig/conf.o
+>   SHIPPED scripts/kconfig/zconf.tab.c
+>   SHIPPED scripts/kconfig/lex.zconf.c
+>   SHIPPED scripts/kconfig/zconf.hash.c
+>   HOSTCC  scripts/kconfig/zconf.tab.o
+>   HOSTLD  scripts/kconfig/conf
+> scripts/kconfig/conf --silentoldconfig Kconfig
+>   Using /home/rostedt/work/git/linux-rt.git as source for kernel
+>   GEN     /home/rostedt/work/git/tmp/Makefile
+>   CHK     include/linux/version.h
+>   UPD     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   UPD     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+>   GEN     include/generated/bounds.h
+>   CC      arch/x86/kernel/asm-offsets.s
+>   GEN     include/generated/asm-offsets.h
+>   CALL    /home/rostedt/work/git/linux-rt.git/scripts/checksyscalls.sh
+> make[3]: *** No rule to make target `scripts/mod/empty.o', needed by `scripts/mod/elfconfig.h'.  Stop.
+> make[2]: *** [scripts/mod] Error 2
+> make[1]: *** [scripts] Error 2
+> make: *** [sub-make] Error 2
+Works for me with 3ee72ca + my patch doing:
 
-> Yes, they stopped locking up with d670ec13 reverted.
+	make -C /path/to/my/linux/src/dir defconfig O=$(pwd)
+	make -j 6
 
-> > [ 1717.560005]  [<ffffffff8104b8d4>] task_sched_runtime+0x24/0x90
-> > [ 1717.560005]  [<ffffffff8107c924>] thread_group_cputime+0x74/0xb0
-> > [ 1717.560005]  [<ffffffff8107d126>] thread_group_cputimer+0xa6/0xf0
-> > [ 1717.560005]  [<ffffffff8107d198>] cpu_timer_sample_group+0x28/0x90
-> > [ 1717.560005]  [<ffffffff8107d3c3>] set_process_cpu_timer+0x33/0x110
-> > [ 1717.560005]  [<ffffffff8107d4da>] update_rlimit_cpu+0x3a/0x60
-> > [ 1717.560005]  [<ffffffff8106fe9e>] do_prlimit+0xfe/0x1f0
-> > [ 1717.560005]  [<ffffffff8106ffd6>] sys_setrlimit+0x46/0x60
-> > [ 1717.560005]  [<ffffffff816be292>] system_call_fastpath+0x16/0x1b
+If you tell me your exact setup I'll try to reproduce and fix.
 
+Best regards
+Uwe
 
-OK so that cputimer stuff is horrid and the worst part is that I cannot
-seem to trigger this. You guys must have some weird userspace stuff that
-I simply don't have.
-
-I tried running some LTP tests, and it was suggested I find some glibc
-tests as well, but I haven't got that far yet.
-
-Now the problem isn't new, but the referenced patch does make it _MUCH_
-more likely.
-
-Both Thomas and I have tried to come up with solutions, but the only
-thing that stands a chance of working, other than using atomic64_t, is
-giving task_cputime::cputime.sum_exec_runtime its own lock.
-
-Clearly this is all very ugly and I'm really hesitant of even posting
-this, but here goes...
-
----
- include/linux/sched.h     |    3 +++
- kernel/posix-cpu-timers.c |    6 +++++-
- kernel/sched_stats.h      |    4 ++--
- 3 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f3c5273..fbbe5eb 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -504,6 +504,7 @@ struct task_cputime {
-  * @running:		non-zero when there are timers running and
-  * 			@cputime receives updates.
-  * @lock:		lock for fields in this struct.
-+ * @runtime_lock:	lock for cputime.sum_exec_runtime
-  *
-  * This structure contains the version of task_cputime, above, that is
-  * used for thread group CPU timer calculations.
-@@ -512,6 +513,7 @@ struct thread_group_cputimer {
- 	struct task_cputime cputime;
- 	int running;
- 	raw_spinlock_t lock;
-+	raw_spinlock_t runtime_lock;
- };
- 
- #include <linux/rwsem.h>
-@@ -2571,6 +2573,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
- static inline void thread_group_cputime_init(struct signal_struct *sig)
- {
- 	raw_spin_lock_init(&sig->cputimer.lock);
-+	raw_spin_lock_init(&sig->cputimer.runtime_lock);
- }
- 
- /*
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index d20586b..bf760b4 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -284,9 +284,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
- 		 * it.
- 		 */
- 		thread_group_cputime(tsk, &sum);
-+		raw_spin_lock(&cputimer->runtime_lock);
- 		update_gt_cputime(&cputimer->cputime, &sum);
--	}
-+	} else
-+		raw_spin_lock(&cputimer->runtime_lock);
-+
- 	*times = cputimer->cputime;
-+	raw_spin_unlock(&cputimer->runtime_lock);
- 	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
- }
- 
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 87f9e36..f9751c1 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -330,7 +330,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
- 	if (!cputimer->running)
- 		return;
- 
--	raw_spin_lock(&cputimer->lock);
-+	raw_spin_lock(&cputimer->runtime_lock);
- 	cputimer->cputime.sum_exec_runtime += ns;
--	raw_spin_unlock(&cputimer->lock);
-+	raw_spin_unlock(&cputimer->runtime_lock);
- }
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
