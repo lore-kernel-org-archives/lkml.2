@@ -1,133 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759673Ab1JGJMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 05:12:20 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:59090 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab1JGJMS (ORCPT
+	id S1759664Ab1JGJSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 05:18:24 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:64938 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903Ab1JGJSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 05:12:18 -0400
-Date: Fri, 7 Oct 2011 03:12:17 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Abhilash K V <abhilash.kv@ti.com>
-cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        b-cousson@ti.com, aneesh@ti.com, khilman@ti.com,
-        santosh.shilimkar@ti.com, christian.gmeiner@gmail.com
-Subject: Re: [PATCH v5 1/3] AM35x: Using OMAP3 generic hwmods
-In-Reply-To: <1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
-Message-ID: <alpine.DEB.2.00.1110070311290.4611@utopia.booyaka.com>
-References: <1317363153-10259-1-git-send-email-abhilash.kv@ti.com> <1317363153-10259-2-git-send-email-abhilash.kv@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 7 Oct 2011 05:18:23 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, jacmet@sunsite.dk
+Cc: linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] sam9g20ek/9m10g45ek/stam9g20: unbreak build after 'use -EINVAL for invalid gpio'
+Date: Fri,  7 Oct 2011 12:31:36 +0200
+Message-Id: <1317983496-6102-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1317915587-27474-1-git-send-email-jacmet@sunsite.dk>
+References: <1317915587-27474-1-git-send-email-jacmet@sunsite.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Peter Korsgaard <jacmet@sunsite.dk>
 
-On Fri, 30 Sep 2011, Abhilash K V wrote:
+Commit 36706ab70b26 (ARM: at91/boards: use -EINVAL for invalid gpio)
+broke the build as it used ';' rather than ',' in structure initializers.
 
-> From: Abhilash K V <abhilash.kv@ti.com>
-> 
-> Removing modules iva, sr1_hwmod, sr2_hwmod, mailbox from
-> the base omap3xxx_hwmods list, so that they can be excluded
-> for am35x.
-> 
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-
-I've dropped the mailbox class comments from this patch -- updated patch 
-below:
-
-
-- Paul
-
-From: Abhilash K V <abhilash.kv@ti.com>
-Date: Fri, 7 Oct 2011 03:08:56 -0600
-Subject: [PATCH] AM35x: Using OMAP3 generic hwmods
-
-Removing modules iva, sr1_hwmod, sr2_hwmod, mailbox from
-the base omap3xxx_hwmods list, so that they can be excluded
-for am35x.
-
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-[paul@pwsan.com: dropped 'mailbox class' comments]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+[nicolas.ferre@atmel.com: change also -1 to -EINVAL for coherency]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ arch/arm/mach-at91/board-sam9g20ek.c    |    4 ++--
+ arch/arm/mach-at91/board-sam9m10g45ek.c |    2 +-
+ arch/arm/mach-at91/board-stamp9g20.c    |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index ab35acb..ac12cd5 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3132,7 +3132,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_mmc2_hwmod,
- 	&omap3xxx_mmc3_hwmod,
- 	&omap3xxx_mpu_hwmod,
--	&omap3xxx_iva_hwmod,
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index b3ec5e6..52d122d 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -217,7 +217,7 @@ static struct mci_platform_data __initdata ek_mmc_data = {
+ 	.slot[1] = {
+ 		.bus_width	= 4,
+ 		.detect_pin	= AT91_PIN_PC9,
+-		.wp_pin		= -1;
++		.wp_pin		= -EINVAL,
+ 	},
  
- 	&omap3xxx_timer1_hwmod,
- 	&omap3xxx_timer2_hwmod,
-@@ -3161,8 +3160,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_i2c1_hwmod,
- 	&omap3xxx_i2c2_hwmod,
- 	&omap3xxx_i2c3_hwmod,
--	&omap34xx_sr1_hwmod,
--	&omap34xx_sr2_hwmod,
- 
- 	/* gpio class */
- 	&omap3xxx_gpio1_hwmod,
-@@ -3184,8 +3181,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_mcbsp2_sidetone_hwmod,
- 	&omap3xxx_mcbsp3_sidetone_hwmod,
- 
--	/* mailbox class */
--	&omap3xxx_mailbox_hwmod,
- 
- 	/* mcspi class */
- 	&omap34xx_mcspi1,
-@@ -3198,31 +3193,39 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 
- /* 3430ES1-only hwmods */
- static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3430es1_dss_core_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
+ };
+@@ -237,7 +237,7 @@ static void __init ek_add_device_mmc(void)
+ 	if (ek_have_2mmc()) {
+ 		ek_mmc_data.slot[0].bus_width = 4;
+ 		ek_mmc_data.slot[0].detect_pin = AT91_PIN_PC2;
+-		ek_mmc_data.slot[0].wp_pin = -1;
++		ek_mmc_data.slot[0].wp_pin = -EINVAL;
+ 	}
+ 	at91_add_device_mci(0, &ek_mmc_data);
+ #else
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index 3c36f9f..8e7d8ad 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -100,7 +100,7 @@ static struct mci_platform_data __initdata mci0_data = {
+ 	.slot[0] = {
+ 		.bus_width	= 4,
+ 		.detect_pin	= AT91_PIN_PD10,
+-		.wp_pin		= -1;
++		.wp_pin		= -EINVAL,
+ 	},
  };
  
- /* 3430ES2+-only hwmods */
- static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3xxx_dss_core_hwmod,
- 	&omap3xxx_usbhsotg_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
+diff --git a/arch/arm/mach-at91/board-stamp9g20.c b/arch/arm/mach-at91/board-stamp9g20.c
+index 3c0cc86..0bd51ee 100644
+--- a/arch/arm/mach-at91/board-stamp9g20.c
++++ b/arch/arm/mach-at91/board-stamp9g20.c
+@@ -123,8 +123,8 @@ static void __init add_device_nand(void)
+ static struct mci_platform_data __initdata mmc_data = {
+ 	.slot[0] = {
+ 		.bus_width	= 4,
+-		.detect_pin	= -1;
+-		.wp_pin		= -1;
++		.detect_pin	= -EINVAL,
++		.wp_pin		= -EINVAL,
+ 	},
  };
- 
- /* 34xx-only hwmods (all ES revisions) */
- static __initdata struct omap_hwmod *omap34xx_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap34xx_sr1_hwmod,
- 	&omap34xx_sr2_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
- /* 36xx-only hwmods (all ES revisions) */
- static __initdata struct omap_hwmod *omap36xx_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3xxx_uart4_hwmod,
- 	&omap3xxx_dss_core_hwmod,
- 	&omap36xx_sr1_hwmod,
- 	&omap36xx_sr2_hwmod,
- 	&omap3xxx_usbhsotg_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
+ #else
 -- 
-1.7.6.3
+1.7.3
 
