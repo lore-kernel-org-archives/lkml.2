@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965382Ab1JGKlC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 06:41:02 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49583 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759857Ab1JGKlA (ORCPT
+	id S965366Ab1JGKmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 06:42:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53496 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759812Ab1JGKmN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 06:41:00 -0400
-Date: Fri, 7 Oct 2011 11:38:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
-        david@fubar.dk, greg@kroah.com
-Subject: Re: A =?UTF-8?B?UGx1bWJlcuKAmXM=?= Wish List for Linux
-Message-ID: <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
-References: <1317943022.1095.25.camel@mop>
-	<20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
-	<CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 7 Oct 2011 06:42:13 -0400
+Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
+ Intel X86
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com,
+        robert.richter@amd.com, ravitillo@lbl.gov
+Date: Fri, 07 Oct 2011 12:42:02 +0200
+In-Reply-To: <CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>
+References: <1317912555-9559-1-git-send-email-eranian@google.com>
+	 <1317912555-9559-8-git-send-email-eranian@google.com>
+	 <20111006153229.GJ14482@one.firstfloor.org>
+	 <CABPqkBSNejhZ_ciyLTUFAybBqqGB-8QzVrPj8OTbAhQ_+mj4aw@mail.gmail.com>
+	 <CABPqkBReqBhFFKsLPfbzFHL7hs2hXSJ8tTZuP9D-2N2MGiB9Mw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1317984122.31132.6.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Oct 2011 12:28:46 +0200
-Kay Sievers <kay.sievers@vrfy.org> wrote:
-
-> On Fri, Oct 7, 2011 at 12:12, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> * (ioctl based?) interface to query and modify the label of a mounted
-> >> FAT volume:
+On Fri, 2011-10-07 at 12:40 +0200, Stephane Eranian wrote:
+> On Fri, Oct 7, 2011 at 12:38 PM, Stephane Eranian <eranian@google.com> wrote:
+> > On Thu, Oct 6, 2011 at 5:32 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >>> +     kernel_insn_init(&insn, kaddr);
+> >>> +     insn_get_opcode(&insn);
+> >>
+> >> This makes me uncomfortable. AFAIK that's the first use of the opcode
+> >> decoder being used directly for user space. It has a quite large attack
+> >> surface. Who says it cannot be exploited?
+> >>
+> > This is not new, it's already used for the PEBS fixups and that includes
+> > user level fixups, if possible.
 > >
-> > Seems sensible - or it could go in sysfs ?
-> 
-> That would mean to export superblocks in /sys, which isn't namespaced,
-> and which might create issues by making information globally available
-> which probably shouldn't?
-
-Possibly, otherwise you really need an ioctl on the root inode of the fs
-- which is doable, NCPfs makes heavy use of that.
-> 
-> >> A FAT labels is implemented as a hidden directory entry in the file
-> >> system which need to be renamed when changing the file system label,
+> > We are not executing the instruction here, just decoding it to filter it out
+> > from a buffer if necessary.
 > >
-> > That would be ugly - it works for FAT as you can create an imaginary name
-> > which is not possible on the fs, but that isn't true for say ext4. Sysfs
-> > sounds the logic way, it means adding chunks of code to various file
-> > systems.
-> 
-> What do you mean would be ugly?
+> I would add that in this particular usage, the source address is coming
+> straight from LBR, it's not made up my SW. That means it corresponds
+> to a point where there was a control flow change. But it can certainly
+> be any x86 opcode (not just branches). LBR captures control flow changes
+> due to traps, faults, interrupts.
 
-I have an ext4fs. It supports every possible file name allowed by POSIX
-and SuS. What name are you going to use for your 'hidden directory' that
-won't clash with a real file ?
-
+You could still fuzz it after the cpu passed through and before the
+kernel reads the LBR. Its a narrow window, but quite feasible.
