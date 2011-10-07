@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab1JGUYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 16:24:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754212Ab1JGUYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 16:24:21 -0400
-Date: Fri, 7 Oct 2011 21:24:17 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
-        Josh Boyer <jwboyer@redhat.com>, aarcange@redhat.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm: Abort reclaim/compaction if compaction can
- proceed
-Message-ID: <20111007202417.GD6418@suse.de>
-References: <1318000643-27996-1-git-send-email-mgorman@suse.de>
- <1318000643-27996-3-git-send-email-mgorman@suse.de>
- <4E8F5BEA.3040502@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4E8F5BEA.3040502@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758635Ab1JGU2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 16:28:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58941 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab1JGU2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 16:28:30 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] MAINTAINERS: Update tegra maintainer information
+Date: Fri,  7 Oct 2011 13:27:48 -0700
+Message-Id: <1318019268-6946-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 04:07:06PM -0400, Rik van Riel wrote:
-> On 10/07/2011 11:17 AM, Mel Gorman wrote:
-> >If compaction can proceed, shrink_zones() stops doing any work but
-> >the callers still shrink_slab(), raises the priority and potentially
-> >sleeps.  This patch aborts direct reclaim/compaction entirely if
-> >compaction can proceed.
-> >
-> >Signed-off-by: Mel Gorman<mgorman@suse.de>
-> 
-> This patch makes sense to me, but I have not tested it like
-> the first one.
-> 
+A couple of changes to the Tegra maintainership setup:
 
-Do if you can.
+I'm very glad to bring on Stephen Warren on board as a maintainer. The
+work he has done so far is excellent, and the fact that he works for
+Nvidia means he has long-term interest in the platform.
 
-> Mel, have you tested this patch?
+Erik Gilling did an astounding amount of work on getting things up and
+running but has been a silent partner on the maintainership side for a
+while, and is stepping down. Thanks for your contributions so far, Erik.
 
-Yes.
+Finally, update the git URL since I'll take over running the main repo
+for a while.
 
-> Did you see any changed
-> behaviour vs. just the first patch?
-> 
+Overall maintainership model isn't changing much at this time: We'll all
+three review patches as appropriate, and one of us will collect the main
+repo (me at this time).
 
-It's marginal and could be confirmation bias on my part. Basically,
-there is noise when this path is being exercised but there were fewer
-slabs scanned.  However, I don't know what the variances are and
-whether the reduction was within the noise or not but it makes sense
-that it would scan less.  If I profiled carefully, I might be able
-to show that a few additional cycles are spent raising the priority
-but it would be marginal.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Cc: Colin Cross <ccross@android.com>
+Cc: Erik Gilling <konkers@android.com>
+Cc: Stephen Warren <swarren@nvidia.com>
+---
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-While patch 1 is very clear, patch 2 depends on reviewers deciding it
-"makes sense".
-
-> Having said that, I'm pretty sure the patch is ok :)
-> 
-
-Care to ack?
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ace8f9c..5483e0c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6366,10 +6366,10 @@ F:	net/ipv4/tcp_lp.c
+ 
+ TEGRA SUPPORT
+ M:	Colin Cross <ccross@android.com>
+-M:	Erik Gilling <konkers@android.com>
+ M:	Olof Johansson <olof@lixom.net>
++M:	Stephen Warren <swarren@nvidia.com>
+ L:	linux-tegra@vger.kernel.org
+-T:	git git://android.git.kernel.org/kernel/tegra.git
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/olof/tegra.git
+ S:	Supported
+ F:	arch/arm/mach-tegra
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.4.1
+
