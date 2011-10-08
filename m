@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab1JHH5s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:57:48 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39769 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab1JHH5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:57:44 -0400
-Subject: [PATCH 11/28] ext4: Calculate and verify inode checksums
+	id S1753986Ab1JHH5f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:57:35 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48955 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753728Ab1JHH51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:57:27 -0400
+Subject: [PATCH 16/28] ext4: Verify and calculate checksums for extent tree
+	blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,240 +20,192 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:54:56 -0700
-Message-ID: <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:55:29 -0700
+Message-ID: <20111008075529.20506.5858.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11100807-6148-0000-0000-00000013A5B6
+x-cbid: 11100807-8974-0000-0000-000000B83D5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces to ext4 the ability to calculate and verify inode
-checksums.  This requires the use of a new ro compatibility flag and some
-accompanying e2fsprogs patches to provide the relevant features in tune2fs and
-e2fsck.
+Calculate and verify the checksum for each extent tree block.  The checksum is
+located in the space immediately after the last possible ext4_extent in the
+block.  The space is is typically the last 4-8 bytes in the block.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h   |   10 ++++-
- fs/ext4/ialloc.c |   10 +++++
- fs/ext4/inode.c  |  108 ++++++++++++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 117 insertions(+), 11 deletions(-)
+ fs/ext4/ext4_extents.h |   25 ++++++++++++++++++++-
+ fs/ext4/extents.c      |   58 +++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 78 insertions(+), 5 deletions(-)
 
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index c99e44c..227210a 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -611,7 +611,8 @@ struct ext4_inode {
- 			__le16	l_i_file_acl_high;
- 			__le16	l_i_uid_high;	/* these 2 fields */
- 			__le16	l_i_gid_high;	/* were reserved2[0] */
--			__u32	l_i_reserved2;
-+			__le16	l_i_checksum_lo;/* crc32c(uuid+inum+inode) LE */
-+			__le16	l_i_reserved;
- 		} linux2;
- 		struct {
- 			__le16	h_i_reserved1;	/* Obsoleted fragment number/size which are removed in ext4 */
-@@ -627,7 +628,7 @@ struct ext4_inode {
- 		} masix2;
- 	} osd2;				/* OS dependent 2 */
- 	__le16	i_extra_isize;
--	__le16	i_pad1;
-+	__le16	i_checksum_hi;	/* crc32c(uuid+inum+inode) BE */
- 	__le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
- 	__le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
- 	__le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
-@@ -729,7 +730,7 @@ do {									       \
- #define i_gid_low	i_gid
- #define i_uid_high	osd2.linux2.l_i_uid_high
- #define i_gid_high	osd2.linux2.l_i_gid_high
--#define i_reserved2	osd2.linux2.l_i_reserved2
-+#define i_checksum_lo	osd2.linux2.l_i_checksum_lo
- 
- #elif defined(__GNU__)
- 
-@@ -868,6 +869,9 @@ struct ext4_inode_info {
- 	 */
- 	tid_t i_sync_tid;
- 	tid_t i_datasync_tid;
-+
-+	/* crc32c(uuid+inum) */
-+	__u32 i_uuid_inum_crc;
- };
+diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+index 095c36f..24b106a 100644
+--- a/fs/ext4/ext4_extents.h
++++ b/fs/ext4/ext4_extents.h
+@@ -62,10 +62,22 @@
+ /*
+  * ext4_inode has i_block array (60 bytes total).
+  * The first 12 bytes store ext4_extent_header;
+- * the remainder stores an array of ext4_extent.
++ * the remainder stores an array of ext4_extent,
++ * followed by ext4_extent_tail.
+  */
  
  /*
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 9c63f27..6e5876a 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1028,6 +1028,16 @@ got:
- 	inode->i_generation = sbi->s_next_generation++;
- 	spin_unlock(&sbi->s_next_gen_lock);
- 
-+	/* Precompute second piece of crc */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+		__le32 inum = cpu_to_le32(inode->i_ino);
-+		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
-+						  (__u8 *)&inum,
-+						  sizeof(inum));
-+	}
++ * This is the extent tail on-disk structure.
++ * All other extent structures are 12 bytes long.  It turns out that
++ * block_size % 12 >= 4 for all valid block sizes (1k, 2k, 4k).
++ * Therefore, this tail structure can be crammed into the end of the block
++ * without having to rebalance the tree.
++ */
++struct ext4_extent_tail {
++	__le32	et_checksum;	/* crc32c(uuid+inum+extent_block) */
++};
 +
- 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
- 	ext4_set_inode_state(inode, EXT4_STATE_NEW);
++/*
+  * This is the extent on-disk structure.
+  * It's used at the bottom of the tree.
+  */
+@@ -101,6 +113,17 @@ struct ext4_extent_header {
  
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 6e64e0b..b00315d 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -49,6 +49,73 @@
+ #define EXT4_EXT_MAGIC		cpu_to_le16(0xf30a)
  
- #define MPAGE_DA_EXTENT_TAIL 0x01
- 
-+static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
-+			      struct ext4_inode_info *ei)
++#define EXT4_EXTENT_TAIL_OFFSET(hdr) \
++	(sizeof(struct ext4_extent_header) + \
++	 (sizeof(struct ext4_extent) * le16_to_cpu((hdr)->eh_max)))
++
++static inline struct ext4_extent_tail *
++find_ext4_extent_tail(struct ext4_extent_header *eh)
 +{
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	__u16 crc_lo;
-+	__u16 crc_hi = 0;
-+	__u32 crc;
-+
-+	crc_lo = raw->i_checksum_lo;
-+	raw->i_checksum_lo = 0;
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
-+		crc_hi = raw->i_checksum_hi;
-+		raw->i_checksum_hi = 0;
-+	}
-+
-+	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)raw,
-+			  EXT4_INODE_SIZE(inode->i_sb));
-+
-+	raw->i_checksum_lo = crc_lo;
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		raw->i_checksum_hi = crc_hi;
-+
-+	return crc;
++	return (struct ext4_extent_tail *)(((void *)eh) +
++					   EXT4_EXTENT_TAIL_OFFSET(eh));
 +}
 +
-+static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
-+				  struct ext4_inode_info *ei)
+ /*
+  * Array of ext4_ext_path contains path to some extent.
+  * Creation/lookup routines use it for traversal/splitting/etc.
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 4ac4303..efd644d 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -46,6 +46,46 @@
+ 
+ #include <trace/events/ext4.h>
+ 
++static __le32 ext4_extent_block_csum(struct inode *inode,
++				     struct ext4_extent_header *eh)
 +{
-+	__u32 provided, calculated;
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	__u32 crc;
 +
-+	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-+	    cpu_to_le32(EXT4_OS_LINUX) ||
-+	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)eh,
++			  EXT4_EXTENT_TAIL_OFFSET(eh));
++	return cpu_to_le32(crc);
++}
++
++static int ext4_extent_block_csum_verify(struct inode *inode,
++					 struct ext4_extent_header *eh)
++{
++	struct ext4_extent_tail *et;
++
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
 +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
 +		return 1;
 +
-+	provided = le16_to_cpu(raw->i_checksum_lo);
-+	calculated = ext4_inode_csum(inode, raw, ei);
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
-+	else
-+		calculated &= 0xFFFF;
-+
-+	return provided == calculated;
++	et = find_ext4_extent_tail(eh);
++	if (et->et_checksum != ext4_extent_block_csum(inode, eh))
++		return 0;
++	return 1;
 +}
 +
-+static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
-+				struct ext4_inode_info *ei)
++static void ext4_extent_block_csum_set(struct inode *inode,
++				       struct ext4_extent_header *eh)
 +{
-+	__u32 crc;
++	struct ext4_extent_tail *et;
 +
-+	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-+	    cpu_to_le32(EXT4_OS_LINUX) ||
-+	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
 +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
 +		return;
 +
-+	crc = ext4_inode_csum(inode, raw, ei);
-+	raw->i_checksum_lo = cpu_to_le16(crc & 0xFFFF);
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		raw->i_checksum_hi = cpu_to_le16(crc >> 16);
++	et = find_ext4_extent_tail(eh);
++	et->et_checksum = ext4_extent_block_csum(inode, eh);
 +}
 +
- static inline int ext4_begin_ordered_truncate(struct inode *inode,
- 					      loff_t new_size)
+ static int ext4_split_extent(handle_t *handle,
+ 				struct inode *inode,
+ 				struct ext4_ext_path *path,
+@@ -101,6 +141,7 @@ static int ext4_ext_dirty(handle_t *handle, struct inode *inode,
  {
-@@ -3407,6 +3474,36 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 	if (ret < 0)
- 		goto bad_inode;
- 	raw_inode = ext4_raw_inode(&iloc);
-+
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
-+		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
-+		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
-+		    EXT4_INODE_SIZE(inode->i_sb)) {
-+			EXT4_ERROR_INODE(inode, "bad extra_isize (%u != %u)",
-+				EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize,
-+				EXT4_INODE_SIZE(inode->i_sb));
-+			ret = -EIO;
-+			goto bad_inode;
-+		}
-+	} else
-+		ei->i_extra_isize = 0;
-+
-+	/* Precompute second piece of crc */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+		__le32 inum = cpu_to_le32(inode->i_ino);
-+		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
-+						  (__u8 *)&inum,
-+						  sizeof(inum));
+ 	int err;
+ 	if (path->p_bh) {
++		ext4_extent_block_csum_set(inode, ext_block_hdr(path->p_bh));
+ 		/* path points to block */
+ 		err = ext4_handle_dirty_metadata(handle, inode, path->p_bh);
+ 	} else {
+@@ -382,6 +423,12 @@ static int __ext4_ext_check(const char *function, unsigned int line,
+ 		error_msg = "invalid extent entries";
+ 		goto corrupted;
+ 	}
++	/* Verify checksum on non-root extent tree nodes */
++	if (ext_depth(inode) != depth &&
++	    !ext4_extent_block_csum_verify(inode, eh)) {
++		error_msg = "extent tree corrupted";
++		goto corrupted;
 +	}
-+
-+	if (!ext4_inode_csum_verify(inode, raw_inode, ei)) {
-+		EXT4_ERROR_INODE(inode, "checksum invalid");
-+		ret = -EIO;
-+		goto bad_inode;
-+	}
-+
- 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
- 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
- 	inode->i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
-@@ -3484,12 +3581,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	return 0;
+ 
+ corrupted:
+@@ -922,6 +969,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+ 		le16_add_cpu(&neh->eh_entries, m);
  	}
  
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
--		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
--		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
--		    EXT4_INODE_SIZE(inode->i_sb)) {
--			ret = -EIO;
--			goto bad_inode;
--		}
- 		if (ei->i_extra_isize == 0) {
- 			/* The extra space is currently unused. Use it. */
- 			ei->i_extra_isize = sizeof(struct ext4_inode) -
-@@ -3501,8 +3592,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
- 				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
++	ext4_extent_block_csum_set(inode, neh);
+ 	set_buffer_uptodate(bh);
+ 	unlock_buffer(bh);
+ 
+@@ -1000,6 +1048,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+ 				sizeof(struct ext4_extent_idx) * m);
+ 			le16_add_cpu(&neh->eh_entries, m);
  		}
--	} else
--		ei->i_extra_isize = 0;
-+	}
++		ext4_extent_block_csum_set(inode, neh);
+ 		set_buffer_uptodate(bh);
+ 		unlock_buffer(bh);
  
- 	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
- 	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
-@@ -3727,6 +3817,8 @@ static int ext4_do_update_inode(handle_t *handle,
- 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
- 	}
+@@ -1098,6 +1147,7 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
+ 	else
+ 		neh->eh_max = cpu_to_le16(ext4_ext_space_block(inode, 0));
+ 	neh->eh_magic = EXT4_EXT_MAGIC;
++	ext4_extent_block_csum_set(inode, neh);
+ 	set_buffer_uptodate(bh);
+ 	unlock_buffer(bh);
  
-+	ext4_inode_csum_set(inode, raw_inode, ei);
+@@ -2458,10 +2508,6 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+ 		if (uninitialized && num)
+ 			ext4_ext_mark_uninitialized(ex);
+ 
+-		err = ext4_ext_dirty(handle, inode, path + depth);
+-		if (err)
+-			goto out;
+-
+ 		/*
+ 		 * If the extent was completely released,
+ 		 * we need to remove it from the leaf
+@@ -2483,6 +2529,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+ 			le16_add_cpu(&eh->eh_entries, -1);
+ 		}
+ 
++		err = ext4_ext_dirty(handle, inode, path + depth);
++		if (err)
++			goto out;
 +
- 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
- 	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
- 	if (!err)
+ 		ext_debug("new extent: %u:%u:%llu\n", block, num,
+ 				ext4_ext_pblock(ex));
+ 		ex--;
 
