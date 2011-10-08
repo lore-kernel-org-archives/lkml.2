@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750879Ab1JHEDs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 00:03:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62076 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab1JHEDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 00:03:46 -0400
-Message-ID: <4E8FCC37.8090409@cn.fujitsu.com>
-Date: Sat, 08 Oct 2011 12:06:15 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1751146Ab1JHEEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 00:04:09 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50750 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab1JHEEF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 00:04:05 -0400
+X-Originating-IP: 217.70.178.130
+X-Originating-IP: 50.43.15.19
+Date: Fri, 7 Oct 2011 21:03:51 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Greg KH <greg@kroah.com>
+Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111008040351.GA7694@leaf>
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+ <1317963790-29426-3-git-send-email-manjugk@ti.com>
+ <20111007064928.GE27508@kroah.com>
+ <20111007205715.GC5275@leaf>
+ <20111007212326.GA29003@kroah.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
-References: <4E7AF758.7060900@cn.fujitsu.com> <20111006175333.GA3959@amt.cnet>
-In-Reply-To: <20111006175333.GA3959@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-08 12:02:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-08 12:02:08,
-	Serialize complete at 2011-10-08 12:02:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111007212326.GA29003@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2011 01:53 AM, Marcelo Tosatti wrote:
-> On Thu, Sep 22, 2011 at 04:52:40PM +0800, Xiao Guangrong wrote:
->> This patchset is against https://github.com/avikivity/kvm.git next branch.
->>
->> In this version, some changes come from Avi's comments:
->> - fix instruction retried for nested guest
->> - skip write-flooding for the sp whose level is 1
->> - rename some functions
+On Fri, Oct 07, 2011 at 02:23:26PM -0700, Greg KH wrote:
+> On Fri, Oct 07, 2011 at 01:57:15PM -0700, Josh Triplett wrote:
+> > On Thu, Oct 06, 2011 at 11:49:28PM -0700, Greg KH wrote:
+> > > On Fri, Oct 07, 2011 at 10:33:07AM +0500, G, Manjunath Kondaiah wrote:
+> > > > +config PROBE_DEFER
+> > > > +	bool "Deferred Driver Probe"
+> > > > +	default y
+> > > > +	help
+> > > > +	  This option provides deferring driver probe if it has dependency on
+> > > > +	  other driver. Without this feature, initcall ordering should be done
+> > > > +	  manually to resolve driver dependencies. This feature completely side
+> > > > +	  steps the issues by allowing driver registration to occur in any
+> > > > +	  order, and any driver can request to be retried after a few more other
+> > > > +	  drivers get probed.
+> > > 
+> > > Why is this even an option?  Why would you ever want it disabled?  Why
+> > > does it need to be selected?
+> > > 
+> > > If you are going to default something to 'y' then just make it so it
+> > > can't be turned off any other way by just not making it an option at
+> > > all.
+> > 
+> > Given that the drivers which use this mechanism will not necessarily get
+> > built into the kernel, I'd suggest that it should remain optional and
+> > default to n.  Those drivers can then add a dependency on PROBE_DEFER.
+> > Let's try to avoid adding more infrastructure to the kernel that takes
+> > up space even when unused; certainly embedded will appreciate not having
+> > this feature unless a driver needs it.
 > 
-> Please rebase.
-> 
-> 
+> How much extra space is this "feature" really?
 
-Marcelo,
+Just checked: 776 bytes, 640 of text and 136 of data.  We have kconfig
+options for comparable amounts.
 
-These patches can be applied without any conflict and it also works well,
-the current code was pulled from https://github.com/avikivity/kvm.git next branch.
+> I don't see it being
+> anything larger than the amount of memory increase that just happened as
+> I typed this email as part of the ongoing memory density changes.
 
-What problem did you meet when you applied these? :(
+I don't know about the changes you mean, but in any case I'd like to
+prevent mandatory size increases wherever possible.  I'd love to see the
+size of "allnoconfig" getting *smaller* over time, not larger.
+
+- Josh Triplett
