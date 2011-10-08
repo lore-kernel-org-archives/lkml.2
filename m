@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1JHSON (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 14:14:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37065 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab1JHSOL (ORCPT
+	id S1753484Ab1JHSPW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 14:15:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60609 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1JHSPV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 14:14:11 -0400
+	Sat, 8 Oct 2011 14:15:21 -0400
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Subject: Re: Serieal console on Samsung S3C6410 ARM11 CPU (Was [ANNOUNCE] 3.0.6-rt17)
+Date: Sat, 8 Oct 2011 20:15:16 +0200
+User-Agent: KMail/1.9.10
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+References: <alpine.LFD.2.02.1110070046270.3240@ionos> <201110081326.58731.jbe@pengutronix.de> <CAJuYYwSEvA+EHwyhgeZkBX+bB_e1cmFnC6YdEx-CdHzk8peyEw@mail.gmail.com>
+In-Reply-To: <CAJuYYwSEvA+EHwyhgeZkBX+bB_e1cmFnC6YdEx-CdHzk8peyEw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6CH-FHOughZu3KSsRYHX2dvncB1sFBNVp+ivEHNs52yA@mail.gmail.com>
-References: <CAHFNz9L-WDeEGx9MazTawJF-Hsz88FS7Z=RinfrKn780jBf++A@mail.gmail.com>
-	<CAErSpo6CH-FHOughZu3KSsRYHX2dvncB1sFBNVp+ivEHNs52yA@mail.gmail.com>
-Date: Sat, 8 Oct 2011 23:44:10 +0530
-Message-ID: <CAHFNz9+pQX8O6FAOpiNVDJbn82i7VWv6hBr6+6E_9QnvuAUGEw@mail.gmail.com>
-Subject: Re: Memory at xxxxxx [disabled]
-From: Manu Abraham <abraham.manu@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201110082015.17128.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/8/11, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Oct 8, 2011 at 9:51 AM, Manu Abraham <abraham.manu@gmail.com> wrote:
->> Hi,
->>
->> Any Idea why I am seeing the [disabled] for the specified memory
->> region as described below ?
->>
->> 04:07.0 Multimedia controller [0480]: Twinhan Technology Co. Ltd
->> Device [1822:4e31] (rev 01)
->>        Subsystem: Twinhan Technology Co. Ltd Device [1822:0010]
->>        Flags: medium devsel, IRQ 11
->>        Memory at fd900000 (32-bit, prefetchable) [disabled] [size=4K]
+Hi Thomas,
+
+Thomas Abraham wrote:
+> On 8 October 2011 16:56, Juergen Beisert <jbe@pengutronix.de> wrote:
+> > Thomas Gleixner wrote:
+> >> I'm pleased to announce the 3.0.6-rt17 release.
+> >
+> > I have no idea where to search, but when I'm using the 3.0.6-rt17 on my
+> > Samsung S3C6410 ARM based system, the UART (serial console) does not work
+> > as expected. Typing only one char at a time is okay. Typing two chars
+> > immediately makes the system using 100 % CPU load and takes about 2
+> > seconds to respond. It seems the interrupt handling is broken in the UART
+> > driver, but I don't know how to fix it.
+> >
+> > This with a simple cursor up (one char to get the last command) and a
+> > small pause to the next "ENTER" char:
+> >
+> > root@mini6410:~ cat /proc/interrupts | grep 18:
+> >  18:    5739107  s3c-uart  s3c6400-uart
+> >
+> > Same again:
+> >
+> > root@mini6410:~ cat /proc/interrupts | grep 18:
+> >  18:    5739113  s3c-uart  s3c6400-uart
+> >
+> > 6 interrupts seems reasonable.
+> >
+> > Now with cursor up and SPACE immediately, then a pause for ENTER:
+> >
+> > root@mini6410:~ cat /proc/interrupts | grep 18:
+> >  18:    5923815  s3c-uart  s3c6400-uart
+> >
+> > 184702 interrupts looks strange.
 >
-> The complete dmesg log should have some clues.  Normally we use the
-> resources assignments done by BIOS.
+> Just curious, do you have the following two commits?
+>
+> serial: samsung: Add unified interrupt handler for s3c64xx and later SoC's
+> ARM: SAMSUNG: Remove uart irq handling from platform code
 
+Are they part of the current 3.0.6 vanilla kernel? I'm only using the vanilla 
+3.0.6 with rt17 on my target.
 
-While waiting for a reply, I did a few reboots down the lane, no
-changes made by me, except that I plugged the card into the next PCI
-slot ..
+jbe
 
-I am abit more perplexed now .. The device doesn't show "disabled" but
-shows a different device ID which is the correct one, as you can see,
-compared to earlier ..
-
-
-04:06.0 Multimedia controller [0480]: Twinhan Technology Co. Ltd
-Mantis DTV PCI Bridge Controller [Ver 1.0] [1822:4e35] (rev 01)
-        Subsystem: Twinhan Technology Co. Ltd Device [1822:0014]
-        Flags: bus master, medium devsel, latency 32, IRQ 11
-        Memory at fd9ff000 (32-bit, prefetchable) [size=4K]
-
-testbox test-apps # lspci -tv
--[0000:00]-+-00.0  Advanced Micro Devices [AMD] RS780 Host Bridge Alternate
-           +-01.0-[01]--+-05.0  ATI Technologies Inc Device 9710
-           |            \-05.1  ATI Technologies Inc Device 970f
-           +-04.0-[02]----00.0  Philips Semiconductors Device 7160
-           +-0a.0-[03]----00.0  Realtek Semiconductor Co., Ltd.
-RTL8111/8168B PCI Express Gigabit Ethernet controller
-           +-11.0  ATI Technologies Inc SB700/SB800 SATA Controller [AHCI mode]
-           +-12.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller
-           +-12.1  ATI Technologies Inc SB700 USB OHCI1 Controller
-           +-12.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller
-           +-13.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller
-           +-13.1  ATI Technologies Inc SB700 USB OHCI1 Controller
-           +-13.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller
-           +-14.0  ATI Technologies Inc SBx00 SMBus Controller
-           +-14.1  ATI Technologies Inc SB700/SB800 IDE Controller
-           +-14.2  ATI Technologies Inc SBx00 Azalia (Intel HDA)
-           +-14.3  ATI Technologies Inc SB700/SB800 LPC host controller
-           +-14.4-[04]----06.0  Twinhan Technology Co. Ltd Mantis DTV
-PCI Bridge Controller [Ver 1.0]
-           +-14.5  ATI Technologies Inc SB700/SB800 USB OHCI2 Controller
-           +-18.0  Advanced Micro Devices [AMD] K10 [Opteron,
-Athlon64, Sempron] HyperTransport Configuration
-           +-18.1  Advanced Micro Devices [AMD] K10 [Opteron,
-Athlon64, Sempron] Address Map
-           +-18.2  Advanced Micro Devices [AMD] K10 [Opteron,
-Athlon64, Sempron] DRAM Controller
-           +-18.3  Advanced Micro Devices [AMD] K10 [Opteron,
-Athlon64, Sempron] Miscellaneous Control
-           \-18.4  Advanced Micro Devices [AMD] K10 [Opteron,
-Athlon64, Sempron] Link Control
-
-
-Could it be that the PCI BIST took more time or something of that
-sort, for the EEPROM upload, in the problematic case as earlier
-(seeing some users complained about bogus device ID's similarly in the
-past. Can't be a corrupt EEPROM either, since it returned to normal a
-few reboots down the lane, or in a different PCI slot) ?
-
-
-Thanks,
-Manu
+-- 
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
