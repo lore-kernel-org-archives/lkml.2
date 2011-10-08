@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab1JHIC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 04:02:28 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52746 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753714Ab1JHH50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:57:26 -0400
-Subject: [PATCH 08/28] ext4: Record the checksum algorithm in use in the
-	superblock
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:54:36 -0700
-Message-ID: <20111008075436.20506.63897.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
-References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	id S1753789Ab1JHIDf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 04:03:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58086 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab1JHID2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 04:03:28 -0400
+Date: Sat, 8 Oct 2011 09:03:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jason Chagas <jason.chagas@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 06/26] ARM: pxa: add missing header inclusions
+Message-ID: <20111008080309.GD25689@n2100.arm.linux.org.uk>
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-7-git-send-email-arnd@arndb.de> <CAMPhdO8FGTw7NzNNjK819zF3GjrRX0ybPyaSFR4U7oG8cGmDtQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMPhdO8FGTw7NzNNjK819zF3GjrRX0ybPyaSFR4U7oG8cGmDtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record the type of checksum algorithm we're using for metadata in the
-superblock, in case we ever want/need to change the algorithm.
+On Fri, Oct 07, 2011 at 01:08:23PM +0800, Eric Miao wrote:
+> On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > These resulted in build breakage in some configurations:
+> >
+> > arch/arm/mach-pxa/irq.c:132:39: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'icip_handle_irq'
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > ---
+> >  arch/arm/mach-pxa/irq.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
+> > index b09e848..848e96d 100644
+> > --- a/arch/arm/mach-pxa/irq.c
+> > +++ b/arch/arm/mach-pxa/irq.c
+> > @@ -16,6 +16,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/interrupt.h>
+> >  #include <linux/syscore_ops.h>
+> > +#include <linux/ftrace.h>
+> 
+> It's actually __irq_entry being defined in <linux/ftrace.h> and in turn
+> __exception_irq_entry being conditionally defined to that.
+> 
+> I think it's better to fix this in <asm/system.h> instead of in the
+> cases where this macro is referenced?
+> 
+> Russell?
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- fs/ext4/ext4.h  |    5 ++++-
- fs/ext4/super.c |   18 ++++++++++++++++++
- 2 files changed, 22 insertions(+), 1 deletions(-)
-
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 8ee8646..a74e125 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -957,6 +957,9 @@ extern void ext4_set_bits(void *bm, int cur, int len);
- #define EXT4_ERRORS_PANIC		3	/* Panic */
- #define EXT4_ERRORS_DEFAULT		EXT4_ERRORS_CONTINUE
- 
-+/* Metadata checksum algorithm codes */
-+#define EXT4_CRC32C_CHKSUM		1
-+
- /*
-  * Structure of the super block
-  */
-@@ -1043,7 +1046,7 @@ struct ext4_super_block {
- 	__le64  s_mmp_block;            /* Block for multi-mount protection */
- 	__le32  s_raid_stripe_width;    /* blocks on all data disks (N*stride)*/
- 	__u8	s_log_groups_per_flex;  /* FLEX_BG group size */
--	__u8	s_reserved_char_pad;
-+	__u8	s_checksum_type;	/* metadata checksum algorithm used */
- 	__le16  s_reserved_pad;
- 	__le64	s_kbytes_written;	/* nr of lifetime kilobytes written */
- 	__le32	s_snapshot_inum;	/* Inode number of active snapshot */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 44d0c8d..ac33e45 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -110,6 +110,16 @@ static struct file_system_type ext3_fs_type = {
- #define IS_EXT3_SB(sb) (0)
- #endif
- 
-+static int ext4_verify_csum_type(struct super_block *sb,
-+				 struct ext4_super_block *es)
-+{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
-+}
-+
- void *ext4_kvmalloc(size_t size, gfp_t flags)
- {
- 	void *ret;
-@@ -3153,6 +3163,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		goto cantfind_ext4;
- 	sbi->s_kbytes_written = le64_to_cpu(es->s_kbytes_written);
- 
-+	/* Check for a known checksum algorithm */
-+	if (!ext4_verify_csum_type(sb, es)) {
-+		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
-+			 "unknown checksum algorithm.");
-+		silent = 1;
-+		goto cantfind_ext4;
-+	}
-+
- 	/* Set defaults before we parse the mount options */
- 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
- 	set_opt(sb, INIT_INODE_TABLE);
-
+There's a patch in the patch system which fixes this (7115/3) but I
+can't apply it because it doesn't apply to anything in my for-next
+tree (it applies to the obsolete 'devel' branch which is rather old
+now.)
