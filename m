@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1JHHpN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:45:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38806 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab1JHHpL convert rfc822-to-8bit (ORCPT
+	id S1752506Ab1JHH4U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:56:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55587 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab1JHH4L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:45:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1317499438-14058-19-git-send-email-arnd@arndb.de>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-19-git-send-email-arnd@arndb.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Sat, 8 Oct 2011 15:44:50 +0800
-Message-ID: <CAMPhdO88OdwjfERo=Ri_-_xR75S53d-HKW1Ah0WGnu_0P1gRXQ@mail.gmail.com>
-Subject: Re: [PATCH 18/26] ARM: pxa: MTD_XIP is not actually working any more
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 8 Oct 2011 03:56:11 -0400
+Subject: Re: Linux 3.1-rc9
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 08 Oct 2011 09:55:51 +0200
+In-Reply-To: <20111008005035.GC22843@hostway.ca>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
+	 <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>
+	 <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318060551.8395.0.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> The headers files required for XIP support have moved around
-> over the last few years, and the code no longer builds.
-> Until someone fixes this, let's just disable support, leaving
-> sa1100 as the only platform still supporting xip.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+On Fri, 2011-10-07 at 17:50 -0700, Simon Kirby wrote:
+> On Fri, Oct 07, 2011 at 08:01:55PM +0200, Peter Zijlstra wrote:
+> 
+> > @@ -2571,6 +2573,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+> >  static inline void thread_group_cputime_init(struct signal_struct *sig)
+> >  {
+> >       raw_spin_lock_init(&sig->cputimer.lock);
+> > +     raw_spin_lock_init(&sig->cputimer.runtime_lock);
+> 
+> My 3.1-rc9 tree has just spin_lock_init() here, not raw_*.
+> 
+> Which tree is your patch against? -next or something?
 
-It is actually fixable, the problem is really mtd-xip.h is referencing
-the interrupt registers directly which I moved them to mach-pxa/irq.c
-for better modularization.
+or something yeah.. tip/master I think.
 
-I'm fine to drop XIP. I'm afraid Nico's gonna be a bit disappointed
-as I broke his favorite XIP code :-)
+> It applies with some cooking like this, but will it be right?
+> 
+> > sed s/raw_// ../sched-patch-noraw.diff | patch -p1 --dry
+> patching file include/linux/sched.h
+> Hunk #1 succeeded at 503 (offset -1 lines).
+> Hunk #2 succeeded at 512 (offset -1 lines).
+> Hunk #3 succeeded at 2568 (offset -5 lines).
+> patching file kernel/posix-cpu-timers.c
+> patching file kernel/sched_stats.h 
 
-> ---
->  arch/arm/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 570c9fd..71b0ccb 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -619,7 +619,6 @@ config ARCH_PNX4008
->  config ARCH_PXA
->        bool "PXA2xx/PXA3xx-based"
->        depends on MMU
-> -       select ARCH_MTD_XIP
->        select ARCH_HAS_CPUFREQ
->        select CLKDEV_LOOKUP
->        select CLKSRC_MMIO
-> --
-> 1.7.5.4
->
->
+yes that would be fine.
