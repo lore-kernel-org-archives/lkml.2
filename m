@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1JHPz1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 11:55:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab1JHPz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 11:55:26 -0400
-Date: Sat, 8 Oct 2011 17:51:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
-Cc: Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>,
-        Michael Chan <mchan@broadcom.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11] Modified workqueue patches for your review
-Message-ID: <20111008155132.GA28854@redhat.com>
-References: <1314339850-32666-1-git-send-email-bprakash@broadcom.com> <20110826085457.GC2632@htj.dyndns.org> <4E58138A.5050702@broadcom.com> <4E8E378B.30907@broadcom.com> <20111007004824.GA5458@google.com> <4E8E5493.5010804@broadcom.com> <20111007145102.GA25449@redhat.com> <4E8F8C97.6010804@broadcom.com>
+	id S1753001Ab1JHPzi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 11:55:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54327 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab1JHPzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 11:55:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=LNwmNFGPpfu654FaRwe646vzV7/h6EEnVVIg1Xk4ThL5Z3WfZCUTOAGoHtfXow3uw
+	irmAeRCWmU/iyvFolb3WQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E8F8C97.6010804@broadcom.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E900E9E.2070604@gmail.com>
+References: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+	<4E900E9E.2070604@gmail.com>
+Date: Sat, 8 Oct 2011 08:55:32 -0700
+X-Google-Sender-Auth: foOXc157nE2gkgKP_RnMQKhnuKw
+Message-ID: <CAD=FV=U2H08ohbgmDxWNPkh8bm8uBPt-2_H2B4cSb9LvEFWdHA@mail.gmail.com>
+Subject: Re: [PATCH] TTY: serial_core: Fix crash if agetty() run on
+ non-console serial port
+From: Doug Anderson <dianders@chromium.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07, Bhanu Prakash Gollapudi wrote:
->
-> On 10/7/2011 7:51 AM, Oleg Nesterov wrote:
->> On 10/06, Bhanu Prakash Gollapudi wrote:
->>>
->>> On 10/6/2011 5:48 PM, Tejun Heo wrote:
->>>>
->>>>> Reviewing the patch, I agree that we cannot rely on
->>>>> get_online_cpus() any longer.  But I'm also not convinced that
->>>>> cpu_add_remove_lock should be used instead, as it shows up some
->>>>> other deadlocks in destroy_workqueue context because of this global
->>>>> lock.
->>
->> Which deadlocks? work->func() must not use cpu_maps_update_begin/end
->> and thus it can't create/destroy !singlethread workqueue.
->
-> Oleg, I attached the stack traces leading to deadlock in my previous
-> email.
+On Sat, Oct 8, 2011 at 1:49 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> I cannot reproduce this. What uart driver is this with? And where does
+> it call uart_suspend_port from? Basically, it would mean that it calls
+> uart_suspend_port while userspace is still running? Or who HUPs the port
+> (the second point in your list)?
 
-Yes, I didn't read it to the end... But you could save me some time and
-explain ;)
+Thank you for testing!  I am working with the 8250 driver controlling
+the onboard UART on an nVidia Tegra T25 (ARM).
 
-OK. Afaics, it is easy to fix this particular problem... First of all,
-scsi_host_dev_release() destroys the single-threaded wq. In this case
-we do not actually need the locking/list_del, the code was written this
-way just for consistency. See the patch below.
+You raise very good questions, and I'm happy to keep tracking down to
+continue to look for a deeper root cause.  I continued to do some more
+testing of this patch (with the help of a few others) after posting
+the list.  We tried the same setup on an x86-based board and the HUP
+doesn't show up.  ...so my patch wasn't needed on that board (although
+my patch didn't hurt).  ...that means, as you already pointed out,
+that the HUP must _not_ be coming from userspace.
 
-But, it seems, we could change scsi_host_dev_release() instead? It could
-probably schedule_work() a work which actually does destroy_workqueue().
-destroy/flush under the lock shared with work->func's is always dangerous.
-
-> Based on Tejun's suggestion I sent a prototype patch that should fix the
-> deadlock due to cpu_add_remove_lock, and avoid the race condition.  I'm
-> yet to test it.
-
-Doesn't look right...
-
-But once again, I didn't see the whole discussion, I have no idea what
-I have missed.
-
-Oleg.
+Probably the true bug in my system is that a spurious HUP is being
+generated as a result of the suspend.  That is probably platform
+dependent and would explain why this hasn't been a bigger problem for
+others.
 
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -930,14 +930,19 @@ void destroy_workqueue(struct workqueue_
- 	const struct cpumask *cpu_map = wq_cpu_map(wq);
- 	int cpu;
- 
--	cpu_maps_update_begin();
--	spin_lock(&workqueue_lock);
--	list_del(&wq->list);
--	spin_unlock(&workqueue_lock);
--
--	for_each_cpu(cpu, cpu_map)
--		cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq, cpu));
-- 	cpu_maps_update_done();
-+	if (is_wq_single_threaded(wq)) {
-+		cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq,
-+						singlethread_cpu));
-+	} else {
-+		cpu_maps_update_begin();
-+		spin_lock(&workqueue_lock);
-+		list_del(&wq->list);
-+		spin_unlock(&workqueue_lock);
-+
-+		for_each_cpu(cpu, cpu_map)
-+			cleanup_workqueue_thread(per_cpu_ptr(wq->cpu_wq, cpu));
-+		cpu_maps_update_done();
-+ 	}
- 
- 	free_percpu(wq->cpu_wq);
- 	kfree(wq);
+...however, even though my patch shouldn't be needed for any hardware
+that doesn't generate the spurious HUP, it might still be worthwhile
+to consider including it?  ...or perhaps changing it to a BUG_ON or
+WARN_ON to at least detect the case of running the shutdown code after
+the suspend code?  Definitely the case that I ran into (shutdown after
+suspend) will definitely cause a crash during resume.
 
+
+I will spend time on Monday digging into the source of the HUP and
+will post a followup.
+
+-Doug
