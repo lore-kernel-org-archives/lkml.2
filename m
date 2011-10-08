@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1JHC5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 22:57:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40511 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab1JHC5M convert rfc822-to-8bit (ORCPT
+	id S1753847Ab1JHDI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 23:08:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:61045 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab1JHDIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 22:57:12 -0400
+	Fri, 7 Oct 2011 23:08:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=ydSqmwydzcgA7h9eoGiJ4vSFl+jE2qTerA+MmMx2BQW7r6g+7zbIM/xfEg5jCgSiY
+	L849iED2iUtTNS7tcZRMQ==
+Date: Fri, 7 Oct 2011 20:08:19 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Rik van Riel <riel@redhat.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, akpm@linux-foundation.org,
+        hughd@google.com, hannes@cmpxchg.org
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+In-Reply-To: <20110901152650.7a63cb8b@annuminas.surriel.com>
+Message-ID: <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1317499438-14058-18-git-send-email-arnd@arndb.de>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de>
-	<1317499438-14058-18-git-send-email-arnd@arndb.de>
-Date: Sat, 8 Oct 2011 10:57:11 +0800
-Message-ID: <CAN1soZw-eB5WxY5YWjfd=_q5w8wSu09mRTcmOEN_SDq9Zuz7eg@mail.gmail.com>
-Subject: Re: [PATCH 17/26] ARM: pxa: pxa95x is incompatible with earlier pxa
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> We cannot support ARMv5 and ARMv7 based boards in a single kernel,
-> so introduce a new option in mach-pxa to select between the two.
->
-> The PJ4 (ARMv7) based boards are now only visible when
-> CONFIG_ARCH_PXA_V7 is set, the other boards are only visible
-> when it's not set.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-pxa/Kconfig |   31 ++++++++++++++++++++++---------
->  1 files changed, 22 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
-> index cd19309..bb310d0 100644
-> --- a/arch/arm/mach-pxa/Kconfig
-> +++ b/arch/arm/mach-pxa/Kconfig
-> @@ -2,6 +2,27 @@ if ARCH_PXA
->
->  menu "Intel PXA2xx/PXA3xx Implementations"
->
-> +config ARCH_PXA_V7
-> +       bool "ARMv7 (PXA95x) based systems"
-> +
-> +if ARCH_PXA_V7
-> +comment "Marvell Dev Platforms (sorted by hardware release time)"
-> +config MACH_TAVOREVB3
-> +       bool "PXA95x Development Platform (aka TavorEVB III)"
-> +       select CPU_PXA955
-> +
-> +config MACH_SAARB
-> +       bool "PXA955 Handheld Platform (aka SAARB)"
-> +       select CPU_PXA955
-> +endif
-> +
-> +config PXA_V7_MACH_AUTO
-> +       def_bool y
-> +       depends on ARCH_PXA_V7
-> +       depends on !MACH_SAARB
-> +       select MACH_TAVOREVB3
-> +
-Could we avoid to use PXA_V7_MACH_AUTO? I think the better way is
-defining a new ARCH (ARCH_PXA95X or something else), and sharing the
-code in arch/arm/mach-pxa. I think that it's easy to implement.
+On Thu, 1 Sep 2011, Rik van Riel wrote:
 
-How about you, Russell & Eric?
+> Add a userspace visible knob to tell the VM to keep an extra amount
+> of memory free, by increasing the gap between each zone's min and
+> low watermarks.
+> 
+> This is useful for realtime applications that call system
+> calls and have a bound on the number of allocations that happen
+> in any short time period.  In this application, extra_free_kbytes
+> would be left at an amount equal to or larger than than the
+> maximum number of allocations that happen in any burst.
+> 
+> It may also be useful to reduce the memory use of virtual
+> machines (temporarily?), in a way that does not cause memory
+> fragmentation like ballooning does.
+> 
 
-> +if !ARCH_PXA_V7
->  comment "Intel/Marvell Dev Platforms (sorted by hardware release time)"
->
->  config ARCH_LUBBOCK
-> @@ -41,19 +62,11 @@ config MACH_TAVOREVB
->        select PXA3xx
->        select CPU_PXA930
->
-> -config MACH_TAVOREVB3
-> -       bool "PXA95x Development Platform (aka TavorEVB III)"
-> -       select CPU_PXA950
-> -
->  config MACH_SAAR
->        bool "PXA930 Handheld Platform (aka SAAR)"
->        select PXA3xx
->        select CPU_PXA930
->
-> -config MACH_SAARB
-> -       bool "PXA955 Handheld Platform (aka SAARB)"
-> -       select CPU_PXA955
-> -
->  comment "Third Party Dev Platforms (sorted by vendor name)"
->
->  config ARCH_PXA_IDP
-> @@ -598,7 +611,7 @@ config MACH_ZIPIT2
->        bool "Zipit Z2 Handheld"
->        select PXA27x
->        select HAVE_PWM
-> -
-> +endif
->  endmenu
->
->  config PXA25x
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I know this was merged into -mm, but I still have to disagree with it 
+because I think it adds yet another userspace knob that will never be 
+obsoleted, will be misinterepted, and is tied very closely to the 
+implementation of page reclaim, both synchronous and asynchronous.  I also 
+think that it will cause regressions on other cpu intensive workloads 
+that don't require this extra freed memory because it works as a global 
+heuristic and is not tied to any specific application.
+
+I think it would be far better to reclaim beyond above the high watermark 
+if the types of workloads that need this tunable can be somehow detected 
+(the worst case scenario is being a prctl() that does synchronous reclaim 
+above the watermark so admins can identify these workloads), or be able to 
+mark allocations within the kernel as potentially coming in large bursts 
+where allocation is problematic.
