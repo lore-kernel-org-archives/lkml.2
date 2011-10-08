@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab1JHNCt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 09:02:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63321 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab1JHNCp (ORCPT
+	id S1752897Ab1JHNIs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 09:08:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63047 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab1JHNIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 09:02:45 -0400
+	Sat, 8 Oct 2011 09:08:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Barry Song <21cnbao@gmail.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, linus.walleij@stericsson.com,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Rongjun Ying <rongjun.ying@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: Re: [PATCH v2] pinmux: add a driver for the CSR SiRFprimaII pinmux
+Date: Sat, 08 Oct 2011 15:08:27 +0200
+Message-ID: <3712698.4MAZQPafzW@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <CAGsJ_4xpYMzHGi09jt2Y9xCocYJ0iHYRfdvwCzcH65uaF2sP0g@mail.gmail.com>
+References: <1314843744-2910-1-git-send-email-Baohua.Song@csr.com> <CACRpkdbb_5EZHT3=SNePbW-=NYjLSLzJgjEdEaBV7X=s6gxydw@mail.gmail.com> <CAGsJ_4xpYMzHGi09jt2Y9xCocYJ0iHYRfdvwCzcH65uaF2sP0g@mail.gmail.com>
 MIME-Version: 1.0
-Date: Sat, 8 Oct 2011 21:02:44 +0800
-Message-ID: <CAM_iQpUgC8Enwm9FWYmc9uLvzjYNgXz8WKxBGeZTw3XL8f24eg@mail.gmail.com>
-Subject: [PATCH] MAINTAINERS: update pm list address
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org,
-        "Len Brown (Intel)" <len.brown@intel.com>,
-        Paul Walmsley <paul@pwsan.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>, Kevin Hilman <khilman@ti.com>,
-        magnus.damm@gmail.com, Bojan Smojver <bojan@rexursive.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>, tom.leiming@gmail.com,
-        Linux PM <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>, Pavel Machek <pavel@ucw.cz>
-Content-Type: multipart/mixed; boundary=00151773ea2c7a7cc104aec92c6c
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:QttuMwZIBV663Pa7kQer0XsekCeKlBkJm/+gI/+NFED
+ lqNcpCVQ0Clrt+/ygqZFVKwgtlideIaeeB3yJtW4xb2fXRrgdo
+ zn1bjqIFfa7U6oRw7p2mTnH72JH7s6A7NGJRzbaOthJOPmWjuJ
+ a6a1X3k7QnZa8ZQfm9/e++0G6E60Aq4xl+BJc4Lxl8sbho9hCK
+ wHcJdFaoBBZwjwId/swwqaQHWuZxng6dID7EMj+418QDIzZTuG
+ 2BwC+1Mup/6Hrwlg+XTfK1XmO/uboj3mMiEOdrXK111NB/Femb
+ GT0xuD4kLOBoJbmo4OXzjc02UggcyMScg4D2zOMjwtp9NJ2mdx
+ /RE2lnPmTjEwQO3XGrIs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151773ea2c7a7cc104aec92c6c
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Saturday 08 October 2011 19:58:23 Barry Song wrote:
+> > You can probably simplify this and other things with
+> > preprocessor macros if you want to, like:
+> >
+> > #define SIRF_FUNC_ENTRY(a) \
+> > { .name = "##a##", .pins = ##a##_pins, .num_pins =
+> > ARRAY_SIZE(##a##_pins), .padmux = &##a##_padmux }
+> >
+> > Then just:
+> >
+> > static const struct sirfsoc_pinmux_func sirfsoc_pinmux_funcs[] = {
+> >     SIRF_FUNC_ENTRY(lcd_16bits),
+> >
+> >
+> > The macro syntax is probably wrong, the preprocessor always
+> > craze me out, but you get the idea.
+> 
+>  :-)  .name = "##a##"  should be changed to .name = #a
+> 
+> #name will convert name into a string "name"
+> 
 
-On Sat, Oct 8, 2011 at 4:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi,
->
-> Due to the continuing outage of lists.linux-foundation.org the linux-pm
-> mailing list is going to be hosted at vger.kernel.org from now on. =C2=A0=
-The
-> new address of the list is linux-pm@vger.kernel.org .
->
+Better don't use string concatenation at all if you can avoid it.
 
-Hi, Rafael,
+A generic macro like
 
-I think the following patch is needed. :)
+#define SIRF_PINMUX(_name, _pins, _padmux) \
+	{ .name = (_name), .pins = (_pins), \
+	  .num_pins = ARRAY_SIZE(_pins), padmux = (_padmux), }
 
-----
+is both very easy to understand for someone reading it casually and
+lets you actually grep for where the identifiers are being used.
 
-Change the pm list address in MAINTAINERS, as it is moved to
-vger.kernel.org now.
+> static const struct sirfsoc_pinmux_func sirfsoc_pinmux_funcs[] = {
+>     SIRF_FUNC_ENTRY(lcd_16bits),
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+for the first time, you have no clue what that does, but
 
---00151773ea2c7a7cc104aec92c6c
-Content-Type: text/x-patch; charset=US-ASCII; name="maintainer-change-pm-list-address.diff"
-Content-Disposition: attachment; 
-	filename="maintainer-change-pm-list-address.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gtim5rw90
+static const struct sirfsoc_pinmux_func sirfsoc_pinmux_funcs[] = {
+	SIRF_PINMUX("lcd_16bits", lcd_16bits_pins, &lcd_16bits_padmux),
+	...
+};
 
-ZGlmZiAtLWdpdCBhL01BSU5UQUlORVJTIGIvTUFJTlRBSU5FUlMKaW5kZXggYWNlOGY5Yy4uMTc3
-NGI2OCAxMDA2NDQKLS0tIGEvTUFJTlRBSU5FUlMKKysrIGIvTUFJTlRBSU5FUlMKQEAgLTI3MzMs
-NyArMjczMyw3IEBAIEY6CWZzL2ZyZWV2eGZzLwogRlJFRVpFUgogTToJUGF2ZWwgTWFjaGVrIDxw
-YXZlbEB1Y3cuY3o+CiBNOgkiUmFmYWVsIEouIFd5c29ja2kiIDxyandAc2lzay5wbD4KLUw6CWxp
-bnV4LXBtQGxpc3RzLmxpbnV4LWZvdW5kYXRpb24ub3JnCitMOglsaW51eC1wbUB2Z2VyLmtlcm5l
-bC5vcmcKIFM6CVN1cHBvcnRlZAogRjoJRG9jdW1lbnRhdGlvbi9wb3dlci9mcmVlemluZy1vZi10
-YXNrcy50eHQKIEY6CWluY2x1ZGUvbGludXgvZnJlZXplci5oCkBAIC0yOTk1LDcgKzI5OTUsNyBA
-QCBGOglkcml2ZXJzL3ZpZGVvL2hnYWZiLmMKIEhJQkVSTkFUSU9OIChha2EgU29mdHdhcmUgU3Vz
-cGVuZCwgYWthIHN3c3VzcCkKIE06CVBhdmVsIE1hY2hlayA8cGF2ZWxAdWN3LmN6PgogTToJIlJh
-ZmFlbCBKLiBXeXNvY2tpIiA8cmp3QHNpc2sucGw+Ci1MOglsaW51eC1wbUBsaXN0cy5saW51eC1m
-b3VuZGF0aW9uLm9yZworTDoJbGludXgtcG1Admdlci5rZXJuZWwub3JnCiBTOglTdXBwb3J0ZWQK
-IEY6CWFyY2gveDg2L3Bvd2VyLwogRjoJZHJpdmVycy9iYXNlL3Bvd2VyLwpAQCAtMzE4OSw3ICsz
-MTg5LDcgQEAgRjoJZHJpdmVycy9pZGUvaWRlLWNkKgogCiBJRExFLUk3MzAwCiBNOglBbmR5IEhl
-bnJvaWQgPGFuZHJldy5kLmhlbnJvaWRAaW50ZWwuY29tPgotTDoJbGludXgtcG1AbGlzdHMubGlu
-dXgtZm91bmRhdGlvbi5vcmcKK0w6CWxpbnV4LXBtQHZnZXIua2VybmVsLm9yZwogUzoJU3VwcG9y
-dGVkCiBGOglkcml2ZXJzL2lkbGUvaTczMDBfaWRsZS5jCiAKQEAgLTMyNzIsNyArMzI3Miw3IEBA
-IEY6CWZpcm13YXJlL2lzY2kvCiAKIElOVEVMIElETEUgRFJJVkVSCiBNOglMZW4gQnJvd24gPGxl
-bmJAa2VybmVsLm9yZz4KLUw6CWxpbnV4LXBtQGxpc3RzLmxpbnV4LWZvdW5kYXRpb24ub3JnCitM
-OglsaW51eC1wbUB2Z2VyLmtlcm5lbC5vcmcKIFQ6CWdpdCBnaXQ6Ly9naXQua2VybmVsLm9yZy9w
-dWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvbGVuYi9saW51eC1pZGxlLTIuNi5naXQKIFM6CVN1cHBv
-cnRlZAogRjoJZHJpdmVycy9pZGxlL2ludGVsX2lkbGUuYwpAQCAtMzM3Niw3ICszMzc2LDcgQEAg
-RjoJZHJpdmVycy9uZXQvaXhnYmV2Zi8KIAogSU5URUwgTVJTVCBQTVUgRFJJVkVSCiBNOglMZW4g
-QnJvd24gPGxlbi5icm93bkBpbnRlbC5jb20+Ci1MOglsaW51eC1wbUBsaXN0cy5saW51eC1mb3Vu
-ZGF0aW9uLm9yZworTDoJbGludXgtcG1Admdlci5rZXJuZWwub3JnCiBTOglTdXBwb3J0ZWQKIEY6
-CWFyY2gveDg2L3BsYXRmb3JtL21yc3QvcG11LioKIApAQCAtNjMwNiw3ICs2MzA2LDcgQEAgU1VT
-UEVORCBUTyBSQU0KIE06CUxlbiBCcm93biA8bGVuLmJyb3duQGludGVsLmNvbT4KIE06CVBhdmVs
-IE1hY2hlayA8cGF2ZWxAdWN3LmN6PgogTToJIlJhZmFlbCBKLiBXeXNvY2tpIiA8cmp3QHNpc2su
-cGw+Ci1MOglsaW51eC1wbUBsaXN0cy5saW51eC1mb3VuZGF0aW9uLm9yZworTDoJbGludXgtcG1A
-dmdlci5rZXJuZWwub3JnCiBTOglTdXBwb3J0ZWQKIEY6CURvY3VtZW50YXRpb24vcG93ZXIvCiBG
-OglhcmNoL3g4Ni9rZXJuZWwvYWNwaS8K
---00151773ea2c7a7cc104aec92c6c--
+Makes it very clear what you are referencing here and needs no extra lines.
+
+	Arnd
