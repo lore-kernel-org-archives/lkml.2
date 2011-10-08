@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1JHH4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:56:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55587 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1JHH4L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:56:11 -0400
-Subject: Re: Linux 3.1-rc9
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 08 Oct 2011 09:55:51 +0200
-In-Reply-To: <20111008005035.GC22843@hostway.ca>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	 <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca>
-	 <1318010515.398.8.camel@twins> <20111008005035.GC22843@hostway.ca>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318060551.8395.0.camel@twins>
-Mime-Version: 1.0
+	id S1751604Ab1JHH4C (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:56:02 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48838 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163Ab1JHHz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:55:59 -0400
+Subject: [PATCH v2 00/28] ext4: Add metadata checksumming
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Sat, 08 Oct 2011 00:53:43 -0700
+Message-ID: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11100807-8974-0000-0000-000000B83D7D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 17:50 -0700, Simon Kirby wrote:
-> On Fri, Oct 07, 2011 at 08:01:55PM +0200, Peter Zijlstra wrote:
-> 
-> > @@ -2571,6 +2573,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
-> >  static inline void thread_group_cputime_init(struct signal_struct *sig)
-> >  {
-> >       raw_spin_lock_init(&sig->cputimer.lock);
-> > +     raw_spin_lock_init(&sig->cputimer.runtime_lock);
-> 
-> My 3.1-rc9 tree has just spin_lock_init() here, not raw_*.
-> 
-> Which tree is your patch against? -next or something?
+Hi all,
 
-or something yeah.. tip/master I think.
+This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
+full design document is on the ext4 wiki[1] but I will summarize that document here.
 
-> It applies with some cooking like this, but will it be right?
-> 
-> > sed s/raw_// ../sched-patch-noraw.diff | patch -p1 --dry
-> patching file include/linux/sched.h
-> Hunk #1 succeeded at 503 (offset -1 lines).
-> Hunk #2 succeeded at 512 (offset -1 lines).
-> Hunk #3 succeeded at 2568 (offset -5 lines).
-> patching file kernel/posix-cpu-timers.c
-> patching file kernel/sched_stats.h 
+As much as we wish our storage hardware was totally reliable, it is still
+quite possible for data to be corrupted on disk, corrupted during transfer over
+a wire, or written to the wrong places.  To protect against this sort of
+non-hostile corruption, it is desirable to store checksums of metadata objects
+on the filesystem to prevent broken metadata from shredding the filesystem.
 
-yes that would be fine.
+The crc32c polynomial was chosen for its improved error detection capabilities
+over crc32 and crc16, and because of its hardware acceleration on current and
+upcoming Intel and Sparc chips.
+
+Each type of metadata object has been retrofitted to store a checksum as follows:
+
+- The superblock stores a crc32c of itself.
+- Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
+  slack_space_after_inode)
+- Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
+  bitmap), stored in the block group descriptor.
+- Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
+  extent_entries) in unused space at the end of the block.
+- Each directory leaf block has an unused-looking directory entry big enough to
+  store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
+  block.
+- Each directory htree block is shortened to contain a crc32c(fs_uuid +
+  inode_num + inode_gen + block) at the end of the block.
+- Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
+  header, where id is, depending on the refcount, either the inode_num and
+  inode_gen; or the block number.
+- MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
+- Block groups can now use crc32c instead of crc16.
+- The journal now has a v2 checksum feature flag.
+- crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
+  commit blocks, revoke blocks, and the journal superblock.
+- Each block tag in a descriptor block has a checksum of the related data block.
+
+The first five patches in the kernel patchset fix existing bugs in ext4 that
+cause incorrect checkums to be written.  I think Ted already took them, but
+they don't appear in 3.1.0-rc9.  The subsequent patches add the necessary code
+to support checksumming in ext4 and jbd2.
+
+I also have a set patches that provide a faster crc32c implementation based on
+Bob Pearson's earlier crc32 patchset.  This has been sent under separate cover
+to the crypto list and to lkml/linux-ext4.
+
+The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
+as it is quite lengthy (~48 patches).
+
+As far as performance impact goes, I see nearly no change with a standard mail
+server ffsb simulation.  On a test that involves only file creation and
+deletion and extent tree modifications, I see a drop of about 50 percent with
+the current kernel crc32c implementation; this improves to a drop of about 20
+percent with the enclosed crc32c implementation.  However, given that metadata
+is usually a small fraction of total IO, it doesn't seem like the cost of
+enabling this feature is unreasonable.
+
+There are of course unresolved issues:
+
+- I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
+  submit that as an add-on to the snapshot patchset.
+
+- Using the journal commit hooks to delay crc32c calculation until dirty
+  buffers are actually being written to disk.
+
+- Interaction with online resize code.  Yongqiang seems to be in the process of
+  rewriting this, so I haven't looked at it very closely yet.
+
+Please have a look at the design document and patches, and please feel free to
+suggest any changes.
+
+v2: Checksum the MMP block, store the checksum type in the superblock, include
+the inode generation in file checksums, and finally solve the problem of limited
+space in block groups by splitting the checksum into two halves.
+
+This patchset has been tested on 3.1.0-rc9 on x64, i386, ppc64, and ppc32.  The
+patches seems to work fine on all four platforms.
+
+--D
+
+[1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+
