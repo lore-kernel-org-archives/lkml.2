@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab1JHH4g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:56:36 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54695 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab1JHH43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:56:29 -0400
-Subject: [PATCH 02/28] ext4: ext4_rename should dirty dir_bh with the correct
-	directory
+	id S1753570Ab1JHH5V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:57:21 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:51833 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753340Ab1JHH5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:57:13 -0400
+Subject: [PATCH 07/28] ext4: Create a rocompat flag for extended metadata
+	checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -21,8 +20,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:53:57 -0700
-Message-ID: <20111008075357.20506.18513.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:54:29 -0700
+Message-ID: <20111008075429.20506.95505.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -33,29 +32,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ext4_rename performs a directory rename (move), dir_bh is a buffer that is
-modified to update the '..' link in the directory being moved (old_inode).
-However, ext4_handle_dirty_metadata is called with the old parent directory
-inode (old_dir) and dir_bh, which is incorrect because dir_bh does not belong
-to the parent inode.  Fix this error.
+This patch introduces a rocompat feature flag to signal the presence of
+checksums for metadata blocks.  It also provides storage for a precomputed UUID
+checksum.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/namei.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ext4/ext4.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 310b356..6d3fab4 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2530,7 +2530,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
- 						cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
--		retval = ext4_handle_dirty_metadata(handle, old_dir, dir_bh);
-+		retval = ext4_handle_dirty_metadata(handle, old_inode, dir_bh);
- 		if (retval) {
- 			ext4_std_error(old_dir->i_sb, retval);
- 			goto end_rename;
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index b7d7bd0..8ee8646 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1222,6 +1222,9 @@ struct ext4_sb_info {
+ 
+ 	/* record the last minlen when FITRIM is called. */
+ 	atomic_t s_last_trim_minblks;
++
++	/* Precomputed FS UUID checksum */
++	__u32 s_uuid_crc;
+ };
+ 
+ static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+@@ -1360,6 +1363,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_RO_COMPAT_DIR_NLINK	0x0020
+ #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
+ #define EXT4_FEATURE_RO_COMPAT_QUOTA		0x0100
++#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
+ 
+ #define EXT4_FEATURE_INCOMPAT_COMPRESSION	0x0001
+ #define EXT4_FEATURE_INCOMPAT_FILETYPE		0x0002
+@@ -1402,7 +1406,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ 					 EXT4_FEATURE_RO_COMPAT_DIR_NLINK | \
+ 					 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | \
+ 					 EXT4_FEATURE_RO_COMPAT_BTREE_DIR |\
+-					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE)
++					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE |\
++					 EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
+ 
+ /*
+  * Default values for user and/or group using reserved blocks
 
