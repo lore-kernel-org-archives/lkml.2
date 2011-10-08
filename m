@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1JHUlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 16:41:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57354 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1JHUlG (ORCPT
+	id S1753986Ab1JHUtW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 16:49:22 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40332 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab1JHUtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 16:41:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>, linus.walleij@linaro.org
-Subject: [GIT PULL] final arm-soc fixes for 3.1
-Date: Sat, 08 Oct 2011 22:40:39 +0200
-Message-ID: <2473979.6NMHgbd7Ss@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+	Sat, 8 Oct 2011 16:49:20 -0400
+Message-ID: <4E90B6F9.8020804@linux.vnet.ibm.com>
+Date: Sun, 09 Oct 2011 02:17:53 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:iNKMDWaeaLNidLTjljHj7LJwewf8oRPNGug5G8epPHW
- SQRDb7QdOPE7GRGvWSTdEzhFQcEXaG0/Ack3jQzVb/n+tlN/LM
- YJ+e3Ch0J/DLJha771Kgz0Ur1SQ0zUfkhNBsf6VjRt3c1ps3Fr
- clwg3H2qHBEHUZ0HRaFyx1aqpUi9pJZ8EPx3iPs3zwfBM5PbM/
- 7/db1W/JfiUI00rpIRizwFAl15EuT/Un2HI83A/KyObBz+G4p/
- m5n0pZD16+Um4qIgD1367E4VrAr1x5szJLQ3pvo8g+SgqMpUHk
- bDkbck0NGvwhEdjlhA85SKgRt3LXaBCAAktRRtdV0Ip8GH2mGb
- yRxi88fqmc69cq8Dn2Ic=
+To: Borislav Petkov <bp@amd64.org>
+CC: "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, mingo@redhat.com,
+        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        andreas.herrmann3@amd.com, amd64-microcode@amd64.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] CPU hotplug,x86 Microcode: Don't request microcode from userspace
+ unnecessarily
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11100811-3568-0000-0000-0000007D5EB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Requesting the microcode from userspace *every time* when onlining CPUs
+(during a CPU hotplug operation) is unnecessary.
 
-Here are some last fixes from my side, please consider merging them into 3.1.
-The majority of fixes that I received is now queued up in my next branch
-for 3.2, but these are the ones that we agreed should still be merged before
-the release.
+So, this patch ensures that once the kernel gets the microcode after booting,
+it is not freed nor invalidated when a CPU goes offline, so that it can be
+reused when that CPU comes back online, without requesting userspace for it
+again. As a result, the CPU hotplug operations become faster as well.
 
-	Arnd
+Tested-by: Borislav Petkov <bp@amd64.org>
+Acked-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-The following changes since commit a102a9ece5489e1718cd7543aa079082450ac3a2:
+ arch/x86/kernel/microcode_core.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-  Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index f924280..3fd0189 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -483,7 +483,13 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
+ 		sysfs_remove_group(&sys_dev->kobj, &mc_attr_group);
+ 		pr_debug("CPU%d removed\n", cpu);
+ 		break;
+-	case CPU_DEAD:
++
++	/* When a CPU goes offline, don't free up or invalidate the copy of
++	 * the microcode in kernel memory, so that we can reuse it when the
++	 * CPU comes back online without unnecessarily requesting the userspace
++	 * for it again.
++	 */
++
+ 	case CPU_UP_CANCELED_FROZEN:
+ 		/* The CPU refused to come up during a system resume */
+ 		microcode_fini_cpu(cpu);
 
-are available in the git repository at:
-  git://git.linaro.org/people/arnd/arm-soc.git fixes
-
-Arnd Bergmann (1):
-      Merge branch 'omap/fixes-for-3.1' into fixes
-
-Axel Lin (1):
-      ARM: OMAP: musb: Remove a redundant omap4430_phy_init call in usb_musb_init
-
-Bryan Buckley (1):
-      ARM: OMAP4: MMC: fix power and audio issue, decouple USBC1 from MMC1
-
-Tony Lindgren (1):
-      ARM: OMAP: Fix i2c init for twl4030
-
-srinidhi kasagar (1):
-      ARM: mach-ux500: enable fix for ARM errata 754322
-
- arch/arm/mach-omap2/board-2430sdp.c |    3 ++-
- arch/arm/mach-omap2/hsmmc.c         |   12 ++++--------
- arch/arm/mach-omap2/usb-musb.c      |    3 ---
- arch/arm/mach-ux500/Kconfig         |    1 +
- 4 files changed, 7 insertions(+), 12 deletions(-)
 
