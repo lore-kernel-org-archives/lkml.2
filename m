@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab1JHIDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 04:03:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58086 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab1JHID2 (ORCPT
+	id S1753439Ab1JHH5Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:57:16 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52266 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab1JHH5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 04:03:28 -0400
-Date: Sat, 8 Oct 2011 09:03:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Subject: Re: [PATCH 06/26] ARM: pxa: add missing header inclusions
-Message-ID: <20111008080309.GD25689@n2100.arm.linux.org.uk>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-7-git-send-email-arnd@arndb.de> <CAMPhdO8FGTw7NzNNjK819zF3GjrRX0ybPyaSFR4U7oG8cGmDtQ@mail.gmail.com>
+	Sat, 8 Oct 2011 03:57:11 -0400
+Subject: [PATCH 13/28] ext4: Create bitmap checksum helper functions
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Sat, 08 Oct 2011 00:55:09 -0700
+Message-ID: <20111008075509.20506.61977.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMPhdO8FGTw7NzNNjK819zF3GjrRX0ybPyaSFR4U7oG8cGmDtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11100807-3270-0000-0000-000000B57B7F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 01:08:23PM +0800, Eric Miao wrote:
-> On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > These resulted in build breakage in some configurations:
-> >
-> > arch/arm/mach-pxa/irq.c:132:39: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'icip_handle_irq'
-> >
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > ---
-> >  arch/arm/mach-pxa/irq.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
-> > index b09e848..848e96d 100644
-> > --- a/arch/arm/mach-pxa/irq.c
-> > +++ b/arch/arm/mach-pxa/irq.c
-> > @@ -16,6 +16,7 @@
-> >  #include <linux/module.h>
-> >  #include <linux/interrupt.h>
-> >  #include <linux/syscore_ops.h>
-> > +#include <linux/ftrace.h>
-> 
-> It's actually __irq_entry being defined in <linux/ftrace.h> and in turn
-> __exception_irq_entry being conditionally defined to that.
-> 
-> I think it's better to fix this in <asm/system.h> instead of in the
-> cases where this macro is referenced?
-> 
-> Russell?
+These helper functions will be used to calculate and verify the block and inode
+bitmap checksums.
 
-There's a patch in the patch system which fixes this (7115/3) but I
-can't apply it because it doesn't apply to anything in my for-next
-tree (it applies to the obsolete 'devel' branch which is rather old
-now.)
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+ fs/ext4/bitmap.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+
+diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
+index fa3af81..43d9173 100644
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -29,3 +29,15 @@ unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
+ 
+ #endif  /*  EXT4FS_DEBUG  */
+ 
++static __u32 ext4_bitmap_csum(struct super_block *sb, ext4_group_t group,
++			      struct buffer_head *bh, int sz)
++{
++	__u32 crc;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++
++	group = cpu_to_le32(group);
++	crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&group, sizeof(group));
++	crc = ext4_chksum(sbi, crc, (__u8 *)bh->b_data, sz);
++
++	return crc;
++}
+
