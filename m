@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab1JHSX2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 14:23:28 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53227 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753431Ab1JHSX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 14:23:28 -0400
-Message-ID: <1318098206.1844.3.camel@Joe-Laptop>
-Subject: Re: Subject: [PATCH]
-From: Joe Perches <joe@perches.com>
-To: Jake Burton <jake5991@live.com>
-Cc: gregkh@suse.de, abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Sat, 08 Oct 2011 11:23:26 -0700
-In-Reply-To: <BLU0-SMTP400327EB20018169910A6BAA2FF0@phx.gbl>
-References: <BLU0-SMTP400327EB20018169910A6BAA2FF0@phx.gbl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753611Ab1JHSiU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 14:38:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59929 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab1JHSiS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 14:38:18 -0400
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mohan Pallaka <mpallaka@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/3] Input: Cypress TTSP device driver
+Date: Sat,  8 Oct 2011 20:37:57 +0200
+Message-Id: <1318099080-26227-1-git-send-email-martinez.javier@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-08 at 19:01 +0100, Jake Burton wrote:
-> diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
-[]
-> @@ -279,7 +279,7 @@ static const int ni_irqpin[] =
->  
->  struct ni_private {
->  	struct pnp_dev *isapnp_dev;
-> - NI_PRIVATE_COMMON};
-> +NI_PRIVATE_COMMON};
+Cypress TrueTouch(tm) Standard Product controllers are found in
+a wide range of embedded devices. This patch-set adds support for a
+variety of TTSP controllers.
 
-Hard to believe this is better.  Maybe:
+The original author of the driver is Kevin McNeely <kev@cypress.com>
 
-struct ni_private {
-	struct pnp_dev *isapnp_dev;
-	NI_PRIVATE_COMMON
-};
+Since the hardware is capable of tracking identifiable contacts and the
+original driver used multi-touch protocol type A (stateless), I've added
+multi-touch protocol type B (stateful) support.
 
-It'd be better to inline NI_PRIVATE_COMMON,
-whatever that is.  There are 3 uses of that
-really ugly #define.
+The driver is composed of a core driver that process the data sent by
+the contacts (fingers) and two bus specific interface modules (I2C and SPI).
 
+This is a fifth version of the driver that fixes issues called out by
+Dmitry Torokhov, Henrik Rydberg and Mohan Pallaka and Kevin McNeely.
 
+The patchset is composed of the patches:
+
+[PATCH v5 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch screen support
+[PATCH v5 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
+[PATCH v5 3/3] Input: cyttsp - add support for Cypress TTSP touchscreen SPI bus interface
