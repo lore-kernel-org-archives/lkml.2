@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1JHKDg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 06:03:36 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:33689 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751156Ab1JHKDd (ORCPT
+	id S1752148Ab1JHKIH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 06:08:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52542 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab1JHKID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 06:03:33 -0400
-Date: Sat, 8 Oct 2011 13:03:28 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] usb gadget: fix langwell_udc.c build error
-Message-ID: <20111008100326.GA24633@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au>
- <4E8F67C6.5020603@xenotime.net>
+	Sat, 8 Oct 2011 06:08:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Jason Chagas <jason.chagas@marvell.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 20/26] ARM: pxa: select FB_PXA on saar and tevorevb
+Date: Sat, 08 Oct 2011 12:07:43 +0200
+Message-ID: <2978851.kb50F9VMMq@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <CAMPhdO8ke1M2aFAqzfmFB-MWj6m5JsCYC_zYBC=iSX1L6kWwTw@mail.gmail.com>
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-21-git-send-email-arnd@arndb.de> <CAMPhdO8ke1M2aFAqzfmFB-MWj6m5JsCYC_zYBC=iSX1L6kWwTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
-Content-Disposition: inline
-In-Reply-To: <4E8F67C6.5020603@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LGDaFuUMxbRd7yxBfOcPWGKGMnqkVbE9be5ttLNWhcH
+ 4af7RU5V6Exqi6VMMeeAzDdO1s7Z56rNufDpSlGGJalmzIIJE9
+ VKkcCjyfLhcBaQi7k94kqzhh9srCVa/azEjUwKfLx9xHiYFDK1
+ 3+4Fo1btCxFEintFqBxwFCDPvmEEDwRemzIeAYxGfs/uzC84/g
+ B490fPR29JQe2Unu/wtx1hmtA3VdAjdf8AfLWiKwbqO4vpdJ3K
+ 8RAjoCXzl4r7GTnDc6niOus5zByzVQ1tCyvoSAAVZrhqezUm6w
+ qF+RK2gyocNuWB0+wJnltSQxpP9Rn06KETcTwZvwSJP7If3lfW
+ zhLka5EZMQknVcxyOzZM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 08 October 2011 17:50:31 Eric Miao wrote:
+> 
+> The option really matters is FB_PXA_SMARTPANEL, which adds support
+> for the display driver to control an external "smart" LCD panel. And how
+> about the patch below to fix this - as normal, make empty functions
+> when not enabled?
+> 
 
---vkogqOf2sHV7VnPd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, your patch looks better than mine.
 
-Hi,
+Thanks,
 
-On Fri, Oct 07, 2011 at 01:57:42PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
->=20
-> Move function to fix langwell_udc.c build error:
->=20
-> drivers/usb/gadget/langwell_udc.c: In function 'show_langwell_udc':
-> drivers/usb/gadget/langwell_udc.c:1693:3: error: implicit declaration of =
-function 'lpm_device_speed'
-> drivers/usb/gadget/langwell_udc.c: At top level:
-> drivers/usb/gadget/langwell_udc.c:2637:37: error: conflicting types for '=
-lpm_device_speed'
-> drivers/usb/gadget/langwell_udc.c:1693:20: note: previous implicit declar=
-ation of 'lpm_device_speed' was here
-
-I don't have this compile error on my branch, did something go in
-without me noticing ?
-
-Can you blame a comit which introduced this ?
-
-btw, all I have is a warning.
-
---=20
-balbi
-
---vkogqOf2sHV7VnPd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOkB/uAAoJEAv8Txj19kN1ACgH/2VwYOJkUVEjj030UzZOSXtc
-Cmx/Aea0lmXqJGMHnmaiv03ijci2jhHmOjwYF7vrhhNHLDUfLyUqn86YTv7mnDEj
-QRuNDCKUW8YgSVxNGBhcbGO/Yf71cMUVw0SuxkLSeIDJc8U4XLbnrNUvq0qM2Jqc
-u7h9e8a0yWnDd53kTIhLUGuE/JAB2KuLa5s89Q37CXN9tJw1d6JF+x/rsV8QjoUi
-Eak9EEUZSo1YwlwTYLXV+aojszpsAowbEfQ9UFjd0Ko3GbZQojb8Lf4IGEOXeQn0
-rGSWE7yowVBPzY7HiThvfnSLD4O4JXq21beebdgqTnNDMk92aAQjZAGVJRw5j44=
-=i/g8
------END PGP SIGNATURE-----
-
---vkogqOf2sHV7VnPd--
+	Arnd
