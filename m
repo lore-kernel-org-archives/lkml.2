@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab1JHVQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 17:16:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37447 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab1JHVQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 17:16:32 -0400
-Message-ID: <4E90BC10.5020300@zytor.com>
-Date: Sat, 08 Oct 2011 14:09:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754104Ab1JHVWR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 17:22:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:46447 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754053Ab1JHVWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 17:22:15 -0400
+Date: Sat, 8 Oct 2011 17:22:14 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Nikitas Angelinas <nikitasangelinas@gmail.com>
+Cc: adilger.kernel@dilger.ca, adilger@whamcloud.com, johann@whamcloud.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikitas_angelinas@xyratex.com, andrew_perepechko@xyratex.com
+Subject: Re: [PATCH 1/2] ext4: MMP: kmmpd should use nodename from
+ init_uts_ns.name, not sysname
+Message-ID: <20111008212214.GN7948@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Nikitas Angelinas <nikitasangelinas@gmail.com>,
+	adilger.kernel@dilger.ca, adilger@whamcloud.com,
+	johann@whamcloud.com, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, nikitas_angelinas@xyratex.com,
+	andrew_perepechko@xyratex.com
+References: <1316737389-5522-1-git-send-email-nikitas_angelinas@xyratex.com>
+ <1317339500-4341-1-git-send-email-nikitas_angelinas@xyratex.com>
+ <1317339500-4341-2-git-send-email-nikitas_angelinas@xyratex.com>
 MIME-Version: 1.0
-To: Jon Masters <jonathan@jonmasters.org>
-CC: Valdis.Kletnieks@vt.edu, Krzysztof Halasa <khc@pm.waw.pl>,
-        Adrian Bunk <bunk@stusta.de>, "Frank Ch. Eigler" <fche@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl>  <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>  <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi>  <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi>  <34045.1317760188@turing-police.cc.vt.edu>  <1317916702.19519.1.camel@constitution.bos.jonmasters.org>  <14191.1317930659@turing-police.cc.vt.edu>  <m34nzlbwbi.fsf@intrepid.localdomain>  <15324.1318004954@turing-police.cc.vt.edu>  <1318050133.19519.184.camel@constitution.bos.jonmasters.org>  <58779.1318084612@turing-police.cc.vt.edu> <1318096788.19519.187.camel@constitution.bos.jonmasters.org>
-In-Reply-To: <1318096788.19519.187.camel@constitution.bos.jonmasters.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317339500-4341-2-git-send-email-nikitas_angelinas@xyratex.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2011 10:59 AM, Jon Masters wrote:
->
-> Good point about being pedantic, and the rest of your comments :) I
-> understand that I'm taking this a little far but I'm just trying to
-> point out one particular gaping hole in the way these things are
-> currently done. One reason I stopped doing keysigning parties is that I
-> realized they were mostly a show. You turn up and get a key signed and
-> then everyone is impressed that you're in the strong set...wupdedoo. Not
-> that I've anything against signing stuff on kernel.org and trying to
-> improve things (I've long directly signed everything on master with my
-> own keys in slight violation of policy, but that turned out to right).
->
+On Fri, Sep 30, 2011 at 12:38:19AM +0100, Nikitas Angelinas wrote:
+> sysname holds "Linux" by default, i.e. what appears when doing a "uname
+> -s"; nodename should be used to print the machine's hostname, i.e. what
+> is returned when doing a "uname -n" or "hostname", and what
+> gethostname(2)/sethostname(2) manipulate, in order to notify the
+> administrator of the node which is contending to mount the filesystem.
+> 
+> Signed-off-by: Nikitas Angelinas <nikitas_angelinas@xyratex.com>
+> Signed-off-by: Andrew Perepechko <andrew_perepechko@xyratex.com>
+> Acked-by: Andreas Dilger <adilger@dilger.ca>
 
-Not so much in violation of policy... we just couldn't get people to do it.
+Applied, thanks.
 
-	-hpa
-
+						- Ted
