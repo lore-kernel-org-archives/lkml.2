@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1JHH7X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:59:23 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59328 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab1JHH7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:59:14 -0400
-Subject: [PATCH 28/28] jbd2: Checksum data blocks that are stored in the
-	journal
+	id S1754879Ab1JHH74 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:59:56 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52039 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754713Ab1JHH7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:59:17 -0400
+Subject: [PATCH 24/28] jbd2: Update structure definitions and flags to support
+	extended checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -21,8 +20,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:56:48 -0700
-Message-ID: <20111008075648.20506.27838.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:56:22 -0700
+Message-ID: <20111008075622.20506.23191.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -33,138 +32,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify checksums of each data block being stored in the journal.
+Add structure definitions, flags, and constants to extend checksum protection
+to all journal blocks.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/jbd2/commit.c     |   22 ++++++++++++++++++++++
- fs/jbd2/journal.c    |   10 ++++++++--
- fs/jbd2/recovery.c   |   30 ++++++++++++++++++++++++++++++
- include/linux/jbd2.h |    1 +
- 4 files changed, 61 insertions(+), 2 deletions(-)
+ fs/jbd2/journal.c    |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    5 ++++-
+ 2 files changed, 41 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 2bce8dc..0459e19 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -339,6 +339,26 @@ static void jbd2_descr_block_csum_set(journal_t *j,
- 	tail->t_checksum = cpu_to_be32(crc);
- }
- 
-+static void jbd2_block_tag_csum_set(journal_t *j, journal_block_tag_t *tag,
-+				    struct buffer_head *bh, __u32 sequence)
-+{
-+	struct page *page = bh->b_page;
-+	__u8 *addr;
-+	__u32 crc;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return;
-+
-+	sequence = cpu_to_be32(sequence);
-+	addr = kmap_atomic(page, KM_USER0);
-+	crc = jbd2_chksum(j, j->j_uuid_crc, (__u8 *)&sequence,
-+			  sizeof(sequence));
-+	crc = jbd2_chksum(j, crc, addr + offset_in_page(bh->b_data),
-+			  bh->b_size);
-+	kunmap_atomic(addr, KM_USER0);
-+
-+	tag->t_checksum = cpu_to_be32(crc);
-+}
- /*
-  * jbd2_journal_commit_transaction
-  *
-@@ -649,6 +669,8 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 		tag = (journal_block_tag_t *) tagp;
- 		write_tag_block(tag_bytes, tag, jh2bh(jh)->b_blocknr);
- 		tag->t_flags = cpu_to_be32(tag_flag);
-+		jbd2_block_tag_csum_set(journal, tag, jh2bh(new_jh),
-+					commit_transaction->t_tid);
- 		tagp += tag_bytes;
- 		space_left -= tag_bytes;
- 
 diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index d494c14..24a0241 100644
+index 5c76a8b..d494c14 100644
 --- a/fs/jbd2/journal.c
 +++ b/fs/jbd2/journal.c
-@@ -1981,10 +1981,16 @@ int jbd2_journal_blocks_per_page(struct inode *inode)
-  */
- size_t journal_tag_bytes(journal_t *journal)
- {
-+	journal_block_tag_t tag;
-+	size_t x = 0;
-+
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		x += sizeof(tag.t_checksum);
-+
- 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
--		return JBD2_TAG_SIZE64;
-+		return x + JBD2_TAG_SIZE64;
- 	else
--		return JBD2_TAG_SIZE32;
-+		return x + JBD2_TAG_SIZE32;
+@@ -109,6 +109,34 @@ int jbd2_verify_csum_type(journal_t *j, journal_superblock_t *sb)
+ 	return sb->s_checksum_type == JBD2_CRC32C_CHKSUM;
  }
  
- /*
-diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index 3db9625..ec315ba 100644
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -390,6 +390,23 @@ static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
- 	return provided == calculated;
- }
- 
-+static int jbd2_block_tag_csum_verify(journal_t *j, journal_block_tag_t *tag,
-+				      void *buf, __u32 sequence)
++static __u32 jbd2_superblock_csum(journal_t *j, journal_superblock_t *sb)
 +{
-+	__u32 provided, calculated;
++	__u32 crc, old_crc;
 +
++	old_crc = sb->s_checksum;
++	sb->s_checksum = 0;
++	crc = jbd2_chksum(j, ~0, (char *)sb, sizeof(journal_superblock_t));
++	sb->s_checksum = old_crc;
++
++	return cpu_to_be32(crc);
++}
++
++int jbd2_superblock_csum_verify(journal_t *j, journal_superblock_t *sb)
++{
 +	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
 +		return 1;
 +
-+	sequence = cpu_to_be32(sequence);
-+	calculated = jbd2_chksum(j, j->j_uuid_crc, (__u8 *)&sequence,
-+				 sizeof(sequence));
-+	calculated = jbd2_chksum(j, calculated, buf, j->j_blocksize);
-+	provided = be32_to_cpu(tag->t_checksum);
-+
-+	return provided == cpu_to_be32(calculated);
++	return sb->s_checksum == jbd2_superblock_csum(j, sb);
 +}
 +
- static int do_one_pass(journal_t *journal,
- 			struct recovery_info *info, enum passtype pass)
- {
-@@ -566,6 +583,19 @@ static int do_one_pass(journal_t *journal,
- 						goto skip_write;
- 					}
- 
-+					/* Look for block corruption */
-+					if (!jbd2_block_tag_csum_verify(
-+						journal, tag, obh->b_data,
-+						be32_to_cpu(tmp->h_sequence))) {
-+						brelse(obh);
-+						success = -EIO;
-+						printk(KERN_ERR "JBD: Invalid "
-+						       "checksum recovering "
-+						       "block %llu in log\n",
-+						       blocknr);
-+						continue;
-+					}
++void jbd2_superblock_csum_set(journal_t *j, journal_superblock_t *sb)
++{
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return;
 +
- 					/* Find a buffer for the new
- 					 * data being restored */
- 					nbh = __getblk(journal->j_fs_dev,
++	sb->s_checksum = jbd2_superblock_csum(j, sb);
++}
++
+ /*
+  * Helper function used to manage commit timeouts
+  */
+@@ -1178,6 +1206,7 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
+ 	sb->s_sequence = cpu_to_be32(journal->j_tail_sequence);
+ 	sb->s_start    = cpu_to_be32(journal->j_tail);
+ 	sb->s_errno    = cpu_to_be32(journal->j_errno);
++	jbd2_superblock_csum_set(journal, sb);
+ 	read_unlock(&journal->j_state_lock);
+ 
+ 	BUFFER_TRACE(bh, "marking dirty");
+@@ -1286,6 +1315,11 @@ static int journal_get_superblock(journal_t *journal)
+ 		}
+ 	}
+ 
++	if (!jbd2_superblock_csum_verify(journal, sb)) {
++		printk(KERN_ERR "JBD: journal checksum error\n");
++		goto out;
++	}
++
+ 	set_buffer_verified(bh);
+ 
+ 	return 0;
+@@ -1580,6 +1614,7 @@ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
+ 	sb->s_feature_compat    |= cpu_to_be32(compat);
+ 	sb->s_feature_ro_compat |= cpu_to_be32(ro);
+ 	sb->s_feature_incompat  |= cpu_to_be32(incompat);
++	jbd2_journal_update_superblock(journal, 0);
+ 
+ 	return 1;
+ #undef COMPAT_FEATURE_ON
+@@ -1610,6 +1645,7 @@ void jbd2_journal_clear_features(journal_t *journal, unsigned long compat,
+ 	sb->s_feature_compat    &= ~cpu_to_be32(compat);
+ 	sb->s_feature_ro_compat &= ~cpu_to_be32(ro);
+ 	sb->s_feature_incompat  &= ~cpu_to_be32(incompat);
++	jbd2_journal_update_superblock(journal, 0);
+ }
+ EXPORT_SYMBOL(jbd2_journal_clear_features);
+ 
+@@ -1658,6 +1694,7 @@ static int journal_convert_superblock_v1(journal_t *journal,
+ 
+ 	sb->s_nr_users = cpu_to_be32(1);
+ 	sb->s_header.h_blocktype = cpu_to_be32(JBD2_SUPERBLOCK_V2);
++	jbd2_superblock_csum_set(journal, sb);
+ 	journal->j_format_version = 2;
+ 
+ 	bh = journal->j_sb_buffer;
 diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 633fea2..098b30b 100644
+index 53df865..be44094 100644
 --- a/include/linux/jbd2.h
 +++ b/include/linux/jbd2.h
-@@ -190,6 +190,7 @@ typedef struct journal_block_tag_s
- 	__be32		t_blocknr;	/* The on-disk block number */
- 	__be32		t_flags;	/* See below */
- 	__be32		t_blocknr_high; /* most-significant high 32bits. */
-+	__be32		t_checksum;	/* crc32c(uuid+seq+block) */
- } journal_block_tag_t;
+@@ -243,7 +243,10 @@ typedef struct journal_superblock_s
+ 	__be32	s_max_trans_data;	/* Limit of data blocks per trans. */
  
- #define JBD2_TAG_SIZE32 (offsetof(journal_block_tag_t, t_blocknr_high))
+ /* 0x0050 */
+-	__u32	s_padding[44];
++	__u8	s_checksum_type;	/* checksum type */
++	__u8	s_padding2[3];
++	__u32	s_padding[42];
++	__be32	s_checksum;		/* crc32c(superblock) */
+ 
+ /* 0x0100 */
+ 	__u8	s_users[16*48];		/* ids of all fs'es sharing the log */
 
