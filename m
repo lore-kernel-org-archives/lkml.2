@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab1JHH5f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:57:35 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48955 "EHLO e3.ny.us.ibm.com"
+	id S1753654Ab1JHH5X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:57:23 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57975 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab1JHH51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:57:27 -0400
-Subject: [PATCH 16/28] ext4: Verify and calculate checksums for extent tree
-	blocks
+	id S1753339Ab1JHH5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:57:13 -0400
+Subject: [PATCH 06/28] ext4: Create a new BH_Verified flag to avoid
+	unnecessary metadata validation
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,192 +20,139 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:55:29 -0700
-Message-ID: <20111008075529.20506.5858.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:54:22 -0700
+Message-ID: <20111008075422.20506.15827.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11100807-8974-0000-0000-000000B83D5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the checksum for each extent tree block.  The checksum is
-located in the space immediately after the last possible ext4_extent in the
-block.  The space is is typically the last 4-8 bytes in the block.
+Create a new BH_Verified flag to indicate that we've verified all the data in a
+buffer_head for correctness.  This allows us to bypass expensive verification
+steps when they are not necessary without missing them when they are.
+
+v2: The later jbd2 metadata checksumming patches need a BH_Verified flag for
+journal metadata, so put the flag in jbd2.h so that both drivers can share the
+same bit.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4_extents.h |   25 ++++++++++++++++++++-
- fs/ext4/extents.c      |   58 +++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 78 insertions(+), 5 deletions(-)
+ fs/ext4/extents.c    |   35 ++++++++++++++++++++++++++---------
+ include/linux/jbd2.h |    2 ++
+ 2 files changed, 28 insertions(+), 9 deletions(-)
 
 
-diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
-index 095c36f..24b106a 100644
---- a/fs/ext4/ext4_extents.h
-+++ b/fs/ext4/ext4_extents.h
-@@ -62,10 +62,22 @@
- /*
-  * ext4_inode has i_block array (60 bytes total).
-  * The first 12 bytes store ext4_extent_header;
-- * the remainder stores an array of ext4_extent.
-+ * the remainder stores an array of ext4_extent,
-+ * followed by ext4_extent_tail.
-  */
- 
- /*
-+ * This is the extent tail on-disk structure.
-+ * All other extent structures are 12 bytes long.  It turns out that
-+ * block_size % 12 >= 4 for all valid block sizes (1k, 2k, 4k).
-+ * Therefore, this tail structure can be crammed into the end of the block
-+ * without having to rebalance the tree.
-+ */
-+struct ext4_extent_tail {
-+	__le32	et_checksum;	/* crc32c(uuid+inum+extent_block) */
-+};
-+
-+/*
-  * This is the extent on-disk structure.
-  * It's used at the bottom of the tree.
-  */
-@@ -101,6 +113,17 @@ struct ext4_extent_header {
- 
- #define EXT4_EXT_MAGIC		cpu_to_le16(0xf30a)
- 
-+#define EXT4_EXTENT_TAIL_OFFSET(hdr) \
-+	(sizeof(struct ext4_extent_header) + \
-+	 (sizeof(struct ext4_extent) * le16_to_cpu((hdr)->eh_max)))
-+
-+static inline struct ext4_extent_tail *
-+find_ext4_extent_tail(struct ext4_extent_header *eh)
-+{
-+	return (struct ext4_extent_tail *)(((void *)eh) +
-+					   EXT4_EXTENT_TAIL_OFFSET(eh));
-+}
-+
- /*
-  * Array of ext4_ext_path contains path to some extent.
-  * Creation/lookup routines use it for traversal/splitting/etc.
 diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 4ac4303..efd644d 100644
+index 57cf568..4ac4303 100644
 --- a/fs/ext4/extents.c
 +++ b/fs/ext4/extents.c
-@@ -46,6 +46,46 @@
+@@ -403,6 +403,26 @@ int ext4_ext_check_inode(struct inode *inode)
+ 	return ext4_ext_check(inode, ext_inode_hdr(inode), ext_depth(inode));
+ }
  
- #include <trace/events/ext4.h>
- 
-+static __le32 ext4_extent_block_csum(struct inode *inode,
-+				     struct ext4_extent_header *eh)
++static int __ext4_ext_check_block(const char *function, unsigned int line,
++				  struct inode *inode,
++				  struct ext4_extent_header *eh,
++				  int depth,
++				  struct buffer_head *bh)
 +{
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	__u32 crc;
++	int ret;
 +
-+	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)eh,
-+			  EXT4_EXTENT_TAIL_OFFSET(eh));
-+	return cpu_to_le32(crc);
-+}
-+
-+static int ext4_extent_block_csum_verify(struct inode *inode,
-+					 struct ext4_extent_header *eh)
-+{
-+	struct ext4_extent_tail *et;
-+
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	et = find_ext4_extent_tail(eh);
-+	if (et->et_checksum != ext4_extent_block_csum(inode, eh))
++	if (buffer_verified(bh))
 +		return 0;
-+	return 1;
++	ret = ext4_ext_check(inode, eh, depth);
++	if (ret)
++		return ret;
++	set_buffer_verified(bh);
++	return ret;
 +}
 +
-+static void ext4_extent_block_csum_set(struct inode *inode,
-+				       struct ext4_extent_header *eh)
-+{
-+	struct ext4_extent_tail *et;
++#define ext4_ext_check_block(inode, eh, depth, bh)	\
++	__ext4_ext_check_block(__func__, __LINE__, inode, eh, depth, bh)
 +
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return;
-+
-+	et = find_ext4_extent_tail(eh);
-+	et->et_checksum = ext4_extent_block_csum(inode, eh);
-+}
-+
- static int ext4_split_extent(handle_t *handle,
- 				struct inode *inode,
- 				struct ext4_ext_path *path,
-@@ -101,6 +141,7 @@ static int ext4_ext_dirty(handle_t *handle, struct inode *inode,
+ #ifdef EXT_DEBUG
+ static void ext4_ext_show_path(struct inode *inode, struct ext4_ext_path *path)
  {
- 	int err;
- 	if (path->p_bh) {
-+		ext4_extent_block_csum_set(inode, ext_block_hdr(path->p_bh));
- 		/* path points to block */
- 		err = ext4_handle_dirty_metadata(handle, inode, path->p_bh);
- 	} else {
-@@ -382,6 +423,12 @@ static int __ext4_ext_check(const char *function, unsigned int line,
- 		error_msg = "invalid extent entries";
- 		goto corrupted;
- 	}
-+	/* Verify checksum on non-root extent tree nodes */
-+	if (ext_depth(inode) != depth &&
-+	    !ext4_extent_block_csum_verify(inode, eh)) {
-+		error_msg = "extent tree corrupted";
-+		goto corrupted;
-+	}
- 	return 0;
- 
- corrupted:
-@@ -922,6 +969,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
- 		le16_add_cpu(&neh->eh_entries, m);
- 	}
- 
-+	ext4_extent_block_csum_set(inode, neh);
- 	set_buffer_uptodate(bh);
- 	unlock_buffer(bh);
- 
-@@ -1000,6 +1048,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
- 				sizeof(struct ext4_extent_idx) * m);
- 			le16_add_cpu(&neh->eh_entries, m);
- 		}
-+		ext4_extent_block_csum_set(inode, neh);
- 		set_buffer_uptodate(bh);
- 		unlock_buffer(bh);
- 
-@@ -1098,6 +1147,7 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
- 	else
- 		neh->eh_max = cpu_to_le16(ext4_ext_space_block(inode, 0));
- 	neh->eh_magic = EXT4_EXT_MAGIC;
-+	ext4_extent_block_csum_set(inode, neh);
- 	set_buffer_uptodate(bh);
- 	unlock_buffer(bh);
- 
-@@ -2458,10 +2508,6 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 		if (uninitialized && num)
- 			ext4_ext_mark_uninitialized(ex);
- 
--		err = ext4_ext_dirty(handle, inode, path + depth);
--		if (err)
--			goto out;
+@@ -659,8 +679,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 	i = depth;
+ 	/* walk through the tree */
+ 	while (i) {
+-		int need_to_validate = 0;
 -
- 		/*
- 		 * If the extent was completely released,
- 		 * we need to remove it from the leaf
-@@ -2483,6 +2529,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 			le16_add_cpu(&eh->eh_entries, -1);
- 		}
+ 		ext_debug("depth %d: num %d, max %d\n",
+ 			  ppos, le16_to_cpu(eh->eh_entries), le16_to_cpu(eh->eh_max));
  
-+		err = ext4_ext_dirty(handle, inode, path + depth);
-+		if (err)
-+			goto out;
-+
- 		ext_debug("new extent: %u:%u:%llu\n", block, num,
- 				ext4_ext_pblock(ex));
- 		ex--;
+@@ -679,8 +697,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 				put_bh(bh);
+ 				goto err;
+ 			}
+-			/* validate the extent entries */
+-			need_to_validate = 1;
+ 		}
+ 		eh = ext_block_hdr(bh);
+ 		ppos++;
+@@ -694,7 +710,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 		path[ppos].p_hdr = eh;
+ 		i--;
+ 
+-		if (need_to_validate && ext4_ext_check(inode, eh, i))
++		if (ext4_ext_check_block(inode, eh, i, bh))
+ 			goto err;
+ 	}
+ 
+@@ -1350,7 +1366,8 @@ got_index:
+ 			return -EIO;
+ 		eh = ext_block_hdr(bh);
+ 		/* subtract from p_depth to get proper eh_depth */
+-		if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
++		if (ext4_ext_check_block(inode, eh,
++					 path->p_depth - depth, bh)) {
+ 			put_bh(bh);
+ 			return -EIO;
+ 		}
+@@ -1363,7 +1380,7 @@ got_index:
+ 	if (bh == NULL)
+ 		return -EIO;
+ 	eh = ext_block_hdr(bh);
+-	if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
++	if (ext4_ext_check_block(inode, eh, path->p_depth - depth, bh)) {
+ 		put_bh(bh);
+ 		return -EIO;
+ 	}
+@@ -2591,8 +2608,8 @@ again:
+ 				err = -EIO;
+ 				break;
+ 			}
+-			if (ext4_ext_check(inode, ext_block_hdr(bh),
+-							depth - i - 1)) {
++			if (ext4_ext_check_block(inode, ext_block_hdr(bh),
++							depth - i - 1, bh)) {
+ 				err = -EIO;
+ 				break;
+ 			}
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 38f307b..3284706 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -313,6 +313,7 @@ enum jbd_state_bits {
+ 	BH_State,		/* Pins most journal_head state */
+ 	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
+ 	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
++	BH_Verified,		/* metadata block has been verified ok */
+ 	BH_JBDPrivateStart,	/* First bit available for private use by FS */
+ };
+ 
+@@ -325,6 +326,7 @@ TAS_BUFFER_FNS(Revoked, revoked)
+ BUFFER_FNS(RevokeValid, revokevalid)
+ TAS_BUFFER_FNS(RevokeValid, revokevalid)
+ BUFFER_FNS(Freed, freed)
++BUFFER_FNS(Verified, verified)
+ 
+ static inline struct buffer_head *jh2bh(struct journal_head *jh)
+ {
 
