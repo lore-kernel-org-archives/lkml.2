@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1JHA13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 20:27:29 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41483 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab1JHA12 (ORCPT
+	id S932702Ab1JHAdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 20:33:44 -0400
+Received: from peace.netnation.com ([204.174.223.2]:60585 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756Ab1JHAdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 20:27:28 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: PEBTAO [ was Re: [ANNOUNCE] 3.0.6-rt17 ]
-In-Reply-To: Your message of "Sat, 08 Oct 2011 01:14:11 +0200."
-             <alpine.LFD.2.02.1110080010000.3240@ionos>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.LFD.2.02.1110070046270.3240@ionos> <b11eac52-79af-40ea-a53b-6f77581be035@email.android.com>
-            <alpine.LFD.2.02.1110080010000.3240@ionos>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318033604_9306P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 07 Oct 2011 20:26:44 -0400
-Message-ID: <34162.1318033604@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4E8F98C7.0073,ss=1,fgs=0,
-	ip=71.62.120.57,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 7 Oct 2011 20:33:42 -0400
+Date: Fri, 7 Oct 2011 17:33:37 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111008003337.GB22843@hostway.ca>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <20111007070842.GA27555@hostway.ca> <20111007174848.GA11011@hostway.ca> <1318010515.398.8.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318010515.398.8.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318033604_9306P
-Content-Type: text/plain; charset=us-ascii
+On Fri, Oct 07, 2011 at 08:01:55PM +0200, Peter Zijlstra wrote:
 
-On Sat, 08 Oct 2011 01:14:11 +0200, Thomas Gleixner said:
+> On Fri, 2011-10-07 at 10:48 -0700, Simon Kirby wrote:
+> 
+> > Yes, they stopped locking up with d670ec13 reverted.
+> 
+> > > [ 1717.560005]  [<ffffffff8104b8d4>] task_sched_runtime+0x24/0x90
+> > > [ 1717.560005]  [<ffffffff8107c924>] thread_group_cputime+0x74/0xb0
+> > > [ 1717.560005]  [<ffffffff8107d126>] thread_group_cputimer+0xa6/0xf0
+> > > [ 1717.560005]  [<ffffffff8107d198>] cpu_timer_sample_group+0x28/0x90
+> > > [ 1717.560005]  [<ffffffff8107d3c3>] set_process_cpu_timer+0x33/0x110
+> > > [ 1717.560005]  [<ffffffff8107d4da>] update_rlimit_cpu+0x3a/0x60
+> > > [ 1717.560005]  [<ffffffff8106fe9e>] do_prlimit+0xfe/0x1f0
+> > > [ 1717.560005]  [<ffffffff8106ffd6>] sys_setrlimit+0x46/0x60
+> > > [ 1717.560005]  [<ffffffff816be292>] system_call_fastpath+0x16/0x1b
+> 
+> OK so that cputimer stuff is horrid and the worst part is that I cannot
+> seem to trigger this. You guys must have some weird userspace stuff that
+> I simply don't have.
 
-> If it would be only the "Sent from my .* phone" mails, it would be
-> easy to filter out in .procmailrc. The bad news is that this habit of
-> top posting and miserable quoting spreads like cancer and I have no
-> intention to cope with that anymore. Having to scroll down several
-> pages to find the content (if any) of a reply is equally annoying as
-> reading a top post with no context.
+I haven't tried your patch yet, but it might help to mention that on
+this particular cluster, we are using CONFIG_TASK_IO_ACCOUNTING under
+CONFIG_TASKSTATS, and we have process accounting enabled (w/"accton").
+Perhaps that enables some other path that makes it difficult to hit
+otherwise.
 
-A sufficently configurable MUA would allow you to define an alternate "delete
-with extreme prejudice" command, which would both summarily discard the item
-being read and send the author a canned message that said "Due to top posting
-and lack of trimming of quoted material, I was unable to find your actual
-point.  Sorry your point has been discarded and lost".
+You can't have clouds without weather reporting, of course. :)
 
+Other than that, it's just a typical shared web environment.
 
---==_Exmh_1318033604_9306P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOj5jEcC3lWbTT17ARAmsRAKCMeBiktwhpbM8TAWttvQvsok5tNACg1NRH
-DuEm2yfJgSP7bfZrWQOWFeA=
-=gjca
------END PGP SIGNATURE-----
-
---==_Exmh_1318033604_9306P--
-
+Simon-
