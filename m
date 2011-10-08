@@ -1,12 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab1JHH7G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:59:06 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52855 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754381Ab1JHH65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:58:57 -0400
-Subject: [PATCH 25/28] jbd2: Checksum revocation blocks
+	id S1754380Ab1JHH7X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:59:23 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59328 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab1JHH7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:59:14 -0400
+Subject: [PATCH 28/28] jbd2: Checksum data blocks that are stored in the
+	journal
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -19,8 +21,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:56:29 -0700
-Message-ID: <20111008075629.20506.75766.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:56:48 -0700
+Message-ID: <20111008075648.20506.27838.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -31,150 +33,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compute and verify revoke blocks inside the journal.
+Calculate and verify checksums of each data block being stored in the journal.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/jbd2/recovery.c   |   35 +++++++++++++++++++++++++++++++++--
- fs/jbd2/revoke.c     |   27 ++++++++++++++++++++++++++-
- include/linux/jbd2.h |    4 ++++
- 3 files changed, 63 insertions(+), 3 deletions(-)
+ fs/jbd2/commit.c     |   22 ++++++++++++++++++++++
+ fs/jbd2/journal.c    |   10 ++++++++--
+ fs/jbd2/recovery.c   |   30 ++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    1 +
+ 4 files changed, 61 insertions(+), 2 deletions(-)
 
 
-diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index 1cad869..4f4eda4 100644
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -662,8 +662,17 @@ static int do_one_pass(journal_t *journal,
- 			err = scan_revoke_records(journal, bh,
- 						  next_commit_ID, info);
- 			brelse(bh);
--			if (err)
--				goto failed;
-+			if (err) {
-+				if (err != -EINVAL)
-+					goto failed;
-+				/*
-+				 * Ignoring corrupt revoke blocks is safe
-+				 * because at worst it results in unnecessary
-+				 * writes during recovery.
-+				 */
-+				jbd_debug(3, "Skipping corrupt revoke "
-+					  "block.\n");
-+			}
- 			continue;
- 
- 		default:
-@@ -703,6 +712,25 @@ static int do_one_pass(journal_t *journal,
- 	return err;
+diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+index 2bce8dc..0459e19 100644
+--- a/fs/jbd2/commit.c
++++ b/fs/jbd2/commit.c
+@@ -339,6 +339,26 @@ static void jbd2_descr_block_csum_set(journal_t *j,
+ 	tail->t_checksum = cpu_to_be32(crc);
  }
  
-+static int jbd2_revoke_block_csum_verify(journal_t *j,
-+					 void *buf)
++static void jbd2_block_tag_csum_set(journal_t *j, journal_block_tag_t *tag,
++				    struct buffer_head *bh, __u32 sequence)
 +{
-+	struct jbd2_journal_revoke_tail *tail;
-+	__u32 provided, calculated;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return 1;
-+
-+	tail = (struct jbd2_journal_revoke_tail *)(buf + j->j_blocksize -
-+			sizeof(struct jbd2_journal_revoke_tail));
-+	provided = tail->r_checksum;
-+	tail->r_checksum = 0;
-+	calculated = jbd2_chksum(j, j->j_uuid_crc, buf, j->j_blocksize);
-+	tail->r_checksum = provided;
-+
-+	provided = be32_to_cpu(provided);
-+	return provided == calculated;
-+}
- 
- /* Scan a revoke record, marking all blocks mentioned as revoked. */
- 
-@@ -717,6 +745,9 @@ static int scan_revoke_records(journal_t *journal, struct buffer_head *bh,
- 	offset = sizeof(jbd2_journal_revoke_header_t);
- 	max = be32_to_cpu(header->r_count);
- 
-+	if (!jbd2_revoke_block_csum_verify(journal, header))
-+		return -EINVAL;
-+
- 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
- 		record_len = 8;
- 
-diff --git a/fs/jbd2/revoke.c b/fs/jbd2/revoke.c
-index 69fd935..e704d4a 100644
---- a/fs/jbd2/revoke.c
-+++ b/fs/jbd2/revoke.c
-@@ -548,6 +548,7 @@ static void write_one_revoke_record(journal_t *journal,
- 				    struct jbd2_revoke_record_s *record,
- 				    int write_op)
- {
-+	int csum_size = 0;
- 	struct journal_head *descriptor;
- 	int offset;
- 	journal_header_t *header;
-@@ -562,9 +563,13 @@ static void write_one_revoke_record(journal_t *journal,
- 	descriptor = *descriptorp;
- 	offset = *offsetp;
- 
-+	/* Do we need to leave space at the end for a checksum? */
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		csum_size = sizeof(struct jbd2_journal_revoke_tail);
-+
- 	/* Make sure we have a descriptor with space left for the record */
- 	if (descriptor) {
--		if (offset == journal->j_blocksize) {
-+		if (offset >= journal->j_blocksize - csum_size) {
- 			flush_descriptor(journal, descriptor, offset, write_op);
- 			descriptor = NULL;
- 		}
-@@ -601,6 +606,24 @@ static void write_one_revoke_record(journal_t *journal,
- 	*offsetp = offset;
- }
- 
-+static void jbd2_revoke_csum_set(journal_t *j,
-+				 struct journal_head *descriptor)
-+{
-+	struct jbd2_journal_revoke_tail *tail;
++	struct page *page = bh->b_page;
++	__u8 *addr;
 +	__u32 crc;
 +
 +	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
 +		return;
 +
-+	tail = (struct jbd2_journal_revoke_tail *)
-+			(jh2bh(descriptor)->b_data + j->j_blocksize -
-+			sizeof(struct jbd2_journal_revoke_tail));
-+	tail->r_checksum = 0;
-+	crc = jbd2_chksum(j, j->j_uuid_crc, jh2bh(descriptor)->b_data,
-+			  j->j_blocksize);
-+	tail->r_checksum = cpu_to_be32(crc);
++	sequence = cpu_to_be32(sequence);
++	addr = kmap_atomic(page, KM_USER0);
++	crc = jbd2_chksum(j, j->j_uuid_crc, (__u8 *)&sequence,
++			  sizeof(sequence));
++	crc = jbd2_chksum(j, crc, addr + offset_in_page(bh->b_data),
++			  bh->b_size);
++	kunmap_atomic(addr, KM_USER0);
++
++	tag->t_checksum = cpu_to_be32(crc);
++}
+ /*
+  * jbd2_journal_commit_transaction
+  *
+@@ -649,6 +669,8 @@ void jbd2_journal_commit_transaction(journal_t *journal)
+ 		tag = (journal_block_tag_t *) tagp;
+ 		write_tag_block(tag_bytes, tag, jh2bh(jh)->b_blocknr);
+ 		tag->t_flags = cpu_to_be32(tag_flag);
++		jbd2_block_tag_csum_set(journal, tag, jh2bh(new_jh),
++					commit_transaction->t_tid);
+ 		tagp += tag_bytes;
+ 		space_left -= tag_bytes;
+ 
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index d494c14..24a0241 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1981,10 +1981,16 @@ int jbd2_journal_blocks_per_page(struct inode *inode)
+  */
+ size_t journal_tag_bytes(journal_t *journal)
+ {
++	journal_block_tag_t tag;
++	size_t x = 0;
++
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		x += sizeof(tag.t_checksum);
++
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
+-		return JBD2_TAG_SIZE64;
++		return x + JBD2_TAG_SIZE64;
+ 	else
+-		return JBD2_TAG_SIZE32;
++		return x + JBD2_TAG_SIZE32;
+ }
+ 
+ /*
+diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+index 3db9625..ec315ba 100644
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -390,6 +390,23 @@ static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
+ 	return provided == calculated;
+ }
+ 
++static int jbd2_block_tag_csum_verify(journal_t *j, journal_block_tag_t *tag,
++				      void *buf, __u32 sequence)
++{
++	__u32 provided, calculated;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return 1;
++
++	sequence = cpu_to_be32(sequence);
++	calculated = jbd2_chksum(j, j->j_uuid_crc, (__u8 *)&sequence,
++				 sizeof(sequence));
++	calculated = jbd2_chksum(j, calculated, buf, j->j_blocksize);
++	provided = be32_to_cpu(tag->t_checksum);
++
++	return provided == cpu_to_be32(calculated);
 +}
 +
- /*
-  * Flush a revoke descriptor out to the journal.  If we are aborting,
-  * this is a noop; otherwise we are generating a buffer which needs to
-@@ -622,6 +645,8 @@ static void flush_descriptor(journal_t *journal,
+ static int do_one_pass(journal_t *journal,
+ 			struct recovery_info *info, enum passtype pass)
+ {
+@@ -566,6 +583,19 @@ static int do_one_pass(journal_t *journal,
+ 						goto skip_write;
+ 					}
  
- 	header = (jbd2_journal_revoke_header_t *) jh2bh(descriptor)->b_data;
- 	header->r_count = cpu_to_be32(offset);
-+	jbd2_revoke_csum_set(journal, descriptor);
++					/* Look for block corruption */
++					if (!jbd2_block_tag_csum_verify(
++						journal, tag, obh->b_data,
++						be32_to_cpu(tmp->h_sequence))) {
++						brelse(obh);
++						success = -EIO;
++						printk(KERN_ERR "JBD: Invalid "
++						       "checksum recovering "
++						       "block %llu in log\n",
++						       blocknr);
++						continue;
++					}
 +
- 	set_buffer_jwrite(bh);
- 	BUFFER_TRACE(bh, "write");
- 	set_buffer_dirty(bh);
+ 					/* Find a buffer for the new
+ 					 * data being restored */
+ 					nbh = __getblk(journal->j_fs_dev,
 diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index be44094..125d5be 100644
+index 633fea2..098b30b 100644
 --- a/include/linux/jbd2.h
 +++ b/include/linux/jbd2.h
-@@ -194,6 +194,10 @@ typedef struct jbd2_journal_revoke_header_s
- 	__be32		 r_count;	/* Count of bytes used in the block */
- } jbd2_journal_revoke_header_t;
+@@ -190,6 +190,7 @@ typedef struct journal_block_tag_s
+ 	__be32		t_blocknr;	/* The on-disk block number */
+ 	__be32		t_flags;	/* See below */
+ 	__be32		t_blocknr_high; /* most-significant high 32bits. */
++	__be32		t_checksum;	/* crc32c(uuid+seq+block) */
+ } journal_block_tag_t;
  
-+/* Tail of revoke block, for checksumming */
-+struct jbd2_journal_revoke_tail {
-+	__be32		r_checksum;	/* crc32c(uuid+revoke_block) */
-+};
- 
- /* Definitions for the journal tag flags word: */
- #define JBD2_FLAG_ESCAPE		1	/* on-disk block is escaped */
+ #define JBD2_TAG_SIZE32 (offsetof(journal_block_tag_t, t_blocknr_high))
 
