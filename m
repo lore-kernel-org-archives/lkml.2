@@ -1,159 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab1JHUCL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 16:02:11 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:56990 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750972Ab1JHUCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 16:02:07 -0400
-Date: Sat, 8 Oct 2011 20:02:11 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20111008200211.GA28115@hallyn.com>
-References: <20110919214531.GA18085@sergelap>
- <20110920174849.GB22317@redhat.com>
- <20110920185354.GA19629@sergelap>
- <20110921175357.GA25590@redhat.com>
- <20110923163113.GA3820@sergelap>
- <20110923173656.GA5233@redhat.com>
- <20110923212025.GA21330@sergelap>
- <20110924163709.GA6776@redhat.com>
- <20110925201723.GA5288@sergelap>
- <20110926160619.GA13736@redhat.com>
+	id S1753919Ab1JHUEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 16:04:40 -0400
+Received: from blu0-omc1-s12.blu0.hotmail.com ([65.55.116.23]:55454 "EHLO
+	blu0-omc1-s12.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753872Ab1JHUEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 16:04:39 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Oct 2011 16:04:39 EDT
+X-Originating-IP: [86.28.179.214]
+X-Originating-Email: [jake5991@live.com]
+Message-ID: <BLU0-SMTP9072E77C5346BC9ADCE223A2FF0@phx.gbl>
+From: JAke Burton <jake5991@live.com>
+To: gregkh@suse.de
+CC: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jake Burton <jake5991@live.com>
+Subject: [PATCH 2/2] Staging: comedi: fix brace coding and whitespace issue in ni_atmio.c
+Date: Sat, 8 Oct 2011 20:58:22 +0100
+X-Mailer: git-send-email 1.7.4.1
+Signed-off-by: Jake Burton <jake5991@live.com>
+X-OriginalArrivalTime: 08 Oct 2011 19:58:28.0350 (UTC) FILETIME=[A59631E0:01CC85F4]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110926160619.GA13736@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 09/25, Serge E. Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > On 09/23, Serge E. Hallyn wrote:
-> > > >
-> > > > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > > > On 09/23, Serge E. Hallyn wrote:
-> > > > > >
-> > > > > > It looks like I can fix all the
-> > > > > > cases
-> > > > >
-> > > > > except ptrace_signal(). Although we can simply ignore this case, imho.
-> > > >
-> > > > ptrace_signal() calls send_signal() though.
-> > >
-> > > Confused... I meant the "if (signr != info->si_signo)" case. This is
-> > > simple, and I only meant that this case is not that important.
-> >
-> > Yes, that's the case I was talking about.  That then proceeds through
-> > send_signal().
-> 
-> It doesn't? I am even more confuused. Anyway, your patch adds map_cred_ns()
-> into ptrace_signal().
-> 
-> > The whole new patch (so far only compile-tested) is below.
-> 
-> Perhaps I missed something, but it looks overcomplicated. I was thinking
-> about the (uncompiled/untested) simple patch below (it ignores ptrace_signal
-> for clarity).
-> 
-> And note that this way we do not need to modify do_notify_parent*()
-> or ipc/mqueue.c:__do_notify() (your patch doesn't cover the latter).
-> Unless I missed something of course.
-> 
-> And we do not need to handle the SEND_SIG_NOINFO case separately.
-> 
-> 
-> However, we still have the problems with sigqueueinfo, 
-> 
-> > > > > > by checking whether si_fromuser(info)
-> > > > >
-> > > > > I am not sure... sys_rt_queueinfo() is nasty. Plus we have to handle
-> > > > > the "fromkernel" case too. May be we can ignore this too.
-> > > >
-> > > > sys_rt_tgsigqueueinfo() still seems to go through send_signal().
-> > >
-> > > Yes. But how can you fix si_uid? We do not even know if it exists.
-> > > Please look at siginfo/_uid, there is a union. We can't know what
-> > > the caller of sys_rt_sigqueueinfo() puts in this location.
-> >
-> > But it's a union alongside the pid.
-> 
-> Again, I do not understand... Yes, we have the same problem with
-> 
-> 	if (from_ancestor_ns)
-> 		q->info.si_pid = 0;
-> 
-> This was discussed, we do not know what we can do. My point was, this
-> change is not sigqueueinfo-friendly too.
-> 
-> Oleg.
-> 
-> --- x/kernel/signal.c
-> +++ x/kernel/signal.c
-> @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
->  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
->  }
->  
-> +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
-> +{
-> +#ifdef CONFIG_USER_NS
-> +	if (current_user_ns() == task_cred_xxx(t, user_ns)))
-> +#endif
-> +		return;
-> +
-> +	if (SI_FROMKERNEL(info))
-> +		switch (info->si_code & __SI_MASK) {
-> +			default:
-> +				return;
-> +
-> +			case __SI_CHLD:
+---
+ drivers/staging/comedi/drivers/ni_atmio.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-After looking a bit more, I really think the __SI_CHLD case just needs to
-always be converted at the callers (i.e. do_notify_parent).
+diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
+index e6c6c72..91e270a 100644
+--- a/drivers/staging/comedi/drivers/ni_atmio.c
++++ b/drivers/staging/comedi/drivers/ni_atmio.c
+@@ -279,7 +279,9 @@ static const int ni_irqpin[] = {
+ 
+ struct ni_private {
+ 	struct pnp_dev *isapnp_dev;
+-NI_PRIVATE_COMMON};
++	NI_PRIVATE_COMMON
++};
++
+ #define devpriv ((struct ni_private *)dev->private)
+ 
+ /* How we access registers */
+-- 
+1.7.4.1
 
-> +			case __SI_MESGQ:
-
-This can be done like this, but if this is going to be the only case of
-a SI_FROMKERNEL not being converted at the caller, and there is aiui only
-one caller (__do_notivy in ipc/mmqueue.c), it seems better to just have
-fixup_uid() always return for SI_FROMKERNEL(info).
-
-Does that sound ok?
-
-If so, I'll whip up the patch and send it out after some testing.  (If
-not, I'll try to better understand :)
-
-
-> +				break;
-> +		}
-> +
-> +	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-> +					current_cred(), info->si_uid);
-> +}
-> +
->  static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
->  			int group, int from_ancestor_ns)
->  {
-> @@ -1088,6 +1109,9 @@ static int __send_signal(int sig, struct
->  				q->info.si_pid = 0;
->  			break;
->  		}
-> +
-> +		fixup_uid(info, t);
-> +
->  	} else if (!is_si_special(info)) {
->  		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
->  			/*
-> 
-
-thanks,
--serge
