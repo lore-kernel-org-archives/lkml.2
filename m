@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab1JGX7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 19:59:54 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27653 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab1JGX7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 19:59:52 -0400
-Date: Sat, 8 Oct 2011 02:56:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linville@tuxdriver.com,
-        davem@davemloft.net
-Subject: Re: et131x: Moving the et131x driver out of staging? (a.k.a. filling
- up the TODO list again)
-Message-ID: <20111007235644.GK18470@longonot.mountain>
-References: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANK3SE398D+DiXLWDystz_jSpD4WJaLqt9gCmVstr+8TginDRw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E8F9267.000D:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S934062Ab1JHAAm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 20:00:42 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:49207 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752915Ab1JHAAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 20:00:39 -0400
+X-Spam-Check-By: orbis-terrarum.net
+From: "Robin H. Johnson" <robbat2@gentoo.org>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: "Robin H. Johnson" <robbat2@gentoo.org>
+Subject: [PATCH] mv_sas: OCZ RevoDrive3/zDrive R4 support (completely untested)
+Date: Fri,  7 Oct 2011 17:00:26 -0700
+Message-Id: <1318032026-21913-1-git-send-email-robbat2@gentoo.org>
+X-Mailer: git-send-email 1.7.7
+X-Virus-Checked: Checked by ClamAV on orbis-terrarum.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some trivial static checker things that could be cleaned
-up.
+From: "Robin H. Johnson" <robbat2@gentoo.org>
 
-drivers/staging/et131x/et131x_initpci.c +489 et131x_adjust_link(45) error: we previously assumed 'phydev' could be null (see line 475)
-drivers/staging/et131x/et131x_initpci.c +505 et131x_adjust_link(61) warn: variable dereferenced before check 'phydev' (see line 498)
+NOT FOR COMMIT USE; TESTING ONLY; NO WARRANTY; DANGER!
 
-(probably the null check should be removed?)
+A friend recently bought a OCZ RevoDrive3 and was surprised by the lack
+of Linux support. I glanced at the Windows driver .inf file for the
+device, as well as the Windows driver for the zDrive R4, it looks like
+rebranded mvsas (mostly based on earlier versions of the Windows driver
+that include PCI IDs already found in the mvsas code).
 
-drivers/staging/et131x/et1310_mac.c:376:44: warning: incorrect type in initializer (different address spaces)
-drivers/staging/et131x/et1310_mac.c:376:44:    expected struct txmac_regs *txmac
-drivers/staging/et131x/et1310_mac.c:376:44:    got struct txmac_regs [noderef] <asn:2>*<noident>
-drivers/staging/et131x/et1310_mac.c:383:28: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et1310_mac.c:383:28:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et1310_mac.c:383:28:    got unsigned int *<noident>
-drivers/staging/et131x/et1310_mac.c:385:31: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/et131x/et1310_mac.c:385:31:    expected void volatile [noderef] <asn:2>*addr
-drivers/staging/et131x/et1310_mac.c:385:31:    got unsigned int *<noident>
+I constructed this patch for my friend to test, completely blind.
+I haven't heard back from him at all yet, but I thought that the wider
+community might find it useful for testing as well. I think it _should_
+work, just need to figure out what the correct chip variant is.
 
-(it just needs an __iomem anotation).
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+---
+ drivers/scsi/mvsas/mv_init.c |   10 ++++++++++
+ include/linux/pci_ids.h      |    2 ++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-drivers/staging/et131x/et131x_initpci.c:556:5: warning: symbol 'et131x_mii_probe' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:246:5: warning: symbol 'et131x_ioctl' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:264:5: warning: symbol 'et131x_set_packet_filter' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:326:6: warning: symbol 'et131x_multicast' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:399:5: warning: symbol 'et131x_tx' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:432:6: warning: symbol 'et131x_tx_timeout' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:490:5: warning: symbol 'et131x_change_mtu' was not declared. Should it be static?
-drivers/staging/et131x/et131x_netdev.c:543:5: warning: symbol 'et131x_set_mac_addr' was not declared. Should it be static?
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 4e9af66..babb4a1 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -723,6 +723,16 @@ static struct pci_device_id __devinitdata mvs_pci_table[] = {
+ 		.class_mask	= 0,
+ 		.driver_data	= chip_9485,
+ 	},
++	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3/zDriveR4, 120GB */
++	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1041), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1042), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1043), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1044), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1080), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1083), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
++	{ PCI_VDEVICE(OCZ, 0x1084), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
+ 
+ 	{ }	/* terminate list */
+ };
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index ae96bbe..3fe46e9 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2868,3 +2868,5 @@
+ 
+ #define PCI_VENDOR_ID_XEN		0x5853
+ #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
++
++#define PCI_VENDOR_ID_OCZ		0x1b85
+-- 
+1.7.7
 
-regards,
-dan carpenter
