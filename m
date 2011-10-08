@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1JHTDW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 15:03:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56284 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753602Ab1JHTDU convert rfc822-to-8bit (ORCPT
+	id S1753836Ab1JHTIF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 15:08:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64396 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab1JHTID convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 15:03:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: =?iso-8859-2?q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: update pm list address
-Date: Sat, 8 Oct 2011 21:05:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.linux-foundation.org,
-        "Len Brown (Intel)" <len.brown@intel.com>,
-        Paul Walmsley <paul@pwsan.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>, Kevin Hilman <khilman@ti.com>,
-        magnus.damm@gmail.com, Bojan Smojver <bojan@rexursive.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>, tom.leiming@gmail.com,
-        Linux PM <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>, Pavel Machek <pavel@ucw.cz>
-References: <CAM_iQpUgC8Enwm9FWYmc9uLvzjYNgXz8WKxBGeZTw3XL8f24eg@mail.gmail.com>
-In-Reply-To: <CAM_iQpUgC8Enwm9FWYmc9uLvzjYNgXz8WKxBGeZTw3XL8f24eg@mail.gmail.com>
+	Sat, 8 Oct 2011 15:08:03 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+In-Reply-To: <1317185489.19340.22.camel@Joe-Laptop>
+References: <1316642115-20029-1-git-send-email-jim.cromie@gmail.com>
+ <1316642115-20029-26-git-send-email-jim.cromie@gmail.com> <1316725066.29447.16.camel@Joe-Laptop>
+ <CAJfuBxxZdNRZAix8ARUjqjNzrQeG2iVea_rMYKysOaX4c=Avig@mail.gmail.com>
+ <1317166589.19340.14.camel@Joe-Laptop> <CAJfuBxyZ63mi_onv8uWc3MCGgKDPfQMOgUOT7isJ-hA=o7sfqA@mail.gmail.com>
+ <1317185489.19340.22.camel@Joe-Laptop>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Sat, 8 Oct 2011 21:07:42 +0200
+X-Google-Sender-Auth: XBL3V23GRIFzzd4TsA11kZen5FM
+Message-ID: <CAO+b5-phx1S5cC91Czjhmym_tAWVGwqaBavhSnwHcuKaK662ag@mail.gmail.com>
+Subject: Re: [PATCH 25/26] dynamic_debug: add pr_fmt_dbg() for dynamic_pr_debug
+To: Joe Perches <joe@perches.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>, jbaron@redhat.com, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201110082105.38446.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 08, 2011, Américo Wang wrote:
-> On Sat, Oct 8, 2011 at 4:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
-> >
-> > Due to the continuing outage of lists.linux-foundation.org the linux-pm
-> > mailing list is going to be hosted at vger.kernel.org from now on.  The
-> > new address of the list is linux-pm@vger.kernel.org .
-> >
-> 
-> Hi, Rafael,
-> 
-> I think the following patch is needed. :)
+On Wed, Sep 28, 2011 at 6:51 AM, Joe Perches <joe@perches.com> wrote:
+> I think all of the '#define pr_fmt(fmt) KBUILD_MODNAME ": "'
+> are effectivly useless and I will eventually delete them.
+>
+> The printk subsystem should look up the module name and
+> prefix them to the printk akin to how the dynamic_debug
+> system does.  Except the module name should be a singleton.
 
-That's correct.
+Shouldn't pr_*() equivalents be introduced for sdev_printk(),
+scmd_printk(), starget_printk() and shost_printk() before elimination
+of pr_fmt() can start ?
 
-Applied to linux-pm/linux-next, but next time please include the entire patch
-into the message body.
-
-Thanks,
-Rafael
-
-
-> ----
-> 
-> Change the pm list address in MAINTAINERS, as it is moved to
-> vger.kernel.org now.
-> 
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Bart.
