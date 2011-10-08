@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab1JHPs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 11:48:59 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:44647 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148Ab1JHPs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 11:48:58 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jon Masters <jonathan@jonmasters.org>, Adrian Bunk <bunk@stusta.de>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl>
-	<4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>
-	<4E88A537.4010008@zytor.com>
-	<20111003093239.GB25136@localhost.pp.htv.fi>
-	<y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi>
-	<34045.1317760188@turing-police.cc.vt.edu>
-	<1317916702.19519.1.camel@constitution.bos.jonmasters.org>
-	<14191.1317930659@turing-police.cc.vt.edu>
-	<m34nzlbwbi.fsf@intrepid.localdomain>
-	<15324.1318004954@turing-police.cc.vt.edu>
-	<1318050133.19519.184.camel@constitution.bos.jonmasters.org>
-	<58779.1318084612@turing-police.cc.vt.edu>
-Date: Sat, 08 Oct 2011 17:48:56 +0200
-In-Reply-To: <58779.1318084612@turing-police.cc.vt.edu> (Valdis Kletnieks's
-	message of "Sat, 08 Oct 2011 10:36:52 -0400")
-Message-ID: <m3aa9bzdp3.fsf@intrepid.localdomain>
+	id S1752860Ab1JHPvz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 11:51:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42417 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab1JHPvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 11:51:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Sat, 8 Oct 2011 21:21:52 +0530
+Message-ID: <CAHFNz9L-WDeEGx9MazTawJF-Hsz88FS7Z=RinfrKn780jBf++A@mail.gmail.com>
+Subject: Memory at xxxxxx [disabled]
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linux-pci <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu writes:
+Hi,
 
-> Same goes for
-> your doctor - how do you know he *really* went to med school?  Even calling
-> the med school and verifying only proves that somebody with that name went
-> there that year.
+Any Idea why I am seeing the [disabled] for the specified memory
+region as described below ?
 
-Actually, it's only proves that the person on the other end says his
-name is at the time in the files. You wanted to be pedantic :-)
--- 
-Krzysztof Halasa
+04:07.0 Multimedia controller [0480]: Twinhan Technology Co. Ltd
+Device [1822:4e31] (rev 01)
+        Subsystem: Twinhan Technology Co. Ltd Device [1822:0010]
+        Flags: medium devsel, IRQ 11
+        Memory at fd900000 (32-bit, prefetchable) [disabled] [size=4K]
+
+
+testbox v4l # lspci -tv
+-[0000:00]-+-00.0  Advanced Micro Devices [AMD] RS780 Host Bridge Alternate
+           +-01.0-[01]--+-05.0  ATI Technologies Inc Device 9710
+           |            \-05.1  ATI Technologies Inc Device 970f
+           +-04.0-[02]----00.0  Philips Semiconductors Device 7160
+           +-0a.0-[03]----00.0  Realtek Semiconductor Co., Ltd.
+RTL8111/8168B PCI Express Gigabit Ethernet controller
+           +-11.0  ATI Technologies Inc SB700/SB800 SATA Controller [AHCI mode]
+           +-12.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller
+           +-12.1  ATI Technologies Inc SB700 USB OHCI1 Controller
+           +-12.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller
+           +-13.0  ATI Technologies Inc SB700/SB800 USB OHCI0 Controller
+           +-13.1  ATI Technologies Inc SB700 USB OHCI1 Controller
+           +-13.2  ATI Technologies Inc SB700/SB800 USB EHCI Controller
+           +-14.0  ATI Technologies Inc SBx00 SMBus Controller
+           +-14.1  ATI Technologies Inc SB700/SB800 IDE Controller
+           +-14.2  ATI Technologies Inc SBx00 Azalia (Intel HDA)
+           +-14.3  ATI Technologies Inc SB700/SB800 LPC host controller
+           +-14.4-[04]----07.0  Twinhan Technology Co. Ltd Device 4e31
+           +-14.5  ATI Technologies Inc SB700/SB800 USB OHCI2 Controller
+           +-18.0  Advanced Micro Devices [AMD] K10 [Opteron,
+Athlon64, Sempron] HyperTransport Configuration
+           +-18.1  Advanced Micro Devices [AMD] K10 [Opteron,
+Athlon64, Sempron] Address Map
+           +-18.2  Advanced Micro Devices [AMD] K10 [Opteron,
+Athlon64, Sempron] DRAM Controller
+           +-18.3  Advanced Micro Devices [AMD] K10 [Opteron,
+Athlon64, Sempron] Miscellaneous Control
+           \-18.4  Advanced Micro Devices [AMD] K10 [Opteron,
+Athlon64, Sempron] Link Control
+
+
+Any pointers would be much appreciated.
+
+Thanks,
+Manu
