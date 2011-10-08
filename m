@@ -1,41 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1JHLbr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 07:31:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52251 "EHLO
+	id S1752770Ab1JHL60 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 07:58:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48667 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab1JHLbn (ORCPT
+	with ESMTP id S1751680Ab1JHL6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 07:31:43 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH 24/26] ARM: pxa: centro and treo680 need palm27x
-Date: Sat, 8 Oct 2011 13:31:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jason Chagas <jason.chagas@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-25-git-send-email-arnd@arndb.de> <CAMPhdO9hTC0_30Oxc+ndn5EstOEMQKa7E_MEf4jn7ipTBbhBfw@mail.gmail.com>
-In-Reply-To: <CAMPhdO9hTC0_30Oxc+ndn5EstOEMQKa7E_MEf4jn7ipTBbhBfw@mail.gmail.com>
+	Sat, 8 Oct 2011 07:58:25 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110081331.41414.marek.vasut@gmail.com>
+In-Reply-To: <CACRpkdbb_5EZHT3=SNePbW-=NYjLSLzJgjEdEaBV7X=s6gxydw@mail.gmail.com>
+References: <1314843744-2910-1-git-send-email-Baohua.Song@csr.com>
+	<CACRpkdbb_5EZHT3=SNePbW-=NYjLSLzJgjEdEaBV7X=s6gxydw@mail.gmail.com>
+Date: Sat, 8 Oct 2011 19:58:23 +0800
+Message-ID: <CAGsJ_4xpYMzHGi09jt2Y9xCocYJ0iHYRfdvwCzcH65uaF2sP0g@mail.gmail.com>
+Subject: Re: [PATCH v2] pinmux: add a driver for the CSR SiRFprimaII pinmux
+From: Barry Song <21cnbao@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Barry Song <Baohua.Song@csr.com>, Stephen Warren <swarren@nvidia.com>,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 08, 2011 12:20:57 PM Eric Miao wrote:
-> On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > The two platforms are part of the palm27x family and use the same
-> > code. Select the palm27x symbol to make sure they can be built
-> > standalone.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> Applied.
+2011/9/1, Linus Walleij <linus.walleij@linaro.org>:
+> On Thu, Sep 1, 2011 at 4:22 AM, Barry Song <Baohua.Song@csr.com> wrote:
+>
+>>  -v2:
+>>  rebase to Linus W's v5 patch(v5 is still in discussion);
+>>  add complete pinmux list table;
+>>  add gpio ranges;
+>>  replace mask magic number by bitops;
+>>  rename upmx to spmx
+>
+> No further comments on this, but now I went in and rewrote
+> pinmuxing a bit so that pin groups are a separate concept from
+> pinmux (which just refers to a group). Please have a look at
+> the U300 driver and see if you can accomodate the changes.
+>
+> Sorry for the flow of respins but I'm really liking the stuff that
+> has come out as a result of Stephen's feedback. Having
+> separate groups and functions may look a bit crufty on
+> simple pinmuxes but I'm pretty convinced it'll be a win
+> for the subsystem when moving to more complex drivers.
+>
+>> +static const struct sirfsoc_pinmux_func sirfsoc_pinmux_funcs[] = {
+>> +       {
+>> +               .name = "lcd_16bits",
+>> +               .pins = lcd_16bits_pins,
+>> +               .num_pins = ARRAY_SIZE(lcd_16bits_pins),
+>> +               .padmux = &lcd_16bits_padmux,
+>> +       }, {
+>> +               .name = "lcd_18bits",
+>> +               .pins = lcd_18bits_pins,
+>> +               .num_pins = ARRAY_SIZE(lcd_18bits_pins),
+>> +               .padmux = &lcd_18bits_padmux,
+>> +       }, {
+>
+> You can probably simplify this and other things with
+> preprocessor macros if you want to, like:
+>
+> #define SIRF_FUNC_ENTRY(a) \
+> { .name = "##a##", .pins = ##a##_pins, .num_pins =
+> ARRAY_SIZE(##a##_pins), .padmux = &##a##_padmux }
+>
+> Then just:
+>
+> static const struct sirfsoc_pinmux_func sirfsoc_pinmux_funcs[] = {
+>     SIRF_FUNC_ENTRY(lcd_16bits),
+>
+>
+> The macro syntax is probably wrong, the preprocessor always
+> craze me out, but you get the idea.
 
-Thanks Eric.
+ :-)  .name = "##a##"  should be changed to .name = #a
+
+#name will convert name into a string "name"
+
+for example,
+
+#define PRINT( n ) printf( #n )
+
+main()
+{
+    PRINT(100);
+}
+
+will output 100.
+
+-barry
