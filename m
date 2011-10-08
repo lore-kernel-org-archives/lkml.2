@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934062Ab1JHAAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Oct 2011 20:00:42 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:49207 "EHLO smtp.gentoo.org"
+	id S1759565Ab1JHAIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Oct 2011 20:08:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62202 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915Ab1JHAAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Oct 2011 20:00:39 -0400
-X-Spam-Check-By: orbis-terrarum.net
-From: "Robin H. Johnson" <robbat2@gentoo.org>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: "Robin H. Johnson" <robbat2@gentoo.org>
-Subject: [PATCH] mv_sas: OCZ RevoDrive3/zDrive R4 support (completely untested)
-Date: Fri,  7 Oct 2011 17:00:26 -0700
-Message-Id: <1318032026-21913-1-git-send-email-robbat2@gentoo.org>
-X-Mailer: git-send-email 1.7.7
-X-Virus-Checked: Checked by ClamAV on orbis-terrarum.net
+	id S1754763Ab1JHAIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Oct 2011 20:08:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="61078606"
+Subject: Re: [patch v2 1/2] sched: Use resched IPI to kick off the nohz idle
+ balance
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Fri, 07 Oct 2011 17:09:46 -0700
+In-Reply-To: <20111006172731.GA31781@redhat.com>
+References: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
+	 <20111006172731.GA31781@redhat.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318032586.11592.206.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Robin H. Johnson" <robbat2@gentoo.org>
+On Thu, 2011-10-06 at 10:27 -0700, Vivek Goyal wrote:
+> On Mon, Oct 03, 2011 at 03:09:00PM -0700, Suresh Siddha wrote:
+> [..]
+> > 
+> >    [ This issue is present from 2.6.35+ kernels, but marking it -stable
+> >      only from v3.0+ as the proposed fix depends on the scheduler_ipi()
+> >      that is introduced recently. ]
+> > 
+> 
+> Hi Suresh,
+> 
+> Are you planning to fix this issue for older kernels too? I am wondering
+> how to go about fixing it there.
+> 
 
-NOT FOR COMMIT USE; TESTING ONLY; NO WARRANTY; DANGER!
+Vivek, Initially when Prarit brought this issue to me, I gave an ugly
+quick fix (Appended) for a quick try. But I would recommend we back port
+the couple of mainline patches that introduced scheduler_ipi() code
+along with these two patches. Thoughts?
 
-A friend recently bought a OCZ RevoDrive3 and was surprised by the lack
-of Linux support. I glanced at the Windows driver .inf file for the
-device, as well as the Windows driver for the zDrive R4, it looks like
-rebranded mvsas (mostly based on earlier versions of the Windows driver
-that include PCI IDs already found in the mvsas code).
-
-I constructed this patch for my friend to test, completely blind.
-I haven't heard back from him at all yet, but I thought that the wider
-community might find it useful for testing as well. I think it _should_
-work, just need to figure out what the correct chip variant is.
-
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
 ---
- drivers/scsi/mvsas/mv_init.c |   10 ++++++++++
- include/linux/pci_ids.h      |    2 ++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+Quick and dirty fix for the deadlock caused by the nohz balance logic.
 
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 4e9af66..babb4a1 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -723,6 +723,16 @@ static struct pci_device_id __devinitdata mvs_pci_table[] = {
- 		.class_mask	= 0,
- 		.driver_data	= chip_9485,
- 	},
-+	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3/zDriveR4, 120GB */
-+	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1041), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1042), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1043), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1044), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1080), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1083), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
-+	{ PCI_VDEVICE(OCZ, 0x1084), chip_9485}, /* OCZ RevoDrive3/zDriveR4, ??? */
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index bc8ee99..f48b950 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3618,6 +3618,7 @@ static DEFINE_PER_CPU(struct call_single_data, remote_sched_softirq_cb);
+ static void trigger_sched_softirq(void *data)
+ {
+ 	raise_softirq_irqoff(SCHED_SOFTIRQ);
++	this_rq()->nohz_balance_kick = 2;
+ }
  
- 	{ }	/* terminate list */
- };
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index ae96bbe..3fe46e9 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2868,3 +2868,5 @@
+ static inline void init_sched_softirq_csd(struct call_single_data *csd)
+@@ -3977,7 +3978,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+ 	struct rq *rq;
+ 	int balance_cpu;
  
- #define PCI_VENDOR_ID_XEN		0x5853
- #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
-+
-+#define PCI_VENDOR_ID_OCZ		0x1b85
--- 
-1.7.7
+-	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
++	if (idle != CPU_IDLE || (this_rq->nohz_balance_kick != 2))
+ 		return;
+ 
+ 	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
+
 
