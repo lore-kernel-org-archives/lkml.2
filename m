@@ -1,121 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1JHHl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:41:58 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40243 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1JHHl4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:41:56 -0400
-Date: Sat, 8 Oct 2011 00:42:07 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Theodore Tso <tytso@mit.edu>, David Miller <davem@davemloft.net>
-Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH v5.1 4/4] crc32: Select an algorithm via kconfig
-Message-ID: <20111008074207.GK12447@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235429.1560.89556.stgit@elm3c44.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111004235429.1560.89556.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753193Ab1JHHoh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:44:37 -0400
+Received: from mail.infrascan.de ([188.40.84.136]:36711 "EHLO infrascan.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858Ab1JHHoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:44:32 -0400
+From: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
+To: balbi@ti.com, gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sshtylyov@ru.mvista.com,
+        Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
+Subject: [PATCH v3] usb: add new usb gadget for ACM and mass storage
+Date: Sat,  8 Oct 2011 09:44:10 +0200
+Message-Id: <1318059850-3336-1-git-send-email-schwarzkopf@sensortherm.de>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, the description of CRC32_SLICEBY4 is a bit screwy.  Let's try that again.
+This driver provides two functions in one configuration:
+a mass storage, and a CDC ACM (serial port) link.
+Heavily based on multi.c and cdc2.c
+
+Signed-off-by: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
 ---
-Allow the kernel builder to choose a crc32* algorithm for the kernel.
+ drivers/usb/gadget/Kconfig  |   10 ++
+ drivers/usb/gadget/Makefile |    2 +
+ drivers/usb/gadget/acm_ms.c |  255 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 267 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/usb/gadget/acm_ms.c
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
-
- lib/Kconfig     |   36 ++++++++++++++++++++++++++++++++++++
- lib/crc32defs.h |   18 ++++++++++++++++++
- 2 files changed, 54 insertions(+), 0 deletions(-)
-
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 477be04..27881d9 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -70,6 +70,42 @@ config CRC32_SELFTEST
- 	  and crc32_be over byte strings with random alignment and length
- 	  and computes the total elapsed time and number of bytes processed.
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 5a084b9..cebefa6 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -846,6 +846,16 @@ config USB_G_NOKIA
+ 	  It's only really useful for N900 hardware. If you're building
+ 	  a kernel for N900, say Y or M here. If unsure, say N.
  
-+choice
-+	prompt "CRC32 implementation"
-+	depends on CRC32
-+	default CRC32_SLICEBY8
-+
-+config CRC32_SLICEBY8
-+	bool "Slice by 8 bytes"
++config USB_G_ACM_MS
++	tristate "CDC Composite Device (ACM and mass storage)"
++	depends on BLOCK
 +	help
-+	  Calculate checksum 8 bytes at a time with a clever slicing algorithm.
-+	  This is the fastest algorithm, but comes with a 8KiB lookup table.
-+	  Most modern processors have enough cache that this shouldn't be
-+	  a problem.
++	  This driver provides two functions in one configuration:
++	  a mass storage, and a CDC ACM (serial port) link.
 +
-+	  If you don't know which to choose, choose this one.
++	  Say "y" to link the driver statically, or "m" to build a
++	  dynamically linked module called "g_acm_ms".
 +
-+config CRC32_SLICEBY4
-+	bool "Slice by 4 bytes"
-+	help
-+	  Calculate checksum 4 bytes at a time with a clever slicing algorithm.
-+	  This is a bit slower than slice by 8, but has a smaller 4KiB lookup
-+	  table.
-+
-+config CRC32_SARWATE
-+	bool "Sarwate's Algorithm (one byte at a time)"
-+	help
-+	  Calculate checksum a byte at a time using Sarwate's algorithm.  This
-+	  is not particularly fast, but has a small 256 byte lookup table.
-+
-+config CRC32_BIT
-+	bool "Classic Algorithm (one bit at a time)"
-+	help
-+	  Calculate checksum one bit at a time.  This is VERY slow, but has
-+	  no lookup table.  This is provided as a debugging option.
-+
-+endchoice
-+
- config CRC7
- 	tristate "CRC7 functions"
- 	help
-diff --git a/lib/crc32defs.h b/lib/crc32defs.h
-index 6fd1917..64cba2c 100644
---- a/lib/crc32defs.h
-+++ b/lib/crc32defs.h
-@@ -13,6 +13,24 @@
-  */
- #define CRC32C_POLY_LE 0x82F63B78
+ config USB_G_MULTI
+ 	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
+ 	depends on BLOCK && NET
+diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+index 9ba725a..8a4e824 100644
+--- a/drivers/usb/gadget/Makefile
++++ b/drivers/usb/gadget/Makefile
+@@ -51,6 +51,7 @@ g_dbgp-y			:= dbgp.o
+ g_nokia-y			:= nokia.o
+ g_webcam-y			:= webcam.o
+ g_ncm-y				:= ncm.o
++g_acm_ms-y			:= acm_ms.o
  
-+/* Try to choose an implementation variant via Kconfig */
-+#ifdef CONFIG_CRC32_SLICEBY8
-+# define CRC_LE_BITS 64
-+# define CRC_BE_BITS 64
-+#endif
-+#ifdef CONFIG_CRC32_SLICEBY4
-+# define CRC_LE_BITS 32
-+# define CRC_BE_BITS 32
-+#endif
-+#ifdef CONFIG_CRC32_SARWATE
-+# define CRC_LE_BITS 8
-+# define CRC_BE_BITS 8
-+#endif
-+#ifdef CONFIG_CRC32_BIT
-+# define CRC_LE_BITS 1
-+# define CRC_BE_BITS 1
-+#endif
+ obj-$(CONFIG_USB_ZERO)		+= g_zero.o
+ obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
+@@ -69,3 +70,4 @@ obj-$(CONFIG_USB_G_MULTI)	+= g_multi.o
+ obj-$(CONFIG_USB_G_NOKIA)	+= g_nokia.o
+ obj-$(CONFIG_USB_G_WEBCAM)	+= g_webcam.o
+ obj-$(CONFIG_USB_G_NCM)		+= g_ncm.o
++obj-$(CONFIG_USB_G_ACM_MS)	+= g_acm_ms.o
+diff --git a/drivers/usb/gadget/acm_ms.c b/drivers/usb/gadget/acm_ms.c
+new file mode 100644
+index 0000000..28280c4
+--- /dev/null
++++ b/drivers/usb/gadget/acm_ms.c
+@@ -0,0 +1,255 @@
++/*
++ * cdc2.c -- CDC Composite driver, with ACM and mass storage support
++ *
++ * Copyright (C) 2008 David Brownell
++ * Copyright (C) 2008 Nokia Corporation
++ * Author: David Brownell
++ * Modified: Klaus Schwarzkopf
++ *
++ * Heavily based on multi.c and cdc2.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
- /*
-  * How many bits at a time to use.  Valid values are 1, 2, 4, 8, 32 and 64.
-  * For less performance-sensitive, use 4 or 8 to save table size.
++#include <linux/kernel.h>
++#include <linux/utsname.h>
++
++#include "u_serial.h"
++
++#define DRIVER_DESC		"CDC Composite Gadget (ACM + MS)"
++#define DRIVER_VERSION		"2011/10/07"
++
++/*-------------------------------------------------------------------------*/
++
++/*
++ * DO NOT REUSE THESE IDs with a protocol-incompatible driver!!  Ever!!
++ * Instead:  allocate your own, using normal USB-IF procedures.
++ */
++#define CDC_VENDOR_NUM	0x1d6b	/* Linux Foundation */
++#define CDC_PRODUCT_NUM	0x0106	/* CDC Composite: ACM + MS*/
++
++/*-------------------------------------------------------------------------*/
++
++/*
++ * Kbuild is not very cooperative with respect to linking separately
++ * compiled library objects into one module.  So for now we won't use
++ * separate compilation ... ensuring init/exit sections work to shrink
++ * the runtime footprint, and giving us at least some parts of what
++ * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
++ */
++
++#include "composite.c"
++#include "usbstring.c"
++#include "config.c"
++#include "epautoconf.c"
++#include "u_serial.c"
++#include "f_acm.c"
++#include "f_mass_storage.c"
++
++/*-------------------------------------------------------------------------*/
++
++static struct usb_device_descriptor device_desc = {
++	.bLength =		sizeof device_desc,
++	.bDescriptorType =	USB_DT_DEVICE,
++
++	.bcdUSB =		cpu_to_le16(0x0200),
++
++	.bDeviceClass =		USB_CLASS_COMM,
++	.bDeviceSubClass =	0,
++	.bDeviceProtocol =	0,
++	/* .bMaxPacketSize0 = f(hardware) */
++
++	/* Vendor and product id can be overridden by module parameters.  */
++	.idVendor =		cpu_to_le16(CDC_VENDOR_NUM),
++	.idProduct =		cpu_to_le16(CDC_PRODUCT_NUM),
++	/* .bcdDevice = f(hardware) */
++	/* .iManufacturer = DYNAMIC */
++	/* .iProduct = DYNAMIC */
++	/* NO SERIAL NUMBER */
++	.bNumConfigurations =	1,
++};
++
++static struct usb_otg_descriptor otg_descriptor = {
++	.bLength =		sizeof otg_descriptor,
++	.bDescriptorType =	USB_DT_OTG,
++
++	/*
++	 * REVISIT SRP-only hardware is possible, although
++	 * it would not be called "OTG" ...
++	 */
++	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
++};
++
++static const struct usb_descriptor_header *otg_desc[] = {
++	(struct usb_descriptor_header *) &otg_descriptor,
++	NULL,
++};
++
++
++/* string IDs are assigned dynamically */
++
++#define STRING_MANUFACTURER_IDX		0
++#define STRING_PRODUCT_IDX		1
++
++static char manufacturer[50];
++
++static struct usb_string strings_dev[] = {
++	[STRING_MANUFACTURER_IDX].s = manufacturer,
++	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
++	{  } /* end of list */
++};
++
++static struct usb_gadget_strings stringtab_dev = {
++	.language	= 0x0409,	/* en-us */
++	.strings	= strings_dev,
++};
++
++static struct usb_gadget_strings *dev_strings[] = {
++	&stringtab_dev,
++	NULL,
++};
++
++/****************************** Configurations ******************************/
++
++static struct fsg_module_parameters fsg_mod_data = { .stall = 1 };
++FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
++
++static struct fsg_common fsg_common;
++
++/*-------------------------------------------------------------------------*/
++
++/*
++ * We _always_ have both CDC ACM and mass storage functions.
++ */
++static int __init cdc_do_config(struct usb_configuration *c)
++{
++	int	status;
++
++	if (gadget_is_otg(c->cdev->gadget)) {
++		c->descriptors = otg_desc;
++		c->bmAttributes |= USB_CONFIG_ATT_WAKEUP;
++	}
++
++
++	status = acm_bind_config(c, 0);
++	if (status < 0)
++		return status;
++
++	status = fsg_bind_config(c->cdev, c, &fsg_common);
++	if (status < 0)
++		return status;
++
++	return 0;
++}
++
++static struct usb_configuration cdc_config_driver = {
++	.label			= DRIVER_DESC,
++	.bConfigurationValue	= 1,
++	/* .iConfiguration = DYNAMIC */
++	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
++};
++
++/*-------------------------------------------------------------------------*/
++
++static int __init cdc_bind(struct usb_composite_dev *cdev)
++{
++	int			gcnum;
++	struct usb_gadget	*gadget = cdev->gadget;
++	int			status;
++	void			*retp;
++
++	/* set up serial link layer */
++	status = gserial_setup(cdev->gadget, 1);
++	if (status < 0)
++		return status;
++
++	/* set up mass storage function */
++	retp = fsg_common_from_params(&fsg_common, cdev, &fsg_mod_data);
++	if (IS_ERR(retp)) {
++		status = PTR_ERR(retp);
++		goto fail0;
++	}
++
++	/* set bcdDevice */
++	gcnum = usb_gadget_controller_number(gadget);
++	if (gcnum >= 0) {
++		device_desc.bcdDevice = cpu_to_le16(0x0300 | gcnum);
++	} else {
++		WARNING(cdev, "controller '%s' not recognized; trying %s\n",
++				gadget->name,
++				cdc_config_driver.label);
++		device_desc.bcdDevice =
++			cpu_to_le16(0x0300 | 0x0099);
++	}
++
++	/*
++	 * Allocate string descriptor numbers ... note that string
++	 * contents can be overridden by the composite_dev glue.
++	 */
++
++	/* device descriptor strings: manufacturer, product */
++	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
++		init_utsname()->sysname, init_utsname()->release,
++		gadget->name);
++	status = usb_string_id(cdev);
++	if (status < 0)
++		goto fail1;
++	strings_dev[STRING_MANUFACTURER_IDX].id = status;
++	device_desc.iManufacturer = status;
++
++	status = usb_string_id(cdev);
++	if (status < 0)
++		goto fail1;
++	strings_dev[STRING_PRODUCT_IDX].id = status;
++	device_desc.iProduct = status;
++
++	/* register our configuration */
++	status = usb_add_config(cdev, &cdc_config_driver, cdc_do_config);
++	if (status < 0)
++		goto fail1;
++
++	dev_info(&gadget->dev, "%s, version: " DRIVER_VERSION "\n",
++			DRIVER_DESC);
++	fsg_common_put(&fsg_common);
++	return 0;
++
++	/* error recovery */
++fail1:
++	fsg_common_put(&fsg_common);
++fail0:
++	gserial_cleanup();
++	return status;
++}
++
++static int __exit cdc_unbind(struct usb_composite_dev *cdev)
++{
++	gserial_cleanup();
++
++	return 0;
++}
++
++static struct usb_composite_driver cdc_driver = {
++	.name		= "g_acm_ms",
++	.dev		= &device_desc,
++	.strings	= dev_strings,
++	.unbind		= __exit_p(cdc_unbind),
++};
++
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_AUTHOR("Klaus Schwarzkopf");
++MODULE_LICENSE("GPL");
++
++static int __init init(void)
++{
++	return usb_composite_probe(&cdc_driver, cdc_bind);
++}
++module_init(init);
++
++static void __exit cleanup(void)
++{
++	usb_composite_unregister(&cdc_driver);
++}
++module_exit(cleanup);
+-- 
+1.7.0.4
+
