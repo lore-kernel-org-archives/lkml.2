@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1JHPQN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 11:16:13 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:60082 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab1JHPQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 11:16:12 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jon Masters <jonathan@jonmasters.org>, Adrian Bunk <bunk@stusta.de>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: kernel.org status: establishing a PGP web of trust
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl>
-	<4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>
+	id S1752459Ab1JHP2m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 11:28:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38103 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1JHP2l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 11:28:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <58779.1318084612@turing-police.cc.vt.edu>
+References: <4E8655CD.90107@zytor.com>
+	<201110020304.28288.rjw@sisk.pl>
+	<4E87B885.50005@zytor.com>
+	<201110021354.57995.rjw@sisk.pl>
 	<4E88A537.4010008@zytor.com>
 	<20111003093239.GB25136@localhost.pp.htv.fi>
-	<y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi>
+	<y0mobxyjazi.fsf@fche.csb>
+	<20111003180441.GD3072@localhost.pp.htv.fi>
 	<34045.1317760188@turing-police.cc.vt.edu>
 	<1317916702.19519.1.camel@constitution.bos.jonmasters.org>
 	<14191.1317930659@turing-police.cc.vt.edu>
 	<m34nzlbwbi.fsf@intrepid.localdomain>
 	<15324.1318004954@turing-police.cc.vt.edu>
-Date: Sat, 08 Oct 2011 17:16:09 +0200
-In-Reply-To: <15324.1318004954@turing-police.cc.vt.edu> (Valdis Kletnieks's
-	message of "Fri, 07 Oct 2011 12:29:14 -0400")
-Message-ID: <m3ipnzzf7q.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	<1318050133.19519.184.camel@constitution.bos.jonmasters.org>
+	<58779.1318084612@turing-police.cc.vt.edu>
+Date: Sat, 8 Oct 2011 17:28:41 +0200
+X-Google-Sender-Auth: aBgSwJSS0MVzWjYnHEcC25c2L3E
+Message-ID: <CAMuHMdV8bW_N9dSo0-4qYyhj7khTNfSCj=vx+PCRZGE1Krs38A@mail.gmail.com>
+Subject: Re: kernel.org status: establishing a PGP web of trust
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jon Masters <jonathan@jonmasters.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Adrian Bunk <bunk@stusta.de>, "Frank Ch. Eigler" <fche@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu writes:
+On Sat, Oct 8, 2011 at 16:36, <Valdis.Kletnieks@vt.edu> wrote:
+> However, you have to remember that *all* real-life identity proofs are to
+> some degree probabalistic.  How do you know your lawyer is a *real* lawyer
+> and not somebody with a fake degree?  Mostly because the other lawers
+> in town and the judges are convinced he's a lawyer too.  Same goes for
+> your doctor - how do you know he *really* went to med school?  Even calling
+> the med school and verifying only proves that somebody with that name went
+> there that year.  And yes, every year we hear about a few fake lawyers and
+> doctors on the news.  But society seems to muddle along just fine anyhow.
 
-> You got that 180 degrees out of phase.  Jon said he wanted a keysigning party
-> where I would prove that I own key B4D3D7B0 (which is, in fact, my key) by
-> signing something random.
+In real life, it's also called the web of trust. How do you prove to a foreign
+government that you're (a) not a convicted criminal and (b) in a healthy state?
+  - You ask your doctor to write a signed declaration,
+  - You go to the ministry of healthcare, which checks the signature
+and registration
+    number of the doctor, and adds a signature and stamp to the document,
+  - You go to the police station, to get a good standing certificate, signed by
+    the mayor,
+  - You go to the ministry of foreign affairs, which checks the
+signatures and stamps
+    of the ministry of healthcare officer and of the mayor, and adds
+an apostille
+    to your documents,
+  - The foreign government verifies the apostille from your ministry of foreign
+    affairs.
 
-But this is not needed at all. While signing someone's public key, you
-don't need to check if he has a corresponding private key. That's BTW
-the same as with PKI certificate requests.
+Very similar to PGP ;-)
 
-By signing one's public key you don't certify at all that you know
-anything about the corresponding private key. You certify that the
-person in question confirmed this public key belongs to him/her. You may
-want to check the email part, but it's part of the identity check, not
-the private key check.
+Gr{oetje,eeting}s,
 
-The check if someone has access to the private key is important later,
-when we can't see the person.
+                        Geert
 
-> My claim is that if I can take Jon's key and sign it
-> with B4D3D7B0, that's already proving I control the key, and another signing
-> of something else doesn't prove anything regarding my control of the
-> key.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-That may be disputable but what I wanted to say is it simply doesn't
-matter.
-
-> Now mind you, it *does* have its uses - for example, "sign the random string
-> I just e-mailed you" will verify that I have control of the e-mail address that the
-> key claims to be attached to.  But that's different from proving I have control
-> of the actual key.
-
-Definitely.
--- 
-Krzysztof Halasa
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
