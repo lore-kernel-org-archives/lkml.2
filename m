@@ -1,165 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1JHUHH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 16:07:07 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:38065 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753865Ab1JHUHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 16:07:04 -0400
-Date: Sat, 8 Oct 2011 16:07:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: markgross@thegnar.org, NeilBrown <neilb@suse.de>,
-        <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        <arve@android.com>, <amit.kucheria@linaro.org>, <farrowg@sg.ibm.com>,
-        "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
-        <linux-pm@lists.linux-foundation.org>, <khilman@ti.com>,
-        Magnus Damm <damm@opensource.se>, <mjg@redhat.com>,
-        <peterz@infradead.org>
-Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
- blocking (aka more wakelock stuff)]
-In-Reply-To: <201110082057.43020.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1110081550070.20695-100000@netrider.rowland.org>
+	id S1753962Ab1JHU1J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 16:27:09 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45565 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753888Ab1JHU1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 16:27:07 -0400
+Date: Sat, 8 Oct 2011 16:27:04 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Fabrice Jouhaud <yargil@free.fr>
+Cc: linux-ext4@vger.kernel.org, adilger.kernel@dilger.ca,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] [SIGNED-OFF] ext4: don't work without procfs
+Message-ID: <20111008202704.GK7948@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Fabrice Jouhaud <yargil@free.fr>, linux-ext4@vger.kernel.org,
+	adilger.kernel@dilger.ca, linux-kernel@vger.kernel.org
+References: <1317920054-2860-1-git-send-email-yargil@free.fr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1317920054-2860-1-git-send-email-yargil@free.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 8 Oct 2011, Rafael J. Wysocki wrote:
-
-> On Saturday, October 08, 2011, mark gross wrote:
-> > On Sat, Oct 08, 2011 at 10:14:39PM +1100, NeilBrown wrote:
-> > > On Sun, 2 Oct 2011 09:44:56 -0700 mark gross <markgross@thegnar.org> wrote:
-> > > 
-> > > > resending to wider list for discussion
-> > > > ----- Forwarded message from mark gross <markgross@thengar.org> -----
-> > > > 
-> > > > Subject: [RFC] wake up notifications and suspend blocking (aka more wakelock stuff)
-> > > > Date: Tue, 20 Sep 2011 13:33:05 -0700
-> > > > From: mark gross <markgross@thengar.org>
-> > > > To: linux-pm@lists.linux-foundation.org
-> > > > Reply-To: markgross@thegnar.org
-> > > > Cc: arve@android.com, markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org, farrowg@sg.ibm.com, "Rafael J. Wysocki" <rjw@sisk.pl>
-> > > > 
-> > > > The following patch set implement an (untested) solution to the
-> > > > following problems.
-> > > > 
-> > > > 1) a method for making a system unable to suspend for critical sections
-> > > > of time.
-> > > 
-> > > We already have this.  A properly requested suspend (following wakeup_count
-> > > protocol) is unable to complete between wakeup_source_activate() and
-> > > wake_source_deactivate() - these delimit the critical sections.
-> > > 
-> > > What more than this do you need?
-> > 
-> > sometimes devices that are not wake up sources need critical sections
-> > where suspend is a problem.
-
-Mark, can you give some examples?  This isn't the same as the firmware 
-update thing, is it?  That deserves to be handled by a completely 
-separate mechanism.
-
-> > > If user-space wants to prevent suspend, it just needs some sort of protocol
-> > > for talking to the user-space process which follows the correct protocol to
-> > > initiate suspend.  That isn't a kernel problem.
-> > 
-> > The devices that I've seen that need to block suspend don't have a
-> > communication interface to user mode. 
-> > 
-> > But, you are right the devices that need this sort of thing could
-> > register as wakeup sources and block suspend as well.
-> > 
-> > FWIW This part of the patch set was to wrap up a proposal I got last
-> > year from some folks to try to provide somewhat compatible semantics to
-> > wakelock's for the android and linux kernel community.
-> > 
-> > I include it for completeness. 
-
-Although many of these problems could be solved by adopting a suitable
-protocol in userspace, currently there is no such protocol.  Even if
-one did exist, the process of getting all the relevant programs to
-adopt it would take quite a while.  This is a case where a problem can
-be solved either in the kernel or in userspace, and the in-kernel
-solution may be simpler.
-
-> > > > 2) providing a race free method for the acknowledgment of wake event
-> > > > processing before re-entry into suspend can happen.
-> > > 
-> > > Again, this is a user-space problem.  It is user-space which requests
-> > > suspend.  It shouldn't request it until it has checked that there are no wake
-> > > events that need processing - and should use the wakeup_count protocol to
-> > > avoid races with wakeup events happening after it has checked.
-> > 
-> > Here you are wrong, or missing the point.  The kernel needs to be
-> > notified from user mode that an update event has been consumed by
-> > whoever cares about it before the next suspend can happen.
+On Thu, Oct 06, 2011 at 06:54:14PM +0200, Fabrice Jouhaud wrote:
+> Regression from commit dd68314ccf3fb918c1fb6471817edbc60ece4b52
+> The problem come from the test of the return value of proc_mkdir
+> that is always false without procfs and abort the init of ext4.
 > 
-> This, in fact, isn't correct.  I have tried to turn your (and John's)
-> attention to this for quite a few times already.
-> 
-> The point is that the entity about to trigger suspend (that need not be the
-> kernel!) has to communicate with the processes that consume wakeup events
-> beforehand.  In theory this communication can happen entirely in user
-> space, but that would involve quite complicated interactions between
-> processes, so nobody does that in practice.
-> 
-> The only "problem" that can't be solved entirely in user space, which is
-> what John turned my attention to during the LPC, is that it may be
-> possible to suspend when processes that should be asked about whether or
-> not to suspend are sleeping and that may be done _without_ actually asking
-> those processes for permission.
+> Signed-off-by: Fabrice Jouhaud <yargil@free.fr>
 
-Essentially, there has to be a way for these processes to say "It's 
-okay to suspend until I tell you otherwise."  That could also be part 
-of the userspace protocol (if it existed).
+Thanks, here's the patch that I ultimately checked in.
 
->  The difficult part is, if we suspend in
-> such a situation, we need to wait until all of those processes have a chance
-> to run before attempting to suspend again.
+commit d44651d0f922b7aaeddd9fc04f2f5700a65983dd
+Author: Fabrice Jouhaud <yargil@free.fr>
+Date:   Sat Oct 8 16:26:03 2011 -0400
 
-Of course, a power-management daemon could handle that part easily.  
-Doing it in the kernel is more difficult.
+    ext4: fix ext4 so it works without CONFIG_PROC_FS
+    
+    This fixes a bug which was introduced in dd68314ccf3fb.  The problem
+    came from the test of the return value of proc_mkdir which is always
+    false without procfs, and this would initialization of ext4.
+    
+    Signed-off-by: Fabrice Jouhaud <yargil@free.fr>
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-> > The fact that there are time outs in the existing wake event code points to
-> > this shortcoming in the current implementation.
-> 
-> Actually, the timeouts serve a different purpose.  Namely, there are wakeup
-> events that aren't actually consumed by anyone above the layer signaling the
-> event (think about Wake-on-LAN via a magic packet) and if such an event
-> happens, we can't suspend at once, because we need to assume that it happened
-> for a reason, so whoever triggered the event has to be given a chance to do
-> whatever he needed to wake up the system for.  This cannot be achieved without
-> timeouts.
-
-Also there are events that may or may not get consumed, but it is
-impossible to tell at the time whether or not a consumer exists.  If
-one does exist then good, the system can suspend again when the
-consumer is finished.  But if not, the system can only wait until a
-timeout.
-
-> > I suppose one could rig up the user mode suspend daemon with
-> > notification callbacks between event consumers across the user mode
-> > stack but its really complex to get it right and forces a solution to a
-> > problem better solved in kernel mode be done with hacky user mode
-> > gyrations that may ripple wildly across user mode.
-> 
-> Agreed.
-> 
-> > Also it is the kernel that is currently deciding when to unblock the
-> > suspend daemon for the next suspend attempt.  Why not build on that and
-> > make is so we don't need the time outs?
-> > 
-> > > i.e. there is no kernel-space problem to solve here (except for possible
-> > > bugs).
-> > 
-> > Just a race between the kernel allowing a suspend and the user mode code
-> > having time to consume the last wake event.
-> 
-> That's correct.
-
-Alan Stern
-
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 42f76c6..dcc4605 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3540,10 +3540,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto failed_mount;
+ 	}
+ 
+-#ifdef CONFIG_PROC_FS
+ 	if (ext4_proc_root)
+ 		sbi->s_proc = proc_mkdir(sb->s_id, ext4_proc_root);
+-#endif
+ 
+ 	bgl_lock_init(sbi->s_blockgroup_lock);
+ 
+@@ -5070,13 +5068,11 @@ static int __init ext4_init_fs(void)
+ 		return err;
+ 	err = ext4_init_system_zone();
+ 	if (err)
+-		goto out7;
++		goto out6;
+ 	ext4_kset = kset_create_and_add("ext4", NULL, fs_kobj);
+ 	if (!ext4_kset)
+-		goto out6;
+-	ext4_proc_root = proc_mkdir("fs/ext4", NULL);
+-	if (!ext4_proc_root)
+ 		goto out5;
++	ext4_proc_root = proc_mkdir("fs/ext4", NULL);
+ 
+ 	err = ext4_init_feat_adverts();
+ 	if (err)
+@@ -5112,12 +5108,12 @@ out2:
+ out3:
+ 	ext4_exit_feat_adverts();
+ out4:
+-	remove_proc_entry("fs/ext4", NULL);
+-out5:
++	if (ext4_proc_root)
++		remove_proc_entry("fs/ext4", NULL);
+ 	kset_unregister(ext4_kset);
+-out6:
++out5:
+ 	ext4_exit_system_zone();
+-out7:
++out6:
+ 	ext4_exit_pageio();
+ 	return err;
+ }
