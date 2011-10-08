@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab1JHEEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 00:04:09 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50750 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab1JHEEF (ORCPT
+	id S1751235Ab1JHFAL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 01:00:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37032 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab1JHFAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 00:04:05 -0400
-X-Originating-IP: 217.70.178.130
-X-Originating-IP: 50.43.15.19
-Date: Fri, 7 Oct 2011 21:03:51 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Greg KH <greg@kroah.com>
-Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-Message-ID: <20111008040351.GA7694@leaf>
-References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
- <1317963790-29426-3-git-send-email-manjugk@ti.com>
- <20111007064928.GE27508@kroah.com>
- <20111007205715.GC5275@leaf>
- <20111007212326.GA29003@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007212326.GA29003@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 8 Oct 2011 01:00:08 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=kycaZ6zZ8KAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=cahJxx6UZF3xCAIBq47FAQ==:17 a=echqnOHk58CYoKWxhsQA:9 a=PUjeQqilurYA:10 a=cahJxx6UZF3xCAIBq47FAQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 69.204.222.235
+Subject: Re: [PATCH 1/4] [BUGFIX] ftrace/kprobes: Fix not to delete probes
+ if in use
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>
+Date: Sat, 08 Oct 2011 01:00:04 -0400
+In-Reply-To: <20111004104438.14591.6553.stgit@fedora15>
+References: <20111004104438.14591.6553.stgit@fedora15>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318050006.4729.103.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 02:23:26PM -0700, Greg KH wrote:
-> On Fri, Oct 07, 2011 at 01:57:15PM -0700, Josh Triplett wrote:
-> > On Thu, Oct 06, 2011 at 11:49:28PM -0700, Greg KH wrote:
-> > > On Fri, Oct 07, 2011 at 10:33:07AM +0500, G, Manjunath Kondaiah wrote:
-> > > > +config PROBE_DEFER
-> > > > +	bool "Deferred Driver Probe"
-> > > > +	default y
-> > > > +	help
-> > > > +	  This option provides deferring driver probe if it has dependency on
-> > > > +	  other driver. Without this feature, initcall ordering should be done
-> > > > +	  manually to resolve driver dependencies. This feature completely side
-> > > > +	  steps the issues by allowing driver registration to occur in any
-> > > > +	  order, and any driver can request to be retried after a few more other
-> > > > +	  drivers get probed.
-> > > 
-> > > Why is this even an option?  Why would you ever want it disabled?  Why
-> > > does it need to be selected?
-> > > 
-> > > If you are going to default something to 'y' then just make it so it
-> > > can't be turned off any other way by just not making it an option at
-> > > all.
-> > 
-> > Given that the drivers which use this mechanism will not necessarily get
-> > built into the kernel, I'd suggest that it should remain optional and
-> > default to n.  Those drivers can then add a dependency on PROBE_DEFER.
-> > Let's try to avoid adding more infrastructure to the kernel that takes
-> > up space even when unused; certainly embedded will appreciate not having
-> > this feature unless a driver needs it.
+On Tue, 2011-10-04 at 19:44 +0900, Masami Hiramatsu wrote:
+> Fix kprobe-tracer not to delete a probe if the probe is in use.
+> In that case, delete operation will return -EBUSY.
 > 
-> How much extra space is this "feature" really?
+> This bug can cause a kernel panic if enabled probes are deleted
+> during perf record.
+> 
+> (Add some probes on functions)
+> # perf record -e probe:\* -aR sh
+> sh-4.2# perf probe --del probe:\*
+> sh-4.2# exit
+> (kernel panic)
 
-Just checked: 776 bytes, 640 of text and 136 of data.  We have kconfig
-options for comparable amounts.
 
-> I don't see it being
-> anything larger than the amount of memory increase that just happened as
-> I typed this email as part of the ongoing memory density changes.
+Hi Masami,
 
-I don't know about the changes you mean, but in any case I'd like to
-prevent mandatory size increases wherever possible.  I'd love to see the
-size of "allnoconfig" getting *smaller* over time, not larger.
+I was able to reproduce the panic. I'm currently running patch 1 and 4
+through my standard tests before pushing this out as urgent.
 
-- Josh Triplett
+Does this exist in previous kernels? If so, I'll also add the stable tag
+to it.
+
+Could you resend the trivial patches when you make your necessary
+corrections. They are not important as these are and I'll add them to a
+separate queue.
+
+Thanks!
+
+-- Steve
+
+
