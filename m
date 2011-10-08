@@ -1,12 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1JHH6H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:58:07 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48993 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab1JHH5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:57:47 -0400
-Subject: [PATCH 17/28] ext4: Calculate and verify checksums for htree nodes
+	id S1754297Ab1JHH6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:58:24 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:55006 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab1JHH6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:58:19 -0400
+Subject: [PATCH 19/28] ext4: Calculate and verify checksums of extended
+	attribute blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -19,271 +21,209 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:55:36 -0700
-Message-ID: <20111008075536.20506.13681.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:55:49 -0700
+Message-ID: <20111008075549.20506.62646.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11100807-8974-0000-0000-000000B83E58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the checksum for directory index tree (htree) node blocks.
-The checksum is stored in the last 4 bytes of the htree block and requires the
-dx_entry array to stop 1 dx_entry short of the end of the block.
+Calculate and verify the checksums of extended attribute blocks.  This only
+applies to separate EA blocks that are pointed to by inode->i_file_acl (i.e.
+external EA blocks); the checksum lives in the EA header.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/namei.c |  164 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 160 insertions(+), 4 deletions(-)
+ fs/ext4/xattr.c |   86 ++++++++++++++++++++++++++++++++++++++++++++++---------
+ fs/ext4/xattr.h |    4 ++-
+ 2 files changed, 75 insertions(+), 15 deletions(-)
 
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index d0158f2..daa0c18 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -145,6 +145,15 @@ struct dx_map_entry
- 	u16 size;
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index c757adc..1ab85dd 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -122,6 +122,57 @@ const struct xattr_handler *ext4_xattr_handlers[] = {
+ 	NULL
  };
  
-+/*
-+ * This goes at the end of each htree block.  If you want to use the
-+ * reserved field, you'll have to update the checksum code to include it.
-+ */
-+struct dx_tail {
-+	u32 reserved;
-+	u32 checksum;	/* crc32c(uuid+inum+dirblock) */
-+};
-+
- static inline ext4_lblk_t dx_get_block(struct dx_entry *entry);
- static void dx_set_block(struct dx_entry *entry, ext4_lblk_t value);
- static inline unsigned dx_get_hash(struct dx_entry *entry);
-@@ -180,6 +189,116 @@ static struct buffer_head * ext4_dx_find_entry(struct inode *dir,
- static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
- 			     struct inode *inode);
- 
-+/* checksumming functions */
-+static struct dx_countlimit *get_dx_countlimit(struct inode *inode,
-+					       struct ext4_dir_entry *dirent,
-+					       int *offset)
-+{
-+	struct ext4_dir_entry *dp;
-+	struct dx_root_info *root;
-+	int count_offset;
-+
-+	if (le16_to_cpu(dirent->rec_len) == EXT4_BLOCK_SIZE(inode->i_sb))
-+		count_offset = 8;
-+	else if (le16_to_cpu(dirent->rec_len) == 12) {
-+		dp = (struct ext4_dir_entry *)(((void *)dirent) + 12);
-+		if (le16_to_cpu(dp->rec_len) !=
-+		    EXT4_BLOCK_SIZE(inode->i_sb) - 12)
-+			return NULL;
-+		root = (struct dx_root_info *)(((void *)dp + 12));
-+		if (root->reserved_zero ||
-+		    root->info_length != sizeof(struct dx_root_info))
-+			return NULL;
-+		count_offset = 32;
-+	} else
-+		return NULL;
-+
-+	if (offset)
-+		*offset = count_offset;
-+	return (struct dx_countlimit *)(((void *)dirent) + count_offset);
-+}
-+
-+static __le32 ext4_dx_csum(struct inode *inode, struct ext4_dir_entry *dirent,
-+			   int count_offset, int count)
++static __le32 ext4_xattr_block_csum(struct inode *inode,
++				    sector_t block_nr,
++				    struct ext4_xattr_header *hdr)
 +{
 +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
 +	struct ext4_inode_info *ei = EXT4_I(inode);
-+	__u32 crc;
-+	int size;
++	__u32 crc, old;
 +
-+	size = count_offset + (count * sizeof(struct dx_entry));
-+
-+	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)dirent, size);
++	old = hdr->h_checksum;
++	hdr->h_checksum = 0;
++	if (le32_to_cpu(hdr->h_refcount) != 1) {
++		block_nr = cpu_to_le64(block_nr);
++		crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&block_nr,
++				  sizeof(block_nr));
++	} else
++		crc = ei->i_uuid_inum_crc;
++	crc = ext4_chksum(sbi, crc, (__u8 *)hdr, EXT4_BLOCK_SIZE(inode->i_sb));
++	hdr->h_checksum = old;
 +	return cpu_to_le32(crc);
 +}
 +
-+static int ext4_dx_csum_verify(struct inode *inode,
-+			       struct ext4_dir_entry *dirent)
++static int ext4_xattr_block_csum_verify(struct inode *inode,
++					sector_t block_nr,
++					struct ext4_xattr_header *hdr)
 +{
-+	struct dx_countlimit *c;
-+	struct dx_tail *t;
-+	int count_offset, limit, count;
-+
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	c = get_dx_countlimit(inode, dirent, &count_offset);
-+	if (!c) {
-+		EXT4_ERROR_INODE(inode, "dir seems corrupt?  Run e2fsck -D.");
-+		return 1;
-+	}
-+	limit = le16_to_cpu(c->limit);
-+	count = le16_to_cpu(c->count);
-+	if (count_offset + (limit * sizeof(struct dx_entry)) >
-+	    EXT4_BLOCK_SIZE(inode->i_sb) - sizeof(struct dx_tail)) {
-+		EXT4_ERROR_INODE(inode, "metadata_csum set but no space for "
-+				 "tree checksum found.  Run e2fsck -D.");
-+		return 1;
-+	}
-+	t = (struct dx_tail *)(((struct dx_entry *)c) + limit);
-+
-+	if (t->checksum != ext4_dx_csum(inode, dirent, count_offset, count))
++	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
++	    (hdr->h_checksum != ext4_xattr_block_csum(inode, block_nr, hdr)))
 +		return 0;
 +	return 1;
 +}
 +
-+static void ext4_dx_csum_set(struct inode *inode, struct ext4_dir_entry *dirent)
++static void ext4_xattr_block_csum_set(struct inode *inode,
++				      sector_t block_nr,
++				      struct ext4_xattr_header *hdr)
 +{
-+	struct dx_countlimit *c;
-+	struct dx_tail *t;
-+	int count_offset, limit, count;
-+
 +	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
 +		return;
 +
-+	c = get_dx_countlimit(inode, dirent, &count_offset);
-+	if (!c) {
-+		EXT4_ERROR_INODE(inode, "dir seems corrupt?  Run e2fsck -D.");
-+		return;
-+	}
-+	limit = le16_to_cpu(c->limit);
-+	count = le16_to_cpu(c->count);
-+	if (count_offset + (limit * sizeof(struct dx_entry)) >
-+	    EXT4_BLOCK_SIZE(inode->i_sb) - sizeof(struct dx_tail)) {
-+		EXT4_ERROR_INODE(inode, "metadata_csum set but no space for "
-+				 "tree checksum.  Run e2fsck -D.");
-+		return;
-+	}
-+	t = (struct dx_tail *)(((struct dx_entry *)c) + limit);
-+
-+	t->checksum = ext4_dx_csum(inode, dirent, count_offset, count);
++	hdr->h_checksum = ext4_xattr_block_csum(inode, block_nr, hdr);
 +}
 +
-+static inline int ext4_handle_dirty_dx_node(handle_t *handle,
-+					    struct inode *inode,
-+					    struct buffer_head *bh)
++static inline int ext4_handle_dirty_xattr_block(handle_t *handle,
++						struct inode *inode,
++						struct buffer_head *bh)
 +{
-+	ext4_dx_csum_set(inode, (struct ext4_dir_entry *)bh->b_data);
++	ext4_xattr_block_csum_set(inode, bh->b_blocknr, BHDR(bh));
 +	return ext4_handle_dirty_metadata(handle, inode, bh);
 +}
 +
- /*
-  * p is at least 6 bytes before the end of page
-  */
-@@ -239,12 +358,20 @@ static inline unsigned dx_root_limit(struct inode *dir, unsigned infosize)
+ static inline const struct xattr_handler *
+ ext4_xattr_handler(int name_index)
  {
- 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(1) -
- 		EXT4_DIR_REC_LEN(2) - infosize;
-+
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		entry_space -= sizeof(struct dx_tail);
- 	return entry_space / sizeof(struct dx_entry);
+@@ -156,14 +207,21 @@ ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
  }
  
- static inline unsigned dx_node_limit(struct inode *dir)
+ static inline int
+-ext4_xattr_check_block(struct buffer_head *bh)
++ext4_xattr_check_block(struct inode *inode, struct buffer_head *bh)
  {
- 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(0);
+ 	int error;
+ 
++	if (buffer_verified(bh))
++		return 0;
 +
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		entry_space -= sizeof(struct dx_tail);
- 	return entry_space / sizeof(struct dx_entry);
+ 	if (BHDR(bh)->h_magic != cpu_to_le32(EXT4_XATTR_MAGIC) ||
+ 	    BHDR(bh)->h_blocks != cpu_to_le32(1))
+ 		return -EIO;
++	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
++		return -EIO;
+ 	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
++	if (!error)
++		set_buffer_verified(bh);
+ 	return error;
  }
  
-@@ -390,6 +517,15 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
- 		goto fail;
- 	}
- 
-+	if (!buffer_verified(bh) &&
-+	    !ext4_dx_csum_verify(dir, (struct ext4_dir_entry *)bh->b_data)) {
-+		ext4_warning(dir->i_sb, "Root failed checksum");
-+		brelse(bh);
-+		*err = ERR_BAD_DX_DIR;
-+		goto fail;
-+	}
-+	set_buffer_verified(bh);
-+
- 	entries = (struct dx_entry *) (((char *)&root->info) +
- 				       root->info.info_length);
- 
-@@ -450,6 +586,17 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
- 		if (!(bh = ext4_bread (NULL,dir, dx_get_block(at), 0, err)))
- 			goto fail2;
- 		at = entries = ((struct dx_node *) bh->b_data)->entries;
-+
-+		if (!buffer_verified(bh) &&
-+		    !ext4_dx_csum_verify(dir,
-+					 (struct ext4_dir_entry *)bh->b_data)) {
-+			ext4_warning(dir->i_sb, "Node failed checksum");
-+			brelse(bh);
-+			*err = ERR_BAD_DX_DIR;
-+			goto fail;
-+		}
-+		set_buffer_verified(bh);
-+
- 		if (dx_get_limit(entries) != dx_node_limit (dir)) {
- 			ext4_warning(dir->i_sb,
- 				     "dx entry: limit != node limit");
-@@ -549,6 +696,15 @@ static int ext4_htree_next_block(struct inode *dir, __u32 hash,
- 		if (!(bh = ext4_bread(NULL, dir, dx_get_block(p->at),
- 				      0, &err)))
- 			return err; /* Failure */
-+
-+		if (!buffer_verified(bh) &&
-+		    !ext4_dx_csum_verify(dir,
-+					 (struct ext4_dir_entry *)bh->b_data)) {
-+			ext4_warning(dir->i_sb, "Node failed checksum");
-+			return -EIO;
-+		}
-+		set_buffer_verified(bh);
-+
- 		p++;
- 		brelse(p->bh);
- 		p->bh = bh;
-@@ -1224,7 +1380,7 @@ static struct ext4_dir_entry_2 *do_split(handle_t *handle, struct inode *dir,
- 	err = ext4_handle_dirty_metadata(handle, dir, bh2);
- 	if (err)
- 		goto journal_error;
--	err = ext4_handle_dirty_metadata(handle, dir, frame->bh);
-+	err = ext4_handle_dirty_dx_node(handle, dir, frame->bh);
- 	if (err)
- 		goto journal_error;
- 	brelse(bh2);
-@@ -1411,7 +1567,7 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 	frame->bh = bh;
- 	bh = bh2;
- 
--	ext4_handle_dirty_metadata(handle, dir, frame->bh);
-+	ext4_handle_dirty_dx_node(handle, dir, frame->bh);
- 	ext4_handle_dirty_metadata(handle, dir, bh);
- 
- 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
-@@ -1586,7 +1742,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
- 			dxtrace(dx_show_index("node", frames[1].entries));
- 			dxtrace(dx_show_index("node",
- 			       ((struct dx_node *) bh2->b_data)->entries));
--			err = ext4_handle_dirty_metadata(handle, dir, bh2);
-+			err = ext4_handle_dirty_dx_node(handle, dir, bh2);
- 			if (err)
- 				goto journal_error;
- 			brelse (bh2);
-@@ -1612,7 +1768,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
- 			if (err)
- 				goto journal_error;
+@@ -226,7 +284,7 @@ ext4_xattr_block_get(struct inode *inode, int name_index, const char *name,
+ 		goto cleanup;
+ 	ea_bdebug(bh, "b_count=%d, refcount=%d",
+ 		atomic_read(&(bh->b_count)), le32_to_cpu(BHDR(bh)->h_refcount));
+-	if (ext4_xattr_check_block(bh)) {
++	if (ext4_xattr_check_block(inode, bh)) {
+ bad_block:
+ 		EXT4_ERROR_INODE(inode, "bad block %llu",
+ 				 EXT4_I(inode)->i_file_acl);
+@@ -370,7 +428,7 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
+ 		goto cleanup;
+ 	ea_bdebug(bh, "b_count=%d, refcount=%d",
+ 		atomic_read(&(bh->b_count)), le32_to_cpu(BHDR(bh)->h_refcount));
+-	if (ext4_xattr_check_block(bh)) {
++	if (ext4_xattr_check_block(inode, bh)) {
+ 		EXT4_ERROR_INODE(inode, "bad block %llu",
+ 				 EXT4_I(inode)->i_file_acl);
+ 		error = -EIO;
+@@ -489,7 +547,7 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+ 				 EXT4_FREE_BLOCKS_FORGET);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+-		error = ext4_handle_dirty_metadata(handle, inode, bh);
++		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, 1);
+@@ -662,7 +720,7 @@ ext4_xattr_block_find(struct inode *inode, struct ext4_xattr_info *i,
+ 		ea_bdebug(bs->bh, "b_count=%d, refcount=%d",
+ 			atomic_read(&(bs->bh->b_count)),
+ 			le32_to_cpu(BHDR(bs->bh)->h_refcount));
+-		if (ext4_xattr_check_block(bs->bh)) {
++		if (ext4_xattr_check_block(inode, bs->bh)) {
+ 			EXT4_ERROR_INODE(inode, "bad block %llu",
+ 					 EXT4_I(inode)->i_file_acl);
+ 			error = -EIO;
+@@ -725,9 +783,9 @@ ext4_xattr_block_set(handle_t *handle, struct inode *inode,
+ 			if (error == -EIO)
+ 				goto bad_block;
+ 			if (!error)
+-				error = ext4_handle_dirty_metadata(handle,
+-								   inode,
+-								   bs->bh);
++				error = ext4_handle_dirty_xattr_block(handle,
++								      inode,
++								      bs->bh);
+ 			if (error)
+ 				goto cleanup;
+ 			goto inserted;
+@@ -796,9 +854,9 @@ inserted:
+ 				ea_bdebug(new_bh, "reusing; refcount now=%d",
+ 					le32_to_cpu(BHDR(new_bh)->h_refcount));
+ 				unlock_buffer(new_bh);
+-				error = ext4_handle_dirty_metadata(handle,
+-								   inode,
+-								   new_bh);
++				error = ext4_handle_dirty_xattr_block(handle,
++								      inode,
++								      new_bh);
+ 				if (error)
+ 					goto cleanup_dquot;
+ 			}
+@@ -848,8 +906,8 @@ getblk_failed:
+ 			set_buffer_uptodate(new_bh);
+ 			unlock_buffer(new_bh);
+ 			ext4_xattr_cache_insert(new_bh);
+-			error = ext4_handle_dirty_metadata(handle,
+-							   inode, new_bh);
++			error = ext4_handle_dirty_xattr_block(handle,
++							      inode, new_bh);
+ 			if (error)
+ 				goto cleanup;
  		}
--		err = ext4_handle_dirty_metadata(handle, dir, frames[0].bh);
-+		err = ext4_handle_dirty_dx_node(handle, dir, frames[0].bh);
- 		if (err) {
- 			ext4_std_error(inode->i_sb, err);
+@@ -1190,7 +1248,7 @@ retry:
+ 		error = -EIO;
+ 		if (!bh)
  			goto cleanup;
+-		if (ext4_xattr_check_block(bh)) {
++		if (ext4_xattr_check_block(inode, bh)) {
+ 			EXT4_ERROR_INODE(inode, "bad block %llu",
+ 					 EXT4_I(inode)->i_file_acl);
+ 			error = -EIO;
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index 25b7387..91f31ca 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -27,7 +27,9 @@ struct ext4_xattr_header {
+ 	__le32	h_refcount;	/* reference count */
+ 	__le32	h_blocks;	/* number of disk blocks used */
+ 	__le32	h_hash;		/* hash value of all attributes */
+-	__u32	h_reserved[4];	/* zero right now */
++	__le32	h_checksum;	/* crc32c(uuid+id+xattrblock) */
++				/* id = inum if refcount=1, blknum otherwise */
++	__u32	h_reserved[3];	/* zero right now */
+ };
+ 
+ struct ext4_xattr_ibody_header {
 
