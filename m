@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab1JHV1q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 17:27:46 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54798 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab1JHV1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 17:27:45 -0400
-Date: Sat, 8 Oct 2011 17:27:44 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH] ext4: Fix comparison endianness problem in MMP
- initialization
-Message-ID: <20111008212744.GP7948@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4 <linux-ext4@vger.kernel.org>
-References: <20110930194900.GY12086@tux1.beaverton.ibm.com>
+	id S1753551Ab1JHWJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 18:09:28 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50825 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab1JHWJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 18:09:27 -0400
+Date: Sun, 9 Oct 2011 01:05:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: JAke Burton <jake5991@live.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, fmhess@users.sourceforge.net,
+        abbotti@mev.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: comedi: fix brace coding and whitespace
+ issue in ni_atmio.c
+Message-ID: <20111008215930.GM18470@longonot.mountain>
+References: <BLU0-SMTP9072E77C5346BC9ADCE223A2FF0@phx.gbl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110930194900.GY12086@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <BLU0-SMTP9072E77C5346BC9ADCE223A2FF0@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4E90CA08.002E:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 30, 2011 at 12:49:00PM -0700, Darrick J. Wong wrote:
-> As part of startup, the MMP initialization code does this:
-> 
-> mmp->mmp_seq = seq = cpu_to_le32(mmp_new_seq());
-> 
-> Next, mmp->mmp_seq is written out to disk, a delay happens, and then the MMP
-> block is read back in and the sequence value is tested:
-> 
-> if (seq != le32_to_cpu(mmp->mmp_seq)) {
-> 	/* fail the mount */
-> 
-> On a LE system such as x86, the *le32* functions do nothing and this works.
-> Unfortunately, on a BE system such as ppc64, this comparison becomes:
-> 
-> if (cpu_to_le32(new_seq) != le32_to_cpu(cpu_to_le32(new_seq)) {
-> 	/* fail the mount */
-> 
-> Except for a few palindromic sequence numbers, this test always causes the
-> mount to fail, which makes MMP filesystems generally unmountable on ppc64.  The
-> attached patch fixes this situation.
-> 
-> (This fix came up while testing the metadata checksumming patchset)
-> 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Nah.  For this kind of thing you need to redo the first one, not
+just write another patch on top of it.  The v2 patch should have a
+subject with [patch v2] blah blah blah.  After the Signed-off-by line
+put three dashes "---" and then the changes between v1 and v2.
 
-Applied, thanks.
+Signed-off-by:  you
+---
+v2:  whitespace changes for Joe Perches.
 
-						- Ted
+Joe should be added to the CC list.  Hopefully it should be sent in
+the same thread as a response to Joe's email.  Use the In-Reply-To
+header.
+
+Also the "};" on the first hunk should be moved down a line as well.
+
+And the subject and the commit message on the first patch were
+mangled.  There wasn't a blank line after the Subject and before the
+changelog.  It need another blank line in front of the Signed-off-by
+line and this patch doesn't have a Signed-off-by line.  (These things
+matter because the process is scripted).
+
+If you want you can leave linux-kernel off the CC list.  They don't
+care about whitespace patches to staging.
+
+regards,
+dan carpenter
+
