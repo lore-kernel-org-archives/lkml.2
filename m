@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1JHIms (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 04:42:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61693 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1JHImq (ORCPT
+	id S1752173Ab1JHItl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 04:49:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37295 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab1JHItj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 04:42:46 -0400
-Subject: Re: [PATCH v2 2/2] virtio-net: Prevent NULL dereference
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <20111003190516.GD22427@redhat.com>
-References: <1317220855-9352-1-git-send-email-levinsasha928@gmail.com>
-	 <1317220855-9352-2-git-send-email-levinsasha928@gmail.com>
-	 <20111003190516.GD22427@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Sat, 08 Oct 2011 10:40:11 +0200
-Message-ID: <1318063211.7385.1.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Sat, 8 Oct 2011 04:49:39 -0400
+Message-ID: <4E900E9E.2070604@gmail.com>
+Date: Sat, 08 Oct 2011 10:49:34 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: serial_core: Fix crash if agetty() run on non-console
+ serial port
+References: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-03 at 21:05 +0200, Michael S. Tsirkin wrote:
-> I thought about this some more. If length was too large host is
-> right now writing into pages that we have freed.
-> That is very bad, and I don't know what do do with it,
-> really not worth prettifying that IMO, NULL pointer is the least of our
-> worries.
+On 10/07/2011 11:59 PM, Doug Anderson wrote:
+> The symptoms of the bug showed up if you were running agetty on ttyS0
+> but not using ttyS0 as the console= port on the kernel command
+> line.  In this case, if you suspended the system you'd get a crash
+> on resume.
+>
+> The specific order of operations that were running:
+> * uart_suspend_port() would be called to put the uart in suspend mode
+> * a tty hangup would be processed
+> * the hangup would call uart_shutdown()
+> * ... suspend / resume happens ...
+> * uart_resume_port() would be called and run the code in the
+>   (port->flags & ASYNC_SUSPENDED) block, which would startup the port
+>   (and enable tx again).
+> * Since the UART would be available for tx, we'd immediately get
+>   an interrupt, eventually calling transmit_chars()
+> * The transmit_chars() function would crash.  The first crash would
+>   be a dereference of a NULL tty member, but since the port has been
+>   shutdown that was just a symptom.
+
+I cannot reproduce this. What uart driver is this with? And where does
+it call uart_suspend_port from? Basically, it would mean that it calls
+uart_suspend_port while userspace is still running? Or who HUPs the port
+(the second point in your list)?
+
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/tty/serial/serial_core.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
 > 
-> But, with mergeable buffers at least, and that is the main mode anyway,
-> there is always a single page per buf, right?
-> So I think we should change the code,
-> and for mergeable buffers we shall only verify that
-> length <= PAGE_SIZE.
+> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+> index a3efbea..668e56a 100644
+> --- a/drivers/tty/serial/serial_core.c
+> +++ b/drivers/tty/serial/serial_core.c
+> @@ -255,6 +255,14 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
+>  	}
+>  
+>  	/*
+> +	 * It's possible for shutdown to be called after suspend.  Specifically
+> +	 * if agetty() is listening to the serial port we get a HUP after the
+> +	 * suspend happend (and HUP calls shutdown).  Clear suspended bit so
+> +	 * we don't try to resume a port that has been shutdown.
+> +	 */
+> +	clear_bit(ASYNCB_SUSPENDED, &port->flags);
+> +
+> +	/*
+>  	 * kill off our tasklet
+>  	 */
+>  	tasklet_kill(&state->tlet);
 
-In receive_mergeable() we already verify both 'page' being non-null and
-length:
-
-	if (len > PAGE_SIZE)
-		len = PAGE_SIZE;
-
-> 
-> IOW copy a bit of code from page_to_skb(vi, page, len)
-> to receive_mergeable, maybe add a common function
-> if we need to avoid duplication.
-
+thanks,
 -- 
-
-Sasha.
-
+js
