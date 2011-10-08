@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1JHSEF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 14:04:05 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:45457 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab1JHSED (ORCPT
+	id S1753458Ab1JHSKi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 14:10:38 -0400
+Received: from blu0-omc1-s7.blu0.hotmail.com ([65.55.116.18]:47875 "EHLO
+	blu0-omc1-s7.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753386Ab1JHSKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 14:04:03 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Krzysztof Halasa <khc@pm.waw.pl>, Adrian Bunk <bunk@stusta.de>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-In-Reply-To: <58779.1318084612@turing-police.cc.vt.edu>
-References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl>
-	 <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl>
-	 <4E88A537.4010008@zytor.com> <20111003093239.GB25136@localhost.pp.htv.fi>
-	 <y0mobxyjazi.fsf@fche.csb> <20111003180441.GD3072@localhost.pp.htv.fi>
-	 <34045.1317760188@turing-police.cc.vt.edu>
-	 <1317916702.19519.1.camel@constitution.bos.jonmasters.org>
-	 <14191.1317930659@turing-police.cc.vt.edu>
-	 <m34nzlbwbi.fsf@intrepid.localdomain>
-	 <15324.1318004954@turing-police.cc.vt.edu>
-	 <1318050133.19519.184.camel@constitution.bos.jonmasters.org>
-	 <58779.1318084612@turing-police.cc.vt.edu>
+	Sat, 8 Oct 2011 14:10:37 -0400
+X-Originating-IP: [86.28.179.214]
+X-Originating-Email: [jake5991@live.com]
+Message-ID: <BLU0-SMTP400327EB20018169910A6BAA2FF0@phx.gbl>
+Subject: Subject: [PATCH]
+From: Jake Burton <jake5991@live.com>
+To: gregkh@suse.de
+CC: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation Of Broken Dreams
-Date: Sat, 08 Oct 2011 13:59:48 -0400
-Message-ID: <1318096788.19519.187.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Date: Sat, 8 Oct 2011 19:01:18 +0100
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: kernel.org status: establishing a PGP web of trust
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+X-OriginalArrivalTime: 08 Oct 2011 18:10:35.0702 (UTC) FILETIME=[93967D60:01CC85E5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-08 at 10:36 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Sat, 08 Oct 2011 01:02:13 EDT, Jon Masters said:
-> 
-> > What I'm saying is that unless you sign something (random text, my
-> > actual key(s)) in my presence, I can't actually know it was you I was
-> > dealing with or someone else claiming to be you (or your identity).
-> 
-> Now see, this is *exacltly* why security people have to be pedantic about
-> stuff.  What you originally asked for was "sign random data to demonstrate
-> control of the key", and I pointed out that being able to sign a key was as
-> good as being able to sign random data to prove control of the key.
+>From bdfe02a6701656b757f8c59a226c01a50609f9fb Mon Sep 17 00:00:00 2001
+From: Jake <jake5991@live.com>
+Date: Sat, 8 Oct 2011 18:38:40 +0100
+Subject: [PATCH] Staging: comedi: fix brace coding style issue and whitespace issue in ni_atmio.c
+ This is a patch to the ni_atmio.c file that fixes up a brace and whitespace warning found by the checkpatch.pl tool.
+Signed-off-by: Jake Burton <jake5991@live.com>
 
-Good point about being pedantic, and the rest of your comments :) I
-understand that I'm taking this a little far but I'm just trying to
-point out one particular gaping hole in the way these things are
-currently done. One reason I stopped doing keysigning parties is that I
-realized they were mostly a show. You turn up and get a key signed and
-then everyone is impressed that you're in the strong set...wupdedoo. Not
-that I've anything against signing stuff on kernel.org and trying to
-improve things (I've long directly signed everything on master with my
-own keys in slight violation of policy, but that turned out to right).
+---
+ drivers/staging/comedi/drivers/ni_atmio.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-:)
+diff --git a/drivers/staging/comedi/drivers/ni_atmio.c b/drivers/staging/comedi/drivers/ni_atmio.c
+index 3330b3d..e6c6c72 100644
+--- a/drivers/staging/comedi/drivers/ni_atmio.c
++++ b/drivers/staging/comedi/drivers/ni_atmio.c
+@@ -268,8 +268,8 @@ static const struct ni_board_struct ni_boards[] = {
+ 	 }
+ };
+ 
+-static const int ni_irqpin[] =
+-    { -1, -1, -1, 0, 1, 2, -1, 3, -1, -1, 4, 5, 6, -1, -1, 7 };
++static const int ni_irqpin[] = {
++	-1, -1, -1, 0, 1, 2, -1, 3, -1, -1, 4, 5, 6, -1, -1, 7 };
+ 
+ #define interrupt_pin(a)	(ni_irqpin[(a)])
+ 
+@@ -279,7 +279,7 @@ static const int ni_irqpin[] =
+ 
+ struct ni_private {
+ 	struct pnp_dev *isapnp_dev;
+- NI_PRIVATE_COMMON};
++NI_PRIVATE_COMMON};
+ #define devpriv ((struct ni_private *)dev->private)
+ 
+ /* How we access registers */
+-- 
+1.7.4.1
 
-Jon.
 
 
