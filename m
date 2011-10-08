@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab1JHH6j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:58:39 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50397 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab1JHH6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:58:33 -0400
-Subject: [PATCH 20/28] ext4: Add new feature to make block group checksums use
-	metadata_csum algorithm
+	id S1754689Ab1JHH7I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:59:08 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52858 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751677Ab1JHH64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:58:56 -0400
+Subject: [PATCH 22/28] jbd2: Update structure definitions and flags to support
+	extended checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -21,8 +20,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:55:56 -0700
-Message-ID: <20111008075556.20506.13252.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:56:08 -0700
+Message-ID: <20111008075608.20506.43878.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -33,248 +32,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new feature flag to enable block group descriptors to use the (faster)
-metadata_csum checksum algorithm.
+Add structure definitions, flags, and constants to extend checksum protection
+to all journal blocks.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/balloc.c  |    3 +-
- fs/ext4/ext4.h    |    8 ++++---
- fs/ext4/ialloc.c  |   11 ++++-----
- fs/ext4/mballoc.c |    6 ++---
- fs/ext4/resize.c  |    2 +-
- fs/ext4/super.c   |   64 ++++++++++++++++++++++++++++++++++++++---------------
- 6 files changed, 61 insertions(+), 33 deletions(-)
+ fs/ext4/super.c      |   55 ++++++++++++++++++++++++++++++++++++++------------
+ fs/jbd2/journal.c    |   50 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    8 ++++++-
+ 3 files changed, 99 insertions(+), 14 deletions(-)
 
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index dd96a7d..7976a8b 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -180,8 +180,7 @@ unsigned ext4_init_block_bitmap(struct super_block *sb, struct buffer_head *bh,
- 				     bh->b_data);
- 		ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
- 					   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--		gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group,
--							gdp);
-+		ext4_group_desc_csum_set(sbi, block_group, gdp);
- 	}
- 	return free_blocks - ext4_group_used_meta_blocks(sb, block_group, gdp);
- }
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 48e116f..4325d1f 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1401,6 +1401,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- #define EXT4_FEATURE_INCOMPAT_FLEX_BG		0x0200
- #define EXT4_FEATURE_INCOMPAT_EA_INODE		0x0400 /* EA in inode */
- #define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000 /* data in dirent */
-+#define EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM	0x2000
- 
- #define EXT2_FEATURE_COMPAT_SUPP	EXT4_FEATURE_COMPAT_EXT_ATTR
- #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT4_FEATURE_INCOMPAT_FILETYPE| \
-@@ -1424,7 +1425,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- 					 EXT4_FEATURE_INCOMPAT_EXTENTS| \
- 					 EXT4_FEATURE_INCOMPAT_64BIT| \
- 					 EXT4_FEATURE_INCOMPAT_FLEX_BG| \
--					 EXT4_FEATURE_INCOMPAT_MMP)
-+					 EXT4_FEATURE_INCOMPAT_MMP| \
-+					 EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM)
- #define EXT4_FEATURE_RO_COMPAT_SUPP	(EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER| \
- 					 EXT4_FEATURE_RO_COMPAT_LARGE_FILE| \
- 					 EXT4_FEATURE_RO_COMPAT_GDT_CSUM| \
-@@ -2034,10 +2036,10 @@ extern void ext4_used_dirs_set(struct super_block *sb,
- 				struct ext4_group_desc *bg, __u32 count);
- extern void ext4_itable_unused_set(struct super_block *sb,
- 				   struct ext4_group_desc *bg, __u32 count);
--extern __le16 ext4_group_desc_csum(struct ext4_sb_info *sbi, __u32 group,
--				   struct ext4_group_desc *gdp);
- extern int ext4_group_desc_csum_verify(struct ext4_sb_info *sbi, __u32 group,
- 				       struct ext4_group_desc *gdp);
-+extern void ext4_group_desc_csum_set(struct ext4_sb_info *sbi, __u32 group,
-+				     struct ext4_group_desc *gdp);
- 
- static inline ext4_fsblk_t ext4_blocks_count(struct ext4_super_block *es)
- {
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 77ae3df..7d2d27d 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -92,7 +92,7 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
- 			bh->b_data);
- 	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sbi, block_group, gdp);
- 
- 	return EXT4_INODES_PER_GROUP(sb);
- }
-@@ -287,7 +287,7 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
- 	}
- 	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sbi, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
- 
- 	percpu_counter_inc(&sbi->s_freeinodes_counter);
-@@ -808,7 +808,7 @@ static int ext4_claim_inode(struct super_block *sb,
- 	}
- 	ext4_inode_bitmap_csum_set(sb, group, gdp, inode_bitmap_bh,
- 				   EXT4_INODES_PER_GROUP(sb) / 8);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
-+	ext4_group_desc_csum_set(sbi, group, gdp);
- err_ret:
- 	ext4_unlock_group(sb, group);
- 	up_read(&grp->alloc_sem);
-@@ -985,8 +985,7 @@ got:
- 						   block_bitmap_bh,
- 						   EXT4_BLOCKS_PER_GROUP(sb) /
- 						   8);
--			gdp->bg_checksum = ext4_group_desc_csum(sbi, group,
--								gdp);
-+			ext4_group_desc_csum_set(sbi, group, gdp);
- 		}
- 		ext4_unlock_group(sb, group);
- 
-@@ -1359,7 +1358,7 @@ extern int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
- skip_zeroout:
- 	ext4_lock_group(sb, group);
- 	gdp->bg_flags |= cpu_to_le16(EXT4_BG_INODE_ZEROED);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
-+	ext4_group_desc_csum_set(sbi, group, gdp);
- 	ext4_unlock_group(sb, group);
- 
- 	BUFFER_TRACE(group_desc_bh,
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 3d6300a..be62df1 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2879,7 +2879,7 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	ext4_free_blks_set(sb, gdp, len);
- 	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, ac->ac_b_ex.fe_group, gdp);
-+	ext4_group_desc_csum_set(sbi, ac->ac_b_ex.fe_group, gdp);
- 
- 	ext4_unlock_group(sb, ac->ac_b_ex.fe_group);
- 	percpu_counter_sub(&sbi->s_freeblocks_counter, ac->ac_b_ex.fe_len);
-@@ -4690,7 +4690,7 @@ do_more:
- 	ext4_free_blks_set(sb, gdp, ret);
- 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
-+	ext4_group_desc_csum_set(sbi, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeblocks_counter, count);
- 
-@@ -4834,7 +4834,7 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
- 	ext4_free_blks_set(sb, desc, blk_free_count);
- 	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh,
- 				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
--	desc->bg_checksum = ext4_group_desc_csum(sbi, block_group, desc);
-+	ext4_group_desc_csum_set(sbi, block_group, desc);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeblocks_counter, blocks_freed);
- 
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 2ad7008..f0a1f02 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -880,7 +880,7 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
- 	ext4_free_blks_set(sb, gdp, input->free_blocks_count);
- 	ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
- 	gdp->bg_flags = cpu_to_le16(EXT4_BG_INODE_ZEROED);
--	gdp->bg_checksum = ext4_group_desc_csum(sbi, input->group, gdp);
-+	ext4_group_desc_csum_set(sbi, input->group, gdp);
- 
- 	/*
- 	 * We can allocate memory for mb_alloc based on the new group
 diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 58157ec..5538fb7 100644
+index 5538fb7..a715b3e 100644
 --- a/fs/ext4/super.c
 +++ b/fs/ext4/super.c
-@@ -2070,29 +2070,48 @@ failed:
- 	return 0;
+@@ -3141,6 +3141,44 @@ static void ext4_destroy_lazyinit_thread(void)
+ 	kthread_stop(ext4_lazyinit_task);
  }
  
--__le16 ext4_group_desc_csum(struct ext4_sb_info *sbi, __u32 block_group,
--			    struct ext4_group_desc *gdp)
-+static __le16 ext4_group_desc_csum(struct ext4_sb_info *sbi, __u32 block_group,
-+				   struct ext4_group_desc *gdp)
- {
-+	int offset;
- 	__u16 crc = 0;
-+	__le32 le_group = cpu_to_le32(block_group);
- 
--	if (sbi->s_es->s_feature_ro_compat &
--	    cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)) {
--		int offset = offsetof(struct ext4_group_desc, bg_checksum);
--		__le32 le_group = cpu_to_le32(block_group);
--
--		crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
--		crc = crc16(crc, (__u8 *)&le_group, sizeof(le_group));
--		crc = crc16(crc, (__u8 *)gdp, offset);
--		offset += sizeof(gdp->bg_checksum); /* skip checksum */
--		/* for checksum of struct ext4_group_desc do the rest...*/
--		if ((sbi->s_es->s_feature_incompat &
--		     cpu_to_le32(EXT4_FEATURE_INCOMPAT_64BIT)) &&
--		    offset < le16_to_cpu(sbi->s_es->s_desc_size))
--			crc = crc16(crc, (__u8 *)gdp + offset,
--				    le16_to_cpu(sbi->s_es->s_desc_size) -
--					offset);
-+	if ((sbi->s_es->s_feature_ro_compat &
-+	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) &&
-+	    (sbi->s_es->s_feature_incompat &
-+	     cpu_to_le32(EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM))) {
-+		/* Use new metadata_csum algorithm */
-+		__u16 old_crc;
-+		__u32 crc32;
-+
-+		old_crc = gdp->bg_checksum;
-+		gdp->bg_checksum = 0;
-+		crc32 = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&le_group,
-+				    sizeof(le_group));
-+		crc32 = ext4_chksum(sbi, crc32, (__u8 *)gdp, sbi->s_desc_size);
-+		gdp->bg_checksum = old_crc;
-+
-+		crc = crc32 & 0xFFFF;
-+		goto out;
- 	}
- 
-+	/* old crc16 code */
-+	offset = offsetof(struct ext4_group_desc, bg_checksum);
-+
-+	crc = crc16(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
-+	crc = crc16(crc, (__u8 *)&le_group, sizeof(le_group));
-+	crc = crc16(crc, (__u8 *)gdp, offset);
-+	offset += sizeof(gdp->bg_checksum); /* skip checksum */
-+	/* for checksum of struct ext4_group_desc do the rest...*/
-+	if ((sbi->s_es->s_feature_incompat &
-+	     cpu_to_le32(EXT4_FEATURE_INCOMPAT_64BIT)) &&
-+	    offset < le16_to_cpu(sbi->s_es->s_desc_size))
-+		crc = crc16(crc, (__u8 *)gdp + offset,
-+			    le16_to_cpu(sbi->s_es->s_desc_size) -
-+				offset);
-+
-+out:
- 	return cpu_to_le16(crc);
- }
- 
-@@ -2107,6 +2126,15 @@ int ext4_group_desc_csum_verify(struct ext4_sb_info *sbi, __u32 block_group,
- 	return 1;
- }
- 
-+void ext4_group_desc_csum_set(struct ext4_sb_info *sbi, __u32 block_group,
-+			      struct ext4_group_desc *gdp)
++static int set_journal_csum_feature_set(struct super_block *sb)
 +{
-+	if (!(sbi->s_es->s_feature_ro_compat &
-+	     cpu_to_le32(EXT4_FEATURE_RO_COMPAT_GDT_CSUM)))
-+		return;
-+	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
++	int ret = 1;
++	int compat, incompat;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++		/* journal checksum v2 */
++		compat = 0;
++		incompat = JBD2_FEATURE_INCOMPAT_CSUM_V2;
++	} else {
++		/* journal checksum v1 */
++		compat = JBD2_FEATURE_COMPAT_CHECKSUM;
++		incompat = 0;
++	}
++
++	if (test_opt(sb, JOURNAL_ASYNC_COMMIT)) {
++		ret = jbd2_journal_set_features(sbi->s_journal,
++				compat, 0,
++				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT |
++				incompat);
++	} else if (test_opt(sb, JOURNAL_CHECKSUM)) {
++		ret = jbd2_journal_set_features(sbi->s_journal,
++				compat, 0,
++				incompat);
++		jbd2_journal_clear_features(sbi->s_journal, 0, 0,
++				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT);
++	} else {
++		jbd2_journal_clear_features(sbi->s_journal,
++				JBD2_FEATURE_COMPAT_CHECKSUM, 0,
++				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT |
++				JBD2_FEATURE_INCOMPAT_CSUM_V2);
++	}
++
++	return ret;
 +}
 +
- /* Called at mount-time, super-block is locked */
- static int ext4_check_descriptors(struct super_block *sb,
- 				  ext4_group_t *first_not_zeroed)
+ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 				__releases(kernel_lock)
+ 				__acquires(kernel_lock)
+@@ -3667,19 +3705,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto failed_mount_wq;
+ 	}
+ 
+-	if (test_opt(sb, JOURNAL_ASYNC_COMMIT)) {
+-		jbd2_journal_set_features(sbi->s_journal,
+-				JBD2_FEATURE_COMPAT_CHECKSUM, 0,
+-				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT);
+-	} else if (test_opt(sb, JOURNAL_CHECKSUM)) {
+-		jbd2_journal_set_features(sbi->s_journal,
+-				JBD2_FEATURE_COMPAT_CHECKSUM, 0, 0);
+-		jbd2_journal_clear_features(sbi->s_journal, 0, 0,
+-				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT);
+-	} else {
+-		jbd2_journal_clear_features(sbi->s_journal,
+-				JBD2_FEATURE_COMPAT_CHECKSUM, 0,
+-				JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT);
++	if (!set_journal_csum_feature_set(sb)) {
++		ext4_msg(sb, KERN_ERR, "Failed to set journal checksum "
++			 "feature set");
++		goto failed_mount_wq;
+ 	}
+ 
+ 	/* We have now updated the journal if required, so we can
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index f24df13..8d8985e 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -100,6 +100,15 @@ static int journal_convert_superblock_v1(journal_t *, journal_superblock_t *);
+ static void __journal_abort_soft (journal_t *journal, int errno);
+ static int jbd2_journal_create_slab(size_t slab_size);
+ 
++/* Checksumming functions */
++int jbd2_verify_csum_type(journal_t *j, journal_superblock_t *sb)
++{
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return 1;
++
++	return sb->s_checksum_type == JBD2_CRC32C_CHKSUM;
++}
++
+ /*
+  * Helper function used to manage commit timeouts
+  */
+@@ -1222,6 +1231,9 @@ static int journal_get_superblock(journal_t *journal)
+ 		}
+ 	}
+ 
++	if (buffer_verified(bh))
++		return 0;
++
+ 	sb = journal->j_superblock;
+ 
+ 	err = -EINVAL;
+@@ -1251,6 +1263,21 @@ static int journal_get_superblock(journal_t *journal)
+ 		goto out;
+ 	}
+ 
++	if (JBD2_HAS_COMPAT_FEATURE(journal, JBD2_FEATURE_COMPAT_CHECKSUM) &&
++	    JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2)) {
++		/* Can't have checksum v1 and v2 on at the same time! */
++		printk(KERN_ERR "JBD: Can't enable checksumming v1 and v2 "
++		       "at the same time!\n");
++		goto out;
++	}
++
++	if (!jbd2_verify_csum_type(journal, sb)) {
++		printk(KERN_ERR "JBD: Unknown checksum type\n");
++		goto out;
++	}
++
++	set_buffer_verified(bh);
++
+ 	return 0;
+ 
+ out:
+@@ -1494,6 +1521,10 @@ int jbd2_journal_check_available_features (journal_t *journal, unsigned long com
+ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
+ 			  unsigned long ro, unsigned long incompat)
+ {
++#define INCOMPAT_FEATURE_ON(f) \
++		((incompat & (f)) && !(sb->s_feature_incompat & cpu_to_be32(f)))
++#define COMPAT_FEATURE_ON(f) \
++		((compat & (f)) && !(sb->s_feature_compat & cpu_to_be32(f)))
+ 	journal_superblock_t *sb;
+ 
+ 	if (jbd2_journal_check_used_features(journal, compat, ro, incompat))
+@@ -1502,16 +1533,35 @@ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
+ 	if (!jbd2_journal_check_available_features(journal, compat, ro, incompat))
+ 		return 0;
+ 
++	/* Asking for checksumming v2 and v1?  Only give them v2. */
++	if (incompat & JBD2_FEATURE_INCOMPAT_CSUM_V2 &&
++	    compat & JBD2_FEATURE_COMPAT_CHECKSUM)
++		compat &= ~JBD2_FEATURE_COMPAT_CHECKSUM;
++
+ 	jbd_debug(1, "Setting new features 0x%lx/0x%lx/0x%lx\n",
+ 		  compat, ro, incompat);
+ 
+ 	sb = journal->j_superblock;
+ 
++	/* If enabling v2 checksums, update superblock */
++	if (INCOMPAT_FEATURE_ON(JBD2_FEATURE_INCOMPAT_CSUM_V2)) {
++		sb->s_checksum_type = JBD2_CRC32C_CHKSUM;
++		sb->s_feature_compat &=
++			~cpu_to_be32(JBD2_FEATURE_COMPAT_CHECKSUM);
++	}
++
++	/* If enabling v1 checksums, downgrade superblock */
++	if (COMPAT_FEATURE_ON(JBD2_FEATURE_COMPAT_CHECKSUM))
++		sb->s_feature_incompat &=
++			~cpu_to_be32(JBD2_FEATURE_INCOMPAT_CSUM_V2);
++
+ 	sb->s_feature_compat    |= cpu_to_be32(compat);
+ 	sb->s_feature_ro_compat |= cpu_to_be32(ro);
+ 	sb->s_feature_incompat  |= cpu_to_be32(incompat);
+ 
+ 	return 1;
++#undef COMPAT_FEATURE_ON
++#undef INCOMPAT_FEATURE_ON
+ }
+ 
+ /*
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 3284706..69ca172 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -147,6 +147,7 @@ typedef struct journal_header_s
+ #define JBD2_CRC32_CHKSUM   1
+ #define JBD2_MD5_CHKSUM     2
+ #define JBD2_SHA1_CHKSUM    3
++#define JBD2_CRC32C_CHKSUM  4
+ 
+ #define JBD2_CRC32_CHKSUM_SIZE 4
+ 
+@@ -263,13 +264,15 @@ typedef struct journal_superblock_s
+ #define JBD2_FEATURE_INCOMPAT_REVOKE		0x00000001
+ #define JBD2_FEATURE_INCOMPAT_64BIT		0x00000002
+ #define JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT	0x00000004
++#define JBD2_FEATURE_INCOMPAT_CSUM_V2		0x00000008
+ 
+ /* Features known to this kernel version: */
+ #define JBD2_KNOWN_COMPAT_FEATURES	JBD2_FEATURE_COMPAT_CHECKSUM
+ #define JBD2_KNOWN_ROCOMPAT_FEATURES	0
+ #define JBD2_KNOWN_INCOMPAT_FEATURES	(JBD2_FEATURE_INCOMPAT_REVOKE | \
+ 					JBD2_FEATURE_INCOMPAT_64BIT | \
+-					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)
++					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT | \
++					JBD2_FEATURE_INCOMPAT_CSUM_V2)
+ 
+ #ifdef __KERNEL__
+ 
+@@ -1004,6 +1007,9 @@ struct journal_s
+ 	 * superblock pointer here
+ 	 */
+ 	void *j_private;
++
++	/* Precomputed UUID checksum */
++	__u32 j_uuid_crc;
+ };
+ 
+ /*
 
