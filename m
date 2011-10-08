@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1JHLOg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 07:14:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64311 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab1JHLOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 07:14:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Eric Miao <eric.y.miao@gmail.com>, Paulo Marques <pmarques@grupopie.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: Question about "Inconsistent kallsyms data"
-Date: Sat, 08 Oct 2011 13:14:06 +0200
-Message-ID: <8197014.WsynFjtK5s@wuerfel>
-User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
-In-Reply-To: <CAMPhdO80ua0WphKnx3nyBLN7LsUDnDKPX1QbzWEjjfO5t3Uz5Q@mail.gmail.com>
-References: <02ae01cc4d91$aed71670$0c854350$%kim@samsung.com> <4E382602.6050308@grupopie.com> <CAMPhdO80ua0WphKnx3nyBLN7LsUDnDKPX1QbzWEjjfO5t3Uz5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:XCT9Yr6Ls9K6voE5pbY/fGIQ8fg4bXtyZG8Gz+rHy7A
- 7e5iZjABSIfo7yMbVgO58024DVTgKMDVroJ4p1ZmEGf4krfdEt
- QAoYlH9TpbUlddmVz6McrMd4lGTXmYn7X8wagWQz7bRXCKwKh5
- k0HwJgtKUtwua6gOHzqBomN/yee+rTf1EBVTlWatF3/FtvoARh
- f+cHnDkrWDfk3RnqMo5pAuL/bIC5BxweFNZlqzINEWl/tpm45k
- f7uHocLJo4AlhoYLa5d9qNbth/soSL1rCnjuNZro3Xvr9+XO4C
- 2kN6iGlGjqQeNQaIrGLl0F/zlILB8JhnedWF9vUIa9jjwJQ5kD
- Um3RLSUcshiyduhdFU94=
+	id S1752741Ab1JHLPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 07:15:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39148 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab1JHLPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 07:15:05 -0400
+Date: Sat, 8 Oct 2011 22:14:39 +1100
+From: NeilBrown <neilb@suse.de>
+To: markgross@thegnar.org
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, arve@android.com,
+        Alan Stern <stern@rowland.harvard.edu>, amit.kucheria@linaro.org,
+        farrowg@sg.ibm.com, "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>,
+        linux-pm@lists.linux-foundation.org, khilman@ti.com,
+        Magnus Damm <damm@opensource.se>, mjg@redhat.com, peterz@infradead.org
+Subject: Re: [markgross@thengar.org: [RFC] wake up notifications and suspend
+ blocking (aka more wakelock stuff)]
+Message-ID: <20111008221439.48f30263@notabene.brown>
+In-Reply-To: <20111002164456.GC14312@mgross-G62>
+References: <20111002164456.GC14312@mgross-G62>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/kFDK2IVHziY0EseCoZ13wpE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 08 October 2011 18:17:49 Eric Miao wrote:
-> >
-> > To check inconsistencies, the Makefile compares ".tmp_System.map" and
-> > "System.map" for differences.
-> >
-> > On a normal build they should be identical, but if this fails with
-> > "Inconsistent kallsyms data" you could try comparing the two files to
-> > check which symbols are causing trouble.
-> 
-> I met this issue today as well. Didn't have a chance to compare the
-> files, as I did a 'rm -fr ../build' and reconfigured/re-built everything,
-> and 'make O=../build clean' didn't work for me.
+--Sig_/kFDK2IVHziY0EseCoZ13wpE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I can easily reproduce it here, but it's extremely hard to nail
-down what is actually going on.
+On Sun, 2 Oct 2011 09:44:56 -0700 mark gross <markgross@thegnar.org> wrote:
 
-For all I know, this depends on the specific configuration, source
-version and gcc version. If you change any of these in any meaningful
-way, the problem can go away or reappear. In one case, I've been
-able to get to the point where inserting a single 'nop' instruction
-in one (any) source file triggered the problem. This happens to be
-the point when one of the linker sections grows beyond some power-of-two
-boundary.
+> resending to wider list for discussion
+> ----- Forwarded message from mark gross <markgross@thengar.org> -----
+>=20
+> Subject: [RFC] wake up notifications and suspend blocking (aka more wakel=
+ock stuff)
+> Date: Tue, 20 Sep 2011 13:33:05 -0700
+> From: mark gross <markgross@thengar.org>
+> To: linux-pm@lists.linux-foundation.org
+> Reply-To: markgross@thegnar.org
+> Cc: arve@android.com, markgross@thegnar.org, Alan Stern <stern@rowland.ha=
+rvard.edu>, amit.kucheria@linaro.org, farrowg@sg.ibm.com, "Rafael J. Wysock=
+i" <rjw@sisk.pl>
+>=20
+> The following patch set implement an (untested) solution to the
+> following problems.
+>=20
+> 1) a method for making a system unable to suspend for critical sections
+> of time.
 
-If anyone wants to reproduce it, I can recommend taking a fast machine
-and the for-next+randconfig branch of git://git.linaro.org/people/arnd/arm-soc.git
-There is a script called randconfig.sh in it. Remove the KALLSYMS_EXTRA_PASS=1
-line from it and run it for some time. After a few hours you will get
-multiple configurations for your compiler that show the problem.
+We already have this.  A properly requested suspend (following wakeup_count
+protocol) is unable to complete between wakeup_source_activate() and
+wake_source_deactivate() - these delimit the critical sections.
 
-I've had one case where even with KALLSYMS_EXTRA_PASS=1 I was still getting
-inconsistent kallsyms data. Manually changing the Makefile to do a fourth
-run fixed it.
+What more than this do you need?
 
-	Arnd
+If user-space wants to prevent suspend, it just needs some sort of protocol
+for talking to the user-space process which follows the correct protocol to
+initiate suspend.  That isn't a kernel problem.
+
+>=20
+> 2) providing a race free method for the acknowledgment of wake event
+> processing before re-entry into suspend can happen.
+
+Again, this is a user-space problem.  It is user-space which requests
+suspend.  It shouldn't request it until it has checked that there are no wa=
+ke
+events that need processing - and should use the wakeup_count protocol to
+avoid races with wakeup events happening after it has checked.
+
+i.e. there is no kernel-space problem to solve here (except for possible
+bugs).
+
+NeilBrown
+
+
+--Sig_/kFDK2IVHziY0EseCoZ13wpE
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTpAwqTnsnt1WYoG5AQLZ0xAAjUCnsIWuTviahIItYAJAgMZ5VbopOoyH
+h1eOUEG+68gPHkSYOWQdbmXYHdCTndPDeDZqgkGUVhdl7UJV5wEpgiEUw9ldQbpj
+kKeETozRJjz86w4/pJ0DYYop8NhPu7Iv7oFm5CBpfolazyPTEnxlIhArF/sbRSFP
+XoWtdH//1BRsPz3LsVS8nLwH60NSUMZ3Pkvnq6GJqGbb060P169hi0CJX5sDAPiq
+aof5lfJlRJhrlHwMjRkmZgN6EixE+N0vT/o2TqRRAW/RStYT1JVAqfgdymi9KxQW
+ivZt/lemV3Yb9lx0gjnh3jtyzokrW2s6z6rjisFaXHnjdsm2y4fOoruCeeYllP8w
+g/xBK//bXZkrYkrYmWQz99BHXtk8gutslmE/KxDAPCifCQyVqK/YfE+3d2cArP5O
+5gCSP4Voufwd4sCAZMWwhGQGyqWVlEBtwAPiIoVTJBF5NVvlC+DpoE+NcqJbp8Tz
+VcZ1obt2jBHWZt/TNrsvC9o+1VjGd0VCHWQzbDX64+mOZcs8+JS21LWh9ucMxtKV
++ttjhPYGdiHcRIFw5PxIKdOgy7Zji4z5fG5n4bw4dJEcTT8AcZnLUFTjOxoLn7Qg
+/BMHi3l9K+/A2eF7Fc93Kr8LxfCgDQ/YWNDMIYIDCKM8yZ2gORvofaB9CyM6R5uD
+T+4nj37hxNc=
+=9VbO
+-----END PGP SIGNATURE-----
+
+--Sig_/kFDK2IVHziY0EseCoZ13wpE--
