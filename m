@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1JHN3U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 09:29:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65519 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab1JHN3T convert rfc822-to-8bit (ORCPT
+	id S1753095Ab1JHNgt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 09:36:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53693 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab1JHNgr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 09:29:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <201110081326.58731.jbe@pengutronix.de>
-References: <alpine.LFD.2.02.1110070046270.3240@ionos>
-	<201110081326.58731.jbe@pengutronix.de>
-Date: Sat, 8 Oct 2011 18:59:18 +0530
-Message-ID: <CAJuYYwSEvA+EHwyhgeZkBX+bB_e1cmFnC6YdEx-CdHzk8peyEw@mail.gmail.com>
-Subject: Re: Serieal console on Samsung S3C6410 ARM11 CPU (Was [ANNOUNCE] 3.0.6-rt17)
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Juergen Beisert <jbe@pengutronix.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 8 Oct 2011 09:36:47 -0400
+References: <4E8FE4E5.9040606@russia.ru>
+From: =?UTF-8?B?SsOpcsO0bWUgUG91bGlu?= <jeromepoulin@gmail.com>
+In-Reply-To: <4E8FE4E5.9040606@russia.ru>
+Mime-Version: 1.0 (iPhone Mail 8J2)
+Date: Sat, 8 Oct 2011 09:36:42 -0400
+Message-ID: <5617831734450003872@unknownmsgid>
+Subject: Re: BUG: spinlock lockup while performing FS operations and detected
+ stalls on CPUs / tasks.
+To: =?UTF-8?B?0JLQsNC70LXRgNC40Lk=?= <paramonov@russia.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "duaneg@dghda.com" <duaneg@dghda.com>,
+        Alexander Beregalov <a.beregalov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juergen,
+As soon as smart says there are ANY problem, the disk IS going bad and
+will have serious problem soon enough. Especially READ DMA errors
+which mean it reallocate sectors. Consumer level disk try to hide
+problems as hard as they can until the disk finally fail. Try ddrescue
+from disk to /dev/null to check for speed, I guess it is slow.
 
-On 8 October 2011 16:56, Juergen Beisert <jbe@pengutronix.de> wrote:
-> Thomas Gleixner wrote:
->> I'm pleased to announce the 3.0.6-rt17 release.
->
-> I have no idea where to search, but when I'm using the 3.0.6-rt17 on my
-> Samsung S3C6410 ARM based system, the UART (serial console) does not work as
-> expected. Typing only one char at a time is okay. Typing two chars
-> immediately makes the system using 100 % CPU load and takes about 2 seconds
-> to respond. It seems the interrupt handling is broken in the UART driver, but
-> I don't know how to fix it.
->
-> This with a simple cursor up (one char to get the last command) and a small
-> pause to the next "ENTER" char:
->
-> root@mini6410:~ cat /proc/interrupts | grep 18:
-> †18: † †5739107 †s3c-uart †s3c6400-uart
->
-> Same again:
->
-> root@mini6410:~ cat /proc/interrupts | grep 18:
-> †18: † †5739113 †s3c-uart †s3c6400-uart
->
-> 6 interrupts seems reasonable.
->
-> Now with cursor up and SPACE immediately, then a pause for ENTER:
->
-> root@mini6410:~ cat /proc/interrupts | grep 18:
-> †18: † †5923815 †s3c-uart †s3c6400-uart
->
-> 184702 interrupts looks strange.
+Envoy√© de mon appareil mobile.
 
-Just curious, do you have the following two commits?
+J√©r√¥me Poulin
+Solutions G.A.
 
-serial: samsung: Add unified interrupt handler for s3c64xx and later SoC's
-ARM: SAMSUNG: Remove uart irq handling from platform code
+On 2011-10-08, at 01:52, –í–∞–ª–µ—Ä–∏–π <paramonov@russia.ru> wrote:
 
-Thanks,
-Thomas.
+> So, this IDE drive has non-critical SMART errors listed at end of message by command smartctl --all /dev/sde. It is unclear how this might affect the command dd.
