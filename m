@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab1JHH4d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:56:33 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50105 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1JHH42 (ORCPT
+	id S1753248Ab1JHH4g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:56:36 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54695 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab1JHH43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:56:28 -0400
-Subject: [PATCH 03/28] ext4: ext4_mkdir should dirty dir_block with the parent
-	inode
+	Sat, 8 Oct 2011 03:56:29 -0400
+Subject: [PATCH 02/28] ext4: ext4_rename should dirty dir_bh with the correct
+	directory
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -21,8 +21,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:54:03 -0700
-Message-ID: <20111008075403.20506.36338.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:53:57 -0700
+Message-ID: <20111008075357.20506.18513.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -33,10 +33,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext4_mkdir calls ext4_handle_dirty_metadata with dir_block and the inode "dir".
-Unfortunately, dir_block belongs to the newly created directory (which is
-"inode"), not the parent directory (which is "dir").  Fix the incorrect
-association.
+When ext4_rename performs a directory rename (move), dir_bh is a buffer that is
+modified to update the '..' link in the directory being moved (old_inode).
+However, ext4_handle_dirty_metadata is called with the old parent directory
+inode (old_dir) and dir_bh, which is incorrect because dir_bh does not belong
+to the parent inode.  Fix this error.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
@@ -45,16 +46,16 @@ Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 
 
 diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 6d3fab4..50c7294 100644
+index 310b356..6d3fab4 100644
 --- a/fs/ext4/namei.c
 +++ b/fs/ext4/namei.c
-@@ -1863,7 +1863,7 @@ retry:
- 	ext4_set_de_type(dir->i_sb, de, S_IFDIR);
- 	inode->i_nlink = 2;
- 	BUFFER_TRACE(dir_block, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, dir, dir_block);
-+	err = ext4_handle_dirty_metadata(handle, inode, dir_block);
- 	if (err)
- 		goto out_clear_inode;
- 	err = ext4_mark_inode_dirty(handle, inode);
+@@ -2530,7 +2530,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
+ 						cpu_to_le32(new_dir->i_ino);
+ 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
+-		retval = ext4_handle_dirty_metadata(handle, old_dir, dir_bh);
++		retval = ext4_handle_dirty_metadata(handle, old_inode, dir_bh);
+ 		if (retval) {
+ 			ext4_std_error(old_dir->i_sb, retval);
+ 			goto end_rename;
 
