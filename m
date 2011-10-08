@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab1JHRSC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 13:18:02 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6046 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1JHRSA convert rfc822-to-8bit (ORCPT
+	id S1753289Ab1JHRg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 13:36:27 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55189 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab1JHRgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 13:18:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=bmEboQ3DlMupT8Bg/ZdwpKR4juhAeL3Uq3Hi9n5TUn1F367i4SAegb7pShQtaJe6z
-	opbM9/Djbl2iPHiI6zFPg==
+	Sat, 8 Oct 2011 13:36:25 -0400
+Date: Sat, 8 Oct 2011 13:36:21 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Eric Miao <eric.y.miao@gmail.com>
+cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Chagas <jason.chagas@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Subject: Re: [PATCH 18/26] ARM: pxa: MTD_XIP is not actually working any
+ more
+In-Reply-To: <CAMPhdO88OdwjfERo=Ri_-_xR75S53d-HKW1Ah0WGnu_0P1gRXQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1110081126150.6390@xanadu.home>
+References: <1317499438-14058-1-git-send-email-arnd@arndb.de> <1317499438-14058-19-git-send-email-arnd@arndb.de> <CAMPhdO88OdwjfERo=Ri_-_xR75S53d-HKW1Ah0WGnu_0P1gRXQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAHFNz9L-WDeEGx9MazTawJF-Hsz88FS7Z=RinfrKn780jBf++A@mail.gmail.com>
-References: <CAHFNz9L-WDeEGx9MazTawJF-Hsz88FS7Z=RinfrKn780jBf++A@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Sat, 8 Oct 2011 11:17:38 -0600
-Message-ID: <CAErSpo6CH-FHOughZu3KSsRYHX2dvncB1sFBNVp+ivEHNs52yA@mail.gmail.com>
-Subject: Re: Memory at xxxxxx [disabled]
-To: Manu Abraham <abraham.manu@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
+Content-ID: <alpine.LFD.2.02.1110081333411.6390@xanadu.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 8, 2011 at 9:51 AM, Manu Abraham <abraham.manu@gmail.com> wrote:
-> Hi,
->
-> Any Idea why I am seeing the [disabled] for the specified memory
-> region as described below ?
->
-> 04:07.0 Multimedia controller [0480]: Twinhan Technology Co. Ltd
-> Device [1822:4e31] (rev 01)
->        Subsystem: Twinhan Technology Co. Ltd Device [1822:0010]
->        Flags: medium devsel, IRQ 11
->        Memory at fd900000 (32-bit, prefetchable) [disabled] [size=4K]
+On Sat, 8 Oct 2011, Eric Miao wrote:
 
-The complete dmesg log should have some clues.  Normally we use the
-resources assignments done by BIOS.
+> On Sun, Oct 2, 2011 at 4:03 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > The headers files required for XIP support have moved around
+> > over the last few years, and the code no longer builds.
+> > Until someone fixes this, let's just disable support, leaving
+> > sa1100 as the only platform still supporting xip.
+> >
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> It is actually fixable, the problem is really mtd-xip.h is referencing
+> the interrupt registers directly which I moved them to mach-pxa/irq.c
+> for better modularization.
+> 
+> I'm fine to drop XIP. I'm afraid Nico's gonna be a bit disappointed
+> as I broke his favorite XIP code :-)
 
-Bjorn
+Well, I don't care much myself.  I have no use for that capability, even 
+though this was interesting to implement.  So it only depends if someone 
+relies on this or not.
+
+A few months ago I asked on the list if XIP was still useful, and Tim 
+Bird replied that Sony was indeed using it.  So if this is not too hard 
+to keep this feature alive then I'd go with that option.
+
+
+Nicolas
