@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1JHH5c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 03:57:32 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52576 "EHLO e6.ny.us.ibm.com"
+	id S1754051Ab1JHICY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 04:02:24 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:51845 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744Ab1JHH51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:57:27 -0400
-Subject: [PATCH 12/28] ext4: Use i_generation in inode-related metadata
-	checksums
+	id S1753708Ab1JHH50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:57:26 -0400
+Subject: [PATCH 09/28] ext4: Only call out to crc32c if necessary
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,8 +19,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:55:02 -0700
-Message-ID: <20111008075502.20506.15728.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:54:43 -0700
+Message-ID: <20111008075443.20506.67020.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -32,74 +31,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whenever we are calculating a checksum for a piece of metadata that is
-associated with an inode, incorporate i_generation into that calculation so
-that old metadata blocks cannot be re-associated after a delete/create cycle.
+Only obtain a reference to the cryptoapi and crc32c if we happen to mount a
+filesystem with metadata checksumming enabled.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ialloc.c |    9 ++++++---
- fs/ext4/inode.c  |    9 ++++++---
- fs/ext4/ioctl.c  |    4 ++++
- 3 files changed, 16 insertions(+), 6 deletions(-)
+ fs/ext4/Kconfig |    2 ++
+ fs/ext4/ext4.h  |   23 +++++++++++++++++++++++
+ fs/ext4/super.c |   15 +++++++++++++++
+ 3 files changed, 40 insertions(+), 0 deletions(-)
 
 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 6e5876a..d4b59e9 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1031,11 +1031,14 @@ got:
- 	/* Precompute second piece of crc */
- 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		__u32 crc;
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 		__le32 inum = cpu_to_le32(inode->i_ino);
--		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
--						  (__u8 *)&inum,
--						  sizeof(inum));
-+		__le32 gen = cpu_to_le32(inode->i_generation);
-+		crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&inum,
-+				  sizeof(inum));
-+		ei->i_uuid_inum_crc = ext4_chksum(sbi, crc, (__u8 *)&gen,
-+						  sizeof(gen));
- 	}
+diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
+index 9ed1bb1..c22f170 100644
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -2,6 +2,8 @@ config EXT4_FS
+ 	tristate "The Extended 4 (ext4) filesystem"
+ 	select JBD2
+ 	select CRC16
++	select CRYPTO
++	select CRYPTO_CRC32C
+ 	help
+ 	  This is the next generation of the ext3 filesystem.
  
- 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index b00315d..593f3bf 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3492,10 +3492,13 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+		__u32 crc;
- 		__le32 inum = cpu_to_le32(inode->i_ino);
--		ei->i_uuid_inum_crc = ext4_chksum(sbi, sbi->s_uuid_crc,
--						  (__u8 *)&inum,
--						  sizeof(inum));
-+		__le32 gen = raw_inode->i_generation;
-+		crc = ext4_chksum(sbi, sbi->s_uuid_crc, (__u8 *)&inum,
-+				  sizeof(inum));
-+		ei->i_uuid_inum_crc = ext4_chksum(sbi, crc, (__u8 *)&gen,
-+						  sizeof(gen));
- 	}
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index a74e125..9012911 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -29,6 +29,7 @@
+ #include <linux/wait.h>
+ #include <linux/blockgroup_lock.h>
+ #include <linux/percpu_counter.h>
++#include <crypto/hash.h>
+ #ifdef __KERNEL__
+ #include <linux/compat.h>
+ #endif
+@@ -1228,6 +1229,9 @@ struct ext4_sb_info {
  
- 	if (!ext4_inode_csum_verify(inode, raw_inode, ei)) {
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index f18bfe3..fdf0b1e 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -149,6 +149,10 @@ flags_out:
- 		if (!inode_owner_or_capable(inode))
- 			return -EPERM;
- 
-+		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+			return -ENOTTY;
+ 	/* Precomputed FS UUID checksum */
+ 	__u32 s_uuid_crc;
 +
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
- 			return err;
++	/* Reference to checksum algorithm driver via cryptoapi */
++	struct crypto_shash *s_chksum_driver;
+ };
+ 
+ static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+@@ -1558,6 +1562,25 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
+ #define DX_HASH_HALF_MD4_UNSIGNED	4
+ #define DX_HASH_TEA_UNSIGNED		5
+ 
++static inline u32 ext4_chksum(struct ext4_sb_info *sbi, u32 crc,
++			      const void *address, unsigned int length)
++{
++	struct {
++		struct shash_desc shash;
++		char ctx[crypto_shash_descsize(sbi->s_chksum_driver)];
++	} desc;
++	int err;
++
++	desc.shash.tfm = sbi->s_chksum_driver;
++	desc.shash.flags = 0;
++	*(u32 *)desc.ctx = crc;
++
++	err = crypto_shash_update(&desc.shash, address, length);
++	BUG_ON(err);
++
++	return *(u32 *)desc.ctx;
++}
++
+ #ifdef __KERNEL__
+ 
+ /* hash info structure used by the directory hash */
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index ac33e45..f02de28 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -870,6 +870,8 @@ static void ext4_put_super(struct super_block *sb)
+ 	unlock_super(sb);
+ 	kobject_put(&sbi->s_kobj);
+ 	wait_for_completion(&sbi->s_kobj_unregister);
++	if (sbi->s_chksum_driver)
++		crypto_free_shash(sbi->s_chksum_driver);
+ 	kfree(sbi->s_blockgroup_lock);
+ 	kfree(sbi);
+ }
+@@ -3171,6 +3173,17 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto cantfind_ext4;
+ 	}
+ 
++	/* Load the checksum driver */
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++		sbi->s_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
++		if (IS_ERR(sbi->s_chksum_driver)) {
++			ret = PTR_ERR(sbi->s_chksum_driver);
++			sbi->s_chksum_driver = NULL;
++			goto failed_mount;
++		}
++	}
++
+ 	/* Set defaults before we parse the mount options */
+ 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
+ 	set_opt(sb, INIT_INODE_TABLE);
+@@ -3803,6 +3816,8 @@ failed_mount2:
+ 		brelse(sbi->s_group_desc[i]);
+ 	ext4_kvfree(sbi->s_group_desc);
+ failed_mount:
++	if (sbi->s_chksum_driver)
++		crypto_free_shash(sbi->s_chksum_driver);
+ 	if (sbi->s_proc) {
+ 		remove_proc_entry(sb->s_id, ext4_proc_root);
+ 	}
 
