@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab1JHIAR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 04:00:17 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52490 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab1JHH7Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 03:59:16 -0400
-Subject: [PATCH 27/28] jbd2: Checksum commit blocks
+	id S1753764Ab1JHH7C (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 03:59:02 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58089 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab1JHH64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Oct 2011 03:58:56 -0400
+Subject: [PATCH 23/28] jbd2: Grab a reference to the crc32c driver only when
+	necessary
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,146 +20,135 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 08 Oct 2011 00:56:42 -0700
-Message-ID: <20111008075642.20506.1528.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 08 Oct 2011 00:56:15 -0700
+Message-ID: <20111008075615.20506.97385.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11100807-3270-0000-0000-000000B57E8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the checksum of commit blocks.  In checksum v2, deprecate
-most of the checksum v1 commit block checksum fields, since each block has its
-own checksum.
+Obtain a reference to the crc32c driver only when the journal needs it for
+checksum v2.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/jbd2/commit.c     |   21 ++++++++++++++++++++-
- fs/jbd2/recovery.c   |   31 +++++++++++++++++++++++++++++++
- include/linux/jbd2.h |   11 +++++++++++
- 3 files changed, 62 insertions(+), 1 deletions(-)
+ fs/jbd2/Kconfig      |    2 ++
+ fs/jbd2/journal.c    |   22 ++++++++++++++++++++++
+ include/linux/jbd2.h |   23 +++++++++++++++++++++++
+ 3 files changed, 47 insertions(+), 0 deletions(-)
 
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index e2c355c..2bce8dc 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -86,6 +86,24 @@ nope:
- 	__brelse(bh);
- }
- 
-+static void jbd2_commit_block_csum_set(journal_t *j,
-+				       struct journal_head *descriptor)
-+{
-+	struct commit_header *h;
-+	__u32 crc;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return;
-+
-+	h = (struct commit_header *)(jh2bh(descriptor)->b_data);
-+	h->h_chksum_type = 0;
-+	h->h_chksum_size = 0;
-+	h->h_chksum[0] = 0;
-+	crc = jbd2_chksum(j, j->j_uuid_crc, jh2bh(descriptor)->b_data,
-+			  j->j_blocksize);
-+	h->h_chksum[0] = cpu_to_be32(crc);
-+}
-+
- /*
-  * Done it all: now submit the commit record.  We should have
-  * cleaned up our previous buffers by now, so if we are in abort
-@@ -129,6 +147,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 		tmp->h_chksum_size 	= JBD2_CRC32_CHKSUM_SIZE;
- 		tmp->h_chksum[0] 	= cpu_to_be32(crc32_sum);
+diff --git a/fs/jbd2/Kconfig b/fs/jbd2/Kconfig
+index f32f346..69a48c2 100644
+--- a/fs/jbd2/Kconfig
++++ b/fs/jbd2/Kconfig
+@@ -1,6 +1,8 @@
+ config JBD2
+ 	tristate
+ 	select CRC32
++	select CRYPTO
++	select CRYPTO_CRC32C
+ 	help
+ 	  This is a generic journaling layer for block devices that support
+ 	  both 32-bit and 64-bit block numbers.  It is currently used by
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 8d8985e..5c76a8b 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1276,6 +1276,16 @@ static int journal_get_superblock(journal_t *journal)
+ 		goto out;
  	}
-+	jbd2_commit_block_csum_set(journal, descriptor);
  
- 	JBUFFER_TRACE(descriptor, "submit commit block");
- 	lock_buffer(bh);
-@@ -351,7 +370,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	struct blk_plug plug;
- 	int csum_size = 0;
++	/* Load the checksum driver */
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2)) {
++		journal->j_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
++		if (IS_ERR(journal->j_chksum_driver)) {
++			err = PTR_ERR(journal->j_chksum_driver);
++			journal->j_chksum_driver = NULL;
++			goto out;
++		}
++	}
++
+ 	set_buffer_verified(bh);
  
--	if (JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
- 		csum_size = sizeof(struct jbd2_journal_block_tail);
- 
- 	/*
-diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index ecb1eda..3db9625 100644
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -372,6 +372,24 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
  	return 0;
- }
+@@ -1432,6 +1442,8 @@ int jbd2_journal_destroy(journal_t *journal)
+ 		iput(journal->j_inode);
+ 	if (journal->j_revoke)
+ 		jbd2_journal_destroy_revoke(journal);
++	if (journal->j_chksum_driver)
++		crypto_free_shash(journal->j_chksum_driver);
+ 	kfree(journal->j_wbuf);
+ 	kfree(journal);
  
-+static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
-+{
-+	struct commit_header *h;
-+	__u32 provided, calculated;
+@@ -1548,6 +1560,16 @@ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
+ 		sb->s_checksum_type = JBD2_CRC32C_CHKSUM;
+ 		sb->s_feature_compat &=
+ 			~cpu_to_be32(JBD2_FEATURE_COMPAT_CHECKSUM);
 +
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return 1;
-+
-+	h = buf;
-+	provided = h->h_chksum[0];
-+	h->h_chksum[0] = 0;
-+	calculated = jbd2_chksum(j, j->j_uuid_crc, buf, j->j_blocksize);
-+	h->h_chksum[0] = provided;
-+
-+	provided = be32_to_cpu(provided);
-+	return provided == calculated;
-+}
-+
- static int do_one_pass(journal_t *journal,
- 			struct recovery_info *info, enum passtype pass)
- {
-@@ -682,6 +700,19 @@ static int do_one_pass(journal_t *journal,
- 				}
- 				crc32_sum = ~0;
- 			}
-+			if (pass == PASS_SCAN &&
-+			    !jbd2_commit_block_csum_verify(journal,
-+							   bh->b_data)) {
-+				info->end_transaction = next_commit_ID;
-+
-+				if (!JBD2_HAS_INCOMPAT_FEATURE(journal,
-+				     JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
-+					journal->j_failed_commit =
-+						next_commit_ID;
-+					brelse(bh);
-+					break;
-+				}
++		/* Load the checksum driver */
++		if (journal->j_chksum_driver == NULL) {
++			journal->j_chksum_driver = crypto_alloc_shash("crc32c",
++								      0, 0);
++			if (IS_ERR(journal->j_chksum_driver)) {
++				journal->j_chksum_driver = NULL;
++				return 0;
 +			}
- 			brelse(bh);
- 			next_commit_ID++;
- 			continue;
++		}
+ 	}
+ 
+ 	/* If enabling v1 checksums, downgrade superblock */
 diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 69e305d..633fea2 100644
+index 69ca172..53df865 100644
 --- a/include/linux/jbd2.h
 +++ b/include/linux/jbd2.h
-@@ -155,6 +155,17 @@ typedef struct journal_header_s
- #define JBD2_CHECKSUM_BYTES (32 / sizeof(u32))
+@@ -31,6 +31,7 @@
+ #include <linux/mutex.h>
+ #include <linux/timer.h>
+ #include <linux/slab.h>
++#include <crypto/hash.h>
+ #endif
+ 
+ #define journal_oom_retry 1
+@@ -1010,6 +1011,9 @@ struct journal_s
+ 
+ 	/* Precomputed UUID checksum */
+ 	__u32 j_uuid_crc;
++
++	/* Reference to checksum algorithm driver via cryptoapi */
++	struct crypto_shash *j_chksum_driver;
+ };
+ 
  /*
-  * Commit block header for storing transactional checksums:
-+ *
-+ * NOTE: If FEATURE_COMPAT_CHECKSUM (checksum v1) is set, the h_chksum*
-+ * fields are used to store a checksum of the descriptor and data blocks.
-+ *
-+ * If FEATURE_INCOMPAT_CSUM_V2 (checksum v2) is set, then the h_chksum
-+ * field is used to store crc32c(uuid+commit_block).  Each journal metadata
-+ * block gets its own checksum, and data block checksums are stored in
-+ * journal_block_tag (in the descriptor).  The other h_chksum* fields are
-+ * not used.
-+ *
-+ * Checksum v1 and v2 are mutually exclusive features.
-  */
- struct commit_header {
- 	__be32		h_magic;
+@@ -1328,6 +1332,25 @@ static inline int jbd_space_needed(journal_t *journal)
+ 
+ extern int jbd_blocks_per_page(struct inode *inode);
+ 
++static inline u32 jbd2_chksum(journal_t *journal, u32 crc,
++			      const void *address, unsigned int length)
++{
++	struct {
++		struct shash_desc shash;
++		char ctx[crypto_shash_descsize(journal->j_chksum_driver)];
++	} desc;
++	int err;
++
++	desc.shash.tfm = journal->j_chksum_driver;
++	desc.shash.flags = 0;
++	*(u32 *)desc.ctx = crc;
++
++	err = crypto_shash_update(&desc.shash, address, length);
++	BUG_ON(err);
++
++	return *(u32 *)desc.ctx;
++}
++
+ #ifdef __KERNEL__
+ 
+ #define buffer_trace_init(bh)	do {} while (0)
 
