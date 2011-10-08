@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab1JHPzi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 11:55:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54327 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab1JHPzg (ORCPT
+	id S1753241Ab1JHPzp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Oct 2011 11:55:45 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35947 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753157Ab1JHPzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 11:55:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=LNwmNFGPpfu654FaRwe646vzV7/h6EEnVVIg1Xk4ThL5Z3WfZCUTOAGoHtfXow3uw
-	irmAeRCWmU/iyvFolb3WQ==
+	Sat, 8 Oct 2011 11:55:41 -0400
+X-Sasl-enc: sImFejuAGOIcX94K87B1exefthJHL7X3YM8BIlmrcsPf 1318089339
+Date: Sat, 8 Oct 2011 08:55:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+Message-ID: <20111008155502.GB616@kroah.com>
+References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
+ <1317963790-29426-3-git-send-email-manjugk@ti.com>
+ <20111007064928.GE27508@kroah.com>
+ <20111007205715.GC5275@leaf>
+ <20111007212326.GA29003@kroah.com>
+ <20111008040351.GA7694@leaf>
 MIME-Version: 1.0
-In-Reply-To: <4E900E9E.2070604@gmail.com>
-References: <1318024753-15336-1-git-send-email-dianders@chromium.org>
-	<4E900E9E.2070604@gmail.com>
-Date: Sat, 8 Oct 2011 08:55:32 -0700
-X-Google-Sender-Auth: foOXc157nE2gkgKP_RnMQKhnuKw
-Message-ID: <CAD=FV=U2H08ohbgmDxWNPkh8bm8uBPt-2_H2B4cSb9LvEFWdHA@mail.gmail.com>
-Subject: Re: [PATCH] TTY: serial_core: Fix crash if agetty() run on
- non-console serial port
-From: Doug Anderson <dianders@chromium.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111008040351.GA7694@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 8, 2011 at 1:49 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> I cannot reproduce this. What uart driver is this with? And where does
-> it call uart_suspend_port from? Basically, it would mean that it calls
-> uart_suspend_port while userspace is still running? Or who HUPs the port
-> (the second point in your list)?
+On Fri, Oct 07, 2011 at 09:03:51PM -0700, Josh Triplett wrote:
+> On Fri, Oct 07, 2011 at 02:23:26PM -0700, Greg KH wrote:
+> > On Fri, Oct 07, 2011 at 01:57:15PM -0700, Josh Triplett wrote:
+> > > On Thu, Oct 06, 2011 at 11:49:28PM -0700, Greg KH wrote:
+> > > > On Fri, Oct 07, 2011 at 10:33:07AM +0500, G, Manjunath Kondaiah wrote:
+> > > > > +config PROBE_DEFER
+> > > > > +	bool "Deferred Driver Probe"
+> > > > > +	default y
+> > > > > +	help
+> > > > > +	  This option provides deferring driver probe if it has dependency on
+> > > > > +	  other driver. Without this feature, initcall ordering should be done
+> > > > > +	  manually to resolve driver dependencies. This feature completely side
+> > > > > +	  steps the issues by allowing driver registration to occur in any
+> > > > > +	  order, and any driver can request to be retried after a few more other
+> > > > > +	  drivers get probed.
+> > > > 
+> > > > Why is this even an option?  Why would you ever want it disabled?  Why
+> > > > does it need to be selected?
+> > > > 
+> > > > If you are going to default something to 'y' then just make it so it
+> > > > can't be turned off any other way by just not making it an option at
+> > > > all.
+> > > 
+> > > Given that the drivers which use this mechanism will not necessarily get
+> > > built into the kernel, I'd suggest that it should remain optional and
+> > > default to n.  Those drivers can then add a dependency on PROBE_DEFER.
+> > > Let's try to avoid adding more infrastructure to the kernel that takes
+> > > up space even when unused; certainly embedded will appreciate not having
+> > > this feature unless a driver needs it.
+> > 
+> > How much extra space is this "feature" really?
+> 
+> Just checked: 776 bytes, 640 of text and 136 of data.  We have kconfig
+> options for comparable amounts.
+> 
+> > I don't see it being
+> > anything larger than the amount of memory increase that just happened as
+> > I typed this email as part of the ongoing memory density changes.
+> 
+> I don't know about the changes you mean
 
-Thank you for testing!  I am working with the 8250 driver controlling
-the onboard UART on an nVidia Tegra T25 (ARM).
+Moore's law.
 
-You raise very good questions, and I'm happy to keep tracking down to
-continue to look for a deeper root cause.  I continued to do some more
-testing of this patch (with the help of a few others) after posting
-the list.  We tried the same setup on an x86-based board and the HUP
-doesn't show up.  ...so my patch wasn't needed on that board (although
-my patch didn't hurt).  ...that means, as you already pointed out,
-that the HUP must _not_ be coming from userspace.
+Really, 776 bytes, just always enable it, it's not worth it.
 
-Probably the true bug in my system is that a spurious HUP is being
-generated as a result of the suspend.  That is probably platform
-dependent and would explain why this hasn't been a bigger problem for
-others.
-
-
-...however, even though my patch shouldn't be needed for any hardware
-that doesn't generate the spurious HUP, it might still be worthwhile
-to consider including it?  ...or perhaps changing it to a BUG_ON or
-WARN_ON to at least detect the case of running the shutdown code after
-the suspend code?  Definitely the case that I ran into (shutdown after
-suspend) will definitely cause a crash during resume.
-
-
-I will spend time on Monday digging into the source of the HUP and
-will post a followup.
-
--Doug
+greg k-h
