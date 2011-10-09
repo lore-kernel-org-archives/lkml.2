@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab1JINra (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 09:47:30 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49333 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab1JINr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 09:47:28 -0400
-Date: Sun, 9 Oct 2011 16:47:26 +0300
-From: Adrian Bunk <bunk@stusta.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Andrew Morton <akpm00@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: [3.1 patch] x86 vsyscall_64.c: better error message on bad pointers
-Message-ID: <20111009134725.GD4586@localhost.pp.htv.fi>
-References: <20111005214047.GE14406@localhost.pp.htv.fi>
- <alpine.LFD.2.02.1110052346080.18778@ionos>
- <20111009134539.GC4586@localhost.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
-Content-Disposition: inline
-In-Reply-To: <20111009134539.GC4586@localhost.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751851Ab1JINsA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 09:48:00 -0400
+Received: from websrv.saout.de ([78.46.99.52]:41655 "EHLO websrv.saout.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751422Ab1JINr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 09:47:59 -0400
+Subject: Re: Block regression since 3.1-rc3
+From: Christophe Saout <christophe@saout.de>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Shaohua Li <shli@kernel.org>, Axboe <axboe@kernel.dk>,
+        Mike Snitzer <snitzer@redhat.com>, Jens@redhat.com,
+        device-mapper@redhat.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <1318147923.22902.3.camel@localhost>
+References: <1317397918.27140.15.camel@localhost>
+	 <x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
+	 <1317729761.25998.4.camel@localhost>
+	 <x49bottoq57.fsf@segfault.boston.devel.redhat.com>
+	 <CANejiEXnXJ7LkyqHyH1S2c4A95Si7v0-gDmRD824r3ROntaDCA@mail.gmail.com>
+	 <20111008161421.GA5743@redhat.com>
+	 <CANejiEXzPp4TvLsZ0VXN9EicMgkHXfkhpLcuXzVvoEH5MJfQuQ@mail.gmail.com>
+	 <CANejiEV+Joc7qvWr1DF4cOR61GKy8MLX4TT4oWh7pxMkhb74Qg@mail.gmail.com>
+	 <1318147923.22902.3.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 09 Oct 2011 15:47:06 +0200
+Message-ID: <1318168026.24616.5.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello again,
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Also for the record: Jeff's patch causes other crashes on my machine
+> (already posted), so while it might be fine from a technical point of
+> view, it still has issues in its current form. Jeff is working on it.
 
-At least some UML versions run into this and need vsyscall=3Dnative
-for now.
+I have to apologize.  Looks like I made a mistake the first time I tried
+Jeff's patch.  Shaohua asked me to check again and this time the box
+runs nicely.  I probably forgot something stupid like a modules_install.
 
-Signed-off-by: Adrian Bunk <bunk@stusta.de>
----
- arch/x86/kernel/vsyscall_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The patch that Jeff posted is actually working.  Mea culpa.  Sorry for
+the fuzz!
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 18ae83d..4ab7e32 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -206,7 +206,7 @@ bool emulate_vsyscall(struct pt_regs *regs, unsigned lo=
-ng address)
- 		 * vsyscalls harder, generate SIGSEGV here as well.
- 		 */
- 		warn_bad_vsyscall(KERN_INFO, regs,
--				  "vsyscall fault (exploit attempt?)");
-+				  "vsyscall fault (exploit attempt?) - if this is a legitimate program=
- boot with vsyscall=3Dnative (read kernel-parameters.txt for the security i=
-mplications)");
- 		goto sigsegv;
- 	}
-=20
+Thanks,
+	Christophe
 
 
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6Rpe0ACgkQmfzqmE8StADWDgCaAkTJA6n2PySYhko3YXS7oCz8
-FjYAnifq31+FAcQnktp2Gsv/lJYnZTph
-=vfLG
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
