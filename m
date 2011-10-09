@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab1JIH2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 03:28:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45326 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab1JIH2j (ORCPT
+	id S1751928Ab1JIHyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 03:54:21 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:51640 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1JIHyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 03:28:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAN1soZzbtqxfNLS_JVhn1irXRVThL=yt_VWfmdkoUL2ShFDEGQ@mail.gmail.com>
-References: <1317499438-14058-1-git-send-email-arnd@arndb.de>
- <CAMPhdO_L-g4vSj3fC-1ckqnHGAPhWOy6Hm4VL5iUbZbbdjRkNQ@mail.gmail.com>
- <CAN1soZy3_9Trycti8SCbnO75N6NE31tFqrKMpZtiJPgwNc2cbg@mail.gmail.com>
- <1499585.ED4ktnBDpX@wuerfel> <CAN1soZyDu43EN3W5YBttdzx7qx=MLKAR1OsJC3hUdqWWxhQaew@mail.gmail.com>
- <CAMPhdO8_cZU8FEGsK0m_XrhbR33TiZFFaNrXddKT1YrHREt-TQ@mail.gmail.com> <CAN1soZzbtqxfNLS_JVhn1irXRVThL=yt_VWfmdkoUL2ShFDEGQ@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Sun, 9 Oct 2011 15:28:18 +0800
-Message-ID: <CAMPhdO-b2hiXUNSKLqio4uHOEby=H82ckC0oahzRToatXmzw_g@mail.gmail.com>
-Subject: Re: [PATCH 17/26] ARM: pxa: pxa95x is incompatible with earlier pxa
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Jason Chagas <jason.chagas@marvell.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 9 Oct 2011 03:54:21 -0400
+Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
+From: Bojan Smojver <bojan@rexursive.com>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Date: Sun, 09 Oct 2011 18:54:19 +1100
+In-Reply-To: <9904162235.1002635820@rexursive.com>
+References: <1317342456.1959.6.camel@shrek.rexursive.com>
+	 <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl>
+	 <201110062045.48689.rjw@sisk.pl> <9904162235.1002635820@rexursive.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318146859.1916.4.camel@shrek.rexursive.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> They are actually not mutually exclusive - it's a trick we use to select
->> MACH_TAVOREVB3 by default but this option also disappears once SAARB
->> is selected.
->>
-> OK. Could I know why saarb should be deselected while tavorevb3 is selected?
+On Sun, 2011-10-09 at 13:57 +1100, Bojan Smojver wrote:
+> My CRC32 checks keep failing on resume. 
+> I don't get a panic, but still, this should not happen. 
 
-Haojian, it's not being deselected, it's just when user selects SAARB,
-this config PXA_V7_MACH_AUTO becomes invalid (which means at
-least one PXA_V7_MACH is selected), and then you could select
-TAVOREVB3 as well.
+False alarm, actually. My threaded CRC32 code was broken and was not
+taking some of the last pages into account. I fixed that now in my code
+and indeed CRC32 of the decompressed pages is the same as the one of the
+pages before compression.
 
-Just go ahead and apply the patch, make menuconfig and see how
-the trick works :-)
+PS. We are going to lose about 10% of the the speed improvements by
+introduction of CRC32 (which will only be used with compression). I
+reckon it's still worth it.
+
+-- 
+Bojan
+
