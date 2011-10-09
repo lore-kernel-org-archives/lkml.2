@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab1JINaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 09:30:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40118 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750922Ab1JINae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 09:30:34 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: dp@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Allow rbtree to cache zero default values
-Date: Sun,  9 Oct 2011 14:30:31 +0100
-Message-Id: <1318167031-15412-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.6.3
+	id S1751480Ab1JINgl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 09:36:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40677 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab1JINgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 09:36:40 -0400
+Date: Sun, 9 Oct 2011 15:31:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 12/26]   Uprobes: Handle breakpoint
+	and Singlestep
+Message-ID: <20111009133139.GA28332@redhat.com>
+References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120221.25326.74714.sendpatchset@srdronam.in.ibm.com> <20111007182834.GA1655@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111007182834.GA1655@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure that when we start up in cache only mode we can store defaults of
-zero, otherwise if the hardware is unavailable we won't be able to read.
+On 10/07, Oleg Nesterov wrote:
+>
+> What if the forking task (current) is in UTASK_BP_HIT state?
+> ...
+>
+> And what if we step into a syscall insn?
+> ...
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/base/regmap/regcache-rbtree.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+And I guess there would be a lot more problems here. But, looking
+at is_prefix_bad() I see the nice comment:
 
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index e04e36e..e314984 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -252,9 +252,6 @@ static int regcache_rbtree_write(struct regmap *map, unsigned int reg,
- 		regcache_rbtree_set_register(rbnode, reg_tmp, value,
- 					     map->cache_word_size);
- 	} else {
--		/* bail out early, no need to create the rbnode yet */
--		if (!value)
--			return 0;
- 		/* look for an adjacent register to the one we are about to add */
- 		for (node = rb_first(&rbtree_ctx->root); node;
- 		     node = rb_next(node)) {
--- 
-1.7.6.3
+	* opcodes we'll probably never support:
+	* 0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
+
+This answers my questions.
+
+> Please simply ignore my email if you think everything is fine.
+
+Yep.
+
+Oleg.
 
