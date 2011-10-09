@@ -1,40 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab1JITEZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 15:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13708 "EHLO mx1.redhat.com"
+	id S1752029Ab1JITHo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 15:07:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3817 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab1JITEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 15:04:24 -0400
-Date: Sun, 9 Oct 2011 21:00:22 +0200
+	id S1750814Ab1JITHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 15:07:43 -0400
+Date: Sun, 9 Oct 2011 21:03:44 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
         Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
 Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20111009190022.GA13853@redhat.com>
-References: <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap> <20110923173656.GA5233@redhat.com> <20110923212025.GA21330@sergelap> <20110924163709.GA6776@redhat.com> <20110925201723.GA5288@sergelap> <20110926160619.GA13736@redhat.com> <20111004174213.GA24179@sergelap>
+Message-ID: <20111009190344.GB13853@redhat.com>
+References: <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap> <20110923173656.GA5233@redhat.com> <20110923212025.GA21330@sergelap> <20110924163709.GA6776@redhat.com> <20110925201723.GA5288@sergelap> <20110926160619.GA13736@redhat.com> <20111008200211.GA28115@hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111004174213.GA24179@sergelap>
+In-Reply-To: <20111008200211.GA28115@hallyn.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I missed this email...
-
-On 10/04, Serge E. Hallyn wrote:
+On 10/08, Serge E. Hallyn wrote:
 >
 > Quoting Oleg Nesterov (oleg@redhat.com):
-> > --- x/kernel/signal.c
-> > +++ x/kernel/signal.c
-> > @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
-> >  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
-> >  }
 > >
 > > +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
 > > +{
@@ -50,43 +43,19 @@ On 10/04, Serge E. Hallyn wrote:
 > > +
 > > +			case __SI_CHLD:
 >
-> If I'm reading this right, this will catch do_notify_parent, which is
-> sending signals not from current.
+> After looking a bit more, I really think the __SI_CHLD case just needs to
+> always be converted at the callers (i.e. do_notify_parent).
 
-Argh, indeed. So we need to modify the callers.
+Yes, unfortunately.
 
-OTOH, this is only possible if the debugger notifies tracee->real_parent,
-or we reparent to /sbin/init.
+> > +			case __SI_MESGQ:
+>
+> This can be done like this, but if this is going to be the only case of
+> a SI_FROMKERNEL not being converted at the caller, and there is aiui only
+> one caller (__do_notivy in ipc/mmqueue.c), it seems better to just have
+> fixup_uid() always return for SI_FROMKERNEL(info).
 
-Anyways, yes, I forgot about this. Thanks.
+Yes, agreed.
 
 Oleg.
-
-Not sure of the best way to avoid
-> this.  For pids that case is being ignored by not using the __SI_MASK,
-> so CLD_EXITED etc will cause from_ancestor_ns to be false.  Could we
-> do that here too, and then translate the pids in do_notify_parent?
-> 
-> > +			case __SI_MESGQ:
-> > +				break;
-> > +		}
-> > +
-> > +	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-> > +					current_cred(), info->si_uid);
-> > +}
-> > +
-> >  static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> >  			int group, int from_ancestor_ns)
-> >  {
-> > @@ -1088,6 +1109,9 @@ static int __send_signal(int sig, struct
-> >  				q->info.si_pid = 0;
-> >  			break;
-> >  		}
-> > +
-> > +		fixup_uid(info, t);
-> > +
-> >  	} else if (!is_si_special(info)) {
-> >  		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
-> >  			/*
-> > 
 
