@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1JILMF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 07:12:05 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51577 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab1JILMA (ORCPT
+	id S1752401Ab1JILM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 07:12:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35341 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752229Ab1JILMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 07:12:00 -0400
+	Sun, 9 Oct 2011 07:12:07 -0400
 From: David Kilroy <kilroyd@googlemail.com>
 To: linux-kernel@vger.kernel.org, greg@kroah.com
 Cc: pe1dnn@amsat.org, David Kilroy <kilroyd@googlemail.com>
-Subject: [PATCH 4/7] staging: wlags49_h2: Report WPA IE in scan results with IWEVGENIE
-Date: Sun,  9 Oct 2011 12:11:34 +0100
-Message-Id: <1318158697-15979-5-git-send-email-kilroyd@googlemail.com>
+Subject: [PATCH 7/7] staging: wlags49_h2: Fixup SIOCSIWGENIE
+Date: Sun,  9 Oct 2011 12:11:37 +0100
+Message-Id: <1318158697-15979-8-git-send-email-kilroyd@googlemail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1318158697-15979-1-git-send-email-kilroyd@googlemail.com>
 References: <1318158697-15979-1-git-send-email-kilroyd@googlemail.com>
@@ -20,44 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Report the IE using the appropriate event instead of a custom one.
+Setting the key management scheme is done in SIOCSIWAUTH, so
+no need to do anything in SIOCSIWGENIE.
+
+Fix up function name.
 
 Signed-off-by: David Kilroy <kilroyd@googlemail.com>
 ---
- drivers/staging/wlags49_h2/wl_wext.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/staging/wlags49_h2/wl_wext.c |   40 +++++++--------------------------
+ 1 files changed, 9 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
-index c392fd8..af9fec5 100644
+index 9884320..8ac5e10 100644
 --- a/drivers/staging/wlags49_h2/wl_wext.c
 +++ b/drivers/staging/wlags49_h2/wl_wext.c
-@@ -2759,21 +2759,19 @@ static int wireless_get_scan(struct net_device *dev, struct iw_request_info *inf
- 		buf = iwe_stream_add_point(info, buf, buf_end, &iwe, msg);
+@@ -3196,42 +3196,20 @@ out:
  
  
--		/* Custom info (WPA-IE) */
-+		/* WPA-IE */
- 		wpa_ie = NULL;
- 		wpa_ie_len = 0;
  
- 		wpa_ie = wl_parse_wpa_ie( probe_resp, &wpa_ie_len );
- 		if( wpa_ie != NULL ) {
--			memset( &iwe, 0, sizeof( iwe ));
--			memset( msg, 0, sizeof( msg ));
-+			memset(&iwe, 0, sizeof(iwe));
+-static int wireless_get_genie(struct net_device *dev,
+-					   struct iw_request_info *info,
+-					   struct iw_point *data, char *extra)
++static int wireless_set_genie(struct net_device *dev,
++			      struct iw_request_info *info,
++			      struct iw_point *data, char *extra)
  
--			iwe.cmd = IWEVCUSTOM;
--			sprintf( msg, "wpa_ie=%s", wl_print_wpa_ie( wpa_ie, wpa_ie_len ));
--			iwe.u.data.length = strlen( msg );
-+			iwe.cmd = IWEVGENIE;
-+			iwe.u.data.length = wpa_ie_len;
+ {
+-	struct wl_private *lp = wl_priv(dev);
+-	unsigned long flags;
+ 	int   ret = 0;
+-	ltv_t ltv;
+-
+-	DBG_FUNC( "wireless_get_genie" );
+-	DBG_ENTER( DbgInfo );
+-
+-	if(lp->portState == WVLAN_PORT_STATE_DISABLED) {
+-		ret = -EBUSY;
+-		goto out;
+-	}
+-
+-	wl_lock( lp, &flags );
  
- 			buf = iwe_stream_add_point(info, buf, buf_end,
--						   &iwe, msg);
-+						   &iwe, wpa_ie);
- 		}
+-    	wl_act_int_off( lp );
+-
+-	memset(&ltv, 0, sizeof(ltv));
+-	ltv.len = 2;
+-	ltv.typ = CFG_SET_WPA_AUTH_KEY_MGMT_SUITE;
+-	lp->AuthKeyMgmtSuite = ltv.u.u16[0] = 4;
+-	ltv.u.u16[0]  = CNV_INT_TO_LITTLE(ltv.u.u16[0]);
+-
+-	ret = hcf_put_info(&(lp->hcfCtx), (LTVP)&ltv);
+-
+-    	wl_act_int_on( lp );
++	DBG_ENTER(DbgInfo);
  
- 		/* Add other custom info in formatted string format as needed... */
+-	wl_unlock(lp, &flags);
++	/* We can't write this to the card, but apparently this
++	 * operation needs to succeed */
++	ret = 0;
+ 
+-out:
+-	DBG_LEAVE( DbgInfo );
++	DBG_LEAVE(DbgInfo);
+ 	return ret;
+ }
+ /*============================================================================*/
+@@ -3970,7 +3948,7 @@ static const iw_handler wl_handler[] =
+ 	IW_HANDLER(SIOCGIWENCODE, (iw_handler) wireless_get_encode),
+ 	IW_HANDLER(SIOCSIWPOWER, (iw_handler) wireless_set_power),
+ 	IW_HANDLER(SIOCGIWPOWER, (iw_handler) wireless_get_power),
+-	IW_HANDLER(SIOCSIWGENIE, (iw_handler) wireless_get_genie),
++	IW_HANDLER(SIOCSIWGENIE, (iw_handler) wireless_set_genie),
+ 	IW_HANDLER(SIOCSIWAUTH, (iw_handler) wireless_set_auth),
+ 	IW_HANDLER(SIOCSIWENCODEEXT, (iw_handler) wireless_set_encodeext),
+ };
 -- 
 1.7.4.1
 
