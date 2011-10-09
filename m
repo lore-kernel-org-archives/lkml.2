@@ -1,57 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab1JLVva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:51:30 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:42987 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab1JLVv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:51:29 -0400
-Subject: [PATCH] media: tea5764: reconcile Kconfig symbol and macro
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 23:51:22 +0200
-Message-ID: <1318456282.8345.15.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754464Ab1JLWAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 18:00:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:59005 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749Ab1JLWAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 18:00:03 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org
+Cc: lennart@poettering.net, harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Jon Masters <jcm@jonmasters.org>
+Subject: Re: A =?utf-8?Q?Plumber=E2=80=99s?= Wish List for Linux
+In-Reply-To: <1317943022.1095.25.camel@mop>
+References: <1317943022.1095.25.camel@mop>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Sun, 09 Oct 2011 19:15:47 +1030
+Message-ID: <8762jyft8k.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbol RADIO_TEA5764_XTAL is unused. The code does use a
-RADIO_TEA5764_XTAL macro, but does that rather peculiar. But there seems
-to be a way to keep both. (The easiest way out would be to rip out both
-the Kconfig symbol and the macro.)
+On Fri, 07 Oct 2011 01:17:02 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> * module-init-tools: provide a proper libmodprobe.so from
+> module-init-tools:
+> Early boot tools, installers, driver install disks want to access
+> information about available modules to optimize bootup handling.
 
-Note there's also a module parameter 'use_xtal' to influence all this.
+That's a bit too vague for my limited experience and/or lack of
+imagination: what exactly do they want?  And why?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-I didn't dare to submit this a trivial patch. This is still untested. By
-the way, is xtal a common abbreviation of crystal?
-
- drivers/media/radio/radio-tea5764.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/radio/radio-tea5764.c b/drivers/media/radio/radio-tea5764.c
-index 95ddcc4..db20904 100644
---- a/drivers/media/radio/radio-tea5764.c
-+++ b/drivers/media/radio/radio-tea5764.c
-@@ -128,8 +128,10 @@ struct tea5764_write_regs {
- 	u16 rdsbbl;				/* PAUSEDET & RDSBBL */
- } __attribute__ ((packed));
- 
--#ifndef RADIO_TEA5764_XTAL
-+#ifdef CONFIG_RADIO_TEA5764_XTAL
- #define RADIO_TEA5764_XTAL 1
-+#else
-+#define RADIO_TEA5764_XTAL 0
- #endif
- 
- static int radio_nr = -1;
--- 
-1.7.4.4
-
+Thanks,
+Rusty.
