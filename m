@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1JIRnu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 13:43:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33224 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab1JIRns (ORCPT
+	id S1752098Ab1JIRvB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 13:51:01 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:42804 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751996Ab1JIRu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 13:43:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: dp@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] regmap: Allow caches for devices with no defaults
-In-Reply-To: Your message of "Sun, 09 Oct 2011 14:44:36 BST."
-             <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1318167876-17801-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-            <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1318182222_103142P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Sun, 9 Oct 2011 13:50:59 -0400
+Message-ID: <4E91DF00.8060107@xenotime.net>
+Date: Sun, 09 Oct 2011 10:50:56 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] usb gadget: fix langwell_udc.c build error
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au> <4E8F67C6.5020603@xenotime.net> <20111008100326.GA24633@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20111008100326.GA24633@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Sun, 09 Oct 2011 13:43:42 -0400
-Message-ID: <109263.1318182222@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4E91DD52.002E,ss=1,fgs=0,
-	ip=71.62.120.57,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1318182222_103142P
-Content-Type: text/plain; charset=us-ascii
+On 10/08/11 03:03, Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Oct 07, 2011 at 01:57:42PM -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> Move function to fix langwell_udc.c build error:
+>>
+>> drivers/usb/gadget/langwell_udc.c: In function 'show_langwell_udc':
+>> drivers/usb/gadget/langwell_udc.c:1693:3: error: implicit declaration of function 'lpm_device_speed'
+>> drivers/usb/gadget/langwell_udc.c: At top level:
+>> drivers/usb/gadget/langwell_udc.c:2637:37: error: conflicting types for 'lpm_device_speed'
+>> drivers/usb/gadget/langwell_udc.c:1693:20: note: previous implicit declaration of 'lpm_device_speed' was here
+> 
+> I don't have this compile error on my branch, did something go in
+> without me noticing ?
 
-On Sun, 09 Oct 2011 14:44:36 BST, Mark Brown said:
-> We only really need the defaults in order to cut down the number of
-> registers we sync and to satisfy reads while the device is powered off
+probably not.  What version of gcc are you using?
+I'm using 4.5.1.
 
-So let me get this straight - we cache the values so that if there's a read,
-we can return our best guess as to what the device would return if it was
-in fact powered on, instead of notifying the caller that the device is off?
+> Can you blame a comit which introduced this ?
 
-I think I just sprained my brain trying to parse the logic there :)
+I don't see such a commit.
 
---==_Exmh_1318182222_103142P
-Content-Type: application/pgp-signature
+> btw, all I have is a warning.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+What warning?
 
-iD8DBQFOkd1OcC3lWbTT17ARAsq9AJ9z6NAfPQU/AJlkrblIH1e4YS+a2gCg2a3f
-kN35nSENMCcMOL6lZ3zhMYQ=
-=kBsk
------END PGP SIGNATURE-----
-
---==_Exmh_1318182222_103142P--
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
