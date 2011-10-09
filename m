@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab1JIKTv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 06:19:51 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:42570 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1JIKTu (ORCPT
+	id S1752127Ab1JIKo2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 06:44:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36593 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab1JIKo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 06:19:50 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-Date: Sun, 09 Oct 2011 21:19:35 +1100
-From: "Bojan Smojver" <bojan@rexursive.com>
-To: penberg@cs.helsinki.fi
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-MIME-Version: 1.0
-X-Mailer: LCG ProfiMail 3.48
-Message-ID: <6127211897.1002662375@rexursive.com>
-References: <1317342456.1959.6.camel@shrek.rexursive.com> <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl> <201110062045.48689.rjw@sisk.pl> <CAOJsxLE7uRFv6FXsz+czLO3+VjDtT-QgHVRZEpZwBJJF0B3ahw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	Sun, 9 Oct 2011 06:44:26 -0400
+From: Renzo Dani <arons7@gmail.com>
+To: mchehab@infradead.org
+Cc: arons7@gmail.com, rdunlap@xenotime.net, linux-media@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] update az6027 firmware URL
+Date: Sun,  9 Oct 2011 12:43:50 +0200
+Message-Id: <1318157030-3901-1-git-send-email-arons7@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------- Original message -------
-> From: Pekka Enberg <penberg@cs.helsinki.fi>
-> To: rjw@sisk.pl
-> Cc: bojan@rexursive.com, linux-kernel@vger.kernel.org, 
-> linux-pm@lists.linux-foundation.org
-> Sent: 9.10.'11,  20:22
->
-> On Thu, Oct 6, 2011 at 9:45 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> The panic happens during late resume, when trying to switch to the 
->> hibernated
->> kernel.
->
-> Is there some way to autotest hibernation? I could try to reproduce
-> the issue but I'm certainly not going to hibernate/resume by hand...
-> :-)
+From: Renzo Dani <arons7@gmail.com>
 
-I kinda remember reading in one of the bug reports for Intel graphics about 
-someone doing it. Not sure how, to be honest. Rafael will know for sure.
 
-May be related, when I simulate image loading failure by returning error 
-from load_image(), I get bad page state error, count -1, so something is 
-amiss. Probably the readahead buffers or maps.
+Signed-off-by: Renzo Dani <arons7@gmail.com>
+---
+ Documentation/dvb/get_dvb_firmware |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-PS. I will also rewrite some of the vmalloc() calls to kmalloc(). No point 
-wasting whole pages for small objects.
+diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
+index c466f58..06456d0 100755
+--- a/Documentation/dvb/get_dvb_firmware
++++ b/Documentation/dvb/get_dvb_firmware
+@@ -575,19 +575,10 @@ sub ngene {
+ }
+ 
+ sub az6027{
+-    my $file = "AZ6027_Linux_Driver.tar.gz";
+-    my $url = "http://linux.terratec.de/files/$file";
+     my $firmware = "dvb-usb-az6027-03.fw";
++    my $url = "http://linux.terratec.de/files/TERRATEC_S7/$firmware";
+ 
+-    wgetfile($file, $url);
+-
+-    #untar
+-    if( system("tar xzvf $file $firmware")){
+-        die "failed to untar firmware";
+-    }
+-    if( system("rm $file")){
+-        die ("unable to remove unnecessary files");
+-    }
++    wgetfile($firmware, $url);
+ 
+     $firmware;
+ }
+-- 
+1.7.3.4
 
---
-Bojan 
