@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab1JIW7x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 18:59:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50581 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab1JIW7w convert rfc822-to-8bit (ORCPT
+	id S1752304Ab1JIXFu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 19:05:50 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:46775 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751014Ab1JIXFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 18:59:52 -0400
+	Sun, 9 Oct 2011 19:05:48 -0400
+Message-ID: <4E9228CA.1060904@xenotime.net>
+Date: Sun, 09 Oct 2011 16:05:46 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <20111008001237.GA30551@kroah.com>
-References: <1317963790-29426-1-git-send-email-manjugk@ti.com>
- <1317963790-29426-2-git-send-email-manjugk@ti.com> <20111007064349.GD27508@kroah.com>
- <CACxGe6uOmrLwJSPw4JHuOmt5B2wsukdDgVUr01pryq5Z9BFadw@mail.gmail.com>
- <32004.1318030113@turing-police.cc.vt.edu> <20111008001237.GA30551@kroah.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 9 Oct 2011 16:59:31 -0600
-X-Google-Sender-Auth: 6rTAfbVir8iTEcaGaARezYFcHB0
-Message-ID: <CACxGe6t+PfnNGniYUj3pbK22uqjqkbh2+D=7qvvd_-Yd4yR0dw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] drivercore: add new error value for deferred probe
-To: Greg KH <greg@kroah.com>
-Cc: Valdis.Kletnieks@vt.edu, "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH -next] usb gadget: fix langwell_udc.c build error
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au> <4E8F67C6.5020603@xenotime.net> <20111008100326.GA24633@legolas.emea.dhcp.ti.com> <4E91DF00.8060107@xenotime.net> <20111009223638.GA29776@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20111009223638.GA29776@legolas.emea.dhcp.ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 6:12 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Oct 07, 2011 at 07:28:33PM -0400, Valdis.Kletnieks@vt.edu wrote:
->> On Fri, 07 Oct 2011 16:12:45 MDT, Grant Likely said:
->> > On Fri, Oct 7, 2011 at 12:43 AM, Greg KH <greg@kroah.com> wrote:
->> > > On Fri, Oct 07, 2011 at 10:33:06AM +0500, G, Manjunath Kondaiah wrote:
->>
->> > >> +#define EPROBE_DEFER 517     /* restart probe again after some time */
->> > >
->> > > Can we really do this?
->>
->> > According to Arnd, yes this is okay.
->>
->> > >  Isn't this some user/kernel api here?
->>
->> > > What's wrong with just "overloading" on top of an existing error code?
->> > > Surely one of the other 516 types could be used here, right?
->>
->> > overloading makes it really hard to find the users at a later date.
->>
->> Would proposing '#define EPROBE_DEFER EAGAIN' be acceptable to everybody? That
->> would allow overloading EAGAIN, but still make it easy to tell the usages apart
->> if we need to separate them later...
->
-> Yes, please do that, it is what USB does for it's internal error code
-> handling.
+On 10/09/11 15:36, Felipe Balbi wrote:
+> git log --pretty=oneline -S'lpm_device_speed' HEAD --	\
+> 	drivers/usb/gadget/langwell_udc.c
 
-Really?  When we've only currently used approximately 2^9 of a 2^31
-numberspace?  I'm fine with making sure that the number doesn't show
-up in the userspace headers, but it makes no sense to overload the
-#defines.  Particularly so in this case where it isn't feasible to
-audit every driver to figure out what probe might possibly return.  It
-is well within the realm of possibility that existing drivers are
-already returning -EAGAIN.
-
-Besides; linux/errno.h *already* has linux-internal error codes that
-do not get exported out to userspace.  There is an #ifdef __KERNEL__
-block around ERESTARTSYS through EIOCBRETRY which is filtered out when
-exporting headers.  I can't see any possible reason why we wouldn't
-add Linux internal error codes here.
-
-g.
-
+e538dfdae85244fd2c4231725d82cc1f1bc4942c usb: Provide usb_speed_string() function
 
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
