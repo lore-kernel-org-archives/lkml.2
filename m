@@ -1,59 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab1JINgl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 09:36:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40677 "EHLO mx1.redhat.com"
+	id S1751525Ab1JINhz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 09:37:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28651 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1JINgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 09:36:40 -0400
-Date: Sun, 9 Oct 2011 15:31:40 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 12/26]   Uprobes: Handle breakpoint
-	and Singlestep
-Message-ID: <20111009133139.GA28332@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120221.25326.74714.sendpatchset@srdronam.in.ibm.com> <20111007182834.GA1655@redhat.com>
+	id S1750922Ab1JINhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 09:37:52 -0400
+Message-ID: <4E91A3AA.1000309@redhat.com>
+Date: Sun, 09 Oct 2011 15:37:46 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007182834.GA1655@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
+References: <4E7AF758.7060900@cn.fujitsu.com> <20111006175333.GA3959@amt.cnet> <4E8FCC37.8090409@cn.fujitsu.com> <4E91926D.8060206@redhat.com>
+In-Reply-To: <4E91926D.8060206@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07, Oleg Nesterov wrote:
+On 10/09/2011 02:24 PM, Avi Kivity wrote:
+> On 10/08/2011 06:06 AM, Xiao Guangrong wrote:
+>> On 10/07/2011 01:53 AM, Marcelo Tosatti wrote:
+>> >  On Thu, Sep 22, 2011 at 04:52:40PM +0800, Xiao Guangrong wrote:
+>> >>  This patchset is against https://github.com/avikivity/kvm.git 
+>> next branch.
+>> >>
+>> >>  In this version, some changes come from Avi's comments:
+>> >>  - fix instruction retried for nested guest
+>> >>  - skip write-flooding for the sp whose level is 1
+>> >>  - rename some functions
+>> >
+>> >  Please rebase.
+>> >
+>> >
+>>
+>> Marcelo,
+>>
+>> These patches can be applied without any conflict and it also works 
+>> well,
+>> the current code was pulled from https://github.com/avikivity/kvm.git 
+>> next branch.
+>>
+>> What problem did you meet when you applied these? :(
 >
-> What if the forking task (current) is in UTASK_BP_HIT state?
-> ...
+> I guess it was a user error - it applies cleanly here too (and pushed 
+> to next, thanks).
 >
-> And what if we step into a syscall insn?
-> ...
 
-And I guess there would be a lot more problems here. But, looking
-at is_prefix_bad() I see the nice comment:
+However, it seems to reduce performance.
 
-	* opcodes we'll probably never support:
-	* 0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
+Autotest results before:
 
-This answers my questions.
+Test                                        Status     Seconds  Info
+----                                        ------     -------  ----
+         (Result file: ../../results/default/status)
+unittest                                    GOOD       147      
+completed successfully
+Fedora.9.32.install.smp2                    GOOD       865      
+completed successfully
+Fedora.9.32.boot.smp2                       GOOD       46       
+completed successfully
+Fedora.9.32.reboot.smp2                     GOOD       49       
+completed successfully
+Fedora.9.32.shutdown.smp2                   GOOD       15       
+completed successfully
+Fedora.9.64.install.smp2                    GOOD       943      
+completed successfully
+Fedora.9.64.boot.smp2                       GOOD       47       
+completed successfully
+Fedora.9.64.reboot.smp2                     GOOD       48       
+completed successfully
+Fedora.9.64.shutdown.smp2                   GOOD       14       
+completed successfully
+WinXP.32.install.smp2                       GOOD       772      
+completed successfully
+WinXP.32.setup.smp2                         GOOD       53       
+completed successfully
+WinXP.32.boot.smp2                          GOOD       57       
+completed successfully
+WinXP.32.reboot.smp2                        GOOD       34       
+completed successfully
+WinXP.32.shutdown.smp2                      GOOD       5        
+completed successfully
+WinXP.64.install.smp2                       GOOD       636      
+completed successfully
 
-> Please simply ignore my email if you think everything is fine.
 
-Yep.
+After:
 
-Oleg.
+unittest                                    GOOD       150      
+completed successfully
+Fedora.9.32.install.smp2                    GOOD       879      
+completed successfully
+Fedora.9.32.boot.smp2                       GOOD       50       
+completed successfully
+Fedora.9.32.reboot.smp2                     GOOD       48       
+completed successfully
+Fedora.9.32.shutdown.smp2                   GOOD       15       
+completed successfully
+Fedora.9.64.install.smp2                    GOOD       997      
+completed successfully
+Fedora.9.64.boot.smp2                       GOOD       47       
+completed successfully
+Fedora.9.64.reboot.smp2                     GOOD       48       
+completed successfully
+Fedora.9.64.shutdown.smp2                   GOOD       14       
+completed successfully
+WinXP.32.install.smp2                       GOOD       764      
+completed successfully
+WinXP.32.setup.smp2                         GOOD       51       
+completed successfully
+WinXP.32.boot.smp2                          GOOD       40       
+completed successfully
+WinXP.32.reboot.smp2                        GOOD       34       
+completed successfully
+WinXP.32.shutdown.smp2                      GOOD       5        
+completed successfully
+WinXP.64.install.smp2                       GOOD       666      
+completed successfully
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
