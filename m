@@ -1,43 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab1JISCB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 14:02:01 -0400
-Received: from void.printf.net ([89.145.121.20]:43873 "EHLO void.printf.net"
+	id S1752067Ab1JITEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 15:04:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13708 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab1JISB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 14:01:58 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Per Forlin <per.forlin@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-References: <20110928181815.45f540034ddde2b206fc4e57@canb.auug.org.au>
-	<20111009050809.GS19986@windriver.com>
-Date: Sun, 09 Oct 2011 14:01:27 -0400
-In-Reply-To: <20111009050809.GS19986@windriver.com> (Paul Gortmaker's message
-	of "Sun, 9 Oct 2011 01:08:09 -0400")
-Message-ID: <m2pqi6m4co.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1750814Ab1JITEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 15:04:24 -0400
+Date: Sun, 9 Oct 2011 21:00:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20111009190022.GA13853@redhat.com>
+References: <20110920174849.GB22317@redhat.com> <20110920185354.GA19629@sergelap> <20110921175357.GA25590@redhat.com> <20110923163113.GA3820@sergelap> <20110923173656.GA5233@redhat.com> <20110923212025.GA21330@sergelap> <20110924163709.GA6776@redhat.com> <20110925201723.GA5288@sergelap> <20110926160619.GA13736@redhat.com> <20111004174213.GA24179@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004174213.GA24179@sergelap>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Sorry, I missed this email...
 
-On Sun, Oct 09 2011, Paul Gortmaker wrote:
-> I was wondering if you were going to apply this to the mmc tree.  Since
-> the module_param addition isn't in the module.h baseline, I'd be
-> speculatively fixing an issue that hasn't been created yet, which isn't
-> the end of the world, but it doesn't feel quite right to do that either.
+On 10/04, Serge E. Hallyn wrote:
+>
+> Quoting Oleg Nesterov (oleg@redhat.com):
+> > --- x/kernel/signal.c
+> > +++ x/kernel/signal.c
+> > @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
+> >  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+> >  }
+> >
+> > +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
+> > +{
+> > +#ifdef CONFIG_USER_NS
+> > +	if (current_user_ns() == task_cred_xxx(t, user_ns)))
+> > +#endif
+> > +		return;
+> > +
+> > +	if (SI_FROMKERNEL(info))
+> > +		switch (info->si_code & __SI_MASK) {
+> > +			default:
+> > +				return;
+> > +
+> > +			case __SI_CHLD:
+>
+> If I'm reading this right, this will catch do_notify_parent, which is
+> sending signals not from current.
 
-Thanks, I've pushed both this patch and "Add module.h to drivers/mmc
-users assuming implicit presence" to the mmc-next tree now.
+Argh, indeed. So we need to modify the callers.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+OTOH, this is only possible if the debugger notifies tracee->real_parent,
+or we reparent to /sbin/init.
+
+Anyways, yes, I forgot about this. Thanks.
+
+Oleg.
+
+Not sure of the best way to avoid
+> this.  For pids that case is being ignored by not using the __SI_MASK,
+> so CLD_EXITED etc will cause from_ancestor_ns to be false.  Could we
+> do that here too, and then translate the pids in do_notify_parent?
+> 
+> > +			case __SI_MESGQ:
+> > +				break;
+> > +		}
+> > +
+> > +	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
+> > +					current_cred(), info->si_uid);
+> > +}
+> > +
+> >  static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+> >  			int group, int from_ancestor_ns)
+> >  {
+> > @@ -1088,6 +1109,9 @@ static int __send_signal(int sig, struct
+> >  				q->info.si_pid = 0;
+> >  			break;
+> >  		}
+> > +
+> > +		fixup_uid(info, t);
+> > +
+> >  	} else if (!is_si_special(info)) {
+> >  		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
+> >  			/*
+> > 
+
