@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750893Ab1JIEor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 00:44:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39726 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1JIEoq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 00:44:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318130976.1844.48.camel@Joe-Laptop>
-References: <1317650037-4648-1-git-send-email-linkinjeon@gmail.com>
-	<20111005220813.GK23467@quack.suse.cz>
-	<1317853198.3095.19.camel@Joe-Laptop>
-	<20111006214159.GK31367@quack.suse.cz>
-	<CAKYAXd8M6mnf0f_5RHpkjZ51suGnnFTHU1ZuJgvt5Nr0JVR1RQ@mail.gmail.com>
-	<1318130976.1844.48.camel@Joe-Laptop>
-Date: Sun, 9 Oct 2011 13:44:44 +0900
-Message-ID: <CAKYAXd-s7-yRpD_UrrZPiXnRpTYEHG3O6w46_Cpn=sd6D9wN8g@mail.gmail.com>
+	id S1750920Ab1JIE4b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 00:56:31 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38902 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750702Ab1JIE43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 00:56:29 -0400
+Message-ID: <1318136188.1844.56.camel@Joe-Laptop>
 Subject: Re: [PATCH 1/2 v3] udf : enable error print in udf_read_tagged().
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Joe Perches <joe@perches.com>
+From: Joe Perches <joe@perches.com>
+To: NamJae Jeon <linkinjeon@gmail.com>
 Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Sat, 08 Oct 2011 21:56:28 -0700
+In-Reply-To: <CAKYAXd-s7-yRpD_UrrZPiXnRpTYEHG3O6w46_Cpn=sd6D9wN8g@mail.gmail.com>
+References: <1317650037-4648-1-git-send-email-linkinjeon@gmail.com>
+	 <20111005220813.GK23467@quack.suse.cz>
+	 <1317853198.3095.19.camel@Joe-Laptop>
+	 <20111006214159.GK31367@quack.suse.cz>
+	 <CAKYAXd8M6mnf0f_5RHpkjZ51suGnnFTHU1ZuJgvt5Nr0JVR1RQ@mail.gmail.com>
+	 <1318130976.1844.48.camel@Joe-Laptop>
+	 <CAKYAXd-s7-yRpD_UrrZPiXnRpTYEHG3O6w46_Cpn=sd6D9wN8g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/9 Joe Perches <joe@perches.com>:
-> On Sun, 2011-10-09 at 12:16 +0900, NamJae Jeon wrote:
->> 2011/10/7 Jan Kara <jack@suse.cz>:
->> > On Wed 05-10-11 15:19:58, Joe Perches wrote:
->> >> On Thu, 2011-10-06 at 00:08 +0200, Jan Kara wrote:
->> >> > Hello,
->> >> >
->> >> > On Mon 03-10-11 22:53:57, Namjae Jeon wrote:
->> >> > > While reading metadata, if a problem occurs, Print out only one of the
->> >> > > five case.(It also does not show a checksum properly.) Because currently
->> >> > > it have been disable by undef udf_debug.  If there is a problem with
->> >> > > scratched disc or loader, the user needs to know which error happened.
->> >> > > And I use pr_fmt instead of printk by joe's suggestion. I try to modify
->> >> > > totally it to pr_fmt also.
->> >>
->> >> >   Thanks for the patch. I'm willing to take the patch since it's an
->> >> > improvement but what would be even nicer is to have error reporting like in
->> >> > ext3 / ext4. We would have functions udf_info, udf_warn, udf_err which
->> >> > also print sb->s_id with each error so that user can better identify on
->> >> > which filesystem error happened.
->> >>
->> >> Modifying the follow-on patch I sent would be pretty trivial.
->> >  Sure, I can do that but if Namjae is willing to do it, I'd have less work
->> > :).
->> Hi. Jan.
->>
->> Currently I can not send a patch using git send-email.
->> maybe it is the problem related with git or patch size...
->> So I attach a patch. Is it okay? or I resend a patch again..
->> plz review attach patch.
->> Thanks.
->
-Hi. Joe.
-> Not a good patch I think.
->
-> You've broken format strings when they should be coalesced
-> and the alignment looks odd.
-Would you explain more ? I didn't understand your meaning yet.
+On Sun, 2011-10-09 at 13:44 +0900, NamJae Jeon wrote:
+> 2011/10/9 Joe Perches <joe@perches.com>:
+> > Not a good patch I think.
+> > You've broken format strings when they should be coalesced
+> > and the alignment looks odd.
+> Would you explain more ? I didn't understand your meaning yet.
 
->
-> udf_debug should also add
->        struct super_block *sb, const char *function,
-> as the leading arguments.
-okay. I will~
-Thanks for your review.
->
->
+Format strings are allowed to exceed 80 columns.
+Arguments should be aligned to the open parenthesis
+
+For example:
+	pr_err("some really long format string longer than "
+		"80 columns and not broken into pieces, Count: %d\n",
+		count);
+is better as:
+	pr_err("some really long format string longer than 80 columns and not broken into pieces, Count: %d\n",
+	       count);
+
+Coalesced format strings makes dmesg output easier to grep.
+count is not indented by 2 tabs, but 1 tab and 7 spaces.
+
+There's no hard and fast rule on the indentation.
+
+The patch I sent coalesced all format strings and
+used that alignment style.
+
