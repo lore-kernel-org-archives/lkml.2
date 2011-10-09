@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1JIUvX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 16:51:23 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46435 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab1JIUvV convert rfc822-to-8bit (ORCPT
+	id S1752279Ab1JIVDR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 17:03:17 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:39310 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537Ab1JIVDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 16:51:21 -0400
-From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-To: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-Subject: Re: Linux 3.1-rc9
-Date: Sun, 9 Oct 2011 22:51:15 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-dirty; KDE/4.7.2; x86_64; ; )
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-In-Reply-To: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110092251.15618.a.miskiewicz@gmail.com>
+	Sun, 9 Oct 2011 17:03:15 -0400
+Subject: Re: [PATCH 10/16] perf stat: Allow tab as cvs delimiter
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1317336490-19437-11-git-send-email-acme@infradead.org>
+References: <1317336490-19437-1-git-send-email-acme@infradead.org>
+	 <1317336490-19437-11-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 09 Oct 2011 22:58:06 +0200
+Message-ID: <1318193886.1903.34.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 of October 2011, Linus Torvalds wrote:
-> Another week, another -rc.
+On Thu, 2011-09-29 at 19:48 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Jim Cromie <jim.cromie@gmail.com>
+> 
+> If option -x '\t' is given, convert '\t' to "\t".  This makes cvs
+> printing more flexible.
 
-suspend to ram regression is annoying (still visible on rc9; 
-https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are silent.
+I found this message when I searched my mail for occurences of 'cvs'. Is
+it still possible to change 'cvs' to 'csv' in the commit summary and
+message? That would keep the result for grepping of either term (in
+commit summaries or messages) correct.
 
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+
+Paul Bolle
+
