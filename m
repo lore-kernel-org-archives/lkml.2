@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab1JITe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 15:34:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43752 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751392Ab1JITe0 (ORCPT
+	id S1752176Ab1JITig (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 15:38:36 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42079 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1JITid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 15:34:26 -0400
-Date: Sun, 9 Oct 2011 20:34:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: dp@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] regmap: Allow caches for devices with no defaults
-Message-ID: <20111009193424.GA24008@opensource.wolfsonmicro.com>
-References: <1318167876-17801-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com> <109263.1318182222@turing-police.cc.vt.edu>
+	Sun, 9 Oct 2011 15:38:33 -0400
+Message-ID: <4E91F82E.4080007@linux.vnet.ibm.com>
+Date: Mon, 10 Oct 2011 01:08:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <109263.1318182222@turing-police.cc.vt.edu>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "amd64-microcode@amd64.org" <amd64-microcode@amd64.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] CPU hotplug,x86 Microcode: Don't request microcode from
+ userspace unnecessarily
+References: <4E90B6F9.8020804@linux.vnet.ibm.com> <20111009112755.GC17926@aftab>
+In-Reply-To: <20111009112755.GC17926@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 09, 2011 at 01:43:42PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Sun, 09 Oct 2011 14:44:36 BST, Mark Brown said:
+On 10/09/2011 04:57 PM, Borislav Petkov wrote:
+> On Sat, Oct 08, 2011 at 04:47:53PM -0400, Srivatsa S. Bhat wrote:
+>> Requesting the microcode from userspace *every time* when onlining CPUs
+>> (during a CPU hotplug operation) is unnecessary.
+>>
+>> So, this patch ensures that once the kernel gets the microcode after booting,
+>> it is not freed nor invalidated when a CPU goes offline, so that it can be
+>> reused when that CPU comes back online, without requesting userspace for it
+>> again. As a result, the CPU hotplug operations become faster as well.
+>>
+>> Tested-by: Borislav Petkov <bp@amd64.org>
+>> Acked-by: Borislav Petkov <bp@amd64.org>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> Good, thanks. Just a minor nitpick below.
+> 
+>> ---
+>>
+>>  arch/x86/kernel/microcode_core.c |    8 +++++++-
+>>  1 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+>> index f924280..3fd0189 100644
+>> --- a/arch/x86/kernel/microcode_core.c
+>> +++ b/arch/x86/kernel/microcode_core.c
+>> @@ -483,7 +483,13 @@ mc_cpu_callback(struct notifier_block *nb, unsigned long action, void *hcpu)
+>>  		sysfs_remove_group(&sys_dev->kobj, &mc_attr_group);
+>>  		pr_debug("CPU%d removed\n", cpu);
+>>  		break;
+>> -	case CPU_DEAD:
+>> +
+>> +	/* When a CPU goes offline, don't free up or invalidate the copy of
+>> +	 * the microcode in kernel memory, so that we can reuse it when the
+>> +	 * CPU comes back online without unnecessarily requesting the userspace
+>> +	 * for it again.
+>> +	 */
+>> +
+> 
+> Kernel comment style is in this format:
+> 
+> /*
+>  * Blabla
+>  * blublu
+>  */
+> 
+Oh, ok.. Thank you for pointing it out.
 
-> > We only really need the defaults in order to cut down the number of
-> > registers we sync and to satisfy reads while the device is powered off
+> @Ingo, can you please adjust it in-flight when applying?
 
-> So let me get this straight - we cache the values so that if there's a read,
-> we can return our best guess as to what the device would return if it was
-> in fact powered on, instead of notifying the caller that the device is off?
-
-> I think I just sprained my brain trying to parse the logic there :)
-
-It's not a guess, it's very solid information which comes from a
-combination of knowing the default register values, knowing that the
-registers we cache won't be changed except by writes and caching writes.
-We're not really doing the caching for this particular feature, having a
-cache is really useful anyway and once you're doing register caching
-it's a small step to be able to skip the actual device interaction.
-
-Having a register cache is useful where you don't need much abstraction
-between the register and the upper layers that talk to the driver - you
-can end up with large chunks of driver which are just data tables saying
-"this bitfield in this register has these semantics" which is obviously
-a substantial win.
-
-However, not all devices have readback support (on older analogue
-processes digital was very expensive and there were a few other issues
-for some buses) and this can get very read heavy (both from
-read/modify/write cycles and from upper layers querying state) so when
-your device is on a slow bus it's really useful to be able to cache the
-register values rather than actually read from the device.
-
-Once you've got a cache it's a simple matter to skip the step where we
-actually interact with the device for non-volatile registers.  In
-situations where the device is idle and we've got the sort of thin
-mapping described above we don't really want to have to keep the device
-powered on just for the mapping and the register values are about all
-the abstraction we need so we don't want another layer. If there a lot
-of updates being made this can give a further performance boost as upper
-layers can update things in any order they see fit as often as they like
-and then we can coalesce the actual writes into a minimal subset when
-powering the device up for actual use.
-
-For a concrete example think of an audio CODEC - there's lots of
-controls like volume settings which can be mapped very directly to what
-users interact with and which have no practical impact unless the device
-is actually doing something other than to store the setting which will
-be used then.
+I'll post the patch with the correct comment style, if that would make
+things easier.
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
