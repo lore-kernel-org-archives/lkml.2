@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab1JIOLI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 10:11:08 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:46288 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751200Ab1JIOLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 10:11:05 -0400
-Date: Sun, 9 Oct 2011 14:11:09 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: handai handai <handai.szj@gmail.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com
-Subject: Re: [Fwd: Re: cgroup umount bug]
-Message-ID: <20111009141109.GA32276@hallyn.com>
-References: <1318146066.2168.10.camel@handai-OptiPlex-780>
- <CAFj3OHWK+wSVjvWQAv5TH55xSQy3nk1p3Z_e_zLOfxSa+5NGTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFj3OHWK+wSVjvWQAv5TH55xSQy3nk1p3Z_e_zLOfxSa+5NGTg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751885Ab1JIO1G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 10:27:06 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36433 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab1JIO1C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 10:27:02 -0400
+In-Reply-To: <1318140213.6216.40.camel@marge.simson.net>
+References: <35C27021-40FC-4127-BC82-9F86FA9D624A@gmail.com> <1318140213.6216.40.camel@marge.simson.net>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+Message-Id: <8AF29618-6746-484D-B773-AED31FBA714D@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+From: Robert Kubrick <robertkubrick@gmail.com>
+Subject: Re: 2.6.32 / RH 6.1 scheduler bloated
+Date: Sun, 9 Oct 2011 10:26:22 -0400
+To: Mike Galbraith <efault@gmx.de>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting handai handai (handai.szj@gmail.com):
-> From: "Serge E. Hallyn" <serge@hallyn.com>
-> > To: 含黛 <handai.szj@taobao.com>
-> > Date: Sat, 8 Oct 2011 18:18:13 +0000
-> > Subject: Re: cgroup umount bug
-> > Quoting 含黛 (handai.szj@taobao.com):
-> > > Hi,
-> > >
-> > >     I found a mount/umount problem while using cgroup: I mount a cpu
-> > > cgroup (or other subsystems) and create some subgroups under it, but
-> > > later I try to umount it without rmdir those subgroups. I find that I
-> > > can umount it without any errors but actually the super block still
-> > > exist. This is because the sb->s_active count is greater than 1 which
-> > > was added by cgroup_create. But later if I want to mount both cpu and
-> > > memory subsystems, it will be unsuccessful indicating that the
-> > > device(cpu subsystem) is busy. This situation will not happen if I rmdir
-> > > the subgroups manually before umount it. So my question is:
-> > >     Should the umount return success when there are still some subgroups
-> >
-> > Yes.  The fs was unmounted from that directory.
-> >
-> > > exist ? If this is okay, then it may lead to some *strange* errors using
-> > > cgroup later. If it can not be umount, then it should inform that the
-> > > mount point is still busy.
-> >
-> > > Following is an example of this problem:
-> > >
-> > > mount -t cgroup -o cpu cgroup /mnt
-> > > mkdir /mnt/test
-> > >
-> > > …..// do some tests
-> > >
-> > > umount /mnt      /* return successfully */
-> > >
-> > > /* do other subsystems test */
-> > > mount -cgroup -o cpu,cpuset cgroup /mnt
-> > > mount: cgroup already mounted or /mnt busy  /*??? which is strange */
-> >
-> > I'm not sure from what you write whether you're aware of this, but
-> > to work around this, you can then
-> >
-> >  mount -t cgroup -o cpu /mnt
-> >  for i in `cat /mnt/test/tasks`; do
-> >  echo $i > /mnt/tasks
-> >  done
-> >  rmdir /mnt/test
-> >  umount /mnt
-> >
-> > and now you can
-> >
-> >  mount -cgroup -o cpu,cpuset cgroup /mnt
-> >
-> 
-> 
-> I know that I can bypass this problem by deleting subgroups before unmount.
+Will try this, but I have older kernel version running on the same  
+hardware, with the same boot parameters, and showing a more  
+reasonable 2us wakeup latency. Still high, but coming out of idle can  
+be slow as you say.
+But 10us??
 
-Or (my point was) after remount.
+On Oct 9, 2011, at 2:03 AM, Mike Galbraith wrote:
 
-> But there is no document mentioning that I should do this to avoid it. But
+> On Sat, 2011-10-08 at 20:26 -0400, Robert Kubrick wrote:
+>> A simple ftrace wakeup test shows 10us latency during the idle-to-run
+>> transition:
+>
+> If you boot nohz=off idle=poll, and measure with cyclictest  
+> (measure in
+> userspace for free), you'll likely see a remarkable difference.
+>
+> Coming out of idle can be slow, but that has more to do with silicon
+> than scheduler bloat (not that bloat doesn't exist mind you).  My  
+> Q6600
+> box _sucks_ at getting off it's duff, even intel_idle.max_cstate=1 is
+> horrid. E5620 gets moving > order of magnitude more quickly with the
+> same kernel/config/params.
+>
+> 	-Mike
+>
 
-Patches to Documentation/ are welcom.
-
-> even if there is, users may still directly umount it accidentally, then he
-> should try to remember what he has done and back to the scene to make it up,
-
-It's not just any user, it's the admin.  If he's not paying attention to
-what he's doing, you've got problems.
-
-> or he may need to reboot his server to do another test : ( .
-> So, since there is nothing good to permit incompletely unmount,
-
-I disagree.
-
->  why not
-> prevent the potential problem by prohibiting this behavior at first ?
-
--serge
