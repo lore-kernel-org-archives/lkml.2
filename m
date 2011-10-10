@@ -1,139 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256Ab1JJGpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 02:45:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56121 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab1JJGpU (ORCPT
+	id S1751458Ab1JJGrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 02:47:22 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57041 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab1JJGrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 02:45:20 -0400
+	Mon, 10 Oct 2011 02:47:21 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID p9A6l9xQ011859, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>
+CC: wwang <wei_wang@realsil.com.cn>
+Subject: [PATCH] staging:rts_pstor:Fix SDIO issue
+Date: Mon, 10 Oct 2011 14:47:08 +0800
+X-BOX-Message-Id: p9A6l9xQ011859
+Message-ID: <1318229228-16605-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-Date: Mon, 10 Oct 2011 14:45:20 +0800
-Message-ID: <CAE8kqZJ4JQ0HC4g80f7R7vhMpUdk4_ydkeV6RNXts4W0DzqgbA@mail.gmail.com>
-Subject: [PATCH] fanotify: to differ file access event from different threads
-From: boyd yang <boyd.yang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: eparis@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
+From: wwang <wei_wang@realsil.com.cn>
 
-Fanotify brings a way to intercept file access events.
-When multiple threadsiterate the same direcotry, some thread will hang.
-This patch let fanotify to differ access events from different
-threads, prevent fanotify from merging access events from different
-threads.
+Fix a bug that SDIO and SD normal card would appear simultaneously if a SDIO card inserted.
 
--------------------------------
+Signed-off-by: wwang <wei_wang@realsil.com.cn>
+---
+ drivers/staging/rts_pstor/sd.c |   31 +++++++++++++++----------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
-diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
-linux-3.1-rc4/fs/notify/fanotify/fanotify.c
---- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c	2011-10-10
-12:28:23.276847000 +0800
-@@ -15,7 +15,8 @@
-
- 	if (old->to_tell == new->to_tell &&
- 	    old->data_type == new->data_type &&
--	    old->tgid == new->tgid) {
-+	    old->tgid == new->tgid &&
-+	    old->pid == new->pid) {
- 		switch (old->data_type) {
- 		case (FSNOTIFY_EVENT_PATH):
- 			if ((old->path.mnt == new->path.mnt) &&
-@@ -144,11 +145,19 @@
- 		return PTR_ERR(notify_event);
-
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
--	if (event->mask & FAN_ALL_PERM_EVENTS) {
--		/* if we merged we need to wait on the new event */
--		if (notify_event)
--			event = notify_event;
--		ret = fanotify_get_response_from_access(group, event);
-+	//if overflow, do not wait for response
-+	if(fsnotify_isoverflow(event))
-+	{
-+		pr_debug("fanotify overflow!\n");
-+	}
-+	else
-+	{
-+		if (event->mask & FAN_ALL_PERM_EVENTS) {
-+			/* if we merged we need to wait on the new event */
-+			if (notify_event)
-+				event = notify_event;
-+			ret = fanotify_get_response_from_access(group, event);
-+		}
- 	}
- #endif
-
-diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
-linux-3.1-rc4/fs/notify/notification.c
---- linux-3.1-rc4_orig/fs/notify/notification.c	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/fs/notify/notification.c	2011-10-10 12:27:09.331787000 +0800
-@@ -95,6 +95,7 @@
- 		BUG_ON(!list_empty(&event->private_data_list));
-
- 		kfree(event->file_name);
-+		put_pid(event->pid);
- 		put_pid(event->tgid);
- 		kmem_cache_free(fsnotify_event_cachep, event);
- 	}
-@@ -132,6 +133,14 @@
- 	return priv;
- }
-
-+bool fsnotify_isoverflow(struct fsnotify_event *event)
-+{
-+	if(event==q_overflow_event)
-+	{
-+		return true;
-+	}
-+	return false;
-+}
- /*
-  * Add an event to the group notification queue.  The group can later pull this
-  * event off the queue to deal with.  If the event is successfully added to the
-@@ -374,6 +383,7 @@
- 			return NULL;
+diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
+index fb62eaf..aab6909 100644
+--- a/drivers/staging/rts_pstor/sd.c
++++ b/drivers/staging/rts_pstor/sd.c
+@@ -3134,41 +3134,40 @@ int reset_sd_card(struct rtsx_chip *chip)
+ 
+ 	if (chip->sd_ctl & RESET_MMC_FIRST) {
+ 		retval = reset_mmc(chip);
+-		if ((retval != STATUS_SUCCESS) && !sd_check_err_code(chip, SD_NO_CARD)) {
++		if (retval != STATUS_SUCCESS) {
++			if (sd_check_err_code(chip, SD_NO_CARD))
++				TRACE_RET(chip, STATUS_FAIL);
++
+ 			retval = reset_sd(chip);
+ 			if (retval != STATUS_SUCCESS) {
+-				if (CHECK_PID(chip, 0x5209)) {
+-					retval = sd_change_bank_voltage(chip, SD_IO_3V3);
+-					if (retval != STATUS_SUCCESS) {
+-						TRACE_RET(chip, STATUS_FAIL);
+-					}
+-				}
++				if (CHECK_PID(chip, 0x5209))
++					sd_change_bank_voltage(chip, SD_IO_3V3);
++
++				TRACE_RET(chip, STATUS_FAIL);
+ 			}
+ 		}
+ 	} else {
+ 		retval = reset_sd(chip);
+ 		if (retval != STATUS_SUCCESS) {
+-			if (sd_check_err_code(chip, SD_NO_CARD)) {
++			if (sd_check_err_code(chip, SD_NO_CARD))
+ 				TRACE_RET(chip, STATUS_FAIL);
+-			}
+ 
+ 			if (CHECK_PID(chip, 0x5209)) {
+ 				retval = sd_change_bank_voltage(chip, SD_IO_3V3);
+-				if (retval != STATUS_SUCCESS) {
++				if (retval != STATUS_SUCCESS)
+ 					TRACE_RET(chip, STATUS_FAIL);
+-				}
+ 			}
+ 
+-			if (!chip->sd_io) {
++			if (chip->sd_io) {
++				TRACE_RET(chip, STATUS_FAIL);
++			} else {
+ 				retval = reset_mmc(chip);
++				if (retval != STATUS_SUCCESS)
++					TRACE_RET(chip, STATUS_FAIL);
+ 			}
  		}
  	}
-+	event->pid = get_pid(old_event->pid);
- 	event->tgid = get_pid(old_event->tgid);
- 	if (event->data_type == FSNOTIFY_EVENT_PATH)
- 		path_get(&event->path);
-@@ -417,6 +427,7 @@
- 		event->name_len = strlen(event->file_name);
- 	}
+ 
+-	if (retval != STATUS_SUCCESS) {
+-		TRACE_RET(chip, STATUS_FAIL);
+-	}
+-
+ 	retval = sd_set_clock_divider(chip, SD_CLK_DIVIDE_0);
+ 	if (retval != STATUS_SUCCESS) {
+ 		TRACE_RET(chip, STATUS_FAIL);
+-- 
+1.7.7
 
-+	event->pid = get_pid(task_pid(current));
- 	event->tgid = get_pid(task_tgid(current));
- 	event->sync_cookie = cookie;
- 	event->to_tell = to_tell;
-diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
-linux-3.1-rc4/include/linux/fsnotify_backend.h
---- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h	2011-08-29
-12:16:01.000000000 +0800
-+++ linux-3.1-rc4/include/linux/fsnotify_backend.h	2011-10-10
-12:27:48.587369000 +0800
-@@ -238,6 +238,7 @@
- 	u32 sync_cookie;	/* used to corrolate events, namely inotify mv events */
- 	const unsigned char *file_name;
- 	size_t name_len;
-+	struct pid *pid;
- 	struct pid *tgid;
-
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-@@ -378,6 +379,8 @@
- 							struct fsnotify_event_private_data *priv,
- 							struct fsnotify_event *(*merge)(struct list_head *,
- 											struct fsnotify_event *));
-+/*true if the event is an overflow event*/
-+extern bool fsnotify_isoverflow(struct fsnotify_event *event);
- /* true if the group notification queue is empty */
- extern bool fsnotify_notify_queue_is_empty(struct fsnotify_group *group);
- /* return, but do not dequeue the first event on the notification queue */
