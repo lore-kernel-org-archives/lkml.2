@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab1JJQel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:34:41 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:35285 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab1JJQek (ORCPT
+	id S1752814Ab1JJQf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:35:59 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35865 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab1JJQf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:34:40 -0400
-Message-ID: <4E931E8F.9030808@ti.com>
-Date: Mon, 10 Oct 2011 22:04:23 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Mon, 10 Oct 2011 12:35:58 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] regulator: twl: Remove hardcoded board constraints
- from driver
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-2-git-send-email-rnayak@ti.com> <20111010162507.GF3607@opensource.wolfsonmicro.com>
-In-Reply-To: <20111010162507.GF3607@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111010142418.GC21944@kroah.com>
+References: <20111006190526.GA13883@redhat.com>
+	<201110071640.53827.frank.mehnert@oracle.com>
+	<CAOJsxLGE_WqV=43JRjL_Mo3X5t11iDR2BNfBmRZWW3rt1CNbTA@mail.gmail.com>
+	<20111010142418.GC21944@kroah.com>
+Date: Mon, 10 Oct 2011 19:35:58 +0300
+X-Google-Sender-Auth: _xV9278JDJhJ1lA9zKiFlhpcegE
+Message-ID: <CAOJsxLGzyDut=6B-Xc0jBWFPNdTzG8vzoVJdyLfBbjyRDx-eWw@mail.gmail.com>
+Subject: Re: RFC: virtualbox tainting.
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Greg KH <greg@kroah.com>
+Cc: Frank Mehnert <frank.mehnert@oracle.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andy Hall <andy.hall@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 October 2011 09:55 PM, Mark Brown wrote:
-> On Mon, Oct 10, 2011 at 09:49:34PM +0530, Rajendra Nayak wrote:
->> Remove the hardcoded .valid_modes_mask and .valid_ops_mask for
->> each regulator from the twl driver and let the boards pass it.
+On Mon, Oct 10, 2011 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
+>> > And of course, helpful and constructive critism is always appreciated.
 >>
->> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
->> Acked-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>> What is holding you back from submitting the vbox modules to kernel
+>> staging tree and starting to clean it up for proper inclusion?
 >
-> Please update this changelog - as I said in reply to your previous
-> posting this isn't actually hardcoding anything, it's dropping things
-> from the constraints which the hardware doesn't support.
+> You haven't actually read the vbox kernel code before, have you :)
 
-Looks like I completely missed the "&=" and your comment
-on the previous posting. Looking at it now, seems to me
-this patch is just un-necessary and what the driver seems
-to be doing (preventing users from setting flags which the
-hardware does not support) seems perfectly fine.
-I will just go ahead and drop this patch.
+I actually have and had a rough patch that added the code to staging
+directory in the kernel tree.
 
+Admittedly I don't remember anything about the code but surely it
+meets the standards of what we already have there? :-)
 
+                        Pekka
