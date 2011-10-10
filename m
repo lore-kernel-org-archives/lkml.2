@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab1JJPqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:46:20 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:59560 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750702Ab1JJPqS (ORCPT
+	id S1751577Ab1JJPxn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 11:53:43 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50016 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab1JJPxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:46:18 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH] Fix include dependency for mmu_notifier
-Date: Mon, 10 Oct 2011 11:46:15 -0400
-Message-Id: <1318261575-24256-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 10 Oct 2011 11:53:41 -0400
+Date: Mon, 10 Oct 2011 11:53:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: linux-x86_64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
+Message-ID: <20111010155319.GA29140@phenom.oracle.com>
+References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4E931502.0110:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kvm_host struct can include an mmu_notifier struct but mmu_notifier.h is
-not included directly.
+On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
+> Run below test on xen pvm.
+> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
+> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
+> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
+> 
+> @ X:58562301
+> @ Y:58574282
+> @ IDLE: 199.600
+> 
+> Normal idle percent should be around 100%.
+> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
+> but these ticks will be accounted again when idle ticks restarted.
+> 
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> Signed-off-by: Joe Jin <joe.jin@oracle.com>
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- include/linux/kvm_host.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Please in the future also CC the maintainers (you can get that using
+the scripts/get_maintainer.pl).
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index eabb21a..d2c79a9 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -14,6 +14,7 @@
- #include <linux/signal.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
-+#include <linux/mmu_notifier.h>
- #include <linux/preempt.h>
- #include <linux/msi.h>
- #include <linux/slab.h>
--- 
-1.7.4.1
-
+Jeremy, any thoughts?
+> 
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index 163b467..5dcbc91 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -151,7 +151,6 @@ static void do_stolen_accounting(void)
+>  
+>  	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+>  	__this_cpu_write(xen_residual_blocked, blocked);
+> -	account_idle_ticks(ticks);
+>  }
+>  
+>  /* Get the TSC speed from Xen */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
