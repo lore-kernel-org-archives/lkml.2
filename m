@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab1JJHho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:37:44 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:46400 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab1JJHhn (ORCPT
+	id S1752616Ab1JJHim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:38:42 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:33487 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab1JJHik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:37:43 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjjUQEYRerA==
-X-RZG-CLASS-ID: mo00
-Date: Mon, 10 Oct 2011 09:37:39 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH] staging: hv: storvsc: ignore SET_WINDOW scsi command
-Message-ID: <20111010073739.GA19807@aepfle.de>
+	Mon, 10 Oct 2011 03:38:40 -0400
+Message-ID: <4E92A0F4.7060107@free-electrons.com>
+Date: Mon, 10 Oct 2011 09:38:28 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+CC: Michael Opdenacker <michael.opdenacker@linaro.org>, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] omap: sound: fix "ambiguous else" warning
+References: <1318223228-15671-1-git-send-email-michael.opdenacker@linaro.org> <1318223228-15671-2-git-send-email-michael.opdenacker@linaro.org> <4E9296A2.50003@bitmer.com>
+In-Reply-To: <4E9296A2.50003@bitmer.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some commands sent by smartd will offline the device.
-With this change applied, smartd sill not monitor the device anymore.
+On 10/10/2011 08:54 AM, Jarkko Nikula wrote:
+> Hi
+>
+> On 10/10/2011 08:07 AM, Michael Opdenacker wrote:
+>> This patch applies against Tony Lindgren's linux-omap tree
+>> It fixes "ambiguous else" warnings at compile time.
+>>
+>> Signed-off-by: Michael Opdenacker<michael.opdenacker@linaro.org>
+>> ---
+>>   sound/soc/omap/omap-mcbsp.c |    3 ++-
+>>   1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+> This is already fixed in ASoC tree by following commit
+>
+> commit 141947e6ceb8f82fe8382b26f093bb379af9af15
+> Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> Date:   Mon Sep 26 10:56:42 2011 +0300
+>
+>     ASoC: omap-mcbsp: Fix compile time warning about ambiguous ‘else’
+Perfect, thanks. I'll keep an eye on the ASoC tree next time.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Michael.
 
----
- drivers/staging/hv/storvsc_drv.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
 
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1122,6 +1122,22 @@ static void storvsc_command_completion(s
- 	kmem_cache_free(host_dev->request_pool, cmd_request);
- }
- 
-+static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
-+{
-+	bool allowed = true;
-+	u8 scsi_op = scmnd->cmnd[0];
-+
-+	switch (scsi_op) {
-+		/* smartd sends this command, which will offline the device */
-+		case SET_WINDOW:
-+			scmnd->result = DID_ERROR << 16;
-+			allowed = false;
-+			break;
-+		default:
-+			break;
-+	}
-+	return allowed;
-+}
- 
- /*
-  * storvsc_queuecommand - Initiate command processing
-@@ -1141,6 +1157,10 @@ static int storvsc_queuecommand_lck(stru
- 	unsigned int sg_count = 0;
- 	struct vmscsi_request *vm_srb;
- 
-+	if (storvsc_check_scsi_cmd(scmnd) == false) {
-+		done(scmnd);
-+		return 0;
-+	}
- 
- 	/* If retrying, no need to prep the cmd */
- 	if (scmnd->host_scribble) {
+-- 
+Michael Opdenacker, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
++ 33 621 604 642
+
