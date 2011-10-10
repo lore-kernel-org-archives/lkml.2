@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1JJO26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 10:28:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61174 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab1JJO24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 10:28:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
-   d="scan'208";a="60668960"
-Date: Mon, 10 Oct 2011 22:28:46 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
-Message-ID: <20111010142846.GA21218@localhost>
-References: <20111003134228.090592370@intel.com>
- <1318248846.14400.21.camel@laptop>
- <20111010130722.GA11387@localhost>
+	id S1754470Ab1JJObg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 10:31:36 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49039 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab1JJObf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 10:31:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010130722.GA11387@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 10 Oct 2011 22:31:34 +0800
+Message-ID: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+Subject: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
+Hi,
 
-> As for the NFS performance, the dd tests show that adding a writeback
-> wait queue to limit the number of NFS PG_writeback pages (patches
-> will follow) is able to gain 48% throughput in itself:
-> 
->       3.1.0-rc8-ioless6+         3.1.0-rc8-nfs-wq+  
-> ------------------------  ------------------------  
->                    22.43       +81.8%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
->                    28.21       +52.6%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
->                    29.21       +55.4%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
->                    14.12       +40.4%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
->                    29.44       +11.4%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
->                     9.09      +240.9%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
->                    25.68       +84.6%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
->                    41.06        +7.6%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
->                    39.13       +25.9%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
->                   238.38       +48.4%       353.72  TOTAL
-> 
-> Which will result in 28% overall improvements over the vanilla kernel:
-> 
->       3.1.0-rc4-vanilla+         3.1.0-rc8-nfs-wq+  
-> ------------------------  ------------------------  
->                    20.89       +95.2%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
->                    39.43        +9.2%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
->                    26.60       +70.6%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
->                    12.70       +56.1%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
->                    27.41       +19.7%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
->                    26.52       +16.8%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
->                    40.70       +16.5%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
->                    45.28        -2.4%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
->                    35.74       +37.8%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
->                   275.28       +28.5%       353.72  TOTAL
-> 
-> As for the most concerned NFS commits, the wait queue patch increases
-> the (nr_commits / bytes_written) ratio by +74% for the thresh=1G,10dd
-> case, +55% for the thresh=100M,10dd case, and mostly ignorable in the
-> other 1dd, 2dd cases, which looks acceptable.
-> 
-> The other noticeable change of the wait queue is, the RTT time per
+Looks like it is a bit difficult to understand PM_QOS_CPU_DMA_LATENCY
+from the words' meaning.
 
-Sorry it's not RTT, but mainly the local queue time of the WRITE RPCs.
+After searching from google, I don't find some useful information about
+the root cause for introducing PM_QOS_CPU_DMA_LATENCY. I understand
+it is very similar to interrupt latency. Also from the comment for
+omap_pm_set_max_mpu_wakeup_lat in file[1], the description is basically same
+with interrupt latency.
 
-> write is reduced by 1-2 order(s) in many of the below cases (from
-> dozens of seconds to hundreds of milliseconds).
+>From comments of pm_qos_add_request usages in drivers, it can be understood
+as interrupt latency too, IMO.
 
-I also measured the stddev of the network bandwidths, and find more
-smooth network transfers in general with the wait queue, which is
-expected.
+So, could we think that PM_QOS_CPU_DMA_LATENCY is interrupt latency?
 
-thresh=1G
-        vanilla       ioless6       nfs-wq
-1dd     83088173.728  53468627.578  53627922.011
-2dd     52398918.208  43733074.167  53531381.177
-10dd    67792638.857  44734947.283  39681731.234
 
-However the major difference should still be that the writeback wait
-queue can significantly reduce the local queue time for the WRITE RPCs.
+[1], arch/arm/plat-omap/include/plat/omap-pm.h
 
-The wait queue patch looks reasonable in that it keeps the pages in
-PG_dirty state rather than to prematurely put them to PG_writeback
-state only to queue them up for dozens of seconds before xmit.
-
-It should be safe because that's exactly the old proved behavior
-before the per-bdi writeback patches introduced in 2.6.32. The 2nd
-patch on proportional nfs_congestion_kb is a new change, though.
-
-Thanks,
-Fengguang
+thanks,
+-- 
+Ming Lei
