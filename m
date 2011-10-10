@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1JJRPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:15:43 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48293 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab1JJRPl (ORCPT
+	id S1751944Ab1JJRW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:22:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60116 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750912Ab1JJRWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:15:41 -0400
-Date: Mon, 10 Oct 2011 19:14:37 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "tj@kernel.org" <tj@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "ashok.raj@intel.com" <ashok.raj@intel.com>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111010171437.GA11907@elf.ucw.cz>
-References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
- <4E931018.8030904@linux.vnet.ibm.com>
- <20111010165343.GA29261@aftab>
+	Mon, 10 Oct 2011 13:22:25 -0400
+Date: Mon, 10 Oct 2011 18:22:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111010172222.GG3607@opensource.wolfsonmicro.com>
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+ <1318263578-7407-4-git-send-email-rnayak@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111010165343.GA29261@aftab>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1318263578-7407-4-git-send-email-rnayak@ti.com>
+X-Cookie: Excellent day to have a rotten day.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Oct 10, 2011 at 09:49:36PM +0530, Rajendra Nayak wrote:
 
-> > > The seems like entirely the wrong way to go about solving this problem.
-> > > 
-> > > The kernel shouldn't be responsible for making hotplug stress tests 
-> > > exclusive with system sleep.  Whoever is running those tests should be 
-> > > smart enough to realize what's wrong if system sleep interferes with a 
-> > > test.
-> 
-> Yes, agreed. And more: I'm still trying to understand why a test case
-> like that is relevant and needs to be fixed at all. Let me re-formulate
-> the question: what real world scenario(s) does the case of hibernating
-> _while_ off- and onlining cores cover? Or are you simply doing kernel
-> resiliency testing and thought that offlining cores while hibernating
-> might make sense?
+> +- regulator-change-voltage: boolean, Output voltage can be changed by software
+> +- regulator-change-current: boolean, Output current can be chnaged by software
+> +- regulator-change-mode: boolean, Operating mode can be changed by software
+> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
+> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
+> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
+> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
+> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
+> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
+> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
+> +- regulator-always-on: boolean, regulator should never be disabled
 
-Some people want to do hibernate on battery low / UPS fail. That can
-happen any time...
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thinking about this I'm not sure that these should go in the device
+tree, they're as much talking about what Linux is able to cope with as
+they are talking about what the hardware is able to do.  Sometimes
+they'll be fixed by the design but they are sometimes also restricted by
+what the software is currently capable of.  DRMS is a prime example
+here, it depends on how good we are at telling the API about how much
+current we're using.
