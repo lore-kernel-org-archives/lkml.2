@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1JJMd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:33:29 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45027 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab1JJMd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:33:26 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/3] Update documentation
-To: rjw@sisk.pl
-Cc: srivatsa.bhat@linux.vnet.ibm.com, bp@amd64.org, pavel@ucw.cz,
-        len.brown@intel.com, tj@kernel.org, mingo@elte.hu,
-        a.p.zijlstra@chello.nl, akpm@linux-foundation.org,
-        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
-        rusty@rustcorp.com.au, rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com,
-        ashok.raj@intel.com, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
-        hpa@zytor.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Date: Mon, 10 Oct 2011 18:03:16 +0530
-Message-ID: <20111010123312.15067.83231.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1754028Ab1JJMfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:35:08 -0400
+Received: from mail.plaintext.sk ([81.0.124.6]:47218 "EHLO shiva.plaintext.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab1JJMfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 08:35:07 -0400
+Date: Mon, 10 Oct 2011 13:35:02 +0100 (GMT+01:00)
+From: LuVar <luvar@plaintext.sk>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        rdunlap@xenotime.net, axboe@kernel.dk, akpm@linux-foundation.org,
+        neilb@suse.de, Kent Overstreet <kent.overstreet@gmail.com>
+Message-ID: <741908052.14171318250102625.JavaMail.root@shiva>
+In-Reply-To: <20111006175808.GA9886@atrey.karlin.mff.cuni.cz>
+Subject: Re: [GIT] Bcache version 12
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 11101003-3568-0000-0000-000000801CC5
+X-Mailer: Zimbra 5.0.16_GA_2921.UBUNTU8_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.16_GA_2921.UBUNTU8_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update documentation about the cpu hotplug and suspend/hibernate
-race condition related issue in Documentation/power directory.
+Hi,
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+----- "Pavel Machek" <pavel@ucw.cz> wrote:
 
- Documentation/power/freezing-of-tasks.txt |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+> Hi!
+> 
+> > It can cache filesystem metadata - it can cache anything.
+> > 
+> > Because bcache has its own superblock (much like md), it can
+> guarantee
+> > that bcache devices are consistent; this is particularly important
+> if
+> > you want to do writeback caching. You really don't want to
+> accidently
+> > mount a filesystem that you were doing writeback caching on without
+> the
+> > ache - bcache makes it impossible to do so accidently.
+> > 
+> > Is any of that useful?
+> 
+> I guess some kind of benchmark would be nice....? I don't know what
+> fair workload for this is. System bootup? Kernel compile after
+> reboot?
 
-diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-index 38b5724..80acd30 100644
---- a/Documentation/power/freezing-of-tasks.txt
-+++ b/Documentation/power/freezing-of-tasks.txt
-@@ -176,3 +176,25 @@ tasks, since it generally exists anyway.
- A driver must have all firmwares it may need in RAM before suspend() is called.
- If keeping them is not practical, for example due to their size, they must be
- requested early enough using the suspend notifier API described in notifiers.txt.
-+
-+However, there is another problem related to request_firmware() which is not
-+related to device drivers. The x86 microcode core uses request_firmware() to
-+get the CPU microcode from userspace. And microcode updates can be triggered by
-+various events such as loading of microcode driver module, reloading of
-+microcode image by writing 1 to the sysfs file /sys/devices/system/cpu/cpu*/
-+microcode/reload or by onlining a CPU during a CPU hotplug operation (in this
-+case, the microcode driver's callback for CPU online event does a microcode
-+update).
-+In all these scenarios, due to some race condition with the freezing of tasks,
-+if the userspace happens to be frozen at the moment when request_firmware() is
-+called, then since the caller will be waiting for the firmware, eventually
-+the freezing of tasks will fail.
-+
-+To solve the issue in the CPU hotplug case, synchronization has been added to
-+prevent the CPU hotplug online operation from running in parallel with
-+suspend/hibernate. The microcode driver module load/unload and microcode image
-+reload are carried out quite infrequently in practice and hence the chances of
-+these events racing with suspend/hibernation are very rare. Anyway, even those
-+corner cases are expected to be handled well when microcode loading via the
-+bootloader gets implemented.
-+
+I guess, fair benchmark is ordinary work... For example I have running my PC with uptimes sometimes more than 10 days, so booting up is not critical. For me is critical startup of my eclipse with some workspace (work, school, personal...). To have more standard comparison I suggest to have some "standard" (average user) workload for testing. Somewhere I have seen to do:
+1. system bootup
+2. startup of some programs (firefox,gimp,hugin)
+3. do some work in openned programs (they used some macros)
+4. save all work and shutdown pc
 
+Imho measuring time for something like this could be relevant measure of general speedup => user experience speedup. This workload probably could be simulated by running phoronix test suite.
+
+To measure speedup in some other quantity (kbps, iops...) there is probably problem with workload type (database, iozone...). Random benchmark will just measure how bcache slows down random operations. To measure speed up there have to be some repetitive io reading from disk (starting same programs...).
+
+PS: I want to make some time to install bcache and try to make some simple benchmarks.... I hope that I will find some time for this around Christmas...
+
+> 
+> 									Pavel
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures)
+> http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
