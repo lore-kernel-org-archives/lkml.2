@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab1JJHM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:12:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43687 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab1JJHM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:12:28 -0400
-Date: Mon, 10 Oct 2011 09:10:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
-Subject: Re: [GIT PULL] RAS update
-Message-ID: <20111010071034.GO32173@elte.hu>
-References: <20110930102034.GB22622@aftab>
- <20111006105535.GA6007@elte.hu>
- <20111006110403.GA31022@elte.hu>
- <20111006124201.GA22432@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752494Ab1JJHPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:15:14 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:5740 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab1JJHPN convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:9:1>);
+	Mon, 10 Oct 2011 03:15:13 -0400
+Message-Id: <4E92B79B020000780005A64F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 10 Oct 2011 08:15:07 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ingo Molnar" <mingo@elte.hu>
+Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        "Matt Fleming" <matt@console-pimps.org>,
+        "Rui Zhang" <rui.zhang@intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, "Avi Kivity" <avi@redhat.com>,
+        "Matthew Garrett" <mjg@redhat.com>,
+        "Marcelo Tosatti" <mtosatti@redhat.com>,
+        "johnstultz" <johnstul@us.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] x86: Don't recursively acquire rtc_lock
+References: <1314720739-28683-1-git-send-email-matt@console-pimps.org>
+ <1314721040.3649.4.camel@mfleming-mobl1.ger.corp.intel.com>
+ <1317367617.3375.2.camel@mfleming-mobl1.ger.corp.intel.com>
+ <20111010064536.GJ32173@elte.hu>
+In-Reply-To: <20111010064536.GJ32173@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20111006124201.GA22432@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@amd64.org> wrote:
-
-> On Thu, Oct 06, 2011 at 07:04:04AM -0400, Ingo Molnar wrote:
-> > 
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> > 
-> > > 
-> > > * Borislav Petkov <bp@amd64.org> wrote:
-> > > 
-> > > > Hi Ingo,
-> > > > 
-> > > > please pull from the branch below to receive one fix which
-> > > > causes a very nasty warning on _all_ CPUs when fiddling with
-> > > > MCE poller interval. Since it is not that important, I'm fine
-> > > > with it going in during the merge window. Top commit here is
-> > > > 9aaef96f61d93062556d34e15731f7d5869dd82e.
-> > > > 
-> > > > Thanks.
-> > > > 
-> > > > The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
-> > > > 
-> > > >   Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
-> > > > 
-> > > > are available in the git repository at:
-> > > >   git://amd64.org/linux/bp.git ras
-> > > > 
-> > > > Hidetoshi Seto (1):
-> > > >       x86, mce: Do not call del_timer_sync() in IRQ context
-> > > > 
-> > > >  arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
-> > > >  1 files changed, 14 insertions(+), 6 deletions(-)
-> > > 
-> > > Pulled, thanks a lot Joerg!
-> > 
-> > s/Boris :-)
+>>> On 10.10.11 at 08:45, Ingo Molnar <mingo@elte.hu> wrote:
+> * Matt Fleming <matt@console-pimps.org> wrote:
+>> Ping? It's -rc8 and 32-bit EFI machines still don't boot.
 > 
-> It doesn't matter - practically, we're almost one and the same guy. :-).
+> Don't know the status of this - Thomas?
 
-Heh ;-)
+This went into 3.1-rc9 (with your signed-off being last).
 
-This happened because Joerg was the main AMD person whom i was 
-Git-pulling from regularly, so i guess my brain optimized away a few 
-neurons via the "AMD git pull -> Joerg" heuristic.
+Jan
 
-That was a pretty crappy optimization, hopefully fixed by now ;-)
+> Thanks,
+> 
+> 	Ingo
 
-Thanks,
 
-	Ingo
+
