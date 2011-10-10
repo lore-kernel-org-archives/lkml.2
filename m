@@ -1,49 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1JJPhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:37:23 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40236 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab1JJPhV convert rfc822-to-8bit (ORCPT
+	id S1752418Ab1JJPlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 11:41:00 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:35808 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab1JJPk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:37:21 -0400
+	Mon, 10 Oct 2011 11:40:58 -0400
+Message-ID: <4E931018.8030904@linux.vnet.ibm.com>
+Date: Mon, 10 Oct 2011 21:02:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <1318260925.7904.89.camel@gandalf.stny.rr.com>
-References: <1317750395.18063.11.camel@gandalf.stny.rr.com>
-	<20111004180237.GA15087@suse.de>
-	<4E8B4BEC.5030708@zytor.com>
-	<1317757101.18063.24.camel@gandalf.stny.rr.com>
-	<4E8B6172.2050006@zytor.com>
-	<1317757696.18063.28.camel@gandalf.stny.rr.com>
-	<1317769149.1662.28.camel@schurl.linbit>
-	<1318260925.7904.89.camel@gandalf.stny.rr.com>
-Date: Mon, 10 Oct 2011 11:37:20 -0400
-Message-ID: <CA+5PVA5_rE3fMWEKaYC_2E3VofrHkwNDDHviUXO+RYkvEYuNVA@mail.gmail.com>
-Subject: Re: [Quilt-dev] [RFC][PATCH v2][QUILT] Add gpg signing to quilt mail
-From: Josh Boyer <jwboyer@gmail.com>
-To: quilt-dev@nongnu.org
-Cc: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        John Kacur <jkacur@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: rjw@sisk.pl, bp@amd64.org, pavel@ucw.cz, len.brown@intel.com,
+        tj@kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, hpa@zytor.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+x-cbid: 11101015-2674-0000-0000-000000CB4F16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 11:35 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-10-05 at 00:58 +0200, Andreas Gruenbacher wrote:
->
->> Yes, please.  Also please use Getopt::Long in the Perl script, and
->> send a patch relative to the quilt repo. I unfortunately can't help
->> with how to beat gpg into behaving right.
->
-> Where do I find the official quilt repo? Doing google searches only
-> leads me to knitting sites. Which is actually quite helpful as the
-> winter temperatures are coming around the corner.
+On 10/10/2011 08:53 PM, Alan Stern wrote:
+> On Mon, 10 Oct 2011, Srivatsa S. Bhat wrote:
+> 
+>> When CPU hotplug is run along with suspend/hibernate tests using
+>> the pm_test framework, even at the freezer level, we hit task freezing
+>> failures. One such failure was reported here:
+>> https://lkml.org/lkml/2011/9/5/28
+>>
+>> An excerpt of the log:
+>>
+>>   Freezing of tasks failed after 20.01 seconds (2 tasks refusing to
+>>   freeze, wq_busy=0):
+>>   invert_cpu_stat D 0000000000000000  5304 20435  17329 0x00000084
+>>    ffff8801f367bab8 0000000000000046 ffff8801f367bfd8 00000000001d3a00
+>>    ffff8801f367a010 00000000001d3a00 00000000001d3a00 00000000001d3a00
+>>    ffff8801f367bfd8 00000000001d3a00 ffff880414cc6840 ffff8801f36783c0
+>>   Call Trace:
+>>    [<ffffffff81532de5>] schedule_timeout+0x235/0x320
+>>    [<ffffffff81532a0b>] wait_for_common+0x11b/0x170
+>>    [<ffffffff81532b3d>] wait_for_completion+0x1d/0x20
+>>    [<ffffffff81364486>] _request_firmware+0x156/0x2c0
+>>    [<ffffffff81364686>] request_firmware+0x16/0x20
+>>    [<ffffffffa01f0da0>] request_microcode_fw+0x70/0xf0 [microcode]
+>>    [<ffffffffa01f0390>] microcode_init_cpu+0xc0/0x100 [microcode]
+>>    [<ffffffffa01f14b4>] mc_cpu_callback+0x7c/0x11f [microcode]
+>>    [<ffffffff815393a4>] notifier_call_chain+0x94/0xd0
+>>    [<ffffffff8109770e>] __raw_notifier_call_chain+0xe/0x10
+>>    [<ffffffff8106d000>] __cpu_notify+0x20/0x40
+>>    [<ffffffff8152cf5b>] _cpu_up+0xc7/0x10e
+>>    [<ffffffff8152d07b>] cpu_up+0xd9/0xec
+>>    [<ffffffff8151e599>] store_online+0x99/0xd0
+>>    [<ffffffff81355eb0>] sysdev_store+0x20/0x30
+>>    [<ffffffff811f3096>] sysfs_write_file+0xe6/0x170
+>>    [<ffffffff8117ee50>] vfs_write+0xd0/0x1a0
+>>    [<ffffffff8117f024>] sys_write+0x54/0xa0
+>>    [<ffffffff8153df02>] system_call_fastpath+0x16/0x1b
+>>
+>>
+>> The reason behind this failure is explained below:
+>>
+>> The x86 microcode update driver has callbacks registered for CPU hotplug
+>> events such as a CPU getting offlined or onlined. Things go wrong when a
+>> CPU hotplug stress test is carried out along with a suspend/resume operation
+>> running simultaneously. Upon getting a CPU_DEAD notification (for example,
+>> when a CPU offline occurs with tasks not frozen), the microcode callback
+>> frees up the microcode and invalidates it. Later, when that CPU gets onlined
+>> with tasks being frozen, the microcode callback (for the CPU_ONLINE_FROZEN
+>> event) tries to apply the microcode to the CPU; doesn't find it and hence
+>> depends on the (currently frozen) userspace to get the microcode again. This
+>> leads to the numerous "WARNING"s at drivers/base/firmware_class.c which
+>> eventually leads to task freezing failures in the suspend code path, as has
+>> been reported.
+>>
+>> So, this patch series addresses this issue by ensuring that CPU hotplug and
+>> suspend/hibernate don't run in parallel, thereby fixing the task freezing
+>> failures.
+> 
+> The seems like entirely the wrong way to go about solving this problem.
+> 
+> The kernel shouldn't be responsible for making hotplug stress tests 
+> exclusive with system sleep.  Whoever is running those tests should be 
+> smart enough to realize what's wrong if system sleep interferes with a 
+> test.
+> 
+> Furthermore, if the entire problem is lack of CPU microcode, hasn't 
+> that been fixed already?  There recently was a patch to avoid releasing 
+> microcode after it was first loaded -- the idea being that there would 
+> then be no need to get the microcode from userspace again at awkward 
+> times while the system is resuming.
+> 
 
-http://savannah.nongnu.org/git/?group=quilt
+Well, that was the first version of this patch itself :)
+I forgot to give a link to it in the patch description:
+http://thread.gmane.org/gmane.linux.kernel/1198291/focus=1200591
 
-josh
+That was my first idea: to avoid releasing microcode after it was first
+loaded. But Tejun and Borislav felt that a better way to fix the problem
+would be to mutually exclude CPU hotplug and suspend/hibernate.
+And later on, Borislav Acked that one-line patch on the grounds that even
+though that was not the best solution for the bug, it is an optimization
+in its own right.
+And then I posted that one-line patch with a revised motivation:
+http://thread.gmane.org/gmane.linux.kernel/1200882
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
+
