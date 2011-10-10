@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab1JJVMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 17:12:49 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:50879 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab1JJVMr (ORCPT
+	id S1752607Ab1JJVNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 17:13:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41477 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab1JJVNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 17:12:47 -0400
-Date: Tue, 11 Oct 2011 00:12:45 +0300 (EEST)
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-X-X-Sender: aaro@dell
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-cc: Kevin Hilman <khilman@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        tony@atomide.com
-Subject: Re: [PATCH 3.1-rc3] gpio/omap: fix build error with certain OMAP1
- configs
-In-Reply-To: <201110071430.14420.jkrzyszt@tis.icnet.pl>
-Message-ID: <alpine.DEB.2.00.1110102356530.7624@dell>
-References: <201108231342.25101.jkrzyszt@tis.icnet.pl> <87sjoshx2k.fsf@ti.com> <201110071430.14420.jkrzyszt@tis.icnet.pl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Oct 2011 17:13:10 -0400
+Date: Mon, 10 Oct 2011 23:13:00 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "amd64-microcode@amd64.org" <amd64-microcode@amd64.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] CPU hotplug,x86 Microcode: Don't request
+ microcode from userspace unnecessarily
+Message-ID: <20111010211300.GA31606@aftab>
+References: <4E90B6F9.8020804@linux.vnet.ibm.com>
+ <4E91F82E.4080007@linux.vnet.ibm.com>
+ <4E91F908.5010006@linux.vnet.ibm.com>
+ <201110102258.02628.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1937644034-1318281165=:7624"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201110102258.02628.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, Oct 10, 2011 at 04:58:02PM -0400, Rafael J. Wysocki wrote:
+> On Sunday, October 09, 2011, Srivatsa S. Bhat wrote:
+> > Requesting the microcode from userspace *every time* when onlining CPUs
+> > (during a CPU hotplug operation) is unnecessary.
+> > 
+> > So, this patch ensures that once the kernel gets the microcode after booting,
+> > it is not freed nor invalidated when a CPU goes offline, so that it can be
+> > reused when that CPU comes back online, without requesting userspace for it
+> > again. As a result, the CPU hotplug operations become faster as well.
+> > 
+> > Tested-by: Borislav Petkov <bp@amd64.org>
+> > Acked-by: Borislav Petkov <bp@amd64.org>
+> > 
+> > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> Fine by me.  I wonder who should take this?
 
---8323329-1937644034-1318281165=:7624
-Content-Type: TEXT/PLAIN; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Ingo, most probably. ucode stuff goes in through -tip.
 
-Hi,
+-- 
+Regards/Gruss,
+Boris.
 
-On Fri, 7 Oct 2011, Janusz Krzysztofik wrote:
-> Dnia wtorek, 23 sierpnia 2011 o 19:11:47 Kevin Hilman napisał(a):
->> Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> writes:
->>> With commit f64ad1a0e21a, "gpio/omap: cleanup _set_gpio_wakeup(), remove
->>> ifdefs", access to build time conditionally omitted 'suspend_wakeup'
->>> member of the 'gpio_bank' structure has been placed unconditionally in
->>> function _set_gpio_wakeup(), which is always built. This resulted in the
->>> driver compilation broken for certain OMAP1, i.e., non-OMAP16xx,
->>> configurations.
->>>
->>> Really required or not in previously excluded cases, define this
->>> structure member unconditionally as a fix.
->>>
->>> Tested with a custom OMAP1510 only configuration.
->>>
->>> Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
->>
->> Verified that this fixes a build problem when building for OMAP1
->> (730/850 only)
->>
->> Acked-by: Kevin Hilman <khilman@ti.com>
-
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-
->> Grant, can you queue this as a fix for 3.1-rc?
->
-> Sorry for being so late with checking this, but it looks like this patch
-> never got into 3.1-rc, as it should, leaving the issue not fixed.
-> Any chance for it still being pushed into 3.1?
-
-This patch is one-liner, and still needed to get 3.1-rc9 compiled and
-running on e.g. Amstrad E3, so I think it should get into 3.1.
-
-A.
---8323329-1937644034-1318281165=:7624--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
