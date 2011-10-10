@@ -1,113 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1JJJ0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:26:23 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:37781 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753068Ab1JJJ0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:26:21 -0400
-Date: Mon, 10 Oct 2011 12:26:15 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-Cc: balbi@ti.com, Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        johnstul@us.ibm.com, vishwanath.bs@ti.com
-Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-Message-ID: <20111010092613.GF6685@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1317901099-2519-1-git-send-email-keshava_mgowda@ti.com>
- <alpine.DEB.2.00.1110070305040.4611@utopia.booyaka.com>
- <CAP05o4J39MotDTOv-O2ahvWfxL-7jC-L3FGsNXbmDy8HNg=W3g@mail.gmail.com>
- <alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
- <CAP05o4KLAnNHcvNbNWqJFN710JMNAy2emYzCt2xHF+m-Kvwveg@mail.gmail.com>
- <CAP05o4+ybhZwRaXZPgS-ZdTL_0gjz1VLf6LuUtMgm_txNPwrnw@mail.gmail.com>
- <20111010090330.GE6685@legolas.emea.dhcp.ti.com>
- <CAP05o4Kqrsr3Kzm=NDpEB7wHACzXkp2mQLuWdUAsZ8pVPdJafA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
-Content-Disposition: inline
-In-Reply-To: <CAP05o4Kqrsr3Kzm=NDpEB7wHACzXkp2mQLuWdUAsZ8pVPdJafA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753214Ab1JJJbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 05:31:25 -0400
+Received: from mort.rzone.de ([81.169.144.234]:23050 "EHLO mort.rzone.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097Ab1JJJbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 05:31:24 -0400
+X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Oct 2011 05:31:24 EDT
+From: Arne Jansen <sensille@gmx.net>
+To: linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] ulist: generic data structure to build unique lists
+Date: Mon, 10 Oct 2011 11:22:05 +0200
+Message-Id: <1318238525-28879-1-git-send-email-sensille@gmx.net>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ulist is a generic data structures to hold a collection of unique u64
+values. The only operations it supports is adding to the list and
+enumerating it.
 
---AH+kv8CCoFf6qPuz
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is possible to store an auxiliary value along with the key.
+The implementation is preliminary and can probably be sped up
+significantly.
+The main purpose of this submission is to get some idea whether this
+data structure is worth having generally available.
 
-On Mon, Oct 10, 2011 at 02:47:42PM +0530, Munegowda, Keshava wrote:
-> On Mon, Oct 10, 2011 at 2:33 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Mon, Oct 10, 2011 at 02:22:23PM +0530, Munegowda, Keshava wrote:
-> >> Hi paul and Felipe
-> >>
-> >> Here is the highlights of the change in the design of =A0USB Host which
-> >> we can do after kernel 3.2 release;
-> >>
-> >> 1. separate the TLL changes =A0from UHH
-> >> 2. The TLL is be a new platform driver in ./drivers/mfd
-> >> 3. the TLL platform driver will export apis =A0for enable/disable cloc=
-ks
-> >> and settings.
-> >
-> > TLL should control its clocks through pm_runtime APIs like anything
-> > else. If you really must export APIs to be used by UHH, you need to have
-> > an API so that you can claim/release a TLL channel and get/put for
-> > increasing/decreasing PM counters.
-> >
-> > I still think though, you should try to avoid exporting OMAP-specific
-> > APIs all over the place. Ideally, we would be able to have some way of
-> > saying that UHH and TLL are closely related... something like having the
-> > ability to say e.g. two devices are sibblings of each other, so that we
-> > could ask for a sibbling to wakeup/sleep depending if we need it or not.
->=20
-> do we have sibling structures today? I dont think so.
+It is used by btrfs subvolume quota to translate recursions into iterative
+loops and to gather a unique list of roots. Once I had built this data
+structure, several uses for it popped up.
 
-no we don't.
+Signed-off-by: Arne Jansen <sensille@gmx.net>
+---
+ include/linux/ulist.h |   46 ++++++++++++++++++++++
+ lib/ulist.c           |  103 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 149 insertions(+), 0 deletions(-)
 
-> > Dunno, maybe I'm drifting here, but I don't think exposing OMAP-specific
-> > APIs is wise.
->=20
-> so, it means , if we can have sibling structure, then we can
-> conditionally enable it right?
+diff --git a/include/linux/ulist.h b/include/linux/ulist.h
+new file mode 100644
+index 0000000..ebba91a
+--- /dev/null
++++ b/include/linux/ulist.h
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (C) 2011 STRATO AG
++ * written by Arne Jansen <sensille@gmx.net>
++ * Distributed under the GNU GPL license version 2.
++ *
++ * ulist is a generic data structures to hold a collection of unique u64
++ * values. The only operations it supports is adding to the list and
++ * enumerating it.
++ * It is possible to store an auxiliary value along with the key.
++ *
++ * The implementation is preliminary and can probably be sped up
++ * significantly. A first step would be to store the values in an rbtree
++ * as soon as ULIST_SIZE is exceeded.
++ */
++
++#ifndef __ULIST__
++#define __ULIST__
++
++#define ULIST_SIZE 16
++
++struct ulist_node {
++	u64 val;
++	unsigned long aux;
++	unsigned long next;
++};
++
++struct ulist {
++	unsigned long nnodes;
++	unsigned long gfp_mask;
++	struct ulist_node *nodes;
++	unsigned long nodes_alloced;
++	struct ulist_node int_nodes[ULIST_SIZE];
++};
++
++void ulist_init(struct ulist *ulist, unsigned long gfp_mask);
++void ulist_fini(struct ulist *ulist);
++void ulist_reinit(struct ulist *ulist);
++struct ulist *ulist_alloc(unsigned long gfp_mask);
++void ulist_free(struct ulist *ulist);
++
++/* returns < 0 on error, 0 on duplicate, 1 on insert */
++int ulist_add(struct ulist *ulist, u64 val, unsigned long aux);
++
++struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_node *prev);
++
++#endif
+diff --git a/lib/ulist.c b/lib/ulist.c
+new file mode 100644
+index 0000000..641a90f
+--- /dev/null
++++ b/lib/ulist.c
+@@ -0,0 +1,103 @@
++/*
++ * Copyright (C) 2011 STRATO AG
++ * written by Arne Jansen <sensille@gmx.net>
++ * Distributed under the GNU GPL license version 2.
++ *
++ * ulist is a generic data structures to hold a collection of unique u64
++ * values. The only operations it supports is adding to the list and
++ * enumerating it.
++ * It is possible to store an auxiliary value along with the key.
++ *
++ * The implementation is preliminary and can probably be sped up
++ * significantly. A first step would be to store the values in an rbtree
++ * as soon as ULIST_SIZE is exceeded.
++ */
++
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/ulist.h>
++
++void ulist_init(struct ulist *ulist, unsigned long gfp_mask)
++{
++	ulist->nnodes = 0;
++	ulist->gfp_mask = gfp_mask;
++	ulist->nodes = ulist->int_nodes;
++	ulist->nodes_alloced = ULIST_SIZE;
++}
++
++void ulist_fini(struct ulist *ulist)
++{
++	if (ulist->nodes_alloced > ULIST_SIZE)
++		kfree(ulist->nodes);
++}
++
++void ulist_reinit(struct ulist *ulist)
++{
++	ulist_fini(ulist);
++	ulist_init(ulist, ulist->gfp_mask);
++}
++
++struct ulist *ulist_alloc(unsigned long gfp_mask)
++{
++	struct ulist *ulist = kmalloc(sizeof(*ulist), gfp_mask);
++
++	if (!ulist)
++		return NULL;
++
++	ulist_init(ulist, gfp_mask);
++
++	return ulist;
++}
++
++void ulist_free(struct ulist *ulist)
++{
++	if (!ulist)
++		return;
++	ulist_fini(ulist);
++	kfree(ulist);
++}
++
++int ulist_add(struct ulist *ulist, u64 val, unsigned long aux)
++{
++	int i;
++
++	for (i = 0; i < ulist->nnodes; ++i) {
++		if (ulist->nodes[i].val == val)
++			return 0;
++	}
++
++	if (ulist->nnodes > ulist->nodes_alloced) {
++		u64 new_alloced = ulist->nodes_alloced + 128;
++		struct ulist_node *new_nodes = kmalloc(sizeof(*new_nodes) *
++					       new_alloced, ulist->gfp_mask);
++
++		if (!new_nodes)
++			return -ENOMEM;
++		memcpy(new_nodes, ulist->nodes,
++		       sizeof(*new_nodes) * ulist->nnodes);
++		if (ulist->nodes_alloced > ULIST_SIZE)
++			kfree(ulist->nodes);
++		ulist->nodes = new_nodes;
++		ulist->nodes_alloced = new_alloced;
++	}
++	ulist->nodes[ulist->nnodes].val = val;
++	ulist->nodes[ulist->nnodes].aux = aux;
++	ulist->nodes[ulist->nnodes].next = ulist->nnodes + 1;
++	++ulist->nnodes;
++
++	return 1;
++}
++
++struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_node *prev)
++{
++	if (ulist->nnodes == 0)
++		return NULL;
++
++	if (!prev)
++		return &ulist->nodes[0];
++
++	if (prev->next < 0 || prev->next >= ulist->nnodes)
++		return NULL;
++
++	return &ulist->nodes[prev->next];
++}
+-- 
+1.7.3.4
 
-the conditional would still lie in UHH driver, but at least it would be
-made into a generic API. I mean, you could create a generic way of
-defining sibbling devices, and a generic way to make them talk to each
-other.
-
---=20
-balbi
-
---AH+kv8CCoFf6qPuz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOkro1AAoJEIaOsuA1yqRE/IYP/iNE1giE3h/L+Y2S8tJX4DYJ
-1o1UXpmpft/1q4CuA01UvaH46JS/uLLPEnNuMNAgdprW3+PdXL/garE8z9cbiaVe
-/lQXbG0krwU94sGxzTEFPlScMk8BGmaI9V/KdgsBamJ3oX0Bj7BFDeZg9tofCbhl
-GGe3OGzs9p/3szXutERloP2FzT1YGQNBH7iwUXrBqtYlw+wdIPlB90ogrhDNWZys
-obOSpo4MIwNICmedwxJrJF2wdwL7vqxbVy2Q43p2lC6/OnUNasvgRPocTbdr+032
-rmDdf3NsCNebaOHYWGY/hRsjgYAAW0MlZHbu+LG/6ZACsM9mC5sHa7FJajDtF42H
-AJ61UKSsnO7LwFAMtGyt6tWSjF0OU/1y00aRW67E28iv1cLDcJGT/d9MI4odhY88
-6jghbNATx6jg0LPipRfFJKKSOJA+SQ0o/C+4ljrPg4UBfgXLvrlytovfD5gDoc8g
-PWW/8GaTlOOsxg219ORr7kjNrwcvuze64dGgVtd+VGLuYcRDIxJgg3QKFrTs0TBn
-lycro5fmoJYjbPpHyYgwxsaqNGAaS3bFHRyVrm11T27F2dkFnT2x1zrs1dXHios4
-FVOQbbzNyMiWLkpXJ4Ls31MuFTPqxICxaS4xmWGsE7kQEW9eQ/KfsqZytqcnGal9
-m9tBYfIUE8agV4YDAFo+
-=2Buk
------END PGP SIGNATURE-----
-
---AH+kv8CCoFf6qPuz--
