@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab1JJJdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:33:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52657 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1JJJdi (ORCPT
+	id S1753251Ab1JJJoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 05:44:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44129 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753097Ab1JJJoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:33:38 -0400
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
- Intel X86
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, Stephane Eranian <eranian@google.com>,
-        linux-kernel@vger.kernel.org, acme@redhat.com, ming.m.lin@intel.com,
-        robert.richter@amd.com, ravitillo@lbl.gov,
-        "masami.hiramatsu.pt" <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-In-Reply-To: <20111010060810.GF32173@elte.hu>
-References: <1317912555-9559-1-git-send-email-eranian@google.com>
-	 <1317912555-9559-8-git-send-email-eranian@google.com>
-	 <20111006153229.GJ14482@one.firstfloor.org>
-	 <1317919424.29658.13.camel@twins>
-	 <20111006171412.GK14482@one.firstfloor.org>
-	 <20111010060810.GF32173@elte.hu>
+	Mon, 10 Oct 2011 05:44:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/eJVQLHOTecap/5dEfVa7EZAkLSPQInjtsv8y+DN
+	twW0XAvo0H/Crw
+Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
+ CONFIG_DEBUG_KERNEL to unhide debug options"
+From: Mike Galbraith <efault@gmx.de>
+To: Adrian Bunk <bunk@stusta.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Josh Triplett <josh@joshtriplett.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+In-Reply-To: <20111010084811.GG4586@localhost.pp.htv.fi>
+References: <20110930134245.GB21474@localhost.pp.htv.fi>
+	 <20110930150519.GA7980@leaf> <20110930155012.GC9049@localhost.pp.htv.fi>
+	 <20111010072946.GA29035@elte.hu>
+	 <20111010084811.GG4586@localhost.pp.htv.fi>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 11:39:41 +0200
-Message-ID: <1318239581.14400.5.camel@laptop>
+Date: Mon, 10 Oct 2011 11:44:06 +0200
+Message-ID: <1318239846.6527.28.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 08:08 +0200, Ingo Molnar wrote:
-> FUD is not how we approach these things - you need to say something 
-> specific. 
+On Mon, 2011-10-10 at 11:48 +0300, Adrian Bunk wrote:
 
-Its Andi, of course its FUD. I mean, he's been telling us to use IRQs
-for the PMI instead of NMIs for a while now. If we were to do something
-daft like that this whole feature, which he does like, would be
-useless/broken.
+> DEBUG_BUGVERBOSE does not depend on EXPERT.
+> 
+> But EXPERT is currently required for disabling it.
 
-He really can't seem to make up his mind.
+Why would anyone other than poor embedded sods turn that off?
+
+	-Mike
 
