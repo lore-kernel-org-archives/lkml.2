@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab1JJRND (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:13:03 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:33741 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752525Ab1JJRNB (ORCPT
+	id S1753589Ab1JJRPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:15:43 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48293 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab1JJRPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:13:01 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: yrNozBAVM1nhqUkC_dE_BZVPv096ZdrJHgo1UmH7La1Wv2t
- wU0LetrUM0hXo5rcHHOKG_4L0oghMkbt_shUAP3mnG_Ec2RLm7D7I4m_I4M0
- zQ.A0LhurSHhv_qFGmN4GfGyzTSNjz6GBjE20M1rj_1H1cuBQTryTa9HfI4_
- M4_XgiWbI8rr0FCpbrD6QSlWMe.l3Y2rT37dKk5fj0Mtkv.7W7eYtAB6pFpj
- .WcbUpf7Sh.LTyspmO32X_ZdeDhPtj6G.TBamMdLLSwTLjJ1NE_ZF4UeOjrt
- e5sxZFLSsmXiMeivQ5odQUFh3EiuhhBMTUZfPOdHavsRNzFJRflUNBGbU9SD
- aERRkN_hURJeKsX2woLZVUjx1xGYRjFfudZao4olmCcXnkCR_A9jr..UpFtM
- DkoLgEKgi9L6CPUJkGm.eNi8-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 10 Oct 2011 12:12:57 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-X-X-Sender: cl@router.home
-To: "Alex,Shi" <alex.shi@intel.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+	Mon, 10 Oct 2011 13:15:41 -0400
+Date: Mon, 10 Oct 2011 19:14:37 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Alan Stern <stern@rowland.harvard.edu>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "tj@kernel.org" <tj@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH] slub Discard slab page only when node partials > minimum
- setting
-In-Reply-To: <1318141715.27949.144.camel@debian>
-Message-ID: <alpine.DEB.2.00.1110101212010.18349@router.home>
-References: <1315188460.31737.5.camel@debian>  <alpine.DEB.2.00.1109061914440.18646@router.home>  <1315357399.31737.49.camel@debian>  <alpine.DEB.2.00.1109062022100.20474@router.home>  <4E671E5C.7010405@cs.helsinki.fi> 
- <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>  <alpine.DEB.2.00.1109071003240.9406@router.home>  <1315442639.31737.224.camel@debian>  <alpine.DEB.2.00.1109081336320.14787@router.home>  <1315557944.31737.782.camel@debian>
- <1316765880.4188.34.camel@debian>  <alpine.DEB.2.00.1109231500580.15559@router.home>  <1317290032.4188.1223.camel@debian>  <alpine.DEB.2.00.1109290927590.9848@router.home>  <6E3BC7F7C9A4BF4286DD4C043110F30B5FD97584A3@shsmsx502.ccr.corp.intel.com> 
- <alpine.DEB.2.00.1110031020450.11713@router.home> <1318141715.27949.144.camel@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111010171437.GA11907@elf.ucw.cz>
+References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
+ <4E931018.8030904@linux.vnet.ibm.com>
+ <20111010165343.GA29261@aftab>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111010165343.GA29261@aftab>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 Oct 2011, Alex,Shi wrote:
+Hi!
 
-> I tested multi-threads loopback netperf on our machines, no clear
-> regression or improvement find on our NHM-EP/NHM-EX/WSM-EP machine.
+> > > The seems like entirely the wrong way to go about solving this problem.
+> > > 
+> > > The kernel shouldn't be responsible for making hotplug stress tests 
+> > > exclusive with system sleep.  Whoever is running those tests should be 
+> > > smart enough to realize what's wrong if system sleep interferes with a 
+> > > test.
+> 
+> Yes, agreed. And more: I'm still trying to understand why a test case
+> like that is relevant and needs to be fixed at all. Let me re-formulate
+> the question: what real world scenario(s) does the case of hibernating
+> _while_ off- and onlining cores cover? Or are you simply doing kernel
+> resiliency testing and thought that offlining cores while hibernating
+> might make sense?
 
-What are your criteria for a regressio?
+Some people want to do hibernate on battery low / UPS fail. That can
+happen any time...
 
-> but on our 4 sockets tigerton machine with 2048 clients, performance
-> increase 20% for TCP_RR subcase, and 10% for TCP_STREAM32 subcase;
-> and on our 2 sockets harpertown machine, the TCP_RR subcase increase
-> 15%.
->
-> The data is quite good!
-
-Sounds encouraging.
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
