@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab1JJJoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:44:13 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44129 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753097Ab1JJJoM (ORCPT
+	id S1753273Ab1JJJoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 05:44:55 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:57392 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab1JJJoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:44:12 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/eJVQLHOTecap/5dEfVa7EZAkLSPQInjtsv8y+DN
-	twW0XAvo0H/Crw
-Subject: Re: Please revert "debug: Make CONFIG_EXPERT select
- CONFIG_DEBUG_KERNEL to unhide debug options"
-From: Mike Galbraith <efault@gmx.de>
-To: Adrian Bunk <bunk@stusta.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Josh Triplett <josh@joshtriplett.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>
-In-Reply-To: <20111010084811.GG4586@localhost.pp.htv.fi>
-References: <20110930134245.GB21474@localhost.pp.htv.fi>
-	 <20110930150519.GA7980@leaf> <20110930155012.GC9049@localhost.pp.htv.fi>
-	 <20111010072946.GA29035@elte.hu>
-	 <20111010084811.GG4586@localhost.pp.htv.fi>
+	Mon, 10 Oct 2011 05:44:54 -0400
+Subject: [PATCH] [TRIVIAL] Kconfig: remove CONFIG_ prefix on two symbols
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 11:44:06 +0200
-Message-ID: <1318239846.6527.28.camel@marge.simson.net>
+Date: Mon, 10 Oct 2011 11:44:51 +0200
+Message-ID: <1318239891.29265.7.camel@x61.thuisdomein>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 11:48 +0300, Adrian Bunk wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+These two changes are trivial in the sense that it's clear what is
+intended here. On the other hand I assume they influence the output of
+the config tools. So perhaps these two changes need review by the
+maintainers of these files.
 
-> DEBUG_BUGVERBOSE does not depend on EXPERT.
-> 
-> But EXPERT is currently required for disabling it.
+ arch/powerpc/platforms/85xx/Kconfig |    2 +-
+ drivers/ide/Kconfig                 |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Why would anyone other than poor embedded sods turn that off?
-
-	-Mike
+diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
+index 498534c..12f5932 100644
+--- a/arch/powerpc/platforms/85xx/Kconfig
++++ b/arch/powerpc/platforms/85xx/Kconfig
+@@ -80,7 +80,7 @@ config P1010_RDB
+ config P1022_DS
+ 	bool "Freescale P1022 DS"
+ 	select DEFAULT_UIMAGE
+-	select CONFIG_PHYS_64BIT	# The DTS has 36-bit addresses
++	select PHYS_64BIT	# The DTS has 36-bit addresses
+ 	select SWIOTLB
+ 	help
+ 	  This option enables support for the Freescale P1022DS reference board.
+diff --git a/drivers/ide/Kconfig b/drivers/ide/Kconfig
+index 9827c5e..075f322 100644
+--- a/drivers/ide/Kconfig
++++ b/drivers/ide/Kconfig
+@@ -681,7 +681,7 @@ config BLK_DEV_IDE_AU1XXX
+        select IDE_XFER_MODE
+ choice
+        prompt "IDE Mode for AMD Alchemy Au1200"
+-       default CONFIG_BLK_DEV_IDE_AU1XXX_PIO_DBDMA
++       default BLK_DEV_IDE_AU1XXX_PIO_DBDMA
+        depends on SOC_AU1200 && BLK_DEV_IDE_AU1XXX
+ 
+ config BLK_DEV_IDE_AU1XXX_PIO_DBDMA
+-- 
+1.7.4.4
 
