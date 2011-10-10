@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab1JJHCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:02:23 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56069 "EHLO mx2.mail.elte.hu"
+	id S1752470Ab1JJHGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:06:32 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36935 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab1JJHCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:02:22 -0400
-Date: Mon, 10 Oct 2011 09:00:44 +0200
+	id S1751884Ab1JJHGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 03:06:31 -0400
+Date: Mon, 10 Oct 2011 09:04:43 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v5
-Message-ID: <20111010070044.GM32173@elte.hu>
-References: <1317251993-5030-1-git-send-email-andi@firstfloor.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, ming.m.lin@intel.com, robert.richter@amd.com,
+        ravitillo@lbl.gov, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] x86: Fix insn decoder for longer instruction
+Message-ID: <20111010070443.GN32173@elte.hu>
+References: <4E8EE885.9040703@hitachi.com>
+ <20111007133155.10933.58577.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317251993-5030-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <20111007133155.10933.58577.stgit@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -32,16 +38,19 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Andi,
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-If you want me to apply these patches then they need to be reviewed 
-and signed off by someone else who i trust and who i'm taking patches 
-from.
+> Fix x86 insn decoder for hardening against invalid length
+> instructions. This adds length checkings for each byte-read
+> site and if it exceeds MAX_INSN_SIZE, returns immediately.
+> This can happen when decoding user-space binary.
+> 
+> Caller can check whether it happened by checking insn.*.got
+> member is set or not.
 
-Please point this person to the previous review iterations of this 
-patch-set which were rather difficult, to make sure everything that 
-was mentioned during review got propagated into the latest version of 
-your patches.
+Thanks.
+
+We really need the /dev/urandom based build-time tester as well.
 
 Thanks,
 
