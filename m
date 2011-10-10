@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1JJMhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:37:43 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35610 "EHLO mga14.intel.com"
+	id S1754072Ab1JJMio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:38:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26746 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab1JJMhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:37:42 -0400
+	id S1752643Ab1JJMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 08:38:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
-   d="scan'208";a="24834064"
-Date: Mon, 10 Oct 2011 14:40:53 +0200
+   d="scan'208";a="76544612"
+Date: Mon, 10 Oct 2011 14:41:55 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd/db8500-prcmu: convert panic() to pr_crit()
-Message-ID: <20111010124053.GL3686@sortiz-mobl>
-References: <1318244684-3049-1-git-send-email-linus.walleij@stericsson.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/2] mfd/db8500-prcmu: rename init function
+Message-ID: <20111010124155.GM3686@sortiz-mobl>
+References: <1317833447-714-1-git-send-email-linus.walleij@stericsson.com>
+ <CACRpkdY=u2mmOZSeJRFvBbRyLwkbpKxSzKPx9gu-i8416KK5jQ@mail.gmail.com>
+ <20111010102917.GK3686@sortiz-mobl>
+ <CACRpkda2kxLMnEm1tQjb7d8Nn+hrJj3=TOOx=Qq75695uKBNMg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318244684-3049-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <CACRpkda2kxLMnEm1tQjb7d8Nn+hrJj3=TOOx=Qq75695uKBNMg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,13 +30,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-On Mon, Oct 10, 2011 at 01:04:44PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Oct 10, 2011 at 01:08:21PM +0200, Linus Walleij wrote:
+> On Mon, Oct 10, 2011 at 12:29 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
 > 
-> panic() is too heavy for this, indeed the PRCMU is critical for
-> the system but not to the point that we should stop everything,
-> if we can still get a prompt or so.
-Thanks, patch applied.
+> >> I can also prepare a pull request for the stuff you want if it makes
+> >> things easier for you, just tell me what you want in it.
+> >
+> > I took the first 12 patches plus your 2 review fixes. I indeed feel the rest
+> > of the patchset would need some additional work. If there's really nothing we
+> > can do about factorizing more of this code between 8500 and 5500, then I'll
+> > look at it for the 3.3 merge window.
+> 
+> OK seems like a fair deal. I have different ideas, like for example
+> abstracting the MBOX parts into a new mailbox subsystem since
+> abstracting mailboxes has been discussed before. 
+Many subsystems and archs would benefit from that, i think.
+
+> So maybe we can
+> break out all of that code into drivers/mbox and proceed from
+> there getting pure MFD arbiters in drivers/mfd.
+Sounds good to me.
 
 Cheers,
 Samuel.
