@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1JJRDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:03:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47775 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1JJRDJ (ORCPT
+	id S1753437Ab1JJRGA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:06:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39936 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab1JJRF7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:03:09 -0400
+	Mon, 10 Oct 2011 13:05:59 -0400
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Date: Mon, 10 Oct 2011 19:05:52 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00064-g65112dc-dirty; KDE/4.7.2; x86_64; ; )
+Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <4E925873.2020501@linux.vnet.ibm.com> <4E931BF6.6070706@linux.vnet.ibm.com>
+In-Reply-To: <4E931BF6.6070706@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.27.118]
-In-Reply-To: <20111010153609.GB2138@amd.com>
-References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
- <1316195506-9777-2-git-send-email-ohad@wizery.com> <20110927100505.GH2138@amd.com>
- <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
- <20110927131222.GL2138@amd.com> <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
- <20110927181438.GM2138@amd.com> <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
- <20111010094738.GW2138@amd.com> <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
- <20111010153609.GB2138@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 10 Oct 2011 19:02:46 +0200
-Message-ID: <CAK=WgbYR_qx53Z7s3R=q29KYo8ebYCH9H9=2OrrWXWMv6=-iOQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
- supported by the hardware
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110101905.52769.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+On Monday 10 of October 2011, Rajiv Andrade wrote:
+> On 09/10/11 23:29, Stefan Berger wrote:
+> > On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
+> >> On Wednesday 05 of October 2011, Linus Torvalds wrote:
+> >>> Another week, another -rc.
+> >> 
+> >> suspend to ram regression is annoying (still visible on rc9;
+> >> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are
+> >> silent.
+> > 
+> > I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce
+> > the 'scheduling while atomic' problem you had reported earlier. I also
+> > could suspend / resume fine as long as I did the following:
+> > 
+> > - suspended with the tpm_tis driver as module in the kernel
+> > - once a suspend was done without the tpm_tis driver the subsequent
+> > suspends were all done without the tpm_tis driver
+> > 
+> > Once I had done a suspend/resume with the tpm_tis driver *not* in the
+> > kernel and then again a suspend with the tpm_tis driver in the kernel,
+> > it did not resume anymore. I believe previously (previous version of
+> > kernel and/or Fedora) it refused to even suspend. The reason why this
+> > doesn't work properly is that the driver has to send a command to the
+> > TPM upon suspend and the BIOS then sends the corresponding wakeup
+> > command.
+> > 
+> > Did you maybe previously suspend/resume without a tpm_tis driver and
+> > then try to suspend with it ?
+> > 
+> > Also, my Lenovo W500 shows particularly odd behavior when I switch
+> > from Windows to Linux. The first suspend with a Linux booted after
+> > Windows (with or without tpm_tis driver) does *not* resume (reboot
+> > required). A subsequently rebooted Linux makes the suspend/resume work
+> > fine.
+> > 
+> >    Stefan
+> 
+> Arkadiusz,
+> 
+> Do you still see the issue with this patch [1][2] applied?
 
-On Mon, Oct 10, 2011 at 5:36 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> The master branch is best to base your patches on for generic work.
+The issue doesn't happen with this patch but error condition with "Could not 
+read PCR 0. TPM is not working correctly." is triggered immediately at boot, 
+even before suspend is used.
 
-Oh, great. thanks.
+$ dmesg|grep -iE "(tpm|suspend)"
+[   12.640039] tpm_tis 00:0a: 1.2 TPM (device-id 0x1020, rev-id 6)
+[   12.640048] tpm_tis 00:0a: Intel iTPM workaround enabled
+[   12.768057] tpm_tis 00:0a: Could not read PCR 0. TPM is not working 
+correctly.
+[   12.768066] tpm_tis 00:0a: Was machine previously suspended without TPM 
+driver present?
+[   88.512117] Suspending console(s) (use no_console_suspend to debug)
 
-> It can happen when there is a bug somewhere :)
 
-Hmm, bug ? ;)
+> 
+> [1] - http://marc.info/?l=linux-kernel&m=131824905826280&w=2
+> [2] - github.com/srajiv/tpm.git for-james
+> 
+> Thanks,
+> Rajiv
 
-Ok, I'll add a BUG_ON :)
 
-> Yes, somthing like that. Probably the iommu_ops->unmap function should
-> be turned into a unmap_page function call which only takes an iova and
-> no size parameter. The iommu-driver unmaps the page pointing to that
-> iova and returns the size of the page unmapped. This still allows the
-> simple implementation for the unmap-call.
-
-Yes, exactly. It will take some time to migrate all drivers (today we
-have 4 drivers, each of which is implementing a slightly different
-->unmap() semantics), but at least let's not accept any new driver
-that doesn't adhere to this, otherwise it's going to be even harder
-for the API to evolve.
-
-> This change is no requirement for this patch-set, but if we agree on it
-> this patch-set should keep that direction in mind.
-
-Definitely, thanks.
-
-> We don't need to really
-> enforce the calls to be symetric. But we can define that we only give
-> the guarantee about what will be unmapped when the calls are symetric.
-
-Sounds good to me. I'll add this to the kernel doc patch (which I'll
-submit after this patch set materializes), and when/if we move to
-symmetric only, we will update it.
-
-> The alternative is that we implement page-splitting in the iommu_unmap
-> function. But that introduces complexity I am not sure we really need.
-
-Yeah, me neither.
-
-> Yes, this get_order thing should be changes to size long-term.
-
-Good. That should be a simple change, I'll do it after this patch set.
-
-Thanks,
-Ohad.
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
