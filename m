@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1JJRxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:53:49 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52576 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab1JJRxr (ORCPT
+	id S1753933Ab1JJR53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:57:29 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51834 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab1JJR52 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:53:47 -0400
-Date: Mon, 10 Oct 2011 19:53:36 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, Alan Stern <stern@rowland.harvard.edu>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "tj@kernel.org" <tj@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "ashok.raj@intel.com" <ashok.raj@intel.com>,
-        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
- freezing failures
-Message-ID: <20111010175336.GA29415@aftab>
-References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
- <4E931018.8030904@linux.vnet.ibm.com>
- <20111010165343.GA29261@aftab>
- <4E932BBA.9090501@linux.vnet.ibm.com>
+	Mon, 10 Oct 2011 13:57:28 -0400
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Date: Mon, 10 Oct 2011 19:57:25 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00064-g65112dc-dirty; KDE/4.7.2; x86_64; ; )
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <201110101905.52769.a.miskiewicz@gmail.com> <4E9329BC.8030704@linux.vnet.ibm.com>
+In-Reply-To: <4E9329BC.8030704@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E932BBA.9090501@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110101957.25322.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 01:30:34PM -0400, Srivatsa S. Bhat wrote:
-> But I do agree that offlining and onlining CPUs while suspending might
-> not seem all that useful or even wise, but like I said, it was designed to
-> bring out such problematic race conditions.
+On Monday 10 of October 2011, Stefan Berger wrote:
+> On 10/10/2011 01:05 PM, Arkadiusz Miśkiewicz wrote:
+> > On Monday 10 of October 2011, Rajiv Andrade wrote:
+> >> On 09/10/11 23:29, Stefan Berger wrote:
+> >>> On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
+> >>>> On Wednesday 05 of October 2011, Linus Torvalds wrote:
+> >>>>> Another week, another -rc.
+> >>>> 
+> >>>> suspend to ram regression is annoying (still visible on rc9;
+> >>>> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are
+> >>>> silent.
+> >>> 
+> >>> I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce
+> >>> the 'scheduling while atomic' problem you had reported earlier. I also
+> >>> could suspend / resume fine as long as I did the following:
+> >>> 
+> >>> - suspended with the tpm_tis driver as module in the kernel
+> >>> - once a suspend was done without the tpm_tis driver the subsequent
+> >>> suspends were all done without the tpm_tis driver
+> >>> 
+> >>> Once I had done a suspend/resume with the tpm_tis driver *not* in the
+> >>> kernel and then again a suspend with the tpm_tis driver in the kernel,
+> >>> it did not resume anymore. I believe previously (previous version of
+> >>> kernel and/or Fedora) it refused to even suspend. The reason why this
+> >>> doesn't work properly is that the driver has to send a command to the
+> >>> TPM upon suspend and the BIOS then sends the corresponding wakeup
+> >>> command.
+> >>> 
+> >>> Did you maybe previously suspend/resume without a tpm_tis driver and
+> >>> then try to suspend with it ?
+> >>> 
+> >>> Also, my Lenovo W500 shows particularly odd behavior when I switch
+> >>> from Windows to Linux. The first suspend with a Linux booted after
+> >>> Windows (with or without tpm_tis driver) does *not* resume (reboot
+> >>> required). A subsequently rebooted Linux makes the suspend/resume work
+> >>> fine.
+> >>> 
+> >>>     Stefan
+> >> 
+> >> Arkadiusz,
+> >> 
+> >> Do you still see the issue with this patch [1][2] applied?
+> > 
+> > The issue doesn't happen with this patch but error condition with "Could
+> > not read PCR 0. TPM is not working correctly." is triggered immediately
+> > at boot, even before suspend is used.
+> > 
+> > $ dmesg|grep -iE "(tpm|suspend)"
+> > [   12.640039] tpm_tis 00:0a: 1.2 TPM (device-id 0x1020, rev-id 6)
+> > [   12.640048] tpm_tis 00:0a: Intel iTPM workaround enabled
+> > [   12.768057] tpm_tis 00:0a: Could not read PCR 0. TPM is not working
+> > correctly.
+> > [   12.768066] tpm_tis 00:0a: Was machine previously suspended without
+> > TPM driver present?
+> > [   88.512117] Suspending console(s) (use no_console_suspend to debug)
 > 
-> So, in the interest of making the important components involved in
-> suspend/resume call path (namely cpu hotplug) more robust and stable,
-> I think it makes sense to fix any issue we hit (atleast when we
-> practically hit it and it is proved that such a scenario is no longer
-> hypothetical).
-> 
-> For that, we can either go with the simple one-line fix that I posted
-> earlier (which has got another motivation now, thanks to Borislav) or
-> with this elaborate solution, whichever seems better/worthwhile.
->
-> If it is still strongly felt that this "bug" is not worth fixing with such
-> mutual exclusion schemes, it will still get solved anyway by applying that
-> one-line patch.
+> Though I suppose that now your suspend/resume cycles always work?
 
-Well, this is easy: the oneliner is needed anyway for removing
-unnecessary ucode reloading and since it fixes your test cases _and_ is
-_simpler_, the whole deal is a no brainer.
+Tried several times and it always worked, so probably yes. Longer testing will 
+give definitive answer.
 
-And although Pavel had a valid concern there about suspending when low
-on battery/failing UPSs and, AFAIUI, it might happen that the machine
-automatically suspends while you offline one of your cores, I can't find
-it in me to care about a case like that, sorry.
+> I guess the BIOS seems not to be initializing the TPM correctly. Any
+> chance you can get a hold of a BIOS update for your machine?
 
-Thanks.
+Then I looked into bios options on this thinkpad t400 and there are 3 possible 
+TPM settings: Enabled, Invisible, Disabled.
+
+Invisible is - visible but not working - according to bios help. No idea why 
+such option exists but I had it enabled.
+
+Right now I've set that to "Enabled" and ran few suspend/resume cycles - no 
+problems so far.
+
+I guess there is some way to make "Invisible" mode properly handled in Linux, 
+too.
+
+>     Stefan
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
