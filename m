@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1JJTLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 15:11:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33943 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab1JJTLU (ORCPT
+	id S1754578Ab1JJTSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 15:18:11 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39967 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab1JJTSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 15:11:20 -0400
-X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=kycaZ6zZ8KAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=M-bkJVFu36DEJtTAY-oA:9 a=EO-8O_nvXX40qb6O1S8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 1/4] [BUGFIX] ftrace/kprobes: Fix not to delete probes
- if in use
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>
-Date: Mon, 10 Oct 2011 15:11:18 -0400
-In-Reply-To: <4E92FDE3.8050301@hitachi.com>
-References: <20111004104438.14591.6553.stgit@fedora15>
-	 <1318050006.4729.103.camel@gandalf.stny.rr.com>
-	 <4E92FDE3.8050301@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318273879.7904.106.camel@gandalf.stny.rr.com>
+	Mon, 10 Oct 2011 15:18:10 -0400
+Date: Mon, 10 Oct 2011 15:17:51 -0400 (EDT)
+Message-Id: <20111010.151751.157914839044682434.davem@davemloft.net>
+To: rdunlap@xenotime.net
+Cc: johfel@gmx.de, torvalds@linux-foundation.org, trivial@kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH] ide: Fix file references in drivers/ide/
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E933B4C.5050104@xenotime.net>
+References: <1317683499.5990.2.camel@LAPJFS>
+	<4E933B4C.5050104@xenotime.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 10 Oct 2011 12:17:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 23:14 +0900, Masami Hiramatsu wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
+Date: Mon, 10 Oct 2011 11:37:00 -0700
 
-> > Does this exist in previous kernels? If so, I'll also add the stable tag
-> > to it.
+> From: Johann Felix Soden <johfel@users.sourceforge.net>
 > 
-> I guess so, since the perf's tracepoint handler locks target module
-> while recording, it is required for perf not to remove undergo events.
+> Fix file references in drivers/ide/
+> 
+> There are a lot of file references to now moved or deleted files in the
+> whole tree, especially in documentation and Kconfig files. This patch
+> fixes the references in drivers/ide/.
+> 
+> Signed-off-by: Johann Felix Soden <johfel@users.sourceforge.net>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-I was able to trigger this bug in 2.6.39 as well. I'll add the stable
-tag to it and post it.
-
-Thanks!
-
--- Steve
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
