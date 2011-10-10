@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1JJMfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:35:08 -0400
-Received: from mail.plaintext.sk ([81.0.124.6]:47218 "EHLO shiva.plaintext.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342Ab1JJMfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:35:07 -0400
-Date: Mon, 10 Oct 2011 13:35:02 +0100 (GMT+01:00)
-From: LuVar <luvar@plaintext.sk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        rdunlap@xenotime.net, axboe@kernel.dk, akpm@linux-foundation.org,
-        neilb@suse.de, Kent Overstreet <kent.overstreet@gmail.com>
-Message-ID: <741908052.14171318250102625.JavaMail.root@shiva>
-In-Reply-To: <20111006175808.GA9886@atrey.karlin.mff.cuni.cz>
-Subject: Re: [GIT] Bcache version 12
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754077Ab1JJMhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:37:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:44797 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab1JJMhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 08:37:20 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=Vdgllb604mQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=SXqaljWb-Noq1ugNhusA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 2/3][RFC] tracing: Add optional percpu buffers for
+ trace_printk()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 10 Oct 2011 08:37:18 -0400
+In-Reply-To: <1318244913.14400.19.camel@laptop>
+References: <20111008170227.792806635@goodmis.org>
+	 <20111008171259.462646120@goodmis.org> <1318244913.14400.19.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 5.0.16_GA_2921.UBUNTU8_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.16_GA_2921.UBUNTU8_64)
+Message-ID: <1318250240.7904.74.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
------ "Pavel Machek" <pavel@ucw.cz> wrote:
-
-> Hi!
-> 
-> > It can cache filesystem metadata - it can cache anything.
+On Mon, 2011-10-10 at 13:08 +0200, Peter Zijlstra wrote:
+> On Sat, 2011-10-08 at 13:02 -0400, Steven Rostedt wrote:
 > > 
-> > Because bcache has its own superblock (much like md), it can
-> guarantee
-> > that bcache devices are consistent; this is particularly important
-> if
-> > you want to do writeback caching. You really don't want to
-> accidently
-> > mount a filesystem that you were doing writeback caching on without
-> the
-> > ache - bcache makes it impossible to do so accidently.
+> > Ideally, using percpu buffers would be useful, but since trace_printk()
+> > is only used in development, having per cpu buffers for something
+> > never used is a waste of space. We could make this a compile option
+> > but trace_printk() may also be used for developing modules, on a
+> > distro kernels or for debugging at customer sites.
 > > 
-> > Is any of that useful?
+> > The approach taken here is to dynamically allocate percpu buffers
+> > with a new tracing/options switch "trace_printk_percpu". It can
+> > be allocated and freed at runtime, or "trace_printk_percpu" may also
+> > be specified on the command line and it will be allocated at boot up.
+> > 
+> > This allows a developer to create percpu buffers for trace_printk()
+> > on a running system, and also free them when not in used. 
 > 
-> I guess some kind of benchmark would be nice....? I don't know what
-> fair workload for this is. System bootup? Kernel compile after
-> reboot?
+> Kill the old code, make tracing/events/trace_printk default to 0 and use
+> enabling of that to allocate your per-cpu buffers.
 
-I guess, fair benchmark is ordinary work... For example I have running my PC with uptimes sometimes more than 10 days, so booting up is not critical. For me is critical startup of my eclipse with some workspace (work, school, personal...). To have more standard comparison I suggest to have some "standard" (average user) workload for testing. Somewhere I have seen to do:
-1. system bootup
-2. startup of some programs (firefox,gimp,hugin)
-3. do some work in openned programs (they used some macros)
-4. save all work and shutdown pc
+This will make debugging some of my embedded boards difficult (the ones
+where I have no way to add kernel command lines). If there's a problem
+at boot up, I will have to modify the kernel to get this to print.
 
-Imho measuring time for something like this could be relevant measure of general speedup => user experience speedup. This workload probably could be simulated by running phoronix test suite.
+For those that don't know the tracing code, it will just simply break.
 
-To measure speedup in some other quantity (kbps, iops...) there is probably problem with workload type (database, iozone...). Random benchmark will just measure how bcache slows down random operations. To measure speed up there have to be some repetitive io reading from disk (starting same programs...).
+Unless you want me to keep the kconfig option that enables it
+permanently. Then I could do this.
 
-PS: I want to make some time to install bcache and try to make some simple benchmarks.... I hope that I will find some time for this around Christmas...
+I also expect tglx to throw frozen sharks at me for "why doesn't
+trace_printk() work anymore?!!!!"
 
-> 
-> 									Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures)
-> http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- Steve
+
+
+
