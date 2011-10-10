@@ -1,134 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1JJHL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:11:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38952 "EHLO mx2.suse.de"
+	id S1752501Ab1JJHLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:11:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58638 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab1JJHLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:11:25 -0400
-Date: Mon, 10 Oct 2011 08:11:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] mm: memory hotplug: Check if pages are correctly reserved on
- a per-section basis
-Message-ID: <20111010071119.GE6418@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751600Ab1JJHLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 03:11:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="61024696"
+Subject: [PATCH] dmaengine: mid_dma: mask_peripheral_interrupt only when
+ dmac is idle
+From: Vinod Koul <vinod.koul@intel.com>
+To: Dan <dan.j.williams@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Oct 2011 12:33:59 +0530
+Message-ID: <1318230239.1573.2301.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is expected that memory being brought online is PageReserved
-similar to what happens when the page allocator is being brought up.
-Memory is onlined in "memory blocks" which consist of one or more
-sections. Unfortunately, the code that verifies PageReserved is
-currently assuming that the memmap backing all these pages is virtually
-contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-As a result, memory hot-add is failing on !VMEMMAP configurations
-with the message;
 
-kernel: section number XXX page number 256 not reserved, was it already online?
+The mask_peripheral_interrupt is called when channel wants to mask the
+interrupt. Move this to suspend as this masking affects other channels
+as well Not touching unmask here and unmask would still be done of
+first channel use
 
-This patch updates the PageReserved check to lookup struct page once
-per section to guarantee the correct struct page is being checked.
-
-[original patch by: nfont@linux.vnet.ibm.com]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 ---
- drivers/base/memory.c |   58 +++++++++++++++++++++++++++++++++---------------
- 1 files changed, 40 insertions(+), 18 deletions(-)
+ drivers/dma/intel_mid_dma.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 2840ed4..ffb69cd 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
- }
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index cf74a66..9e96c43 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -115,16 +115,15 @@ DMAC1 interrupt Functions*/
  
- /*
-+ * The probe routines leave the pages reserved, just as the bootmem code does.
-+ * Make sure they're still that way.
-+ */
-+static bool pages_correctly_reserved(unsigned long start_pfn,
-+					unsigned long nr_pages)
-+{
-+	int i, j;
-+	struct page *page;
-+	unsigned long pfn = start_pfn;
-+
-+	/*
-+	 * memmap between sections is not contiguous except with
-+	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
-+	 * and assume memmap is contiguous within each section
-+	 */
-+	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
-+		if (WARN_ON_ONCE(!pfn_valid(pfn)))
-+			return false;
-+		page = pfn_to_page(pfn);
-+
-+		for (j = 0; j < PAGES_PER_SECTION; j++) {
-+			if (PageReserved(page + i))
-+				continue;
-+
-+			printk(KERN_WARNING "section number %ld page number %d "
-+				"not reserved, was it already online?\n",
-+				pfn_to_section_nr(pfn), j);
-+
-+			return false;
-+		}
-+	}
-+
-+	return true;
-+}
-+
-+/*
-  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
-  * OK to have direct references to sparsemem variables in here.
+ /**
+  * dmac1_mask_periphral_intr -	mask the periphral interrupt
+- * @midc: dma channel for which masking is required
++ * @mid: dma device for which masking is required
+  *
+  * Masks the DMA periphral interrupt
+  * this is valid for DMAC1 family controllers only
+  * This controller should have periphral mask registers already mapped
   */
- static int
- memory_block_action(unsigned long phys_index, unsigned long action)
+-static void dmac1_mask_periphral_intr(struct intel_mid_dma_chan *midc)
++static void dmac1_mask_periphral_intr(struct middma_device *mid)
  {
--	int i;
- 	unsigned long start_pfn, start_paddr;
- 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
- 	struct page *first_page;
-@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ 	u32 pimr;
+-	struct middma_device *mid = to_middma_device(midc->chan.device);
  
- 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
- 
--	/*
--	 * The probe routines leave the pages reserved, just
--	 * as the bootmem code does.  Make sure they're still
--	 * that way.
--	 */
--	if (action == MEM_ONLINE) {
--		for (i = 0; i < nr_pages; i++) {
--			if (PageReserved(first_page+i))
--				continue;
--
--			printk(KERN_WARNING "section number %ld page number %d "
--				"not reserved, was it already online?\n",
--				phys_index, i);
--			return -EBUSY;
--		}
--	}
--
- 	switch (action) {
- 		case MEM_ONLINE:
- 			start_pfn = page_to_pfn(first_page);
-+
-+			if (!pages_correctly_reserved(start_pfn, nr_pages))
-+				return -EBUSY;
-+
- 			ret = online_pages(start_pfn, nr_pages);
- 			break;
- 		case MEM_OFFLINE:
+ 	if (mid->pimr_mask) {
+ 		pimr = readl(mid->mask_reg + LNW_PERIPHRAL_MASK);
+@@ -184,7 +183,6 @@ static void enable_dma_interrupt(struct intel_mid_dma_chan *midc)
+ static void disable_dma_interrupt(struct intel_mid_dma_chan *midc)
+ {
+ 	/*Check LPE PISR, make sure fwd is disabled*/
+-	dmac1_mask_periphral_intr(midc);
+ 	iowrite32(MASK_INTR_REG(midc->ch_id), midc->dma_base + MASK_BLOCK);
+ 	iowrite32(MASK_INTR_REG(midc->ch_id), midc->dma_base + MASK_TFR);
+ 	iowrite32(MASK_INTR_REG(midc->ch_id), midc->dma_base + MASK_ERR);
+@@ -1348,6 +1346,7 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
+ 		if (device->ch[i].in_use)
+ 			return -EAGAIN;
+ 	}
++	dmac1_mask_periphral_intr(device);
+ 	device->state = SUSPENDED;
+ 	pci_save_state(pci);
+ 	pci_disable_device(pci);
+-- 
+1.7.0.4
+
 
 -- 
-Mel Gorman
-SUSE Labs
+~Vinod
+
