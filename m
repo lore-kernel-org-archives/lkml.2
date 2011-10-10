@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab1JJTTT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 15:19:19 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:36910 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab1JJTTS (ORCPT
+	id S1754625Ab1JJTTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 15:19:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40800 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754566Ab1JJTTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 15:19:18 -0400
-X-IronPort-AV: E=Sophos;i="4.68,518,1312156800"; 
-   d="scan'208";a="8311790"
-Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance discard
- support with secure erasing support.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>, Li Dongyang <lidongyang@novell.com>
-In-Reply-To: <20111010175323.GA31210@phenom.oracle.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
-	 <1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
-	 <1318263187.21903.464.camel@zakaz.uk.xensource.com>
-	 <20111010164250.GG28646@phenom.oracle.com>
-	 <20111010175323.GA31210@phenom.oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Mon, 10 Oct 2011 20:19:15 +0100
-Message-ID: <1318274355.27397.12.camel@dagon.hellion.org.uk>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Oct 2011 15:19:46 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=vhdKIqpQuCYA:10 a=gKh_qVmIFScA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=3nbZYyFuAAAA:8 a=20KFwNOVAAAA:8 a=hGzw-44bAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=0zx7FwPiojy1fBRBiaQA:9 a=nAFY3w5RRlwVPeaIFQMA:7 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jEp0ucaQiEUA:10 a=dowx1zmaLagA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=WNlz9nDMQB9av_0FHvQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111010191943.804412316@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Mon, 10 Oct 2011 15:17:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, stable@kernel.org
+Subject: [PATCH 2/2] perf probe: Fix to show correct error string
+References: <20111010191706.044816068@goodmis.org>
+Content-Disposition: inline; filename=0002-perf-probe-Fix-to-show-correct-error-string.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Where is your tree at the moment?
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2011-10-10 at 18:53 +0100, Konrad Rzeszutek Wilk wrote:
-> > > I think an explicit flag variable is likely to be less trouble WRT
-> > > maintaining compatibility in the future than a bit-field. Also I think
-> > > you may as well align the struct size to something larger than a byte,
-> > > either 4 or 8 bytes would make sense.
-> > 
-> > Ok. Will change it and make it an uint64_t secure_flag
-> > variable. Later on if there are any "other" flags we can chop it down.
-> 
-> New patch (it also looks like the patch I sent to xen-devel to update
-> the blkif.h was never merged) - so let me send right now.
-> 
-> BTW, it seems that the #pragma pack(push, 4) is used in the
-> drivers/block/xen-blkback/common.h to compact the structures already so
-> I don't think we need the aligment.
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Only around the x86_32 ABI definition, working around the fact that the
-original 32 bit interface was not 64 bit clean :-(. I think to ensure
-that the new DISCARD structure is sensibly aligned you probably do want
-it to be a multiple of 64 bits in size (32 of flags and 32 of pad would
-do it).
+Fix perf probe to show correct error string when it
+fails to delete an event. The write(2) returns -1
+if failed, and errno stores real error number.
 
-> diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-> index 9324488..13d040e 100644
-> --- a/include/xen/interface/io/blkif.h
-> +++ b/include/xen/interface/io/blkif.h
-> @@ -84,6 +84,10 @@ typedef uint64_t blkif_sector_t;
->   *     e07154r6-Data_Set_Management_Proposal_for_ATA-ACS2.doc
->   * http://www.seagate.com/staticfiles/support/disc/manuals/
->   *     Interface%20manuals/100293068c.pdf
-> + * We also provide three extra XenBus options to the discard operation:
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/20111004104504.14591.41266.stgit@fedora15
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/perf/util/probe-event.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Who is "We" here? The frontend, backend or both? Do they both need to
-agree on anything?
-
-> + * 'discard-granularity' - Max amount of sectors that can be discarded.
-
-... in a single request?
-
-> + * 'discard-alignment' - 4K, 128K, etc aligment on sectors to erased.
-                                          alignment
-
-What size are the sectors which "discard-granularity" is measured in? Is
-it "discard-alignment"-byte sectors or in base 512-byte sectors?
-
-> + * 'discard-secure' - whether the discard can also securely erase data.
->   */
->  #define BLKIF_OP_DISCARD           5
->  
-> @@ -107,6 +111,8 @@ struct blkif_request_rw {
->  struct blkif_request_discard {
->  	blkif_sector_t sector_number;
->  	uint64_t nr_sectors;
-> +#define BLKIF_OP_DISCARD_FLAG_SECURE	(1<<1) /* ignored if discard-secure=0 */
-
-"1<<0" is unused.
-
-> +	uint32_t flag;
->  };
->  
->  struct blkif_request {
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 1c7bfa5..eb25900 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1956,8 +1956,10 @@ static int __del_trace_probe_event(int fd, struct st=
+r_node *ent)
+=20
+ 	pr_debug("Writing event: %s\n", buf);
+ 	ret =3D write(fd, buf, strlen(buf));
+-	if (ret < 0)
++	if (ret < 0) {
++		ret =3D -errno;
+ 		goto error;
++	}
+=20
+ 	printf("Remove event: %s\n", ent->s);
+ 	return 0;
+--=20
+1.7.6.3
 
 
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJOk0VQAAoJEIy3vGnGbaoAKsEQAJGzsQy1qlr6wthDsqgSLetQ
+uGjSmno5j/jj+eMfaOT+wYXidqVDRp4EVqKUGXKJa5rRapFqcO4EInreQZg7dLLf
+0i29kBZbp/vDCB7mV9W4YAFWH82cYy8FYWuKQlK7DldUGiCCBm8FSnKDOwwfHcnc
+DJljertJaxYp8222wsTwVv11Nz/N2fi2uYBqgvIQdFdwODorAz/bJ5T9Rwz3M5kN
+EjYN2neIySdr10HJG59VhMTvq+dxiOllOTZ+IdfBJc3C8pL7T/vmAzufC3c3wGFG
+v8bBiSc3DwwiSc3/jv7rYA58uLHzxSNOyCjppSz4d4woC3nhbRffaEMN/U6lvjV0
+diNhHGxEQMiBBNNTDCRCR62805DLK9w/kjAV4zW3kyIgKNi1Z8pzrqaXWyz/ZYBZ
+XusSuFc4jbcp9rsWlVvw6bB0lm0Y/MUt3/DmUxNHu1haCk1CwXgKFH2uu9C17KLZ
+qYeAdsukqQ8UXw2XeDdvCkxyNzcpffjm/kqPbtAa2mZrGzIgKB+g6FHNZCIXI8bz
++zgDgjzZovwlFZo3IYVaMn1qnWuh0Bd27T7cOoI1tU1sa0/rLXEtEFUiF+VydqKg
+6PIFCM98shvXKdoKYS3VJRL8tHubfGQCGCssnBbdsbJXhfCIRH7+D6DvDVK+RXPc
+lCIsDrpAwZO4teUaO/9q
+=xk+8
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
