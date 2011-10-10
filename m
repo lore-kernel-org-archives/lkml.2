@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1JJMDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:03:23 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:56791 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab1JJMDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:03:22 -0400
-X-Greylist: delayed 2679 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Oct 2011 08:03:22 EDT
-Date: Mon, 10 Oct 2011 13:18:13 +0200
-From: David Sterba <dave@jikos.cz>
-To: Hugo Mills <hugo-lkml@carfax.org.uk>, Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
-        Btrfs mailing list <linux-btrfs@vger.kernel.org>
-Subject: Re: A Plumber???s Wish List for Linux
-Message-ID: <20111010111813.GF17912@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
-	Kay Sievers <kay.sievers@vrfy.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-	lennart@poettering.net, harald@redhat.com, david@fubar.dk,
-	greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
-	Btrfs mailing list <linux-btrfs@vger.kernel.org>
-References: <1317943022.1095.25.camel@mop> <20111007111231.6e11d18e@lxorguk.ukuu.org.uk> <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com> <20111007113820.3b8424a8@lxorguk.ukuu.org.uk> <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com> <20111007152137.GE28351@carfax.org.uk>
+	id S1753944Ab1JJMIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:08:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55914 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab1JJMIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 08:08:15 -0400
+Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111003134228.090592370@intel.com>
+References: <20111003134228.090592370@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Oct 2011 14:14:06 +0200
+Message-ID: <1318248846.14400.21.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111007152137.GE28351@carfax.org.uk>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 04:21:37PM +0100, Hugo Mills wrote:
-> On Fri, Oct 07, 2011 at 02:46:23PM +0200, Kay Sievers wrote:
-> > On Fri, Oct 7, 2011 at 12:38, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > > On Fri, 7 Oct 2011 12:28:46 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
-> > >
-> > >> What do you mean would be ugly?
-> > >
-> > > I have an ext4fs. It supports every possible file name allowed by POSIX
-> > > and SuS. What name are you going to use for your 'hidden directory' that
-> > > won't clash with a real file ?
-> > 
-> > Ah, no. The label on FAT (similar on NTFS) are 'magic entries' in the
-> > root dir list, not a real file in the root dir.
-> > 
-> > We need kernel support for changing a mounted fs, because, unlike
-> > ext4, the blocks containing the strings are inside the fs, which the
-> > kernel might change any time.
-> 
->    It's worth noting that there are similar issues with btrfs around
-> changing label. A common API for it would make sense. The only btrfs
-> patches I've seen to change label after mkfs-time work either as:
-> 
->  * unmounted only, single underlying device only, pure userspace
->    implementation
->  * mounted only, multiple underlying devices, kernel support needed
-> 
->    The kernel-side patches never got integrated, so we're still unable
-> to change the label on the majority of btrfs filesystems.
-> 
->    Changing the UUID for the filesystem is even harder, as I think
-> it's written to every metadata block. I'm not sure we can do that
-> sanely on a mounted filesystem.
+On Mon, 2011-10-03 at 21:42 +0800, Wu Fengguang wrote:
+> This is the minimal IO-less balance_dirty_pages() changes that are expected to
+> be regression free (well, except for NFS).
 
-http://marc.info/?l=linux-btrfs&m=131161949201880&w=2
+I can't seem to get around reviewing these patches in detail, but fwiw
+I'm fine with pushing fwd with this set (plus a possible NFS fix).
 
-"Resetting the UUID on btrfs isn't a quick-and-easy thing - you have to
-walk the entire tree and change every object. We've got a bad-hack in
-meego that uses btrfs-debug-tree and changes the UUID while it runs
-the entire tree, but it's ugly as hell."
+I don't see a reason to strip it down even further.
 
-That's on an unmoutned fs. Doing it on a mounted one seems more
-complicated wrt to the intermediate state when there are some blocks
-with the old and some block wit the new UUID. The operation will take
-long and I don't know if it's better do to do it in batches (and
-follow usual rules for commiting a transaction every now and then), or
-in one go (requires: no failures, no scrub run, no devices
-added/removed). Counting all potential problems and practical
-unusability of the FS during UUID change, the off-line approach seems a
-better way to go.
+So I guess that's:
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
 
-david
+
