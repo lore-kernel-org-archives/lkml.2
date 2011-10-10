@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab1JJMRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:17:04 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52445 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab1JJMRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:17:02 -0400
-Subject: [PATCH] Refuse activation of tpm_tis driver if TPM is not working
- correctly
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-To: "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        James Morris <jmorris@namei.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>, m.selhorst@sirrix.com
-Cc: a.miskiewicz@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 08:16:45 -0400
-Message-ID: <1318249005.5482.5.camel@d941e-10>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754026Ab1JJMUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:20:49 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:37939
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753863Ab1JJMUs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 08:20:48 -0400
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371K1432Nea8N98dKzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+Date: Mon, 10 Oct 2011 20:30:19 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>, Barry Song <21cnbao@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Stijn Devriendt <highguy@gmail.com>
+Subject: Re: [PATCH 1/2] drivers: create a pin control subsystem v9
+Message-ID: <20111010123018.GD24198@S2100-06.ap.freescale.net>
+References: <1317629862-13549-1-git-send-email-linus.walleij@stericsson.com>
+ <20111009093651.GC24198@S2100-06.ap.freescale.net>
+ <CACRpkdbdz0FE57TdVryKD+X2=1sf-M9NgiZzm+Sm+WYhU6n_bQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbdz0FE57TdVryKD+X2=1sf-M9NgiZzm+Sm+WYhU6n_bQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refuse activation of tpm_tis driver if the TPM is found not to be
-working correctly. This prevents suspend/resume problems for me on
-Lenovo W500 and T61p.
+On Mon, Oct 10, 2011 at 10:23:53AM +0200, Linus Walleij wrote:
+> On Sun, Oct 9, 2011 at 11:36 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> 
+> >> + * @hog_on_boot: if this is set to true, the regulator subsystem will itself
+> >                                                ^^^^^^^^^
+> > s/regulator/pinmux?
+> 
+> Yep!
+> 
+> >> +#endif /* !CONFIG_PINCTRL */
+> >
+> > s/!CONFIG_PINCTRL/CONFIG_PINMUX?
+> 
+> Yep!
+> 
+> Foldes into original patch with a fixup comment.
+> 
+> Can I have your Reviewed-by: tag on this subsystem?
+> 
+Sorry, not yet.  This is not a full review.  I'm trying to migrate imx
+pinctrl to the subsystem.  And all these are just some random spotting.
 
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Another couple of typo on pinctrl.txt?
 
----
- drivers/char/tpm/tpm_tis.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+> diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+> new file mode 100644
+> index 0000000..2915fea
+> --- /dev/null
+> +++ b/Documentation/pinctrl.txt
+> @@ -0,0 +1,951 @@
 
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 3f4051a..7f2761d 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -549,6 +549,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	u32 vendor, intfcaps, intmask;
- 	int rc, i, irq_s, irq_e;
- 	struct tpm_chip *chip;
-+	u8 digest[TPM_DIGEST_SIZE];
- 
- 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
- 		return -ENODEV;
-@@ -616,6 +617,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 	/* get the timeouts before testing for irqs */
- 	tpm_get_timeouts(chip);
- 
-+	/* test for correctly working TPM; refuse driver if not working 
-+	   to prevent suspend/resume problems */
-+	rc = tpm_pcr_read(chip->dev_num, 0, digest);
-+	if (rc != 0) {
-+		dev_err(dev, "Could not read PCR 0. "
-+			"TPM is not working correctly.\n");
-+		dev_err(dev, "Was machine previously suspended without TPM "
-+			"driver present?\n");
-+		rc = -ENODEV;
-+		goto out_err;
-+	}
-+
- 	/* INTERRUPT Setup */
- 	init_waitqueue_head(&chip->vendor.read_queue);
- 	init_waitqueue_head(&chip->vendor.int_queue);
+[...]
+
+> +The example 8x8 PGA package above will have pin numbers 0 thru 63 assigned to
+> +its physical pins. It will name the pins { A1, A2, A3 ... H6, H7, H8 } using
+> +pinctrl_register_pins_[sparse|dense]() and a suitable data set as shown
+
+It should just be pinctrl_register_pins()?
+
+> +earlier.
+
+[...]
+
+> +System pinmux hogging
+> +=====================
+> +
+> +A system pinmux map entry, i.e. a pinmux setting that does not have a device
+> +associated with it, can be hogged by the core when the pin controller is
+> +registered. This means that the core will attempt to call regulator_get() and
+> +regulator_enable() on it immediately after the pin control device has been
+> +registered.
+
+s/regulator_get/pinmux_get, and s/regulator_enable/pinmux_enable
+
 -- 
-1.7.6.4
-
+Regards,
+Shawn
 
