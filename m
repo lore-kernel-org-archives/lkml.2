@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab1JJPxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:53:43 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50016 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab1JJPxl (ORCPT
+	id S1751808Ab1JJQAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:00:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57971 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1JJQAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:53:41 -0400
-Date: Mon, 10 Oct 2011 11:53:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-x86_64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
-Message-ID: <20111010155319.GA29140@phenom.oracle.com>
-References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
+	Mon, 10 Oct 2011 12:00:16 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: balbi@ti.com, "Klaus Schwarzkopf" <schwarzkopf@sensortherm.de>
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sshtylyov@ru.mvista.com
+Subject: Re: [PATCH v3] usb: add new usb gadget for ACM and mass storage
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
+ <1318059850-3336-1-git-send-email-schwarzkopf@sensortherm.de>
+ <20111010055010.GC31653@legolas.emea.dhcp.ti.com>
+ <4E92ADBD.2010404@sensortherm.de>
+Date: Mon, 10 Oct 2011 18:00:11 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E931502.0110:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v2472lcp3l0zgt@mpn-glaptop>
+In-Reply-To: <4E92ADBD.2010404@sensortherm.de>
+User-Agent: Opera Mail/11.51 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
-> Run below test on xen pvm.
-> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
-> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
-> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
-> 
-> @ X:58562301
-> @ Y:58574282
-> @ IDLE: 199.600
-> 
-> Normal idle percent should be around 100%.
-> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
-> but these ticks will be accounted again when idle ticks restarted.
-> 
-> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+On Mon, 10 Oct 2011 10:33:01 +0200, Klaus Schwarzkopf <schwarzkopf@sensortherm.de> wrote:
+>> +static struct usb_device_descriptor device_desc = {
+>> +	.bLength =		sizeof device_desc,
+>> +	.bDescriptorType =	USB_DT_DEVICE,
+>> +
+>> +	.bcdUSB =		cpu_to_le16(0x0200),
+>> +
+>> +	.bDeviceClass =		USB_CLASS_COMM,
+>> +	.bDeviceSubClass =	0,
+>> +	.bDeviceProtocol =	0,
 
-Please in the future also CC the maintainers (you can get that using
-the scripts/get_maintainer.pl).
+> Should bDeviceClass, bDeviceSubClass, and bDeviceProtocol have the same
+> value like in the file multi.c?
+>
+> 	.bDeviceClass =		USB_CLASS_MISC /* 0xEF */,
+> 	.bDeviceSubClass =	2,
+> 	.bDeviceProtocol =	1,
 
-Jeremy, any thoughts?
-> 
-> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-> index 163b467..5dcbc91 100644
-> --- a/arch/x86/xen/time.c
-> +++ b/arch/x86/xen/time.c
-> @@ -151,7 +151,6 @@ static void do_stolen_accounting(void)
->  
->  	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
->  	__this_cpu_write(xen_residual_blocked, blocked);
-> -	account_idle_ticks(ticks);
->  }
->  
->  /* Get the TSC speed from Xen */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+IIRC, the reason multi.c has those is because Windows does not recognise
+a multi-configuration device with zeros here.
