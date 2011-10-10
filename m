@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab1JJHgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:36:12 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39035 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab1JJHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:36:11 -0400
-Date: Mon, 10 Oct 2011 09:34:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH RFC V3 2/8] stop_machine: make stop_machine safe and
- efficient to call early
-Message-ID: <20111010073405.GC29035@elte.hu>
-References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
- <619c66d6da63aa086e2eac017e7aed216cc8ddc3.1317755691.git.jeremy.fitzhardinge@citrix.com>
- <8762k4grwy.fsf@rustcorp.com.au>
+	id S1752602Ab1JJHho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:37:44 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:46400 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab1JJHhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 03:37:43 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjjUQEYRerA==
+X-RZG-CLASS-ID: mo00
+Date: Mon, 10 Oct 2011 09:37:39 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH] staging: hv: storvsc: ignore SET_WINDOW scsi command
+Message-ID: <20111010073739.GA19807@aepfle.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <8762k4grwy.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some commands sent by smartd will offline the device.
+With this change applied, smartd sill not monitor the device anymore.
 
-* Rusty Russell <rusty@rustcorp.com.au> wrote:
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-> On Tue,  4 Oct 2011 12:18:03 -0700, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > 
-> > Make stop_machine() safe to call early in boot, before stop_machine()
-> > has been set up, by simply calling the callback function directly if
-> > there's only one CPU online.
-> 
-> Not that you need this, since it's >90% Tejun's code now, but:
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ drivers/staging/hv/storvsc_drv.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-hey, extra review is always useful.
-
-Jeremy, Tejun, what's the expected merge path of these changes?
-
-Thanks,
-
-	Ingo
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -1122,6 +1122,22 @@ static void storvsc_command_completion(s
+ 	kmem_cache_free(host_dev->request_pool, cmd_request);
+ }
+ 
++static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
++{
++	bool allowed = true;
++	u8 scsi_op = scmnd->cmnd[0];
++
++	switch (scsi_op) {
++		/* smartd sends this command, which will offline the device */
++		case SET_WINDOW:
++			scmnd->result = DID_ERROR << 16;
++			allowed = false;
++			break;
++		default:
++			break;
++	}
++	return allowed;
++}
+ 
+ /*
+  * storvsc_queuecommand - Initiate command processing
+@@ -1141,6 +1157,10 @@ static int storvsc_queuecommand_lck(stru
+ 	unsigned int sg_count = 0;
+ 	struct vmscsi_request *vm_srb;
+ 
++	if (storvsc_check_scsi_cmd(scmnd) == false) {
++		done(scmnd);
++		return 0;
++	}
+ 
+ 	/* If retrying, no need to prep the cmd */
+ 	if (scmnd->host_scribble) {
