@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab1JJLzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:55:16 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:45011 "EHLO
+	id S1753911Ab1JJLz3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:55:29 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:45065 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1JJLzM (ORCPT
+	with ESMTP id S1753880Ab1JJLzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:55:12 -0400
+	Mon, 10 Oct 2011 07:55:16 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 02/13] drbd: protect updates to integrits_tfm by tconn->data->mutex
-Date: Mon, 10 Oct 2011 13:54:55 +0200
-Message-Id: <1318247706-7732-3-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 13/13] drbd: Don't use empty nested netlink attributes
+Date: Mon, 10 Oct 2011 13:55:06 +0200
+Message-Id: <1318247706-7732-14-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
 References: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,64 +20,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we need to hold that mutex anyways to make sure the peer
-gets that change in the right position in the data stream,
-it makes a lot of sense to use the same mutex to ensure existence
-of the tfm.
+From: Andreas Gruenbacher <agruen@linbit.com>
+
+Before mainline commit ea5693cc (v2.6.29-rc1), empty nested netlink attributes
+were not allowed.  Fix that by leaving out nested attributes if they are empty
+and by allowing the top-level attributes to be missing.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h  |    2 +-
- drivers/block/drbd/drbd_main.c |    9 +++++----
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/block/drbd/drbd_nl.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index e167228..c59012f 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -848,7 +848,7 @@ struct drbd_tconn {			/* is a resource from the config file */
- 	struct list_head out_of_sequence_requests;
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 011f7f4..f142380 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1204,7 +1204,7 @@ int drbd_adm_disk_opts(struct sk_buff *skb, struct genl_info *info)
+ 		set_disk_conf_defaults(new_disk_conf);
  
- 	struct crypto_hash *cram_hmac_tfm;
--	struct crypto_hash *integrity_tfm;  /* checksums we compute */
-+	struct crypto_hash *integrity_tfm;  /* checksums we compute, updates protected by tconn->data->mutex */
- 	struct crypto_hash *peer_integrity_tfm;  /* checksums we verify */
- 	struct crypto_hash *csums_tfm;
- 	struct crypto_hash *verify_tfm;
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 939d31b..7c806b9 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -1720,11 +1720,11 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
- 	int dgs;
- 	int err;
+ 	err = disk_conf_from_attrs(new_disk_conf, info);
+-	if (err) {
++	if (err && err != -ENOMSG) {
+ 		retcode = ERR_MANDATORY_TAG;
+ 		drbd_msg_put_info(from_attrs_err_to_txt(err));
+ 	}
+@@ -1960,7 +1960,7 @@ int drbd_adm_net_opts(struct sk_buff *skb, struct genl_info *info)
+ 		set_net_conf_defaults(new_conf);
  
-+	sock = &mdev->tconn->data;
-+	p = drbd_prepare_command(mdev, sock);
- 	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_tfm) ?
- 		crypto_hash_digestsize(mdev->tconn->integrity_tfm) : 0;
+ 	err = net_conf_from_attrs(new_conf, info);
+-	if (err) {
++	if (err && err != -ENOMSG) {
+ 		retcode = ERR_MANDATORY_TAG;
+ 		drbd_msg_put_info(from_attrs_err_to_txt(err));
+ 		goto fail;
+@@ -2395,7 +2395,7 @@ int drbd_adm_resource_opts(struct sk_buff *skb, struct genl_info *info)
+ 		set_res_opts_defaults(&res_opts);
  
--	sock = &mdev->tconn->data;
--	p = drbd_prepare_command(mdev, sock);
- 	if (!p)
- 		return -EIO;
- 	p->sector = cpu_to_be64(req->i.sector);
-@@ -1793,11 +1793,12 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	int err;
- 	int dgs;
- 
-+	sock = &mdev->tconn->data;
-+	p = drbd_prepare_command(mdev, sock);
-+
- 	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_tfm) ?
- 		crypto_hash_digestsize(mdev->tconn->integrity_tfm) : 0;
- 
--	sock = &mdev->tconn->data;
--	p = drbd_prepare_command(mdev, sock);
- 	if (!p)
- 		return -EIO;
- 	p->sector = cpu_to_be64(peer_req->i.sector);
+ 	err = res_opts_from_attrs(&res_opts, info);
+-	if (err) {
++	if (err && err != -ENOMSG) {
+ 		retcode = ERR_MANDATORY_TAG;
+ 		drbd_msg_put_info(from_attrs_err_to_txt(err));
+ 		goto fail;
 -- 
 1.7.4.1
 
