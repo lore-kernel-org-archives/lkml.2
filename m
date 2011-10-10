@@ -1,77 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab1JJQgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:36:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55654 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab1JJQgR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:36:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318262559.1546.31.camel@vkoul-udesk3>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<1317997177.1573.2275.camel@vkoul-udesk3>
-	<CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
-	<1318229592.1573.2298.camel@vkoul-udesk3>
-	<CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-	<1318238296.1546.3.camel@vkoul-udesk3>
-	<CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
-	<1318243501.1546.12.camel@vkoul-udesk3>
-	<CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
-	<1318262559.1546.31.camel@vkoul-udesk3>
-Date: Mon, 10 Oct 2011 21:58:43 +0530
-Message-ID: <CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753040Ab1JJQiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:38:13 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:4010 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752969Ab1JJQiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 12:38:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 2/4] dmaengine: at_hdmac: add device tree support
+Date: Mon, 10 Oct 2011 18:37:50 +0200
+Message-Id: <3780f07b118f8b6a31ed6a27a81312bfff7356f9.1318264339.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
+References: <1314075338.22120.3.camel@vkoul-udesk3>
+ <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
+In-Reply-To: <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
+References: <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 October 2011 21:32, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Mon, 2011-10-10 at 16:46 +0530, Jassi Brar wrote:
->> On 10 October 2011 16:15, Vinod Koul <vinod.koul@intel.com> wrote:
->> >
->> > But I am fine if we find a common ground and merge the two where dmac
->> > can cleanly identify direction and mode it is operating.
->> >
->> The client would set the xfer_direction and dmac would interpret as
->>
->> enum xfer_direction {
->>      MEM_TO_MEM,   ->  Async/Memcpy mode
->>      MEM_TO_DEV,    ->  Slave mode & From Memory to Device
->>      DEV_TO_MEM,    ->  Slave mode & From Device to Memory
->>      DEV_TO_DEV,     ->  Slave mode & From Device to Device
->> }
->>
->> How could it get any cleaner?
-> Consider the case of a dmac driver which supports interleaved dma as
-> well as memcpy and slave
-> It needs to interpret dma_data_direction for later cases and
-> xfer_direction for former ones.
-dma_data_direction is the mapping attribute of a buffer and is not meant to
-tell type of source and destination of a transfer.
-xfer_direction is meant for that purpose.
-So I'd rather convert device_prep_dma_cyclic and device_prep_slave_sg
-to use xfer_direction.
+Add device tree probe support for atmel at_hdmac DMA driver.
+Bindings are added to specify DMA controller configuration.
+
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ .../devicetree/bindings/dma/atmel-dma.txt          |   14 +++++++++
+ drivers/dma/at_hdmac.c                             |   30 +++++++++++++++++++-
+ 2 files changed, 43 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/dma/atmel-dma.txt
+
+diff --git a/Documentation/devicetree/bindings/dma/atmel-dma.txt b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+new file mode 100644
+index 0000000..3c046ee
+--- /dev/null
++++ b/Documentation/devicetree/bindings/dma/atmel-dma.txt
+@@ -0,0 +1,14 @@
++* Atmel Direct Memory Access Controller (DMA)
++
++Required properties:
++- compatible: Should be "atmel,<chip>-dma"
++- reg: Should contain DMA registers location and length
++- interrupts: Should contain DMA interrupt
++
++Examples:
++
++dma@ffffec00 {
++	compatible = "atmel,at91sam9g45-dma";
++	reg = <0xffffec00 0x200>;
++	interrupts = <21>;
++};
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index fef57bc..6d25b6a 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -23,6 +23,8 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ #include "at_hdmac_regs.h"
+ 
+@@ -1175,6 +1177,20 @@ static void atc_free_chan_resources(struct dma_chan *chan)
+ 
+ /*--  Module Management  -----------------------------------------------*/
+ 
++#if defined(CONFIG_OF)
++static const struct of_device_id atmel_dma_dt_ids[] = {
++	{
++		.compatible = "atmel,at91sam9rl-dma",
++		.data = (void *)ATDMA_DEVTYPE_SAM9RL
++	}, {
++		.compatible = "atmel,at91sam9g45-dma",
++		.data = (void *)ATDMA_DEVTYPE_SAM9G45
++	}, { /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, atmel_dma_dt_ids);
++#endif
++
+ static struct platform_device_id atdma_devtypes[] = {
+ 	{
+ 		.name = "at91sam9rl_dma",
+@@ -1187,6 +1203,17 @@ static struct platform_device_id atdma_devtypes[] = {
+ 	}
+ };
+ 
++static inline enum atdma_devtype __init at_dma_get_driver_data(
++					struct platform_device *pdev)
++{
++	if (pdev->dev.of_node) {
++		const struct of_device_id *match;
++		match = of_match_node(atmel_dma_dt_ids, pdev->dev.of_node);
++		return (enum atdma_devtype)match->data;
++	}
++	return platform_get_device_id(pdev)->driver_data;
++}
++
+ /**
+  * at_dma_off - disable DMA controller
+  * @atdma: the Atmel HDAMC device
+@@ -1218,7 +1245,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 	dma_cap_set(DMA_MEMCPY, cap_mask);
+ 
+ 	/* get DMA parameters from controller type */
+-	atdmatype = platform_get_device_id(pdev)->driver_data;
++	atdmatype = at_dma_get_driver_data(pdev);
+ 
+ 	switch (atdmatype) {
+ 	case ATDMA_DEVTYPE_SAM9RL:
+@@ -1526,6 +1553,7 @@ static struct platform_driver at_dma_driver = {
+ 	.driver = {
+ 		.name	= "at_hdmac",
+ 		.pm	= &at_dma_dev_pm_ops,
++		.of_match_table	= of_match_ptr(atmel_dma_dt_ids),
+ 	},
+ };
+ 
+-- 
+1.7.5.4
+
