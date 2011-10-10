@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab1JJXuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 19:50:50 -0400
-Received: from cpc7-stkp7-2-0-cust918.10-2.cable.virginmedia.com ([86.22.251.151]:41648
-	"EHLO freya" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751061Ab1JJXut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 19:50:49 -0400
-Date: Tue, 11 Oct 2011 00:50:42 +0100
-From: Ben Dooks <ben-i2c@fluff.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        ben-linux@fluff.org
-Subject: Re: [PATCH 00/13] V5 Split i2c-designware.c to support PCI drivers.
-Message-ID: <20111010235042.GA17934@freya.fluff.org>
-References: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317925597-32245-1-git-send-email-dirk.brandewie@gmail.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753421Ab1JJX40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 19:56:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51175 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab1JJX40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 19:56:26 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=meVymXHHAAAA:8 a=z02YPy5vMGV_Tt8tILoA:9 a=PUjeQqilurYA:10 a=DHQQ7jDAcw4A:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: stable mailing list?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 10 Oct 2011 19:56:23 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318290984.7904.127.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 11:26:24AM -0700, dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> 
-> This patch set reworks i2c-designware.c to enable supporting multiple
+I received a bounce from stable@kernel.org. What should we be Ccing to?
 
-Right, applied to branch for-32/i2c/i2c-designware and will be in -next
-as soon as possible.
+-- Steve
+
+
+
+-------- Forwarded Message --------
+From: Mail Administrator <Postmaster@mail.rr.com>
+Reply-to: <Postmaster@mail.rr.com>
+To: rostedt@goodmis.org
+Subject: Mail System Error - Returned Mail
+Date: Mon, 10 Oct 2011 22:41:38 +0000
+
+This Message was undeliverable due to the following reason:
+
+Each of the following recipients was rejected by a remote mail server.
+The reasons given by the server are included to help you determine why
+each recipient was rejected.
+
+    Recipient: <stable@kernel.org>
+    Reason:    5.1.1 <stable@kernel.org>: Recipient address rejected: User unknown in local recipient table
+
+
+
 
