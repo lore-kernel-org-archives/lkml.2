@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab1JJRkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:40:31 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:57260 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753672Ab1JJRk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:40:29 -0400
-Message-ID: <4E932E0B.8060204@xenotime.net>
-Date: Mon, 10 Oct 2011 10:40:27 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1753820Ab1JJRlC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:41:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50410 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752250Ab1JJRlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 13:41:01 -0400
+Date: Mon, 10 Oct 2011 19:40:58 +0200
+From: Jan Kara <jack@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        NamJae Jeon <linkinjeon@gmail.com>
+Subject: Re: [PATCH 4/6] udf: Convert printks to pr_<level>
+Message-ID: <20111010174058.GJ3944@quack.suse.cz>
+References: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
+ <cover.1318233879.git.joe@perches.com>
+ <2eb3e996c9fd511f4c3dbf6f26efa3481b70a87a.1318233879.git.joe@perches.com>
+ <20111010145953.GC3944@quack.suse.cz>
+ <1318260214.25811.14.camel@Joe-Laptop>
+ <20111010164157.GH3944@quack.suse.cz>
+ <1318267510.27825.20.camel@Joe-Laptop>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Felipe Balbi <balbi@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCH -next] usb gadget: fix langwell_udc.c build error
-References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au> <4E8F67C6.5020603@xenotime.net> <20111008100326.GA24633@legolas.emea.dhcp.ti.com> <4E91DF00.8060107@xenotime.net> <20111009223638.GA29776@legolas.emea.dhcp.ti.com> <4E9228CA.1060904@xenotime.net> <20111010050959.GA30935@legolas.emea.dhcp.ti.com> <20111010171645.GA24628@kroah.com>
-In-Reply-To: <20111010171645.GA24628@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318267510.27825.20.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon 10-10-11 10:25:10, Joe Perches wrote:
+> On Mon, 2011-10-10 at 18:41 +0200, Jan Kara wrote:
+> > On Mon 10-10-11 08:23:34, Joe Perches wrote:
+> > > I forgot to mention that udf_err emits at KERN_CRIT.
+> > > I think that's not good.
+> > I've changed udf_err() to call pr_err() because
+> > KERN_CRIT is really too much.
+> 
+> If this means you applied it or applied it with
+> modifications, I think it'd be good to either
+> reply to the 0/n message with something like
+> "applied to my tree", or reply to each message
+> as appropriate.
+  Sure, that's what I wanted to do but I first wanted to test what I have,
+stumbled across an issue with patch 1 which delayed me a bit...
 
-Move function to fix langwell_udc.c build error:
+> That reply lets other people like NamJae proceed
+> appropriately.  Otherwise, it's left to some
+> pull request or patch series posted by you
+> potentially months later to figure out what's
+> current.
+> 
+> Is there a udf git tree?
+  On kernel.org which is down... I didn't bother to setup some other place
+yet.
 
-drivers/usb/gadget/langwell_udc.c: In function 'show_langwell_udc':
-drivers/usb/gadget/langwell_udc.c:1693:3: error: implicit declaration of function 'lpm_device_speed'
-drivers/usb/gadget/langwell_udc.c: At top level:
-drivers/usb/gadget/langwell_udc.c:2637:37: error: conflicting types for 'lpm_device_speed'
-drivers/usb/gadget/langwell_udc.c:1693:20: note: previous implicit declaration of 'lpm_device_speed' was here
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Cc:	Felipe Balbi <balbi@ti.com>
-Cc:	linux-usb@vger.kernel.org
----
- drivers/usb/gadget/langwell_udc.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
-
---- next-2011-1007.orig/drivers/usb/gadget/langwell_udc.c
-+++ next-2011-1007/drivers/usb/gadget/langwell_udc.c
-@@ -1562,6 +1562,20 @@ static ssize_t show_function(struct devi
- static DEVICE_ATTR(function, S_IRUGO, show_function, NULL);
- 
- 
-+static inline enum usb_device_speed lpm_device_speed(u32 reg)
-+{
-+	switch (LPM_PSPD(reg)) {
-+	case LPM_SPEED_HIGH:
-+		return USB_SPEED_HIGH;
-+	case LPM_SPEED_FULL:
-+		return USB_SPEED_FULL;
-+	case LPM_SPEED_LOW:
-+		return USB_SPEED_LOW;
-+	default:
-+		return USB_SPEED_UNKNOWN;
-+	}
-+}
-+
- /* device "langwell_udc" sysfs attribute file */
- static ssize_t show_langwell_udc(struct device *_dev,
- 		struct device_attribute *attr, char *buf)
-@@ -2634,20 +2648,6 @@ done:
- 	dev_vdbg(&dev->pdev->dev, "<--- %s()\n", __func__);
- }
- 
--static inline enum usb_device_speed lpm_device_speed(u32 reg)
--{
--	switch (LPM_PSPD(reg)) {
--	case LPM_SPEED_HIGH:
--		return USB_SPEED_HIGH;
--	case LPM_SPEED_FULL:
--		return USB_SPEED_FULL;
--	case LPM_SPEED_LOW:
--		return USB_SPEED_LOW;
--	default:
--		return USB_SPEED_UNKNOWN;
--	}
--}
--
- /* port change detect interrupt handler */
- static void handle_port_change(struct langwell_udc *dev)
- {
+> The stuff on sourceforge is not current
+> and the MAINTAINERS W: entry doesn't work.
+  Actually, the link is ancient and I don't use SF for UDF development so
+I've added a patch to my tree which removes the link.
+  
+> 
+> Maybe:
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 644894a..58eb5f1 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6624,7 +6624,7 @@ F:	drivers/net/ethernet/8390/ne-h8300.c
+>  
+>  UDF FILESYSTEM
+>  M:	Jan Kara <jack@suse.cz>
+> -W:	http://linux-udf.sourceforge.net
+> +W:	http://sourceforge.net/projects/linux-udf/develop
+>  S:	Maintained
+>  F:	Documentation/filesystems/udf.txt
+>  F:	fs/udf/
+> 
+> cheers, Joe
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
