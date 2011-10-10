@@ -1,172 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1JJQWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:22:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56572 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab1JJQVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:21:13 -0400
-From: Rajendra Nayak <rnayak@ti.com>
-To: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
-        <lrg@ti.com>, <b-cousson@ti.com>, <patches@linaro.org>,
-        <linux-kernel@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH v2 4/5] regulator: adapt fixed regulator driver to dt
-Date: Mon, 10 Oct 2011 21:49:37 +0530
-Message-ID: <1318263578-7407-5-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1318263578-7407-1-git-send-email-rnayak@ti.com>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
+	id S1752660Ab1JJQXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:23:31 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:40066 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1JJQXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 12:23:30 -0400
+Message-ID: <4E931BF6.6070706@linux.vnet.ibm.com>
+Date: Mon, 10 Oct 2011 13:23:18 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+CC: =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <a.miskiewicz@gmail.com>,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+Subject: Re: Linux 3.1-rc9
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <201110092251.15618.a.miskiewicz@gmail.com> <4E925873.2020501@linux.vnet.ibm.com>
+In-Reply-To: <4E925873.2020501@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+x-cbid: 11101016-8936-0000-0000-000004B71F27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fixed regulator driver uses of_get_fixed_voltage_config()
-to extract fixed_voltage_config structure contents from device tree.
+On 09/10/11 23:29, Stefan Berger wrote:
+> On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
+>> On Wednesday 05 of October 2011, Linus Torvalds wrote:
+>>> Another week, another -rc.
+>> suspend to ram regression is annoying (still visible on rc9;
+>> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are 
+>> silent.
+>>
+> I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce 
+> the 'scheduling while atomic' problem you had reported earlier. I also 
+> could suspend / resume fine as long as I did the following:
+>
+> - suspended with the tpm_tis driver as module in the kernel
+> - once a suspend was done without the tpm_tis driver the subsequent 
+> suspends were all done without the tpm_tis driver
+>
+> Once I had done a suspend/resume with the tpm_tis driver *not* in the 
+> kernel and then again a suspend with the tpm_tis driver in the kernel, 
+> it did not resume anymore. I believe previously (previous version of 
+> kernel and/or Fedora) it refused to even suspend. The reason why this 
+> doesn't work properly is that the driver has to send a command to the 
+> TPM upon suspend and the BIOS then sends the corresponding wakeup 
+> command.
+>
+> Did you maybe previously suspend/resume without a tpm_tis driver and 
+> then try to suspend with it ?
+>
+> Also, my Lenovo W500 shows particularly odd behavior when I switch 
+> from Windows to Linux. The first suspend with a Linux booted after 
+> Windows (with or without tpm_tis driver) does *not* resume (reboot 
+> required). A subsequently rebooted Linux makes the suspend/resume work 
+> fine.
+>
+>    Stefan
+>
+Arkadiusz,
 
-Also add documenation for additional bindings for fixed
-regulators that can be passed through dt.
+Do you still see the issue with this patch [1][2] applied?
 
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
----
- .../bindings/regulator/fixed-regulator.txt         |   25 +++++++++
- drivers/regulator/fixed.c                          |   58 ++++++++++++++++++++
- 2 files changed, 83 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/fixed-regulator.txt
+[1] - http://marc.info/?l=linux-kernel&m=131824905826280&w=2
+[2] - github.com/srajiv/tpm.git for-james
 
-diff --git a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-new file mode 100644
-index 0000000..049df3d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-@@ -0,0 +1,25 @@
-+Fixed Voltage regulators
-+
-+Required properties:
-+- compatible: Must be "regulator-fixed";
-+
-+Optional properties:
-+- regulator-fixed-supply: Name of the regulator supply
-+- regulator-fixed-microvolts: Output voltage of regulator
-+- regulator-fixed-gpio: gpio to use for enable control
-+- regulator-fixed-startup-delay: startup time in microseconds
-+- regulator-fixed-enable-high: Polarity of enable GPIO,
-+  1 = Active High, 0 = Active low
-+- regulator-fixed-enabled-at-boot: 1 = yes, 0 = no
-+
-+Example:
-+
-+	abc: fixedregulator@0 {
-+		compatible = "regulator-fixed";
-+		regulator-fixed-supply = "fixed-supply";
-+		regulator-fixed-microvolts = <1800000>;
-+		regulator-fixed-gpio = <43>;
-+		regulator-fixed-startup-delay = <70000>;
-+		regulator-fixed-enable-high;
-+		regulator-fixed-enabled-at-boot;
-+	};
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 2fe9d99..eb37eb6 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -23,9 +23,12 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/fixed.h>
-+#include <linux/regulator/machine.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/regulator/of_regulator.h>
- 
- struct fixed_voltage_data {
- 	struct regulator_desc desc;
-@@ -37,6 +40,47 @@ struct fixed_voltage_data {
- 	bool is_enabled;
- };
- 
-+
-+/**
-+ * of_get_fixed_voltage_config - extract fixed_voltage_config structure info
-+ * @dev: device requesting for fixed_voltage_config
-+ *
-+ * Populates fixed_voltage_config structure by extracting data from device
-+ * tree node, returns a pointer to the populated structure of NULL if memory
-+ * alloc fails.
-+ */
-+struct fixed_voltage_config *of_get_fixed_voltage_config(struct device *dev)
-+{
-+	struct fixed_voltage_config *config;
-+	struct device_node *np = dev->of_node;
-+	const __be32 *microvolts, *gpio, *delay;
-+
-+	config = devm_kzalloc(dev, sizeof(struct fixed_voltage_config), GFP_KERNEL);
-+	if (!config)
-+		return NULL;
-+
-+	config->supply_name = (char *)of_get_property(np,
-+					"regulator-fixed-supply", NULL);
-+	microvolts = of_get_property(np, "regulator-fixed-microvolts", NULL);
-+	if (microvolts)
-+		config->microvolts = be32_to_cpu(*microvolts);
-+	gpio = of_get_property(np, "regulator-fixed-gpio", NULL);
-+	if (gpio)
-+		config->gpio = be32_to_cpu(*gpio);
-+	delay = of_get_property(np, "regulator-fixed-startup-delay", NULL);
-+	if (delay)
-+		config->startup_delay = be32_to_cpu(*delay);
-+
-+	if (of_find_property(np, "regulator-fixed-enable-high", NULL))
-+		config->enable_high = true;
-+	if (of_find_property(np, "regulator-fixed-enabled-at-boot", NULL))
-+		config->enabled_at_boot = true;
-+
-+	config->init_data = of_get_regulator_init_data(dev);
-+
-+	return config;
-+}
-+
- static int fixed_voltage_is_enabled(struct regulator_dev *dev)
- {
- 	struct fixed_voltage_data *data = rdev_get_drvdata(dev);
-@@ -108,6 +152,9 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- 	struct fixed_voltage_data *drvdata;
- 	int ret;
- 
-+	if (pdev->dev.of_node)
-+		config = of_get_fixed_voltage_config(&pdev->dev);
-+
- 	drvdata = kzalloc(sizeof(struct fixed_voltage_data), GFP_KERNEL);
- 	if (drvdata == NULL) {
- 		dev_err(&pdev->dev, "Failed to allocate device data\n");
-@@ -216,12 +263,23 @@ static int __devexit reg_fixed_voltage_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id fixed_of_match[] __devinitconst = {
-+	{ .compatible = "regulator-fixed", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, fixed_of_match);
-+#else
-+#define fixed_of_match NULL
-+#endif
-+
- static struct platform_driver regulator_fixed_voltage_driver = {
- 	.probe		= reg_fixed_voltage_probe,
- 	.remove		= __devexit_p(reg_fixed_voltage_remove),
- 	.driver		= {
- 		.name		= "reg-fixed-voltage",
- 		.owner		= THIS_MODULE,
-+		.of_match_table = fixed_of_match,
- 	},
- };
- 
--- 
-1.7.1
+Thanks,
+Rajiv
 
