@@ -1,135 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab1JJFM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 01:12:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37905 "EHLO mx2.mail.elte.hu"
+	id S1751252Ab1JJFYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 01:24:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54666 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab1JJFM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 01:12:57 -0400
-Date: Mon, 10 Oct 2011 07:11:09 +0200
+	id S1750746Ab1JJFYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 01:24:41 -0400
+Date: Mon, 10 Oct 2011 07:22:59 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 00/15] perf/core improvements
-Message-ID: <20111010051109.GB32173@elte.hu>
-References: <1317921758-4154-1-git-send-email-acme@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        acme@redhat.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
+        paulus@samba.org, linux-kernel@vger.kernel.org, nhorman@tuxdriver.com
+Subject: Re: [PATCHv2 1/2] perf tools: Collect tracing event data files
+ directly
+Message-ID: <20111010052259.GC32173@elte.hu>
+References: <20110925133406.GB2702@jolsa.brq.redhat.com>
+ <1317028312-5156-1-git-send-email-jolsa@redhat.com>
+ <1317028312-5156-2-git-send-email-jolsa@redhat.com>
+ <1317044192.26514.1.camel@gandalf.stny.rr.com>
+ <20110926145606.GA8886@jolsa.brq.redhat.com>
+ <20110928135525.GS18553@somewhere>
+ <1317218589.4588.4.camel@gandalf.stny.rr.com>
+ <20110928141754.GT18553@somewhere>
+ <20110928165639.GA10084@elte.hu>
+ <1317229825.4588.12.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317921758-4154-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1317229825.4588.12.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.9
+X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
-	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> Hi Ingo,
+> Good to see your email is back :)
 > 
->         Please consider pulling from:
 > 
-> git://github.com/acmel/linux.git perf/core
+> On Wed, 2011-09-28 at 18:56 +0200, Ingo Molnar wrote:
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > > > But it seems Steve's patches are not completely uncontroversial 
+> > > > > because of some crazy disagreements on where the 
+> > > > > libparsevent.so should lay (tools generic or tied to perf).
+> > > > 
+> > > > Which to me seems to be a silly road block, in which I never got 
+> > > > a clear answer for.
+> > > 
+> > > Yeah we need to sort that out with Ingo.
+> > 
+> > Basically, since it's not at all clear to me where these things (and 
+> > APIs) will go, I'd be much more comfortable with this starting out as 
+> > tools/perf/lib/ - we can still split it out later on. Merging it in 
+> > will be a lot harder.
 > 
-> 	It makes 'perf top' use the abstractions in 'perf report', allowing it
-> to:
-> 
-> 1. Have total consistency with 'report'
-> 
-> 2. Allow --sort to be used to have more views than just 'dso, symbol'
->    Try 'perf top --sort comm' or 'pid' for instance
-> 
-> 3. All the goodies in the TUI, like zooming in/out threads, dsos, etc
-> 
-> 4. Integration with Live Annotation
-> 
-> 5. In the live annotation window, navigate to functions called by the one
->    being annotated (x86_64 only right now). This is just an experimentation
->    in increasing the integration of the multiple perf tools, more of this
->    kind to come.
-> 
-> 6. Initial callchain support, not yet decaying it over time as the main
->    view.
-> 
-> 	Also in this batch is the work Stephane did on including information
-> about the machine where the perf.data file was collected.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (13):
->   perf hists: Stop using 'self' for struct hists
->   perf hists: Allow limiting the number of rows and columns in fprintf
->   perf report: Add option to show total period
->   perf hists: Threaded addition and sorting of entries
->   perf browsers: Add live mode to the hists, annotate browsers
->   perf top: Reuse the 'report' hist_entry/hists classes
->   perf top: Add callgraph support
->   perf annotate browser: Allow navigation to called functions
->   perf top: Use the TUI interface by default
->   perf annotate browser: Use -> to navigate on assembly lines
->   perf hists browser: Don't offer symbol actions when symbols not on --sort
->   perf hists browser: Fix TAB/UNTAB use with multiple events
->   perf hists browser: Update the browser.nr_entries after the timer
-> 
-> Stephane Eranian (2):
->   perf tools: Fix broken number of samples for perf report -n
->   perf tools: Make perf.data more self-descriptive (v8)
-> 
->  tools/perf/Documentation/perf-report.txt |    8 +
->  tools/perf/Documentation/perf-script.txt |    7 +
->  tools/perf/Documentation/perf-top.txt    |   38 +-
->  tools/perf/Makefile                      |    4 -
->  tools/perf/arch/powerpc/Makefile         |    1 +
->  tools/perf/arch/powerpc/util/header.c    |   36 +
->  tools/perf/arch/x86/Makefile             |    1 +
->  tools/perf/arch/x86/util/header.c        |   59 ++
->  tools/perf/builtin-annotate.c            |    9 +-
->  tools/perf/builtin-diff.c                |    2 +-
->  tools/perf/builtin-record.c              |   15 +
->  tools/perf/builtin-report.c              |   17 +-
->  tools/perf/builtin-script.c              |    6 +-
->  tools/perf/builtin-top.c                 |  430 +++++++-----
->  tools/perf/builtin.h                     |    1 -
->  tools/perf/perf.h                        |   11 +
->  tools/perf/util/annotate.h               |    7 +-
->  tools/perf/util/evlist.c                 |    6 +
->  tools/perf/util/evlist.h                 |    4 +
->  tools/perf/util/evsel.c                  |    1 +
->  tools/perf/util/header.c                 | 1145 +++++++++++++++++++++++++++++-
->  tools/perf/util/header.h                 |   29 +-
->  tools/perf/util/hist.c                   |  338 +++++++---
->  tools/perf/util/hist.h                   |   33 +-
->  tools/perf/util/session.c                |   19 +
->  tools/perf/util/session.h                |    1 +
->  tools/perf/util/sort.h                   |    1 +
->  tools/perf/util/symbol.h                 |    1 +
->  tools/perf/util/top.c                    |  141 +----
->  tools/perf/util/top.h                    |   36 +-
->  tools/perf/util/ui/browsers/annotate.c   |   99 +++-
->  tools/perf/util/ui/browsers/hists.c      |  146 +++--
->  tools/perf/util/ui/browsers/top.c        |  236 ------
->  33 files changed, 2091 insertions(+), 797 deletions(-)
->  create mode 100644 tools/perf/arch/powerpc/util/header.c
->  create mode 100644 tools/perf/arch/x86/util/header.c
->  delete mode 100644 tools/perf/util/ui/browsers/top.c
+> I would actually argue that merging is much easier than splitting 
+> something up. [...]
 
-Pulled, thanks a lot Arnaldo!
+Technically it's somewhat easier - socially, not.
+
+> [...] If A depends on B, merging B back into A is trivial. But if B 
+> is a part of A, breaking it out of A is a much more difficult task, 
+> as the boundaries of A and B are not so easy to find and the 
+> coupling of the two is much tighter.
+
+That's a technical problem. In reality we can split up and merge 
+projects of very significant size just fine. I've done split-ups and 
+factorings-out from millions of lines of code impact. tools/perf is 
+still well within such size boundaries.
+
+> I find trying to break things out of perf is very hard to do as the 
+> dependencies are throughout all of perf, and no one seems to agree 
+> on how to do so.
+
+Then it would be absolute madness to make that non-agreement external 
+and hard-code a separate social structure for it!
+
+Libraries are for *boring* infrastructure stuff *everyone agrees on*. 
+
+They are absolutely lousy arbitrators of technical disagreement and 
+if there's a serious disagreement they can easily become an absolute 
+nightmare socially and a technical distraction. How difficult is this 
+to understand?
+
+Please work out disagreements with Arnaldo and do librarization 
+within perf if you are interested in that angle. If those internal 
+interfaces become visibly boring and are consistently used by 
+everything in a way that every main contributor agrees on then we can 
+perhaps librarize it. Not the other way around.
+
+Thanks,
 
 	Ingo
