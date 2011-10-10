@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751033Ab1JHEY0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Oct 2011 00:24:26 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:60166 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab1JHEYZ (ORCPT
+	id S1751992Ab1JJU67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 16:58:59 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58535 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab1JJU66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Oct 2011 00:24:25 -0400
+	Mon, 10 Oct 2011 16:58:58 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Lennart Poettering <mzxreary@0pointer.de>
 Cc: Matt Helsley <matthltc@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
         linux-kernel@vger.kernel.org, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com
+        greg@kroah.com, Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
 References: <1317943022.1095.25.camel@mop>
 	<20111007074904.GC16723@count0.beaverton.ibm.com>
 	<20111007160113.GB14201@tango.0pointer.de>
-Date: Fri, 07 Oct 2011 21:24:37 -0700
-In-Reply-To: <20111007160113.GB14201@tango.0pointer.de> (Lennart Poettering's
-	message of "Fri, 7 Oct 2011 18:01:14 +0200")
-Message-ID: <m17h4g2jqy.fsf@fess.ebiederm.org>
+	<m17h4g2jqy.fsf@fess.ebiederm.org>
+	<20111010163140.GA22191@tango.0pointer.de>
+Date: Mon, 10 Oct 2011 13:59:10 -0700
+In-Reply-To: <20111010163140.GA22191@tango.0pointer.de> (Lennart Poettering's
+	message of "Mon, 10 Oct 2011 18:31:41 +0200")
+Message-ID: <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/yScGR7fLhe5FlhBve/eL+MhqS3NBpd10=
+X-XM-AID: U2FsdGVkX18tqHrLWBqMErO/01XYsxaY0FzeN3uLtu4=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+X-Spam-Report: * -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
 	*  0.8 RDNS_NONE Delivered to internal network by a host with no rDNS
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Lennart Poettering <mzxreary@0pointer.de>
-X-Spam-Relay-Country: **
-Subject: Re: A =?utf-8?Q?Plumber=E2=80=99s?= Wish List for Linux
+X-Spam-Relay-Country: 
+Subject: Detecting if you are running in a container
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -44,40 +50,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+Cc's and subject updated so hopefully we get the correct people
+on this discussion to make progress.
+
 Lennart Poettering <mzxreary@0pointer.de> writes:
 
-> On Fri, 07.10.11 00:49, Matt Helsley (matthltc@us.ibm.com) wrote:
->
->> 
->> On Fri, Oct 07, 2011 at 01:17:02AM +0200, Kay Sievers wrote:
->> 
->> <snip>
->> 
->> > * simple, reliable and future-proof way to detect whether a specific pid
->> > is running in a CLONE_NEWPID container, i.e. not in the root PID
->> > namespace. Currently, there are available a few ugly hacks to detect
->> 
->> Is that precisely what's needed or would it be sufficient to know
->> that the pid is running in a child pid namespace of the current pid
->> namespace? If so, I think this could eventually be done by comparing
->> the inode numbers assigned to /proc/<pid>/ns/pid to those of
->> /proc/1/ns/pid.
->
-> I think the most interesting test would be to figure out for a process
-> if itself is running in a PID namespace. And for that comparing inodes
-> wouldn't work since the namespace process would never get access to the
-> inode of the outside init.
+> To make a standard distribution run nicely in a Linux container you
+> usually have to make quite a number of modifications to it and disable
+> certain things from the boot process. Ideally however, one could simply
+> boot the same image on a real machine and in a container and would just
+> do the right thing, fully stateless. And for that you need to be able to
+> detect containers, and currently you can't.
 
-Strictly correct answer.  All processes are running in a pid namespace.
-I think we can implement that in a libc header.
+I agree getting to the point where we can run a standard distribution
+unmodified in a container sounds like a reasonable goal.
 
-static inline bool in_pid_namespace(void)
-{
-        return true;
-}
+> Quite a few kernel subsystems are
+> currently not virtualized, for example SELinux, VTs, most of sysfs, most
+> of /proc/sys, audit, udev or file systems (by which I mean that for a
+> container you probably don't want to fsck the root fs, and so on), and
+> containers tend to be much more lightweight than real systems.
 
-Why does it matter if you are running in something other than the
-initial pid namespace?  I expect what you are really after is something
-else entirely, and you are asking the wrong question.
+That is an interesting viewpoint on what is not complete.  But as a
+listing of the tasks that distribution startup needs to do differently in
+a container the list seems more or less reasonable.
+
+There are two questions 
+- How in the general case do we detect if we are running in a container.
+- How do we make reasonable tests during bootup to see if it makes sense
+  to perform certain actions.
+
+For the general detection if we are running in a linux container I can
+see two reasonable possibilities.
+
+- Put a file in / that let's you know by convention that you are in a
+  linux container.  I am inclined to do this because this is something
+  we can support on all kernels old and new.
+
+- Allow modification to the output of uname(2).  The uts namespace
+  already covers uname(2) and uname is the standard method to
+  communicate to userspace the vageries about the OS level environment
+  they are running in.
+
+
+My list of things that still have work left to do looks like:
+- cgroups.  It is not safe to create a new hierarchies with groups
+  that are in existing hierarchies.  So cgroups don't work.
+
+- user namespace.  We are very close to have something workable
+  on this one, but until we do all of the users inside and outside
+  of a container are the same, and pass the same permission checks.
+
+  As a result we have to drop most of roots privileges, and we have
+  to be a bit careful what binaries that can gain privileges (think suid
+  root) are in the container filesystem.
+
+- Reboot.  I know Daniel was working on something not long ago
+  but I am not certain where he would up.
+
+- device namespaces.  We periodically think about having a separate
+  set of devices and to support things like losetup in a container
+  that seems necessary.  Most of the time getting all of the way
+  to device namespaces seems unnecessary.
+
+
+As for tests on what to startup.
+
+- udev.  All of the kernel interfaces for udev should be supported in
+  current kernels.  However I believe udev is useless because container
+  start drops CAP_MKNOD so we can't do evil things.  So I would
+  recommend basing the startup of udev on presence of CAP_MKNOD.
+
+- VTs.  Ptys should be well supported at this point.  For the rest
+  they are physical hardware that a container should not be playing with
+  so I would base which gettys to start up based on which device nodes
+  are present in /dev.
+
+- sysctls (aka /proc/sys) that is a trick one.  Until the user namespace
+  is fleshed out a little more sysctls are going to be a problem,
+  because root can write to most of them.  My gut feel says you probably
+  want to base that to poke at sysctls on CAP_SYS_ADMIN.  At least that
+  test will become true when the userspaces are rolled out, and at
+  that point you will want to set all of the sysctls you have permission
+  to.
+
+- audit.  My memory is very fuzzy on this one.  The issue in question is
+  should we start auditd?  I believe the audit calls actually fail in a
+  container so we should be able to trigger starting auditd on if audit
+  works at all.  If we can't do it that way certainly the work should be
+  put in so that it can be done that way.
+
+- fsck.  A rw filesystem check like you mentioned earlier seems like a
+  reasonable place to be I know the OpenVz folks were talking about
+  putting containers in their own block devices for their next round of
+  supporting containers.  At which point a filesystem check on container
+  startup might not be a bad idea at all.
+
+- cgroups hierarchies.  I don't know at which point in the system
+  startup we care.  The appropriate solution would seem to be to try
+  it and if the operation fails figure it isn't supported.
+
+- selinux.  It really should be in the same category.  You should be
+  able to attempt to load a policy and have it fail in a way that
+  indicates that selinux is currently supported.  I don't know if
+  we can make that work right until we get the user namespace into
+  a usable shame.
+
+In general things in a container should work or the kernel feature
+should fail in a way that indicates that the feature is not supported.
+That currently works well for the networking stack, and with the
+pending usablilty of the user namespace it should work just about
+everywhere else as well.  For things that don't fit that model we
+need to fix the kernel.
+
+So while I agree a check to see if something is a container seems
+reasonable.  I do not agree that the pid namespace is the place to put
+that information.  I see no natural to put that information in the
+pid namespace.
+
+I further think there are a lot of reasonable checks for if a
+kernel feature is supported in the current environment I would
+rather pursue over hacks based the fact we are in a container.
 
 Eric
