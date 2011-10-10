@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1JJIlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:41:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62018 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab1JJIlF (ORCPT
+	id S1752959Ab1JJIlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:41:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50363 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752643Ab1JJIl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:41:05 -0400
-Message-ID: <4E92AF9D.8060702@gmail.com>
-Date: Mon, 10 Oct 2011 10:41:01 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Mon, 10 Oct 2011 04:41:29 -0400
+Date: Mon, 10 Oct 2011 09:41:26 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 2/2] regmap: Allow caches for devices with no defaults
+Message-ID: <20111010084126.GA2563@opensource.wolfsonmicro.com>
+References: <1318167876-17801-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: virtualbox tainting.
-References: <20111006190526.GA13883@redhat.com>
-In-Reply-To: <20111006190526.GA13883@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Dave,
+On Sun, Oct 09, 2011 at 02:44:36PM +0100, Mark Brown wrote:
+> We only really need the defaults in order to cut down the number of
+> registers we sync and to satisfy reads while the device is powered off
+> but not all devices are going to need to do that (always on devices like
+> PMICs being the prime example) so don't require those devices to supply
+> a default.  Instead only try to fall back to hardware defaults if the
+> driver told us to.
+> 
+> Devices using LZO won't be able to instantiate with this, that will require
+> some updates in the LZO code to handle this case.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/base/regmap/regcache.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+> index 67c7703..666f6f5 100644
+> --- a/drivers/base/regmap/regcache.c
+> +++ b/drivers/base/regmap/regcache.c
+> @@ -120,7 +120,7 @@ int regcache_init(struct regmap *map)
+>  		if (!tmp_buf)
+>  			return -ENOMEM;
+>  		map->reg_defaults = tmp_buf;
+> -	} else {
+> +	} else if (map->num_reg_defaults_raw) {
+>  		/* Some devices such as PMICs don't have cache defaults,
+>  		 * we cope with this by reading back the HW registers and
+>  		 * crafting the cache defaults by hand.
+> -- 
+> 1.7.6.3
 
-On 10/06/2011 09:05 PM, Dave Jones wrote:
-> The number of bug reports we get from people with virtualbox loaded are
-> truly astonishing.  It's GPL, but sadly that doesn't mean it's good.
-> Nearly all of these bugs look like random corruption. (corrupt linked lists,
-> corrupt page tables, and just plain 'weird' crashes).
->
-> This diff adds tainting to the module loader to treat it as we do with stuff
-> from staging/ (crap). With this tainting in place, automatic bug filing tools
-> can opt out of automatically filing kernel bugs, and inform the user to file
-> bugs somewhere more appropriate.
->
-> Signed-off-by: Dave Jones <davej@redhat.com>
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 04379f92..d26c9a3 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2653,6 +2653,10 @@ static int check_module_license_and_versions(struct module *mod)
->  	if (strcmp(mod->name, "ndiswrapper") == 0)
->  		add_taint(TAINT_PROPRIETARY_MODULE);
->  
-> +	/* vbox is garbage. */
-> +	if (strcmp(mod->name, "vboxdrv") == 0)
-> +		add_taint(TAINT_CRAP);
-> +
->  	/* driverloader was caught wrongly pretending to be under GPL */
->  	if (strcmp(mod->name, "driverloader") == 0)
->  		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-Patch vbox' kernel modules instead?
-Seems to mark it as crap, all you have to do is add this to the driver source:
-MODULE_INFO(staging, "Y");
+We could probably then also remove the first check in
+regcache_hw_init() I guess.
 
-Tested this theory by adding that line to snd-usb-audio, it immediately tainted kernel. :)
+The one:
 
-Cheers,
-Maarten
+if (!map->num_reg_defaults_raw)
+	return -EINVAL;
+
+Thanks,
+Dimitris
