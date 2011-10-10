@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1JJHMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:12:18 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:53823 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab1JJHMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:12:17 -0400
-Subject: Re: [PATCH v8]: Improve performance of LZO/plain hibernation
-From: Bojan Smojver <bojan@rexursive.com>
-To: penberg@cs.helsinki.fi
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Date: Mon, 10 Oct 2011 18:12:15 +1100
-In-Reply-To: <6127211897.1002662375@rexursive.com>
-References: <1317342456.1959.6.camel@shrek.rexursive.com>
-	 <3169978091.1002283638@rexursive.com> <201110062037.14322.rjw@sisk.pl>
-	 <201110062045.48689.rjw@sisk.pl>
-	 <CAOJsxLE7uRFv6FXsz+czLO3+VjDtT-QgHVRZEpZwBJJF0B3ahw@mail.gmail.com>
-	 <6127211897.1002662375@rexursive.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318230735.2019.1.camel@shrek.rexursive.com>
-Mime-Version: 1.0
+	id S1752537Ab1JJHM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:12:29 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43687 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494Ab1JJHM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 03:12:28 -0400
+Date: Mon, 10 Oct 2011 09:10:34 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
+Subject: Re: [GIT PULL] RAS update
+Message-ID: <20111010071034.GO32173@elte.hu>
+References: <20110930102034.GB22622@aftab>
+ <20111006105535.GA6007@elte.hu>
+ <20111006110403.GA31022@elte.hu>
+ <20111006124201.GA22432@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111006124201.GA22432@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-10-09 at 21:19 +1100, Bojan Smojver wrote:
-> I kinda remember reading in one of the bug reports for Intel graphics
-> about someone doing it. Not sure how, to be honest.
 
-This worked for me on Fedora:
+* Borislav Petkov <bp@amd64.org> wrote:
 
-echo -n reboot > /sys/power/disk
-for (( i=0; i<5; i++)); do pm-hibernate; sleep 2; done
+> On Thu, Oct 06, 2011 at 07:04:04AM -0400, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> > > 
+> > > * Borislav Petkov <bp@amd64.org> wrote:
+> > > 
+> > > > Hi Ingo,
+> > > > 
+> > > > please pull from the branch below to receive one fix which
+> > > > causes a very nasty warning on _all_ CPUs when fiddling with
+> > > > MCE poller interval. Since it is not that important, I'm fine
+> > > > with it going in during the merge window. Top commit here is
+> > > > 9aaef96f61d93062556d34e15731f7d5869dd82e.
+> > > > 
+> > > > Thanks.
+> > > > 
+> > > > The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
+> > > > 
+> > > >   Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
+> > > > 
+> > > > are available in the git repository at:
+> > > >   git://amd64.org/linux/bp.git ras
+> > > > 
+> > > > Hidetoshi Seto (1):
+> > > >       x86, mce: Do not call del_timer_sync() in IRQ context
+> > > > 
+> > > >  arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
+> > > >  1 files changed, 14 insertions(+), 6 deletions(-)
+> > > 
+> > > Pulled, thanks a lot Joerg!
+> > 
+> > s/Boris :-)
+> 
+> It doesn't matter - practically, we're almost one and the same guy. :-).
 
-PS. Obviously, substitute pm-hibernate for whatever you distro uses.
+Heh ;-)
 
--- 
-Bojan
+This happened because Joerg was the main AMD person whom i was 
+Git-pulling from regularly, so i guess my brain optimized away a few 
+neurons via the "AMD git pull -> Joerg" heuristic.
 
+That was a pretty crappy optimization, hopefully fixed by now ;-)
+
+Thanks,
+
+	Ingo
