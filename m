@@ -1,160 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab1JJNHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 09:07:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55240 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab1JJNHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 09:07:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
-   d="scan'208";a="60641514"
-Date: Mon, 10 Oct 2011 21:07:22 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
-Message-ID: <20111010130722.GA11387@localhost>
-References: <20111003134228.090592370@intel.com>
- <1318248846.14400.21.camel@laptop>
-MIME-Version: 1.0
+	id S1754166Ab1JJNJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 09:09:31 -0400
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:44684 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753031Ab1JJNJ3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 09:09:29 -0400
+X-AuditID: 12074425-b7f116d0000008fe-68-4e92ee88af46
+Subject: Re: A Plumber???s Wish List for Linux
+Mime-Version: 1.0 (Apple Message framework v1244.3)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318248846.14400.21.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20111010111813.GF17912@twin.jikos.cz>
+Date: Mon, 10 Oct 2011 09:09:37 -0400
+Cc: Theodore Tso <tytso@MIT.EDU>, Hugo Mills <hugo-lkml@carfax.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, harald@redhat.com, david@fubar.dk,
+        greg@kroah.com, Chris Mason <chris.mason@oracle.com>,
+        Btrfs mailing list <linux-btrfs@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4C18E3B8-FA7E-4BC1-BE5D-B517004321A2@mit.edu>
+References: <1317943022.1095.25.camel@mop> <20111007111231.6e11d18e@lxorguk.ukuu.org.uk> <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com> <20111007113820.3b8424a8@lxorguk.ukuu.org.uk> <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com> <20111007152137.GE28351@carfax.org.uk> <20111010111813.GF17912@twin.jikos.cz>
+To: dave@jikos.cz
+X-Mailer: Apple Mail (2.1244.3)
+X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0gUYRSG+2Znx3F1ZFwtvzSNBkQx1wyjBjExkBqRTOhHJWGN7ugu7q7L
+	zGrqn4yyTFRUXK1FxLA0L7AihIuC1tLN2yJaUiaLZRe8o4sFadKMi5d/7znPeV/Ox3dwmfKd
+	PBDXGkwcb2B1FKZAlR7xYarS5ZqU6MYBFd1hfY3SFUNzGL34bQCl66ZsMtrR9AjQv9Z65LRt
+	pgmjJ7ocGP278iegx2efe9ATvQ1YghfT7OhBmMrlNxhTW9qGMktfU5mSwW45s/pjCmU+WFcA
+	s9L/EWNc3SHMqjUpVZGmiFNzOm0+x5+Iv6nQdD17gRp7sYIxe4msGDyUlwFPHJKnYFvfOurW
+	h+CY04qVAQWuJPsB7Psz4eEuugDcbKhG3MUwAlfMzm2LHxkFx1zDIsBxgoyBC1uI1JaREfDT
+	1ty2xkgKTq8NoNKIpzjisnhJEiVDYaMlxD39D4HO6TNufRy2PFmQSZogY6HZVuYhaSXpRODk
+	+2uS9id94cDyK8y981HYfM8FqoCvZW8Hy74dLPtSm4CsHQSr9UUqPavVCVymSshkDQaOV9FR
+	eq0pilPndYPt/0oMtYEqO2UHJA4obyI6tiZFKWfzhUK9HRzGEeogMbIotnwyctWFGlbQ3ODz
+	dJxgBxCXUf5EjlNkhJotLOL43B0UhKNUALFgS0hRktmsicvhOCPH79AjOE5BYnNJNPryXDZX
+	kKXVmfYwgntK4d5i+Lo0QwhGVi9os918CBwLDCBw8cCUpAQ0eYZd7879zYMA8Sl+bru3eJ27
+	7nkxGBGD62u3g03sHgosBvW+4+XykknW8uXWTNyVDK4z5nP02H1g2Ri+nnp3ZJ3g2RZ5q+vB
+	OecgqzO1J452zDRZFdmt1rcbkaPlMRf/Oi44HeaarLM5PW2RyRWds8bbaYWnifSal9aopAPm
+	4DDhavfqpfON1WFBoOpyjs/Tx8Pp4XVr6y3huckB5u8rdyhU0LAnI2S8wP4HW1xvhFoDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 08:14:06PM +0800, Peter Zijlstra wrote:
-> On Mon, 2011-10-03 at 21:42 +0800, Wu Fengguang wrote:
-> > This is the minimal IO-less balance_dirty_pages() changes that are expected to
-> > be regression free (well, except for NFS).
-> 
-> I can't seem to get around reviewing these patches in detail, but fwiw
-> I'm fine with pushing fwd with this set (plus a possible NFS fix).
-> 
-> I don't see a reason to strip it down even further.
-> 
-> So I guess that's:
-> 
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Thanks :-) In fact you've already reviewed the major parts of the
-patchset in great details and helped simplify parts of the algorithm,
-which I appreciate a lot.
+On Oct 10, 2011, at 7:18 AM, David Sterba wrote:
 
-As for the NFS performance, the dd tests show that adding a writeback
-wait queue to limit the number of NFS PG_writeback pages (patches
-will follow) is able to gain 48% throughput in itself:
+> "Resetting the UUID on btrfs isn't a quick-and-easy thing - you have to
+> walk the entire tree and change every object. We've got a bad-hack in
+> meego that uses btrfs-debug-tree and changes the UUID while it runs
+> the entire tree, but it's ugly as hell."
 
-      3.1.0-rc8-ioless6+         3.1.0-rc8-nfs-wq+  
-------------------------  ------------------------  
-                   22.43       +81.8%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
-                   28.21       +52.6%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
-                   29.21       +55.4%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
-                   14.12       +40.4%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
-                   29.44       +11.4%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
-                    9.09      +240.9%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
-                   25.68       +84.6%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
-                   41.06        +7.6%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
-                   39.13       +25.9%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
-                  238.38       +48.4%       353.72  TOTAL
+Changing the UUID is going to be harder for ext4 as well, once we integrate metadata checksums.   So while it makes sense to have on-line ways of updating labels for mounted file systems it probably makes muchness sense to support it for UUIDs.
 
-Which will result in 28% overall improvements over the vanilla kernel:
+I suspect what it means in practice is that it will be useful for file systems to provide fs image copying tools that also generate a new UUID while you're at it, for use by IT administrators and embedded systems manufacturers.
 
-      3.1.0-rc4-vanilla+         3.1.0-rc8-nfs-wq+  
-------------------------  ------------------------  
-                   20.89       +95.2%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
-                   39.43        +9.2%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
-                   26.60       +70.6%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
-                   12.70       +56.1%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
-                   27.41       +19.7%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
-                   26.52       +16.8%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
-                   40.70       +16.5%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
-                   45.28        -2.4%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
-                   35.74       +37.8%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
-                  275.28       +28.5%       353.72  TOTAL
-
-As for the most concerned NFS commits, the wait queue patch increases
-the (nr_commits / bytes_written) ratio by +74% for the thresh=1G,10dd
-case, +55% for the thresh=100M,10dd case, and mostly ignorable in the
-other 1dd, 2dd cases, which looks acceptable.
-
-The other noticeable change of the wait queue is, the RTT time per
-write is reduced by 1-2 order(s) in many of the below cases (from
-dozens of seconds to hundreds of milliseconds).
-
-Thanks,
-Fengguang
----
-
-PS. mountstats numbers
-
-thresh=1GB
-==========
-
-1dd
-
-vanilla        WRITE: 33108 33108 0 13794766688 4502688 89550800 1826162 91643336
-ioless6        WRITE: 104355 104355 0 12824990824 14192280 1677501539 13497260 1691407074
-nfs-wq         WRITE: 58632 58632 0 13635750848 7973952 148662395 4735943 153535047
-
-vanilla       COMMIT: 29 29 0 3248 3712 45210 191022 236235
-ioless6       COMMIT: 26 26 0 2912 3328 32875 196848 229725
-nfs-wq        COMMIT: 35 35 0 3920 4480 1156 223393 224550
-
-2dd
-
-vanilla        WRITE: 28681 28681 0 11507024952 3900616 178242698 5849890 184288501
-ioless6        WRITE: 151075 151075 0 12192866408 20546200 3195004617 5748708 3200969292
-nfs-wq         WRITE: 89925 89925 0 15450966104 12229800 212096905 3443883 215849660
-
-vanilla       COMMIT: 43 43 0 4816 5504 45252 349816 396792
-ioless6       COMMIT: 52 52 0 5824 6656 40798 376099 417068
-nfs-wq        COMMIT: 66 66 0 7392 8448 10854 490021 502373
-
-10dd
-
-vanilla        WRITE: 47281 47281 0 14044390136 6430216 1378503679 11994453 1390582846
-ioless6        WRITE: 35972 35972 0 7959317984 4892192 1205239506 7412186 1212670083
-nfs-wq         WRITE: 49625 49625 0 14819167672 6749000 10704223 4135391 14876589
-
-vanilla       COMMIT: 235 235 0 26320 30080 328532 1097793 1426737
-ioless6       COMMIT: 128 128 0 14336 16384 73611 388716 462470
-nfs-wq        COMMIT: 431 432 0 48384 55168 217056 1775499 1993006
-
-
-thresh=100MB
-============
-
-1dd
-
-vanilla        WRITE: 28858 28858 0 12427843376 3924688 6384263 2308574 8722669
-nfs-wq         WRITE: 206620 206620 0 13104059680 28100320 90597897 10245879 101016004
-
-vanilla       COMMIT: 250 250 0 28000 32000 27030 229750 256786
-nfs-wq        COMMIT: 267 267 0 29904 34176 4672 247504 252184
-
-2dd
-
-vanilla        WRITE: 32593 32593 0 8382655992 4432648 193667999 3611697 197302564
-nfs-wq         WRITE: 98662 98662 0 14025467856 13418032 183280630 5381343 188715890
-
-vanilla       COMMIT: 272 272 0 30464 34816 24445 295949 320576
-nfs-wq        COMMIT: 584 584 0 65408 74752 1318 483049 484442
-
-10dd
-
-vanilla        WRITE: 32294 32294 0 6651515344 4391984 104926130 8666874 113596871
-nfs-wq         WRITE: 27571 27571 0 12711521256 3749656 6129491 2248486 8385102
-
-vanilla       COMMIT: 825 825 0 92400 105600 82135 739763 822179
-nfs-wq        COMMIT: 2449 2449 0 274288 313472 6091 2057767 2064555
+-- Ted
