@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab1JJLYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:24:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64742 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab1JJLYH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:24:07 -0400
+	id S1753798Ab1JJLYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:24:45 -0400
+Received: from verein.lst.de ([213.95.11.211]:49444 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753618Ab1JJLYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 07:24:44 -0400
+Date: Mon, 10 Oct 2011 13:24:43 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
+        xiyou.wangcong@gmail.com, viro@zeniv.linux.org.uk, dchinner@redhat.com
+Subject: Re: [PATCH v2] ramfs: Remove module leftovers
+Message-ID: <20111010112443.GA29093@lst.de>
+References: <1318244079-10815-1-git-send-email-richard@nod.at> <20111010110907.GB28672@lst.de> <4E92D352.1030109@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZ-WTecB-SPXjs531heu4M5Jc-9YvjEV2fPfaHSxiYG2A@mail.gmail.com>
-References: <1317629883-13582-1-git-send-email-linus.walleij@stericsson.com>
- <CAGsJ_4yKzyFzJwKgA2nkUf6z2fYoQLB48SOJR82DyAvcut7khQ@mail.gmail.com> <CACRpkdZ-WTecB-SPXjs531heu4M5Jc-9YvjEV2fPfaHSxiYG2A@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 10 Oct 2011 19:23:46 +0800
-Message-ID: <CAGsJ_4zkj-nJ9nX+vnLuvJpy124HNqQvUioRpJvLER5WUTZnJQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinmux: add a driver for the U300 pinmux
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E92D352.1030109@nod.at>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/10 Linus Walleij <linus.walleij@linaro.org>:
-> On Sat, Oct 8, 2011 at 11:09 AM, Barry Song <21cnbao@gmail.com> wrote:
->>> +static void __init u300_pmx_dumpregs(struct u300_pmx *upmx)
->>> +{
->>> +       u16 regval;
->>> +       int i;
->>> +
->>> +       for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
->>> +               regval = readw(upmx->virtbase + u300_pmx_registers[i]);
->>> +               dev_info(upmx->dev, "PMX%u: 0x%04x\n", i, regval);
->>> +       }
->>> +}
->>
->> is this a debug information or do you want it to be in mainline?
->
-> Debug info, I'll delete it. Not that it hurt, but I'll kill it.
->
->>> +       /* Create state holders etc for this driver */
->>> +       upmx = devm_kzalloc(&pdev->dev, sizeof(struct u300_pmx), GFP_KERNEL);
->>
->> and this would be "devm_kzalloc(&pdev->dev, sizeof(*upmx), GFP_KERNEL); " ?
->
-> Same semantic effect, but if you prefer it that way, sure :-)
->
-> I've seen both used in the kernel before...
+On Mon, Oct 10, 2011 at 01:13:22PM +0200, Richard Weinberger wrote:
+> > Removing the dead code looks good, but what is the point in using
+> > device_initcall?  We've always been using module_init for non-modular
+> > code, though.
+> > 
+> 
+> Ah, ok!
+> So we can keep the module_init()?
+> I was not sure whether it's valid to use module_init() in pure
+> non-modular code...
 
-coding style document says :
-"
-                  Chapter 14: Allocating memory
+It is valid.  And if it's not the style de jour anymore thousands of people
+will flame me now, but I've always done it that way.
 
-  The kernel provides the following general purpose memory allocators:
-  kmalloc(), kzalloc(), kcalloc(), vmalloc(), and vzalloc().  Please refer to
-  the API documentation for further information about them.
-
- The preferred form for passing a size of a struct is the following:
-
-          p = kmalloc(sizeof(*p), ...);
-
-  The alternative form where struct name is spelled out hurts readability and
-  introduces an opportunity for a bug when the pointer variable type is changed
-  but the corresponding sizeof that is passed to a memory allocator is not.
-"
->
-> Can I have your Reviewed-by: tag after this?
-
-yes. of course.
-
->
-> Linus Walleij
->
-Thanks
-barry
