@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1JJUdG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 16:33:06 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:16064 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab1JJUdF (ORCPT
+	id S1753928Ab1JJUfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 16:35:25 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55918 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab1JJUfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 16:33:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=rK6sREfLIpTewxT/lSiN+FF7VAczJBt9kKi9k5NW9sDUsDJqceG/+spb2UICkmaBg
-	18oXNBNaTWNbDIyFqEd8A==
-From: Muraliraja Muniraju <muralira@google.com>
-To: "David S. Miller\"" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Murali Raja <muralira@google.com>
-Subject: [PATCH v2] net-netlink: Add a new attribute to expose TOS values via netlink
-Date: Mon, 10 Oct 2011 13:32:25 -0700
-Message-Id: <1318278745-27734-1-git-send-email-muralira@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111010130713.6df8bfe4@nehalam.linuxnetplumber.net>
-References: <20111010130713.6df8bfe4@nehalam.linuxnetplumber.net>
+	Mon, 10 Oct 2011 16:35:23 -0400
+Date: Mon, 10 Oct 2011 22:35:13 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "tj@kernel.org" <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111010203513.GB30798@aftab>
+References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
+ <4E931018.8030904@linux.vnet.ibm.com>
+ <20111010165343.GA29261@aftab>
+ <4E932BBA.9090501@linux.vnet.ibm.com>
+ <20111010175336.GA29415@aftab>
+ <20111010180848.GI8100@google.com>
+ <20111010183442.GC29415@aftab>
+ <20111010185307.GK8100@google.com>
+ <4E9340C2.4090901@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E9340C2.4090901@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Raja <muralira@google.com>
+On Mon, Oct 10, 2011 at 03:00:18PM -0400, Srivatsa S. Bhat wrote:
+> > Hmm... is it possible to tell whether the core coming online is the
+> > same one as the last time?  If that's possible, the problem becomes
+> > pretty simple and we can simply tell people who are mixing
+> > suspend/hibernate with physical hotplug that they're crazy.
+> > 
+> 
+> I think that is pretty easy, atleast from a microcode revision standpoint:
+> the collect_cpu_info() function (defined in arch/x86/kernel/microcode_core.c
+> and arch/x86/kernel/microcode_intel.c or ..._amd.c) can be used for that
+> purpose. Am I right Boris?
 
-This patch exposes the tos value for the TCP sockets when the TOS flag
-is requested in the ext_flags for the inet_diag request. This would mainly be
-used to expose TOS values for both for TCP and UDP sockets. Currently it is
-supported for TCP. When netlink support for UDP would be added the support
-to expose the TOS values would alse be done.
+Correct, on AMD the PATCH_LEVEL MSR (0x8b) contains the ... doh, current
+patch level of the core, i.e. the applied ucode version.
 
-Signed-off-by: Murali Raja <muralira@google.com>
----
-Changelog since v1:
-- Removing the reserved field.
-
- include/linux/inet_diag.h |    9 ++++++++-
- net/ipv4/inet_diag.c      |    7 +++++++
- 2 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
-index bc8c490..e36093d 100644
---- a/include/linux/inet_diag.h
-+++ b/include/linux/inet_diag.h
-@@ -97,9 +97,10 @@ enum {
- 	INET_DIAG_INFO,
- 	INET_DIAG_VEGASINFO,
- 	INET_DIAG_CONG,
-+	INET_DIAG_TOS,
- };
- 
--#define INET_DIAG_MAX INET_DIAG_CONG
-+#define INET_DIAG_MAX INET_DIAG_TOS
- 
- 
- /* INET_DIAG_MEM */
-@@ -120,6 +121,12 @@ struct tcpvegas_info {
- 	__u32	tcpv_minrtt;
- };
- 
-+/* INET_DIAG_TOS */
-+
-+struct inet_diag_tos {
-+	__u8	idiag_tos;
-+};
-+
- #ifdef __KERNEL__
- struct sock;
- struct inet_hashinfo;
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 389a2e6..6c52e29 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -82,6 +82,7 @@ static int inet_csk_diag_fill(struct sock *sk,
- 	struct nlmsghdr  *nlh;
- 	void *info = NULL;
- 	struct inet_diag_meminfo  *minfo = NULL;
-+	struct inet_diag_tos *tos = NULL;
- 	unsigned char	 *b = skb_tail_pointer(skb);
- 	const struct inet_diag_handler *handler;
- 
-@@ -108,6 +109,9 @@ static int inet_csk_diag_fill(struct sock *sk,
- 		       icsk->icsk_ca_ops->name);
- 	}
- 
-+	if (ext & (1 << (INET_DIAG_TOS - 1)))
-+		tos = INET_DIAG_PUT(skb, INET_DIAG_TOS, sizeof(*tos));
-+
- 	r->idiag_family = sk->sk_family;
- 	r->idiag_state = sk->sk_state;
- 	r->idiag_timer = 0;
-@@ -169,6 +173,9 @@ static int inet_csk_diag_fill(struct sock *sk,
- 	    icsk->icsk_ca_ops && icsk->icsk_ca_ops->get_info)
- 		icsk->icsk_ca_ops->get_info(sk, ext, skb);
- 
-+	if (tos)
-+		tos->idiag_tos = inet->tos;
-+
- 	nlh->nlmsg_len = skb_tail_pointer(skb) - b;
- 	return skb->len;
- 
 -- 
-1.7.3.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
