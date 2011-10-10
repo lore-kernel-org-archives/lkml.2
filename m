@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1JJHeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:34:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38426 "EHLO mx3.mail.elte.hu"
+	id S1752580Ab1JJHgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:36:12 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39035 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab1JJHeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:34:12 -0400
-Date: Mon, 10 Oct 2011 09:32:14 +0200
+	id S1752455Ab1JJHgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 03:36:11 -0400
+Date: Mon, 10 Oct 2011 09:34:05 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
         the arch/x86 maintainers <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized
- ticketlocks
-Message-ID: <20111010073214.GB29035@elte.hu>
-References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com>
- <201109282008.17722.stephan.diestelhorst@amd.com>
- <CA+55aFwm7ESNfrHhEHrAKcjcPUq8YxtuEkJd5PzAekYo2dMYNw@mail.gmail.com>
- <2707952.s3VYcmPHUN@chlor>
- <4E8DE7F1.3050108@goop.org>
- <4E8DEED0.1020909@goop.org>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH RFC V3 2/8] stop_machine: make stop_machine safe and
+ efficient to call early
+Message-ID: <20111010073405.GC29035@elte.hu>
+References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
+ <619c66d6da63aa086e2eac017e7aed216cc8ddc3.1317755691.git.jeremy.fitzhardinge@citrix.com>
+ <8762k4grwy.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E8DEED0.1020909@goop.org>
+In-Reply-To: <8762k4grwy.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -47,17 +45,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+* Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-> On 10/06/2011 10:40 AM, Jeremy Fitzhardinge wrote:
-> > However, it looks like locked xadd is also has better performance:  on
-> > my Sandybridge laptop (2 cores, 4 threads), the add+mfence is 20% slower
-> > than locked xadd, so that pretty much settles it unless you think
-> > there'd be a dramatic difference on an AMD system.
+> On Tue,  4 Oct 2011 12:18:03 -0700, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+> > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > 
+> > Make stop_machine() safe to call early in boot, before stop_machine()
+> > has been set up, by simply calling the callback function directly if
+> > there's only one CPU online.
 > 
-> Konrad measures add+mfence is about 65% slower on AMD Phenom as well.
+> Not that you need this, since it's >90% Tejun's code now, but:
+> 
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-xadd also results in smaller/tighter code, right?
+hey, extra review is always useful.
+
+Jeremy, Tejun, what's the expected merge path of these changes?
 
 Thanks,
 
