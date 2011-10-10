@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab1JJL4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:56:39 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:45065 "EHLO
+	id S1753917Ab1JJL4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:56:38 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:45072 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab1JJLzO (ORCPT
+	with ESMTP id S1753854Ab1JJLzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Oct 2011 07:55:14 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 05/13] drbd: Receiving part for the PROTOCOL_UPDATE packet
-Date: Mon, 10 Oct 2011 13:54:58 +0200
-Message-Id: <1318247706-7732-6-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 08/13] drbd: Output signed / unsigned netlink fields correctly
+Date: Mon, 10 Oct 2011 13:55:01 +0200
+Message-Id: <1318247706-7732-9-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
 References: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,195 +20,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andreas Gruenbacher <agruen@linbit.com>
+
+Note: All input values are still treated as signed; unsigned long long values
+are still broken.
+
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h      |    3 +-
- drivers/block/drbd/drbd_main.c     |    2 +
- drivers/block/drbd/drbd_receiver.c |   73 +++++++++++++++++++++++++++++-------
- 3 files changed, 63 insertions(+), 15 deletions(-)
+ include/linux/genl_magic_func.h   |   23 ++++++++++-----
+ include/linux/genl_magic_struct.h |   52 +++++++++++++++++++++++++++----------
+ 2 files changed, 53 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index c59012f..75b26d8 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -225,6 +225,7 @@ enum drbd_packet {
- 	P_CONN_ST_CHG_REQ     = 0x2a, /* data sock: Connection wide state request */
- 	P_CONN_ST_CHG_REPLY   = 0x2b, /* meta sock: Connection side state req reply */
- 	P_RETRY_WRITE	      = 0x2c, /* Protocol C: retry conflicting write request */
-+	P_PROTOCOL_UPDATE     = 0x2d, /* data sock: is used in established connections */
+diff --git a/include/linux/genl_magic_func.h b/include/linux/genl_magic_func.h
+index e8e1220..a1305b7 100644
+--- a/include/linux/genl_magic_func.h
++++ b/include/linux/genl_magic_func.h
+@@ -78,12 +78,13 @@ static struct nla_policy s_name ## _nl_policy[] __read_mostly =		\
+ { s_fields };
  
- 	P_MAY_IGNORE	      = 0x100, /* Flag to test if (cmd > P_MAY_IGNORE) ... */
- 	P_MAX_OPT_CMD	      = 0x101,
-@@ -849,7 +850,7 @@ struct drbd_tconn {			/* is a resource from the config file */
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, _type, __get, __put) \
++#define __field(attr_nr, attr_flag, name, nla_type, _type, __get,	\
++		 __put, __is_signed)					\
+ 	[__nla_type(attr_nr)] = { .type = nla_type },
  
- 	struct crypto_hash *cram_hmac_tfm;
- 	struct crypto_hash *integrity_tfm;  /* checksums we compute, updates protected by tconn->data->mutex */
--	struct crypto_hash *peer_integrity_tfm;  /* checksums we verify */
-+	struct crypto_hash *peer_integrity_tfm;  /* checksums we verify, only accessed from receiver thread  */
- 	struct crypto_hash *csums_tfm;
- 	struct crypto_hash *verify_tfm;
- 	void *int_dig_in;
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 7c806b9..eecb0fb 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -3290,6 +3290,8 @@ const char *cmdname(enum drbd_packet cmd)
- 		[P_RS_CANCEL]		= "RSCancel",
- 		[P_CONN_ST_CHG_REQ]	= "conn_st_chg_req",
- 		[P_CONN_ST_CHG_REPLY]	= "conn_st_chg_reply",
-+		[P_RETRY_WRITE]		= "retry_write",
-+		[P_PROTOCOL_UPDATE]	= "protocol_update",
+ #undef __array
+ #define __array(attr_nr, attr_flag, name, nla_type, _type, maxlen,	\
+-		__get, __put)						\
++		__get, __put, __is_signed)				\
+ 	[__nla_type(attr_nr)] = { .type = nla_type,			\
+ 		.len = maxlen - (nla_type == NLA_NUL_STRING) },
  
- 		/* enum drbd_packet, but not commands - obsoleted flags:
- 		 *	P_MAY_IGNORE
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 61b57fc..9611303 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3001,9 +3001,11 @@ static enum drbd_after_sb_p convert_after_sb(enum drbd_after_sb_p peer)
- static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- {
- 	struct p_protocol *p = pi->data;
--	int p_proto, p_after_sb_0p, p_after_sb_1p, p_after_sb_2p;
--	int p_discard_my_data, p_two_primaries, cf;
--	struct net_conf *nc;
-+	enum drbd_after_sb_p p_after_sb_0p, p_after_sb_1p, p_after_sb_2p;
-+	int p_proto, p_discard_my_data, p_two_primaries, cf;
-+	struct net_conf *nc, *old_net_conf, *new_net_conf = NULL;
-+	char integrity_alg[SHARED_SECRET_MAX] = "";
-+	struct crypto_hash *peer_tfm = NULL, *tfm = NULL;
- 	void *int_dig_in = NULL, *int_dig_vv = NULL;
- 
- 	p_proto		= be32_to_cpu(p->protocol);
-@@ -3015,8 +3017,6 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- 	p_discard_my_data = cf & CF_DISCARD_MY_DATA;
- 
- 	if (tconn->agreed_pro_version >= 87) {
--		char integrity_alg[SHARED_SECRET_MAX];
--		struct crypto_hash *tfm = NULL;
- 		int err;
- 
- 		if (pi->size > sizeof(integrity_alg))
-@@ -3024,35 +3024,70 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- 		err = drbd_recv_all(tconn, integrity_alg, pi->size);
- 		if (err)
- 			return err;
--		integrity_alg[SHARED_SECRET_MAX-1] = 0;
-+		integrity_alg[SHARED_SECRET_MAX - 1] = 0;
-+	}
- 
-+	if (pi->cmd == P_PROTOCOL_UPDATE) {
- 		if (integrity_alg[0]) {
- 			int hash_size;
- 
--			tfm = crypto_alloc_hash(integrity_alg, 0, CRYPTO_ALG_ASYNC);
--			if (!tfm) {
-+			peer_tfm = crypto_alloc_hash(integrity_alg, 0, CRYPTO_ALG_ASYNC);
-+			tfm      = crypto_alloc_hash(integrity_alg, 0, CRYPTO_ALG_ASYNC);
-+			if (!(peer_tfm && tfm)) {
- 				conn_err(tconn, "peer data-integrity-alg %s not supported\n",
- 					 integrity_alg);
- 				goto disconnect;
- 			}
--			conn_info(tconn, "peer data-integrity-alg: %s\n", integrity_alg);
- 
- 			hash_size = crypto_hash_digestsize(tfm);
- 			int_dig_in = kmalloc(hash_size, GFP_KERNEL);
- 			int_dig_vv = kmalloc(hash_size, GFP_KERNEL);
- 			if (!(int_dig_in && int_dig_vv)) {
--				crypto_free_hash(tfm);
-+				conn_err(tconn, "Allocation of buffers for data integrity checking failed\n");
- 				goto disconnect;
- 			}
+@@ -235,7 +236,8 @@ static int s_name ## _from_attrs(struct s_name *s, struct genl_info *info)	\
  		}
  
--		if (tconn->peer_integrity_tfm)
--			crypto_free_hash(tconn->peer_integrity_tfm);
--		tconn->peer_integrity_tfm = tfm;
-+		new_net_conf = kmalloc(sizeof(struct net_conf), GFP_KERNEL);
-+		if (!new_net_conf) {
-+			conn_err(tconn, "Allocation of new net_conf failed\n");
-+			goto disconnect;
-+		}
-+
-+		mutex_lock(&tconn->data.mutex);
-+		mutex_lock(&tconn->conf_update);
-+		old_net_conf = tconn->net_conf;
-+		*new_net_conf = *old_net_conf;
-+
-+		new_net_conf->wire_protocol = p_proto;
-+		new_net_conf->after_sb_0p = convert_after_sb(p_after_sb_0p);
-+		new_net_conf->after_sb_1p = convert_after_sb(p_after_sb_1p);
-+		new_net_conf->after_sb_2p = convert_after_sb(p_after_sb_2p);
-+		new_net_conf->two_primaries = p_two_primaries;
-+		strcpy(new_net_conf->integrity_alg, integrity_alg);
-+		new_net_conf->integrity_alg_len = strlen(integrity_alg) + 1;
-+
-+		crypto_free_hash(tconn->integrity_tfm);
-+		tconn->integrity_tfm = tfm;
-+
-+		rcu_assign_pointer(tconn->net_conf, new_net_conf);
-+		mutex_unlock(&tconn->conf_update);
-+		mutex_unlock(&tconn->data.mutex);
-+
-+		crypto_free_hash(tconn->peer_integrity_tfm);
- 		kfree(tconn->int_dig_in);
- 		kfree(tconn->int_dig_vv);
-+		tconn->peer_integrity_tfm = peer_tfm;
- 		tconn->int_dig_in = int_dig_in;
- 		tconn->int_dig_vv = int_dig_vv;
-+
-+		if (strcmp(old_net_conf->integrity_alg, integrity_alg))
-+			conn_info(tconn, "peer data-integrity-alg: %s\n", integrity_alg);
-+
-+		synchronize_rcu();
-+		kfree(old_net_conf);
-+
-+		return 0;
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put)	\
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		__is_signed)						\
+ 	__assign(attr_nr, attr_flag, name, nla_type, type,		\
+ 			if (s)						\
+ 				s->name = __get(nla);			\
+@@ -243,7 +245,8 @@ static int s_name ## _from_attrs(struct s_name *s, struct genl_info *info)	\
+ 
+ /* validate_nla() already checked nla_len <= maxlen appropriately. */
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put) \
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, __is_signed)				\
+ 	__assign(attr_nr, attr_flag, name, nla_type, type,		\
+ 			if (s)						\
+ 				s->name ## _len =			\
+@@ -404,14 +407,16 @@ static inline int s_name ## _to_unpriv_skb(struct sk_buff *skb,		\
+ 
+ 
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put)	\
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		__is_signed)						\
+ 	if (!exclude_sensitive || !((attr_flag) & GENLA_F_SENSITIVE)) {	\
+ 		DPRINT_FIELD(">>", nla_type, name, s, NULL);		\
+ 		__put(skb, attr_nr, s->name);				\
  	}
  
- 	clear_bit(CONN_DRY_RUN, &tconn->flags);
-@@ -3063,7 +3098,7 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- 	rcu_read_lock();
- 	nc = rcu_dereference(tconn->net_conf);
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put) \
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, __is_signed)				\
+ 	if (!exclude_sensitive || !((attr_flag) & GENLA_F_SENSITIVE)) {	\
+ 		DPRINT_ARRAY(">>",nla_type, name, s, NULL);		\
+ 		__put(skb, attr_nr, min_t(int, maxlen,			\
+@@ -425,9 +430,11 @@ static inline int s_name ## _to_unpriv_skb(struct sk_buff *skb,		\
+ /* Functions for initializing structs to default values.  */
  
--	if (p_proto != nc->wire_protocol && tconn->agreed_pro_version < 100) {
-+	if (p_proto != nc->wire_protocol) {
- 		conn_err(tconn, "incompatible communication protocols\n");
- 		goto disconnect_rcu_unlock;
- 	}
-@@ -3093,6 +3128,11 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- 		goto disconnect_rcu_unlock;
- 	}
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put)
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		__is_signed)
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put)
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, __is_signed)
+ #undef __u32_field_def
+ #define __u32_field_def(attr_nr, attr_flag, name, default)		\
+ 	x->name = default;
+diff --git a/include/linux/genl_magic_struct.h b/include/linux/genl_magic_struct.h
+index 0fca21f..ba911da 100644
+--- a/include/linux/genl_magic_struct.h
++++ b/include/linux/genl_magic_struct.h
+@@ -87,28 +87,28 @@ enum {
+ /* possible field types */
+ #define __flg_field(attr_nr, attr_flag, name) \
+ 	__field(attr_nr, attr_flag, name, NLA_U8, char, \
+-			nla_get_u8, NLA_PUT_U8)
++			nla_get_u8, NLA_PUT_U8, false)
+ #define __u8_field(attr_nr, attr_flag, name)	\
+ 	__field(attr_nr, attr_flag, name, NLA_U8, unsigned char, \
+-			nla_get_u8, NLA_PUT_U8)
++			nla_get_u8, NLA_PUT_U8, false)
+ #define __u16_field(attr_nr, attr_flag, name)	\
+ 	__field(attr_nr, attr_flag, name, NLA_U16, __u16, \
+-			nla_get_u16, NLA_PUT_U16)
++			nla_get_u16, NLA_PUT_U16, false)
+ #define __u32_field(attr_nr, attr_flag, name)	\
+ 	__field(attr_nr, attr_flag, name, NLA_U32, __u32, \
+-			nla_get_u32, NLA_PUT_U32)
++			nla_get_u32, NLA_PUT_U32, false)
+ #define __s32_field(attr_nr, attr_flag, name)	\
+ 	__field(attr_nr, attr_flag, name, NLA_U32, __s32, \
+-			nla_get_u32, NLA_PUT_U32)
++			nla_get_u32, NLA_PUT_U32, true)
+ #define __u64_field(attr_nr, attr_flag, name)	\
+ 	__field(attr_nr, attr_flag, name, NLA_U64, __u64, \
+-			nla_get_u64, NLA_PUT_U64)
++			nla_get_u64, NLA_PUT_U64, false)
+ #define __str_field(attr_nr, attr_flag, name, maxlen) \
+ 	__array(attr_nr, attr_flag, name, NLA_NUL_STRING, char, maxlen, \
+-			nla_strlcpy, NLA_PUT)
++			nla_strlcpy, NLA_PUT, false)
+ #define __bin_field(attr_nr, attr_flag, name, maxlen) \
+ 	__array(attr_nr, attr_flag, name, NLA_BINARY, char, maxlen, \
+-			nla_memcpy, NLA_PUT)
++			nla_memcpy, NLA_PUT, false)
  
-+	if (strcmp(integrity_alg, nc->integrity_alg)) {
-+		conn_err(tconn, "incompatible setting of the data-integrity-alg\n");
-+		goto disconnect_rcu_unlock;
-+	}
-+
- 	rcu_read_unlock();
- 
- 	return 0;
-@@ -3100,6 +3140,10 @@ static int receive_protocol(struct drbd_tconn *tconn, struct packet_info *pi)
- disconnect_rcu_unlock:
- 	rcu_read_unlock();
- disconnect:
-+	crypto_free_hash(peer_tfm);
-+	crypto_free_hash(tfm);
-+	kfree(int_dig_in);
-+	kfree(int_dig_vv);
- 	conn_request_state(tconn, NS(conn, C_DISCONNECTING), CS_HARD);
- 	return -EIO;
- }
-@@ -4197,6 +4241,7 @@ static struct data_cmd drbd_cmd_handler[] = {
- 	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), receive_skip },
- 	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), receive_out_of_sync },
- 	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), receive_req_conn_state },
-+	[P_PROTOCOL_UPDATE] = { 1, sizeof(struct p_protocol), receive_protocol },
+ /* fields with default values */
+ #define __flg_field_def(attr_nr, attr_flag, name, default) \
+@@ -174,11 +174,13 @@ enum {								\
  };
  
- static void drbdd(struct drbd_tconn *tconn)
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put)	\
++#define __field(attr_nr, attr_flag, name, nla_type, type,	\
++		__get, __put, __is_signed)			\
+ 	T_ ## name = (__u16)(attr_nr | attr_flag),
+ 
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put) \
++#define __array(attr_nr, attr_flag, name, nla_type, type,	\
++		maxlen, __get, __put, __is_signed)		\
+ 	T_ ## name = (__u16)(attr_nr | attr_flag),
+ 
+ #include GENL_MAGIC_INCLUDE_FILE
+@@ -238,11 +240,13 @@ static inline void ct_assert_unique_ ## s_name ## _attributes(void)	\
+ }
+ 
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put)	\
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		__is_signed)						\
+ 	case attr_nr:
+ 
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put) \
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, __is_signed)				\
+ 	case attr_nr:
+ 
+ #include GENL_MAGIC_INCLUDE_FILE
+@@ -260,16 +264,36 @@ static inline void ct_assert_unique_ ## s_name ## _attributes(void)	\
+ struct s_name { s_fields };
+ 
+ #undef __field
+-#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put) \
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		__is_signed)						\
+ 	type name;
+ 
+ #undef __array
+-#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen, __get, __put) \
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, __is_signed)				\
+ 	type name[maxlen];	\
+ 	__u32 name ## _len;
+ 
+ #include GENL_MAGIC_INCLUDE_FILE
+ 
++#undef GENL_struct
++#define GENL_struct(tag_name, tag_number, s_name, s_fields)		\
++enum {									\
++	s_fields							\
++};
++
++#undef __field
++#define __field(attr_nr, attr_flag, name, nla_type, type, __get, __put,	\
++		is_signed)						\
++	F_ ## name ## _IS_SIGNED = is_signed,
++
++#undef __array
++#define __array(attr_nr, attr_flag, name, nla_type, type, maxlen,	\
++		__get, __put, is_signed)				\
++	F_ ## name ## _IS_SIGNED = is_signed,
++
++#include GENL_MAGIC_INCLUDE_FILE
++
+ /* }}}1 */
+ #endif /* GENL_MAGIC_STRUCT_H */
+ /* vim: set foldmethod=marker nofoldenable : */
 -- 
 1.7.4.1
 
