@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1JJIKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:10:11 -0400
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:39349 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab1JJIKJ (ORCPT
+	id S1752821Ab1JJIRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:17:04 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:58112 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab1JJIRC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:10:09 -0400
-Subject: [PATCH] [TRIVIAL] aic7xxx: fix Kconfig references to READMEs
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 10:10:02 +0200
-Message-ID: <1318234202.29265.1.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Oct 2011 04:17:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGsJ_4yKzyFzJwKgA2nkUf6z2fYoQLB48SOJR82DyAvcut7khQ@mail.gmail.com>
+References: <1317629883-13582-1-git-send-email-linus.walleij@stericsson.com>
+	<CAGsJ_4yKzyFzJwKgA2nkUf6z2fYoQLB48SOJR82DyAvcut7khQ@mail.gmail.com>
+Date: Mon, 10 Oct 2011 10:17:01 +0200
+Message-ID: <CACRpkdZ-WTecB-SPXjs531heu4M5Jc-9YvjEV2fPfaHSxiYG2A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinmux: add a driver for the U300 pinmux
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- drivers/scsi/aic7xxx/Kconfig.aic79xx |    3 +--
- drivers/scsi/aic7xxx/Kconfig.aic7xxx |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+On Sat, Oct 8, 2011 at 11:09 AM, Barry Song <21cnbao@gmail.com> wrote:
+>> +static void __init u300_pmx_dumpregs(struct u300_pmx *upmx)
+>> +{
+>> +       u16 regval;
+>> +       int i;
+>> +
+>> +       for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
+>> +               regval = readw(upmx->virtbase + u300_pmx_registers[i]);
+>> +               dev_info(upmx->dev, "PMX%u: 0x%04x\n", i, regval);
+>> +       }
+>> +}
+>
+> is this a debug information or do you want it to be in mainline?
 
-diff --git a/drivers/scsi/aic7xxx/Kconfig.aic79xx b/drivers/scsi/aic7xxx/Kconfig.aic79xx
-index 5e6620f..6739069 100644
---- a/drivers/scsi/aic7xxx/Kconfig.aic79xx
-+++ b/drivers/scsi/aic7xxx/Kconfig.aic79xx
-@@ -31,8 +31,7 @@ config AIC79XX_CMDS_PER_DEVICE
- 	on some devices.  The upper bound is 253.  0 disables tagged queueing.
- 
- 	Per device tag depth can be controlled via the kernel command line
--	"tag_info" option.  See drivers/scsi/aic7xxx/README.aic79xx
--	for details.
-+	"tag_info" option.  See Documentation/scsi/aic79xx.txt for details.
- 
- config AIC79XX_RESET_DELAY_MS
- 	int "Initial bus reset delay in milli-seconds"
-diff --git a/drivers/scsi/aic7xxx/Kconfig.aic7xxx b/drivers/scsi/aic7xxx/Kconfig.aic7xxx
-index 88da670..55ac55e 100644
---- a/drivers/scsi/aic7xxx/Kconfig.aic7xxx
-+++ b/drivers/scsi/aic7xxx/Kconfig.aic7xxx
-@@ -36,8 +36,7 @@ config AIC7XXX_CMDS_PER_DEVICE
- 	on some devices.  The upper bound is 253.  0 disables tagged queueing.
- 
- 	Per device tag depth can be controlled via the kernel command line
--	"tag_info" option.  See drivers/scsi/aic7xxx/README.aic7xxx
--	for details.
-+	"tag_info" option.  See Documentation/scsi/aic7xxx.txt for details.
- 
- config AIC7XXX_RESET_DELAY_MS
- 	int "Initial bus reset delay in milli-seconds"
--- 
-1.7.4.4
+Debug info, I'll delete it. Not that it hurt, but I'll kill it.
 
+>> +       /* Create state holders etc for this driver */
+>> +       upmx = devm_kzalloc(&pdev->dev, sizeof(struct u300_pmx), GFP_KERNEL);
+>
+> and this would be "devm_kzalloc(&pdev->dev, sizeof(*upmx), GFP_KERNEL); " ?
 
+Same semantic effect, but if you prefer it that way, sure :-)
 
+I've seen both used in the kernel before...
+
+Can I have your Reviewed-by: tag after this?
+
+Linus Walleij
