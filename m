@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab1JJF5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 01:57:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44095 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab1JJF5G (ORCPT
+	id S1752006Ab1JJGCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 02:02:21 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:50625 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751177Ab1JJGCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 01:57:06 -0400
-From: Olof Johansson <olof@lixom.net>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, apw@canonical.com,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] checkpatch: warn on found Change-Id lines
-Date: Sun,  9 Oct 2011 22:56:56 -0700
-Message-Id: <1318226216-5317-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 10 Oct 2011 02:02:19 -0400
+Date: Mon, 10 Oct 2011 09:02:14 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mnazarewicz@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+Message-ID: <20111010060212.GA31707@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <cover.1314364322.git.mina86@mina86.com>
+ <befb5cae917585ee1caee515426cb11045ce1d6b.1314364323.git.mina86@mina86.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+In-Reply-To: <befb5cae917585ee1caee515426cb11045ce1d6b.1314364323.git.mina86@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some external projects use repo, which uses a special-format Change-Id
-field in the commit message for some internal bookkeeping (to re-associate
-patches back to review entries, etc). Sometimes they sneak into patches
-going upstream, which is embarrassing for the developer, and annoying
-for the maintainer.
 
-Add checking for these to checkpatch, to catch them before
-posting. Provide a way to disable the check to keep checkpatch useful
-for intra-project use.
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+On Fri, Aug 26, 2011 at 03:18:35PM +0200, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
+>=20
+> This commit replaces usb_gadget's is_dualspeed field with
+> a max_speed field.
 
- scripts/checkpatch.pl |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+missing Signed-off-by
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 3dfc471..bac1c93 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -18,6 +18,7 @@ my $quiet = 0;
- my $tree = 1;
- my $chk_signoff = 1;
- my $chk_patch = 1;
-+my $chk_changeid = 1;
- my $tst_only;
- my $emacs = 0;
- my $terse = 0;
-@@ -45,6 +46,7 @@ Options:
-   -q, --quiet                quiet
-   --no-tree                  run without a kernel tree
-   --no-signoff               do not check for 'Signed-off-by' line
-+  --no-change-id             don't complain about 'Change-Id' lines
-   --patch                    treat FILE as patchfile (default)
-   --emacs                    emacs compile window format
-   --terse                    one line per report
-@@ -99,6 +101,7 @@ GetOptions(
- 	'q|quiet+'	=> \$quiet,
- 	'tree!'		=> \$tree,
- 	'signoff!'	=> \$chk_signoff,
-+	'change-id!'	=> \$chk_changeid,
- 	'patch!'	=> \$chk_patch,
- 	'emacs!'	=> \$emacs,
- 	'terse!'	=> \$terse,
-@@ -341,6 +344,7 @@ sub deparenthesize {
- }
- 
- $chk_signoff = 0 if ($file);
-+$chk_changeid = 0 if ($file);
- 
- my @dep_includes = ();
- my @dep_functions = ();
-@@ -1578,6 +1582,10 @@ sub process {
- 				}
- 			}
- 		}
-+# Check for Change-Id lines:
-+		if ($line =~ /^\s*change-id:/i && $chk_changeid) {
-+			ERROR("CHANGE_ID", "Found Change-Id line\n", $herecurr);
-+		}
- 
- # Check for wrappage within a valid hunk of the file
- 		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
--- 
-1.7.4.1
+--=20
+balbi
 
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOkopkAAoJEAv8Txj19kN1KAMH/A82C5iLjUJtz2PwIkDPkvy7
+mYZ/bTmlpmaAQXj2PViQO3nOU8TiQV43w/qz+lrDnGaIgw5yeDeg5mAi35RwD2bI
+gMF4AXhMucLp2mpNQydG2O2C+4MZl4S/J/Hg9MqNqf9jKezKHcT2NLUxeRp10prG
+N52sYnAHQELk9yIJyXGFf4vyevuoG2ftvr7rd9UTidMQc1mhi7Pno7S2vv5bSX6j
+prwgc6umj5MQiDdbIXxMdIzvQaxYGWRn7Uh9ubd3G4Gf4vHvyZCyfdhLhKNE9bLp
+fK0wGl6+B8R91+jjnvmL+glz9kQBx+l8o7zOq5m8P9C7YpCi2pXzku/Ooe77pBc=
+=FepR
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
