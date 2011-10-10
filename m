@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab1JJIBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:01:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11317 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab1JJIB3 (ORCPT
+	id S1752699Ab1JJIDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:03:42 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41650 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752455Ab1JJIDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:01:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 10 Oct 2011 01:01:11 -0700
-Date: Mon, 10 Oct 2011 11:01:09 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Erik Gilling <konkers@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 3/3] arm/tegra: device tree support for ventana board
-Message-ID: <20111010080109.GQ9003@tbergstrom-lnx.Nvidia.com>
-References: <1317647918-22694-1-git-send-email-pdeschrijver@nvidia.com>
- <1317647918-22694-4-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173B23B2FA@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173B23B2FA@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Oct 2011 04:03:40 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18wz9YBTHsw3xEpgDrvS4eKa852c1pkqgeymqFa3q
+	wPe+lF6vzojWMy
+Subject: [patch] cpusets, cgroups: disallow attaching kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <1318224892.6161.45.camel@marge.simson.net>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Oct 2011 10:03:34 +0200
+Message-ID: <1318233815.6527.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 07, 2011 at 08:04:34PM +0200, Stephen Warren wrote:
-> Peter De Schrijver wrote at Monday, October 03, 2011 7:19 AM:
+On Mon, 2011-10-10 at 07:34 +0200, Mike Galbraith wrote:
+> Maybe the below (which seems to have been stillborn) should be done to
+> cgroups as well.  Postmortem: kthreadd is attached to a cgroup with no
+> rt_runtime allocated, gives birth to severely handicapped kstop threads,
+> humongous crash dump follows.
 > 
-> ...
-> > diff --git a/arch/arm/boot/dts/tegra-ventana.dts b/arch/arm/boot/dts/tegra-ventana.dts
-> ...
-> > +	chosen {
-> > +		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/ram rdinit=/sbin/init";
+> Fiddling with kthreadd is user error, but since it makes no sense to
+> move the thing, why not just say no, and save the user's toes some
+> needless wear and tear.
 > 
-> It might be nice to make this identical to what Harmony and Seaboard have here.
-> 
-> Still, it doesn't matter a lot, since I (and I imagine most people) have
-> to edit this command-line to point at the correct partition for my disks
-> anyway; eventually, U-Boot should be providing/re-writing this property
-> too.
-> 
-> ...
-> > diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-> ...
-> > -	if (of_machine_is_compatible("nvidia,harmony"))
-> > -		harmony_pinmux_init();
-> > -	else if (of_machine_is_compatible("nvidia,seaboard"))
-> > -		seaboard_pinmux_init();
-> > +	for (i = 0; i < ARRAY_SIZE(pinmux_configs); i++) {
-> > +		if (of_machine_is_compatible(pinmux_configs[i].machine)) {
-> > +			pinmux_configs[i].init();
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> > +	if (i == ARRAY_SIZE(pinmux_configs))
-> > +		printk(KERN_WARNING "Unknown platform! Pinmuxing not initialized\n");
-> 
-> Should that be WARN() instead of printk?
+> > If cpusets doesn't want to let PF_THREAD_BOUND threads out, how about
+> > cpusets not letting userland scripts attach kthreadd instead?
+> > 
+> > cpusets: disallow moving kthreadd into a cpuset.
 
-pr_warning() might be better. Or do we want a backtrace and a tainted kernel
-in this case? 
+So how about this, both dirt simple and effective.
 
-Cheers,
+cpusets, cgroups: disallow attaching kthreadd
 
-Peter.
+Allowing kthreadd to be moved to a non-root group makes no sense, it being
+a global resource, and needlessly leads unsuspecting users toward trouble.
+
+1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+allocated is not schedulable.  Simple user error, but harmful to the box.
+
+2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+rendering the cpuset immortal.
+
+Save the user some unexpected trouble, just say no.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+---
+ kernel/cpuset.c |    6 ++++--
+ kernel/sched.c  |    9 +++++++++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+Index: linux-3.0-tip/kernel/cpuset.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/cpuset.c
++++ linux-3.0-tip/kernel/cpuset.c
+@@ -59,6 +59,7 @@
+ #include <linux/mutex.h>
+ #include <linux/workqueue.h>
+ #include <linux/cgroup.h>
++#include <linux/kthread.h>
+ 
+ /*
+  * Workqueue for cpuset related tasks.
+@@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
+ 	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+ 	 * applicable for such threads.  This prevents checking for success of
+ 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+-	 * be changed.
++	 * be changed.  We also disallow attaching kthreadd, to prevent it's
++	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
+ 	 */
+-	if (tsk->flags & PF_THREAD_BOUND)
++	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+ 		return -EINVAL;
+ 
+ 	return 0;
+Index: linux-3.0-tip/kernel/sched.c
+===================================================================
+--- linux-3.0-tip.orig/kernel/sched.c
++++ linux-3.0-tip/kernel/sched.c
+@@ -9132,6 +9132,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
+ static int
+ cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ {
++	/*
++	 * kthreadd can fork workers for an RT workqueue in a cgroup
++	 * which may or may not have rt_runtime allocated.  Just say no,
++	 * as attaching a global resource to a non-root group  doesn't
++	 * make any sense anyway.
++	 */
++	if (tsk == kthreadd_task)
++		return -EINVAL;
++
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
+ 		return -EINVAL;
+
+
