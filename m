@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1JJTbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 15:31:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60833 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab1JJTbJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 15:31:09 -0400
+	id S1754648Ab1JJToH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 15:44:07 -0400
+Received: from claw.goop.org ([74.207.240.146]:41516 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753026Ab1JJToG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 15:44:06 -0400
+Message-ID: <4E934B01.4040805@goop.org>
+Date: Mon, 10 Oct 2011 12:44:01 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <s5hy5wtxbmm.wl%tiwai@suse.de>
-References: <1317721043.11231.2.camel@jmachine> <CAB=NE6X81KPvx-yt33MghmoftUznoP-jYO8sBxoeW_0fzQ1pdA@mail.gmail.com>
- <s5hy5wtxbmm.wl%tiwai@suse.de>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 10 Oct 2011 12:30:45 -0700
-Message-ID: <CAB=NE6UWoFVA5-Jy7v87qbSkdujpX2Oki7EhNfihV2nY3BdTCQ@mail.gmail.com>
-Subject: Re: [alsa-devel] Using spdiff for backporting
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jesper Andersen <jespera@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        alsa-devel@alsa-project.org, julia@diku.dk,
-        linux-kernel@vger.kernel.org
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+CC: xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "Andi@domain.invalid" <Andi@domain.invalid>,
+        Nick Piggin <npiggin@kernel.dk>, KVM <kvm@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Kleen <andi@firstfloor.org>,
+        Avi Kivity <avi@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the@domain.invalid" <the@domain.invalid>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Xen-devel] [PATCH 00/10] [PATCH RFC V2] Paravirtualized ticketlocks
+References: <cover.1315878463.git.jeremy.fitzhardinge@citrix.com> <4E8DE7F1.3050108@goop.org> <2523929.AGG4U997NO@d-allen> <2222671.j13duhYQpt@d-allen>
+In-Reply-To: <2222671.j13duhYQpt@d-allen>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 5:41 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Fri, 7 Oct 2011 10:41:06 -0700,
-> Luis R. Rodriguez wrote:
+On 10/10/2011 07:01 AM, Stephan Diestelhorst wrote:
+> On Monday 10 October 2011, 07:00:50 Stephan Diestelhorst wrote:
+>> On Thursday 06 October 2011, 13:40:01 Jeremy Fitzhardinge wrote:
+>>> On 10/06/2011 07:04 AM, Stephan Diestelhorst wrote:
+>>>> On Wednesday 28 September 2011, 14:49:56 Linus Torvalds wrote:
+>>>>> Which certainly should *work*, but from a conceptual standpoint, isn't
+>>>>> it just *much* nicer to say "we actually know *exactly* what the upper
+>>>>> bits were".
+>>>> Well, we really do NOT want atomicity here. What we really rather want
+>>>> is sequentiality: free the lock, make the update visible, and THEN
+>>>> check if someone has gone sleeping on it.
+>>>>
+>>>> Atomicity only conveniently enforces that the three do not happen in a
+>>>> different order (with the store becoming visible after the checking
+>>>> load).
+>>>>
+>>>> This does not have to be atomic, since spurious wakeups are not a
+>>>> problem, in particular not with the FIFO-ness of ticket locks.
+>>>>
+>>>> For that the fence, additional atomic etc. would be IMHO much cleaner
+>>>> than the crazy overflow logic.
+>>> All things being equal I'd prefer lock-xadd just because its easier to
+>>> analyze the concurrency for, crazy overflow tests or no.  But if
+>>> add+mfence turned out to be a performance win, then that would obviously
+>>> tip the scales.
+>>>
+>>> However, it looks like locked xadd is also has better performance:  on
+>>> my Sandybridge laptop (2 cores, 4 threads), the add+mfence is 20% slower
+>>> than locked xadd, so that pretty much settles it unless you think
+>>> there'd be a dramatic difference on an AMD system.
+>> Indeed, the fences are usually slower than locked RMWs, in particular,
+>> if you do not need to add an instruction. I originally missed that
+>> amazing stunt the GCC pulled off with replacing the branch with carry
+>> flag magic. It seems that two twisted minds have found each other
+>> here :)
 >>
->> > Also, in the slides from the plumbers-conf. I think I saw it mentioned
->> > that there's also an alsa-compat git-tree somewhere. Maybe that is a
->> > more compelling usecase? I was unable to find it though so I'd
->> > appreciate a link.
->>
->> It was on kernel.org, but if it got rm -rf'd then its gone as I do not
->> have a local copy.
->
-> Oh, I didn't know of such a tree.  So you created alsa driver build
-> system with your spdiff?  That's interesting.
+>> One of my concerns was adding a branch in here... so that is settled,
+>> and if everybody else feels like this is easier to reason about...
+>> go ahead :) (I'll keep my itch to myself then.)
+> Just that I can't... if performance is a concern, adding the LOCK
+> prefix to the addb outperforms the xadd significantly:
 
-Nope, this was pre-spdiff days. It was just a proof of concept I
-wanted to make just to see how long it would take me to do it and how
-clean it was. It was pretty trivial. I'm now working with Jesper on
-seeing how best we can use spdiff for a unified backport of the
-kernel.
+Hm, yes.  So using the lock prefix on add instead of the mfence?  Hm.
 
->> The compat-alsa stuff though was determined to be
->> superflous with the ALSA's team's own backport work which is currently
->> independent.
->
-> Yes, the external alsa-driver build tree has existed since 10 years
-> ago :)  It was even possible to build with 2.2/2.4 kernels until
-> recently.
->
-> The current tree is found in github,
->        git://github.com/tiwai/alsa-driver-build.git
-
-That's pretty darn impressive.
-
->> My hope though is to unify these through the compat.git /
->> compat-kernel (currently just called compat-wireless) effort.
->
-> The common framework would be really nice to have.
-
-Agreed!
-
-> V4L also have own build system, and possible other subsystem trees too.
-
-Heh, yeah for Video at least Ubuntu guys just backported a newer DRM
-into their distro kernel. I feel as if a generic backport would make
-more sense. I have already split out all generic kernel backport stuff
-into its own module, compat.git, and anything else that cannot be
-backported within an independent module we'e kept on compat-wireless.
-compat-wireless at this point should really be called compat-net but
-I've been lazy to rename it.
-
-At plumbers I put together slides for metrics of what goes into compat
-or compat-wireles, how many lines of code we pull and how much code
-consists of backport work. The conclusion was with compat backporting
-a new subsystem becomes proportionally easier. Then the legwork to
-keep compat-wireless up to date can benefit from spdiff as the
-spatches can eseentially generate new patches to help backport new
-drivers after just two drivers get backported for a condition which
-compat cannot address.
-
-The slides are at:
-
-http://bombadil.infradead.org/~mcgrof/presentations/backport/kernel-backport-for-good.pdf
-
-  Luis
+    J
