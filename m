@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab1JJXhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 19:37:07 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46177 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753264Ab1JJXhF (ORCPT
+	id S1753610Ab1JJXip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 19:38:45 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:46733 "EHLO
+	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752071Ab1JJXio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 19:37:05 -0400
-X-Sasl-enc: WP0Kohj64L8C5aj4rLHBGQP849+B2o0gzAkAXXct5fbi 1318289824
-Date: Mon, 10 Oct 2011 16:35:31 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly
- reserved on a per-section basis
-Message-ID: <20111010233531.GA7234@kroah.com>
-References: <20111010071119.GE6418@suse.de>
- <20111010150038.ac161977.akpm@linux-foundation.org>
- <20111010232403.GA30513@kroah.com>
- <20111010162813.7a470ae4.akpm@linux-foundation.org>
+	Mon, 10 Oct 2011 19:38:44 -0400
+Date: Mon, 10 Oct 2011 19:38:42 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: eranian@google.com
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, anton@samba.org,
+        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
+Subject: Re: Oprofile Regression Caused by commit
+ e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25 on PPC
+Message-ID: <20111010233842.GC24583@mgebm.net>
+References: <20111007204247.GA5444@mgebm.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
 Content-Disposition: inline
-In-Reply-To: <20111010162813.7a470ae4.akpm@linux-foundation.org>
+In-Reply-To: <20111007204247.GA5444@mgebm.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 04:28:13PM -0700, Andrew Morton wrote:
-> On Mon, 10 Oct 2011 16:24:03 -0700
-> Greg KH <greg@kroah.com> wrote:
-> 
-> > On Mon, Oct 10, 2011 at 03:00:38PM -0700, Andrew Morton wrote:
-> > > On Mon, 10 Oct 2011 08:11:19 +0100
-> > > Mel Gorman <mgorman@suse.de> wrote:
-> > > 
-> > > > It is expected that memory being brought online is PageReserved
-> > > > similar to what happens when the page allocator is being brought up.
-> > > > Memory is onlined in "memory blocks" which consist of one or more
-> > > > sections. Unfortunately, the code that verifies PageReserved is
-> > > > currently assuming that the memmap backing all these pages is virtually
-> > > > contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-> > > > As a result, memory hot-add is failing on !VMEMMAP configurations
-> > > > with the message;
-> > > > 
-> > > > kernel: section number XXX page number 256 not reserved, was it already online?
-> > > > 
-> > > > This patch updates the PageReserved check to lookup struct page once
-> > > > per section to guarantee the correct struct page is being checked.
-> > > > 
-> > > 
-> > > Nathan's earlier version of this patch is already in linux-next, via
-> > > Greg.  We should drop the old version and get the new one merged
-> > > instead.
-> > 
-> > Ok, care to send me what exactly needs to be reverted and what needs to
-> > be added?
-> 
-> Drop
-> 
-> commit 54f23eb7ba7619de85d8edca6e5336bc33072dbd
-> Author: Nathan Fontenot <nfont@austin.ibm.com>
-> Date:   Mon Sep 26 10:22:33 2011 -0500
-> 
->     memory hotplug: Correct page reservation checking
-> 
-> and replace it with start-of-this-thread.
-> 
-> That's assuming that Mel's update passes Nathan's review and testing :)
 
-Ok, I'll wait for that review and testing, and then can someone send me
-the patch at the start-of-this-thread as I no longer seem to be able to
-find it :(
+--ncSAzJYg3Aa9+CRW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-greg k-h
+On Fri, 07 Oct 2011, Eric B Munson wrote:
+
+> This commit seems to have caused a regression with oprofile.  It is fairl=
+y easy
+> to trigger, simply run oprofile monitoring an event that will fire (somet=
+hing
+> frequent like CPU cycles) causes oprofile to fail saying that the PMU is =
+in use.
+> If I disable CONFIG_CGROUP_PERF, everything goes back to working.  I susp=
+ect the
+> problem is that the PMU is being initialized without being reserved for p=
+erf.  I
+> am not yet sure of the right fix yet so if you have any suggestions I wou=
+ld
+> appreciate them.
+>=20
+> Eric
+
+This isn't the best description of the behavior we see, what happens is at =
+some
+point in the profiling session the MMCR register is clobbered by
+perf_cgroup_switch() which calls perf_pmu_enable() without reserving the PMC
+hardware.  When this happens oprofile stops counting.  It doesn't happen ea=
+ch
+time so some runs show event counts that are reasonable, but it can also le=
+ad to
+event counts that are smaller than expected, or completely missing.
+
+Eric
+
+--ncSAzJYg3Aa9+CRW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOk4ICAAoJEKhG9nGc1bpJbxoQAJiZLtnVQ5Cs41TtFXRotoWn
+qjNGR76jFWDqSw9Bh52DBAp9+uvtlDqn309deQtm79C70TW1Pe73gIZdtrbwqduN
+Iyy5+Nnlid8dBTkH4mEXQuJf1fdKifXJ2u4b+4sC061qCmauXJrZQXFBMm4J4ZO0
+o+M1GIzH3rO0WAJcvHPSfR20OFn1d1ETZiaWv8nKyUTr/kwEamZ/p8ppES4Ar3JN
+eRqpQ2CLhgBj9x+ptW76Y5z8Mgf4MTkNfyQ9mxehy3YCpPf2hBfhhy+DMXxoxl0z
+qEv1Fbp3tvJ+JzyRcaivWw72xc4bxvfYAb6iDU4F0nr+s492uVeiR1I5yzX/dtAf
+Eu8vXRCciIHSvZPNDoZgMnulppFU1pwEC+F6Gg9BaaOQpHCM8HB6cDEmrXQV6fCF
+6PzF5FQi1bR+6WRn58sYLQTwCm6Q7n3kaqwn/qLMUN9H9SzG9EwjcCTHUKI0S/Hz
+Fjy+UvbW8O43kSm9AN1/peNRYpGjwlJ13BaKCsQWIETW3acVqBoZbq4ZQxi4i9oL
+yXk7kc6vyTG0bJvSPoabT3ySFng76X86e9N8Q1x8npDRvJ5Ib3xtFdHy8ThueIDc
+7JhLvG//vWx4DeGY6PZi1dNZIgmksnx1z0vlKTMclxyXIfMJrIddEpjzidbpOK4B
+i3kVOxXieEEL613x4W7d
+=dAk7
+-----END PGP SIGNATURE-----
+
+--ncSAzJYg3Aa9+CRW--
