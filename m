@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1JJHim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 03:38:42 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:33487 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab1JJHik (ORCPT
+	id S1752629Ab1JJHk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 03:40:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49859 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab1JJHkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 03:38:40 -0400
-Message-ID: <4E92A0F4.7060107@free-electrons.com>
-Date: Mon, 10 Oct 2011 09:38:28 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Jarkko Nikula <jarkko.nikula@bitmer.com>
-CC: Michael Opdenacker <michael.opdenacker@linaro.org>, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
-        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+	Mon, 10 Oct 2011 03:40:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=Uk4vPc6lrvlNcKMsQgKzvIDatHU5g70/HwsjuUTkQBJJI+b7N9gaw0ivrwnv/R/h4
+	KD0wfJCLviyKx9k3HwJHA==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] omap: sound: fix "ambiguous else" warning
-References: <1318223228-15671-1-git-send-email-michael.opdenacker@linaro.org> <1318223228-15671-2-git-send-email-michael.opdenacker@linaro.org> <4E9296A2.50003@bitmer.com>
-In-Reply-To: <4E9296A2.50003@bitmer.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCHv5 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+References: <cover.1314364322.git.mina86@mina86.com>
+ <befb5cae917585ee1caee515426cb11045ce1d6b.1314364323.git.mina86@mina86.com>
+ <20111010060212.GA31707@legolas.emea.dhcp.ti.com>
+Date: Mon, 10 Oct 2011 09:40:09 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mpn@google.com>
+Organization: Google
+Message-ID: <op.v24kw72ipw9a85@mpn-glaptop>
+In-Reply-To: <20111010060212.GA31707@legolas.emea.dhcp.ti.com>
+User-Agent: Opera Mail/11.51 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2011 08:54 AM, Jarkko Nikula wrote:
-> Hi
->
-> On 10/10/2011 08:07 AM, Michael Opdenacker wrote:
->> This patch applies against Tony Lindgren's linux-omap tree
->> It fixes "ambiguous else" warnings at compile time.
+On Mon, 10 Oct 2011 08:02:14 +0200, Felipe Balbi <balbi@ti.com> wrote:
+
+> On Fri, Aug 26, 2011 at 03:18:35PM +0200, Michal Nazarewicz wrote:
+>> From: Michal Nazarewicz <mina86@mina86.com>
 >>
->> Signed-off-by: Michael Opdenacker<michael.opdenacker@linaro.org>
->> ---
->>   sound/soc/omap/omap-mcbsp.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
-> This is already fixed in ASoC tree by following commit
+>> This commit replaces usb_gadget's is_dualspeed field with
+>> a max_speed field.
 >
-> commit 141947e6ceb8f82fe8382b26f093bb379af9af15
-> Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Date:   Mon Sep 26 10:56:42 2011 +0300
->
->     ASoC: omap-mcbsp: Fix compile time warning about ambiguous ‘else’
-Perfect, thanks. I'll keep an eye on the ASoC tree next time.
+> missing Signed-off-by
 
-Michael.
-
-
--- 
-Michael Opdenacker, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
-+ 33 621 604 642
-
+Sorry, forgot about -s.  I'll try to send fixed patches later today
+or tomorrow.
