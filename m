@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab1JJW4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 18:56:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56521 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab1JJW4q (ORCPT
+	id S1753372Ab1JJXK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 19:10:58 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:43464 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750826Ab1JJXK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 18:56:46 -0400
-Date: Mon, 10 Oct 2011 15:56:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCHv16 0/9] Contiguous Memory Allocator
-Message-Id: <20111010155642.38df59af.akpm@linux-foundation.org>
-In-Reply-To: <201110071827.06366.arnd@arndb.de>
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
-	<201110071827.06366.arnd@arndb.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 10 Oct 2011 19:10:57 -0400
+X-Authenticated: #36809985
+X-Provags-ID: V01U2FsdGVkX1+AfAFe9f+A0MNHp9BVsqgy/51oBMV5nns+GWBaU4
+	Wcb8vj8n4DrXbf
+Message-ID: <1318288249.12675.6.camel@LAPJFS>
+Subject: [PATCH] Fix file references in Kconfig files
+From: Johann Felix Soden <johfel@gmx.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 11 Oct 2011 01:10:49 +0200
+In-Reply-To: <alpine.LNX.2.00.1110102350170.14768@pobox.suse.cz>
+References: <1317683499.5990.2.camel@LAPJFS> <4E934066.80109@xenotime.net>
+	 <alpine.LNX.2.00.1110102350170.14768@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3-2 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Oct 2011 18:27:06 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
+From: Johann Felix Soden <johfel@users.sourceforge.net>
 
-> On Thursday 06 October 2011, Marek Szyprowski wrote:
-> > Once again I decided to post an updated version of the Contiguous Memory
-> > Allocator patches.
-> > 
-> > This version provides mainly a bugfix for a very rare issue that might
-> > have changed migration type of the CMA page blocks resulting in dropping
-> > CMA features from the affected page block and causing memory allocation
-> > to fail. Also the issue reported by Dave Hansen has been fixed.
-> > 
-> > This version also introduces basic support for x86 architecture, what
-> > allows wide testing on KVM/QEMU emulators and all common x86 boxes. I
-> > hope this will result in wider testing, comments and easier merging to
-> > mainline.
-> 
-> Hi Marek,
-> 
-> I think we need to finally get this into linux-next now, to get some
-> broader testing. Having the x86 patch definitely helps here becauses
-> it potentially exposes the code to many more testers.
-> 
-> IMHO it would be good to merge the entire series into 3.2, since
-> the ARM portion fixes an important bug (double mapping of memory
-> ranges with conflicting attributes) that we've lived with for far
-> too long, but it really depends on how everyone sees the risk
-> for regressions here. If something breaks in unfixable ways before
-> the 3.2 release, we can always revert the patches and have another
-> try later.
-> 
-> It's also not clear how we should merge it. Ideally the first bunch
-> would go through linux-mm, and the architecture specific patches
-> through the respective architecture trees, but there is an obvious
-> inderdependency between these sets.
-> 
-> Russell, Andrew, are you both comfortable with putting the entire
-> set into linux-mm to solve this? Do you see this as 3.2 or rather
-> as 3.3 material?
-> 
+This patch fixes file references to moved or deleted files
+outside of Documentation/.
 
-Russell's going to hate me, but...
+Signed-off-by: Johann Felix Soden <johfel@users.sourceforge.net>
 
-I do know that he had substantial objections to at least earlier
-versions of this, and he is a guy who knows of what he speaks.
+---
+This patch fixes references that are not in the big patch from 
+Paul Bolle or in my drivers/ide/Kconfig patch (both in trivial.git).
 
-So I would want to get a nod from rmk on this work before proceeding. 
-If that nod isn't available then let's please identify the issues and
-see what we can do about them.
+ arch/cris/Kconfig          |    4 ++--
+ arch/cris/arch-v10/Kconfig |   12 ++++++------
+ drivers/net/irda/Kconfig   |    2 +-
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index 17addac..408b055 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -282,8 +282,8 @@ config ETRAX_RTC
+ 	  Enables drivers for the Real-Time Clock battery-backed chips on
+ 	  some products. The kernel reads the time when booting, and
+ 	  the date can be set using ioctl(fd, RTC_SET_TIME, &rt) with rt a
+-	  rtc_time struct (see <file:include/asm-cris/rtc.h>) on the /dev/rtc
+-	  device.  You can check the time with cat /proc/rtc, but
++	  rtc_time struct (see <file:arch/cris/include/asm/rtc.h>) on the
++	  /dev/rtc device.  You can check the time with cat /proc/rtc, but
+ 	  normal time reading should be done using libc function time and
+ 	  friends.
+ 
+diff --git a/arch/cris/arch-v10/Kconfig b/arch/cris/arch-v10/Kconfig
+index adc164e..df9a38b 100644
+--- a/arch/cris/arch-v10/Kconfig
++++ b/arch/cris/arch-v10/Kconfig
+@@ -24,8 +24,8 @@ config ETRAX_PA_LEDS
+ 	help
+ 	  The ETRAX network driver is responsible for flashing LED's when
+ 	  packets arrive and are sent.  It uses macros defined in
+-	  <file:include/asm-cris/io.h>, and those macros are defined after what
+-	  YOU choose in this option.  The actual bits used are configured
++	  <file:arch/cris/include/asm/io.h>, and those macros are defined after
++	  what YOU choose in this option.  The actual bits used are configured
+ 	  separately.  Select this if the LEDs are on port PA.  Some products
+ 	  put the leds on PB or a memory-mapped latch (CSP0) instead.
+ 
+@@ -34,8 +34,8 @@ config ETRAX_PB_LEDS
+ 	help
+ 	  The ETRAX network driver is responsible for flashing LED's when
+ 	  packets arrive and are sent.  It uses macros defined in
+-	  <file:include/asm-cris/io.h>, and those macros are defined after what
+-	  YOU choose in this option.  The actual bits used are configured
++	  <file:arch/cris/include/asm/io.h>, and those macros are defined after
++	  what YOU choose in this option.  The actual bits used are configured
+ 	  separately.  Select this if the LEDs are on port PB.  Some products
+ 	  put the leds on PA or a memory-mapped latch (CSP0) instead.
+ 
+@@ -44,8 +44,8 @@ config ETRAX_CSP0_LEDS
+ 	help
+ 	  The ETRAX network driver is responsible for flashing LED's when
+ 	  packets arrive and are sent. It uses macros defined in
+-	  <file:include/asm-cris/io.h>, and those macros are defined after what
+-	  YOU choose in this option.  The actual bits used are configured
++	  <file:arch/cris/include/asm/io.h>, and those macros are defined after
++	  what YOU choose in this option.  The actual bits used are configured
+ 	  separately.  Select this if the LEDs are on a memory-mapped latch
+ 	  using chip select CSP0, this is mapped at 0x90000000.
+ 	  Some products put the leds on PA or PB instead.
+diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
+index 25bb2a0..a40fab4 100644
+--- a/drivers/net/irda/Kconfig
++++ b/drivers/net/irda/Kconfig
+@@ -183,7 +183,7 @@ config OLD_BELKIN_DONGLE
+ 	  Say Y here if you want to build support for the Adaptec Airport 1000
+ 	  and 2000 dongles.  If you want to compile it as a module, choose
+ 	  M here. Some information is contained in the comments
+-	  at the top of <file:drivers/net/irda/old_belkin.c>.
++	  at the top of <file:drivers/net/irda/old_belkin-sir.c>.
+ 
+ config ACT200L_DONGLE
+ 	tristate "ACTiSYS IR-200L dongle"
+-- 
+1.7.6.3
+
+
 
