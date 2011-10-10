@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab1JJM6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:58:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55316 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab1JJM63 (ORCPT
+	id S1754116Ab1JJNDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 09:03:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50364 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1JJNDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:58:29 -0400
-Subject: Re: [PATCH 2/3][RFC] tracing: Add optional percpu buffers for
- trace_printk()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1318250240.7904.74.camel@gandalf.stny.rr.com>
-References: <20111008170227.792806635@goodmis.org>
-	 <20111008171259.462646120@goodmis.org> <1318244913.14400.19.camel@laptop>
-	 <1318250240.7904.74.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 15:04:33 +0200
-Message-ID: <1318251873.14400.30.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Mon, 10 Oct 2011 09:03:35 -0400
+Message-ID: <4E92ED1F.9020902@linaro.org>
+Date: Mon, 10 Oct 2011 15:03:27 +0200
+From: Michael Opdenacker <michael.opdenacker@linaro.org>
+Organization: Linaro
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: jarkko.nikula@bitmer.com, lrg@ti.com, perex@perex.cz, tiwai@suse.de,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] omap: sound: fix checkpatch.pl error
+References: <1318223228-15671-1-git-send-email-michael.opdenacker@linaro.org> <1318223228-15671-3-git-send-email-michael.opdenacker@linaro.org> <20111010093240.GB3040@opensource.wolfsonmicro.com>
+In-Reply-To: <20111010093240.GB3040@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 08:37 -0400, Steven Rostedt wrote:
+Hi Mark,
 
-> This will make debugging some of my embedded boards difficult (the ones
-> where I have no way to add kernel command lines). If there's a problem
-> at boot up, I will have to modify the kernel to get this to print.
-> 
-> For those that don't know the tracing code, it will just simply break.
-> 
-> Unless you want me to keep the kconfig option that enables it
-> permanently. Then I could do this.
+On 10/10/2011 11:32 AM, Mark Brown wrote:
+> Applied, but please do try to make sure your changelogs resemble those
+> for the rest of the subsystem.  Especially for trivial patches it's not
+> good to increase the effort required to apply them.
+Thanks! I will use "ASoC" in my commit messages if I understand correctly.
 
-There's a fairly easy fix for that, initialize it at boot, and free once
-userspace it up and running if no trace_printk() came by.
+I must confess I didn't pay enough attention to the list of recipients,
+which I just got from scripts/get_maintainer.pl.
 
-> I also expect tglx to throw frozen sharks at me for "why doesn't
-> trace_printk() work anymore?!!!!"
+I will be more careful next time.
 
-I'm sure you'll get over that :-)
+Thanks again,
+
+Michael.
+
+-- 
+Michael Opdenacker - Community Manager
+Linaro, http://linaro.org
+Cell: +33 621 604 642
+IRC: 'opm' in #linaro on irc.freenode.net
 
