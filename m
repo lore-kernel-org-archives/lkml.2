@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab1JJLuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:50:32 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52219 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab1JJLub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:50:31 -0400
-Date: Mon, 10 Oct 2011 13:48:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-Message-ID: <20111010114840.GC17079@elte.hu>
-References: <CAFLxGvzpvJ1mgdcbrq+3h5EA+VOhZDR9BY27uWGgsmV4TWYb4A@mail.gmail.com>
- <20111005223055.GG14406@localhost.pp.htv.fi>
- <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
- <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
- <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
- <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
- <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
- <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
- <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
- <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753899Ab1JJLzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:55:16 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:45011 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab1JJLzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 07:55:12 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 02/13] drbd: protect updates to integrits_tfm by tconn->data->mutex
+Date: Mon, 10 Oct 2011 13:54:55 +0200
+Message-Id: <1318247706-7732-3-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
+References: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since we need to hold that mutex anyways to make sure the peer
+gets that change in the right position in the data stream,
+it makes a lot of sense to use the same mutex to ensure existence
+of the tfm.
 
-* richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h  |    2 +-
+ drivers/block/drbd/drbd_main.c |    9 +++++----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-> From UML's point of view the current situation is odd. UML will no 
-> longer run on top of a default 3.1 kernel.
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index e167228..c59012f 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -848,7 +848,7 @@ struct drbd_tconn {			/* is a resource from the config file */
+ 	struct list_head out_of_sequence_requests;
+ 
+ 	struct crypto_hash *cram_hmac_tfm;
+-	struct crypto_hash *integrity_tfm;  /* checksums we compute */
++	struct crypto_hash *integrity_tfm;  /* checksums we compute, updates protected by tconn->data->mutex */
+ 	struct crypto_hash *peer_integrity_tfm;  /* checksums we verify */
+ 	struct crypto_hash *csums_tfm;
+ 	struct crypto_hash *verify_tfm;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 939d31b..7c806b9 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -1720,11 +1720,11 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
+ 	int dgs;
+ 	int err;
+ 
++	sock = &mdev->tconn->data;
++	p = drbd_prepare_command(mdev, sock);
+ 	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_tfm) ?
+ 		crypto_hash_digestsize(mdev->tconn->integrity_tfm) : 0;
+ 
+-	sock = &mdev->tconn->data;
+-	p = drbd_prepare_command(mdev, sock);
+ 	if (!p)
+ 		return -EIO;
+ 	p->sector = cpu_to_be64(req->i.sector);
+@@ -1793,11 +1793,12 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 	int err;
+ 	int dgs;
+ 
++	sock = &mdev->tconn->data;
++	p = drbd_prepare_command(mdev, sock);
++
+ 	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_tfm) ?
+ 		crypto_hash_digestsize(mdev->tconn->integrity_tfm) : 0;
+ 
+-	sock = &mdev->tconn->data;
+-	p = drbd_prepare_command(mdev, sock);
+ 	if (!p)
+ 		return -EIO;
+ 	p->sector = cpu_to_be64(peer_req->i.sector);
+-- 
+1.7.4.1
 
-This needs to be fixed (perhaps worked around in UML if that's 
-possible and if you agree with that) - or barring a real obvious fix 
-needs to be reverted to the last-known-working state. We are in -rc9 
-so nothing but really, really obvious patches can be applied.
-
-> Why is this odd? One of the major reasons why people are still 
-> using UML is because you can run it as non-privileged user on any 
-> x86 Linux host. An user which has root privileges can setup and use 
-> KVM which is much nicer than UML...
-
-No, your complaint is entirely justified.
-
-Andrew?
-
-Thanks,
-
-	Ingo
