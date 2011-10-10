@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab1JJRhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:37:25 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:27834 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab1JJRhY (ORCPT
+	id S1753723Ab1JJRho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:37:44 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39131 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750893Ab1JJRhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:37:24 -0400
-Date: Mon, 10 Oct 2011 10:37:22 -0700 (PDT)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: Greg KH <greg@kroah.com>
-Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es,
-        Josh Triplett <josh@joshtriplett.org>
-Message-ID: <361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <20111008155502.GB616@kroah.com>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+	Mon, 10 Oct 2011 13:37:42 -0400
+X-Sasl-enc: 465rUFdPCXEe6TaGAfWYAVbPq4wruu568PkEAbfOTw4M 1318268261
+Date: Mon, 10 Oct 2011 10:16:45 -0700
+From: Greg KH <greg@kroah.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH -next] usb gadget: fix langwell_udc.c build error
+Message-ID: <20111010171645.GA24628@kroah.com>
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au>
+ <4E8F67C6.5020603@xenotime.net>
+ <20111008100326.GA24633@legolas.emea.dhcp.ti.com>
+ <4E91DF00.8060107@xenotime.net>
+ <20111009223638.GA29776@legolas.emea.dhcp.ti.com>
+ <4E9228CA.1060904@xenotime.net>
+ <20111010050959.GA30935@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.61.162]
-X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111010050959.GA30935@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
------ Original Message -----
-> From: "Greg KH" <greg@kroah.com>
-> To: "Josh Triplett" <josh@joshtriplett.org>
-> Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-arm-kernel@lists.infradead.org, "Grant Likely"
-> <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-> "Dilan Lee" <dilee@nvidia.com>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
-> Sent: Saturday, October 8, 2011 11:55:02 AM
-> Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+On Mon, Oct 10, 2011 at 08:10:01AM +0300, Felipe Balbi wrote:
+> Hi,
 > 
+> On Sun, Oct 09, 2011 at 04:05:46PM -0700, Randy Dunlap wrote:
+> > On 10/09/11 15:36, Felipe Balbi wrote:
+> > > git log --pretty=oneline -S'lpm_device_speed' HEAD --	\
+> > > 	drivers/usb/gadget/langwell_udc.c
+> > 
+> > e538dfdae85244fd2c4231725d82cc1f1bc4942c usb: Provide usb_speed_string() function
+> 
+> Aha, now I know why, that went straight througth Greg.
+> 
+> Greg, can you pick this patch ? It's clearly needed. Meanwhile, I'll
+> cherry-pick that commit from your tree and apply Randy's fix too.
+> 
+> Here's my ack for $SUBJECT:
+> 
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-I'm a bit of a fly on the wall here, but I'm curious how this impacts suspend/resume.
-device_initialize->device_pm_init are called from device_register, so certainly this
-patch doesn't also ensure that the PM ordering matches probe ordering, which is bound
-to break suspend, right? Was this ever tested with the OMAP target? Shouldn't the
-PM change be also part of this patch set? I don't see why you would want to have this in
-without the PM changes.
+Um, pick what patch?
 
-Maybe I have it all wrong though :-).
+Randy, care to resend it to me with Felipe's ack?
 
-A
+thanks,
+
+greg k-h
