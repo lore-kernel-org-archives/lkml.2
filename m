@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab1JJQZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:25:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57807 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919Ab1JJQZK (ORCPT
+	id S1752719Ab1JJQ1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:27:33 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:58359 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab1JJQ1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:25:10 -0400
-Date: Mon, 10 Oct 2011 17:25:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] regulator: twl: Remove hardcoded board
- constraints from driver
-Message-ID: <20111010162507.GF3607@opensource.wolfsonmicro.com>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-2-git-send-email-rnayak@ti.com>
+	Mon, 10 Oct 2011 12:27:31 -0400
+X-IronPort-AV: E=Sophos;i="4.68,518,1312156800"; 
+   d="scan'208";a="8308688"
+Subject: Re: [PATCH 1/9] mm: add a "struct subpage" type containing a page,
+ offset and length
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, "Christoph Hellwig" <hch@infradead.org>
+Date: Mon, 10 Oct 2011 17:27:07 +0100
+In-Reply-To: <1318245101-16890-1-git-send-email-ian.campbell@citrix.com>
+References: <1318245076.21903.408.camel@zakaz.uk.xensource.com>
+	 <1318245101-16890-1-git-send-email-ian.campbell@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318264027.21903.470.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318263578-7407-2-git-send-email-rnayak@ti.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 09:49:34PM +0530, Rajendra Nayak wrote:
-> Remove the hardcoded .valid_modes_mask and .valid_ops_mask for
-> each regulator from the twl driver and let the boards pass it.
-> 
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+(reposting including LKML to catch other potential users)
 
-Please update this changelog - as I said in reply to your previous
-posting this isn't actually hardcoding anything, it's dropping things
-from the constraints which the hardware doesn't support.
+Is this structure of any use to unify other instances of a similar
+tuple, e.g. biovec, pagefrag etc?
+
+Ian.
+
+On Mon, 2011-10-10 at 12:11 +0100, Ian Campbell wrote:
+> A few network drivers currently use skb_frag_struct for this purpose but I have
+> patches which add additional fields and semantics there which these other uses
+> do not want.
+> 
+> A structure for reference sub-page regions seems like a generally useful thing
+> so do so instead of adding a network subsystem specific structure.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: linux-mm@kvack.org
+> ---
+>  include/linux/mm_types.h |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 774b895..dc1d103 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -135,6 +135,17 @@ struct page {
+>  #endif
+>  ;
+>  
+> +struct subpage {
+> +	struct page *page;
+> +#if (BITS_PER_LONG > 32) || (PAGE_SIZE >= 65536)
+> +	__u32 page_offset;
+> +	__u32 size;
+> +#else
+> +	__u16 page_offset;
+> +	__u16 size;
+> +#endif
+> +};
+> +
+>  typedef unsigned long __nocast vm_flags_t;
+>  
+>  /*
+
+
