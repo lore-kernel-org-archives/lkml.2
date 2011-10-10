@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab1JJQJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:09:39 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:54141 "EHLO imr4.ericy.com"
+	id S1752382Ab1JJQK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:10:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14022 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab1JJQJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:09:38 -0400
-Subject: Resend: hwmon staging tree moved back to kernel.org
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-In-Reply-To: <1318262521.3983.93.camel@groeck-laptop>
-References: <1318262521.3983.93.camel@groeck-laptop>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-4ll2lW6AAR9eswTDQFr+"
-Organization: Ericsson
-Date: Mon, 10 Oct 2011 09:08:06 -0700
-Message-ID: <1318262886.3983.97.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751179Ab1JJQK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 12:10:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,518,1312182000"; 
+   d="scan'208";a="76606207"
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+From: Vinod Koul <vinod.koul@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+In-Reply-To: <CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+	 <1317200618.1573.1765.camel@vkoul-udesk3>
+	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+	 <1317295068.1573.1780.camel@vkoul-udesk3>
+	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+	 <20111003161349.GB28287@flint.arm.linux.org.uk>
+	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+	 <1317966346.1573.2252.camel@vkoul-udesk3>
+	 <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+	 <1317997177.1573.2275.camel@vkoul-udesk3>
+	 <CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
+	 <1318229592.1573.2298.camel@vkoul-udesk3>
+	 <CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
+	 <1318238296.1546.3.camel@vkoul-udesk3>
+	 <CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
+	 <1318243501.1546.12.camel@vkoul-udesk3>
+	 <CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 10 Oct 2011 21:32:39 +0530
+Message-ID: <1318262559.1546.31.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-4ll2lW6AAR9eswTDQFr+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2011-10-10 at 16:46 +0530, Jassi Brar wrote:
+> On 10 October 2011 16:15, Vinod Koul <vinod.koul@intel.com> wrote:
+> >
+> > But I am fine if we find a common ground and merge the two where dmac
+> > can cleanly identify direction and mode it is operating.
+> >
+> The client would set the xfer_direction and dmac would interpret as
+> 
+> enum xfer_direction {
+>      MEM_TO_MEM,   ->  Async/Memcpy mode
+>      MEM_TO_DEV,    ->  Slave mode & From Memory to Device
+>      DEV_TO_MEM,    ->  Slave mode & From Device to Memory
+>      DEV_TO_DEV,     ->  Slave mode & From Device to Device
+> }
+> 
+> How could it get any cleaner?
+Consider the case of a dmac driver which supports interleaved dma as
+well as memcpy and slave
+It needs to interpret dma_data_direction for later cases and
+xfer_direction for former ones. Not a clean way to convey same info. And
+only reason why we cannot use dma_data_direction here is because we
+don't know the "mode", by splitting we overcome that.
 
-[ trying again, this time with correct mailing list addresses ;) ]
+-- 
+~Vinod
 
-Hi Stephen,
-
-my hwmon staging tree is back from its github location (git://github.com/gr=
-oeck/linux.git) to kernel.org:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmo=
-n-next
-
-Thanks,
-Guenter
-
-
---=-4ll2lW6AAR9eswTDQFr+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOkxhjAAoJEANmWzN1g3l3m2UH/i5xEYFW6BETz/UunJgdGqSm
-JtvM9v1I807oyKuK6RyHquaGZtsLwqeK+oSTrknl90GJM7g1u27uSNsWRWN3yVCh
-UtzWf7O+9Wh60ktvLhF7kJv2qte+iZL6BmEb7wVYDqTlXOwe/rDbdoixiodlFizU
-QP0kVOOaObAmRbCqKnZ4VjUa+mnAao9Rii+pz83QOIyKlOUWGkv6w0q19i+5U7tQ
-Ypu02TyJSdZ7PLlzJ73pHfoQV1GNmp/WhllcfhlypU1TU4mteQihPKHJDO1XLaQC
-upO9K4W+cC60N/8UO8KU733HO0LwF12UZow2YLBVZv7SIE9AfjYd2RYzPuslES0=
-=bBUZ
------END PGP SIGNATURE-----
-
---=-4ll2lW6AAR9eswTDQFr+--
