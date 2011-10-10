@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1JJUCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 16:02:49 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:33558 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab1JJUCs (ORCPT
+	id S1754690Ab1JJUEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 16:04:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18857 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753548Ab1JJUEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 16:02:48 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Andrew Morton <akpm@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 4/5] fat: follow rename pack_hex_byte to hex_byte_pack
-References: <CAKiorj5MJ8_ZH-J-7GjNQLoPNTshFdrrHfjptgpgi_4mchHJYw@mail.gmail.com>
-	<bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
-	<bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
-	<0fd7e74869d6f19d05376fe944a9113851378d84.1318257114.git.andriy.shevchenko@linux.intel.com>
-Date: Tue, 11 Oct 2011 05:02:38 +0900
-In-Reply-To: <0fd7e74869d6f19d05376fe944a9113851378d84.1318257114.git.andriy.shevchenko@linux.intel.com>
-	(Andy Shevchenko's message of "Mon, 10 Oct 2011 17:33:38 +0300")
-Message-ID: <87zkh8ty1t.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
+	Mon, 10 Oct 2011 16:04:06 -0400
+Date: Mon, 10 Oct 2011 15:57:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>, Li Dongyang <lidongyang@novell.com>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance discard
+ support with secure erasing support.
+Message-ID: <20111010195749.GA5755@phenom.oracle.com>
+References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
+ <1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
+ <1318263187.21903.464.camel@zakaz.uk.xensource.com>
+ <20111010164250.GG28646@phenom.oracle.com>
+ <1318274402.27397.13.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318274402.27397.13.camel@dagon.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090208.4E934FAF.0036,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com> writes:
+On Mon, Oct 10, 2011 at 08:20:02PM +0100, Ian Campbell wrote:
+> On Mon, 2011-10-10 at 17:42 +0100, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Oct 10, 2011 at 05:13:07PM +0100, Ian Campbell wrote:
+> 
+> > > In any case it should also be posted against the canonical inter-guest
+> > > interface definition in the xen tree for review with that in mind.
+> > 
+> > Yes! But I was thinking to first let this one rattle a bit and see what
+> > folks thought about it before submitting the xen-devel.
+> 
+> It's a good idea to get ABI changes out for review before the
+> implementation rattles around so much that changing it becomes hard.
 
-> There is no functional change.
->
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
-Thanks.
-
-> ---
->  fs/fat/dir.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/fat/dir.c b/fs/fat/dir.c
-> index 5efbd5d..aca191b 100644
-> --- a/fs/fat/dir.c
-> +++ b/fs/fat/dir.c
-> @@ -156,8 +156,8 @@ static int uni16_to_x8(struct super_block *sb, unsigned char *ascii,
->  		} else {
->  			if (uni_xlate == 1) {
->  				*op++ = ':';
-> -				op = pack_hex_byte(op, ec >> 8);
-> -				op = pack_hex_byte(op, ec);
-> +				op = hex_byte_pack(op, ec >> 8);
-> +				op = hex_byte_pack(op, ec);
->  				len -= 5;
->  			} else {
->  				*op++ = '?';
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+OK, lets drop this until we get that straigthen out. I've posted
+http://lists.xensource.com/archives/html/xen-devel/2011-10/msg00642.html the changes to
+Xen ABI.
