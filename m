@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1JJJoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:44:55 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:57392 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1JJJoy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:44:54 -0400
-Subject: [PATCH] [TRIVIAL] Kconfig: remove CONFIG_ prefix on two symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 11:44:51 +0200
-Message-ID: <1318239891.29265.7.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753286Ab1JJJrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 05:47:06 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:5786 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097Ab1JJJrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 05:47:05 -0400
+Message-ID: <4E92BEE9.5090604@atmel.com>
+Date: Mon, 10 Oct 2011 11:46:17 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>, herbert@gondor.hengli.com.au,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [GIT PULL] at91: driver for Atmel true hardware random number generator
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-These two changes are trivial in the sense that it's clear what is
-intended here. On the other hand I assume they influence the output of
-the config tools. So perhaps these two changes need review by the
-maintainers of these files.
+Hi Arnd,
 
- arch/powerpc/platforms/85xx/Kconfig |    2 +-
- drivers/ide/Kconfig                 |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Here is a couple of patches for adding the True Random Number Generator
+that can be find on some AT91SAM SoCs.
+Herbert Xu told me that this material can go through the ARM SoC tree.
 
-diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
-index 498534c..12f5932 100644
---- a/arch/powerpc/platforms/85xx/Kconfig
-+++ b/arch/powerpc/platforms/85xx/Kconfig
-@@ -80,7 +80,7 @@ config P1010_RDB
- config P1022_DS
- 	bool "Freescale P1022 DS"
- 	select DEFAULT_UIMAGE
--	select CONFIG_PHYS_64BIT	# The DTS has 36-bit addresses
-+	select PHYS_64BIT	# The DTS has 36-bit addresses
- 	select SWIOTLB
- 	help
- 	  This option enables support for the Freescale P1022DS reference board.
-diff --git a/drivers/ide/Kconfig b/drivers/ide/Kconfig
-index 9827c5e..075f322 100644
---- a/drivers/ide/Kconfig
-+++ b/drivers/ide/Kconfig
-@@ -681,7 +681,7 @@ config BLK_DEV_IDE_AU1XXX
-        select IDE_XFER_MODE
- choice
-        prompt "IDE Mode for AMD Alchemy Au1200"
--       default CONFIG_BLK_DEV_IDE_AU1XXX_PIO_DBDMA
-+       default BLK_DEV_IDE_AU1XXX_PIO_DBDMA
-        depends on SOC_AU1200 && BLK_DEV_IDE_AU1XXX
- 
- config BLK_DEV_IDE_AU1XXX_PIO_DBDMA
+They may conflict with future work on at91 gpio that can be found on at91-next 
+branch. We will recall you this during the "pull request" that we will send you 
+for those bits...
+
+The following changes since commit 976d167615b64e14bc1491ca51d424e2ba9a5e84:
+
+  Linux 3.1-rc9 (2011-10-04 18:11:50 -0700)
+
+are available in the git repository at:
+git://github.com/at91linux/linux-at91.git for-arnd/at91-trng
+
+Peter Korsgaard (2):
+      ARM: at91: at91sam9g45: add trng clock and platform device
+      hw_random: add driver for atmel true hardware random number generator
+
+ arch/arm/mach-at91/at91sam9g45.c         |    7 ++
+ arch/arm/mach-at91/at91sam9g45_devices.c |   29 ++++++
+ drivers/char/hw_random/Kconfig           |   13 +++
+ drivers/char/hw_random/Makefile          |    1 +
+ drivers/char/hw_random/atmel-rng.c       |  158 ++++++++++++++++++++++++++++++
+ 5 files changed, 208 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/hw_random/atmel-rng.c
+
+Thanks, cheers,
 -- 
-1.7.4.4
-
+Nicolas Ferre
