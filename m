@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab1JJCTF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 22:19:05 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33555
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751148Ab1JJCTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 22:19:04 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: util: Invoke cn_netlink_send() in a work context
-Date: Sun,  9 Oct 2011 19:42:28 -0700
-Message-Id: <1318214548-22572-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751516Ab1JJC3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 22:29:11 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35469 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab1JJC3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 22:29:10 -0400
+Message-ID: <4E925873.2020501@linux.vnet.ibm.com>
+Date: Sun, 09 Oct 2011 22:29:07 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+MIME-Version: 1.0
+To: =?UTF-8?B?QXJrYWRpdXN6IE1pxZtraWV3aWN6?= <a.miskiewicz@gmail.com>
+CC: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+Subject: Re: [tpmdd-devel] Linux 3.1-rc9
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <201110092251.15618.a.miskiewicz@gmail.com>
+In-Reply-To: <201110092251.15618.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Invoke cn_netlink_send() in a work context as opposed being called
-in the context of  channel callback. On entry into the channel callback
-code the channel inbound spin lock is held and deferring to a work
-context avoids having to invoke cn_netlink_send() while holding
-the inbound lock. As part of this adjustment, also increase the
-timeout value for waiting for the user level component of KVP.
+On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
+> On Wednesday 05 of October 2011, Linus Torvalds wrote:
+>> Another week, another -rc.
+> suspend to ram regression is annoying (still visible on rc9;
+> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are silent.
+>
+I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce 
+the 'scheduling while atomic' problem you had reported earlier. I also 
+could suspend / resume fine as long as I did the following:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hv_kvp.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+- suspended with the tpm_tis driver as module in the kernel
+- once a suspend was done without the tpm_tis driver the subsequent 
+suspends were all done without the tpm_tis driver
 
-diff --git a/drivers/staging/hv/hv_kvp.c b/drivers/staging/hv/hv_kvp.c
-index 307aedc..1e9515c 100644
---- a/drivers/staging/hv/hv_kvp.c
-+++ b/drivers/staging/hv/hv_kvp.c
-@@ -44,11 +44,12 @@
- static struct {
- 	bool active; /* transaction status - active or not */
- 	int recv_len; /* number of bytes received. */
-+	int index; /* current index */
- 	struct vmbus_channel *recv_channel; /* chn we got the request */
- 	u64 recv_req_id; /* request ID. */
- } kvp_transaction;
- 
--static int kvp_send_key(int index);
-+static void kvp_send_key(struct work_struct *dummy);
- 
- #define TIMEOUT_FIRED 1
- 
-@@ -57,6 +58,7 @@ static void kvp_work_func(struct work_struct *dummy);
- static void kvp_register(void);
- 
- static DECLARE_DELAYED_WORK(kvp_work, kvp_work_func);
-+static DECLARE_WORK(kvp_sendkey_work, kvp_send_key);
- 
- static struct cb_id kvp_id = { CN_KVP_IDX, CN_KVP_VAL };
- static const char kvp_name[] = "kvp_kernel_module";
-@@ -121,10 +123,11 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 	}
- }
- 
--static int
--kvp_send_key(int index)
-+static void
-+kvp_send_key(struct work_struct *dummy)
- {
- 	struct cn_msg *msg;
-+	int index = kvp_transaction.index;
- 
- 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
- 
-@@ -136,9 +139,8 @@ kvp_send_key(int index)
- 		msg->len = sizeof(struct hv_ku_msg);
- 		cn_netlink_send(msg, 0, GFP_ATOMIC);
- 		kfree(msg);
--		return 0;
- 	}
--	return 1;
-+	return;
- }
- 
- /*
-@@ -286,6 +288,7 @@ void hv_kvp_onchannelcallback(void *context)
- 			kvp_transaction.recv_channel = channel;
- 			kvp_transaction.recv_req_id = requestid;
- 			kvp_transaction.active = true;
-+			kvp_transaction.index = kvp_data->index;
- 
- 			/*
- 			 * Get the information from the
-@@ -296,8 +299,8 @@ void hv_kvp_onchannelcallback(void *context)
- 			 * Set a timeout to deal with
- 			 * user-mode not responding.
- 			 */
--			kvp_send_key(kvp_data->index);
--			schedule_delayed_work(&kvp_work, 100);
-+			schedule_work(&kvp_sendkey_work);
-+			schedule_delayed_work(&kvp_work, 5*HZ);
- 
- 			return;
- 
-@@ -332,4 +335,5 @@ void hv_kvp_deinit(void)
- {
- 	cn_del_callback(&kvp_id);
- 	cancel_delayed_work_sync(&kvp_work);
-+	cancel_work_sync(&kvp_sendkey_work);
- }
--- 
-1.7.4.1
+Once I had done a suspend/resume with the tpm_tis driver *not* in the 
+kernel and then again a suspend with the tpm_tis driver in the kernel, 
+it did not resume anymore. I believe previously (previous version of 
+kernel and/or Fedora) it refused to even suspend. The reason why this 
+doesn't work properly is that the driver has to send a command to the 
+TPM upon suspend and the BIOS then sends the corresponding wakeup command.
+
+Did you maybe previously suspend/resume without a tpm_tis driver and 
+then try to suspend with it ?
+
+Also, my Lenovo W500 shows particularly odd behavior when I switch from 
+Windows to Linux. The first suspend with a Linux booted after Windows 
+(with or without tpm_tis driver) does *not* resume (reboot required). A 
+subsequently rebooted Linux makes the suspend/resume work fine.
+
+    Stefan
+
+
+
 
