@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125Ab1JJPOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:14:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:49253 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750991Ab1JJPOK (ORCPT
+	id S1751268Ab1JJPO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 11:14:29 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63070 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab1JJPO2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:14:10 -0400
-Date: Mon, 10 Oct 2011 11:14:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
-cc: balbi@ti.com, <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <sshtylyov@ru.mvista.com>
-Subject: Re: [PATCH v3] usb: add new usb gadget for ACM and mass storage
-In-Reply-To: <4E92ADBD.2010404@sensortherm.de>
-Message-ID: <Pine.LNX.4.44L0.1110101111540.18069-100000@netrider.rowland.org>
+	Mon, 10 Oct 2011 11:14:28 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [83.233.40.23]
+In-Reply-To: <20111010075250.GY18470@longonot.mountain>
+References: <1318225337-25438-1-git-send-email-pelle@windestam.se>
+	<20111010075250.GY18470@longonot.mountain>
+Date: Mon, 10 Oct 2011 17:14:27 +0200
+Message-ID: <CAOdCkm1YNJ2xkVk+p1MTxX_e_5T8UM9Tz7mWE5v5JUhHOuenEg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drivers: staging: rts_pstor fixed checkpatch warnings
+From: Pelle Windestam <pelle@windestam.se>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011, Klaus Schwarzkopf wrote:
+On Mon, Oct 10, 2011 at 9:52 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
-> >> +	.bDeviceClass =		USB_CLASS_COMM,
-> >> +	.bDeviceSubClass =	0,
-> >> +	.bDeviceProtocol =	0,
-> 
-> Should bDeviceClass, bDeviceSubClass, and bDeviceProtocol have the same 
-> value like in the file multi.c?
-> 
-> 	.bDeviceClass =		USB_CLASS_MISC /* 0xEF */,
-> 	.bDeviceSubClass =	2,
-> 	.bDeviceProtocol =	1,
+> This looked nicer in the original version.  I know that checkpatch
+> complains but in the end, checkpatch is just a perl script.  It's
+> less sentient than a squirrel.
+>
+> regards,
+> dan carpenter
+>
 
-This may or may not be relevant...  The USB 2.0 spec (Table 9-8) says
-that if bDeviceClass is 0 then each interface specifies its own class
-information and the interfaces operate independently.  Isn't that what 
-you want?
+I have to agree with you on that, but I wasn't sure how strictly to
+follow the checkpatch warnings. I'll happily resubmit the patch
+without this change if nobody minds.
 
-Alan Stern
-
+//Pelle
