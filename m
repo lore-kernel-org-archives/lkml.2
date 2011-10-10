@@ -1,145 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1JJSaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 14:30:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab1JJSaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 14:30:24 -0400
-Date: Mon, 10 Oct 2011 20:25:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
-	thread is singlestepping.
-Message-ID: <20111010182535.GA6934@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com> <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com> <20111005180139.GA5704@redhat.com> <20111006054710.GB17591@linux.vnet.ibm.com> <20111007165828.GA32319@redhat.com> <20111010122556.GB16268@linux.vnet.ibm.com>
+	id S1754169Ab1JJSez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 14:34:55 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59333 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab1JJSex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 14:34:53 -0400
+Date: Mon, 10 Oct 2011 20:34:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "tj@kernel.org" <tj@kernel.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Alan Stern <stern@rowland.harvard.edu>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "ashok.raj@intel.com" <ashok.raj@intel.com>,
+        "tigran@aivazian.fsnet.co.uk" <tigran@aivazian.fsnet.co.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] Freezer, CPU hotplug, x86 Microcode: Fix task
+ freezing failures
+Message-ID: <20111010183442.GC29415@aftab>
+References: <Pine.LNX.4.44L0.1110101119550.18069-100000@netrider.rowland.org>
+ <4E931018.8030904@linux.vnet.ibm.com>
+ <20111010165343.GA29261@aftab>
+ <4E932BBA.9090501@linux.vnet.ibm.com>
+ <20111010175336.GA29415@aftab>
+ <20111010180848.GI8100@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111010122556.GB16268@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111010180848.GI8100@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10, Srikar Dronamraju wrote:
->
-> While we are here, do you suggest I re-use current->saved_sigmask and
-> hence use set_restore_sigmask() while resetting the sigmask?
->
-> I see saved_sigmask being used just before task sleeps and restored when
-> task is scheduled back. So I dont see a case where using saved_sigmask
-> in uprobes could conflict with its current usage.
+Hi Tejun,
 
-Yes, I think this is possible, and probably you do not even need
-set_restore_sigmask().
+On Mon, Oct 10, 2011 at 02:08:48PM -0400, tj@kernel.org wrote:
+> Maybe I'm confused but is that patch correct for actual CPU hotplug
+> case?  If not, what's the point in doing that?  What are we gonna do
+> after six month some people come up with "CPU hotplug fails to load
+> new microcode for the new CPU"?
 
-But. There are some problems with this approach too.
+Ok, first of all, we still will load ucode on the onlining path - we're
+simply not going to reload it when the CPU has gone offline and onlined
+again. For that case people should simply reload the module so that
+ucode on _all_ CPUs is updated pretty much at same time.
 
-Firstly, even if you block all signals, there are other reasons for
-TIF_SIGPENDING which you can't control. For example, the task can be
-frozen or it can stop in UTASK_SSTEP state. Not good, if we have
-enough threads, this can lead to the "soft" deadlock. Say, a group
-stop can never finish because a thread sleeps in xol_wait_event()
-"forever".
+Now, actually, the ucode driver shouldn't even exist as it is - ucode
+should be loaded much much earlier when the cores are being trampolined.
+Normally, ucode is loaded by BIOS and I imagine this facility here
+exists for the sole purpose to apply ucode only when there's no new BIOS
+available.
 
-Another problem is that it is not possible to block the "implicit"
-SIGKILL sent by exec/exit_group/etc. This mean the task can exit
-without sstep_complete/xol_free_insn_slot/etc. Mostly this is fine,
-we have free_uprobe_utask()->xol_free_insn_slot(). But in theory
-this can deadlock afaics. Suppose that the coredumping is in progress,
-the killed UTASK_SSTEP task hangs in exit_mm() waiting for other
-threads. If we have enough threads like this, we can deadlock with
-another thread sleeping in xol_wait_event().
+So, here's what ucode handling should actually be, IMHO:
 
-This can be fixed, we can move free_uprobe_utask() from
-put_task_struct() to mm_release(). Btw, imho this makes sense anyway,
-why should a zombie thread abuse a slot?
+* load ucode very early during booting of each CPU
 
-However the first problem looks nasty, even if it is not very serious.
-And, otoh, it doesn't look right to block SIGKILL, the task can loop
-forever executing the xol insn (see below).
+* keep ucode in memory in case not all cores have been onlined from the
+get-go to apply when they're onlined later
 
+* do NOT reapply it when cores are off-/onlined because there's no need
+(cores retain ucode when we offline them (basically, they enter C1,
+probably C3 on Intel or similar so no problem)).
 
+* when you have new ucode image, trigger a replacement of the image in
+memory and subsequently trigger a re-application of the new ucode (sysfs
+write, whatever).
 
-What do you think about the patch below? On top of 25/26, uncompiled,
-untested. With this patch the task simply refuses to react to
-TIF_SIGPENDING until sstep_complete().
+> The invalidation code is there for a reason.
 
-This relies on the fact that do_notify_resume() calls
-uprobe_notify_resume() before do_signal(), I guess this is safe because
-we have other reasons for this order.
+... and that reason being?
 
-And, unless I missed something, this makes
-free_uprobe_utask()->xol_free_insn_slot() unnecessary.
+> The CPU is going away and the microcode tied to the CPU should go away
+> too.
 
+This is what I don't understand - as I said earlier, ucode is not
+something you get on a monthly basis: you get only a very few updates
+and that's it in the majority of the cases. So users going the trouble
+of reloading the microcode.ko module a very few times (if ever!) during
+a system's lifetime shouldn't be an issue.
 
+> If somebody is sure that microcode don't need to be changed once
+> loaded, then all's good and dandy but that's not the case here, right?
 
-HOWEVER! I simply do not know what should we do if the probed insn
-is something like asm("1:; jmp 1b;"). IIUC, in this sstep_complete()
-never returns true. The patch also adds the fatal_signal_pending()
-check to make this task killlable, but the problem is: whatever we do,
-I do not think it is correct to disable/delay the signals in this case.
-With any approach.
+Well, basically the current situation didn't change the ucode - it
+simply reloaded the same image from before going offline.
 
-What do you think? Maybe we should simply disallow to probe such insns?
+See, there's this another problem with what we have right now: imagine
+you've just updated the ucode image on disk and offline only a subset of
+the cores. Then you online them again and they now get the newer ucode
+image while the others still run the old ucode. This could explode or
+could not, one thing's for sure: all bets are off. If we don't reload it
+on hotplug, we're fine - only module reload triggers the ucode update in
+a fairly synchronized manner.
 
-Once again, the change in sstep_complete() is "off-topic", this is
-another problem we should solve somehow.
+> If you want to optimize away microcode unloading during
+> suspend/resume, the RTTD is doing revalidation / reload during
+> CPU_ONLINE as necessary.
 
-Oleg.
+see above.
 
---- x/kernel/signal.c
-+++ x/kernel/signal.c
-@@ -2141,6 +2141,15 @@ int get_signal_to_deliver(siginfo_t *inf
- 	struct signal_struct *signal = current->signal;
- 	int signr;
- 
-+#ifdef CONFIG_UPROBES
-+	if (unlikely(current->utask &&
-+			current->utask->state != UTASK_RUNNING)) {
-+		WARN_ON_ONCE(current->utask->state != UTASK_SSTEP);
-+		clear_thread_flag(TIF_SIGPENDING);
-+		return 0;
-+	}
-+#endif
-+
- relock:
- 	/*
- 	 * We'll jump back here after any time we were stopped in TASK_STOPPED.
---- x/kernel/uprobes.c
-+++ x/kernel/uprobes.c
-@@ -1331,7 +1331,8 @@ static bool sstep_complete(struct uprobe
- 	 * If we have executed out of line, Instruction pointer
- 	 * cannot be same as virtual address of XOL slot.
- 	 */
--	if (vaddr == current->utask->xol_vaddr)
-+	if (vaddr == current->utask->xol_vaddr &&
-+			!__fatal_signal_pending(current))
- 		return false;
- 	post_xol(uprobe, regs);
- 	return true;
-@@ -1390,8 +1391,7 @@ void uprobe_notify_resume(struct pt_regs
- 			utask->state = UTASK_RUNNING;
- 			user_disable_single_step(current);
- 			xol_free_insn_slot(current);
--
--			/* TODO Stop queueing signals. */
-+			recalc_sigpending();
- 		}
- 	}
- 	return;
+> If this use case doesn't really matter too much to anyone, just
+> leaving it alone would be better than adding band aid which can lead
+> to very obscure issues down the road (oooh, that microcode shouldn't
+> have been loaded to that cpu).
 
+I'd like to actually hear someone justify such a requirement.
+
+I hope I'm making some sense here.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
