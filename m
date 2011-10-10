@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab1JJPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:23:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65266 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab1JJPX4 (ORCPT
+	id S1751974Ab1JJPZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 11:25:31 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:43913 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751429Ab1JJPZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:23:56 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 4/4] staging: et131x: Update TODO list
-Date: Mon, 10 Oct 2011 16:22:32 +0100
-Message-Id: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
+	Mon, 10 Oct 2011 11:25:29 -0400
+Date: Mon, 10 Oct 2011 11:25:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, <rjw@sisk.pl>,
+        <bp@amd64.org>, <pavel@ucw.cz>, <len.brown@intel.com>, <tj@kernel.org>,
+        <mingo@elte.hu>, <akpm@linux-foundation.org>,
+        <suresh.b.siddha@intel.com>, <lucas.demarchi@profusion.mobi>,
+        <rusty@rustcorp.com.au>, <rdunlap@xenotime.net>,
+        <vatsa@linux.vnet.ibm.com>, <ashok.raj@intel.com>,
+        <tigran@aivazian.fsnet.co.uk>, <tglx@linutronix.de>, <hpa@zytor.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
+In-Reply-To: <1318256788.14400.53.camel@laptop>
+Message-ID: <Pine.LNX.4.44L0.1110101123200.18069-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added some more tasks to the TODO list, as highlighted by Francois
-Romieu <romieu@fr.zoreil.com>.
+On Mon, 10 Oct 2011, Peter Zijlstra wrote:
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/README |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+> I just remember being very surprised about finding out the hotplug usage
+> of suspend/hibernate wasn't at all serialized against the regular
+> hotplug thingies.. (see 144060fee07e9c22e179d00819c83c86fbcbf82c).
 
-diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
-index d383e80..c67f83e 100644
---- a/drivers/staging/et131x/README
-+++ b/drivers/staging/et131x/README
-@@ -2,13 +2,18 @@ This is a driver for the ET1310 network device.
- 
- Based on the driver found at https://sourceforge.net/projects/et131x/
- 
--Cleaned up immensely by Olaf Hartman and Christoph
--Hellwig <hch@infradead.org>
-+Cleaned up immensely by Olaf Hartman and Christoph Hellwig <hch@infradead.org>
- 
- Note, the powermanagement options were removed from the vendor provided
- driver as they did not build properly at the time.
- 
- TODO:
-+	- Put the driver into a single file, with a .h for the registers layout.
-+	- rx_ring.fbr{0, 1} can probably share a common structure
-+	- Use of kmem_cache seems a bit unusual
-+	- Use dma_alloc_... in place of pci_alloc_...
-+	- It's too late stopping the tx queue when there is no room for the current packet. The condition should be detected for the next packet.
-+	- PCI_VDEVICE ?
- 
- Please send patches to:
- 	Greg Kroah-Hartman <gregkh@suse.de>
--- 
-1.7.6.4
+It _is_ serialized against some of them... maybe not all, though.  
+That's one of the purposes of the "prepare" and "complete" callback
+methods in dev_pm_ops.
+
+Alan Stern
 
