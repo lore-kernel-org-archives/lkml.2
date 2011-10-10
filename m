@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab1JJLC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:02:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60683 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab1JJLCZ (ORCPT
+	id S1753628Ab1JJLE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:04:59 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:34744 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752674Ab1JJLE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:02:25 -0400
-Subject: Re: [PATCH 2/3][RFC] tracing: Add optional percpu buffers for
- trace_printk()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20111008171259.462646120@goodmis.org>
-References: <20111008170227.792806635@goodmis.org>
-	 <20111008171259.462646120@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 13:08:33 +0200
-Message-ID: <1318244913.14400.19.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 10 Oct 2011 07:04:58 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd/db8500-prcmu: convert panic() to pr_crit()
+Date: Mon, 10 Oct 2011 13:04:44 +0200
+Message-ID: <1318244684-3049-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-08 at 13:02 -0400, Steven Rostedt wrote:
-> 
-> Ideally, using percpu buffers would be useful, but since trace_printk()
-> is only used in development, having per cpu buffers for something
-> never used is a waste of space. We could make this a compile option
-> but trace_printk() may also be used for developing modules, on a
-> distro kernels or for debugging at customer sites.
-> 
-> The approach taken here is to dynamically allocate percpu buffers
-> with a new tracing/options switch "trace_printk_percpu". It can
-> be allocated and freed at runtime, or "trace_printk_percpu" may also
-> be specified on the command line and it will be allocated at boot up.
-> 
-> This allows a developer to create percpu buffers for trace_printk()
-> on a running system, and also free them when not in used. 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Kill the old code, make tracing/events/trace_printk default to 0 and use
-enabling of that to allocate your per-cpu buffers.
+panic() is too heavy for this, indeed the PRCMU is critical for
+the system but not to the point that we should stop everything,
+if we can still get a prompt or so.
 
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Add-on patch in response to Sam's review comment on liberal
+panic() usage.
+---
+ drivers/mfd/db8500-prcmu.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index e996d11..a25ab9c 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -1763,7 +1763,7 @@ retry:
+ 
+ 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+ 			msecs_to_jiffies(5000))) {
+-		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
++		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
+ 			__func__);
+ 		goto unlock_and_return;
+ 	}
+@@ -1785,7 +1785,7 @@ retry:
+ 		if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+ 				msecs_to_jiffies(5000)))
+ 			goto retry;
+-		panic("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
++		pr_crit("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
+ 			__func__);
+ 	}
+ 
+@@ -1811,7 +1811,7 @@ void prcmu_ac_sleep_req()
+ 
+ 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+ 			msecs_to_jiffies(5000))) {
+-		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
++		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
+ 			__func__);
+ 	}
+ 
+-- 
+1.7.3.2
 
