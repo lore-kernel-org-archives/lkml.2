@@ -1,212 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab1JJNGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 09:06:33 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:11787 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab1JJNGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 09:06:32 -0400
-X-IronPort-AV: E=Sophos;i="4.68,517,1312156800"; 
-   d="scan'208";a="8302885"
-Subject: Re: xen: IPI interrupts not resumed early enough on suspend/resume
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Mon, 10 Oct 2011 14:06:30 +0100
-In-Reply-To: <alpine.LFD.2.02.1110071822160.3240@ionos>
-References: <1317654626.21903.72.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.02.1110032033530.1489@ionos>
-	 <1317668908.11991.20.camel@dagon.hellion.org.uk>
-	 <alpine.LFD.2.02.1110032229250.1489@ionos>
-	 <1318001583.21903.355.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.02.1110071822160.3240@ionos>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1318251990.21903.433.camel@zakaz.uk.xensource.com>
+	id S1754156Ab1JJNHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 09:07:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55240 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753031Ab1JJNHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 09:07:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
+   d="scan'208";a="60641514"
+Date: Mon, 10 Oct 2011 21:07:22 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 00/11] IO-less dirty throttling v12
+Message-ID: <20111010130722.GA11387@localhost>
+References: <20111003134228.090592370@intel.com>
+ <1318248846.14400.21.camel@laptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318248846.14400.21.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-07 at 17:29 +0100, Thomas Gleixner wrote:
-> On Fri, 7 Oct 2011, Ian Campbell wrote:
-> > On Mon, 2011-10-03 at 22:35 +0200, Thomas Gleixner wrote:
-> >  /**
-> > + * irq_pm_syscore_ops - enable interrupt lines early
-> > + *
-> > + * Enable all interrupt lines with %IRQF_EARLY_RESUME set
-> > + */
-> > +static void irq_pm_syscore_resume(void)
-> > +{
-> > +	struct irq_desc *desc;
-> > +	int irq;
-> > +
-> > +	for_each_irq_desc(irq, desc) {
-> > +		unsigned long flags;
-> > +
-> > +		if (!desc->action || !(desc->action->flags & IRQF_EARLY_RESUME))
-> > +			continue;
-> > +
-> > +		raw_spin_lock_irqsave(&desc->lock, flags);
-> > +		__enable_irq(desc, irq, true);
-> > +		raw_spin_unlock_irqrestore(&desc->lock, flags);
-> > +	}
-> > +}
+On Mon, Oct 10, 2011 at 08:14:06PM +0800, Peter Zijlstra wrote:
+> On Mon, 2011-10-03 at 21:42 +0800, Wu Fengguang wrote:
+> > This is the minimal IO-less balance_dirty_pages() changes that are expected to
+> > be regression free (well, except for NFS).
 > 
-> Come on, this is a full copy of resume_device_irqs(). What about
-> having a common function with an (bool early) argument and call it
-> from both syscore and resume_device?
+> I can't seem to get around reviewing these patches in detail, but fwiw
+> I'm fine with pushing fwd with this set (plus a possible NFS fix).
+> 
+> I don't see a reason to strip it down even further.
+> 
+> So I guess that's:
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Yes, that's a good idea.
+Thanks :-) In fact you've already reviewed the major parts of the
+patchset in great details and helped simplify parts of the algorithm,
+which I appreciate a lot.
 
->From dc8a8329f3e97f30e1290c898c816250aa7e8957 Mon Sep 17 00:00:00 2001
-From: Ian Campbell <ian.campbell@citrix.com>
-Date: Mon, 3 Oct 2011 15:37:00 +0100
-Subject: [PATCH] irq: add IRQF_RESUME_EARLY and resume such IRQs earlier in the process
+As for the NFS performance, the dd tests show that adding a writeback
+wait queue to limit the number of NFS PG_writeback pages (patches
+will follow) is able to gain 48% throughput in itself:
 
-This adds a mechanism to resume selected IRQs during syscore_resume instead of
-dpm_resume_noirq.
+      3.1.0-rc8-ioless6+         3.1.0-rc8-nfs-wq+  
+------------------------  ------------------------  
+                   22.43       +81.8%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
+                   28.21       +52.6%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
+                   29.21       +55.4%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
+                   14.12       +40.4%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
+                   29.44       +11.4%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
+                    9.09      +240.9%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
+                   25.68       +84.6%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
+                   41.06        +7.6%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
+                   39.13       +25.9%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
+                  238.38       +48.4%       353.72  TOTAL
 
-Under Xen we need to resume IRQs associated with IPIs early enough that the
-resched IPI is unmasked and we can therefore schedule ourselves out of the
-stop_machine where the suspend/resume takes place.
+Which will result in 28% overall improvements over the vanilla kernel:
 
-This issue was introduced by 676dc3cf5bc3 "xen: Use IRQF_FORCE_RESUME".
+      3.1.0-rc4-vanilla+         3.1.0-rc8-nfs-wq+  
+------------------------  ------------------------  
+                   20.89       +95.2%        40.77  NFS-thresh=100M/nfs-10dd-1M-32p-32768M-100M:10-X
+                   39.43        +9.2%        43.07  NFS-thresh=100M/nfs-1dd-1M-32p-32768M-100M:10-X
+                   26.60       +70.6%        45.39  NFS-thresh=100M/nfs-2dd-1M-32p-32768M-100M:10-X
+                   12.70       +56.1%        19.83  NFS-thresh=10M/nfs-10dd-1M-32p-32768M-10M:10-X
+                   27.41       +19.7%        32.81  NFS-thresh=10M/nfs-1dd-1M-32p-32768M-10M:10-X
+                   26.52       +16.8%        30.97  NFS-thresh=10M/nfs-2dd-1M-32p-32768M-10M:10-X
+                   40.70       +16.5%        47.42  NFS-thresh=1G/nfs-10dd-1M-32p-32768M-1024M:10-X
+                   45.28        -2.4%        44.20  NFS-thresh=1G/nfs-1dd-1M-32p-32768M-1024M:10-X
+                   35.74       +37.8%        49.26  NFS-thresh=1G/nfs-2dd-1M-32p-32768M-1024M:10-X
+                  275.28       +28.5%       353.72  TOTAL
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel <xen-devel@lists.xensource.com>
-Cc: stable@kernel.org (at least to 2.6.32.y)
+As for the most concerned NFS commits, the wait queue patch increases
+the (nr_commits / bytes_written) ratio by +74% for the thresh=1G,10dd
+case, +55% for the thresh=100M,10dd case, and mostly ignorable in the
+other 1dd, 2dd cases, which looks acceptable.
+
+The other noticeable change of the wait queue is, the RTT time per
+write is reduced by 1-2 order(s) in many of the below cases (from
+dozens of seconds to hundreds of milliseconds).
+
+Thanks,
+Fengguang
 ---
- drivers/xen/events.c      |    2 +-
- include/linux/interrupt.h |    3 ++
- kernel/irq/pm.c           |   48 ++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 7523719..44490de 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1021,7 +1021,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
- 	if (irq < 0)
- 		return irq;
- 
--	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME;
-+	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME | IRQF_EARLY_RESUME;
- 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
- 	if (retval != 0) {
- 		unbind_from_irq(irq);
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a103732..f51a81b 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -59,6 +59,8 @@
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-  * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
-  * IRQF_NO_THREAD - Interrupt cannot be threaded
-+ * IRQF_EARLY_RESUME - Resume IRQ early during syscore instead of at device
-+ *                resume time.
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
-@@ -72,6 +74,7 @@
- #define IRQF_NO_SUSPEND		0x00004000
- #define IRQF_FORCE_RESUME	0x00008000
- #define IRQF_NO_THREAD		0x00010000
-+#define IRQF_EARLY_RESUME	0x00020000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
- 
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index f76fc00..86bcd79 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -9,6 +9,7 @@
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
-+#include <linux/syscore_ops.h>
- 
- #include "internals.h"
- 
-@@ -39,25 +40,58 @@ void suspend_device_irqs(void)
- }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
- 
--/**
-- * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-- *
-- * Enable all interrupt lines previously disabled by suspend_device_irqs() that
-- * have the IRQS_SUSPENDED flag set.
-- */
--void resume_device_irqs(void)
-+static resume_irqs(bool want_early)
- {
- 	struct irq_desc *desc;
- 	int irq;
- 
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
-+		bool is_early = desc->action &&
-+			desc->action->flags & IRQF_EARLY_RESUME;
-+
-+		if (is_early != want_early)
-+			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
- 		__enable_irq(desc, irq, true);
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	}
- }
-+
-+/**
-+ * irq_pm_syscore_ops - enable interrupt lines early
-+ *
-+ * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
-+ */
-+static void irq_pm_syscore_resume(void)
-+{
-+	resume_irqs(true);
-+}
-+
-+static struct syscore_ops irq_pm_syscore_ops = {
-+	.resume		= irq_pm_syscore_resume,
-+};
-+
-+static int __init irq_pm_init_ops(void)
-+{
-+	register_syscore_ops(&irq_pm_syscore_ops);
-+	return 0;
-+}
-+
-+device_initcall(irq_pm_init_ops);
-+
-+/**
-+ * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-+ *
-+ * Enable all non-%IRQF_EARLY_RESUME interrupt lines previously
-+ * disabled by suspend_device_irqs() that have the IRQS_SUSPENDED flag
-+ * set as well as those with %IRQF_FORCE_RESUME.
-+ */
-+void resume_device_irqs(void)
-+{
-+	resume_irqs(false);
-+}
- EXPORT_SYMBOL_GPL(resume_device_irqs);
- 
- /**
--- 
-1.7.2.5
+PS. mountstats numbers
+
+thresh=1GB
+==========
+
+1dd
+
+vanilla        WRITE: 33108 33108 0 13794766688 4502688 89550800 1826162 91643336
+ioless6        WRITE: 104355 104355 0 12824990824 14192280 1677501539 13497260 1691407074
+nfs-wq         WRITE: 58632 58632 0 13635750848 7973952 148662395 4735943 153535047
+
+vanilla       COMMIT: 29 29 0 3248 3712 45210 191022 236235
+ioless6       COMMIT: 26 26 0 2912 3328 32875 196848 229725
+nfs-wq        COMMIT: 35 35 0 3920 4480 1156 223393 224550
+
+2dd
+
+vanilla        WRITE: 28681 28681 0 11507024952 3900616 178242698 5849890 184288501
+ioless6        WRITE: 151075 151075 0 12192866408 20546200 3195004617 5748708 3200969292
+nfs-wq         WRITE: 89925 89925 0 15450966104 12229800 212096905 3443883 215849660
+
+vanilla       COMMIT: 43 43 0 4816 5504 45252 349816 396792
+ioless6       COMMIT: 52 52 0 5824 6656 40798 376099 417068
+nfs-wq        COMMIT: 66 66 0 7392 8448 10854 490021 502373
+
+10dd
+
+vanilla        WRITE: 47281 47281 0 14044390136 6430216 1378503679 11994453 1390582846
+ioless6        WRITE: 35972 35972 0 7959317984 4892192 1205239506 7412186 1212670083
+nfs-wq         WRITE: 49625 49625 0 14819167672 6749000 10704223 4135391 14876589
+
+vanilla       COMMIT: 235 235 0 26320 30080 328532 1097793 1426737
+ioless6       COMMIT: 128 128 0 14336 16384 73611 388716 462470
+nfs-wq        COMMIT: 431 432 0 48384 55168 217056 1775499 1993006
 
 
+thresh=100MB
+============
 
+1dd
+
+vanilla        WRITE: 28858 28858 0 12427843376 3924688 6384263 2308574 8722669
+nfs-wq         WRITE: 206620 206620 0 13104059680 28100320 90597897 10245879 101016004
+
+vanilla       COMMIT: 250 250 0 28000 32000 27030 229750 256786
+nfs-wq        COMMIT: 267 267 0 29904 34176 4672 247504 252184
+
+2dd
+
+vanilla        WRITE: 32593 32593 0 8382655992 4432648 193667999 3611697 197302564
+nfs-wq         WRITE: 98662 98662 0 14025467856 13418032 183280630 5381343 188715890
+
+vanilla       COMMIT: 272 272 0 30464 34816 24445 295949 320576
+nfs-wq        COMMIT: 584 584 0 65408 74752 1318 483049 484442
+
+10dd
+
+vanilla        WRITE: 32294 32294 0 6651515344 4391984 104926130 8666874 113596871
+nfs-wq         WRITE: 27571 27571 0 12711521256 3749656 6129491 2248486 8385102
+
+vanilla       COMMIT: 825 825 0 92400 105600 82135 739763 822179
+nfs-wq        COMMIT: 2449 2449 0 274288 313472 6091 2057767 2064555
