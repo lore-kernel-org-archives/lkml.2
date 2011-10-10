@@ -1,149 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab1JJOAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 10:00:05 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63581 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab1JJN7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 09:59:46 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 2/2] Staging: comedi: fix printk and line over 80
-Date: Mon, 10 Oct 2011 19:28:53 +0530
-Message-Id: <1318255133-6986-2-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1318255133-6986-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1318255133-6986-1-git-send-email-ravishankar.km@greenturtles.in>
+	id S1754504Ab1JJOAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 10:00:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29816 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754471Ab1JJOAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 10:00:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
+   d="scan'208";a="24853381"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: jacob.jun.pan@intel.com, mingo@elte.hu,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH] x86, ioapic: only print ioapic debug information for IRQs belonging to an ioapic chip
+Date: Mon, 10 Oct 2011 17:00:36 +0300
+Message-Id: <1318255236-6389-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a  printk and line over 80 charcter found by the
-checkpatch.pl tool
+with "apic=verbose" the print_IO_APIC() function tries to print IRQ to pin mappings
+for every active irq. It assumes chip_data is of type irq_cfg and may cause an oops if not.
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+As the print_IO_APIC() is called from a late_initcall other chained irq chips may already be
+registered with custom chip_data information, causing an oops. This is the case with intel
+MID SoC devices with gpio demuxers registered as irq_chips.
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 ---
- drivers/staging/comedi/drivers/cb_pcimdda.c |   41 ++++++++++++++++----------
- 1 files changed, 25 insertions(+), 16 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index 8c981a8..6918e3d 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -105,7 +105,10 @@ struct board_struct {
- 	int ao_bits;
- 	int dio_chans;
- 	int dio_method;
--	int dio_offset;		/* how many bytes into the BADR are the DIO ports */
-+	int dio_offset;		/*
-+				 * how many bytes into the BADR
-+				 * are the DIO ports
-+				 */
- 	int regs_badrindex;	/* IO Region for the control, analog output,
- 				   and DIO registers */
- 	int reg_sz;		/* number of bytes of registers in io region */
-@@ -152,9 +155,12 @@ static DEFINE_PCI_DEVICE_TABLE(pci_table) = {
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 472e094..0a37ec0 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1499,6 +1499,7 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 	unsigned long flags;
+ 	struct irq_cfg *cfg;
+ 	unsigned int irq;
++	struct irq_chip *chip;
  
- MODULE_DEVICE_TABLE(pci, pci_table);
+ 	printk(KERN_DEBUG "number of MP IRQ sources: %d.\n", mp_irq_entries);
+ 	for (i = 0; i < nr_ioapics; i++)
+@@ -1618,6 +1619,10 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 	for_each_active_irq(irq) {
+ 		struct irq_pin_list *entry;
  
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+/*
-+ * this structure is for data unique to this hardware driver.  If
-+ * several hardware drivers keep similar information in this structure,
-+ * feel free to suggest moving the variable to the struct comedi_device
-+ * struct.
-+ */
- struct board_private_struct {
- 	unsigned long registers;	/* set by probe */
- 	unsigned long dio_registers;
-@@ -300,7 +306,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		return err;
- 
- /* Output some info */
--	printk("comedi%d: %s: ", dev->minor, thisboard->name);
-+	pr_info("comedi%d: %s: attached\n", dev->minor, thisboard->name);
- 
- /*
-  * Initialize dev->board_name.  Note that we can use the "thisboard"
-@@ -335,13 +341,16 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (thisboard->dio_chans) {
- 		switch (thisboard->dio_method) {
- 		case DIO_8255:
--			/* this is a straight 8255, so register us with the 8255 driver */
-+			/*
-+			 * this is a straight 8255, so register
-+			 * us with the 8255 driver
-+			 */
- 			subdev_8255_init(dev, s, NULL, devpriv->dio_registers);
- 			devpriv->attached_to_8255 = 1;
- 			break;
- 		case DIO_INTERNAL:
- 		default:
--			printk("DIO_INTERNAL not implemented yet!\n");
-+			pr_warn("DIO_INTERNAL not implemented yet!\n");
- 			return -ENXIO;
- 			break;
- 		}
-@@ -351,8 +360,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	devpriv->attached_successfully = 1;
- 
--	printk("attached\n");
--
- 	return 1;
- }
- 
-@@ -381,8 +388,8 @@ static int detach(struct comedi_device *dev)
- 		}
- 
- 		if (devpriv->attached_successfully && thisboard)
--			printk("comedi%d: %s: detached\n", dev->minor,
--			       thisboard->name);
-+			pr_info("comedi%d: %s: detached\n", dev->minor,
-+				thisboard->name);
- 
- 	}
- 
-@@ -436,8 +443,11 @@ static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 
- 	for (i = 0; i < insn->n; i++) {
- 		inw(devpriv->registers + chan * 2);
--		/* should I set data[i] to the result of the actual read on the register
--		   or the cached unsigned int in devpriv->ao_readback[]? */
-+		/*
-+		 * should I set data[i] to the result of the actual read on
-+		 * the register or the cached unsigned int in
-+		 * devpriv->ao_readback[]?
-+		 */
- 		data[i] = devpriv->ao_readback[chan];
- 	}
- 
-@@ -489,8 +499,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 			devpriv->pci_dev = pcidev;
- 			dev->board_ptr = boards + index;
- 			if (comedi_pci_enable(pcidev, thisboard->name)) {
--				printk
--				    ("cb_pcimdda: Failed to enable PCI device and request regions\n");
-+				pr_err("cb_pcimdda: Failed to enable PCI device and request regions\n");
- 				return -EIO;
- 			}
- 			registers =
-@@ -503,7 +512,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
- 		}
- 	}
- 
--	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
-+	pr_err("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
- 	       "card found at the requested position\n");
- 	return -ENODEV;
- }
++		chip = irq_get_chip(irq);
++		if (chip != &ioapic_chip && chip != &ir_ioapic_chip)
++			continue;
++
+ 		cfg = irq_get_chip_data(irq);
+ 		if (!cfg)
+ 			continue;
 -- 
-1.7.6.4
+1.7.4.1
 
