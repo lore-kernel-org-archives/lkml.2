@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1JJL5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:57:52 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:45012 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab1JJLzM (ORCPT
+	id S1753945Ab1JJL6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:58:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61890 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab1JJL6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:55:12 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 01/13] drbd: Refuse to change network options online when...
-Date: Mon, 10 Oct 2011 13:54:54 +0200
-Message-Id: <1318247706-7732-2-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
-References: <1318247706-7732-1-git-send-email-philipp.reisner@linbit.com>
+	Mon, 10 Oct 2011 07:58:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1318235485-2112-1-git-send-email-linus.walleij@stericsson.com>
+References: <1318235485-2112-1-git-send-email-linus.walleij@stericsson.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 10 Oct 2011 19:57:51 +0800
+Message-ID: <CAGsJ_4w9y_DTgX-zz7BUFM2M+UPgFF=JDmD5RptQ3SR5-0h1UQ@mail.gmail.com>
+Subject: Re: [PATCH v10] pinctrl: add a driver for the U300 pinmux
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* the peer does not speak protocol_version 100 and the
-  user wants to change one of:
-    - wire_protocol
-    - two_primaries
-    - integrity_alg
+2011/10/10 Linus Walleij <linus.walleij@stericsson.com>:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> This adds a driver for the U300 pinmux portions of the system
+> controller "SYSCON". It also serves as an example of how to use
+> the pinmux subsystem. This driver also houses the platform data
+> for the only supported platform.
+>
+> This deletes the old U300 driver in arch/arm/mach-u300 and
+> replace it with a driver using the new subsystem.
+>
+> The new driver is considerably fatter than the old one, but it
+> also registers all 467 pins of the system and adds the power
+> and EMIF pin groups and corresponding functions. The idea
+> is to use this driver as a a reference for other
+> implementation so it needs to be as complete and verbose
+> as possible.
+>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-* the user wants to remove the allow_two_primaries flag
-  when there are two primaries
+Reviewed-by: Barry Song <21cnbao@gmail.com>
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_nl.c |   22 ++++++++++++++++++----
- include/linux/drbd.h         |    1 +
- 2 files changed, 19 insertions(+), 4 deletions(-)
+> ---
+> ChangeLog v9 -> v10
+> - Removed debug register dump (review from Barry Song)
+> - Allocate sizeof(*ptr) instead of sizeof(struct foo)
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 972178b..87fd3bf 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1771,10 +1771,24 @@ _check_net_options(struct drbd_tconn *tconn, struct net_conf *old_conf, struct n
- 	struct drbd_conf *mdev;
- 	int i;
- 
--	if (old_conf && tconn->agreed_pro_version < 100 &&
--	    tconn->cstate == C_WF_REPORT_PARAMS &&
--	    new_conf->wire_protocol != old_conf->wire_protocol)
--		return ERR_NEED_APV_100;
-+	if (old_conf && tconn->cstate == C_WF_REPORT_PARAMS && tconn->agreed_pro_version < 100) {
-+		if (new_conf->wire_protocol != old_conf->wire_protocol)
-+			return ERR_NEED_APV_100;
-+
-+		if (new_conf->two_primaries != old_conf->two_primaries)
-+			return ERR_NEED_APV_100;
-+
-+		if (!new_conf->integrity_alg != !old_conf->integrity_alg)
-+			return ERR_NEED_APV_100;
-+
-+		if (strcmp(new_conf->integrity_alg, old_conf->integrity_alg))
-+			return ERR_NEED_APV_100;
-+	}
-+
-+	if (!new_conf->two_primaries &&
-+	    conn_highest_role(tconn) == R_PRIMARY &&
-+	    conn_highest_peer(tconn) == R_PRIMARY)
-+		return ERR_NEED_ALLOW_TWO_PRI;
- 
- 	if (new_conf->two_primaries &&
- 	    (new_conf->wire_protocol != DRBD_PROT_C))
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index 05063e6..679e811 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -161,6 +161,7 @@ enum drbd_ret_code {
- 	ERR_MINOR_EXISTS	= 161,
- 	ERR_INVALID_REQUEST	= 162,
- 	ERR_NEED_APV_100	= 163,
-+	ERR_NEED_ALLOW_TWO_PRI  = 164,
- 
- 	/* insert new ones above this line */
- 	AFTER_LAST_ERR_CODE
--- 
-1.7.4.1
 
+-barry
