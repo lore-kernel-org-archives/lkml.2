@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1JJBv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 9 Oct 2011 21:51:58 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54422 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab1JJBv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 9 Oct 2011 21:51:57 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID p9A1pjLn006301, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH] staging:rts_pstor:Fix SDIO issue
-Date: Mon, 10 Oct 2011 09:51:44 +0800
-X-BOX-Message-Id: p9A1pjLn006301
-Message-ID: <1318211504-22108-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.7
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751566Ab1JJCTF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 9 Oct 2011 22:19:05 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:33555
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751148Ab1JJCTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 9 Oct 2011 22:19:04 -0400
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/1] Staging: hv: util: Invoke cn_netlink_send() in a work context
+Date: Sun,  9 Oct 2011 19:42:28 -0700
+Message-Id: <1318214548-22572-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wwang <wei_wang@realsil.com.cn>
+Invoke cn_netlink_send() in a work context as opposed being called
+in the context of  channel callback. On entry into the channel callback
+code the channel inbound spin lock is held and deferring to a work
+context avoids having to invoke cn_netlink_send() while holding
+the inbound lock. As part of this adjustment, also increase the
+timeout value for waiting for the user level component of KVP.
 
-Fix a bug that SDIO and SD normal card would appear simultaneously if a SDIO card inserted.
-
-Signed-off-by: wwang <wei_wang@realsil.com.cn>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/rts_pstor/sd.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/hv/hv_kvp.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index fb62eaf..ebf529a 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -3134,14 +3134,15 @@ int reset_sd_card(struct rtsx_chip *chip)
+diff --git a/drivers/staging/hv/hv_kvp.c b/drivers/staging/hv/hv_kvp.c
+index 307aedc..1e9515c 100644
+--- a/drivers/staging/hv/hv_kvp.c
++++ b/drivers/staging/hv/hv_kvp.c
+@@ -44,11 +44,12 @@
+ static struct {
+ 	bool active; /* transaction status - active or not */
+ 	int recv_len; /* number of bytes received. */
++	int index; /* current index */
+ 	struct vmbus_channel *recv_channel; /* chn we got the request */
+ 	u64 recv_req_id; /* request ID. */
+ } kvp_transaction;
  
- 	if (chip->sd_ctl & RESET_MMC_FIRST) {
- 		retval = reset_mmc(chip);
--		if ((retval != STATUS_SUCCESS) && !sd_check_err_code(chip, SD_NO_CARD)) {
-+		if (retval != STATUS_SUCCESS) {
-+			if (sd_check_err_code(chip, SD_NO_CARD))
-+				TRACE_RET(chip, STATUS_FAIL);
-+
- 			retval = reset_sd(chip);
- 			if (retval != STATUS_SUCCESS) {
- 				if (CHECK_PID(chip, 0x5209)) {
--					retval = sd_change_bank_voltage(chip, SD_IO_3V3);
--					if (retval != STATUS_SUCCESS) {
--						TRACE_RET(chip, STATUS_FAIL);
--					}
-+					sd_change_bank_voltage(chip, SD_IO_3V3);
-+					TRACE_RET(chip, STATUS_FAIL);
- 				}
- 			}
- 		}
-@@ -3157,17 +3158,16 @@ int reset_sd_card(struct rtsx_chip *chip)
- 				if (retval != STATUS_SUCCESS) {
- 					TRACE_RET(chip, STATUS_FAIL);
- 				}
-+				retval = STATUS_FAIL;
- 			}
+-static int kvp_send_key(int index);
++static void kvp_send_key(struct work_struct *dummy);
  
--			if (!chip->sd_io) {
-+			if (!chip->sd_io)
- 				retval = reset_mmc(chip);
--			}
- 		}
+ #define TIMEOUT_FIRED 1
+ 
+@@ -57,6 +58,7 @@ static void kvp_work_func(struct work_struct *dummy);
+ static void kvp_register(void);
+ 
+ static DECLARE_DELAYED_WORK(kvp_work, kvp_work_func);
++static DECLARE_WORK(kvp_sendkey_work, kvp_send_key);
+ 
+ static struct cb_id kvp_id = { CN_KVP_IDX, CN_KVP_VAL };
+ static const char kvp_name[] = "kvp_kernel_module";
+@@ -121,10 +123,11 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
  	}
+ }
  
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
+-static int
+-kvp_send_key(int index)
++static void
++kvp_send_key(struct work_struct *dummy)
+ {
+ 	struct cn_msg *msg;
++	int index = kvp_transaction.index;
  
- 	retval = sd_set_clock_divider(chip, SD_CLK_DIVIDE_0);
- 	if (retval != STATUS_SUCCESS) {
+ 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
+ 
+@@ -136,9 +139,8 @@ kvp_send_key(int index)
+ 		msg->len = sizeof(struct hv_ku_msg);
+ 		cn_netlink_send(msg, 0, GFP_ATOMIC);
+ 		kfree(msg);
+-		return 0;
+ 	}
+-	return 1;
++	return;
+ }
+ 
+ /*
+@@ -286,6 +288,7 @@ void hv_kvp_onchannelcallback(void *context)
+ 			kvp_transaction.recv_channel = channel;
+ 			kvp_transaction.recv_req_id = requestid;
+ 			kvp_transaction.active = true;
++			kvp_transaction.index = kvp_data->index;
+ 
+ 			/*
+ 			 * Get the information from the
+@@ -296,8 +299,8 @@ void hv_kvp_onchannelcallback(void *context)
+ 			 * Set a timeout to deal with
+ 			 * user-mode not responding.
+ 			 */
+-			kvp_send_key(kvp_data->index);
+-			schedule_delayed_work(&kvp_work, 100);
++			schedule_work(&kvp_sendkey_work);
++			schedule_delayed_work(&kvp_work, 5*HZ);
+ 
+ 			return;
+ 
+@@ -332,4 +335,5 @@ void hv_kvp_deinit(void)
+ {
+ 	cn_del_callback(&kvp_id);
+ 	cancel_delayed_work_sync(&kvp_work);
++	cancel_work_sync(&kvp_sendkey_work);
+ }
 -- 
-1.7.7
+1.7.4.1
 
