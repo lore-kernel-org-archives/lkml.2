@@ -1,87 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab1JJXip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 19:38:45 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:46733 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752071Ab1JJXio (ORCPT
+	id S1753643Ab1JJXl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 19:41:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39699 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab1JJXlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 19:38:44 -0400
-Date: Mon, 10 Oct 2011 19:38:42 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: eranian@google.com
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, anton@samba.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
-Subject: Re: Oprofile Regression Caused by commit
- e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25 on PPC
-Message-ID: <20111010233842.GC24583@mgebm.net>
-References: <20111007204247.GA5444@mgebm.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ncSAzJYg3Aa9+CRW"
-Content-Disposition: inline
-In-Reply-To: <20111007204247.GA5444@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 10 Oct 2011 19:41:55 -0400
+Date: Mon, 10 Oct 2011 16:41:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <greg@kroah.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly
+ reserved on a per-section basis
+Message-Id: <20111010164152.5485fbaf.akpm@linux-foundation.org>
+In-Reply-To: <20111010233531.GA7234@kroah.com>
+References: <20111010071119.GE6418@suse.de>
+	<20111010150038.ac161977.akpm@linux-foundation.org>
+	<20111010232403.GA30513@kroah.com>
+	<20111010162813.7a470ae4.akpm@linux-foundation.org>
+	<20111010233531.GA7234@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 10 Oct 2011 16:35:31 -0700
+Greg KH <greg@kroah.com> wrote:
 
---ncSAzJYg3Aa9+CRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > Ok, care to send me what exactly needs to be reverted and what needs to
+> > > be added?
+> > 
+> > Drop
+> > 
+> > commit 54f23eb7ba7619de85d8edca6e5336bc33072dbd
+> > Author: Nathan Fontenot <nfont@austin.ibm.com>
+> > Date:   Mon Sep 26 10:22:33 2011 -0500
+> > 
+> >     memory hotplug: Correct page reservation checking
+> > 
+> > and replace it with start-of-this-thread.
+> > 
+> > That's assuming that Mel's update passes Nathan's review and testing :)
+> 
+> Ok, I'll wait for that review and testing, and then can someone send me
+> the patch at the start-of-this-thread as I no longer seem to be able to
+> find it :(
 
-On Fri, 07 Oct 2011, Eric B Munson wrote:
+It sounds like your new email setup is working as well as mine :(
 
-> This commit seems to have caused a regression with oprofile.  It is fairl=
-y easy
-> to trigger, simply run oprofile monitoring an event that will fire (somet=
-hing
-> frequent like CPU cycles) causes oprofile to fail saying that the PMU is =
-in use.
-> If I disable CONFIG_CGROUP_PERF, everything goes back to working.  I susp=
-ect the
-> problem is that the PMU is being initialized without being reserved for p=
-erf.  I
-> am not yet sure of the right fix yet so if you have any suggestions I wou=
-ld
-> appreciate them.
->=20
-> Eric
 
-This isn't the best description of the behavior we see, what happens is at =
-some
-point in the profiling session the MMCR register is clobbered by
-perf_cgroup_switch() which calls perf_pmu_enable() without reserving the PMC
-hardware.  When this happens oprofile stops counting.  It doesn't happen ea=
-ch
-time so some runs show event counts that are reasonable, but it can also le=
-ad to
-event counts that are smaller than expected, or completely missing.
+From: Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] mm: memory hotplug: Check if pages are correctly reserved on
 
-Eric
+It is expected that memory being brought online is PageReserved
+similar to what happens when the page allocator is being brought up.
+Memory is onlined in "memory blocks" which consist of one or more
+sections. Unfortunately, the code that verifies PageReserved is
+currently assuming that the memmap backing all these pages is virtually
+contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
+As a result, memory hot-add is failing on !VMEMMAP configurations
+with the message;
 
---ncSAzJYg3Aa9+CRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+kernel: section number XXX page number 256 not reserved, was it already online?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This patch updates the PageReserved check to lookup struct page once
+per section to guarantee the correct struct page is being checked.
 
-iQIcBAEBAgAGBQJOk4ICAAoJEKhG9nGc1bpJbxoQAJiZLtnVQ5Cs41TtFXRotoWn
-qjNGR76jFWDqSw9Bh52DBAp9+uvtlDqn309deQtm79C70TW1Pe73gIZdtrbwqduN
-Iyy5+Nnlid8dBTkH4mEXQuJf1fdKifXJ2u4b+4sC061qCmauXJrZQXFBMm4J4ZO0
-o+M1GIzH3rO0WAJcvHPSfR20OFn1d1ETZiaWv8nKyUTr/kwEamZ/p8ppES4Ar3JN
-eRqpQ2CLhgBj9x+ptW76Y5z8Mgf4MTkNfyQ9mxehy3YCpPf2hBfhhy+DMXxoxl0z
-qEv1Fbp3tvJ+JzyRcaivWw72xc4bxvfYAb6iDU4F0nr+s492uVeiR1I5yzX/dtAf
-Eu8vXRCciIHSvZPNDoZgMnulppFU1pwEC+F6Gg9BaaOQpHCM8HB6cDEmrXQV6fCF
-6PzF5FQi1bR+6WRn58sYLQTwCm6Q7n3kaqwn/qLMUN9H9SzG9EwjcCTHUKI0S/Hz
-Fjy+UvbW8O43kSm9AN1/peNRYpGjwlJ13BaKCsQWIETW3acVqBoZbq4ZQxi4i9oL
-yXk7kc6vyTG0bJvSPoabT3ySFng76X86e9N8Q1x8npDRvJ5Ib3xtFdHy8ThueIDc
-7JhLvG//vWx4DeGY6PZi1dNZIgmksnx1z0vlKTMclxyXIfMJrIddEpjzidbpOK4B
-i3kVOxXieEEL613x4W7d
-=dAk7
------END PGP SIGNATURE-----
+[original patch by: nfont@linux.vnet.ibm.com]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/base/memory.c |   58 +++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 40 insertions(+), 18 deletions(-)
 
---ncSAzJYg3Aa9+CRW--
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 2840ed4..ffb69cd 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
+ }
+ 
+ /*
++ * The probe routines leave the pages reserved, just as the bootmem code does.
++ * Make sure they're still that way.
++ */
++static bool pages_correctly_reserved(unsigned long start_pfn,
++					unsigned long nr_pages)
++{
++	int i, j;
++	struct page *page;
++	unsigned long pfn = start_pfn;
++
++	/*
++	 * memmap between sections is not contiguous except with
++	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
++	 * and assume memmap is contiguous within each section
++	 */
++	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
++		if (WARN_ON_ONCE(!pfn_valid(pfn)))
++			return false;
++		page = pfn_to_page(pfn);
++
++		for (j = 0; j < PAGES_PER_SECTION; j++) {
++			if (PageReserved(page + i))
++				continue;
++
++			printk(KERN_WARNING "section number %ld page number %d "
++				"not reserved, was it already online?\n",
++				pfn_to_section_nr(pfn), j);
++
++			return false;
++		}
++	}
++
++	return true;
++}
++
++/*
+  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+ memory_block_action(unsigned long phys_index, unsigned long action)
+ {
+-	int i;
+ 	unsigned long start_pfn, start_paddr;
+ 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+ 	struct page *first_page;
+@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ 
+ 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+ 
+-	/*
+-	 * The probe routines leave the pages reserved, just
+-	 * as the bootmem code does.  Make sure they're still
+-	 * that way.
+-	 */
+-	if (action == MEM_ONLINE) {
+-		for (i = 0; i < nr_pages; i++) {
+-			if (PageReserved(first_page+i))
+-				continue;
+-
+-			printk(KERN_WARNING "section number %ld page number %d "
+-				"not reserved, was it already online?\n",
+-				phys_index, i);
+-			return -EBUSY;
+-		}
+-	}
+-
+ 	switch (action) {
+ 		case MEM_ONLINE:
+ 			start_pfn = page_to_pfn(first_page);
++
++			if (!pages_correctly_reserved(start_pfn, nr_pages))
++				return -EBUSY;
++
+ 			ret = online_pages(start_pfn, nr_pages);
+ 			break;
+ 		case MEM_OFFLINE:
+
+
