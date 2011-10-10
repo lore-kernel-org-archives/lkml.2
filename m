@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1JJWh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 18:37:29 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61148 "EHLO
+	id S1753450Ab1JJWmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 18:42:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48147 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1JJWh1 (ORCPT
+	with ESMTP id S1752169Ab1JJWmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 18:37:27 -0400
-Date: Mon, 10 Oct 2011 15:37:23 -0700
+	Mon, 10 Oct 2011 18:42:08 -0400
+Date: Mon, 10 Oct 2011 15:42:05 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Rik van Riel <riel@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, lwoodman@redhat.com,
-        Seiji Aguchi <saguchi@redhat.com>, hughd@google.com,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-Message-Id: <20111010153723.6397924f.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>
+Subject: Re: [PATCH] checkpatch: Add a --strict check for utf-8 in commit
+ logs
+Message-Id: <20111010154205.02c3bd3e.akpm@linux-foundation.org>
+In-Reply-To: <1318285950.2149.24.camel@Joe-Laptop>
+References: <1318226216-5317-1-git-send-email-olof@lixom.net>
+	<1318266599.27825.12.camel@Joe-Laptop>
+	<20111010151027.bc397b85.akpm@linux-foundation.org>
+	<1318285950.2149.24.camel@Joe-Laptop>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,49 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Oct 2011 20:08:19 -0700 (PDT)
-David Rientjes <rientjes@google.com> wrote:
+On Mon, 10 Oct 2011 15:32:30 -0700
+Joe Perches <joe@perches.com> wrote:
 
-> On Thu, 1 Sep 2011, Rik van Riel wrote:
+> Some find using utf-8 in commit logs inappropriate.
 > 
-> > Add a userspace visible knob to tell the VM to keep an extra amount
-> > of memory free, by increasing the gap between each zone's min and
-> > low watermarks.
-> > 
-> > This is useful for realtime applications that call system
-> > calls and have a bound on the number of allocations that happen
-> > in any short time period.  In this application, extra_free_kbytes
-> > would be left at an amount equal to or larger than than the
-> > maximum number of allocations that happen in any burst.
-> > 
-> > It may also be useful to reduce the memory use of virtual
-> > machines (temporarily?), in a way that does not cause memory
-> > fragmentation like ballooning does.
-> > 
+> Some patch commit logs contain unintended utf-8 characters
+> when doing things like copy/pasting compilation output.
 > 
-> I know this was merged into -mm, but I still have to disagree with it 
-> because I think it adds yet another userspace knob that will never be 
-> obsoleted, will be misinterepted, and is tied very closely to the 
-> implementation of page reclaim, both synchronous and asynchronous.
-
-Yup.  We should strenuously avoid merging it, for these reasons.
-
->  I also 
-> think that it will cause regressions on other cpu intensive workloads 
-> that don't require this extra freed memory because it works as a global 
-> heuristic and is not tied to any specific application.
+> Look for the start of any commit log by skipping initial
+> lines that look like email headers and "From: " lines.
 > 
-> I think it would be far better to reclaim beyond above the high watermark 
-> if the types of workloads that need this tunable can be somehow detected 
-> (the worst case scenario is being a prctl() that does synchronous reclaim 
-> above the watermark so admins can identify these workloads), or be able to 
-> mark allocations within the kernel as potentially coming in large bursts 
-> where allocation is problematic.
+> Stop looking for utf-8 at the first signature line.
+> 
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> ---
+> 
+> I don't feel strongly that this patch should be applied,
+> that's why it's a --strict check and not on by default,
+> but Andrew Morton seems to want something like it...
 
-The page allocator already tries harder if the caller has
-rt_task(current).  Why is this inadequate?  Can we extend this idea
-further to fix whatever-the-problem-is?
+Mainly because of the non-ascii single-quote chars which gcc emits in
+its warning/error messages.  I use LANG=C to stop gcc from doing that,
+and also have a proglet to undo this nonsense when I'm merging patches
+(below) (I totally forget how it works).  But I see such things turning
+up in the tree via other merge paths.
 
-Does there exist anything like a test case which demonstrates the need
-for this feature?
+
+
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+
+static void dump(int *buf)
+{
+	if (buf[0] == 0xE2 && buf[1] == 0x80 && buf[2] == 0x98) {
+		putchar('`');
+		buf[0] = 0;
+		buf[1] = 0;
+		buf[2] = 0;
+	} else if (buf[0] == 0xE2 && buf[1] == 0x80 && buf[2] == 0x99) {
+		putchar('\'');
+		buf[0] = 0;
+		buf[1] = 0;
+		buf[2] = 0;
+	} else if (buf[0] == 0xa1) {
+		putchar('`');
+		goto move;
+	} else if (buf[0] == 0xa2) {
+		putchar('\'');
+		goto move;
+	} else {
+		if (buf[0])
+			putchar(buf[0]);
+move:
+		buf[0] = buf[1]; 
+		buf[1] = buf[2];
+		buf[2] = 0;
+	}
+}
+
+static void doit(FILE *f)
+{
+	int buf[3] = {};
+	int c;
+
+	while ((c = fgetc(f)) != EOF) {
+		dump(buf);
+		buf[2] = c;
+	}
+	dump(buf);
+	dump(buf);
+	dump(buf);
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc == 1) {
+		doit(stdin);
+	} else {
+		int i;
+
+		for (i = 1; i < argc; i++) {
+			FILE *f = fopen(argv[i], "r");
+
+			if (f == NULL) {
+				fprintf(stderr, "%s: cannot open `%s': %s\n",
+					argv[0], argv[1], strerror(errno));
+				exit(1);
+			}
+			doit(f);
+			fclose(f);
+		}
+	}
+	exit(0);
+}			
 
