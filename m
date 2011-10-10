@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab1JJKNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 06:13:15 -0400
-Received: from www.0x90.at ([78.46.59.21]:22640 "EHLO mail.0x90.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097Ab1JJKNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 06:13:14 -0400
-X-Greylist: delayed 662 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Oct 2011 06:13:14 EDT
-Date: Mon, 10 Oct 2011 12:05:55 +0200
-From: Daniel Walter <d.walter@0x90.at>
-To: rui.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH][TRIVIAL] [thermal] fix unused variable warning
-Message-ID: <20111010100555.GA33394@0x90.at>
+	id S1753344Ab1JJKSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 06:18:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49838 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab1JJKSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 06:18:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <fced9ea9f590d664a08a1f5425adfc5afa1d5949.1318233879.git.joe@perches.com>
+References: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
+	<cover.1318233879.git.joe@perches.com>
+	<fced9ea9f590d664a08a1f5425adfc5afa1d5949.1318233879.git.joe@perches.com>
+Date: Mon, 10 Oct 2011 19:18:21 +0900
+Message-ID: <CAKYAXd8XCR14M9goZrF4N0iKhMnwOOa+9OT1_StNYWGT6e2X5A@mail.gmail.com>
+Subject: Re: [PATCH 2/6] udf: Rename udf_error to udf_err
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[thermal] fix unused variable warning 
-
-thermal_event_seqnum is only used if CONFIG_NET is defined.
-
-Signed-off-by: Daniel Walter <d.walter@0x90.at>
----
- drivers/thermal/thermal_sys.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
----
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index 708f8e9..def02da 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -60,7 +60,9 @@ static LIST_HEAD(thermal_tz_list);
- static LIST_HEAD(thermal_cdev_list);
- static DEFINE_MUTEX(thermal_list_lock);
- 
-+#ifdef CONFIG_NET
- static unsigned int thermal_event_seqnum;
-+#endif /* CONFIG_NET */
- 
- static int get_idr(struct idr *idr, struct mutex *lock, int *id)
- {
+2011/10/10 Joe Perches <joe@perches.com>:
+> Rename udf_error to udf_err for consistency with normal logging
+> uses of pr_err.
+>
+> Rename function udf_err to _udf_err.
+> Remove __func__ from uses and move __func__ to a new udf_err
+> macro that calls _udf_err.
+> Some of the udf_error uses had \n terminations, some did not so
+> standardize \n's to udf_err uses, remove \n from _udf_err function.
+> Coalesce udf_err formats.
+> One message prefixed with udf_read_super is now prefixed with
+> udf_fill_super.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+Reviewed-by: NamJae Jeon <linkinjeon@gmail.com>
