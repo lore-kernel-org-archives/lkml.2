@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab1JJIHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:07:54 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:55794 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab1JJIHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:07:53 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com, joe@perches.com,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH v2 3/9] Staging: comedi: fix printk issue in cb_pcidas.c
-Date: Mon, 10 Oct 2011 13:36:55 +0530
-Message-Id: <1318234015-5591-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.4
+	id S1752749Ab1JJIIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:08:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37824 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752455Ab1JJIIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 04:08:16 -0400
+From: Joe Perches <joe@perches.com>
+To: Jan Kara <jack@suse.cz>
+Cc: NamJae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] udf: Change some KERN_<level>s and logging neatening
+Date: Mon, 10 Oct 2011 01:08:01 -0700
+Message-Id: <cover.1318233879.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
+In-Reply-To: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
+References: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidas.c file that fixes up a printk warning
-found by the checkpatch.pl tool
+I reviewed your patch and think it's too large
+for others to review because it combines multiple
+things into a single patch.
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- v1->v2: Fixed a whitespace issue and removed printks as suggested
- by Dan Carpenter and Ryan Mallon.
- Converted printks to pr_<levels>.
+I think that adding struct super_block * to udb_debug
+isn't necessary or particularly useful.
 
- drivers/staging/comedi/drivers/cb_pcidas.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+Here are the changes to your original patch that I made:
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 61968a5..572525c5 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -565,8 +565,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 	int index;
- 	int i;
- 
--	printk("comedi%d: cb_pcidas: ", dev->minor);
--
- /*
-  * Allocate the private structure area.
-  */
-@@ -576,7 +574,6 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
--	printk("\n");
- 
- 	for_each_pci_dev(pcidev) {
- 		/*  is it not a computer boards card? */
-@@ -600,20 +597,20 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 		}
- 	}
- 
--	printk("No supported ComputerBoards/MeasurementComputing card found on "
-+	pr_err("No supported ComputerBoards/MeasurementComputing card found on "
- 	       "requested position\n");
- 	return -EIO;
- 
- found:
- 
--	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	pr_info("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
-+		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
- 
- 	/*
- 	 * Enable PCI device and reserve I/O ports.
- 	 */
- 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
--		printk(" Failed to enable PCI device and request regions\n");
-+		pr_err("Failed to enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	/*
-@@ -639,7 +636,7 @@ found:
- 	/*  get irq */
- 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
- 			IRQF_SHARED, "cb_pcidas", dev)) {
--		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
-+		pr_err("unable to allocate irq %d\n", devpriv->pci_dev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = devpriv->pci_dev->irq;
-@@ -768,7 +765,6 @@ found:
-  */
- static int cb_pcidas_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
- 
- 	if (devpriv) {
- 		if (devpriv->s5933_config) {
+Separate a single large patch into reviewable chunks.
+Don't convert every message type to udf_<foo>.
+
+Joe Perches (6):
+  udf: Promote some debugging messages to udf_error
+  udf: Rename udf_error to udf_err
+  udf: Rename udf_warn to udf_warn
+  udf: Convert printks to pr_<level>
+  udf: Neaten logging output, use vsprintf extension %pV
+  udf: Neaten udf_debug uses
+
+ fs/udf/balloc.c    |   14 ++--
+ fs/udf/directory.c |    8 +-
+ fs/udf/inode.c     |   36 ++++-----
+ fs/udf/lowlevel.c  |    2 +-
+ fs/udf/misc.c      |   24 ++++---
+ fs/udf/namei.c     |    5 +-
+ fs/udf/partition.c |   11 +--
+ fs/udf/super.c     |  214 +++++++++++++++++++++++-----------------------------
+ fs/udf/truncate.c  |   21 ++---
+ fs/udf/udfdecl.h   |   35 ++++++---
+ fs/udf/udftime.c   |    3 +-
+ fs/udf/unicode.c   |    6 +-
+ 12 files changed, 178 insertions(+), 201 deletions(-)
+
 -- 
-1.7.6.4
+1.7.6.405.gc1be0
 
