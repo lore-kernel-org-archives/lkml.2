@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1JJQVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:21:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49412 "EHLO
+	id S1752796Ab1JJQVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:21:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49414 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab1JJQVN (ORCPT
+	with ESMTP id S1752605Ab1JJQVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Oct 2011 12:21:13 -0400
 From: Rajendra Nayak <rnayak@ti.com>
@@ -13,9 +13,9 @@ CC: <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <tony@atomide.com>,
         <lrg@ti.com>, <b-cousson@ti.com>, <patches@linaro.org>,
         <linux-kernel@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
-Date: Mon, 10 Oct 2011 21:49:36 +0530
-Message-ID: <1318263578-7407-4-git-send-email-rnayak@ti.com>
+Subject: [PATCH v2 5/5] regulator: map consumer regulator based on device tree
+Date: Mon, 10 Oct 2011 21:49:38 +0530
+Message-ID: <1318263578-7407-6-git-send-email-rnayak@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1318263578-7407-1-git-send-email-rnayak@ti.com>
 References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
@@ -25,237 +25,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The helper routine is meant to be used by regulator drivers
-to extract the regulator_init_data structure from the data
-that is passed from device tree.
-'consumer_supplies' which is part of regulator_init_data is not extracted
-as the regulator consumer mappings are passed through DT differently,
-implemented in subsequent patches.
-Similarly the regulator<-->parent/supply mapping is handled in
-subsequent patches.
+Device nodes in DT can associate themselves with one or more
+regulators/supply by providing a list of phandles (to regulator nodes)
+and corresponding supply names.
 
-Also add documentation for regulator bindings to be used to pass
-regulator_init_data struct information from device tree.
+For Example:
+	devicenode: node@0x0 {
+		...
+		...
+		vmmc-supply = <&regulator1>;
+		vpll-supply = <&regulator1>;
+	};
+
+The driver would then do a regulator_get(dev, "vmmc"); to get
+regulator1 and do a regulator_get(dev, "vpll"); to get
+regulator2.
+
+of_get_regulator() extracts the regulator node for a given
+device, based on the supply name.
+
+Use it to look up the regulator for a given consumer from device tree, during
+a regulator_get(). If not found fallback and lookup through
+the regulator_map_list instead.
+
+Also, since the regulator dt nodes can use the same binding to
+associate with a parent regulator/supply, allow the drivers to
+specify a supply_name, which can then be used to lookup dt
+to find the parent phandle.
 
 Signed-off-by: Rajendra Nayak <rnayak@ti.com>
 ---
- .../devicetree/bindings/regulator/regulator.txt    |   44 +++++++++
- drivers/regulator/Kconfig                          |    8 ++
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/of_regulator.c                   |   93 ++++++++++++++++++++
- include/linux/regulator/of_regulator.h             |   21 +++++
- 5 files changed, 167 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
- create mode 100644 drivers/regulator/of_regulator.c
- create mode 100644 include/linux/regulator/of_regulator.h
+ drivers/regulator/core.c         |   91 +++++++++++++++++++++++++++++++------
+ include/linux/regulator/driver.h |    2 +
+ 2 files changed, 78 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-new file mode 100644
-index 0000000..a623fdd
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -0,0 +1,44 @@
-+Voltage/Current Regulators
-+
-+Optional properties:
-+- regulator-min-uV: smallest voltage consumers may set
-+- regulator-max-uV: largest voltage consumers may set
-+- regulator-uV-offset: Offset applied to voltages to compensate for voltage drops
-+- regulator-min-uA: smallest current consumers may set
-+- regulator-max-uA: largest current consumers may set
-+- regulator-change-voltage: boolean, Output voltage can be changed by software
-+- regulator-change-current: boolean, Output current can be chnaged by software
-+- regulator-change-mode: boolean, Operating mode can be changed by software
-+- regulator-change-status: boolean, Enable/Disable control for regulator exists
-+- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
-+- regulator-mode-fast: boolean, allow/set fast mode for the regulator
-+- regulator-mode-normal: boolean, allow/set normal mode for the regulator
-+- regulator-mode-idle: boolean, allow/set idle mode for the regulator
-+- regulator-mode-standby: boolean, allow/set standby mode for the regulator
-+- regulator-input-uV: Input voltage for regulator when supplied by another regulator
-+- regulator-always-on: boolean, regulator should never be disabled
-+- regulator-boot-on: bootloader/firmware enabled regulator
-+- <name>-supply: phandle to the parent supply/regulator node
-+
-+Example:
-+
-+	xyzreg: regulator@0 {
-+		regulator-min-uV = <1000000>;
-+		regulator-max-uV = <2500000>;
-+		regulator-mode-fast;
-+		regulator-change-voltage;
-+		regulator-always-on;
-+		vin-supply = <&vin>;
-+	};
-+
-+The same binding used by a regulator to reference its
-+supply can be used by any consumer to reference its
-+regulator/supply
-+
-+Example of a device node referencing a regulator node,
-+
-+	devicenode: node@0x0 {
-+		...
-+		...
-+		<name>-supply = <&xyzreg>;
-+	};
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index c7fd2c0..981c92e 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -64,6 +64,14 @@ config REGULATOR_USERSPACE_CONSUMER
- 
-           If unsure, say no.
- 
-+config OF_REGULATOR
-+	tristate "OF regulator helpers"
-+	depends on OF
-+	default y if OF
-+	help
-+	  OpenFirmware regulator framework helper routines that can
-+	  used by regulator drivers to extract data from device tree.
-+
- config REGULATOR_BQ24022
- 	tristate "TI bq24022 Dual Input 1-Cell Li-Ion Charger IC"
- 	help
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 040d5aa..e6bc009 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_REGULATOR) += core.o dummy.o
- obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
- obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
- obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
-+obj-$(CONFIG_OF_REGULATOR) += of_regulator.o
- 
- obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
- obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-new file mode 100644
-index 0000000..9262d06
---- /dev/null
-+++ b/drivers/regulator/of_regulator.c
-@@ -0,0 +1,93 @@
-+/*
-+ * OF helpers for regulator framework
-+ *
-+ * Copyright (C) 2011 Texas Instruments, Inc.
-+ * Rajendra Nayak <rnayak@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/slab.h>
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index d8e6a42..9a5ebbe 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -25,9 +25,11 @@
+ #include <linux/mutex.h>
+ #include <linux/suspend.h>
+ #include <linux/delay.h>
 +#include <linux/of.h>
-+#include <linux/regulator/machine.h>
-+
-+static void of_get_regulation_constraints(struct device_node *np,
-+					struct regulator_init_data **init_data)
-+{
-+	const __be32 *min_uV, *max_uV, *uV_offset;
-+	const __be32 *min_uA, *max_uA, *input_uV;
-+	unsigned int valid_modes_mask = 0, valid_ops_mask = 0;
-+
-+	min_uV = of_get_property(np, "regulator-min-uV", NULL);
-+	if (min_uV)
-+		(*init_data)->constraints.min_uV = be32_to_cpu(*min_uV);
-+	max_uV = of_get_property(np, "regulator-max-uV", NULL);
-+	if (max_uV)
-+		(*init_data)->constraints.max_uV = be32_to_cpu(*max_uV);
-+	uV_offset = of_get_property(np, "regulator-uV-offset", NULL);
-+	if (uV_offset)
-+		(*init_data)->constraints.uV_offset = be32_to_cpu(*uV_offset);
-+	min_uA = of_get_property(np, "regulator-min-uA", NULL);
-+	if (min_uA)
-+		(*init_data)->constraints.min_uA = be32_to_cpu(*min_uA);
-+	max_uA = of_get_property(np, "regulator-max-uA", NULL);
-+	if (max_uA)
-+		(*init_data)->constraints.max_uA = be32_to_cpu(*max_uA);
-+	input_uV = of_get_property(np, "regulator-input-uV", NULL);
-+	if (input_uV)
-+		(*init_data)->constraints.input_uV = be32_to_cpu(*input_uV);
-+
-+	/* valid modes mask */
-+	if (of_find_property(np, "regulator-mode-fast", NULL))
-+				valid_modes_mask |= REGULATOR_MODE_FAST;
-+	if (of_find_property(np, "regulator-mode-normal", NULL))
-+				valid_modes_mask |= REGULATOR_MODE_NORMAL;
-+	if (of_find_property(np, "regulator-mode-idle", NULL))
-+				valid_modes_mask |= REGULATOR_MODE_IDLE;
-+	if (of_find_property(np, "regulator-mode-standby", NULL))
-+				valid_modes_mask |= REGULATOR_MODE_STANDBY;
-+
-+	/* valid ops mask */
-+	if (of_find_property(np, "regulator-change-voltage", NULL))
-+				valid_ops_mask |= REGULATOR_CHANGE_VOLTAGE;
-+	if (of_find_property(np, "regulator-change-current", NULL))
-+				valid_ops_mask |= REGULATOR_CHANGE_CURRENT;
-+	if (of_find_property(np, "regulator-change-mode", NULL))
-+				valid_ops_mask |= REGULATOR_CHANGE_MODE;
-+	if (of_find_property(np, "regulator-change-status", NULL))
-+				valid_ops_mask |= REGULATOR_CHANGE_STATUS;
-+
-+	(*init_data)->constraints.valid_modes_mask = valid_modes_mask;
-+	(*init_data)->constraints.valid_ops_mask = valid_ops_mask;
-+
-+	if (of_find_property(np, "regulator-always-on", NULL))
-+				(*init_data)->constraints.always_on = true;
-+	if (of_find_property(np, "regulator-boot-on", NULL))
-+				(*init_data)->constraints.boot_on = true;
-+}
-+
+ #include <linux/regulator/consumer.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/regulator.h>
+@@ -131,6 +133,33 @@ static struct regulator *get_device_regulator(struct device *dev)
+ 	return NULL;
+ }
+ 
 +/**
-+ * of_get_regulator_init_data - extract regulator_init_data structure info
-+ * @dev: device requesting for regulator_init_data
++ * of_get_regulator - get a regulator device node based on supply name
++ * @dev: Device pointer for the consumer (of regulator) device
++ * @supply: regulator supply name
 + *
-+ * Populates regulator_init_data structure by extracting data from device
-+ * tree node, returns a pointer to the populated struture or NULL if memory
-+ * alloc fails.
++ * Extract the regulator device node corresponding to the supply name.
++ * retruns the device node corresponding to the regulator if found, else
++ * returns NULL.
 + */
-+struct regulator_init_data *of_get_regulator_init_data(struct device *dev)
++struct device_node *of_get_regulator(struct device *dev, const char *supply)
 +{
-+	struct regulator_init_data *init_data;
++	struct device_node *regnode = NULL;
++	char prop_name[32]; /* 32 is max size of property name */
 +
-+	if (!dev->of_node)
++	dev_dbg(dev, "Looking up %s-supply from device tree\n", supply);
++
++	snprintf(prop_name, 32, "%s-supply", supply);
++	regnode = of_parse_phandle(dev->of_node, prop_name, 0);
++
++	if (!regnode) {
++		pr_warn("%s: %s property in node %s references invalid phandle",
++			__func__, prop_name, dev->of_node->full_name);
 +		return NULL;
-+
-+	init_data = devm_kzalloc(dev, sizeof(*init_data), GFP_KERNEL);
-+	if (!init_data)
-+		return NULL; /* Out of memory? */
-+
-+	of_get_regulation_constraints(dev->of_node, &init_data);
-+	return init_data;
++	}
++	return regnode;
 +}
-diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
-new file mode 100644
-index 0000000..c5a1ad6
---- /dev/null
-+++ b/include/linux/regulator/of_regulator.h
-@@ -0,0 +1,21 @@
-+/*
-+ * OpenFirmware regulator support routines
-+ *
-+ */
 +
-+#ifndef __LINUX_OF_REG_H
-+#define __LINUX_OF_REG_H
+ /* Platform voltage constraint check */
+ static int regulator_check_voltage(struct regulator_dev *rdev,
+ 				   int *min_uV, int *max_uV)
+@@ -1155,6 +1184,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	struct regulator_map *map;
+ 	struct regulator *regulator = ERR_PTR(-ENODEV);
+ 	const char *devname = NULL;
++	struct device_node *node;
+ 	int ret;
+ 
+ 	if (id == NULL) {
+@@ -1167,6 +1197,23 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 
+ 	mutex_lock(&regulator_list_mutex);
+ 
++	/*
++	 * Lookup happens in 3 ways
++	 * 1. If a dev and dev->of_node exist, look for a
++	 * regulator mapping in dt node.
++	 * 2. Check if a match can be found in regulator_map_list
++	 * if regulator info is still passed in non-dt way
++	 * 3. if !dev, then just look for a matching regulator name.
++	 * Useful for dt builds using regulator_get() without specifying
++	 * a device.
++	 */
++	if (dev && dev->of_node) {
++		node = of_get_regulator(dev, id);
++		if (node)
++			list_for_each_entry(rdev, &regulator_list, list)
++				if (node == rdev->dev.parent->of_node)
++					goto found;
++	}
+ 	list_for_each_entry(map, &regulator_map_list, list) {
+ 		/* If the mapping has a device set up it must match */
+ 		if (map->dev_name &&
+@@ -1178,6 +1225,10 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 			goto found;
+ 		}
+ 	}
++	if (!dev)
++		list_for_each_entry(rdev, &regulator_list, list)
++			if (strcmp(rdev_get_name(rdev), id))
++				goto found;
+ 
+ 	if (board_wants_dummy_regulator) {
+ 		rdev = dummy_regulator_rdev;
+@@ -2579,6 +2630,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 	static atomic_t regulator_no = ATOMIC_INIT(0);
+ 	struct regulator_dev *rdev;
+ 	int ret, i;
++	const char *supply;
+ 
+ 	if (regulator_desc == NULL)
+ 		return ERR_PTR(-EINVAL);
+@@ -2653,25 +2705,34 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 	if (ret < 0)
+ 		goto scrub;
+ 
+-	if (init_data->supply_regulator) {
+-		struct regulator_dev *r;
+-		int found = 0;
++	if (init_data->supply_regulator)
++		supply = init_data->supply_regulator;
++	else if (regulator_desc->supply_name);
++		supply = regulator_desc->supply_name;
+ 
+-		list_for_each_entry(r, &regulator_list, list) {
+-			if (strcmp(rdev_get_name(r),
+-				   init_data->supply_regulator) == 0) {
+-				found = 1;
+-				break;
+-			}
++	if (supply) {
++		struct regulator_dev *r;
++		struct device_node *node;
 +
-+#if defined(CONFIG_OF_REGULATOR)
-+extern struct regulator_init_data
-+	*of_get_regulator_init_data(struct device *dev);
-+#else
-+static inline struct regulator_init_data
-+	*of_get_regulator_init_data(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_OF_REGULATOR */
++		/* first do a dt based lookup */
++		if (dev) {
++			node = of_get_regulator(dev, supply);
++			if (node)
++				list_for_each_entry(r, &regulator_list, list)
++					if (node == r->dev.parent->of_node)
++						goto found;
+ 		}
+ 
+-		if (!found) {
+-			dev_err(dev, "Failed to find supply %s\n",
+-				init_data->supply_regulator);
+-			ret = -ENODEV;
+-			goto scrub;
+-		}
++		/* next try doing it non-dt way */
++		list_for_each_entry(r, &regulator_list, list)
++			if (strcmp(rdev_get_name(r), supply) == 0)
++				goto found;
+ 
++		dev_err(dev, "Failed to find supply %s\n", supply);
++		ret = -ENODEV;
++		goto scrub;
 +
-+#endif /* __LINUX_OF_REG_H */
-+
++found:
+ 		ret = set_supply(rdev, r);
+ 		if (ret < 0)
+ 			goto scrub;
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 1a80bc7..65ca5ff 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -153,6 +153,7 @@ enum regulator_type {
+  * this type.
+  *
+  * @name: Identifying name for the regulator.
++ * @supply_name: Identifying the regulator supply
+  * @id: Numerical identifier for the regulator.
+  * @n_voltages: Number of selectors available for ops.list_voltage().
+  * @ops: Regulator operations table.
+@@ -162,6 +163,7 @@ enum regulator_type {
+  */
+ struct regulator_desc {
+ 	const char *name;
++	const char *supply_name;
+ 	int id;
+ 	unsigned n_voltages;
+ 	struct regulator_ops *ops;
 -- 
 1.7.1
 
