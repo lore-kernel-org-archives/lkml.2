@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab1JJTIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 15:08:53 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61814 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368Ab1JJTIw (ORCPT
+	id S1754535Ab1JJTLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 15:11:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33943 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab1JJTLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 15:08:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [91.17.208.69]
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
-Date: Mon, 10 Oct 2011 21:08:31 +0200
-Message-ID: <CANvSZQ_h1QbSCWs2tBmOA9FXY=DTcgsom+WG9JJqm8-dm+aNyg@mail.gmail.com>
-Subject: Sporadic kernel panic on Lenovo T420s resume from S3
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 10 Oct 2011 15:11:20 -0400
+X-Authority-Analysis: v=1.1 cv=lfM0d0QHaVz67dfwwr9cyIw6NbaGR/pZhMD6XWNi0kk= c=1 sm=0 a=kycaZ6zZ8KAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=M-bkJVFu36DEJtTAY-oA:9 a=EO-8O_nvXX40qb6O1S8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH 1/4] [BUGFIX] ftrace/kprobes: Fix not to delete probes
+ if in use
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>
+Date: Mon, 10 Oct 2011 15:11:18 -0400
+In-Reply-To: <4E92FDE3.8050301@hitachi.com>
+References: <20111004104438.14591.6553.stgit@fedora15>
+	 <1318050006.4729.103.camel@gandalf.stny.rr.com>
+	 <4E92FDE3.8050301@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318273879.7904.106.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Mon, 2011-10-10 at 23:14 +0900, Masami Hiramatsu wrote:
 
-recently, my Lenovo ThinkPad T420s has been sporadically crashing
-after waking up the machine from ACPI S3. The system locks up hard,
-i.e., MagicSysRq no longer works, but at least a dump is printed to
-the console. The process that is crashing is a kworker process, the
-topmost method on the call stack is "wq_worker_sleeping".
+> > Does this exist in previous kernels? If so, I'll also add the stable tag
+> > to it.
+> 
+> I guess so, since the perf's tracepoint handler locks target module
+> while recording, it is required for perf not to remove undergo events.
 
-The remaining call stack is available (as a photograph) at:
-https://secure.tgbyte.de/dropbox/ieNiema6.jpg
+I was able to trigger this bug in 2.6.39 as well. I'll add the stable
+tag to it and post it.
 
-Unfortunately, the top of the panic is not visible and scrolling back
-does not work.
+Thanks!
 
-Some further details:
+-- Steve
 
-$ uname -a
-Linux orion 3.1.0-0301rc9-generic #201110050905 SMP Wed Oct 5 09:15:03
-UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
 
-Kernel config: https://secure.tgbyte.de/dropbox/config-3.1.0-0301rc9-generic
-
-Any ideas?
-
-Thanks,
-Thilo
