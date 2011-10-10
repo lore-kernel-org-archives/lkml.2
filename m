@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab1JJNpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 09:45:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60233 "EHLO
+	id S1754410Ab1JJNqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 09:46:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49686 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab1JJNll (ORCPT
+	with ESMTP id S1754106Ab1JJNlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 09:41:41 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=vhdKIqpQuCYA:10 a=WJDs0hhh-dAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=q_iu5iEAGgpD4jx2qzUA:9 a=dfp8IjMbZrS_kIwK43kA:7 a=QEXdDO2ut3YA:10 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=qZChSBH0zHxC0y8gSpgA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 10 Oct 2011 09:41:40 -0400
+X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=vhdKIqpQuCYA:10 a=n-O0odzCyiAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=QmLstDrSBIOjJvd1QVsA:9 a=rM4hZF0_oNvuPrtRx5QA:7 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=U77ut86-OoJUjDdygSYA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111010134138.896815699@goodmis.org>
+Message-Id: <20111010134138.393789456@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 10 Oct 2011 09:38:56 -0400
+Date: Mon, 10 Oct 2011 09:38:55 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 04/20] tracing/filter: Use static allocation for filter predicates
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kevin Winchester <kjwinchester@gmail.com>, jbaron@redhat.com,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: [PATCH 03/20] x86: jump_label: arch_jump_label_text_poke_early: add missing __init
 References: <20111010133852.829771373@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-filter-Use-static-allocation-for-filter-pred.patch
+Content-Disposition: inline; filename=0003-x86-jump_label-arch_jump_label_text_poke_early-add-m.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,121 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Kevin Winchester <kjwinchester@gmail.com>
 
-Don't dynamically allocate filter_pred struct, use static memory.
-This way we can get rid of the code managing the dynamic filter_pred
-struct object.
+arch_jump_label_text_poke_early calls text_poke_early, which is
+an __init function.  Thus arch_jump_label_text_poke_early should
+be the same.
 
-The create_pred function integrates create_logical_pred function.
-This way the static predicate memory is returned only from
-one place.
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+Cc: jbaron@redhat.com
+Cc: tglx@linutronix.de
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/1313539478-30303-1-git-send-email-kjwinchest=
+er@gmail.com
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1313072754-4620-2-git-send-email-jolsa@redha=
-t.com
+[ Use __init_or_module instead of __init ]
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events_filter.c |   57 ++++++++++----------------------=
-----
- 1 files changed, 16 insertions(+), 41 deletions(-)
+ arch/x86/kernel/jump_label.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
-_filter.c
-index 256764e..cb295a1 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -630,11 +630,7 @@ find_event_field(struct ftrace_event_call *call, char =
-*name)
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index 3fee346..cacdd46 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -42,7 +42,7 @@ void arch_jump_label_transform(struct jump_entry *entry,
+ 	put_online_cpus();
+ }
 =20
- static void filter_free_pred(struct filter_pred *pred)
+-void arch_jump_label_text_poke_early(jump_label_t addr)
++void __init_or_module arch_jump_label_text_poke_early(jump_label_t addr)
  {
--	if (!pred)
--		return;
--
- 	kfree(pred->field_name);
--	kfree(pred);
- }
-=20
- static void filter_clear_pred(struct filter_pred *pred)
-@@ -1302,39 +1298,30 @@ parse_operand:
- 	return 0;
- }
-=20
--static struct filter_pred *create_pred(int op, char *operand1, char *opera=
-nd2)
-+static struct filter_pred *create_pred(struct filter_parse_state *ps,
-+				       int op, char *operand1, char *operand2)
- {
--	struct filter_pred *pred;
-+	static struct filter_pred pred;
-=20
--	pred =3D kzalloc(sizeof(*pred), GFP_KERNEL);
--	if (!pred)
--		return NULL;
-+	memset(&pred, 0, sizeof(pred));
-+	pred.op =3D op;
-=20
--	pred->field_name =3D kstrdup(operand1, GFP_KERNEL);
--	if (!pred->field_name) {
--		kfree(pred);
-+	if (op =3D=3D OP_AND || op =3D=3D OP_OR)
-+		return &pred;
-+
-+	if (!operand1 || !operand2) {
-+		parse_error(ps, FILT_ERR_MISSING_FIELD, 0);
- 		return NULL;
- 	}
-=20
--	strcpy(pred->regex.pattern, operand2);
--	pred->regex.len =3D strlen(pred->regex.pattern);
--
--	pred->op =3D op;
--
--	return pred;
--}
--
--static struct filter_pred *create_logical_pred(int op)
--{
--	struct filter_pred *pred;
--
--	pred =3D kzalloc(sizeof(*pred), GFP_KERNEL);
--	if (!pred)
-+	pred.field_name =3D kstrdup(operand1, GFP_KERNEL);
-+	if (!pred.field_name)
- 		return NULL;
-=20
--	pred->op =3D op;
-+	strcpy(pred.regex.pattern, operand2);
-+	pred.regex.len =3D strlen(pred.regex.pattern);
-=20
--	return pred;
-+	return &pred;
- }
-=20
- static int check_preds(struct filter_parse_state *ps)
-@@ -1643,19 +1630,7 @@ static int replace_preds(struct ftrace_event_call *c=
-all,
- 			goto fail;
- 		}
-=20
--		if (elt->op =3D=3D OP_AND || elt->op =3D=3D OP_OR) {
--			pred =3D create_logical_pred(elt->op);
--			goto add_pred;
--		}
--
--		if (!operand1 || !operand2) {
--			parse_error(ps, FILT_ERR_MISSING_FIELD, 0);
--			err =3D -EINVAL;
--			goto fail;
--		}
--
--		pred =3D create_pred(elt->op, operand1, operand2);
--add_pred:
-+		pred =3D create_pred(ps, elt->op, operand1, operand2);
- 		if (!pred) {
- 			err =3D -ENOMEM;
- 			goto fail;
+ 	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
+ 			JUMP_LABEL_NOP_SIZE);
 --=20
 1.7.6.3
 
@@ -157,19 +79,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOkvYTAAoJEIy3vGnGbaoAtGYP/iThV2w2HPD/5bh93mnF+Nwl
-ah8wcCmTD3eWFxDcIjl3cJQ7b51P5apmbW3Y76xZXSnqfTWOx0FcihNMfzdfHkta
-IylMDgfPIyFf2F1iSqyvQNz6uC+3JtUZGuKVZn+wETBHZfJW0vu2bVfgETmj2PFc
-1/313532HWpfZE1HDA3MZiYAZvA9ZllSSOZkHcUks0XHEO4pYIrZqIQzhbhdp56t
-vJI9KcrDTqvWQd2rFn5jZE3YV61j43903pXO2t55hc9uKYVezZEks6RV1VV7zYWr
-ZNB0MvL7mXaV/qH4xbHzkekIzCIb02vhfhLxulVJmpc3zxWZwT5b5ZdHyN5mUZWy
-YgW6ET/c1r4aQeeWJjosuT86IQs33g8S+gZmcbk6zhBd2/2Hp+UG6MNX9svlpyiz
-E0M4SBa8Bqys8AgTfGMPbD1lKijwCDbfHwrzYluazBD7oBObxS3miGoy7mXrHOVr
-ssqX39UT1kOhxmQBRT2GLtY3WS8NvjZ5re/wJCOaBqn18RRRQ/cq/OwUaaFPukTi
-AjQNdQ+XUpDoDrX72Aa/W/X3A4BsbOz6KgvbvGUN68AMjX0SzFmbe7HwDLNlFvxa
-UzUAWWWFVamAEUqHYSreI6TZXKKz4AFAGQfTNh75qfsdZs4WSulxDov3hMkLzOFH
-+uUn+zk+Z/0GWwaXHaFP
-=JIu4
+iQIcBAABAgAGBQJOkvYSAAoJEIy3vGnGbaoACjMQAMVerGTz+CK94mm1rU2HDeiD
+nVS0h9lL4kLcXAktqpidMY74f1sFnsmRbqWJPwT+NqCtSvBt81U7LQmnjaPWnqUd
+98MW3TueSwmGJtUxZoEaZi8IjFrcEL3R/LFWZ1oiLy/k6Bpufa+peS4dPuJvdknR
+/HvRw2fVYVweNeuwBSbkSnGYv2IS2zRO48krCb6nPL/vyynVJbMN+TIy49NfkxzY
+7UY7Z6opyc4sJ0F8opjfNbFYG/5Fs+hfrvNjYavYA2IUeDKmfQ57s7IilIPdxPVJ
+Ytpr8/zBWrTTbIduLIyiR128ND4QYCnXi44jHiUKw9o24busPUSRF8/ze02iYEC7
+iOPWuQkUfLczisJBkboY2wFvJsQnWyHGpyEMvoTnjwIej/7LE4vJ1QfkavNu6aUz
+QKB9dvjM3GJmi4VyTQ3VMKQc3/akUvLqwnJ65mlV9DYpUgNIEbQAIIx/OeYjegrm
+UJT1sjnLk6yVqyBYOZuKvqwLbmanvf9pCeYEK5cchWD6pRagzDNrG90CdGoQP/7C
+LX26QGJUjotWnWFuFWBUktViym6MJBmHyZcUbvb1sHPwZbphLhc0bzfjSdP9LBCD
+1CxGPE2YQlAwHdUjNR3SfZVu3A/rV0yINAd8D2XPg+7g1YFkK+zNNB5t9BmggJS9
+jnANSacY9TMMTesAxMQ3
+=yXjg
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
