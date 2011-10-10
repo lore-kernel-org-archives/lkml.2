@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab1JJRjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:39:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50151 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680Ab1JJRjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:39:14 -0400
-Date: Mon, 10 Oct 2011 10:38:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-usb@vger.kernel.org,
-        Harro Haan <hrhaan@gmail.com>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] fix ehci alignment error
-Message-ID: <20111010173845.GB25114@suse.de>
-References: <20111010124154.464239811@gmail.com>
- <20111010141402.GA21856@suse.de>
- <yw1xipnwzu7a.fsf@unicorn.mansr.com>
- <20111010170042.GB24166@suse.de>
- <20115.11246.991917.639835@pilspetsen.it.uu.se>
+	id S1753794Ab1JJRkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:40:31 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:57260 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753672Ab1JJRk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 13:40:29 -0400
+Message-ID: <4E932E0B.8060204@xenotime.net>
+Date: Mon, 10 Oct 2011 10:40:27 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20115.11246.991917.639835@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>
+CC: Felipe Balbi <balbi@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [PATCH -next] usb gadget: fix langwell_udc.c build error
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au> <4E8F67C6.5020603@xenotime.net> <20111008100326.GA24633@legolas.emea.dhcp.ti.com> <4E91DF00.8060107@xenotime.net> <20111009223638.GA29776@legolas.emea.dhcp.ti.com> <4E9228CA.1060904@xenotime.net> <20111010050959.GA30935@legolas.emea.dhcp.ti.com> <20111010171645.GA24628@kroah.com>
+In-Reply-To: <20111010171645.GA24628@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 07:31:26PM +0200, Mikael Pettersson wrote:
-> Greg KH writes:
->  > On Mon, Oct 10, 2011 at 05:29:13PM +0100, Måns Rullgård wrote:
->  > > Greg KH <gregkh@suse.de> writes:
->  > > 
->  > > > On Mon, Oct 10, 2011 at 02:38:27PM +0200, Harro Haan wrote:
->  > > >> The Kirkwood gave an unaligned memory access error on
->  > > >> line 742 of drivers/usb/host/echi-hcd.c:
->  > > >> "ehci->last_periodic_enable = ktime_get_real();"
->  > > >
->  > > > What is "The Kirkwood"?  What size processor is this?
->  > > 
->  > > It's an ARM926-like CPU from Marvell.
->  > 
->  > 32 or 64bit?
-> 
-> All ARMs are 32-bit, but some have instructions for loading or
-> storing 2 x 32 bits at a time, but also require the corresponding
-> memory address to be 64-bit aligned.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Ah, ok, that makes more sense here.  I'll go queue it up.
+Move function to fix langwell_udc.c build error:
 
-greg k-h
+drivers/usb/gadget/langwell_udc.c: In function 'show_langwell_udc':
+drivers/usb/gadget/langwell_udc.c:1693:3: error: implicit declaration of function 'lpm_device_speed'
+drivers/usb/gadget/langwell_udc.c: At top level:
+drivers/usb/gadget/langwell_udc.c:2637:37: error: conflicting types for 'lpm_device_speed'
+drivers/usb/gadget/langwell_udc.c:1693:20: note: previous implicit declaration of 'lpm_device_speed' was here
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Cc:	Felipe Balbi <balbi@ti.com>
+Cc:	linux-usb@vger.kernel.org
+---
+ drivers/usb/gadget/langwell_udc.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+--- next-2011-1007.orig/drivers/usb/gadget/langwell_udc.c
++++ next-2011-1007/drivers/usb/gadget/langwell_udc.c
+@@ -1562,6 +1562,20 @@ static ssize_t show_function(struct devi
+ static DEVICE_ATTR(function, S_IRUGO, show_function, NULL);
+ 
+ 
++static inline enum usb_device_speed lpm_device_speed(u32 reg)
++{
++	switch (LPM_PSPD(reg)) {
++	case LPM_SPEED_HIGH:
++		return USB_SPEED_HIGH;
++	case LPM_SPEED_FULL:
++		return USB_SPEED_FULL;
++	case LPM_SPEED_LOW:
++		return USB_SPEED_LOW;
++	default:
++		return USB_SPEED_UNKNOWN;
++	}
++}
++
+ /* device "langwell_udc" sysfs attribute file */
+ static ssize_t show_langwell_udc(struct device *_dev,
+ 		struct device_attribute *attr, char *buf)
+@@ -2634,20 +2648,6 @@ done:
+ 	dev_vdbg(&dev->pdev->dev, "<--- %s()\n", __func__);
+ }
+ 
+-static inline enum usb_device_speed lpm_device_speed(u32 reg)
+-{
+-	switch (LPM_PSPD(reg)) {
+-	case LPM_SPEED_HIGH:
+-		return USB_SPEED_HIGH;
+-	case LPM_SPEED_FULL:
+-		return USB_SPEED_FULL;
+-	case LPM_SPEED_LOW:
+-		return USB_SPEED_LOW;
+-	default:
+-		return USB_SPEED_UNKNOWN;
+-	}
+-}
+-
+ /* port change detect interrupt handler */
+ static void handle_port_change(struct langwell_udc *dev)
+ {
