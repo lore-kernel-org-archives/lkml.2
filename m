@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1JJWfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 18:35:18 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:37074 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab1JJWfP (ORCPT
+	id S1753382Ab1JJWhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 18:37:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45179 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab1JJWhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 18:35:15 -0400
-Date: Mon, 10 Oct 2011 16:35:14 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-cc: "Kristo, Tero" <t-kristo@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
-In-Reply-To: <4E936F0E.9050203@ti.com>
-Message-ID: <alpine.DEB.2.00.1110101631450.5205@utopia.booyaka.com>
-References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com>
- <4E936F0E.9050203@ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Oct 2011 18:37:16 -0400
+Message-ID: <4E937396.7090100@gmail.com>
+Date: Tue, 11 Oct 2011 09:37:10 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Hartmut Knaack <knaack.h@gmx.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [Patch 2/2] gpio-pca953x: fix gpio_base and add verbosity
+References: <4E93703C.9050307@gmx.de>
+In-Reply-To: <4E93703C.9050307@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Cousson, Benoit wrote:
+On 11/10/11 09:22, Hartmut Knaack wrote:
 
-> On 10/10/2011 10:42 PM, Paul Walmsley wrote:
->
-> > If it's the "3xxx" that you're objecting to in the name, we could call it
-> > "prm2" or "prmxyz" - the '3xxx' just seemed like the most logical
-> > approach.  The name of the hwmod class in the patch is still "prm", of
-> > course.
+> Inspired by the gpio-pcf857x driver, this patch will output information
+> about the instantiated gpio-chip, including gpio start and end, chip
+> type and if irq is used.
 > 
-> Yes, but that's different, the number is supposed to represent the instance
-> number in the IP naming convention. So prm2 != prmv2.
+> Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
+> -------------------------------------------------------------
+> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+> index ae479fd..4bdb88e 100644
+> --- a/drivers/gpio/gpio-pca953x.c
+> +++ b/drivers/gpio/gpio-pca953x.c
+> @@ -683,6 +683,12 @@ static int __devinit pca953x_probe(struct
+> i2c_client *client,
+>      if (ret)
+>          goto out_failed;
+>  
+> +    dev_info(&client->dev, "gpios %d..%d added on a %s%s\n",
+> +         chip->gpio_chip.base,
+> +         chip->gpio_chip.base + chip->gpio_chip.ngpio - 1,
+> +         client->name,
+> +         client->irq ? " (irq ignored)" : "");
+> +   
 
-Heh, that works as long as there's no "prmv" IP block ;-)
 
-> > Thoughts?
+If we want this, why not move it into gpiochip_add rather than
+duplicating it in each driver? If you want to keep it here it should
+probably be moved below the gpiochip_add, since the above would still
+print if gpiochip_add failed.
+
+>      ret = gpiochip_add(&chip->gpio_chip);
+>      if (ret)
+>          goto out_failed_irq;
 > 
-> In fact the device name does not have to match the hwmod name. So we can just
-> create an "omap2_prm" omap_device for OMAP2, "omap3_prm" omap_device for
-> OMAP3...
-> That will allow the relevant PRM  driver to be bound to the proper device.
-
-We can, we'd just need to add this extra mapping layer, so it doesn't 
-become a nasty special-case hack for each IP block that this applies to.
-
-Sounds like something for 3.3 (if ever...)
 
 
-- Paul
+~Ryan
+
