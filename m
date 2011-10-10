@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab1JJKLV (ORCPT <rfc822;w@1wt.eu>);
+	id S1753353Ab1JJKLV (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 10 Oct 2011 06:11:21 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:59813 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1JJKLT (ORCPT
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60234 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab1JJKLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 10 Oct 2011 06:11:19 -0400
-Subject: [PATCH] [TRIVIAL] Kconfig: remove a few puzzling comments
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 12:11:15 +0200
-Message-ID: <1318241475.29265.13.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+From: Nasir Abed <nasirabed@gmail.com>
+To: gregkh@suse.de
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Nasir Abed <nasirabed+kernel@gmail.com>
+Subject: [PATCH] Staging: comedi: c6xdigio: fixed missing KERN_* in printk
+Date: Mon, 10 Oct 2011 12:09:52 +0200
+Message-Id: <1318241392-11464-1-git-send-email-nasirabed+kernel@gmail.com>
+X-Mailer: git-send-email 1.5.4.3
+In-Reply-To: <>
+References: <>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These comments mention CONFIG options that do not exist: not as a symbol
-in a Kconfig file (without the CONFIG_ prefix) and neither as a symbol
-(with that prefix) in the code.
+Fixed missing KERN_* in printk statements.
 
-There's one reference to XSCALE_PMU_TIMER as a negative dependency.
-But XSCALE_PMU_TIMER is never defined (CONFIG_XSCALE_PMU_TIMER is
-also unused in the code). It shows up with type "unknown" if you search
-for it in menuconfig. Apparently a negative dependency on an unknown
-symbol is always true. That negative dependency can be removed too.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Nasir Abed <nasirabed+kernel@gmail.com>
 ---
- arch/arm/Kconfig              |    3 +--
- arch/cris/Kconfig.debug       |    1 -
- drivers/video/console/Kconfig |    2 --
- net/ipv4/Kconfig              |    2 --
- 4 files changed, 1 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/c6xdigio.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 3146ed3..aac26d5 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1078,10 +1078,9 @@ config IWMMXT
- 	  Enable support for iWMMXt context switching at run time if
- 	  running on a CPU that supports it.
+diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+index e0ac825..11cdaf2 100644
+--- a/drivers/staging/comedi/drivers/c6xdigio.c
++++ b/drivers/staging/comedi/drivers/c6xdigio.c
+@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+ {
+-	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
++	printk(KERN_DEBUG "c6xdigio_pwmo_insn_read %x\n", insn->n);
+ 	return insn->n;
+ }
  
--#  bool 'Use XScale PMU as timer source' CONFIG_XSCALE_PMU_TIMER
- config XSCALE_PMU
- 	bool
--	depends on CPU_XSCALE && !XSCALE_PMU_TIMER
-+	depends on CPU_XSCALE
- 	default y
+@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 	struct comedi_subdevice *s;
  
- config CPU_HAS_PMU
-diff --git a/arch/cris/Kconfig.debug b/arch/cris/Kconfig.debug
-index 0b9a630..14881e8 100644
---- a/arch/cris/Kconfig.debug
-+++ b/arch/cris/Kconfig.debug
-@@ -1,6 +1,5 @@
- menu "Kernel hacking"
+ 	iobase = it->options[0];
+-	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
++	printk(KERN_DEBUG "comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+ 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
+-		printk("comedi%d: I/O port conflict\n", dev->minor);
++		printk(KERN_ERR "comedi%d: I/O port conflict\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -456,9 +456,10 @@ static int c6xdigio_attach(struct comedi_device *dev,
  
--#bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
- config PROFILING
- 	bool "Kernel profiling support"
+ 	irq = it->options[1];
+ 	if (irq > 0)
+-		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
++		printk(KERN_DEBUG "comedi%d: irq = %u ignored\n",
++				dev->minor, irq);
+ 	else if (irq == 0)
+-		printk("comedi%d: no irq\n", dev->minor);
++		printk(KERN_DEBUG "comedi%d: no irq\n", dev->minor);
  
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index 2209e35..c2d11fef 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -66,8 +66,6 @@ config SGI_NEWPORT_CONSOLE
-           Say Y here if you want the console on the Newport aka XL graphics
-           card of your Indy.  Most people say Y here.
+ 	s = dev->subdevices + 0;
+ 	/* pwm output subdevice */
+@@ -503,7 +504,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
+ {
+ 	/* board_halt(dev);  may not need this */
  
--#  bool 'IODC console' CONFIG_IODC_CONSOLE
--
- config DUMMY_CONSOLE
- 	bool
- 	depends on VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y 
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index cbb505b..251f662 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -163,8 +163,6 @@ config IP_PNP_RARP
- 	  operating on your network. Read
- 	  <file:Documentation/filesystems/nfs/nfsroot.txt> for details.
+-	printk("comedi%d: c6xdigio: remove\n", dev->minor);
++	printk(KERN_DEBUG "comedi%d: c6xdigio: remove\n", dev->minor);
  
--# not yet ready..
--#   bool '    IP: ARP support' CONFIG_IP_PNP_ARP
- config NET_IPIP
- 	tristate "IP: tunneling"
- 	select INET_TUNNEL
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, C6XDIGIO_SIZE);
 -- 
-1.7.4.4
+1.5.4.3
 
