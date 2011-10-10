@@ -1,22 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1JJUAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 16:00:13 -0400
-Received: from claw.goop.org ([74.207.240.146]:41575 "EHLO claw.goop.org"
+	id S1754687Ab1JJUCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 16:02:04 -0400
+Received: from claw.goop.org ([74.207.240.146]:41597 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673Ab1JJUAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 16:00:12 -0400
-Message-ID: <4E934EC9.5030909@goop.org>
-Date: Mon, 10 Oct 2011 13:00:09 -0700
+	id S1753026Ab1JJUCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 16:02:02 -0400
+Message-ID: <4E934F37.2020300@goop.org>
+Date: Mon, 10 Oct 2011 13:01:59 -0700
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Zhenzhong Duan <zhenzhong.duan@oracle.com>, linux-x86_64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [PATCH] cpu idle ticks show twice in xen pvm guest
-References: <ce19ea02-45e6-465a-a4c8-b5d74bf8c2ad@default> <20111010155319.GA29140@phenom.oracle.com>
-In-Reply-To: <20111010155319.GA29140@phenom.oracle.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <david.daney@cavium.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH RFC V3 2/8] stop_machine: make stop_machine safe and efficient
+ to call early
+References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com> <619c66d6da63aa086e2eac017e7aed216cc8ddc3.1317755691.git.jeremy.fitzhardinge@citrix.com> <8762k4grwy.fsf@rustcorp.com.au> <20111010073405.GC29035@elte.hu>
+In-Reply-To: <20111010073405.GC29035@elte.hu>
 X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -24,50 +36,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2011 08:53 AM, Konrad Rzeszutek Wilk wrote:
-> On Wed, Oct 05, 2011 at 10:11:58PM -0700, Zhenzhong Duan wrote:
->> Run below test on xen pvm.
->> # x=$(cat /proc/stat | grep cpu0 | awk '{print $5}') && sleep 60  \
->> && y=$(cat /proc/stat | grep cpu0 | awk '{print $5}') \
->> && echo -e  "X:$x\nY:$y\nIDLE:" $(echo "scale=3; ($y-$x)/6000*100" | bc)
->>
->> @ X:58562301
->> @ Y:58574282
->> @ IDLE: 199.600
->>
->> Normal idle percent should be around 100%.
->> xen_timer_interrupt called account_idle_ticks to account hypervisor stolen idle ticks 
->> but these ticks will be accounted again when idle ticks restarted.
->>
->> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
->> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> Please in the future also CC the maintainers (you can get that using
-> the scripts/get_maintainer.pl).
+On 10/10/2011 12:34 AM, Ingo Molnar wrote:
+> * Rusty Russell <rusty@rustcorp.com.au> wrote:
 >
-> Jeremy, any thoughts?
+>> On Tue,  4 Oct 2011 12:18:03 -0700, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>>
+>>> Make stop_machine() safe to call early in boot, before stop_machine()
+>>> has been set up, by simply calling the callback function directly if
+>>> there's only one CPU online.
+>> Not that you need this, since it's >90% Tejun's code now, but:
+>>
+>> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+> hey, extra review is always useful.
+>
+> Jeremy, Tejun, what's the expected merge path of these changes?
 
-Does this affect the accounting of stolen ticks?  If it does, that's not
-necessarily a showstopper for this patch, but we'll need to do some more
-thinking about it.  Certainly, accurate accounting for idleness is
-important.
+Andrew has already picked up the stop_machine patch, I think.  But it's
+pretty settled now, so it shouldn't cause any problem if it gets via
+multiple paths.
+
+What about the jump-label stuff?  Has that been going via tip.git in the
+past, or by some other path?
 
     J
-
->> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
->> index 163b467..5dcbc91 100644
->> --- a/arch/x86/xen/time.c
->> +++ b/arch/x86/xen/time.c
->> @@ -151,7 +151,6 @@ static void do_stolen_accounting(void)
->>  
->>  	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
->>  	__this_cpu_write(xen_residual_blocked, blocked);
->> -	account_idle_ticks(ticks);
->>  }
->>  
->>  /* Get the TSC speed from Xen */
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
