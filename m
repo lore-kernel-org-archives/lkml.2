@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1JJV3n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 17:29:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41272 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1JJV3k convert rfc822-to-8bit (ORCPT
+	id S1752525Ab1JJVdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 17:33:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39486 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab1JJVdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 17:29:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=q8gAHpCdveo4B0YGzUYrEfJ5n3m8qn0jIgp4lxerCIG0AEzTmob1FotWdnvI8hSy7
-	gG1ClpJUY10HHvTiMKgAA==
+	Mon, 10 Oct 2011 17:33:21 -0400
+Date: Mon, 10 Oct 2011 14:33:16 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        device-mapper development <dm-devel@redhat.com>,
+        Christophe Saout <christophe@saout.de>, linux-kernel@vger.kernel.org
+Subject: Re: Block regression since 3.1-rc3
+Message-ID: <20111010213316.GM8100@google.com>
+References: <1317397918.27140.15.camel@localhost>
+ <x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
+ <1317729761.25998.4.camel@localhost>
+ <x49bottoq57.fsf@segfault.boston.devel.redhat.com>
+ <CANejiEXnXJ7LkyqHyH1S2c4A95Si7v0-gDmRD824r3ROntaDCA@mail.gmail.com>
+ <20111008161421.GA5743@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20111010140957.69f10b06@nehalam.linuxnetplumber.net>
-References: <20111010130713.6df8bfe4@nehalam.linuxnetplumber.net>
-	<1318278745-27734-1-git-send-email-muralira@google.com>
-	<20111010140957.69f10b06@nehalam.linuxnetplumber.net>
-Date: Mon, 10 Oct 2011 14:29:36 -0700
-Message-ID: <CAP3iWTQ-7sNWMNazrmA1ZbNRATyd=MzKKsVtCHQ2_4dYboG=jg@mail.gmail.com>
-Subject: Re: [PATCH v2] net-netlink: Add a new attribute to expose TOS values
- via netlink
-From: MuraliRaja Muniraju <muralira@google.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: "David S. Miller\"" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111008161421.GA5743@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
-            Regarding the only field in the structure.
+Hello, Mike.
 
-            -- I thought that adding it as a attribute and exposing it
-via a extension instead of modifying the inet_diag_sockid structure.
-This is to make sure that older binaries will not have issues with the
-later kernel. Do you have any alternate suggestions.
+On Sat, Oct 08, 2011 at 12:14:21PM -0400, Mike Snitzer wrote:
+> Unless others have an immediate ah-ha moment, I'd suggest we revert
+> commit 4853abaae7e4a2a (block: fix flush machinery for stacking drivers
+> with differring flush flags).  Whereby avoiding unnecessarily reentering
+> the flush machinery.
 
-            This change has been done keeping IPV4 in mind. I do not
-see the V6 sockets exposed thought netlink. Please correct me if I am
-reading it wrong.
+I don't object to the immediate fix but think that adding such special
+case is gonna make the thing even more brittle and make future changes
+even more difficult.  Those one off cases tend to cause pretty severe
+headache when someone wants to evolve common code, so let's please
+find out what went wrong and fix it properly so that everyone follows
+the same set of rules.
 
-Thanks,
-Murali
+> If commit ed8b752bccf256 (dm table: set flush capability based on
+> underlying devices) is in place the flush gets fed directly to
+> scsi_request_fn, which is fine because the request-based DM's
+> request_queue's flush_flags reflect the flush capabilities of the
+> underlying device(s).
+> 
+> We are then covered relative to the only request-based DM use-case
+> people care about (e.g. dm-multipath, which doesn't use stacked
+> request-based DM).
+> 
+> We can revisit upholding the purity of the flush machinery for stacked
+> devices in >= 3.2.
 
-On Mon, Oct 10, 2011 at 2:09 PM, Stephen Hemminger
-<shemminger@vyatta.com> wrote:
-> On Mon, 10 Oct 2011 13:32:25 -0700
-> Muraliraja Muniraju <muralira@google.com> wrote:
->
->> From: Murali Raja <muralira@google.com>
->>
->> This patch exposes the tos value for the TCP sockets when the TOS flag
->> is requested in the ext_flags for the inet_diag request. This would mainly be
->> used to expose TOS values for both for TCP and UDP sockets. Currently it is
->> supported for TCP. When netlink support for UDP would be added the support
->> to expose the TOS values would alse be done.
->>
->> Signed-off-by: Murali Raja <muralira@google.com>
->> ---
->> Changelog since v1:
->> - Removing the reserved field.
->>
->>  include/linux/inet_diag.h |    9 ++++++++-
->>  net/ipv4/inet_diag.c      |    7 +++++++
->>  2 files changed, 15 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
->> index bc8c490..e36093d 100644
->> --- a/include/linux/inet_diag.h
->> +++ b/include/linux/inet_diag.h
->> @@ -97,9 +97,10 @@ enum {
->>       INET_DIAG_INFO,
->>       INET_DIAG_VEGASINFO,
->>       INET_DIAG_CONG,
->> +     INET_DIAG_TOS,
->>  };
->>
->> -#define INET_DIAG_MAX INET_DIAG_CONG
->> +#define INET_DIAG_MAX INET_DIAG_TOS
->>
->>
->>  /* INET_DIAG_MEM */
->> @@ -120,6 +121,12 @@ struct tcpvegas_info {
->>       __u32   tcpv_minrtt;
->>  };
->>
->> +/* INET_DIAG_TOS */
->> +
->> +struct inet_diag_tos {
->> +     __u8    idiag_tos;
->> +};
->
-> I think the idea is a good one, and useful, but want to make the
-> ABI right.
-> With only one entry, this doesn't need to be wrapped in a structure.
->
-> Also does this work for IPv6 (Transport class) as well?
->
->
+Hmmm... another rather nasty assumption the current flush code makes
+is that every flush request has either zero or single bio attached to
+it.  The assumption has always been there for quite some time now.
+That somehow seems broken by request based dm (either that or wrong
+request is taking INSERT_FLUSH path).  Is it possible that a rq /w
+single bio can end up with multiple bios after cloning?
 
-
+Thank you.
 
 -- 
-Thanks,
-Murali
+tejun
