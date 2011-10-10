@@ -1,88 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab1JJVEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 17:04:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7887 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab1JJVEs (ORCPT
+	id S1752286Ab1JJVI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 17:08:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46970 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab1JJVI5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 17:04:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=uLZtfZzHecsL4YNJSFoWi65OSfxRKSbFAJBhJeD/1uSJ/XNegnAAEF2+sYQcmWH+h
-	FrrEq48bZy099FXyg9K5g==
+	Mon, 10 Oct 2011 17:08:57 -0400
+From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Subject: Re: Linux 3.1-rc9
+Date: Mon, 10 Oct 2011 23:08:42 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00064-g65112dc-dirty; KDE/4.7.2; x86_64; ; )
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <4E9329BC.8030704@linux.vnet.ibm.com> <201110101957.25322.a.miskiewicz@gmail.com>
+In-Reply-To: <201110101957.25322.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
-References: <1314845309-3277-1-git-send-email-dczhu@mips.com> <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 10 Oct 2011 15:04:21 -0600
-Message-ID: <CAErSpo5HNKi7NSKBbyL3o39Ow+Xkncyccrj5PQNaoeMdLHJsFQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 0/2] Pass resources to pci_create_bus() and fix
- MIPS PCI resources
-To: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, monstr@monstr.eu,
-        benh@kernel.crashing.org, paulus@samba.org, davem@davemloft.net,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
-        dengcheng.zhu@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201110102308.43145.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 3:50 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Aug 31, 2011 at 8:48 PM, Deng-Cheng Zhu <dczhu@mips.com> wrote:
->> (Resending the patch set to include more arch maintainers.)
->>
->> Change the pci_create_bus() interface to pass in available resources to get them
->> settled down early. This is to avoid possible resource conflicts while doing
->> pci_scan_slot() in pci_scan_child_bus(). Note that pcibios_fixup_bus() can get
->> rid of such conflicts, but it's done AFTER scanning slots.
->>
->> In addition, MIPS PCI resources are now fixed using this new interface.
->
-> Jesse, I assume these are headed for the 3.2 merge window, right?
+On Monday 10 of October 2011, Arkadiusz Miśkiewicz wrote:
+> On Monday 10 of October 2011, Stefan Berger wrote:
+> > On 10/10/2011 01:05 PM, Arkadiusz Miśkiewicz wrote:
+> > > On Monday 10 of October 2011, Rajiv Andrade wrote:
+> > >> On 09/10/11 23:29, Stefan Berger wrote:
+> > >>> On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
+> > >>>> On Wednesday 05 of October 2011, Linus Torvalds wrote:
+> > >>>>> Another week, another -rc.
+> > >>>> 
+> > >>>> suspend to ram regression is annoying (still visible on rc9;
+> > >>>> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers
+> > >>>> are silent.
+> > >>> 
+> > >>> I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce
+> > >>> the 'scheduling while atomic' problem you had reported earlier. I
+> > >>> also could suspend / resume fine as long as I did the following:
+> > >>> 
+> > >>> - suspended with the tpm_tis driver as module in the kernel
+> > >>> - once a suspend was done without the tpm_tis driver the subsequent
+> > >>> suspends were all done without the tpm_tis driver
+> > >>> 
+> > >>> Once I had done a suspend/resume with the tpm_tis driver *not* in the
+> > >>> kernel and then again a suspend with the tpm_tis driver in the
+> > >>> kernel, it did not resume anymore. I believe previously (previous
+> > >>> version of kernel and/or Fedora) it refused to even suspend. The
+> > >>> reason why this doesn't work properly is that the driver has to send
+> > >>> a command to the TPM upon suspend and the BIOS then sends the
+> > >>> corresponding wakeup command.
+> > >>> 
+> > >>> Did you maybe previously suspend/resume without a tpm_tis driver and
+> > >>> then try to suspend with it ?
+> > >>> 
+> > >>> Also, my Lenovo W500 shows particularly odd behavior when I switch
+> > >>> from Windows to Linux. The first suspend with a Linux booted after
+> > >>> Windows (with or without tpm_tis driver) does *not* resume (reboot
+> > >>> required). A subsequently rebooted Linux makes the suspend/resume
+> > >>> work fine.
+> > >>> 
+> > >>>     Stefan
+> > >> 
+> > >> Arkadiusz,
+> > >> 
+> > >> Do you still see the issue with this patch [1][2] applied?
+> > > 
+> > > The issue doesn't happen with this patch but error condition with
+> > > "Could not read PCR 0. TPM is not working correctly." is triggered
+> > > immediately at boot, even before suspend is used.
+> > > 
+> > > $ dmesg|grep -iE "(tpm|suspend)"
+> > > [   12.640039] tpm_tis 00:0a: 1.2 TPM (device-id 0x1020, rev-id 6)
+> > > [   12.640048] tpm_tis 00:0a: Intel iTPM workaround enabled
+> > > [   12.768057] tpm_tis 00:0a: Could not read PCR 0. TPM is not working
+> > > correctly.
+> > > [   12.768066] tpm_tis 00:0a: Was machine previously suspended without
+> > > TPM driver present?
+> > > [   88.512117] Suspending console(s) (use no_console_suspend to debug)
+> > 
+> > Though I suppose that now your suspend/resume cycles always work?
+> 
+> Tried several times and it always worked, so probably yes. Longer testing
+> will give definitive answer.
+> 
+> > I guess the BIOS seems not to be initializing the TPM correctly. Any
+> > chance you can get a hold of a BIOS update for your machine?
+> 
+> Then I looked into bios options on this thinkpad t400 and there are 3
+> possible TPM settings: Enabled, Invisible, Disabled.
+> 
+> Invisible is - visible but not working - according to bios help. No idea
+> why such option exists but I had it enabled.
+> 
+> Right now I've set that to "Enabled" and ran few suspend/resume cycles - no
+> problems so far.
 
-I tried to build on these patches to convert x86 to using the new
-pci_create_bus() interface, but I couldn't figure out a nice way to
-handle an arbitrary number of resources.
+Unfortunately TPM enabled in bios + kernel (3.1.0-rc9-00064-g65112dc-dirty) 
+with the patch applied
 
-We made pci_create_bus() take a "struct pci_bus_resource *"
-(https://lkml.org/lkml/2011/8/26/88):
+[11629.922643] legacy_resume(): pnp_bus_resume+0x0/0x67 returns -19
+[11629.922646] PM: Device 00:0a failed to resume: error -19
 
-    struct pci_bus *pci_create_bus(struct device *parent, int bus,
-			       struct pci_ops *ops, void *sysdata,
-			       struct pci_bus_resource *bus_res);
 
-Where pci_bus_resource looks like this:
+and there is no "Could not read PCR 0. TPM is not working correctly." message, 
+so this check  doesn't seem to be good enough.
 
-    struct pci_bus_resource {
-        struct list_head list;
-        struct resource *res;
-        unsigned int flags;
-    };
+> 
+> I guess there is some way to make "Invisible" mode properly handled in
+> Linux, too.
+> 
+> >     Stefan
 
-Conceptually, we're passing a list of resources to pci_create_bus(),
-which I think is the right thing.  But I think the best way to do that
-is by passing a pointer to a struct list_head, not a pointer to a
-pci_bus_resource.
 
-If we pass a pci_bus_resource, we're basically using that as a
-container for a list (as per include/linux/list.h), but it's not a
-well-formed list.  Normally a list contains one list_head per element,
-plus an extra list_head for the head of the list.  There's a nice
-drawing on page 296 of http://lwn.net/images/pdf/LDD3/ch11.pdf.
-
-The list built in your MIPS patch (https://lkml.org/lkml/2011/8/26/89)
-consists of two pci_bus_resource structs (each with a list_head), but
-there's no third list_head for the head of the list.  I think if you
-tried to use list_for_each_entry() to iterate through the list, it
-would not work correctly.
-
-I'll post a slightly modified series to show what I mean.  Take a look
-and see if it makes sense to you.
-
-Bjorn
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
