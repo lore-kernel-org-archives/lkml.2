@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab1JJMqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:46:49 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55254 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1JJMqr (ORCPT
+	id S1754093Ab1JJMtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:49:13 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:29760
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752643Ab1JJMtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:46:47 -0400
-Message-ID: <4E92E8E0.4090004@linux.vnet.ibm.com>
-Date: Mon, 10 Oct 2011 18:15:20 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Mon, 10 Oct 2011 08:49:11 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zz1cddhzz1202hzzf29ahz2ei87h27ah668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPVD:NLI;H:oce-exbhcs03a.oce.net;RD:error;EFVD:FOP
+X-FB-DOMAIN-IP-MATCH: fail
+Message-ID: <20111010124154.464239811@gmail.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 10 Oct 2011 14:38:27 +0200
+From: Harro Haan <hrhaan@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+CC: Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>, <linux-usb@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Harro Haan <hrhaan@gmail.com>
+Subject: [PATCH] fix ehci alignment error
+Content-Disposition: inline; filename="fix-ehci-alignment-error.patch"
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: rjw@sisk.pl, bp@amd64.org, pavel@ucw.cz, len.brown@intel.com,
-        tj@kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        tigran@aivazian.fsnet.co.uk, tglx@linutronix.de, hpa@zytor.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <20111010123242.15067.48238.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111010123242.15067.48238.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11101003-3568-0000-0000-00000080200B
+X-OriginalArrivalTime: 10 Oct 2011 12:49:05.0733 (UTC) FILETIME=[FEB24F50:01CC874A]
+Content-Type: text/plain
+X-Bypass-Agent: EF-1;
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2011 06:03 PM, Srivatsa S. Bhat wrote:
-> Don't allow cpu hotplug online operation and suspend/hibernate to run in
-> parallel. If suspend/hibernate has already started, fail the cpu online
-> operation.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/cpu.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 12b7458..bc8c7d4 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -15,6 +15,7 @@
->  #include <linux/stop_machine.h>
->  #include <linux/mutex.h>
->  #include <linux/gfp.h>
-> +#include <linux/suspend.h>
-> 
->  #ifdef CONFIG_SMP
->  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-> @@ -366,6 +367,14 @@ int __cpuinit cpu_up(unsigned int cpu)
->  	}
->  #endif
-> 
-> +	/*
-> +	 * Prevent cpu online and suspend/hibernate (including freezer)
-> +	 * operations from running in parallel. Fail cpu online if suspend or
-> +	 * hibernate has already started.
-> +	 */
-> +	if (!trylock_pm_sleep())
+The Kirkwood gave an unaligned memory access error on
+line 742 of drivers/usb/host/echi-hcd.c:
+"ehci->last_periodic_enable = ktime_get_real();"
 
-Would it be better to hook into the suspend/hibernate notifiers and
-use them to exclude cpu hotplug from suspend/hibernate, instead of
-trying to take pm_mutex lock like this?
-Peter, I remember you pointing out in another patch's review
-(http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087)
-that introducing more locks in cpu hotplug would be a bad idea. Does that
-comment hold here as well, or is this fine?
+Signed-off-by: Harro Haan <hrhaan@gmail.com>
+---
+ include/linux/usb/hcd.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Anyways, I'll start working on that other implementation that hooks onto
-the suspend/hibernate notifiers and see if that works out better.
-
-> +		return -EBUSY;
-> +
->  	cpu_maps_update_begin();
-> 
->  	if (cpu_hotplug_disabled) {
-> @@ -377,6 +386,7 @@ int __cpuinit cpu_up(unsigned int cpu)
-> 
->  out:
->  	cpu_maps_update_done();
-> +	unlock_pm_sleep();
->  	return err;
->  }
-> 
-> 
-
-
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index 0097136..c0ecc5a 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -178,7 +178,7 @@ struct usb_hcd {
+ 	 * this structure.
+ 	 */
+ 	unsigned long hcd_priv[0]
+-			__attribute__ ((aligned(sizeof(unsigned long))));
++			__attribute__ ((aligned(sizeof(s64))));
+ };
+ 
+ /* 2.4 does this a bit differently ... */
 -- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+1.7.0.4
+
+
+
 
