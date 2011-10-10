@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab1JJIlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:41:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50363 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643Ab1JJIl3 (ORCPT
+	id S1752974Ab1JJInl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:43:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48775 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab1JJInk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:41:29 -0400
-Date: Mon, 10 Oct 2011 09:41:26 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] regmap: Allow caches for devices with no defaults
-Message-ID: <20111010084126.GA2563@opensource.wolfsonmicro.com>
-References: <1318167876-17801-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 10 Oct 2011 04:43:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318167876-17801-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20111007092445.4f097ed9@nehalam.linuxnetplumber.net>
+References: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com> <20111007092445.4f097ed9@nehalam.linuxnetplumber.net>
+From: Mihai Maruseac <mihai.maruseac@gmail.com>
+Date: Mon, 10 Oct 2011 11:43:20 +0300
+Message-ID: <CAOMsUMLRc5dT4kGyAUMLka2f=jTOCeYt8WEkNZPY+dwkrBhPeQ@mail.gmail.com>
+Subject: Re: [PATCH] dev: use name hash for dev_seq_ops.
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: davem@davemloft.net, eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
+        therbert@google.com, jpirko@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
+        Mihai Maruseac <mmaruseac@ixiacom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 09, 2011 at 02:44:36PM +0100, Mark Brown wrote:
-> We only really need the defaults in order to cut down the number of
-> registers we sync and to satisfy reads while the device is powered off
-> but not all devices are going to need to do that (always on devices like
-> PMICs being the prime example) so don't require those devices to supply
-> a default.  Instead only try to fall back to hardware defaults if the
-> driver told us to.
-> 
-> Devices using LZO won't be able to instantiate with this, that will require
-> some updates in the LZO code to handle this case.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/base/regmap/regcache.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-> index 67c7703..666f6f5 100644
-> --- a/drivers/base/regmap/regcache.c
-> +++ b/drivers/base/regmap/regcache.c
-> @@ -120,7 +120,7 @@ int regcache_init(struct regmap *map)
->  		if (!tmp_buf)
->  			return -ENOMEM;
->  		map->reg_defaults = tmp_buf;
-> -	} else {
-> +	} else if (map->num_reg_defaults_raw) {
->  		/* Some devices such as PMICs don't have cache defaults,
->  		 * we cope with this by reading back the HW registers and
->  		 * crafting the cache defaults by hand.
-> -- 
-> 1.7.6.3
+On Fri, Oct 7, 2011 at 7:24 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
+> On Fri,  7 Oct 2011 18:20:49 +0300
+> Mihai Maruseac <mihai.maruseac@gmail.com> wrote:
+>
+>> Instead of using the dev->next chain and trying to resync at each call to
+>> dev_seq_start, use this hash and store bucket number and bucket offset in
+>> seq->private field.
+>>
+>> As one can notice the improvement is of 1 order of magnitude.
+>
+> Good idea,
+> This will change the ordering of entries in /proc which may upset
+> some program, not a critical flaw but worth noting.
+>
+> Rather than recording the bucket and offset of last entry, another
+> alternative would be to just record the ifindex.
+>
 
-We could probably then also remove the first check in
-regcache_hw_init() I guess.
+I tried to record the ifindex but I think that using it and
+dev_get_by_index can result in an infinite loop or a NULL
+dereferrence. If a device is removed and ifindex points to it we'll
+get a NULL from dev_get_by_index. Checking for NULL and calling again
+dev_get_by_index will end in an infinite loop at the end of the hlist.
 
-The one:
+Augmenting the structure to also contain the number of indexes when
+the seq_file is opened returns to the current situation with two ints.
+Also, it is more prone to bugs caused by device removal while
+printing.
 
-if (!map->num_reg_defaults_raw)
-	return -EINVAL;
-
-Thanks,
-Dimitris
+-- 
+Mihai
