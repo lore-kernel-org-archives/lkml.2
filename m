@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab1JJPZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 11:25:31 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43913 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751429Ab1JJPZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 11:25:29 -0400
-Date: Mon, 10 Oct 2011 11:25:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
+	id S1752015Ab1JJP0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 11:26:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737Ab1JJP0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 11:26:13 -0400
+Date: Mon, 10 Oct 2011 11:25:42 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, <rjw@sisk.pl>,
-        <bp@amd64.org>, <pavel@ucw.cz>, <len.brown@intel.com>, <tj@kernel.org>,
-        <mingo@elte.hu>, <akpm@linux-foundation.org>,
-        <suresh.b.siddha@intel.com>, <lucas.demarchi@profusion.mobi>,
-        <rusty@rustcorp.com.au>, <rdunlap@xenotime.net>,
-        <vatsa@linux.vnet.ibm.com>, <ashok.raj@intel.com>,
-        <tigran@aivazian.fsnet.co.uk>, <tglx@linutronix.de>, <hpa@zytor.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-In-Reply-To: <1318256788.14400.53.camel@laptop>
-Message-ID: <Pine.LNX.4.44L0.1110101123200.18069-100000@netrider.rowland.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [patch v2 1/2] sched: Use resched IPI to kick off the nohz idle
+ balance
+Message-ID: <20111010152542.GD21169@redhat.com>
+References: <20111003220934.834943260@sbsiddha-desk.sc.intel.com>
+ <20111006172731.GA31781@redhat.com>
+ <1318032586.11592.206.camel@sbsiddha-desk.sc.intel.com>
+ <20111010135220.GC21169@redhat.com>
+ <1318255564.14400.45.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318255564.14400.45.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011, Peter Zijlstra wrote:
+On Mon, Oct 10, 2011 at 04:06:04PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-10-10 at 09:52 -0400, Vivek Goyal wrote:
+> 
+> > I did partial backport of above to come up with a fix for rhel6 and put
+> > your first patch on top of it. 
+> 
+> You might also want to look at these for PPC64:
+> 
+> 23d72bfd8f9f24aa9efafed3586a99f5669c23d7
 
-> I just remember being very surprised about finding out the hotplug usage
-> of suspend/hibernate wasn't at all serialized against the regular
-> hotplug thingies.. (see 144060fee07e9c22e179d00819c83c86fbcbf82c).
+This seems to be just cleanup of the way IPI are handled in ppc64
+(mux/demux). I don't understand the details but looks like not a
+necessary component of the problem at hand.
 
-It _is_ serialized against some of them... maybe not all, though.  
-That's one of the purposes of the "prepare" and "complete" callback
-methods in dev_pm_ops.
+> 880102e78547c1db158a17e36cf0cdd98e7ad710
 
-Alan Stern
+Here Benjamin talks about following.
 
+    Manual merge of arch/powerpc/kernel/smp.c and add missing scheduler_ipi()
+    call to arch/powerpc/platforms/cell/interrupt.c
+
+And I can't find any scheduler_ipi() call in current cell/interrupt.c. So
+either it got moved or something else happend. CCing him to find out. 
+
+Thanks
+Vivek
