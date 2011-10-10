@@ -1,34 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab1JJTCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 15:02:52 -0400
-Received: from na3sys010aog111.obsmtp.com ([74.125.245.90]:50105 "HELO
-	na3sys010aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754426Ab1JJTCu (ORCPT
+	id S1754518Ab1JJTIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 15:08:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47220 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab1JJTIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 15:02:50 -0400
+	Mon, 10 Oct 2011 15:08:18 -0400
+Date: Mon, 10 Oct 2011 23:08:12 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 16/19] power_supply: Convert all users to new usb_phy
+Message-ID: <20111010190812.GA12821@oksana.dev.rtsoft.ru>
+References: <1317036092-3000-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1317036092-3000-17-git-send-email-heikki.krogerus@linux.intel.com>
+ <20111003131055.GC2487@xps8300>
 MIME-Version: 1.0
-In-Reply-To: <4E8F77B8.3000805@xenotime.net>
-References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au>
- <4E8F683D.9020604@xenotime.net> <CAL1RGDXoiRfR1Ku67tRgbhxzyWQmDrjKCztnVd6wbwi0Uud90Q@mail.gmail.com>
- <4E8F77B8.3000805@xenotime.net>
-From: Roland Dreier <roland@purestorage.com>
-Date: Mon, 10 Oct 2011 12:02:29 -0700
-Message-ID: <CAL1RGDWXV2=cYTRAvKuZbquOPS7n-p3NJkYnrzyK_ZAbKsJy6A@mail.gmail.com>
-Subject: Re: [PATCH -next] infiniband: fix ipath_chip_init.c build errors
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mike Marciniszyn <infinipath@qlogic.com>, linux-rdma@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111003131055.GC2487@xps8300>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 7, 2011 at 3:05 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> First I saw it was in today's linux-next (20111007).
+On Mon, Oct 03, 2011 at 04:10:55PM +0300, Heikki Krogerus wrote:
+[...]
+> > +static inline int
+> > +isp1704_read(struct isp1704_charger *isp, u32 reg)
 
-Got it... a latent problem exposed by some include clean up, probably.
+Cosmetic nitpick: I don't see any reason to break this into two lines.
 
-Applied, thanks.
+> > +{
+> > +	return usb_phy_io_read(isp->xceiv, reg);
+> > +}
+> > +
+> > +static inline int
+> > +isp1704_write(struct isp1704_charger *isp, u32 val, u32 reg)
+
+Same here.
+
+I assume you want this patch to go via some other tree, so feel
+free to add
+
+Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
