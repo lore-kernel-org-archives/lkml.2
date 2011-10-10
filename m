@@ -1,106 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab1JJJ6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:58:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65147 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1JJJ6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:58:07 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        rmallon@gmail.com, joe@perches.com,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH v2 1/3] Staging: comedi: fix printk issue in cb_pcidio.c
-Date: Mon, 10 Oct 2011 15:27:06 +0530
-Message-Id: <1318240626-5898-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.4
+	id S1753249Ab1JJKCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 06:02:31 -0400
+Received: from lucidpixels.com ([72.73.18.11]:57849 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753011Ab1JJKCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 06:02:30 -0400
+Date: Mon, 10 Oct 2011 06:02:29 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: vnc-list@realvnc.com
+Subject: 3.1-rc9: Xvnc segmentation fault/coredump
+Message-ID: <alpine.DEB.2.02.1110100545540.16362@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidio.c file that fixes up a printk warning
-found by the checkpatch.pl tool
+Hello,
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- v2: printk strings are fixed as suggested by Ryan Mallon.
- Converted printks to pr_levels> and 2 prinks are removed from the
- function. i.e. printk("comedi%d: cb_pcidio: \n", dev->minor);
- printk("comedi%d: cb_pcidio: remove\n", dev->minor);
- 
- v1: Used dev_<levels> instead of printks which is not possible because
- In the function, pcidev is initialized to NULL so the Earlier patch
- was broken.
- 
- drivers/staging/comedi/drivers/cb_pcidio.c |   20 ++++++++------------
- 1 files changed, 8 insertions(+), 12 deletions(-)
+Summary: vncserver crashes with 3.1-rc9 when launching 
+thunderbird and chrome (usually reproducible)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
-index 79477a5..650978d 100644
---- a/drivers/staging/comedi/drivers/cb_pcidio.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidio.c
-@@ -184,8 +184,6 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int index;
- 	int i;
- 
--	printk("comedi%d: cb_pcidio: \n", dev->minor);
--
- /*
-  * Allocate the private structure area.  alloc_private() is a
-  * convenient macro defined in comedidev.h.
-@@ -223,7 +221,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		}
- 	}
- 
--	printk("No supported ComputerBoards/MeasurementComputing card found on "
-+	pr_err("No supported ComputerBoards/MeasurementComputing card found on "
- 	       "requested position\n");
- 	return -EIO;
- 
-@@ -236,12 +234,11 @@ found:
- 	dev->board_name = thisboard->name;
- 
- 	devpriv->pci_dev = pcidev;
--	printk("Found %s on bus %i, slot %i\n", thisboard->name,
--	       devpriv->pci_dev->bus->number,
--	       PCI_SLOT(devpriv->pci_dev->devfn));
-+	pr_info("Found %s on bus %i, slot %i\n", thisboard->name,
-+		devpriv->pci_dev->bus->number,
-+		PCI_SLOT(devpriv->pci_dev->devfn));
- 	if (comedi_pci_enable(pcidev, thisboard->name)) {
--		printk
--		    ("cb_pcidio: failed to enable PCI device and request regions\n");
-+		pr_err("cb_pcidio: failed to enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	devpriv->dio_reg_base
-@@ -259,11 +256,11 @@ found:
- 	for (i = 0; i < thisboard->n_8255; i++) {
- 		subdev_8255_init(dev, dev->subdevices + i,
- 				 NULL, devpriv->dio_reg_base + i * 4);
--		printk(" subdev %d: base = 0x%lx\n", i,
--		       devpriv->dio_reg_base + i * 4);
-+		pr_debug("subdev %d: base = 0x%lx\n", i,
-+			 devpriv->dio_reg_base + i * 4);
- 	}
- 
--	printk("attached\n");
-+	pr_info("attached\n");
- 	return 1;
- }
- 
-@@ -277,7 +274,6 @@ found:
-  */
- static int pcidio_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: cb_pcidio: remove\n", dev->minor);
- 	if (devpriv) {
- 		if (devpriv->pci_dev) {
- 			if (devpriv->dio_reg_base)
--- 
-1.7.6.4
+Problem: With 3.1-rc9 -- vncserver (both vnc-4_1_3-x86_linux) and the 
+package in Debian: 4.1.1+X4.3.0-37 both core dump under 3.1-rc9 when I 
+launch a couple of applications, thunderbird and chrome, these 
+applications were also upgraded around the time I went to 3.1-rc9 so I 
+cannot be certain which is causing the crashes.  I cannot change the 
+kernel for a while, machine is in production now; however, I have been
+following the 3.1-rc's for awhile and all were OK (ran -rc8) for 
+the longest until -rc9.  There appears to be no quick/fast 
+debug package available for vncserver; however, I will show/describe it as 
+best as I can.
+
+1. Start vnc: vncserver -geometry 1920x1200 :1 -depth 24
+2. Launch latest thunderbird, then chrome, then Xvnc crashes, dumps core.
+
+Core with Debian's 4.1.1+X4.3.0-37
+-rw------- 1 bob users  60551168 Oct 10 05:01 core.Xvnc4.7121
+
+Core with realvnc's latest VNC on website (4.1.3):
+-rw------- 1 bob users  67252224 Oct 10 05:11 core.Xvnc.9631
+
+Obviously without a debug version, the output is not meaningful, however, 
+I was curious if ayone had seen anything like this with 3.1-rc9?
+
+Core was generated by `Xvnc4 :1 -desktop p34:1 (bob) -auth /home/bob/.Xauthority -geometry 1920x1200 -'.
+Program terminated with signal 11, Segmentation fault.
+#0  0x00000000004cbed4 in ?? ()
+(gdb) bt full
+#0  0x00000000004cbed4 in ?? ()
+No symbol table info available.
+#1  0x00000000004dd577 in ?? ()
+No symbol table info available.
+#2  0x00000000005832a2 in ?? ()
+No symbol table info available.
+#3  0x00000000005834ff in ?? ()
+No symbol table info available.
+#4  0x0000000000426d90 in ?? ()
+No symbol table info available.
+#5  0x000000000040be86 in ?? ()
+No symbol table info available.
+#6  0x00007f78bc27eead in __libc_start_main ()
+    from /lib/x86_64-linux-gnu/libc.so.6
+No symbol table info available.
+#7  0x0000000000409259 in ?? ()
+No symbol table info available.
+#8  0x00007fff81ea1f58 in ?? ()
+No symbol table info available.
+#9  0x000000000000001c in ?? ()
+No symbol table info available.
+#10 0x0000000000000015 in ?? ()
+No symbol table info available.
+---Type <return> to continue, or q <return> to quit---
+#11 0x00007fff81ea2cbc in ?? ()
+No symbol table info available.
+#12 0x00007fff81ea2cc2 in ?? ()
+No symbol table info available.
+#13 0x00007fff81ea2cc5 in ?? ()
+No symbol table info available.
+#14 0x00007fff81ea2cce in ?? ()
+No symbol table info available.
+#15 0x00007fff81ea2cda in ?? ()
+No symbol table info available.
+#16 0x00007fff81ea2ce0 in ?? ()
+No symbol table info available.
+#17 0x00007fff81ea2cf6 in ?? ()
+No symbol table info available.
+#18 0x00007fff81ea2d00 in ?? ()
+No symbol table info available.
+#19 0x00007fff81ea2d0a in ?? ()
+No symbol table info available.
+#20 0x00007fff81ea2d11 in ?? ()
+No symbol table info available.
+#21 0x00007fff81ea2d14 in ?? ()
+No symbol table info available.
+#22 0x00007fff81ea2d1d in ?? ()
+---Type <return> to continue, or q <return> to quit---
+No symbol table info available.
+#23 0x00007fff81ea2d23 in ?? ()
+No symbol table info available.
+#24 0x00007fff81ea2d2c in ?? ()
+No symbol table info available.
+#25 0x00007fff81ea2d42 in ?? ()
+No symbol table info available.
+#26 0x00007fff81ea2d4b in ?? ()
+No symbol table info available.
+#27 0x00007fff81ea2d50 in ?? ()
+No symbol table info available.
+#28 0x00007fff81ea2d54 in ?? ()
+No symbol table info available.
+#29 0x00007fff81ea2d58 in ?? ()
+No symbol table info available.
+#30 0x00007fff81ea2e68 in ?? ()
+No symbol table info available.
+#31 0x00007fff81ea2e6c in ?? ()
+No symbol table info available.
+#32 0x0000000000000000 in ?? ()
+No symbol table info available.
+(gdb)
+
+Justin.
 
