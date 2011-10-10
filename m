@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab1JJJ0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 05:26:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44306 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753034Ab1JJJ0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 05:26:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,516,1312182000"; 
-   d="scan'208";a="24790490"
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-In-Reply-To: <CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1317200618.1573.1765.camel@vkoul-udesk3>
-	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	 <1317295068.1573.1780.camel@vkoul-udesk3>
-	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	 <20111003161349.GB28287@flint.arm.linux.org.uk>
-	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	 <1317966346.1573.2252.camel@vkoul-udesk3>
-	 <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	 <1317997177.1573.2275.camel@vkoul-udesk3>
-	 <CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
-	 <1318229592.1573.2298.camel@vkoul-udesk3>
-	 <CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 10 Oct 2011 14:48:16 +0530
-Message-ID: <1318238296.1546.3.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753200Ab1JJJ0X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 05:26:23 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:37781 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753068Ab1JJJ0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 05:26:21 -0400
+Date: Mon, 10 Oct 2011 12:26:15 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+Cc: balbi@ti.com, Paul Walmsley <paul@pwsan.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khilman@ti.com, b-cousson@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com
+Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+Message-ID: <20111010092613.GF6685@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1317901099-2519-1-git-send-email-keshava_mgowda@ti.com>
+ <alpine.DEB.2.00.1110070305040.4611@utopia.booyaka.com>
+ <CAP05o4J39MotDTOv-O2ahvWfxL-7jC-L3FGsNXbmDy8HNg=W3g@mail.gmail.com>
+ <alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
+ <CAP05o4KLAnNHcvNbNWqJFN710JMNAy2emYzCt2xHF+m-Kvwveg@mail.gmail.com>
+ <CAP05o4+ybhZwRaXZPgS-ZdTL_0gjz1VLf6LuUtMgm_txNPwrnw@mail.gmail.com>
+ <20111010090330.GE6685@legolas.emea.dhcp.ti.com>
+ <CAP05o4Kqrsr3Kzm=NDpEB7wHACzXkp2mQLuWdUAsZ8pVPdJafA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
+Content-Disposition: inline
+In-Reply-To: <CAP05o4Kqrsr3Kzm=NDpEB7wHACzXkp2mQLuWdUAsZ8pVPdJafA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 14:46 +0530, Jassi Brar wrote:
-> On 10 October 2011 12:23, Vinod Koul <vinod.koul@intel.com> wrote:
+
+--AH+kv8CCoFf6qPuz
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Oct 10, 2011 at 02:47:42PM +0530, Munegowda, Keshava wrote:
+> On Mon, Oct 10, 2011 at 2:33 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
 > >
-> > +struct dmaxfer_memcpy_template {
-> > +       dma_addr_t src_start;
-> > +       dma_addr_t dst_start;
-> > +       bool src_inc;
-> > +       bool dst_inc;
-> > +       bool src_sgl;
-> > +       bool dst_sgl;
-> > +       size_t numf;
-> > +       size_t frame_size;
-> > +       struct data_chunk sgl[0];
-> > +};
-> > +
-> > +struct dmaxfer_slave_template {
-> > +       dma_addr_t mem;
-> > +       bool mem_inc;
-> > +       size_t numf;
-> > +       size_t frame_size;
-> > +       struct data_chunk sgl[0];
-> > +};
+> > On Mon, Oct 10, 2011 at 02:22:23PM +0530, Munegowda, Keshava wrote:
+> >> Hi paul and Felipe
+> >>
+> >> Here is the highlights of the change in the design of =A0USB Host which
+> >> we can do after kernel 3.2 release;
+> >>
+> >> 1. separate the TLL changes =A0from UHH
+> >> 2. The TLL is be a new platform driver in ./drivers/mfd
+> >> 3. the TLL platform driver will export apis =A0for enable/disable cloc=
+ks
+> >> and settings.
 > >
-> (1) Please tell how is dmaxfer_slave_template supposed to work on
->  bi-directional channels?
->  Keeping in mind, dma_slave_config.direction is marked to go away
->  in future.
-I didn't use dma_slave_config.direction. There is direction field in
-corresponding prepare function.
+> > TLL should control its clocks through pm_runtime APIs like anything
+> > else. If you really must export APIs to be used by UHH, you need to have
+> > an API so that you can claim/release a TLL channel and get/put for
+> > increasing/decreasing PM counters.
+> >
+> > I still think though, you should try to avoid exporting OMAP-specific
+> > APIs all over the place. Ideally, we would be able to have some way of
+> > saying that UHH and TLL are closely related... something like having the
+> > ability to say e.g. two devices are sibblings of each other, so that we
+> > could ask for a sibbling to wakeup/sleep depending if we need it or not.
+>=20
+> do we have sibling structures today? I dont think so.
 
-> 
-> (2)
->   * slave_template.mem  <=>  memcpy_template.src_start
->   * slave_template.mem_inc  <=>  memcpy_template.src_inc
-> 
->  So essentially
->   memcpy_template  :=  slave_template + src/dst_sgl + dst_start + dst_inc
-> 
->  Even after this separation, there is nothing slave specific in
-> dmaxfer_slave_template. The slave client still needs DMA_SLAVE_CONFIG
-> to specify slave parameters of the transfer.
->  You only save a few bytes in a _copy_ of memcpy_template.
-Yes DMA_SLAVE_CONFIG is always required, this attempt was not aimed to
-remove that, but I would be interested in it :)
+no we don't.
 
--- 
-~Vinod
+> > Dunno, maybe I'm drifting here, but I don't think exposing OMAP-specific
+> > APIs is wise.
+>=20
+> so, it means , if we can have sibling structure, then we can
+> conditionally enable it right?
 
+the conditional would still lie in UHH driver, but at least it would be
+made into a generic API. I mean, you could create a generic way of
+defining sibbling devices, and a generic way to make them talk to each
+other.
+
+--=20
+balbi
+
+--AH+kv8CCoFf6qPuz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOkro1AAoJEIaOsuA1yqRE/IYP/iNE1giE3h/L+Y2S8tJX4DYJ
+1o1UXpmpft/1q4CuA01UvaH46JS/uLLPEnNuMNAgdprW3+PdXL/garE8z9cbiaVe
+/lQXbG0krwU94sGxzTEFPlScMk8BGmaI9V/KdgsBamJ3oX0Bj7BFDeZg9tofCbhl
+GGe3OGzs9p/3szXutERloP2FzT1YGQNBH7iwUXrBqtYlw+wdIPlB90ogrhDNWZys
+obOSpo4MIwNICmedwxJrJF2wdwL7vqxbVy2Q43p2lC6/OnUNasvgRPocTbdr+032
+rmDdf3NsCNebaOHYWGY/hRsjgYAAW0MlZHbu+LG/6ZACsM9mC5sHa7FJajDtF42H
+AJ61UKSsnO7LwFAMtGyt6tWSjF0OU/1y00aRW67E28iv1cLDcJGT/d9MI4odhY88
+6jghbNATx6jg0LPipRfFJKKSOJA+SQ0o/C+4ljrPg4UBfgXLvrlytovfD5gDoc8g
+PWW/8GaTlOOsxg219ORr7kjNrwcvuze64dGgVtd+VGLuYcRDIxJgg3QKFrTs0TBn
+lycro5fmoJYjbPpHyYgwxsaqNGAaS3bFHRyVrm11T27F2dkFnT2x1zrs1dXHios4
+FVOQbbzNyMiWLkpXJ4Ls31MuFTPqxICxaS4xmWGsE7kQEW9eQ/KfsqZytqcnGal9
+m9tBYfIUE8agV4YDAFo+
+=2Buk
+-----END PGP SIGNATURE-----
+
+--AH+kv8CCoFf6qPuz--
