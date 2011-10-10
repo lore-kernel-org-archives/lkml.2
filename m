@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab1JJGfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 02:35:08 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49864 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1JJGfH convert rfc822-to-8bit (ORCPT
+	id S1751256Ab1JJGpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 02:45:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56121 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab1JJGpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 02:35:07 -0400
+	Mon, 10 Oct 2011 02:45:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111010062653.GB4139@liondog.tnic>
-References: <1318225452-10397-1-git-send-email-Barry.Song@csr.com> <20111010062653.GB4139@liondog.tnic>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 10 Oct 2011 14:34:45 +0800
-Message-ID: <CAGsJ_4zSUYPrK3Bdo4p5bL25PO7orAJJByRAx2U=OT-JE62uHw@mail.gmail.com>
-Subject: Re: [PATCH] PM: HIBERNATION: add resume_delay kernel param as well as resume_delay
-To: Borislav Petkov <bp@alien8.de>, Barry Song <Barry.Song@csr.com>,
-        pavel@ucw.cz, rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        Barry Song <baohua.song@csr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 10 Oct 2011 14:45:20 +0800
+Message-ID: <CAE8kqZJ4JQ0HC4g80f7R7vhMpUdk4_ydkeV6RNXts4W0DzqgbA@mail.gmail.com>
+Subject: [PATCH] fanotify: to differ file access event from different threads
+From: boyd yang <boyd.yang@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: eparis@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/10 Borislav Petkov <bp@alien8.de>:
-> On Sun, Oct 09, 2011 at 10:44:12PM -0700, Barry Song wrote:
->> From: Barry Song <baohua.song@csr.com>
->>
->> patch "PM: HIBERNATION: add resume_wait param to support MMC-like devices
->> as resume file" add resume_wait param. this patch adds resume_delay so that
->> resume_wait/delay has the same model with root_wait/delay.
->>
->> Signed-off-by: Barry Song <baohua.song@csr.com>
->> ---
->>  Documentation/kernel-parameters.txt |    3 +++
->>  kernel/power/hibernate.c            |   14 ++++++++++++++
->>  2 files changed, 17 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 88a7b19..831bde2 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2240,6 +2240,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>                       in <PAGE_SIZE> units (needed only for swap files).
->>                       See  Documentation/power/swsusp-and-swap-files.txt
->>
->> +     resumedelay=    [HIBERNATION] Delay (in seconds) to pause before attempting to
->> +                     read the resume files
->> +
->>       resumewait      [HIBERNATION] Wait (indefinitely) for resume device to show up.
->>                       Useful for devices that are detected asynchronously
->>                       (e.g. USB and MMC devices).
->> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->> index b3da53c..f73a00e 100644
->> --- a/kernel/power/hibernate.c
->> +++ b/kernel/power/hibernate.c
->> @@ -33,6 +33,7 @@
->>  static int nocompress = 0;
->>  static int noresume = 0;
->>  static int resume_wait = 0;
->> +static int resume_delay = 0;
->
-> These static variables get zeroed needlessly and checkpatch actually
-> warns about that. Maybe fix that up while you're there?
+This patch fixes a hang problem of Eric Paris's fs Notification/fanotify.
 
-yes. right. i initilized it to 0 to keep consistent coding style with
-the context because there were other variants doing that.
-i'd like to delete all initialization together as a seperate patch. Or
-do you want to do that?
+Fanotify brings a way to intercept file access events.
+When multiple threadsiterate the same direcotry, some thread will hang.
+This patch let fanotify to differ access events from different
+threads, prevent fanotify from merging access events from different
+threads.
 
->
-> Thanks.
->
-> --
-> Regards/Gruss,
->    Boris.
--barry
+-------------------------------
+
+diff -r -u linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c
+linux-3.1-rc4/fs/notify/fanotify/fanotify.c
+--- linux-3.1-rc4_orig/fs/notify/fanotify/fanotify.c	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/fs/notify/fanotify/fanotify.c	2011-10-10
+12:28:23.276847000 +0800
+@@ -15,7 +15,8 @@
+
+ 	if (old->to_tell == new->to_tell &&
+ 	    old->data_type == new->data_type &&
+-	    old->tgid == new->tgid) {
++	    old->tgid == new->tgid &&
++	    old->pid == new->pid) {
+ 		switch (old->data_type) {
+ 		case (FSNOTIFY_EVENT_PATH):
+ 			if ((old->path.mnt == new->path.mnt) &&
+@@ -144,11 +145,19 @@
+ 		return PTR_ERR(notify_event);
+
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+-	if (event->mask & FAN_ALL_PERM_EVENTS) {
+-		/* if we merged we need to wait on the new event */
+-		if (notify_event)
+-			event = notify_event;
+-		ret = fanotify_get_response_from_access(group, event);
++	//if overflow, do not wait for response
++	if(fsnotify_isoverflow(event))
++	{
++		pr_debug("fanotify overflow!\n");
++	}
++	else
++	{
++		if (event->mask & FAN_ALL_PERM_EVENTS) {
++			/* if we merged we need to wait on the new event */
++			if (notify_event)
++				event = notify_event;
++			ret = fanotify_get_response_from_access(group, event);
++		}
+ 	}
+ #endif
+
+diff -r -u linux-3.1-rc4_orig/fs/notify/notification.c
+linux-3.1-rc4/fs/notify/notification.c
+--- linux-3.1-rc4_orig/fs/notify/notification.c	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/fs/notify/notification.c	2011-10-10 12:27:09.331787000 +0800
+@@ -95,6 +95,7 @@
+ 		BUG_ON(!list_empty(&event->private_data_list));
+
+ 		kfree(event->file_name);
++		put_pid(event->pid);
+ 		put_pid(event->tgid);
+ 		kmem_cache_free(fsnotify_event_cachep, event);
+ 	}
+@@ -132,6 +133,14 @@
+ 	return priv;
+ }
+
++bool fsnotify_isoverflow(struct fsnotify_event *event)
++{
++	if(event==q_overflow_event)
++	{
++		return true;
++	}
++	return false;
++}
+ /*
+  * Add an event to the group notification queue.  The group can later pull this
+  * event off the queue to deal with.  If the event is successfully added to the
+@@ -374,6 +383,7 @@
+ 			return NULL;
+ 		}
+ 	}
++	event->pid = get_pid(old_event->pid);
+ 	event->tgid = get_pid(old_event->tgid);
+ 	if (event->data_type == FSNOTIFY_EVENT_PATH)
+ 		path_get(&event->path);
+@@ -417,6 +427,7 @@
+ 		event->name_len = strlen(event->file_name);
+ 	}
+
++	event->pid = get_pid(task_pid(current));
+ 	event->tgid = get_pid(task_tgid(current));
+ 	event->sync_cookie = cookie;
+ 	event->to_tell = to_tell;
+diff -r -u linux-3.1-rc4_orig/include/linux/fsnotify_backend.h
+linux-3.1-rc4/include/linux/fsnotify_backend.h
+--- linux-3.1-rc4_orig/include/linux/fsnotify_backend.h	2011-08-29
+12:16:01.000000000 +0800
++++ linux-3.1-rc4/include/linux/fsnotify_backend.h	2011-10-10
+12:27:48.587369000 +0800
+@@ -238,6 +238,7 @@
+ 	u32 sync_cookie;	/* used to corrolate events, namely inotify mv events */
+ 	const unsigned char *file_name;
+ 	size_t name_len;
++	struct pid *pid;
+ 	struct pid *tgid;
+
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+@@ -378,6 +379,8 @@
+ 							struct fsnotify_event_private_data *priv,
+ 							struct fsnotify_event *(*merge)(struct list_head *,
+ 											struct fsnotify_event *));
++/*true if the event is an overflow event*/
++extern bool fsnotify_isoverflow(struct fsnotify_event *event);
+ /* true if the group notification queue is empty */
+ extern bool fsnotify_notify_queue_is_empty(struct fsnotify_group *group);
+ /* return, but do not dequeue the first event on the notification queue */
