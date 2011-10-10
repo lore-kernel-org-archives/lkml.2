@@ -1,139 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab1JJQnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:43:45 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:47844 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab1JJQno (ORCPT
+	id S1753267Ab1JJQnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:43:52 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:19780 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab1JJQnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:43:44 -0400
-Date: Mon, 10 Oct 2011 09:43:39 -0700
-From: Tejun Heo <htejun@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Rientjes <rientjes@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [patch] cpusets, cgroups: disallow attaching kthreadd
-Message-ID: <20111010164339.GA8100@google.com>
-References: <1316758874.7393.2.camel@marge.simson.net>
- <4E7C2E7F.40307@cn.fujitsu.com>
- <1316762345.8168.4.camel@marge.simson.net>
- <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
- <1316770936.6641.11.camel@marge.simson.net>
- <1316775204.7562.9.camel@marge.simson.net>
- <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
- <1316788392.6544.33.camel@marge.simson.net>
- <1318224892.6161.45.camel@marge.simson.net>
- <1318233815.6527.5.camel@marge.simson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318233815.6527.5.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 10 Oct 2011 12:43:50 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
+        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH V2 4/4] ARM: at91/dma: DMA controller registering with DT support
+Date: Mon, 10 Oct 2011 18:43:41 +0200
+Message-Id: <1318265021-4562-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <e292fbb24a98b7cfda8ea83364956a50e1cb120f.1318264339.git.nicolas.ferre@atmel.com>
+References: <e292fbb24a98b7cfda8ea83364956a50e1cb120f.1318264339.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Device tree support on at91sam9g45 family SoC. Only call
+platform_device_register() if no compatible dma-controller
+node is found in device tree.
 
-(cc'ing Thomas and Steven and quoting whole body)
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+V2: use compatible string to match device.
 
-On Mon, Oct 10, 2011 at 10:03:34AM +0200, Mike Galbraith wrote:
-> On Mon, 2011-10-10 at 07:34 +0200, Mike Galbraith wrote:
-> > Maybe the below (which seems to have been stillborn) should be done to
-> > cgroups as well.  Postmortem: kthreadd is attached to a cgroup with no
-> > rt_runtime allocated, gives birth to severely handicapped kstop threads,
-> > humongous crash dump follows.
-> > 
-> > Fiddling with kthreadd is user error, but since it makes no sense to
-> > move the thing, why not just say no, and save the user's toes some
-> > needless wear and tear.
-> > 
-> > > If cpusets doesn't want to let PF_THREAD_BOUND threads out, how about
-> > > cpusets not letting userland scripts attach kthreadd instead?
-> > > 
-> > > cpusets: disallow moving kthreadd into a cpuset.
-> 
-> So how about this, both dirt simple and effective.
-> 
-> cpusets, cgroups: disallow attaching kthreadd
-> 
-> Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> a global resource, and needlessly leads unsuspecting users toward trouble.
-> 
-> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> allocated is not schedulable.  Simple user error, but harmful to the box.
-> 
-> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> rendering the cpuset immortal.
-> 
-> Save the user some unexpected trouble, just say no.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
+ arch/arm/mach-at91/at91sam9g45_devices.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Yes, I think we need something like this.  wq workers were using
-PF_THREAD_BOUND to prevent diddling from userland which made some
-unhappy.  Maybe we need a flag to properly indicate "don't diddle with
-this thread from userland"?  But, then, mainline kernel wouldn't need
-the current PF_THREAD_BOUND at all.  Peter, Steven, what do you think?
-
-Thanks.
-
-> ---
->  kernel/cpuset.c |    6 ++++--
->  kernel/sched.c  |    9 +++++++++
->  2 files changed, 13 insertions(+), 2 deletions(-)
-> 
-> Index: linux-3.0-tip/kernel/cpuset.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/cpuset.c
-> +++ linux-3.0-tip/kernel/cpuset.c
-> @@ -59,6 +59,7 @@
->  #include <linux/mutex.h>
->  #include <linux/workqueue.h>
->  #include <linux/cgroup.h>
-> +#include <linux/kthread.h>
->  
->  /*
->   * Workqueue for cpuset related tasks.
-> @@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
->  	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
->  	 * applicable for such threads.  This prevents checking for success of
->  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
-> -	 * be changed.
-> +	 * be changed.  We also disallow attaching kthreadd, to prevent it's
-> +	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
->  	 */
-> -	if (tsk->flags & PF_THREAD_BOUND)
-> +	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
->  		return -EINVAL;
->  
->  	return 0;
-> Index: linux-3.0-tip/kernel/sched.c
-> ===================================================================
-> --- linux-3.0-tip.orig/kernel/sched.c
-> +++ linux-3.0-tip/kernel/sched.c
-> @@ -9132,6 +9132,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
->  static int
->  cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
->  {
-> +	/*
-> +	 * kthreadd can fork workers for an RT workqueue in a cgroup
-> +	 * which may or may not have rt_runtime allocated.  Just say no,
-> +	 * as attaching a global resource to a non-root group  doesn't
-> +	 * make any sense anyway.
-> +	 */
-> +	if (tsk == kthreadd_task)
-> +		return -EINVAL;
-> +
->  #ifdef CONFIG_RT_GROUP_SCHED
->  	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
->  		return -EINVAL;
-> 
-> 
-
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 9390ae6..2120055 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -64,7 +64,13 @@ static struct platform_device at_hdmac_device = {
+ 
+ void __init at91_add_device_hdmac(void)
+ {
+-	platform_device_register(&at_hdmac_device);
++	struct device_node *np = of_find_node_by_name(NULL, "dma-controller");
++
++	if (np && of_device_is_compatible(np, "atmel,at91sam9g45-dma")) {
++		of_node_put(np);
++	} else {
++		platform_device_register(&at_hdmac_device);
++	}
+ }
+ #else
+ void __init at91_add_device_hdmac(void) {}
 -- 
-tejun
+1.7.5.4
+
