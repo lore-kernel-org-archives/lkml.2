@@ -1,114 +1,461 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab1JJOeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 10:34:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9492 "EHLO mga09.intel.com"
+	id S1754537Ab1JJOed (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 10:34:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9068 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab1JJOeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 10:34:22 -0400
+	id S1754510Ab1JJOeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 10:34:31 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="61737382"
+X-IronPort-AV: E=Sophos;i="4.68,517,1312182000"; 
+   d="scan'208";a="76575962"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Andrew Morton <akpm@google.com>, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 1/5] lib: rename pack_hex_byte to hex_byte_pack
-Date: Mon, 10 Oct 2011 17:33:35 +0300
-Message-Id: <bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCHv2 2/5] kgdb: follow rename pack_hex_byte to hex_byte_pack
+Date: Mon, 10 Oct 2011 17:33:36 +0300
+Message-Id: <34f5cdc31cb8bdd5596f0f20d5be2c867d9bcfa2.1318257114.git.andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.6.3
-In-Reply-To: <CAKiorj5MJ8_ZH-J-7GjNQLoPNTshFdrrHfjptgpgi_4mchHJYw@mail.gmail.com>
+In-Reply-To: <bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
 References: <CAKiorj5MJ8_ZH-J-7GjNQLoPNTshFdrrHfjptgpgi_4mchHJYw@mail.gmail.com>
+ <bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
+In-Reply-To: <bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
+References: <bc1318a3244d9df71f44041d8a57d8f075f2cb5b.1318257114.git.andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As suggested by Andrew Morton in [1] there is better to have most significant
-part first in the function name.
-
-[1] https://lkml.org/lkml/2011/9/20/22
-
 There is no functional change.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net
 ---
- include/linux/kernel.h |    7 ++++++-
- lib/vsprintf.c         |   14 +++++++-------
- 2 files changed, 13 insertions(+), 8 deletions(-)
+ arch/cris/arch-v10/kernel/kgdb.c |    6 ++--
+ arch/cris/arch-v32/kernel/kgdb.c |   14 +++++-----
+ arch/frv/kernel/gdb-stub.c       |   44 ++++++++++++++++----------------
+ arch/mn10300/kernel/gdb-stub.c   |   52 +++++++++++++++++++-------------------
+ kernel/debug/gdbstub.c           |   12 ++++----
+ 5 files changed, 64 insertions(+), 64 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index a10ed77..4c0d3b2 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -376,13 +376,18 @@ extern const char hex_asc[];
- #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
- #define hex_asc_hi(x)	hex_asc[((x) & 0xf0) >> 4]
+diff --git a/arch/cris/arch-v10/kernel/kgdb.c b/arch/cris/arch-v10/kernel/kgdb.c
+index b9f9c8c..b579dd0 100644
+--- a/arch/cris/arch-v10/kernel/kgdb.c
++++ b/arch/cris/arch-v10/kernel/kgdb.c
+@@ -694,7 +694,7 @@ mem2hex(char *buf, unsigned char *mem, int count)
+                 /* Valid mem address. */
+                 for (i = 0; i < count; i++) {
+                         ch = *mem++;
+-			buf = pack_hex_byte(buf, ch);
++			buf = hex_byte_pack(buf, ch);
+                 }
+         }
+         
+@@ -868,7 +868,7 @@ stub_is_stopped(int sigval)
+ 	/* Send trap type (converted to signal) */
  
--static inline char *pack_hex_byte(char *buf, u8 byte)
-+static inline char *hex_byte_pack(char *buf, u8 byte)
- {
- 	*buf++ = hex_asc_hi(byte);
- 	*buf++ = hex_asc_lo(byte);
- 	return buf;
+ 	*ptr++ = 'T';
+-	ptr = pack_hex_byte(ptr, sigval);
++	ptr = hex_byte_pack(ptr, sigval);
+ 
+ 	/* Send register contents. We probably only need to send the
+ 	 * PC, frame pointer and stack pointer here. Other registers will be
+@@ -881,7 +881,7 @@ stub_is_stopped(int sigval)
+                 status = read_register (regno, &reg_cont);
+                 
+ 		if (status == SUCCESS) {
+-			ptr = pack_hex_byte(ptr, regno);
++			ptr = hex_byte_pack(ptr, regno);
+                         *ptr++ = ':';
+ 
+                         ptr = mem2hex(ptr, (unsigned char *)&reg_cont,
+diff --git a/arch/cris/arch-v32/kernel/kgdb.c b/arch/cris/arch-v32/kernel/kgdb.c
+index c0343c3..8c1d35c 100644
+--- a/arch/cris/arch-v32/kernel/kgdb.c
++++ b/arch/cris/arch-v32/kernel/kgdb.c
+@@ -677,7 +677,7 @@ mem2hex(char *buf, unsigned char *mem, int count)
+                 /* Valid mem address. */
+ 		for (i = 0; i < count; i++) {
+ 			ch = *mem++;
+-			buf = pack_hex_byte(buf, ch);
++			buf = hex_byte_pack(buf, ch);
+ 		}
+         }
+         /* Terminate properly. */
+@@ -695,7 +695,7 @@ mem2hex_nbo(char *buf, unsigned char *mem, int count)
+ 	mem += count - 1;
+ 	for (i = 0; i < count; i++) {
+ 		ch = *mem--;
+-		buf = pack_hex_byte(buf, ch);
++		buf = hex_byte_pack(buf, ch);
+         }
+ 
+         /* Terminate properly. */
+@@ -880,7 +880,7 @@ stub_is_stopped(int sigval)
+ 	/* Send trap type (converted to signal) */
+ 
+ 	*ptr++ = 'T';
+-	ptr = pack_hex_byte(ptr, sigval);
++	ptr = hex_byte_pack(ptr, sigval);
+ 
+ 	if (((reg.exs & 0xff00) >> 8) == 0xc) {
+ 
+@@ -988,26 +988,26 @@ stub_is_stopped(int sigval)
+ 	}
+ 	/* Only send PC, frame and stack pointer. */
+ 	read_register(PC, &reg_cont);
+-	ptr = pack_hex_byte(ptr, PC);
++	ptr = hex_byte_pack(ptr, PC);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(ptr, (unsigned char *)&reg_cont, register_size[PC]);
+ 	*ptr++ = ';';
+ 
+ 	read_register(R8, &reg_cont);
+-	ptr = pack_hex_byte(ptr, R8);
++	ptr = hex_byte_pack(ptr, R8);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(ptr, (unsigned char *)&reg_cont, register_size[R8]);
+ 	*ptr++ = ';';
+ 
+ 	read_register(SP, &reg_cont);
+-	ptr = pack_hex_byte(ptr, SP);
++	ptr = hex_byte_pack(ptr, SP);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(ptr, (unsigned char *)&reg_cont, register_size[SP]);
+ 	*ptr++ = ';';
+ 
+ 	/* Send ERP as well; this will save us an entire register fetch in some cases. */
+         read_register(ERP, &reg_cont);
+-	ptr = pack_hex_byte(ptr, ERP);
++	ptr = hex_byte_pack(ptr, ERP);
+         *ptr++ = ':';
+         ptr = mem2hex(ptr, (unsigned char *)&reg_cont, register_size[ERP]);
+         *ptr++ = ';';
+diff --git a/arch/frv/kernel/gdb-stub.c b/arch/frv/kernel/gdb-stub.c
+index a4dba6b..a6d5381 100644
+--- a/arch/frv/kernel/gdb-stub.c
++++ b/arch/frv/kernel/gdb-stub.c
+@@ -672,7 +672,7 @@ static unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fa
+ 	if ((uint32_t)mem&1 && count>=1) {
+ 		if (!gdbstub_read_byte(mem,ch))
+ 			return NULL;
+-		buf = pack_hex_byte(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[0]);
+ 		mem++;
+ 		count--;
+ 	}
+@@ -680,8 +680,8 @@ static unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fa
+ 	if ((uint32_t)mem&3 && count>=2) {
+ 		if (!gdbstub_read_word(mem,(uint16_t *)ch))
+ 			return NULL;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
+ 		mem += 2;
+ 		count -= 2;
+ 	}
+@@ -689,10 +689,10 @@ static unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fa
+ 	while (count>=4) {
+ 		if (!gdbstub_read_dword(mem,(uint32_t *)ch))
+ 			return NULL;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
+-		buf = pack_hex_byte(buf, ch[2]);
+-		buf = pack_hex_byte(buf, ch[3]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[2]);
++		buf = hex_byte_pack(buf, ch[3]);
+ 		mem += 4;
+ 		count -= 4;
+ 	}
+@@ -700,8 +700,8 @@ static unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fa
+ 	if (count>=2) {
+ 		if (!gdbstub_read_word(mem,(uint16_t *)ch))
+ 			return NULL;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
+ 		mem += 2;
+ 		count -= 2;
+ 	}
+@@ -709,7 +709,7 @@ static unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fa
+ 	if (count>=1) {
+ 		if (!gdbstub_read_byte(mem,ch))
+ 			return NULL;
+-		buf = pack_hex_byte(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[0]);
+ 	}
+ 
+ 	*buf = 0;
+@@ -1498,21 +1498,21 @@ void gdbstub(int sigval)
+ 		ptr = mem2hex(title, ptr, sizeof(title) - 1,0);
+ 
+ 		hx = hex_asc_hi(brr >> 24);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(brr >> 24);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(brr >> 16);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(brr >> 16);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(brr >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(brr >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(brr);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(brr);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 
+ 		ptr = mem2hex(crlf, ptr, sizeof(crlf) - 1, 0);
+ 		*ptr = 0;
+@@ -1526,10 +1526,10 @@ void gdbstub(int sigval)
+ 
+ 	/* Send trap type (converted to signal) */
+ 	*ptr++ = 'T';
+-	ptr = pack_hex_byte(ptr, sigval);
++	ptr = hex_byte_pack(ptr, sigval);
+ 
+ 	/* Send Error PC */
+-	ptr = pack_hex_byte(ptr, GDB_REG_PC);
++	ptr = hex_byte_pack(ptr, GDB_REG_PC);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&__debug_frame->pc, ptr, 4, 0);
+ 	*ptr++ = ';';
+@@ -1537,7 +1537,7 @@ void gdbstub(int sigval)
+ 	/*
+ 	 * Send frame pointer
+ 	 */
+-	ptr = pack_hex_byte(ptr, GDB_REG_FP);
++	ptr = hex_byte_pack(ptr, GDB_REG_FP);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&__debug_frame->fp, ptr, 4, 0);
+ 	*ptr++ = ';';
+@@ -1545,7 +1545,7 @@ void gdbstub(int sigval)
+ 	/*
+ 	 * Send stack pointer
+ 	 */
+-	ptr = pack_hex_byte(ptr, GDB_REG_SP);
++	ptr = hex_byte_pack(ptr, GDB_REG_SP);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&__debug_frame->sp, ptr, 4, 0);
+ 	*ptr++ = ';';
+diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
+index 538266b..522eb8a 100644
+--- a/arch/mn10300/kernel/gdb-stub.c
++++ b/arch/mn10300/kernel/gdb-stub.c
+@@ -798,7 +798,7 @@ unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fault)
+ 	if ((u32) mem & 1 && count >= 1) {
+ 		if (gdbstub_read_byte(mem, ch) != 0)
+ 			return 0;
+-		buf = pack_hex_byte(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[0]);
+ 		mem++;
+ 		count--;
+ 	}
+@@ -806,8 +806,8 @@ unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fault)
+ 	if ((u32) mem & 3 && count >= 2) {
+ 		if (gdbstub_read_word(mem, ch) != 0)
+ 			return 0;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
+ 		mem += 2;
+ 		count -= 2;
+ 	}
+@@ -815,10 +815,10 @@ unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fault)
+ 	while (count >= 4) {
+ 		if (gdbstub_read_dword(mem, ch) != 0)
+ 			return 0;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
+-		buf = pack_hex_byte(buf, ch[2]);
+-		buf = pack_hex_byte(buf, ch[3]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[2]);
++		buf = hex_byte_pack(buf, ch[3]);
+ 		mem += 4;
+ 		count -= 4;
+ 	}
+@@ -826,8 +826,8 @@ unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fault)
+ 	if (count >= 2) {
+ 		if (gdbstub_read_word(mem, ch) != 0)
+ 			return 0;
+-		buf = pack_hex_byte(buf, ch[0]);
+-		buf = pack_hex_byte(buf, ch[1]);
++		buf = hex_byte_pack(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[1]);
+ 		mem += 2;
+ 		count -= 2;
+ 	}
+@@ -835,7 +835,7 @@ unsigned char *mem2hex(const void *_mem, char *buf, int count, int may_fault)
+ 	if (count >= 1) {
+ 		if (gdbstub_read_byte(mem, ch) != 0)
+ 			return 0;
+-		buf = pack_hex_byte(buf, ch[0]);
++		buf = hex_byte_pack(buf, ch[0]);
+ 	}
+ 
+ 	*buf = 0;
+@@ -1273,13 +1273,13 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
+ 		ptr = mem2hex(title, ptr, sizeof(title) - 1, 0);
+ 
+ 		hx = hex_asc_hi(excep >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(excep >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(excep);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(excep);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 
+ 		ptr = mem2hex(crlf, ptr, sizeof(crlf) - 1, 0);
+ 		*ptr = 0;
+@@ -1291,21 +1291,21 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
+ 		ptr = mem2hex(tbcberr, ptr, sizeof(tbcberr) - 1, 0);
+ 
+ 		hx = hex_asc_hi(bcberr >> 24);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(bcberr >> 24);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(bcberr >> 16);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(bcberr >> 16);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(bcberr >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(bcberr >> 8);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_hi(bcberr);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 		hx = hex_asc_lo(bcberr);
+-		ptr = pack_hex_byte(ptr, hx);
++		ptr = hex_byte_pack(ptr, hx);
+ 
+ 		ptr = mem2hex(crlf, ptr, sizeof(crlf) - 1, 0);
+ 		*ptr = 0;
+@@ -1321,12 +1321,12 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
+ 	 * Send trap type (converted to signal)
+ 	 */
+ 	*ptr++ = 'T';
+-	ptr = pack_hex_byte(ptr, sigval);
++	ptr = hex_byte_pack(ptr, sigval);
+ 
+ 	/*
+ 	 * Send Error PC
+ 	 */
+-	ptr = pack_hex_byte(ptr, GDB_REGID_PC);
++	ptr = hex_byte_pack(ptr, GDB_REGID_PC);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&regs->pc, ptr, 4, 0);
+ 	*ptr++ = ';';
+@@ -1334,7 +1334,7 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
+ 	/*
+ 	 * Send frame pointer
+ 	 */
+-	ptr = pack_hex_byte(ptr, GDB_REGID_FP);
++	ptr = hex_byte_pack(ptr, GDB_REGID_FP);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&regs->a3, ptr, 4, 0);
+ 	*ptr++ = ';';
+@@ -1343,7 +1343,7 @@ static int gdbstub(struct pt_regs *regs, enum exception_code excep)
+ 	 * Send stack pointer
+ 	 */
+ 	ssp = (unsigned long) (regs + 1);
+-	ptr = pack_hex_byte(ptr, GDB_REGID_SP);
++	ptr = hex_byte_pack(ptr, GDB_REGID_SP);
+ 	*ptr++ = ':';
+ 	ptr = mem2hex(&ssp, ptr, 4, 0);
+ 	*ptr++ = ';';
+diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
+index 3487248..c22d8c2 100644
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -217,7 +217,7 @@ void gdbstub_msg_write(const char *s, int len)
+ 
+ 		/* Pack in hex chars */
+ 		for (i = 0; i < wcount; i++)
+-			bufptr = pack_hex_byte(bufptr, s[i]);
++			bufptr = hex_byte_pack(bufptr, s[i]);
+ 		*bufptr = '\0';
+ 
+ 		/* Move up */
+@@ -249,7 +249,7 @@ char *kgdb_mem2hex(char *mem, char *buf, int count)
+ 	if (err)
+ 		return NULL;
+ 	while (count > 0) {
+-		buf = pack_hex_byte(buf, *tmp);
++		buf = hex_byte_pack(buf, *tmp);
+ 		tmp++;
+ 		count--;
+ 	}
+@@ -411,14 +411,14 @@ static char *pack_threadid(char *pkt, unsigned char *id)
+ 	limit = id + (BUF_THREAD_ID_SIZE / 2);
+ 	while (id < limit) {
+ 		if (!lzero || *id != 0) {
+-			pkt = pack_hex_byte(pkt, *id);
++			pkt = hex_byte_pack(pkt, *id);
+ 			lzero = 0;
+ 		}
+ 		id++;
+ 	}
+ 
+ 	if (lzero)
+-		pkt = pack_hex_byte(pkt, 0);
++		pkt = hex_byte_pack(pkt, 0);
+ 
+ 	return pkt;
+ }
+@@ -486,7 +486,7 @@ static void gdb_cmd_status(struct kgdb_state *ks)
+ 	dbg_remove_all_break();
+ 
+ 	remcom_out_buffer[0] = 'S';
+-	pack_hex_byte(&remcom_out_buffer[1], ks->signo);
++	hex_byte_pack(&remcom_out_buffer[1], ks->signo);
  }
  
-+static inline char * __deprecated pack_hex_byte(char *buf, u8 byte)
-+{
-+	return hex_byte_pack(buf, byte);
-+}
-+
- extern int hex_to_bin(char ch);
- extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
- 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index c1a3927..993599e 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -547,7 +547,7 @@ char *mac_address_string(char *buf, char *end, u8 *addr,
- 	}
- 
- 	for (i = 0; i < 6; i++) {
--		p = pack_hex_byte(p, addr[i]);
-+		p = hex_byte_pack(p, addr[i]);
- 		if (fmt[0] == 'M' && i != 5)
- 			*p++ = separator;
- 	}
-@@ -667,13 +667,13 @@ char *ip6_compressed_string(char *p, const char *addr)
- 		lo = word & 0xff;
- 		if (hi) {
- 			if (hi > 0x0f)
--				p = pack_hex_byte(p, hi);
-+				p = hex_byte_pack(p, hi);
- 			else
- 				*p++ = hex_asc_lo(hi);
--			p = pack_hex_byte(p, lo);
-+			p = hex_byte_pack(p, lo);
- 		}
- 		else if (lo > 0x0f)
--			p = pack_hex_byte(p, lo);
-+			p = hex_byte_pack(p, lo);
- 		else
- 			*p++ = hex_asc_lo(lo);
- 		needcolon = true;
-@@ -695,8 +695,8 @@ char *ip6_string(char *p, const char *addr, const char *fmt)
- 	int i;
- 
- 	for (i = 0; i < 8; i++) {
--		p = pack_hex_byte(p, *addr++);
--		p = pack_hex_byte(p, *addr++);
-+		p = hex_byte_pack(p, *addr++);
-+		p = hex_byte_pack(p, *addr++);
- 		if (fmt[0] == 'I' && i != 7)
- 			*p++ = ':';
- 	}
-@@ -754,7 +754,7 @@ char *uuid_string(char *buf, char *end, const u8 *addr,
- 	}
- 
- 	for (i = 0; i < 16; i++) {
--		p = pack_hex_byte(p, addr[index[i]]);
-+		p = hex_byte_pack(p, addr[index[i]]);
- 		switch (i) {
- 		case 3:
- 		case 5:
+ static void gdb_get_regs_helper(struct kgdb_state *ks)
+@@ -954,7 +954,7 @@ int gdb_serial_stub(struct kgdb_state *ks)
+ 		/* Reply to host that an exception has occurred */
+ 		ptr = remcom_out_buffer;
+ 		*ptr++ = 'T';
+-		ptr = pack_hex_byte(ptr, ks->signo);
++		ptr = hex_byte_pack(ptr, ks->signo);
+ 		ptr += strlen(strcpy(ptr, "thread:"));
+ 		int_to_threadref(thref, shadow_pid(current->pid));
+ 		ptr = pack_threadid(ptr, thref);
 -- 
 1.7.6.3
 
