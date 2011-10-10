@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab1JJRfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:35:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38305 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472Ab1JJRfJ (ORCPT
+	id S1753645Ab1JJRhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:37:25 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:27834 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750893Ab1JJRhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:35:09 -0400
-Date: Mon, 10 Oct 2011 18:35:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] regulator: map consumer regulator based on device
- tree
-Message-ID: <20111010173506.GH3607@opensource.wolfsonmicro.com>
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com>
- <1318263578-7407-6-git-send-email-rnayak@ti.com>
+	Mon, 10 Oct 2011 13:37:24 -0400
+Date: Mon, 10 Oct 2011 10:37:22 -0700 (PDT)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: Greg KH <greg@kroah.com>
+Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es,
+        Josh Triplett <josh@joshtriplett.org>
+Message-ID: <361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <20111008155502.GB616@kroah.com>
+Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318263578-7407-6-git-send-email-rnayak@ti.com>
-X-Cookie: Excellent day to have a rotten day.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.61.162]
+X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 09:49:38PM +0530, Rajendra Nayak wrote:
+Hi,
 
-> Device nodes in DT can associate themselves with one or more
-> regulators/supply by providing a list of phandles (to regulator nodes)
-> and corresponding supply names.
+----- Original Message -----
+> From: "Greg KH" <greg@kroah.com>
+> To: "Josh Triplett" <josh@joshtriplett.org>
+> Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-arm-kernel@lists.infradead.org, "Grant Likely"
+> <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+> "Dilan Lee" <dilee@nvidia.com>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
+> Sent: Saturday, October 8, 2011 11:55:02 AM
+> Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
+> 
 
-Mostly looks good.
+I'm a bit of a fly on the wall here, but I'm curious how this impacts suspend/resume.
+device_initialize->device_pm_init are called from device_register, so certainly this
+patch doesn't also ensure that the PM ordering matches probe ordering, which is bound
+to break suspend, right? Was this ever tested with the OMAP target? Shouldn't the
+PM change be also part of this patch set? I don't see why you would want to have this in
+without the PM changes.
 
-> +/**
-> + * of_get_regulator - get a regulator device node based on supply name
-> + * @dev: Device pointer for the consumer (of regulator) device
-> + * @supply: regulator supply name
-> + *
-> + * Extract the regulator device node corresponding to the supply name.
-> + * retruns the device node corresponding to the regulator if found, else
-> + * returns NULL.
-> + */
-> +struct device_node *of_get_regulator(struct device *dev, const char *supply)
-> +{
+Maybe I have it all wrong though :-).
 
-Should be static.
-
-> @@ -1178,6 +1225,10 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
->  			goto found;
->  		}
->  	}
-> +	if (!dev)
-> +		list_for_each_entry(rdev, &regulator_list, list)
-> +			if (strcmp(rdev_get_name(rdev), id))
-> +				goto found;
->  
-
-This looks really strange, we didn't remove any old lookup code and the
-DT lookup jumps to found by iself so why are we adding code here?
-
-> +	if (supply) {
-> +		struct regulator_dev *r;
-> +		struct device_node *node;
-> +
-> +		/* first do a dt based lookup */
-> +		if (dev) {
-> +			node = of_get_regulator(dev, supply);
-> +			if (node)
-> +				list_for_each_entry(r, &regulator_list, list)
-> +					if (node == r->dev.parent->of_node)
-> +						goto found;
->  		}
->  
-> -		if (!found) {
-> -			dev_err(dev, "Failed to find supply %s\n",
-> -				init_data->supply_regulator);
-> -			ret = -ENODEV;
-> -			goto scrub;
-> -		}
-> +		/* next try doing it non-dt way */
-> +		list_for_each_entry(r, &regulator_list, list)
-> +			if (strcmp(rdev_get_name(r), supply) == 0)
-> +				goto found;
->  
-> +		dev_err(dev, "Failed to find supply %s\n", supply);
-> +		ret = -ENODEV;
-> +		goto scrub;
-> +
-> +found:
-
-This is all getting *really* complicated and illegible.  I'm not sure
-what the best way to structure is but erroring out early looks useful.
+A
