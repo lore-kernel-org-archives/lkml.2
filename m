@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab1JJGHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 02:07:22 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50017 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab1JJGHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 02:07:20 -0400
-Date: Mon, 10 Oct 2011 08:05:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        acme <acme@ghostprotocols.net>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [V3][PATCH 0/7] perf, x86: Implement AMD IBS
-Message-ID: <20111010060537.GE32173@elte.hu>
-References: <1316597423-25723-1-git-send-email-robert.richter@amd.com>
- <1316778523.9084.17.camel@twins>
- <20110923122014.GP6063@erda.amd.com>
- <1317716839.25926.12.camel@twins>
- <20111004085409.GA18566@elte.hu>
- <m2botwlnfk.fsf@firstfloor.org>
- <1317746709.32543.23.camel@twins>
+	id S1752325Ab1JJGKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 02:10:34 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:60161 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751246Ab1JJGKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 02:10:33 -0400
+Date: Mon, 10 Oct 2011 09:10:29 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH 15/30] usb/musb: use a Kconfig choice to pick the right
+ DMA method
+Message-ID: <20111010061026.GF31707@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1317566760-25681-1-git-send-email-arnd@arndb.de>
+ <1317566760-25681-16-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oFbHfjnMgUMsrGjO"
 Content-Disposition: inline
-In-Reply-To: <1317746709.32543.23.camel@twins>
+In-Reply-To: <1317566760-25681-16-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+--oFbHfjnMgUMsrGjO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, 2011-10-04 at 09:41 -0700, Andi Kleen wrote:
-> > Ingo Molnar <mingo@elte.hu> writes:
-> > >
-> > >  - Testable IBS user-space code a bit more prominently integrated
-> > >    than having to go down into a cellar with no working lights and 
-> > >    finding the code on display in tools/perf/Documentation/examples/ 
-> > >    on the bottom of a locked filing cabinet stuck in a disused
-> > >    lavatory with a sign on the door saying 'Beware of the Leopard.'
-> > 
-> > I looked at this for PEBS, and the best solution currently seems
-> > to be a python script that works with perf script and does some post
-> > processing to present the data as summary or individual samples.
-> > I assume that could work for IBS too.
-> > 
-> > Comments?
-> 
-> I would much prefer perf {ibs,pebs} commands implemented in C, so 
-> that normal people can change/improve them too.
+On Sun, Oct 02, 2011 at 04:45:45PM +0200, Arnd Bergmann wrote:
+> The logic to allow only one DMA driver in MUSB is currently
+> flawed, because it also allows picking no DMA driver at all
+> and also not selecting PIO mode.
+>=20
+> Using a choice statement makes this foolproof for now and
+> also simplifies the Makefile.
+>=20
+> Unfortunately, we will have to revisit this when we start
+> supporting multiple ARM platforms in a single kernel binary,
+> because at that point we will actually need to select
+> multiple DMA drivers and pick the right one at run-time.
+>=20
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Felipe Balbi <balbi@ti.com>
 
-The other issue is performance, obviously. So for core functionality 
-we are pretty sure we want to offer to everyone C is the preferred 
-form.
+applied, thanks
 
-Scripting integration *in addition* to that is obviously welcome too.
+--=20
+balbi
 
-Thanks,
+--oFbHfjnMgUMsrGjO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOkoxSAAoJEAv8Txj19kN13ZEH/1sTMVPwHCHaVkQNG5zdeaGV
+n/asaA8O2+qLn40ATjXrw/wUOShUW+dD29Dv8q/9Hr/fA9vJXCOKcg+zQqN1c7Lm
+pp/ygTSnNr1QIfRoJgw36bGZgsvGDQMjxjdR7EZ70Tur8zR5Y48q9YHxCG92oZ7Z
+9mrPY37IGGOCtBS9V/OQW5uO+Hm6rIGAswoFAO6HghCw9JNA8kqMRJHj2EzUv8OK
+hcH8AbiWQPP8z4mHQHGj78Q9Q61SJeObkk0a0olszmJn1yyajaADKeoWwphfjvF0
+Z/Fl5+Ztuj2n/A7OZB8RsfG3cl64zWVDAbeosrqUS/WzfvNSd75M4QM8+C4crBQ=
+=5FcO
+-----END PGP SIGNATURE-----
+
+--oFbHfjnMgUMsrGjO--
