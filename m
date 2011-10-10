@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1JJMcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 08:32:42 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46219 "EHLO
+	id S1754006Ab1JJMdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 08:33:14 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46258 "EHLO
 	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1JJMck (ORCPT
+	with ESMTP id S1753342Ab1JJMdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 08:32:40 -0400
+	Mon, 10 Oct 2011 08:33:11 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/3] Introduce helper functions
+Subject: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
 To: rjw@sisk.pl
 Cc: srivatsa.bhat@linux.vnet.ibm.com, bp@amd64.org, pavel@ucw.cz,
         len.brown@intel.com, tj@kernel.org, mingo@elte.hu,
@@ -18,8 +18,8 @@ Cc: srivatsa.bhat@linux.vnet.ibm.com, bp@amd64.org, pavel@ucw.cz,
         ashok.raj@intel.com, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
         hpa@zytor.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-doc@vger.kernel.org
-Date: Mon, 10 Oct 2011 18:02:32 +0530
-Message-ID: <20111010123139.15067.12906.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 10 Oct 2011 18:03:03 +0530
+Message-ID: <20111010123242.15067.48238.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
 References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,59 +30,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper functions used to prevent cpu hotplug (online operation) from
-running in parallel with suspend or hibernate.
+Don't allow cpu hotplug online operation and suspend/hibernate to run in
+parallel. If suspend/hibernate has already started, fail the cpu online
+operation.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/suspend.h |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+ kernel/cpu.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 6bbcef2..89a5d27 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -276,7 +276,24 @@ static inline bool system_entering_hibernation(void) { return false; }
- #define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
- #define PM_POST_RESTORE		0x0006 /* Restore failed */
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..bc8c7d4 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
++#include <linux/suspend.h>
  
-+extern struct mutex pm_mutex;
-+
- #ifdef CONFIG_PM_SLEEP
-+
-+/*
-+ * Allow operations like CPU online to exclude suspend and hibernation
-+ */
-+static inline int trylock_pm_sleep(void)
-+{
-+	return mutex_trylock(&pm_mutex);
-+}
-+
-+static inline void unlock_pm_sleep(void)
-+{
-+	mutex_unlock(&pm_mutex);
-+}
-+
- void save_processor_state(void);
- void restore_processor_state(void);
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -366,6 +367,14 @@ int __cpuinit cpu_up(unsigned int cpu)
+ 	}
+ #endif
  
-@@ -298,6 +315,8 @@ extern bool pm_get_wakeup_count(unsigned int *count);
- extern bool pm_save_wakeup_count(unsigned int count);
- #else /* !CONFIG_PM_SLEEP */
++	/*
++	 * Prevent cpu online and suspend/hibernate (including freezer)
++	 * operations from running in parallel. Fail cpu online if suspend or
++	 * hibernate has already started.
++	 */
++	if (!trylock_pm_sleep())
++		return -EBUSY;
++
+ 	cpu_maps_update_begin();
  
-+static inline int trylock_pm_sleep(void) { return 1; }
-+static inline void unlock_pm_sleep(void) {}
- static inline int register_pm_notifier(struct notifier_block *nb)
- {
- 	return 0;
-@@ -313,8 +332,6 @@ static inline int unregister_pm_notifier(struct notifier_block *nb)
- static inline bool pm_wakeup_pending(void) { return false; }
- #endif /* !CONFIG_PM_SLEEP */
+ 	if (cpu_hotplug_disabled) {
+@@ -377,6 +386,7 @@ int __cpuinit cpu_up(unsigned int cpu)
  
--extern struct mutex pm_mutex;
--
- #ifndef CONFIG_HIBERNATE_CALLBACKS
- static inline void lock_system_sleep(void) {}
- static inline void unlock_system_sleep(void) {}
+ out:
+ 	cpu_maps_update_done();
++	unlock_pm_sleep();
+ 	return err;
+ }
+ 
 
