@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab1JJQnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 12:43:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31777 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1JJQnS (ORCPT
+	id S1753193Ab1JJQnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 12:43:45 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47844 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab1JJQno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 12:43:18 -0400
-Date: Mon, 10 Oct 2011 12:42:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>, Li Dongyang <lidongyang@novell.com>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance discard
- support with secure erasing support.
-Message-ID: <20111010164250.GG28646@phenom.oracle.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
- <1318263187.21903.464.camel@zakaz.uk.xensource.com>
+	Mon, 10 Oct 2011 12:43:44 -0400
+Date: Mon, 10 Oct 2011 09:43:39 -0700
+From: Tejun Heo <htejun@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Rientjes <rientjes@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [patch] cpusets, cgroups: disallow attaching kthreadd
+Message-ID: <20111010164339.GA8100@google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+ <4E7C2E7F.40307@cn.fujitsu.com>
+ <1316762345.8168.4.camel@marge.simson.net>
+ <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+ <1316770936.6641.11.camel@marge.simson.net>
+ <1316775204.7562.9.camel@marge.simson.net>
+ <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+ <1316788392.6544.33.camel@marge.simson.net>
+ <1318224892.6161.45.camel@marge.simson.net>
+ <1318233815.6527.5.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318263187.21903.464.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
-X-CT-RefId: str=0001.0A090206.4E93209E.02B7,ss=1,re=0.000,fgs=0
+In-Reply-To: <1318233815.6527.5.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 05:13:07PM +0100, Ian Campbell wrote:
-> On Mon, 2011-10-10 at 16:28 +0100, Konrad Rzeszutek Wilk wrote:
-> > diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-> > index 9324488..04f60b0 100644
-> > --- a/include/xen/interface/io/blkif.h
-> > +++ b/include/xen/interface/io/blkif.h
-> > @@ -84,6 +84,10 @@ typedef uint64_t blkif_sector_t;
-> >   *     e07154r6-Data_Set_Management_Proposal_for_ATA-ACS2.doc
-> >   * http://www.seagate.com/staticfiles/support/disc/manuals/
-> >   *     Interface%20manuals/100293068c.pdf
-> > + * We also provide three extra XenBus options to the discard operation:
-> > + * 'discard-granularity' - Max amount of sectors that can be discarded.
-> > + * 'discard-alignment' - 4K, 128K, etc aligment on sectors to erased.
-> > + * 'discard-secure' - whether the discard can also securely erase data.
-> >   */
-> >  #define BLKIF_OP_DISCARD           5
-> >  
-> > @@ -107,6 +111,7 @@ struct blkif_request_rw {
-> >  struct blkif_request_discard {
-> >         blkif_sector_t sector_number;
-> >         uint64_t nr_sectors;
-> > +       uint8_t secure:1;
-> >  };
-> >  
-> >  struct blkif_request { 
+Hello,
+
+(cc'ing Thomas and Steven and quoting whole body)
+
+On Mon, Oct 10, 2011 at 10:03:34AM +0200, Mike Galbraith wrote:
+> On Mon, 2011-10-10 at 07:34 +0200, Mike Galbraith wrote:
+> > Maybe the below (which seems to have been stillborn) should be done to
+> > cgroups as well.  Postmortem: kthreadd is attached to a cgroup with no
+> > rt_runtime allocated, gives birth to severely handicapped kstop threads,
+> > humongous crash dump follows.
+> > 
+> > Fiddling with kthreadd is user error, but since it makes no sense to
+> > move the thing, why not just say no, and save the user's toes some
+> > needless wear and tear.
+> > 
+> > > If cpusets doesn't want to let PF_THREAD_BOUND threads out, how about
+> > > cpusets not letting userland scripts attach kthreadd instead?
+> > > 
+> > > cpusets: disallow moving kthreadd into a cpuset.
 > 
-> Which tree/branch is this? I don't see BLKIF_OP_DISCARD in mainline or
-> your linux-next branch.
-
-Uh, that is not good. I must have forgotten to merge it in - that is the
-#stable/for-jens-3.2 branch.
-
-Let me do that right now.
+> So how about this, both dirt simple and effective.
 > 
-> Since this changes an inter-guest ABI we may need to consider backwards
-> compatibility (I suspect this interface is new enough that no one has
-> actually implemented it in anger and we can get away with changing it).
-
-<nods>
-> In any case it should also be posted against the canonical inter-guest
-> interface definition in the xen tree for review with that in mind.
-
-Yes! But I was thinking to first let this one rattle a bit and see what
-folks thought about it before submitting the xen-devel.
+> cpusets, cgroups: disallow attaching kthreadd
 > 
-> I think an explicit flag variable is likely to be less trouble WRT
-> maintaining compatibility in the future than a bit-field. Also I think
-> you may as well align the struct size to something larger than a byte,
-> either 4 or 8 bytes would make sense.
+> Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> a global resource, and needlessly leads unsuspecting users toward trouble.
+> 
+> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> allocated is not schedulable.  Simple user error, but harmful to the box.
+> 
+> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> rendering the cpuset immortal.
+> 
+> Save the user some unexpected trouble, just say no.
+> 
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
 
-Ok. Will change it and make it an uint64_t secure_flag
-variable. Later on if there are any "other" flags we can chop it down.
+Yes, I think we need something like this.  wq workers were using
+PF_THREAD_BOUND to prevent diddling from userland which made some
+unhappy.  Maybe we need a flag to properly indicate "don't diddle with
+this thread from userland"?  But, then, mainline kernel wouldn't need
+the current PF_THREAD_BOUND at all.  Peter, Steven, what do you think?
+
+Thanks.
+
+> ---
+>  kernel/cpuset.c |    6 ++++--
+>  kernel/sched.c  |    9 +++++++++
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> Index: linux-3.0-tip/kernel/cpuset.c
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/cpuset.c
+> +++ linux-3.0-tip/kernel/cpuset.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/kthread.h>
+>  
+>  /*
+>   * Workqueue for cpuset related tasks.
+> @@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
+>  	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+>  	 * applicable for such threads.  This prevents checking for success of
+>  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+> -	 * be changed.
+> +	 * be changed.  We also disallow attaching kthreadd, to prevent it's
+> +	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
+>  	 */
+> -	if (tsk->flags & PF_THREAD_BOUND)
+> +	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+>  		return -EINVAL;
+>  
+>  	return 0;
+> Index: linux-3.0-tip/kernel/sched.c
+> ===================================================================
+> --- linux-3.0-tip.orig/kernel/sched.c
+> +++ linux-3.0-tip/kernel/sched.c
+> @@ -9132,6 +9132,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
+>  static int
+>  cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>  {
+> +	/*
+> +	 * kthreadd can fork workers for an RT workqueue in a cgroup
+> +	 * which may or may not have rt_runtime allocated.  Just say no,
+> +	 * as attaching a global resource to a non-root group  doesn't
+> +	 * make any sense anyway.
+> +	 */
+> +	if (tsk == kthreadd_task)
+> +		return -EINVAL;
+> +
+>  #ifdef CONFIG_RT_GROUP_SCHED
+>  	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
+>  		return -EINVAL;
+> 
+> 
+
+-- 
+tejun
