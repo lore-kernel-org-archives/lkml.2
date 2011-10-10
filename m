@@ -1,58 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1JJIIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 04:08:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37824 "EHLO
+	id S1752769Ab1JJII1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 04:08:27 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43568 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752455Ab1JJIIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 04:08:16 -0400
+	id S1752455Ab1JJII0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 04:08:26 -0400
 From: Joe Perches <joe@perches.com>
 To: Jan Kara <jack@suse.cz>
 Cc: NamJae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/6] udf: Change some KERN_<level>s and logging neatening
-Date: Mon, 10 Oct 2011 01:08:01 -0700
-Message-Id: <cover.1318233879.git.joe@perches.com>
+Subject: [PATCH 1/6] udf: Promote some debugging messages to udf_error
+Date: Mon, 10 Oct 2011 01:08:02 -0700
+Message-Id: <e72525141cf56c5add8c3fda53f89641bd09a848.1318233879.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
-In-Reply-To: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
-References: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com>
+In-Reply-To: <cover.1318233879.git.joe@perches.com>
+References: <CAKYAXd9csZyMXAy_uopb-fHKtY8VBjWD6UVdbQ3QTHYPogLVrw@mail.gmail.com> <cover.1318233879.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I reviewed your patch and think it's too large
-for others to review because it combines multiple
-things into a single patch.
+If there is a problem with a scratched disc or loader,
+it's valuable to know which error occurred.
 
-I think that adding struct super_block * to udb_debug
-isn't necessary or particularly useful.
+Convert some debug messages to udf_error, neaten those messages too.
+Add the calculated tag checksum and the read checksum to error message.
+Make udf_error a public function and move the logging prototypes together.
 
-Here are the changes to your original patch that I made:
+Original-patch-by: NamJae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/udf/misc.c    |   21 ++++++++++++++-------
+ fs/udf/super.c   |    6 ++----
+ fs/udf/udfdecl.h |    9 +++++++--
+ 3 files changed, 23 insertions(+), 13 deletions(-)
 
-Separate a single large patch into reviewable chunks.
-Don't convert every message type to udf_<foo>.
-
-Joe Perches (6):
-  udf: Promote some debugging messages to udf_error
-  udf: Rename udf_error to udf_err
-  udf: Rename udf_warn to udf_warn
-  udf: Convert printks to pr_<level>
-  udf: Neaten logging output, use vsprintf extension %pV
-  udf: Neaten udf_debug uses
-
- fs/udf/balloc.c    |   14 ++--
- fs/udf/directory.c |    8 +-
- fs/udf/inode.c     |   36 ++++-----
- fs/udf/lowlevel.c  |    2 +-
- fs/udf/misc.c      |   24 ++++---
- fs/udf/namei.c     |    5 +-
- fs/udf/partition.c |   11 +--
- fs/udf/super.c     |  214 +++++++++++++++++++++++-----------------------------
- fs/udf/truncate.c  |   21 ++---
- fs/udf/udfdecl.h   |   35 ++++++---
- fs/udf/udftime.c   |    3 +-
- fs/udf/unicode.c   |    6 +-
- 12 files changed, 178 insertions(+), 201 deletions(-)
-
+diff --git a/fs/udf/misc.c b/fs/udf/misc.c
+index 9215700..87667f8 100644
+--- a/fs/udf/misc.c
++++ b/fs/udf/misc.c
+@@ -204,6 +204,7 @@ struct buffer_head *udf_read_tagged(struct super_block *sb, uint32_t block,
+ {
+ 	struct tag *tag_p;
+ 	struct buffer_head *bh = NULL;
++	u8 checksum;
+ 
+ 	/* Read the block */
+ 	if (block == 0xFFFFFFFF)
+@@ -211,7 +212,7 @@ struct buffer_head *udf_read_tagged(struct super_block *sb, uint32_t block,
+ 
+ 	bh = udf_tread(sb, block);
+ 	if (!bh) {
+-		udf_debug("block=%d, location=%d: read failed\n",
++		udf_error(sb, __func__, "read failed, block=%u, location=%d\n",
+ 			  block, location);
+ 		return NULL;
+ 	}
+@@ -221,21 +222,26 @@ struct buffer_head *udf_read_tagged(struct super_block *sb, uint32_t block,
+ 	*ident = le16_to_cpu(tag_p->tagIdent);
+ 
+ 	if (location != le32_to_cpu(tag_p->tagLocation)) {
+-		udf_debug("location mismatch block %u, tag %u != %u\n",
++		udf_error(sb, __func__,
++			  "location mismatch, block %u, tag %u != %u\n",
+ 			  block, le32_to_cpu(tag_p->tagLocation), location);
+ 		goto error_out;
+ 	}
+ 
+ 	/* Verify the tag checksum */
+-	if (udf_tag_checksum(tag_p) != tag_p->tagChecksum) {
+-		printk(KERN_ERR "udf: tag checksum failed block %d\n", block);
++	checksum = udf_tag_checksum(tag_p);
++	if (checksum != tag_p->tagChecksum) {
++		udf_error(sb, __func__,
++			  "tag checksum failed, block %u: 0x%02x != 0x%02x\n",
++			  block, checksum, tag_p->tagChecksum);
+ 		goto error_out;
+ 	}
+ 
+ 	/* Verify the tag version */
+ 	if (tag_p->descVersion != cpu_to_le16(0x0002U) &&
+ 	    tag_p->descVersion != cpu_to_le16(0x0003U)) {
+-		udf_debug("tag version 0x%04x != 0x0002 || 0x0003 block %d\n",
++		udf_error(sb, __func__,
++			  "tag version 0x%04x != 0x0002 || 0x0003, block %u\n",
+ 			  le16_to_cpu(tag_p->descVersion), block);
+ 		goto error_out;
+ 	}
+@@ -247,8 +253,9 @@ struct buffer_head *udf_read_tagged(struct super_block *sb, uint32_t block,
+ 					le16_to_cpu(tag_p->descCRCLength)))
+ 		return bh;
+ 
+-	udf_debug("Crc failure block %d: crc = %d, crclen = %d\n", block,
+-	    le16_to_cpu(tag_p->descCRC), le16_to_cpu(tag_p->descCRCLength));
++	udf_error(sb, __func__, "crc failure, block %u: crc = %d, crclen = %d\n",
++		  block, le16_to_cpu(tag_p->descCRC),
++		  le16_to_cpu(tag_p->descCRCLength));
+ 
+ error_out:
+ 	brelse(bh);
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 7b27b06..80f47ce 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -92,8 +92,6 @@ static void udf_close_lvid(struct super_block *);
+ static unsigned int udf_count_free(struct super_block *);
+ static int udf_statfs(struct dentry *, struct kstatfs *);
+ static int udf_show_options(struct seq_file *, struct vfsmount *);
+-static void udf_error(struct super_block *sb, const char *function,
+-		      const char *fmt, ...);
+ 
+ struct logicalVolIntegrityDescImpUse *udf_sb_lvidiu(struct udf_sb_info *sbi)
+ {
+@@ -2096,8 +2094,8 @@ error_out:
+ 	return -EINVAL;
+ }
+ 
+-static void udf_error(struct super_block *sb, const char *function,
+-		      const char *fmt, ...)
++void udf_error(struct super_block *sb, const char *function,
++	       const char *fmt, ...)
+ {
+ 	va_list args;
+ 
+diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
+index dbd52d4b..81e66af 100644
+--- a/fs/udf/udfdecl.h
++++ b/fs/udf/udfdecl.h
+@@ -29,6 +29,13 @@ do { \
+ #define udf_debug(f, a...) /**/
+ #endif
+ 
++__attribute__((format(printf, 3, 4)))
++extern void udf_warning(struct super_block *, const char *, const char *, ...);
++
++__attribute__((format(printf, 3, 4)))
++extern void udf_error(struct super_block *sb, const char *function,
++		      const char *fmt, ...);
++
+ #define udf_info(f, a...) \
+ 	printk(KERN_INFO "UDF-fs INFO " f, ##a);
+ 
+@@ -112,8 +119,6 @@ struct extent_position {
+ 
+ /* super.c */
+ 
+-__attribute__((format(printf, 3, 4)))
+-extern void udf_warning(struct super_block *, const char *, const char *, ...);
+ static inline void udf_updated_lvid(struct super_block *sb)
+ {
+ 	struct buffer_head *bh = UDF_SB(sb)->s_lvid_bh;
 -- 
 1.7.6.405.gc1be0
 
