@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1JJRGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 13:06:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39936 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1JJRF7 convert rfc822-to-8bit (ORCPT
+	id S1753454Ab1JJRIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 13:08:18 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:36119 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751866Ab1JJRIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 13:05:59 -0400
-From: Arkadiusz =?utf-8?q?Mi=C5=9Bkiewicz?= <a.miskiewicz@gmail.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: Linux 3.1-rc9
-Date: Mon, 10 Oct 2011 19:05:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc9-00064-g65112dc-dirty; KDE/4.7.2; x86_64; ; )
-Cc: Stefan Berger <stefanb@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com> <4E925873.2020501@linux.vnet.ibm.com> <4E931BF6.6070706@linux.vnet.ibm.com>
-In-Reply-To: <4E931BF6.6070706@linux.vnet.ibm.com>
+	Mon, 10 Oct 2011 13:08:17 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: UwOaNAQVM1m3hrLhEglcAPDsMnXZbUj.wLqM690zmBhNSkW
+ Fb29g0yzGxa_y2iGmhFE2JSFYyLw90qpuYOU3puTc.iRSOdrnuXyWZtGsy.A
+ h1hnTdHQDNj9WWcsV8Hnw92J6cr1.K0tCrXMCaXVDkYhDkvwrPTmGRvDiRNh
+ TmauueZxTwFtcxch0R58mNhqG9_lW5Mb6Bpf4Eoo3kFLeTPNn.8zuUSJH5kB
+ udlw_vNDl2LrqtjH2ENxziCKwLzkmrirtVRJawlpZlzhRVElWa6yJyAJ7vZl
+ HcFTD7qLl.oTxO9GbB.40E8xhJBWSBWCx.9Q62e4jDYp4u6o8b1NVj7m5qpl
+ X_N04e2N59zzMXOiHXa8XE80C4CWuuW0w7OJkfkP49DDxKIVvdL0l7TBVzyp
+ vQSm8BTAkvfUvs3njSpJ4eYA-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 10 Oct 2011 12:08:13 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: "Alex,Shi" <alex.shi@intel.com>
+cc: tj@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+In-Reply-To: <1318237851.27949.190.camel@debian>
+Message-ID: <alpine.DEB.2.00.1110101026080.16264@router.home>
+References: <1318237851.27949.190.camel@debian>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110101905.52769.a.miskiewicz@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 of October 2011, Rajiv Andrade wrote:
-> On 09/10/11 23:29, Stefan Berger wrote:
-> > On 10/09/2011 04:51 PM, Arkadiusz Miśkiewicz wrote:
-> >> On Wednesday 05 of October 2011, Linus Torvalds wrote:
-> >>> Another week, another -rc.
-> >> 
-> >> suspend to ram regression is annoying (still visible on rc9;
-> >> https://lkml.org/lkml/2011/9/24/76) but unfortunately maintainers are
-> >> silent.
-> > 
-> > I tried -rc9 on my Lenovo W500 with that same TPM. I cannot reproduce
-> > the 'scheduling while atomic' problem you had reported earlier. I also
-> > could suspend / resume fine as long as I did the following:
-> > 
-> > - suspended with the tpm_tis driver as module in the kernel
-> > - once a suspend was done without the tpm_tis driver the subsequent
-> > suspends were all done without the tpm_tis driver
-> > 
-> > Once I had done a suspend/resume with the tpm_tis driver *not* in the
-> > kernel and then again a suspend with the tpm_tis driver in the kernel,
-> > it did not resume anymore. I believe previously (previous version of
-> > kernel and/or Fedora) it refused to even suspend. The reason why this
-> > doesn't work properly is that the driver has to send a command to the
-> > TPM upon suspend and the BIOS then sends the corresponding wakeup
-> > command.
-> > 
-> > Did you maybe previously suspend/resume without a tpm_tis driver and
-> > then try to suspend with it ?
-> > 
-> > Also, my Lenovo W500 shows particularly odd behavior when I switch
-> > from Windows to Linux. The first suspend with a Linux booted after
-> > Windows (with or without tpm_tis driver) does *not* resume (reboot
-> > required). A subsequently rebooted Linux makes the suspend/resume work
-> > fine.
-> > 
-> >    Stefan
-> 
-> Arkadiusz,
-> 
-> Do you still see the issue with this patch [1][2] applied?
+On Mon, 10 Oct 2011, Alex,Shi wrote:
 
-The issue doesn't happen with this patch but error condition with "Could not 
-read PCR 0. TPM is not working correctly." is triggered immediately at boot, 
-even before suspend is used.
+> index 3470c9d..d1de56c 100644
+> --- a/arch/x86/include/asm/percpu.h
+> +++ b/arch/x86/include/asm/percpu.h
+> @@ -46,7 +46,7 @@
+>
+>  #ifdef CONFIG_SMP
+>  #define __percpu_prefix		"%%"__stringify(__percpu_seg)":"
+> -#define __my_cpu_offset		percpu_read(this_cpu_off)
+> +#define __my_cpu_offset		this_cpu_read(this_cpu_off)
 
-$ dmesg|grep -iE "(tpm|suspend)"
-[   12.640039] tpm_tis 00:0a: 1.2 TPM (device-id 0x1020, rev-id 6)
-[   12.640048] tpm_tis 00:0a: Intel iTPM workaround enabled
-[   12.768057] tpm_tis 00:0a: Could not read PCR 0. TPM is not working 
-correctly.
-[   12.768066] tpm_tis 00:0a: Was machine previously suspended without TPM 
-driver present?
-[   88.512117] Suspending console(s) (use no_console_suspend to debug)
+Should this not be __this_cpu_read() instead?
 
+>   * per-thread variables implemented as per-cpu variables and thus
+>   * stable for the duration of the respective task.
+>   */
+> -#define percpu_read(var)		percpu_from_op("mov", var, "m" (var))
+> -#define percpu_read_stable(var)		percpu_from_op("mov", var, "p" (&(var)))
+> -#define percpu_write(var, val)		percpu_to_op("mov", var, val)
+> -#define percpu_add(var, val)		percpu_add_op(var, val)
+> -#define percpu_sub(var, val)		percpu_add_op(var, -(val))
+> -#define percpu_and(var, val)		percpu_to_op("and", var, val)
+> -#define percpu_or(var, val)		percpu_to_op("or", var, val)
+> -#define percpu_xor(var, val)		percpu_to_op("xor", var, val)
+> -#define percpu_inc(var)		percpu_unary_op("inc", var)
+> +#define this_cpu_read(var)		percpu_from_op("mov", var, "m" (var))
+> +#define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
+> +#define this_cpu_write(var, val)	percpu_to_op("mov", var, val)
+> +#define this_cpu_add(var, val)		percpu_add_op(var, val)
+> +#define this_cpu_sub(var, val)		percpu_add_op(var, -(val))
+> +#define this_cpu_and(var, val)		percpu_to_op("and", var, val)
+> +#define this_cpu_or(var, val)		percpu_to_op("or", var, val)
+> +#define this_cpu_xor(var, val)		percpu_to_op("xor", var, val)
+> +#define this_cpu_inc(var)		percpu_unary_op("inc", var)
 
-> 
-> [1] - http://marc.info/?l=linux-kernel&m=131824905826280&w=2
-> [2] - github.com/srajiv/tpm.git for-james
-> 
-> Thanks,
-> Rajiv
+Why define these operations? They are already defined in the form of
+this_cpu_add_1/2/4/8 and include/linux/percpu.h branches out to them.
 
+> @@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
+>  	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
+>  		printk(KERN_ERR "sock_release: fasync list not empty!\n");
+>
+> -	percpu_sub(sockets_in_use, 1);
+> +	this_cpu_sub(sockets_in_use, 1);
+>  	if (!sock->file) {
+>  		iput(SOCK_INODE(sock));
+>  		return;
 
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+In general __this_cpu_xx operations can be used instead of this_cpu_xx
+operations if the context is already preempt safe. There is no change of
+the code generated for x86 in those cases. But the fallback code on other
+platforms can generate more efficient code.
+
