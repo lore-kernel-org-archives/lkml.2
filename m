@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab1JJXYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 19:24:22 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54204 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752757Ab1JJXYV (ORCPT
+	id S1753469Ab1JJX0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 19:26:50 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:40529 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab1JJX0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 19:24:21 -0400
-X-Sasl-enc: uaWPls1HBzDSdJul/I3wqstuwS+iC3ZXT6idLFT3HjBB 1318289060
-Date: Mon, 10 Oct 2011 16:24:03 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly
- reserved on a per-section basis
-Message-ID: <20111010232403.GA30513@kroah.com>
-References: <20111010071119.GE6418@suse.de>
- <20111010150038.ac161977.akpm@linux-foundation.org>
+	Mon, 10 Oct 2011 19:26:49 -0400
+Date: Mon, 10 Oct 2011 17:26:48 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+cc: "Kristo, Tero" <t-kristo@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
+In-Reply-To: <4E936F0E.9050203@ti.com>
+Message-ID: <alpine.DEB.2.00.1110101725140.5205@utopia.booyaka.com>
+References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com>
+ <4E936F0E.9050203@ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010150038.ac161977.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 03:00:38PM -0700, Andrew Morton wrote:
-> On Mon, 10 Oct 2011 08:11:19 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > It is expected that memory being brought online is PageReserved
-> > similar to what happens when the page allocator is being brought up.
-> > Memory is onlined in "memory blocks" which consist of one or more
-> > sections. Unfortunately, the code that verifies PageReserved is
-> > currently assuming that the memmap backing all these pages is virtually
-> > contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
-> > As a result, memory hot-add is failing on !VMEMMAP configurations
-> > with the message;
-> > 
-> > kernel: section number XXX page number 256 not reserved, was it already online?
-> > 
-> > This patch updates the PageReserved check to lookup struct page once
-> > per section to guarantee the correct struct page is being checked.
-> > 
-> 
-> Nathan's earlier version of this patch is already in linux-next, via
-> Greg.  We should drop the old version and get the new one merged
-> instead.
+On Tue, 11 Oct 2011, Cousson, Benoit wrote:
 
-Ok, care to send me what exactly needs to be reverted and what needs to
-be added?
+> In fact the device name does not have to match the hwmod name. So we can just
+> create an "omap2_prm" omap_device for OMAP2, "omap3_prm" omap_device for
+> OMAP3...
+> That will allow the relevant PRM  driver to be bound to the proper device.
 
-thanks,
+Incidentally, given that we would be using the hwmod name and the version 
+number to determine the appropriate omap_device name, what IP version 
+numbers should we assign to these PRM IP blocks for different SoCs?
 
-greg k-h
+
+- Paul
