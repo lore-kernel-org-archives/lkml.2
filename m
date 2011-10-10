@@ -1,64 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1JJLl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 07:41:26 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:45394 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab1JJLlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 07:41:25 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: xiyou.wangcong@gmail.com, viro@zeniv.linux.org.uk, dchinner@redhat.com,
-        hch@lst.de, Richard Weinberger <richard@nod.at>
-Subject: [PATCH v3] ramfs: Remove module leftovers
-Date: Mon, 10 Oct 2011 13:41:19 +0200
-Message-Id: <1318246879-28013-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7
+	id S1753814Ab1JJLmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 07:42:25 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40102 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab1JJLmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 07:42:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E92AF9D.8060702@gmail.com>
+References: <20111006190526.GA13883@redhat.com>
+	<4E92AF9D.8060702@gmail.com>
+Date: Mon, 10 Oct 2011 07:42:23 -0400
+Message-ID: <CA+5PVA6FhU1Xv80OqrcybRN=Txqg2vpJWgcRmCcZjRyBEEz3Ng@mail.gmail.com>
+Subject: Re: RFC: virtualbox tainting.
+From: Josh Boyer <jwboyer@gmail.com>
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since ramfs is hard-selected to "y", the module leftovers make
-no sense.
+On Mon, Oct 10, 2011 at 4:41 AM, Maarten Lankhorst
+<m.b.lankhorst@gmail.com> wrote:
+> Patch vbox' kernel modules instead?
+> Seems to mark it as crap, all you have to do is add this to the driver source:
+> MODULE_INFO(staging, "Y");
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- fs/ramfs/inode.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+The distributions can't patch the user's vbox modules.  Unless they're
+patched in the upstream vbox source, this really isn't going to work.
 
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index eacb166..462ceb3 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -23,7 +23,6 @@
-  * caches is sufficient.
-  */
- 
--#include <linux/module.h>
- #include <linux/fs.h>
- #include <linux/pagemap.h>
- #include <linux/highmem.h>
-@@ -288,14 +287,7 @@ static int __init init_ramfs_fs(void)
- {
- 	return register_filesystem(&ramfs_fs_type);
- }
--
--static void __exit exit_ramfs_fs(void)
--{
--	unregister_filesystem(&ramfs_fs_type);
--}
--
- module_init(init_ramfs_fs)
--module_exit(exit_ramfs_fs)
- 
- int __init init_rootfs(void)
- {
-@@ -311,5 +303,3 @@ int __init init_rootfs(void)
- 
- 	return err;
- }
--
--MODULE_LICENSE("GPL");
--- 
-1.7.7
-
+josh
