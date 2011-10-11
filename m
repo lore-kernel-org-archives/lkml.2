@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab1JKKwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:52:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58932 "EHLO mx2.suse.de"
+	id S1754521Ab1JKKyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:54:49 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:45868 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab1JKKwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:52:22 -0400
-Date: Tue, 11 Oct 2011 12:52:18 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Bastien Nocera <hadess@hadess.net>,
-        Jason Gerecke <killertofu@gmail.com>, Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: linux-next: manual merge of the hid tree with Linus' tree
-In-Reply-To: <20111011143755.68708e9f278048e12321a9e6@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1110111251580.14768@pobox.suse.cz>
-References: <20111011143755.68708e9f278048e12321a9e6@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752117Ab1JKKys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 06:54:48 -0400
+X-Greylist: delayed 1816 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 06:54:48 EDT
+Subject: Re: [PATCH] rtc: rtc-puv3: Add __devinit and __devexit markers for
+ probe and remove
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+In-Reply-To: <1317824987.2674.1.camel@phoenix>
+References: <1317824987.2674.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Tue, 11 Oct 2011 18:25:32 +0800
+Message-ID: <1318328732.1938.14.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Stephen Rothwell wrote:
+Thanks Axel.
 
-> Hi Jiri,
+Signed-off-by: Guan Xuetao<gxt@mprc.pku.edu.cn>
+
+Guan Xuetao
+
+On Wed, 2011-10-05 at 22:29 +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/rtc/rtc-puv3.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Today's linux-next merge of the hid tree got a conflict in
-> drivers/hid/hid-wacom.c between commit 3512069eefd3 ("Input: wacom - add
-> POINTER and DIRECT device properties") from Linus' tree and commit
-> 3797ef6b6bc0 ("HID: wacom: Set input bits before registration") from the
-> hid tree.
-> 
-> I fixed it up (maybe - see below) and can carry the fix as necessary.
+> diff --git a/drivers/rtc/rtc-puv3.c b/drivers/rtc/rtc-puv3.c
+> index b3eba3c..e4b6880 100644
+> --- a/drivers/rtc/rtc-puv3.c
+> +++ b/drivers/rtc/rtc-puv3.c
+> @@ -220,7 +220,7 @@ static void puv3_rtc_enable(struct platform_device *pdev, int en)
+>  	}
+>  }
+>  
+> -static int puv3_rtc_remove(struct platform_device *dev)
+> +static int __devexit puv3_rtc_remove(struct platform_device *dev)
+>  {
+>  	struct rtc_device *rtc = platform_get_drvdata(dev);
+>  
+> @@ -236,7 +236,7 @@ static int puv3_rtc_remove(struct platform_device *dev)
+>  	return 0;
+>  }
+>  
+> -static int puv3_rtc_probe(struct platform_device *pdev)
+> +static int __devinit puv3_rtc_probe(struct platform_device *pdev)
+>  {
+>  	struct rtc_device *rtc;
+>  	struct resource *res;
 
-That is a correct resolution, thanks.
 
--- 
-Jiri Kosina
-SUSE Labs
