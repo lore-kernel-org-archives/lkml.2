@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab1JKKKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:10:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40535 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab1JKKKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:10:32 -0400
-Date: Tue, 11 Oct 2011 06:10:00 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@Calva.COM,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake
- TASK_KILLABLE tasks too
-Message-ID: <20111011061000.3a3a03fe@tlielax.poochiereds.net>
-In-Reply-To: <20111011061847.GB1377@ucw.cz>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
-	<1317210761-11518-2-git-send-email-jlayton@redhat.com>
-	<20111011061847.GB1377@ucw.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754059Ab1JKKLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:11:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59637 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab1JKKLb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 06:11:31 -0400
+MIME-Version: 1.0
+X-Originating-IP: [136.163.44.102]
+In-Reply-To: <1314728964-20863-1-git-send-email-iceaway@gmail.com>
+References: <1314728964-20863-1-git-send-email-iceaway@gmail.com>
+Date: Tue, 11 Oct 2011 12:11:31 +0200
+Message-ID: <CAOdCkm2mtU8v4YrU2-r2aRJOFKruk0mWUV9T67gheykM=74DfQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] staging: panel: Fixed checkpatch warning about simple_strtoul()
+From: Pelle Windestam <pelle@windestam.se>
+To: Pelle Windestam <iceaway@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011 08:18:48 +0200
-Pavel Machek <pavel@ucw.cz> wrote:
+On Tue, Aug 30, 2011 at 8:29 PM, Pelle Windestam <iceaway@gmail.com> wrote:
+> Fixed the checkpatch warning about sing simple_strtoul instead of
+> kstrtoul() in panel.c.
+>
+> Signed-off-by: Pelle Windestam <iceaway@gmail.com>
+> ---
+>  drivers/staging/panel/panel.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+> index b303b7e..4683d5f 100644
+> --- a/drivers/staging/panel/panel.c
+> +++ b/drivers/staging/panel/panel.c
+> @@ -1179,16 +1179,14 @@ static inline int handle_lcd_special_code(void)
+>                        break;
+>
+>                while (*esc) {
+> -                       char *endp;
+> -
+>                        if (*esc == 'x') {
+>                                esc++;
+> -                               lcd_addr_x = simple_strtoul(esc, &endp, 10);
+> -                               esc = endp;
+> +                               if (kstrtoul(esc, 10, &lcd_addr_x) < 0)
+> +                                       break;
+>                        } else if (*esc == 'y') {
+>                                esc++;
+> -                               lcd_addr_y = simple_strtoul(esc, &endp, 10);
+> -                               esc = endp;
+> +                               if (kstrtoul(esc, 10, &lcd_addr_y) < 0)
+> +                                       break;
+>                        } else
+>                                break;
+>                }
+> --
+> 1.7.3.4
+>
+>
 
-> 
-> Hi!
-> 
-> > TASK_KILLABLE is often used to put tasks to sleep for quite some time.
-> > One of the most common uses is to put tasks to sleep while waiting for
-> > replies from a server on a networked filesystem (such as CIFS or NFS).
-> > 
-> > Unfortunately, fake_signal_wake_up does not currently wake up tasks
-> > that are sleeping in TASK_KILLABLE state. This means that even if the
-> > code were in place to allow them to freeze while in this sleep, it
-> > wouldn't work anyway.
-> > 
-> > This patch changes this function to wake tasks in this state as well.
-> > This should be harmless -- if the code doing the sleeping doesn't have
-> > handling to deal with freezer events, it should just go back to sleep.
-> 
-> I'm pretty sure this will break something; but that does not mean it
-> is bad idea, just that it should be merged early and tested a lot.
-> 
+Was there any reason for not accepting this patch?
 
-FWIW, I looked at most of the places in the kernel that do
-TASK_KILLABLE sleeps and they look like they'll handle this correctly.
-The main one I wasn't sure about was mem_cgroup_handle_oom(), but I
-think it'll do the right thing too. I certainly could have missed
-something though...
-
-In any case, would you mind merging this via the linux-pm tree for 3.2?
-
-Thanks,
--- 
-Jeff Layton <jlayton@redhat.com>
+//Pelle
