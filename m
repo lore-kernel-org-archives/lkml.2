@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1JKOEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 10:04:32 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56935 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750942Ab1JKOEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 10:04:30 -0400
-Date: Tue, 11 Oct 2011 10:04:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <khilman@ti.com>, <b-cousson@ti.com>, <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-In-Reply-To: <20111011081352.GC10155@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1110111000460.2177-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754754Ab1JKOFC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 10:05:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12556 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab1JKOFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 10:05:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="62125356"
+Subject: Re: [PATCH 2/2] pch_dma: Modify redundant memory allocation
+From: Vinod Koul <vinod.koul@intel.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+In-Reply-To: <1318337002-10041-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+	 <1318337002-10041-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 19:27:07 +0530
+Message-ID: <1318341427.1546.347.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Felipe Balbi wrote:
-
-> > > It doesn't shown here, but the TLL link is completely optional. It's
-> > > mainly used for modem integration, IIRC. Still, if we're using TLL, EHCI
-> > > and OHCI will depend on a clock provided by the USBTLL block.
-> > > 
-> > > Clearly, USBTLL isn't either a parent of UHH, nor a parent of EHCI/OHCI
-> > > blocks. We can, from a code perspective, make USBTLL into a parent of
-> > > UHH to make things simpler, but this will mean that calling
-> > > pm_runtime_get() will also unconditionaly turn on TLL clock, unless we
-> > > add some nasty hacks to allow TLL know if *HCI port is in TLL mode.
-> > > 
-> > > That's why I decided for making TLL and UHH siblings, because that's a
-> > > closer relationship than parent-child.
-> > > 
-> > > Can you see the problem now ?
-> > 
-> > Okay, now I understand better.  The word "sibling" implies that the two 
-> > objects have the same parent, so a different word would describe this 
-> > relationship better.  Something like "friend" or "associate".
-> > 
-> > Or maybe, following Paul's suggestion, the driver core doesn't have to 
-> > be changed at all.
+On Tue, 2011-10-11 at 21:43 +0900, Tomoya MORINAGA wrote:
+> nr_channels is defined in "struct pch_dma".
+> and struct pch_dma_chan is defined in "struct pch_dma".
+> So, "sizeof(struct pch_dma_chan) * nr_channels" is unnecessary.
 > 
-> I see... I just thought that if there are other similar cases, it might
-> make sense to have a more generic way to make those two devices talk to
-> each other. But if you all agree that an EXPORT_SYMBOL_GPL() is enough,
-> then it's ok ;-)
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+> ---
+>  drivers/dma/pch_dma.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+> index e72bfeb..d78f526 100644
+> --- a/drivers/dma/pch_dma.c
+> +++ b/drivers/dma/pch_dma.c
+> @@ -811,8 +811,7 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
+>  	int i;
+>  
+>  	nr_channels = id->driver_data;
+> -	pd = kzalloc(sizeof(struct pch_dma)+
+> -		sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
+> +	pd = kzalloc(sizeof(struct pch_dma), GFP_KERNEL);
+kernel convention is 
+	sizeof(*pd)
 
-At the moment, I can't see any way to set up a more generic mechanism 
-that wouldn't be more complicated and have higher overhead than a 
-simple EXPORT_SYMBOL_GPL.
+>  	if (!pd)
+>  		return -ENOMEM;
+>  
 
-Can this be handled by adding another resource to a platform_device?  
-That at least would make use of an already-existing mechanism.
 
-Alan Stern
+-- 
+~Vinod
 
