@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab1JKRFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:05:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33397 "EHLO mx2.suse.de"
+	id S1755428Ab1JKRFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:05:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab1JKRFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:05:38 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:12 2011
-Message-Id: <20111011165712.770466719@pistachio.kroah.org>
+	id S1755062Ab1JKRFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:05:44 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:13 2011
+Message-Id: <20111011165712.936325301@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:39 -0600
+Date: Tue, 11 Oct 2011 10:55:40 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [29/38] ARM: mach-ux500: enable fix for ARM errata 754322
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [30/38] drm/radeon/kms: retry aux transactions if there are status flags
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,29 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 98e87d57aab9b1594f9cc53a386fcb6f2f2ba6e2 upstream.
+commit 4f332844cc87c5f99c5300f788abbe8a8c731390 upstream.
 
-This applies ARM errata fix 754322 for all ux500 platforms.
+If there are error flags in the aux status, retry the transaction.
+This makes aux much more reliable, especially on llano systems.
 
-Signed-off-by: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-ux500/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/atombios_dp.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -6,6 +6,7 @@ config UX500_SOC_COMMON
- 	select ARM_GIC
- 	select HAS_MTU
- 	select ARM_ERRATA_753970
-+	select ARM_ERRATA_754322
- 
- menu "Ux500 SoC"
- 
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -129,7 +129,9 @@ static int radeon_dp_aux_native_write(st
+ 	for (retry = 0; retry < 4; retry++) {
+ 		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
+ 					    msg, msg_bytes, NULL, 0, delay, &ack);
+-		if (ret < 0)
++		if (ret == -EBUSY)
++			continue;
++		else if (ret < 0)
+ 			return ret;
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+ 			return send_bytes;
+@@ -160,7 +162,9 @@ static int radeon_dp_aux_native_read(str
+ 	for (retry = 0; retry < 4; retry++) {
+ 		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
+ 					    msg, msg_bytes, recv, recv_bytes, delay, &ack);
+-		if (ret < 0)
++		if (ret == -EBUSY)
++			continue;
++		else if (ret < 0)
+ 			return ret;
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+ 			return ret;
+@@ -236,7 +240,9 @@ int radeon_dp_i2c_aux_ch(struct i2c_adap
+ 	for (retry = 0; retry < 4; retry++) {
+ 		ret = radeon_process_aux_ch(auxch,
+ 					    msg, msg_bytes, reply, reply_bytes, 0, &ack);
+-		if (ret < 0) {
++		if (ret == -EBUSY)
++			continue;
++		else if (ret < 0) {
+ 			DRM_DEBUG_KMS("aux_ch failed %d\n", ret);
+ 			return ret;
+ 		}
 
 
