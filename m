@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab1JKVVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:21:46 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:36719 "EHLO smtp.gentoo.org"
+	id S1751179Ab1JKVeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:34:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45706 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab1JKVVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:21:44 -0400
-Date: Tue, 11 Oct 2011 21:21:43 +0000
-From: "Robin H. Johnson" <robbat2@gentoo.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-ide@vger.kernel.org
-Cc: "	Robin H. Johnson" <robbat2@gentoo.org>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] mv_sas: OCZ RevoDrive3 & zDrive R4 support
-Message-ID: <robbat2-20111011T211421-450808012Z@orbis-terrarum.net>
-References: <1318032026-21913-1-git-send-email-robbat2@gentoo.org>
- <1318132024-12426-1-git-send-email-robbat2@gentoo.org>
- <robbat2-20111011T204841-021218330Z@orbis-terrarum.net>
- <1318366663.2992.29.camel@dabdike.int.hansenpartnership.com>
+	id S1750791Ab1JKVeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 17:34:36 -0400
+Date: Tue, 11 Oct 2011 15:31:38 -0600
+From: Greg KH <gregkh@suse.de>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
+Message-ID: <20111011213138.GA3881@suse.de>
+References: <20111011165903.GA30976@kroah.com>
+ <20111011165708.466042477@pistachio.kroah.org>
+ <20111011172019.GI10838@kvack.org>
+ <CAErSpo6JFTm4y35Nz7aNUgM3ynX52fM1-AwX7OTOwm3cminv1Q@mail.gmail.com>
+ <20111011192447.GC1112@kroah.com>
+ <CAErSpo47Yw3Vygs5=OVmtUuLsB9FxJeYBm20UYem-Z3L7B0UhQ@mail.gmail.com>
+ <20111011195611.GA2956@kroah.com>
+ <20111011200335.GJ10838@kvack.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aF3LVLvitz/VQU3c"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318366663.2992.29.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <20111011200335.GJ10838@kvack.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 11, 2011 at 04:03:35PM -0400, Benjamin LaHaise wrote:
+> On Tue, Oct 11, 2011 at 01:56:11PM -0600, Greg KH wrote:
+> > > On Tue, Oct 11, 2011 at 1:24 PM, Greg KH <greg@kroah.com> wrote:
+> ...
+> > > I'd like to know more about this regression.
+> > 
+> > It shows up as an oops that prevents the machine from booting.
+> 
+> If it's a regression, the patch should be limited to fixing the bug.  As 
+> it stands, this patch series introduces new functionality, and because it 
+> goes through a known broken state with the first patch, it may cause 
+> failures for people if they land in the middle during a bisect.  This 
+> doesn't seem like the right approach for -stable.
 
---aF3LVLvitz/VQU3c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Bisection here follows the same problems that happened in Linus's tree,
+so that's not a big deal, it happens a lot in stable patches.
 
-On Tue, Oct 11, 2011 at 03:57:43PM -0500,  James Bottomley wrote:
-> Well, when you put things like
->=20
-> "NOT FOR COMMIT USE; TESTING ONLY; NO WARRANTY; DANGER!"
->=20
-> and
->=20
-> "I constructed this patch for my friend to test, completely blind.
-> I haven't heard back from him at all yet, but I thought that the wider
-> community might find it useful for testing as well. I think it _should_
-> work, just need to figure out what the correct chip variant is."
->=20
-> On the patch it tends to make maintainers exercise extreme caution.
-> Thus comments from others (preferably successful test reports) or acks
-> from Marvell or Vertex would be very helpful.
-Both of those were on the first version of the patch, when I'd written
-the code and not run it at all. After that, I got access to a RevoDrive3
-remotely, and run about 5TiB of data through it for testing.
-
-The second version of the patch removed those warnings, and described
-some of my testing:
-http://thread.gmane.org/gmane.linux.kernel/1200731/focus=3D50312
-
-Some fio performance numbers:
-http://paste.pocoo.org/show/489716/
-
-dmesg/hdparm/smartctl:
-http://www.ocztechnologyforum.com/forum/showthread.php?95151-Linux-patch-su=
-pport-for-RevoDrive3-RevoDrive3-X2-zDrive-R4&p=3D686054&viewfull=3D1#post68=
-6054
-
---=20
-Robin Hugh Johnson
-Gentoo Linux: Developer, Trustee & Infrastructure Lead
-E-Mail     : robbat2@gentoo.org
-GnuPG FP   : 11AC BA4F 4778 E3F6 E4ED  F38E B27B 944E 3488 4E85
-
---aF3LVLvitz/VQU3c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-Comment: Robbat2 @ Orbis-Terrarum Networks - The text below is a digital signature. If it doesn't make any sense to you, ignore it.
-
-iEYEARECAAYFAk6Us2cACgkQPpIsIjIzwiyS4ACfTl9WChJbrfzIxgrbaXiNWDB+
-9LEAn3QUlUISMBzeh3E91F11LbKX3yXi
-=h3y7
------END PGP SIGNATURE-----
-
---aF3LVLvitz/VQU3c--
+greg k-h
