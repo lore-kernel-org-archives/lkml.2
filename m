@@ -1,68 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab1JKHZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:25:50 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45031 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab1JKHZs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@suse.com:5:1>);
-	Tue, 11 Oct 2011 03:25:48 -0400
-Message-Id: <4E940B99020000780005AA12@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 11 Oct 2011 08:25:45 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Dong Yang Li" <lidongyang@suse.com>
-Cc: <hch@infradead.org>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] xen/blkback: Fix the inhibition to map pages
-	 when discarding sector ranges.
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751825Ab1JKH15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:27:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48284 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab1JKH1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 03:27:54 -0400
+Date: Tue, 11 Oct 2011 08:27:48 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <greg@kroah.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        rientjes@google.com
+Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly
+ reserved on a per-section basis
+Message-ID: <20111011072406.GA2503@suse.de>
+References: <20111010071119.GE6418@suse.de>
+ <20111010150038.ac161977.akpm@linux-foundation.org>
+ <20111010232403.GA30513@kroah.com>
+ <20111010162813.7a470ae4.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20111010162813.7a470ae4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> The 'operation' parameters are the ones provided to the bio layer while
-> the req->operation are the ones passed in between the backend and
-> frontend. We used the wrong 'operation' value to squash the
-> call to map pages when processing the discard operation resulting
-> in mapping the pages unnecessarily.
+On Mon, Oct 10, 2011 at 04:28:13PM -0700, Andrew Morton wrote:
+> On Mon, 10 Oct 2011 16:24:03 -0700
+> Greg KH <greg@kroah.com> wrote:
 > 
-> CC: Li Dongyang <lidongyang@novell.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkback/blkback.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > On Mon, Oct 10, 2011 at 03:00:38PM -0700, Andrew Morton wrote:
+> > > On Mon, 10 Oct 2011 08:11:19 +0100
+> > > Mel Gorman <mgorman@suse.de> wrote:
+> > > 
+> > > > It is expected that memory being brought online is PageReserved
+> > > > similar to what happens when the page allocator is being brought up.
+> > > > Memory is onlined in "memory blocks" which consist of one or more
+> > > > sections. Unfortunately, the code that verifies PageReserved is
+> > > > currently assuming that the memmap backing all these pages is virtually
+> > > > contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
+> > > > As a result, memory hot-add is failing on !VMEMMAP configurations
+> > > > with the message;
+> > > > 
+> > > > kernel: section number XXX page number 256 not reserved, was it already online?
+> > > > 
+> > > > This patch updates the PageReserved check to lookup struct page once
+> > > > per section to guarantee the correct struct page is being checked.
+> > > > 
+> > > 
+> > > Nathan's earlier version of this patch is already in linux-next, via
+> > > Greg.  We should drop the old version and get the new one merged
+> > > instead.
+> > 
+> > Ok, care to send me what exactly needs to be reverted and what needs to
+> > be added?
 > 
-> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> index 184b133..3da9a40 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -707,7 +707,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  	 * the hypercall to unmap the grants - that is all done in
->  	 * xen_blkbk_unmap.
->  	 */
-> -	if (operation != BLKIF_OP_DISCARD &&
-> +	if (operation != REQ_DISCARD &&
+> Drop
+> 
+> commit 54f23eb7ba7619de85d8edca6e5336bc33072dbd
+> Author: Nathan Fontenot <nfont@austin.ibm.com>
+> Date:   Mon Sep 26 10:22:33 2011 -0500
+> 
+>     memory hotplug: Correct page reservation checking
+> 
+> and replace it with start-of-this-thread.
+> 
+> That's assuming that Mel's update passes Nathan's review and testing :)
 
-Why is that check necessary in the first place? xen_blkbk_map() doesn't
-do any harm when req->nr_segments is zero (as could also be the case
-on WRITE_FLUSH ones).
+It passed review and testing with IBM based on a SUSE bug. I thought
+Nathan's patch had been lost as it was posted to linuxppc-dev instead
+of linux-mm. This rework was to improve the changelog and readability.
 
-Jan
+David correctly pointed out a bug that passed testing because it was
+still checking one page per section. As long as that page was reserved,
+memory hot-add would go ahead. Here is a corrected version.
 
->  			xen_blkbk_map(req, pending_req, seg))
->  		goto fail_flush;
->  
+Thanks
 
+==== CUT HERE ====
+mm: memory hotplug: Check if pages are correctly reserved on a per-section basis
 
+It is expected that memory being brought online is PageReserved
+similar to what happens when the page allocator is being brought up.
+Memory is onlined in "memory blocks" which consist of one or more
+sections. Unfortunately, the code that verifies PageReserved is
+currently assuming that the memmap backing all these pages is virtually
+contiguous which is only the case when CONFIG_SPARSEMEM_VMEMMAP is set.
+As a result, memory hot-add is failing on those configurations with
+the message;
 
+kernel: section number XXX page number 256 not reserved, was it already online?
 
+This patch updates the PageReserved check to lookup struct page once
+per section to guarantee the correct struct page is being checked.
+
+[Check pages within sections properly: rientjes@google.com]
+[original patch by: nfont@linux.vnet.ibm.com]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ drivers/base/memory.c |   58 +++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 40 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 2840ed4..ffb69cd 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
+ }
+ 
+ /*
++ * The probe routines leave the pages reserved, just as the bootmem code does.
++ * Make sure they're still that way.
++ */
++static bool pages_correctly_reserved(unsigned long start_pfn,
++					unsigned long nr_pages)
++{
++	int i, j;
++	struct page *page;
++	unsigned long pfn = start_pfn;
++
++	/*
++	 * memmap between sections is not contiguous except with
++	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
++	 * and assume memmap is contiguous within each section
++	 */
++	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
++		if (WARN_ON_ONCE(!pfn_valid(pfn)))
++			return false;
++		page = pfn_to_page(pfn);
++
++		for (j = 0; j < PAGES_PER_SECTION; j++) {
++			if (PageReserved(page + j))
++				continue;
++
++			printk(KERN_WARNING "section number %ld page number %d "
++				"not reserved, was it already online?\n",
++				pfn_to_section_nr(pfn), j);
++
++			return false;
++		}
++	}
++
++	return true;
++}
++
++/*
+  * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+ memory_block_action(unsigned long phys_index, unsigned long action)
+ {
+-	int i;
+ 	unsigned long start_pfn, start_paddr;
+ 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+ 	struct page *first_page;
+@@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ 
+ 	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+ 
+-	/*
+-	 * The probe routines leave the pages reserved, just
+-	 * as the bootmem code does.  Make sure they're still
+-	 * that way.
+-	 */
+-	if (action == MEM_ONLINE) {
+-		for (i = 0; i < nr_pages; i++) {
+-			if (PageReserved(first_page+i))
+-				continue;
+-
+-			printk(KERN_WARNING "section number %ld page number %d "
+-				"not reserved, was it already online?\n",
+-				phys_index, i);
+-			return -EBUSY;
+-		}
+-	}
+-
+ 	switch (action) {
+ 		case MEM_ONLINE:
+ 			start_pfn = page_to_pfn(first_page);
++
++			if (!pages_correctly_reserved(start_pfn, nr_pages))
++				return -EBUSY;
++
+ 			ret = online_pages(start_pfn, nr_pages);
+ 			break;
+ 		case MEM_OFFLINE:
