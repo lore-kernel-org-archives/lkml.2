@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab1JKVIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:08:06 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:18956 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1JKVHq (ORCPT
+	id S1752403Ab1JKVJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:09:34 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49421 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1JKVJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:07:46 -0400
-Message-ID: <4E94B01D.2050402@cavium.com>
-Date: Tue, 11 Oct 2011 14:07:41 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
-References: <20110922184614.25419.84606.stgit@ponder> <20111011134753.2751aeb1.akpm@linux-foundation.org>
-In-Reply-To: <20111011134753.2751aeb1.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 11 Oct 2011 17:09:33 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/20] [GIT PULL][v3.2] tracing: queued updates
+In-Reply-To: Your message of "Tue, 11 Oct 2011 07:50:17 +0200."
+             <20111011055017.GA32616@elte.hu>
+From: Valdis.Kletnieks@vt.edu
+References: <20111010133852.829771373@goodmis.org>
+            <20111011055017.GA32616@elte.hu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1318367320_2766P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Oct 2011 21:07:44.0416 (UTC) FILETIME=[D208CA00:01CC8859]
+Date: Tue, 11 Oct 2011 17:08:40 -0400
+Message-ID: <20002.1318367320@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E94B05B.0058,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 01:47 PM, Andrew Morton wrote:
-> On Thu, 22 Sep 2011 12:51:23 -0600
-> Grant Likely<grant.likely@secretlab.ca>  wrote:
->
->> Allow drivers to report at probe time that they cannot get all the resources
->> required by the device, and should be retried at a later time.
->>
->> This should completely solve the problem of getting devices
->> initialized in the right order.  Right now this is mostly handled by
->> mucking about with initcall ordering which is a complete hack, and
->> doesn't even remotely handle the case where device drivers are in
->> modules.  This approach completely sidesteps the issues by allowing
->> driver registration to occur in any order, and any driver can request
->> to be retried after a few more other drivers get probed.
->
-> What happens is there is a circular dependency, or if a driver's
-> preconditions are never met?  AFAICT the code keeps running the probe
-> function for ever.
->
+--==_Exmh_1318367320_2766P
+Content-Type: text/plain; charset=us-ascii
 
-The deferred probe functions are only run once per (other) driver 
-binding event.  So once you quit registering new drivers, no further 
-probing is done.  There is no endless loop happening here.
+On Tue, 11 Oct 2011 07:50:17 +0200, Ingo Molnar said:
 
-If the preconditions are never met, the driver will just sit in the list 
-waiting.
+>  $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/core
+>  fatal: The remote end hung up unexpectedly
+
+Is it possible to get 'git' to say something more informative than "hung up
+unexpectedly"? "Tree not found, check URL" or similar would be nice...
 
 
-> If so: bad.  The kernel should detect such situations, should
-> exhaustively report them and if possible, fix them up and struggle
-> onwards.
->
+--==_Exmh_1318367320_2766P
+Content-Type: application/pgp-signature
 
-I don't think we should actively report anything, but being able to 
-inspect the deferred probe list from user space might be useful for 
-diagnosing problems
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
+iD8DBQFOlLBYcC3lWbTT17ARAutlAJ9lhEuZp6SdZjgr72C5MtJGBlFiBwCgmaNO
+HVxeNBvcOLg9C9uA4nxALcU=
+=TRe6
+-----END PGP SIGNATURE-----
 
-David Daney
+--==_Exmh_1318367320_2766P--
 
