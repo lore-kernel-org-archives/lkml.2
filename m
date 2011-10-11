@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab1JKGTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 02:19:13 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47602 "EHLO
+	id S1753135Ab1JKGTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:19:34 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47671 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1JKGTK (ORCPT
+	with ESMTP id S1751881Ab1JKGTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 02:19:10 -0400
-Date: Tue, 11 Oct 2011 08:18:48 +0200
+	Tue, 11 Oct 2011 02:19:31 -0400
+Date: Tue, 11 Oct 2011 08:19:23 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Jeff Layton <jlayton@redhat.com>
 Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
         linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
         linux-nfs@vger.kernel.org, john@Calva.COM,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake
- TASK_KILLABLE tasks too
-Message-ID: <20111011061847.GB1377@ucw.cz>
+Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle freeze
+ events
+Message-ID: <20111011061923.GC1377@ucw.cz>
 References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
- <1317210761-11518-2-git-send-email-jlayton@redhat.com>
+ <1317210761-11518-4-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317210761-11518-2-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1317210761-11518-4-git-send-email-jlayton@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 2011-09-28 07:52:40, Jeff Layton wrote:
+> Allow the wait_on_bit_killable sleeps in SUNRPC layer to respect the
+> freezer. This should allow suspend and hibernate events to occur, even
+> when there are RPC's pending on the wire.
 
-Hi!
-
-> TASK_KILLABLE is often used to put tasks to sleep for quite some time.
-> One of the most common uses is to put tasks to sleep while waiting for
-> replies from a server on a networked filesystem (such as CIFS or NFS).
-> 
-> Unfortunately, fake_signal_wake_up does not currently wake up tasks
-> that are sleeping in TASK_KILLABLE state. This means that even if the
-> code were in place to allow them to freeze while in this sleep, it
-> wouldn't work anyway.
-> 
-> This patch changes this function to wake tasks in this state as well.
-> This should be harmless -- if the code doing the sleeping doesn't have
-> handling to deal with freezer events, it should just go back to sleep.
-
-I'm pretty sure this will break something; but that does not mean it
-is bad idea, just that it should be merged early and tested a lot.
+Will the RPC protocols used handle that correctly? What will happen
+during resume?
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
