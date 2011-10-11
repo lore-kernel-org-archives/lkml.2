@@ -1,125 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1JKKph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:45:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6224 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab1JKKpf (ORCPT
+	id S1754396Ab1JKKui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:50:38 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:37338 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1JKKuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:45:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 11 Oct 2011 03:45:17 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH v8 2/3] arm/tegra: add support for ventana pinmuxing
-Date: Tue, 11 Oct 2011 13:45:05 +0300
-Message-ID: <1318329909-32601-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1318329909-32601-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1318329909-32601-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 11 Oct 2011 06:50:37 -0400
+Date: Tue, 11 Oct 2011 12:50:23 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [Linaro-mm-sig] [PATCHv16 0/9] Contiguous Memory Allocator
+In-reply-to: <4E93F088.60006@stericsson.com>
+To: "'Maxime Coquelin'" <maxime.coquelin-nonst@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        benjamin.gaignard@linaro.org,
+        "'Ludovic BARRE'" <ludovic.barre@stericsson.com>,
+        vincent.guittot@linaro.org
+Message-id: <00b301cc8803$93b5b3e0$bb211ba0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcyH6Dp3VMfXzE1zQveu67uN4QmG9QAGc4JQ
+References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
+ <4E92E003.4060901@stericsson.com>
+ <00b001cc87e5$dc818cc0$9584a640$%szyprowski@samsung.com>
+ <4E93F088.60006@stericsson.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for ventana pinmuxing as a seaboard derivative. This is a cut down
-version of work done by Jong Kim <jongk@nvidia.com>.
+Hello,
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/mach-tegra/Makefile                |    1 +
- arch/arm/mach-tegra/board-seaboard-pinmux.c |   49 +++++++++++++++++++++++++-
- 2 files changed, 48 insertions(+), 2 deletions(-)
+On Tuesday, October 11, 2011 9:30 AM Maxime Coquelin wrote:
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index f11b910..91a07e1 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -31,6 +31,7 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
- 
- obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
- obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
-+obj-${CONFIG_MACH_TEGRA_DT}             += board-seaboard-pinmux.o
- 
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice.o
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice-pinmux.o
-diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-index b31c765..b62b04d 100644
---- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
-+++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
-@@ -158,8 +158,26 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
- 	{TEGRA_PINGROUP_XM2D,  TEGRA_MUX_NONE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
- };
- 
--
--
-+static __initdata struct tegra_pingroup_config ventana_pinmux[] = {
-+	{TEGRA_PINGROUP_DAP3, TEGRA_MUX_DAP3,     TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_DDC,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTA,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTB,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTC,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_DTD,  TEGRA_MUX_VI,       TEGRA_PUPD_PULL_DOWN, TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_GMD,  TEGRA_MUX_SFLASH,   TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_LPW0, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LPW2, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LSC1, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_LSCK, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_LSDA, TEGRA_MUX_RSVD4,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_PTA,  TEGRA_MUX_RSVD2,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SLXC, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SLXK, TEGRA_MUX_SDIO3,    TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
-+	{TEGRA_PINGROUP_SPIA, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_SPIC, TEGRA_MUX_GMI,      TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+	{TEGRA_PINGROUP_SPIG, TEGRA_MUX_SPI2_ALT, TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
-+};
- 
- static struct tegra_gpio_table common_gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
-@@ -172,6 +190,26 @@ static struct tegra_gpio_table common_gpio_table[] = {
- 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
- };
- 
-+static void __init update_pinmux(struct tegra_pingroup_config *newtbl, int size)
-+{
-+	int i, j;
-+	struct tegra_pingroup_config *new_pingroup, *base_pingroup;
-+
-+	/* Update base seaboard pinmux table with secondary board
-+	 * specific pinmux table table.
-+	 */
-+	for (i = 0; i < size; i++) {
-+		new_pingroup = &newtbl[i];
-+		for (j = 0; j < ARRAY_SIZE(seaboard_pinmux); j++) {
-+			base_pingroup = &seaboard_pinmux[j];
-+			if (new_pingroup->pingroup == base_pingroup->pingroup) {
-+				*base_pingroup = *new_pingroup;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
- static void __init seaboard_common_pinmux_init(void)
- {
- 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
-@@ -186,3 +224,10 @@ void __init seaboard_pinmux_init(void)
- {
- 	seaboard_common_pinmux_init();
- }
-+
-+void __init ventana_pinmux_init(void)
-+{
-+	update_pinmux(ventana_pinmux, ARRAY_SIZE(ventana_pinmux));
-+	seaboard_common_pinmux_init();
-+}
-+
+> On 10/11/2011 09:17 AM, Marek Szyprowski wrote:
+> > On Monday, October 10, 2011 2:08 PM Maxime Coquelin wrote:
+> >
+> >       During our stress tests, we encountered some problems :
+> >
+> >       1) Contiguous allocation lockup:
+> >           When system RAM is full of Anon pages, if we try to allocate a
+> > contiguous buffer greater than the min_free value, we face a
+> > dma_alloc_from_contiguous lockup.
+> >           The expected result would be dma_alloc_from_contiguous() to fail.
+> >           The problem is reproduced systematically on our side.
+> > Thanks for the report. Do you use Android's lowmemorykiller? I haven't
+> > tested CMA on Android kernel yet. I have no idea how it will interfere
+> > with Android patches.
+> >
+> 
+> The software used for this test (v16) is a generic 3.0 Kernel and a
+> minimal filesystem using Busybox.
+
+I'm really surprised. Could you elaborate a bit how to trigger this issue?
+I've did several tests and I never get a lockup. Allocation failed from time
+to time though.
+
+> With v15 patchset, I also tested it with Android.
+> IIRC, sometimes the lowmemorykiller succeed to get free space and the
+> contiguous allocation succeed, sometimes we faced  the lockup.
+> 
+> >>       2) Contiguous allocation fail:
+> >>           We have developed a small driver and a shell script to
+> >> allocate/release contiguous buffers.
+> >>           Sometimes, dma_alloc_from_contiguous() fails to allocate the
+> >> contiguous buffer (about once every 30 runs).
+> >>           We have 270MB Memory passed to the kernel in our configuration,
+> >> and the CMA pool is 90MB large.
+> >>           In this setup, the overall memory is either free or full of
+> >> reclaimable pages.
+> > Yeah. We also did such stress tests recently and faced this issue. I've
+> > spent some time investigating it but I have no solution yet.
+> >
+> > The problem is caused by a page, which is put in the CMA area. This page
+> > is movable, but it's address space provides no 'migratepage' method. In
+> > such case mm subsystem uses fallback_migrate_page() function. Sadly this
+> > function only returns -EAGAIN. The migration loops a few times over it
+> > and fails causing the fail in the allocation procedure.
+> >
+> > We are investing now which kernel code created/allocated such problematic
+
+s/investing/investigating
+
+> > pages and how to add real migration support for them.
+> >
+> 
+> Ok, thanks for pointing this out.
+
+We found this issue very recently. I'm still surprised that we did not notice 
+it during system testing.
+
+Best regards
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+Marek Szyprowski
+Samsung Poland R&D Center
 
