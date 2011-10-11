@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1JKTyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:54:22 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:59967 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933Ab1JKTyU (ORCPT
+	id S932100Ab1JKTy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:54:28 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34408 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab1JKTy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:54:20 -0400
-Date: Tue, 11 Oct 2011 15:54:14 -0400 (EDT)
-Message-Id: <20111011.155414.810541217087355148.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 11 Oct 2011 15:54:26 -0400
+Date: Tue, 11 Oct 2011 12:54:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Satoru Moriya <satoru.moriya@hds.com>
+Cc: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Message-Id: <20111011125419.2702b5dc.akpm@linux-foundation.org>
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+	<20111010153723.6397924f.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 11 Oct 2011 12:54:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 11 Oct 2011 15:32:11 -0400
+Satoru Moriya <satoru.moriya@hds.com> wrote:
 
-Just a few driver bugs, and one missing state update during ipv6 GRO processing.
+> On 10/10/2011 06:37 PM, Andrew Morton wrote:
+> > On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes 
+> > <rientjes@google.com> wrote:
+> > 
+> >> On Thu, 1 Sep 2011, Rik van Riel wrote:
+> >
+> > The page allocator already tries harder if the caller has 
+> > rt_task(current).  Why is this inadequate?  Can we extend this idea 
+> > further to fix whatever-the-problem-is?
+> 
+> Actually page allocator decreases min watermark to 3/4 * min watermark
+> for rt-task. But in our case some applications create a lot of
+> processes and if all of them are rt-task, the amount of watermark
+> bonus(1/4 * min watermark) is not enough.
+> 
+> If we can tune the amount of bonus, it may be fine. But that is
+> almost all same as extra free kbytes.
 
-1) When iSCSI and FCOE are both in use, bnx2x allocated conflicting client IDs.
-   Fix from Dmitry Kravkov.
+This situation is detectable at runtime.  If realtime tasks are being
+stalled in the page allocator then start to increase the free-page
+reserves.  A little control system.
 
-2) MSCAN CAN driver copies one byte to many on odd packet lengths, fix from
-   Wolfgang Grandegger.
-
-3) Blue frame support in mlx4_en driver is busted on PowerPC due to endian
-   bugs, fix from Thadeu Lima de Souza Cascardo.
-
-4) When GRO pulls ipv6 extension headers, the protocol value changes,
-   so it has to reload the protocol ops pointer.  Fix from Zheng Yan.
-
-Please pull, thanks a lot!
-
-The following changes since commit 65112dccf8a113737684366349d7f9ec373ddc47:
-
-  Merge git://git.samba.org/sfrench/cifs-2.6 (2011-10-10 14:53:11 +1200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Dmitry Kravkov (1):
-      bnx2x: fix cl_id allocation for non-eth clients for NPAR mode
-
-Thadeu Lima de Souza Cascardo (1):
-      mlx4_en: fix endianness with blue frame support
-
-Wolfgang Grandegger (1):
-      mscan: too much data copied to CAN frame due to 16 bit accesses
-
-Yan, Zheng (1):
-      gro: refetch inet6_protos[] after pulling ext headers
-
- drivers/net/bnx2x/bnx2x.h     |   20 +++++++++++++-------
- drivers/net/bnx2x/bnx2x_cmn.h |    2 +-
- drivers/net/can/mscan/mscan.c |   11 ++++++++---
- drivers/net/mlx4/en_tx.c      |    6 +++---
- net/ipv6/af_inet6.c           |    1 +
- 5 files changed, 26 insertions(+), 14 deletions(-)
