@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1JKP5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 11:57:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52906 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab1JKP5R convert rfc822-to-8bit (ORCPT
+	id S1754986Ab1JKP6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 11:58:13 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:51365 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754608Ab1JKP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 11:57:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318334185.1546.344.camel@vkoul-udesk3>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<1317997177.1573.2275.camel@vkoul-udesk3>
-	<CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
-	<1318229592.1573.2298.camel@vkoul-udesk3>
-	<CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-	<1318238296.1546.3.camel@vkoul-udesk3>
-	<CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
-	<1318243501.1546.12.camel@vkoul-udesk3>
-	<CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
-	<1318262559.1546.31.camel@vkoul-udesk3>
-	<CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
-	<1318334185.1546.344.camel@vkoul-udesk3>
-Date: Tue, 11 Oct 2011 21:27:16 +0530
-Message-ID: <CAJe_ZheapUSd5Wt5-1bi_cS1WvOjBsQ-sh5JXx1p1mH4Xb+hoQ@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Oct 2011 11:58:12 -0400
+Subject: Re: [PATCH] x86, efi: Calling __pa() with an ioremap'd address is
+ invalid
+From: Matt Fleming <matt@console-pimps.org>
+To: "hpanvin@gmail.com" <hpa@zytor.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <ming@elte.hu>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>
+In-Reply-To: <df88dc7c-e404-4190-a15c-4c3ef44ed45f@email.android.com>
+References: <1318337645-7112-1-git-send-email-matt@console-pimps.org>
+	 <20111011130333.GA4117@srcf.ucam.org>
+	 <1318338617.4060.109.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <df88dc7c-e404-4190-a15c-4c3ef44ed45f@email.android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 16:58:09 +0100
+Message-ID: <1318348689.4060.118.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 October 2011 17:26, Vinod Koul <vinod.koul@intel.com> wrote:
->> >> >
->> >> > But I am fine if we find a common ground and merge the two where dmac
->> >> > can cleanly identify direction and mode it is operating.
->> >> >
->> >> The client would set the xfer_direction and dmac would interpret as
->> >>
->> >> enum xfer_direction {
->> >>      MEM_TO_MEM,   ->  Async/Memcpy mode
->> >>      MEM_TO_DEV,    ->  Slave mode & From Memory to Device
->> >>      DEV_TO_MEM,    ->  Slave mode & From Device to Memory
->> >>      DEV_TO_DEV,     ->  Slave mode & From Device to Device
->> >> }
->> >>
->> >> How could it get any cleaner?
->> > Consider the case of a dmac driver which supports interleaved dma as
->> > well as memcpy and slave
->> > It needs to interpret dma_data_direction for later cases and
->> > xfer_direction for former ones.
->> dma_data_direction is the mapping attribute of a buffer and is not meant to
->> tell type of source and destination of a transfer.
->> xfer_direction is meant for that purpose.
->> So I'd rather convert device_prep_dma_cyclic and device_prep_slave_sg
->> to use xfer_direction.
->
-> If the conversion id done for all drivers, then it should be fine...
->
-I already said that many days ago. Though I am not sure what blocks
-this patch if that conversion is done separately (which would touch many
-subsystems).
+On Tue, 2011-10-11 at 08:45 -0700, hpanvin@gmail.com wrote:
+> I think ioremap_cache() should work for either.
+
+Sorry yeah, it will work but I don't think it's desirable (that's what I
+meant, though I realise it's not what I wrote).
+
+The reason being: aren't you doing an extra step of indirection because
+you have to jump through the vmalloc space?
+
+With 32-bit this is obviously necessary because of the lack of space for
+the direct kernel map, but on 64-bit we can just extend the kernel map
+and do quick conversions between physical and virtual space with __va()
+and __pa().
+
+Maybe the extra indirection isn't that bad and no one will care? If so,
+then sure, a unified version sounds like a plan. I was just hesitant of
+changing the existing 64-bit implementation for fear of receiving
+replies like "you've now made the 64-bit path slower".
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
