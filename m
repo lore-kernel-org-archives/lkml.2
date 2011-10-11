@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab1JKUWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 16:22:39 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:21697 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1JKUWf convert rfc822-to-8bit (ORCPT
+	id S1751780Ab1JKUXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 16:23:44 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:57958 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1JKUXn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 16:22:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ZrHVsxGqEMXqHSUhngHiNpKHad/AbkQ9rN4PXW6yB1G42wnDojdXHhejoKF1mGjKE
-	OBqcrYkqSs8fEZ9aEdcEg==
-MIME-Version: 1.0
-In-Reply-To: <20111011195611.GA2956@kroah.com>
-References: <20111011165903.GA30976@kroah.com> <20111011165708.466042477@pistachio.kroah.org>
- <20111011172019.GI10838@kvack.org> <CAErSpo6JFTm4y35Nz7aNUgM3ynX52fM1-AwX7OTOwm3cminv1Q@mail.gmail.com>
- <20111011192447.GC1112@kroah.com> <CAErSpo47Yw3Vygs5=OVmtUuLsB9FxJeYBm20UYem-Z3L7B0UhQ@mail.gmail.com>
- <20111011195611.GA2956@kroah.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Oct 2011 14:22:11 -0600
-Message-ID: <CAErSpo7pVC2DxVDmE-oJm6KmaVbWKi2OdCiSastoGQdfMgg+Kg@mail.gmail.com>
-Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
-To: Greg KH <greg@kroah.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Oct 2011 16:23:43 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Tue, 11 Oct 2011 16:23:22 -0400
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AcyIT5/cYvqtacUOT5CIAW74WZaPtwAA5Nyw
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+	<20111010153723.6397924f.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+ <20111011125419.2702b5dc.akpm@linux-foundation.org>
+In-Reply-To: <20111011125419.2702b5dc.akpm@linux-foundation.org>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=37 spamscore=37
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110110246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 1:56 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Oct 11, 2011 at 01:47:47PM -0600, Bjorn Helgaas wrote:
->> On Tue, Oct 11, 2011 at 1:24 PM, Greg KH <greg@kroah.com> wrote:
->> > On Tue, Oct 11, 2011 at 12:14:05PM -0600, Bjorn Helgaas wrote:
+On 10/11/2011 03:55 PM, Andrew Morton wrote:
+> On Tue, 11 Oct 2011 15:32:11 -0400
+> Satoru Moriya <satoru.moriya@hds.com> wrote:
+> 
+>> On 10/10/2011 06:37 PM, Andrew Morton wrote:
+>>> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes 
+>>> <rientjes@google.com> wrote:
+>>>
+>>>> On Thu, 1 Sep 2011, Rik van Riel wrote:
 >>
->> >> It's not obvious that this fits the criteria for -stable
->> >> (Documentation/stable_kernel_rules.txt).
->> >>
->> >> For example, I can't tell what real problem this fixes.
->> >
->> > Yeah, it's not obvious, but I have had a lot of reports that 3.0 does
->> > not work on some systems without this set of patches.  Now figuring out
->> > of those same systems ever worked at all is getting to be quite
->> > difficult as I don't have access to the hardware, and the people that do
->> > aren't responding to test requests.  But from what I gather, 2.6.32 did
->> > work on these boxes, so it is a regression somehow, but I am not
->> > positive of this.
+>> Actually page allocator decreases min watermark to 3/4 * min 
+>> watermark for rt-task. But in our case some applications create a lot 
+>> of processes and if all of them are rt-task, the amount of watermark
+>> bonus(1/4 * min watermark) is not enough.
 >>
->> I'd like to know more about this regression.
->
-> It shows up as an oops that prevents the machine from booting.
->
->> > Now I'm very open to pushback, and if people really don't want these in
->> > (i.e. the PCI maintainer(s) say no), then I'll drop them and work with
->> > the distros to get them into their trees so that their customers's
->> > systems will work properly.
->>
->> If distros want these patches, does that mean they have bug reports?
->> URLs to them would be helpful.
->
-> All of the ones I have are "private" at the moment due to the hardware
-> and product being tested by the users, sorry.
->
-> I really wish that some of the people who had this problem would post
-> publically, and I guess we could just say, because they aren't being
-> public about it, it shouldn't go into a stable tree.  And I don't have a
-> problem with that.
+>> If we can tune the amount of bonus, it may be fine. But that is 
+>> almost all same as extra free kbytes.
+> 
+> This situation is detectable at runtime.  If realtime tasks are being 
+> stalled in the page allocator then start to increase the free-page 
+> reserves.  A little control system.
 
-I think accepting patches without our having a chance to see the
-problem sets a bad precedent.  It's quite common to see patches that
-"solve" the problem, but do it in the wrong way.
+Detecting at runtime is too late for some latency critical systems.
+At that system, we must avoid a stall before it happens.
 
-If the hardware is secret, maybe they could open a new, sanitized bug
-report?  It should be easy to remove the valuable details from the
-dmesg log and oops.
+Also, if we increase the free-page reserves a.k.a min_free_kbytes,
+the possibility of direct reclaim on other workloads increases.
+I think it's a bad side effect.
 
-Bjorn
+Thanks,
+Satoru
