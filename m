@@ -1,125 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab1JKE0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 00:26:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43498 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab1JKE0H (ORCPT
+	id S1751455Ab1JKEnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 00:43:24 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:41629 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JKEnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 00:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=REFwgzLsF+YKVjG3Yqdt38yPBggl929sbqqzo47vZRYpN3gtAWHZoYz0t9xSIIUfN
-	dX/qVT0Ogox2gb2wounXw==
-Date: Mon, 10 Oct 2011 21:26:00 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
-cc: Greg KH <greg@kroah.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly reserved
- on a per-section basis
-In-Reply-To: <20111010164152.5485fbaf.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1110102125040.12035@chino.kir.corp.google.com>
-References: <20111010071119.GE6418@suse.de> <20111010150038.ac161977.akpm@linux-foundation.org> <20111010232403.GA30513@kroah.com> <20111010162813.7a470ae4.akpm@linux-foundation.org> <20111010233531.GA7234@kroah.com>
- <20111010164152.5485fbaf.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 11 Oct 2011 00:43:23 -0400
+Date: Tue, 11 Oct 2011 15:43:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: manual merge of the sound tree with the arm-soc tree
+Message-Id: <20111011154304.f7fefc4f7f86b4b10348578c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Oct_2011_15_43_04_+1100_FX=7aUQFssi/xrcp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011, Andrew Morton wrote:
+--Signature=_Tue__11_Oct_2011_15_43_04_+1100_FX=7aUQFssi/xrcp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 2840ed4..ffb69cd 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
->  }
->  
->  /*
-> + * The probe routines leave the pages reserved, just as the bootmem code does.
-> + * Make sure they're still that way.
-> + */
-> +static bool pages_correctly_reserved(unsigned long start_pfn,
-> +					unsigned long nr_pages)
-> +{
-> +	int i, j;
-> +	struct page *page;
-> +	unsigned long pfn = start_pfn;
-> +
-> +	/*
-> +	 * memmap between sections is not contiguous except with
-> +	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
-> +	 * and assume memmap is contiguous within each section
-> +	 */
-> +	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
-> +		if (WARN_ON_ONCE(!pfn_valid(pfn)))
-> +			return false;
-> +		page = pfn_to_page(pfn);
-> +
-> +		for (j = 0; j < PAGES_PER_SECTION; j++) {
-> +			if (PageReserved(page + i))
+Hi Takashi,
 
-page + j
+Today's linux-next merge of the sound tree got a conflict in
+arch/arm/plat-omap/devices.c between commit 40246e0003f0 ("ARM: OMAP:
+mcbsp: Move out omap_mcbsp_register_board_cfg from plat-omap/devices")
+from the arm-soc tree and commit d231f5cbac9e ("OMAP: McPDM: Convert
+McPDM device to omap_device") from the sound tree.
 
-> +				continue;
-> +
-> +			printk(KERN_WARNING "section number %ld page number %d "
-> +				"not reserved, was it already online?\n",
-> +				pfn_to_section_nr(pfn), j);
-> +
-> +			return false;
-> +		}
-> +	}
-> +
-> +	return true;
-> +}
-> +
-> +/*
->   * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
->   * OK to have direct references to sparsemem variables in here.
->   */
->  static int
->  memory_block_action(unsigned long phys_index, unsigned long action)
->  {
-> -	int i;
->  	unsigned long start_pfn, start_paddr;
->  	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
->  	struct page *first_page;
-> @@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
->  
->  	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
->  
-> -	/*
-> -	 * The probe routines leave the pages reserved, just
-> -	 * as the bootmem code does.  Make sure they're still
-> -	 * that way.
-> -	 */
-> -	if (action == MEM_ONLINE) {
-> -		for (i = 0; i < nr_pages; i++) {
-> -			if (PageReserved(first_page+i))
-> -				continue;
-> -
-> -			printk(KERN_WARNING "section number %ld page number %d "
-> -				"not reserved, was it already online?\n",
-> -				phys_index, i);
-> -			return -EBUSY;
-> -		}
-> -	}
-> -
->  	switch (action) {
->  		case MEM_ONLINE:
->  			start_pfn = page_to_pfn(first_page);
-> +
-> +			if (!pages_correctly_reserved(start_pfn, nr_pages))
-> +				return -EBUSY;
-> +
->  			ret = online_pages(start_pfn, nr_pages);
->  			break;
->  		case MEM_OFFLINE:
+Just overlapping removals.  I fixed it up (see below) and can carry the
+fix as necessary.
+
+Mark, Liam:  That sound tree commit has a few Signed-off-by lines with no
+email addresses.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/plat-omap/devices.c
+index acd132c,40eca9b..0000000
+--- a/arch/arm/plat-omap/devices.c
++++ b/arch/arm/plat-omap/devices.c
+@@@ -24,44 -24,56 +24,11 @@@
+  #include <plat/tc.h>
+  #include <plat/board.h>
+  #include <plat/mmc.h>
+ -#include <mach/gpio.h>
+  #include <plat/menelaus.h>
+ -#include <plat/mcbsp.h>
+  #include <plat/omap44xx.h>
+ =20
+- #if defined(CONFIG_SND_OMAP_SOC_MCPDM) || \
+- 		defined(CONFIG_SND_OMAP_SOC_MCPDM_MODULE)
+-=20
+- static struct resource mcpdm_resources[] =3D {
+- 	{
+- 		.name		=3D "mcpdm_mem",
+- 		.start		=3D OMAP44XX_MCPDM_BASE,
+- 		.end		=3D OMAP44XX_MCPDM_BASE + SZ_4K,
+- 		.flags		=3D IORESOURCE_MEM,
+- 	},
+- 	{
+- 		.name		=3D "mcpdm_irq",
+- 		.start		=3D OMAP44XX_IRQ_MCPDM,
+- 		.end		=3D OMAP44XX_IRQ_MCPDM,
+- 		.flags		=3D IORESOURCE_IRQ,
+- 	},
+- };
+-=20
+- static struct platform_device omap_mcpdm_device =3D {
+- 	.name		=3D "omap-mcpdm",
+- 	.id		=3D -1,
+- 	.num_resources	=3D ARRAY_SIZE(mcpdm_resources),
+- 	.resource	=3D mcpdm_resources,
+- };
+-=20
+- static void omap_init_mcpdm(void)
+- {
+- 	(void) platform_device_register(&omap_mcpdm_device);
+- }
+- #else
+- static inline void omap_init_mcpdm(void) {}
+- #endif
+-=20
+  /*-----------------------------------------------------------------------=
+--*/
+ =20
+ -#if defined(CONFIG_OMAP_MCBSP) || defined(CONFIG_OMAP_MCBSP_MODULE)
+ -
+ -static struct platform_device **omap_mcbsp_devices;
+ -
+ -void omap_mcbsp_register_board_cfg(struct resource *res, int res_count,
+ -			struct omap_mcbsp_platform_data *config, int size)
+ -{
+ -	int i;
+ -
+ -	omap_mcbsp_devices =3D kzalloc(size * sizeof(struct platform_device *),
+ -				     GFP_KERNEL);
+ -	if (!omap_mcbsp_devices) {
+ -		printk(KERN_ERR "Could not register McBSP devices\n");
+ -		return;
+ -	}
+ -
+ -	for (i =3D 0; i < size; i++) {
+ -		struct platform_device *new_mcbsp;
+ -		int ret;
+ -
+ -		new_mcbsp =3D platform_device_alloc("omap-mcbsp", i + 1);
+ -		if (!new_mcbsp)
+ -			continue;
+ -		platform_device_add_resources(new_mcbsp, &res[i * res_count],
+ -					res_count);
+ -		new_mcbsp->dev.platform_data =3D &config[i];
+ -		ret =3D platform_device_add(new_mcbsp);
+ -		if (ret) {
+ -			platform_device_put(new_mcbsp);
+ -			continue;
+ -		}
+ -		omap_mcbsp_devices[i] =3D new_mcbsp;
+ -	}
+ -}
+ -
+ -#else
+ -void omap_mcbsp_register_board_cfg(struct resource *res, int res_count,
+ -			struct omap_mcbsp_platform_data *config, int size)
+ -{  }
+ -#endif
+ -
+ -/*-----------------------------------------------------------------------=
+--*/
+ -
+  #if defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
+  	defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE)
+ =20
+
+--Signature=_Tue__11_Oct_2011_15_43_04_+1100_FX=7aUQFssi/xrcp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOk8lYAAoJEECxmPOUX5FETc8P/j8Zt28T0PJZjZZ5MGVUp5va
+urnTqS7VxG6bRCq7wmQpnGVtO7AwzclXIgpCh5T0kVCVRm0nVWAbh2hBT5gSwV2l
+T9FN45Z+SAyqbSfrOuxGde7zk0yYevSVi7/K0WOv70kO6lPby9P8ZQQbz+zzTRMh
+td6qPrAMz0EakUz68PkMBGmRhm7pOd0AnQLdAiDC92/BRtF4cIuids404PM033xm
+25ek1hNjFschRH7mXInd8gfMC8ykoSAaf9w3taSKLELxys0vtZOoJeJeoces3Qfp
+I3dsEOt8RvnQwtl/6QZRdquS735h9jN15+vzpFJSVulwPfZnSY9jAl19M2hengD0
+2k8G2m2+XrnbCl/93AU08RVcrnRBADuvLP6zeDf26MqsbMmTI+bsuQWxNv0rPjLz
+l62Em9JqFCTEJtXxNWDQhP2GZykX4OdD6ywu+WvYdQrFMgiqkAzy2CkDuVB1e3v/
+aHf1Nbvs3FOyiJnBnpqaRzrJQexNZa+LG91FYcJJeUVkhry9cmo/bdfhHuWTq3+n
+Ldtow+scyM2gE8tN91HchwSRhr8Ms7zBVR7lsWyvre1DOu8jtPrfO7mPMdp/gkbR
+w829NjhUc61R3eH6IbZL1v89x/YDif5cqJ7cxsQLBecwre19p7XtAX/GLIVxamOg
+y2gfcchTvtciD2FOpmep
+=lHKP
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Oct_2011_15_43_04_+1100_FX=7aUQFssi/xrcp--
