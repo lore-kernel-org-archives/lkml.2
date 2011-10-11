@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab1JKLRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 07:17:10 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:51320 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751407Ab1JKLRJ (ORCPT
+	id S1754604Ab1JKLXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 07:23:46 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:39886 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1JKLXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 07:17:09 -0400
-Message-ID: <4E942581.2050903@ru.mvista.com>
-Date: Tue, 11 Oct 2011 15:16:17 +0400
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
-        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 4/4] ARM: at91/dma: DMA controller registering with
- DT support
-References: <e292fbb24a98b7cfda8ea83364956a50e1cb120f.1318264339.git.nicolas.ferre@atmel.com> <1318265021-4562-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1318265021-4562-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 11 Oct 2011 07:23:45 -0400
+Subject: [PATCH] [TRIVIAL] h8300: drivers/serial/Kconfig was moved
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 13:23:29 +0200
+Message-ID: <1318332209.18122.45.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+commit ab4382d27412e7e3e7c936e8d50d8888dfac3df8 moved
+drivers/serial/Kconfig to drivers/tty/serial/Kconfig, so we need to
+source the latter file.
 
-On 10-10-2011 20:43, Nicolas Ferre wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+The first release with this move was v2.6.38. Didn't anyone notice?
+Perhaps the configuration tools silently skip invalid "source" files.
+Anyhow, I added Yoshinori Sato, who perhaps can tell us whether sourcing
+of this Kconfig is still needed for h8300.
 
-> Device tree support on at91sam9g45 family SoC. Only call
-> platform_device_register() if no compatible dma-controller
-> node is found in device tree.
+ arch/h8300/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
-> ---
-> V2: use compatible string to match device.
-
-[...]
-
-> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-> index 9390ae6..2120055 100644
-> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
-> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-> @@ -64,7 +64,13 @@ static struct platform_device at_hdmac_device = {
->
->   void __init at91_add_device_hdmac(void)
->   {
-> -	platform_device_register(&at_hdmac_device);
-> +	struct device_node *np = of_find_node_by_name(NULL, "dma-controller");
-> +
-> +	if (np&&  of_device_is_compatible(np, "atmel,at91sam9g45-dma")) {
-> +		of_node_put(np);
-> +	} else {
-> +		platform_device_register(&at_hdmac_device);
-> +	}
-
-    {} not needed here, and checkpatch.pl should have protested.
-
-WBR, Sergei
+diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
+index 091ed61..2b1eee7 100644
+--- a/arch/h8300/Kconfig
++++ b/arch/h8300/Kconfig
+@@ -195,7 +195,7 @@ config UNIX98_PTYS
+ 
+ source "drivers/char/pcmcia/Kconfig"
+ 
+-source "drivers/serial/Kconfig"
++source "drivers/tty/serial/Kconfig"
+ 
+ source "drivers/i2c/Kconfig"
+ 
+-- 
+1.7.4.4
 
