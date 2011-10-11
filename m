@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1JKJVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:21:51 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:55120 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab1JKJVu (ORCPT
+	id S1754112Ab1JKJYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:24:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44362 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab1JKJYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:21:50 -0400
-Date: Tue, 11 Oct 2011 20:21:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: build warning after merge of the moduleh tree
-Message-Id: <20111011202142.4d18840463055a8bdb9d1590@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Oct_2011_20_21_42_+1100_gz_IoKSauGCGkWVV"
+	Tue, 11 Oct 2011 05:24:51 -0400
+From: Sumit Semwal <sumit.semwal@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mm@kvack.org>, <linaro-mm-sig@lists.linaro.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-media@vger.kernel.org>
+CC: <linux@arm.linux.org.uk>, <arnd@arndb.de>, <jesse.barker@linaro.org>,
+        <m.szyprowski@samsung.com>, <rob@ti.com>, <daniel@ffwll.ch>,
+        <t.stanislaws@samsung.com>, Sumit Semwal <sumit.semwal@ti.com>
+Subject: [RFC 0/2] Introduce dma buffer sharing mechanism
+Date: Tue, 11 Oct 2011 14:53:51 +0530
+Message-ID: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Oct_2011_20_21_42_+1100_gz_IoKSauGCGkWVV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Everyone,
 
-Hi Paul,
+Various subsystems - V4L2, GPU-accessors, DRI to name a few - have felt the 
+need to have a common mechanism to share memory buffers across different
+devices - ARM, video hardware, GPU.
 
-After merging the moduleh tree, today's linux-next build (i386 defconfig)
-produced this warning:
+This need comes forth from a variety of use cases including cameras, image 
+processing, video recorders, sound processing, DMA engines, GPU and display
+buffers, and others.
 
-arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: data definition has=
- no type or storage class [enabled by default]
-arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: type defaults to 'i=
-nt' in declaration of 'EXPORT_SYMBOL_GPL' [-Wimplicit-int]
-arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: parameter names (wi=
-thout types) in function declaration [enabled by default]
+This RFC is the first attempt in defining such a buffer sharing mechanism- it is
+the result of discussions from a couple of memory-management mini-summits held
+by Linaro to understand and address common needs around memory management. [1]
 
-Introduced by commit 144d31e6f190 ("perf, intel: Use GO/HO bits in
-perf-ctr") from the tip tree interacting with the module.h slipt up.
+A new dma_buf buffer object is added, with operations and API to allow easy
+sharing of this buffer object across devices.
 
-I'll add a patch tomorrow to add an include of export.h to this file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The framework allows:
+- a new buffer-object to be created with fixed size.
+- different devices to 'attach' themselves to this buffer, to facilitate
+  backing storage negotiation, using dma_buf_attach() API.
+- association of a file pointer with each user-buffer and associated
+   allocator-defined operations on that buffer. This operation is called the
+   'export' operation.
+- this exported buffer-object to be shared with the other entity by asking for
+   its 'file-descriptor (fd)', and sharing the fd across.
+- a received fd to get the buffer object back, where it can be accessed using
+   the associated exporter-defined operations.
+- the exporter and user to share the scatterlist using get_scatterlist and
+   put_scatterlist operations.
 
---Signature=_Tue__11_Oct_2011_20_21_42_+1100_gz_IoKSauGCGkWVV
-Content-Type: application/pgp-signature
+Documentation present in the patch-set gives more details.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This is based on design suggestions from many people at the mini-summits,
+most notably from Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
+Daniel Vetter <daniel@ffwll.ch>.
 
-iQIcBAEBCAAGBQJOlAqmAAoJEECxmPOUX5FELHEQAJeir7ffG7n+lPmVHte/BkD/
-czFeQutV5I27zT1SgPYxALKwC44jtRUwttAQmdwPb/BMBLK7DPHf58G4M086EBzZ
-eIwOpF0AzPVrrbZo6jomGQfyw2j241JfFzHz67rkf1gXQTXKm6hr/nLRXMiTV+TU
-bvix+ekzQpcKJtrP55gs4lQtXa9R3V1rs9J/YNXsEUxSVknXgZl5jgT+3aaYiP2V
-kNjpiXTSa0xcfvF5LJ1djh54EJa/Ld9RQhFZHhrkQr2R79yLRnaVWUP5JuLjhn3b
-4N9XisZxaPKpvuYjDDMwuPiAnS6M2VV2NX+bv2GBDCk13Hibd5Ry1swdNPTTPYYx
-CF5f00p8zoEMw1DUU3BZPFEu1GrEEaQQcJ/mbBYscMsoUKJwJBFWNPk7lClXUNNG
-OuYoZffoVFA1WbZk4sC0i1LTwSV9JAgYQHph/V6OP1ClAbDgn4Gn1o8nTKOWOmnP
-g8bhl6PYBnUMMBCWEf/hbs7NHhbN3qC9jWKaWfAOlXHI74tgGXyHzs+sjpYW/w/w
-hFwa84DZneEsOh+lWTTCLMTdUrACR/6irffqIilseXv/J3VRNcEQk4lL8t6bzOEc
-bKLR1VCX61o2ttDFSRvH6XAsUoyoPQktwx8doAUMxVBkbWOX5LyhM1/4apEIzm4o
-zlf01NoeOFTFqEwj/ow9
-=HFBg
------END PGP SIGNATURE-----
+The implementation is inspired from proof-of-concept patch-set from
+Tomasz Stanislawski <t.stanislaws@samsung.com>, who demonstrated buffer sharing
+between two v4l2 devices. [2]
 
---Signature=_Tue__11_Oct_2011_20_21_42_+1100_gz_IoKSauGCGkWVV--
+References:
+[1]: https://wiki.linaro.org/OfficeofCTO/MemoryManagement
+[2]: http://lwn.net/Articles/454389
+
+
+Sumit Semwal (2):
+  dma-buf: Introduce dma buffer sharing mechanism
+  dma-buf: Documentation for buffer sharing framework
+
+ Documentation/dma-buf-sharing.txt |  210 ++++++++++++++++++++++++++++++++
+ drivers/base/Kconfig              |   10 ++
+ drivers/base/Makefile             |    1 +
+ drivers/base/dma-buf.c            |  242 +++++++++++++++++++++++++++++++++++++
+ include/linux/dma-buf.h           |  162 +++++++++++++++++++++++++
+ 5 files changed, 625 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/dma-buf-sharing.txt
+ create mode 100644 drivers/base/dma-buf.c
+ create mode 100644 include/linux/dma-buf.h
+
+-- 
+1.7.4.1
+
