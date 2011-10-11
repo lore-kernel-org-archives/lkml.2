@@ -1,58 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab1JKRE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:04:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62792 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab1JKREX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:04:23 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.27.118]
-In-Reply-To: <CAHQjnOPcetkp-XX0x4HQsR+iYN1SaCAhuBEE2nVTdhssFpUmJQ@mail.gmail.com>
-References: <1316195506-9777-1-git-send-email-ohad@wizery.com>
- <1316195506-9777-2-git-send-email-ohad@wizery.com> <20110927100505.GH2138@amd.com>
- <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
- <20110927131222.GL2138@amd.com> <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
- <20110927181438.GM2138@amd.com> <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
- <20111010094738.GW2138@amd.com> <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
- <20111010153609.GB2138@amd.com> <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
- <CAHQjnOPcetkp-XX0x4HQsR+iYN1SaCAhuBEE2nVTdhssFpUmJQ@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 11 Oct 2011 19:04:01 +0200
-Message-ID: <CAK=WgbZeZhr1AN82e1yab-rLWyB0tuK-s3wM+YoeJ24rsoXk2Q@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
- supported by the hardware
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755331Ab1JKREj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:04:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33316 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755255Ab1JKREg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:04:36 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:11 2011
+Message-Id: <20111011165711.661391102@pistachio.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Tue, 11 Oct 2011 10:55:32 -0600
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [22/38] x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
+In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-On Tue, Oct 11, 2011 at 4:59 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> I think the type of size should be size_t.
-..
-> Thus, it should be
-> iommu_unmap(domain, orig_iova, orig_size - size)
+------------------
 
-Agree with both suggestions, thanks !
+From: Paul Menzel <paulepanter@users.sourceforge.net>
 
-P.S - please only keep the parts of my email which you are replying
-to, otherwise it's a bit hard to find your comments.
+commit 29cf7a30f8a0ce4af2406d93d5a332099be26923 upstream.
 
-Thanks,
-Ohad.
+In summary, this DMI quirk uses the _CRS info by default for the ASUS
+M2V-MX SE by turning on `pci=use_crs` and is similar to the quirk
+added by commit 2491762cfb47 ("x86/PCI: use host bridge _CRS info on
+ASRock ALiveSATA2-GLAN") whose commit message should be read for further
+information.
+
+Since commit 3e3da00c01d0 ("x86/pci: AMD one chain system to use pci
+read out res") Linux gives the following oops:
+
+    parport0: PC-style at 0x378, irq 7 [PCSPP,TRISTATE]
+    HDA Intel 0000:20:01.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+    HDA Intel 0000:20:01.0: setting latency timer to 64
+    BUG: unable to handle kernel paging request at ffffc90011c08000
+    IP: [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
+    PGD 13781a067 PUD 13781b067 PMD 1300ba067 PTE 800000fd00000173
+    Oops: 0009 [#1] SMP
+    last sysfs file: /sys/module/snd_pcm/initstate
+    CPU 0
+    Modules linked in: snd_hda_intel(+) snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event tpm_tis tpm snd_seq tpm_bios psmouse parport_pc snd_timer snd_seq_device parport processor evdev snd i2c_viapro thermal_sys amd64_edac_mod k8temp i2c_core soundcore shpchp pcspkr serio_raw asus_atk0110 pci_hotplug edac_core button snd_page_alloc edac_mce_amd ext3 jbd mbcache sha256_generic cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod raid1 md_mod usbhid hid sg sd_mod crc_t10dif sr_mod cdrom ata_generic uhci_hcd sata_via pata_via libata ehci_hcd usbcore scsi_mod via_rhine mii nls_base [last unloaded: scsi_wait_scan]
+    Pid: 1153, comm: work_for_cpu Not tainted 2.6.37-1-amd64 #1 M2V-MX SE/System Product Name
+    RIP: 0010:[<ffffffffa0578402>]  [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
+    RSP: 0018:ffff88013153fe50  EFLAGS: 00010286
+    RAX: ffffc90011c08000 RBX: ffff88013029ec00 RCX: 0000000000000006
+    RDX: 0000000000000000 RSI: 0000000000000246 RDI: 0000000000000246
+    RBP: ffff88013341d000 R08: 0000000000000000 R09: 0000000000000040
+    R10: 0000000000000286 R11: 0000000000003731 R12: ffff88013029c400
+    R13: 0000000000000000 R14: 0000000000000000 R15: ffff88013341d090
+    FS:  0000000000000000(0000) GS:ffff8800bfc00000(0000) knlGS:00000000f7610ab0
+    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+    CR2: ffffc90011c08000 CR3: 0000000132f57000 CR4: 00000000000006f0
+    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+    Process work_for_cpu (pid: 1153, threadinfo ffff88013153e000, task ffff8801303c86c0)
+    Stack:
+     0000000000000005 ffffffff8123ad65 00000000000136c0 ffff88013029c400
+     ffff8801303c8998 ffff88013341d000 ffff88013341d090 ffff8801322d9dc8
+     ffff88013341d208 0000000000000000 0000000000000000 ffffffff811ad232
+    Call Trace:
+     [<ffffffff8123ad65>] ? __pm_runtime_set_status+0x162/0x186
+     [<ffffffff811ad232>] ? local_pci_probe+0x49/0x92
+     [<ffffffff8105afc5>] ? do_work_for_cpu+0x0/0x1b
+     [<ffffffff8105afc5>] ? do_work_for_cpu+0x0/0x1b
+     [<ffffffff8105afd0>] ? do_work_for_cpu+0xb/0x1b
+     [<ffffffff8105fd3f>] ? kthread+0x7a/0x82
+     [<ffffffff8100a824>] ? kernel_thread_helper+0x4/0x10
+     [<ffffffff8105fcc5>] ? kthread+0x0/0x82
+     [<ffffffff8100a820>] ? kernel_thread_helper+0x0/0x10
+    Code: f4 01 00 00 ef 31 f6 48 89 df e8 29 dd ff ff 85 c0 0f 88 2b 03 00 00 48 89 ef e8 b4 39 c3 e0 8b 7b 40 e8 fc 9d b1 e0 48 8b 43 38 <66> 8b 10 66 89 14 24 8b 43 14 83 e8 03 83 f8 01 77 32 31 d2 be
+    RIP  [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
+     RSP <ffff88013153fe50>
+    CR2: ffffc90011c08000
+    ---[ end trace 8d1f3ebc136437fd ]---
+
+Trusting the ACPI _CRS information (`pci=use_crs`) fixes this problem.
+
+    $ dmesg | grep -i crs # with the quirk
+    PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+
+The match has to be against the DMI board entries though since the vendor entries are not populated.
+
+    DMI: System manufacturer System Product Name/M2V-MX SE, BIOS 0304    10/30/2007
+
+This quirk should be removed when `pci=use_crs` is enabled for machines
+from 2006 or earlier or some other solution is implemented.
+
+Using coreboot [1] with this board the problem does not exist but this
+quirk also does not affect it either. To be safe though the check is
+tightened to only take effect when the BIOS from American Megatrends is
+used.
+
+        15:13 < ruik> but coreboot does not need that
+        15:13 < ruik> because i have there only one root bus
+        15:13 < ruik> the audio is behind a bridge
+
+        $ sudo dmidecode
+        BIOS Information
+                Vendor: American Megatrends Inc.
+                Version: 0304
+                Release Date: 10/30/2007
+
+[1] http://www.coreboot.org/
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=30552
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/pci/acpi.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -43,6 +43,17 @@ static const struct dmi_system_id pci_us
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
+                 },
+         },
++	/* https://bugzilla.kernel.org/show_bug.cgi?id=30552 */
++	/* 2006 AMD HT/VIA system with two host bridges */
++	{
++		.callback = set_use_crs,
++		.ident = "ASUS M2V-MX SE",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++			DMI_MATCH(DMI_BOARD_NAME, "M2V-MX SE"),
++			DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
++		},
++	},
+ 	{}
+ };
+ 
+
+
