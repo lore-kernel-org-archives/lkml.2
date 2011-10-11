@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab1JKM3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 08:29:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43587 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab1JKM3T (ORCPT
+	id S1753713Ab1JKMdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 08:33:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54572 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753276Ab1JKMdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 08:29:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-References: <20111008155502.GB616@kroah.com>
-	<361419345.198335.1318268242916.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Date: Tue, 11 Oct 2011 20:29:18 +0800
-Message-ID: <CACVXFVMnt-ChUDhawhoyMm-wJ8xSQAWs1c8ykzmyshfX49HEsw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
-From: Ming Lei <tom.leiming@gmail.com>
-To: Andrei Warkentin <awarkentin@vmware.com>
-Cc: Greg KH <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>,
+	Tue, 11 Oct 2011 08:33:09 -0400
+Date: Tue, 11 Oct 2011 13:33:05 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Manjunath@jasper.es,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Writing register default value for the reset
+	register
+Message-ID: <20111011123305.GA2899@opensource.wolfsonmicro.com>
+References: <1318326900.3526.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318326900.3526.2.camel@phoenix>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 1:37 AM, Andrei Warkentin <awarkentin@vmware.com> wrote:
-> Hi,
->
-> ----- Original Message -----
->> From: "Greg KH" <greg@kroah.com>
->> To: "Josh Triplett" <josh@joshtriplett.org>
->> Cc: "G, Manjunath Kondaiah" <manjugk@ti.com>, linux-arm-kernel@lists.infradead.org, "Grant Likely"
->> <grant.likely@secretlab.ca>, linux-omap@vger.kernel.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
->> "Dilan Lee" <dilee@nvidia.com>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, Manjunath@jasper.es
->> Sent: Saturday, October 8, 2011 11:55:02 AM
->> Subject: Re: [PATCH 2/5] drivercore: Add driver probe deferral mechanism
->>
->
-> I'm a bit of a fly on the wall here, but I'm curious how this impacts suspend/resume.
-> device_initialize->device_pm_init are called from device_register, so certainly this
-> patch doesn't also ensure that the PM ordering matches probe ordering, which is bound
-> to break suspend, right? Was this ever tested with the OMAP target? Shouldn't the
+On Tue, Oct 11, 2011 at 05:55:00PM +0800, Axel Lin wrote:
+> The WM8983 can be reset by performing a write of any value to
+> the software reset register.
+> To avoid writing to the software reset register while resume,
+> we should write the same value in wm8983_reg_defs to software
+> reset register in wm8983_probe().
+> The write to the reset register is suppressed by the cache
+> restore code when it skips writes of default registers.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/codecs/wm8983.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm8983.c b/sound/soc/codecs/wm8983.c
+> index 17f04ec..93ee284 100644
+> --- a/sound/soc/codecs/wm8983.c
+> +++ b/sound/soc/codecs/wm8983.c
+> @@ -1007,7 +1007,7 @@ static int wm8983_probe(struct snd_soc_codec *codec)
+>  		return ret;
+>  	}
+>  
+> -	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0x8983);
+> +	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0);
+>  	if (ret < 0) {
+>  		dev_err(codec->dev, "Failed to issue reset: %d\n", ret);
+>  		return ret;
 
-Inside device_add(), device_pm_add is called before bus_probe_device,
-so the patch can't change the device order in pm list, and just change
-the driver probe order.
+We should probably just handle the reset register specially during
+resume.
 
-> PM change be also part of this patch set? I don't see why you would want to have this in
-> without the PM changes.
->
-
-
-thanks,
--- 
-Ming Lei
+Thanks,
+Dimitris
