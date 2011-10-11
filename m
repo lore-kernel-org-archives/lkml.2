@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab1JKRGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:06:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33507 "EHLO mx2.suse.de"
+	id S1755462Ab1JKRGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:06:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33528 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab1JKRF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:05:57 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:10 2011
-Message-Id: <20111011165710.281098946@pistachio.kroah.org>
+	id S1755062Ab1JKRGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:06:07 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:13 2011
+Message-Id: <20111011165713.233109819@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:23 -0600
+Date: Tue, 11 Oct 2011 10:55:42 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [13/38] ASoC: use a valid device for dev_err() in Zylonite
+        davem@davemloft.net, eric.dumazet@gmail.com,
+        Jason Wang <jasowang@redhat.com>
+Subject: [32/38] ipv6: fix NULL dereference in udp6_ufo_fragment()
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Jason Wang <jasowang@redhat.com>
 
-commit eff919ac0fc7565e71ffa35657c333dd8cdc0520 upstream.
+This patch fixes the issue caused by ef81bb40bf15f350fe865f31fa42f1082772a576
+which is a backport of upstream 87c48fa3b4630905f98268dde838ee43626a060c. The
+problem does not exist in upstream.
 
-A recent conversion has introduced references to &pdev->dev, which does
-not actually exist in all the contexts it's used in.
+We do not check whether route is attached before trying to assign ip
+identification through route dest which lead NULL pointer dereference. This
+happens when host bridge transmit a packet from guest.
 
-Replace this with card->dev where necessary, in order to let
-the driver build again.
+This patch changes ipv6_select_ident() to accept in6_addr as its paramter and
+fix the issue by using the destination address in ipv6 header when no route is
+attached.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/soc/pxa/zylonite.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ include/net/ipv6.h    |    2 +-
+ net/ipv6/ip6_output.c |   10 +++++-----
+ net/ipv6/udp.c        |    4 +++-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/sound/soc/pxa/zylonite.c
-+++ b/sound/soc/pxa/zylonite.c
-@@ -196,20 +196,20 @@ static int zylonite_probe(struct snd_soc
- 	if (clk_pout) {
- 		pout = clk_get(NULL, "CLK_POUT");
- 		if (IS_ERR(pout)) {
--			dev_err(&pdev->dev, "Unable to obtain CLK_POUT: %ld\n",
-+			dev_err(card->dev, "Unable to obtain CLK_POUT: %ld\n",
- 				PTR_ERR(pout));
- 			return PTR_ERR(pout);
- 		}
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -463,7 +463,7 @@ static inline int ipv6_addr_diff(const s
+ 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
+ }
  
- 		ret = clk_enable(pout);
- 		if (ret != 0) {
--			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
-+			dev_err(card->dev, "Unable to enable CLK_POUT: %d\n",
- 				ret);
- 			clk_put(pout);
- 			return ret;
- 		}
+-extern void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt);
++extern void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr);
  
--		dev_dbg(&pdev->dev, "MCLK enabled at %luHz\n",
-+		dev_dbg(card->dev, "MCLK enabled at %luHz\n",
- 			clk_get_rate(pout));
- 	}
+ /*
+  *	Prototypes exported by ipv6
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -620,9 +620,9 @@ static u32 __ipv6_select_ident(const str
+ 	return hash + newid;
+ }
  
-@@ -241,7 +241,7 @@ static int zylonite_resume_pre(struct sn
- 	if (clk_pout) {
- 		ret = clk_enable(pout);
- 		if (ret != 0)
--			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
-+			dev_err(card->dev, "Unable to enable CLK_POUT: %d\n",
- 				ret);
- 	}
+-void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
++void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr)
+ {
+-	fhdr->identification = htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
++	fhdr->identification = htonl(__ipv6_select_ident(addr));
+ }
  
+ int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+@@ -709,7 +709,7 @@ int ip6_fragment(struct sk_buff *skb, in
+ 		skb_reset_network_header(skb);
+ 		memcpy(skb_network_header(skb), tmp_hdr, hlen);
+ 
+-		ipv6_select_ident(fh, rt);
++		ipv6_select_ident(fh, &rt->rt6i_dst.addr);
+ 		fh->nexthdr = nexthdr;
+ 		fh->reserved = 0;
+ 		fh->frag_off = htons(IP6_MF);
+@@ -855,7 +855,7 @@ slow_path:
+ 		fh->nexthdr = nexthdr;
+ 		fh->reserved = 0;
+ 		if (!frag_id) {
+-			ipv6_select_ident(fh, rt);
++			ipv6_select_ident(fh, &rt->rt6i_dst.addr);
+ 			frag_id = fh->identification;
+ 		} else
+ 			fh->identification = frag_id;
+@@ -1146,7 +1146,7 @@ static inline int ip6_ufo_append_data(st
+ 		skb_shinfo(skb)->gso_size = (mtu - fragheaderlen -
+ 					     sizeof(struct frag_hdr)) & ~7;
+ 		skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
+-		ipv6_select_ident(&fhdr, rt);
++		ipv6_select_ident(&fhdr, &rt->rt6i_dst.addr);
+ 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
+ 		__skb_queue_tail(&sk->sk_write_queue, skb);
+ 
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -1309,6 +1309,7 @@ static struct sk_buff *udp6_ufo_fragment
+ 	u8 frag_hdr_sz = sizeof(struct frag_hdr);
+ 	int offset;
+ 	__wsum csum;
++	struct rt6_info *rt = (struct rt6_info *)skb_dst(skb);
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (unlikely(skb->len <= mss))
+@@ -1359,7 +1360,8 @@ static struct sk_buff *udp6_ufo_fragment
+ 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
+ 	fptr->nexthdr = nexthdr;
+ 	fptr->reserved = 0;
+-	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
++	ipv6_select_ident(fptr,
++			  rt ? &rt->rt6i_dst.addr : &ipv6_hdr(skb)->daddr);
+ 
+ 	/* Fragment the skb. ipv6 header and the remaining fields of the
+ 	 * fragment header are updated in ipv6_gso_segment()
 
 
