@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1JKSmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:42:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57089 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab1JKSmH convert rfc822-to-8bit (ORCPT
+	id S1755028Ab1JKSox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:44:53 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47467 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab1JKSow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:42:07 -0400
+	Tue, 11 Oct 2011 14:44:52 -0400
+Date: Wed, 12 Oct 2011 00:14:34 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type
+ NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111011184434.GB32316@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111003070735.GJ2223@in.ibm.com>
+ <20111003073203.GA22694@in.ibm.com>
+ <20111004140437.GA28306@redhat.com>
+ <20111005071844.GB2235@in.ibm.com>
+ <20111005152537.GB30146@redhat.com>
+ <20111007161218.GA2297@in.ibm.com>
+ <20111010070725.GB11577@liondog.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<CABE8wwtcO_su0cF6YocVjAYKhUb=TTwqttfaZkC+RWGLKJimdQ@mail.gmail.com>
-Date: Wed, 12 Oct 2011 00:12:05 +0530
-Message-ID: <CAJe_ZhcGtrsPmpx3OTy0QmHv40Ta=r9oYRA6OykGH+6_DSX+NA@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: "Williams, Dan J" <dan.j.williams@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Russell King <rmk@arm.linux.org.uk>,
-        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>, Alexandre.Bounine@idt.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111010070725.GB11577@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11101109-3568-0000-0000-00000081F976
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 October 2011 22:14, Williams, Dan J <dan.j.williams@intel.com> wrote:
-> [ Adding Alexandre ]
->
-> This is a tangent, but it would be nice if this API extension also
-> covered the needs of the incoming RapidIO case which wants to specify
-> new device context information per operation (and not once at
-> configuration time, like slave case).  Would it be enough if the
-> transfer template included a (struct device *context) member at the
-> end?  Most dma users could ignore it, but RapidIO could use it to do
-> something like:
->
->   struct rio_dev *rdev = container_of(context, typeof(*rdev), device);
->
-> That might not be enough, but I'm concerned that making the context a
-> (void *) is too flexible.  I'd rather have something like this than
-> acquiring a lock in rio_dma_prep_slave_sg() and holding it over
-> ->prep().  The alternative is to extend device_prep_slave_sg to take
-> an extra parameter, but that impacts all other slave implementations
-> with a dead parameter.
->
->From what I read so far, the requirement is closer to prep_slave_sg
-than to this api.
+On Mon, Oct 10, 2011 at 09:07:25AM +0200, Borislav Petkov wrote:
+> On Fri, Oct 07, 2011 at 09:42:19PM +0530, K.Prasad wrote:
+> > The problem, as pointed out by Borislav Petkov in a different mail, is that
+> > we might end up capturing a vmcore containing corrupted data when the
+> > same is not required for analysing the cause of the crash.
+> > 
+> > Of course, all this is assuming that reading the faulty memory with MCE
+> > disabled is harmless. However, the effect of a read operation in this
+> > case is undefined.
+> 
+> Frankly, I don't think that it is undefined - you basically should be
+> able to read DRAM albeit with the corrupted data in it. However, you
+> probably best disable the whole DRAM error detection first by clearing
+> a couple of bits in MC4_CTL_MASK (at least on AMD that should work, I
+> dunno how Intel does that).
+> 
 
-IMO, there should be a virtual channel for each device that the real
-physical channel, at the backend, can transfer data to/from.
+The MC4_CTL_MASK doesn't appear to be defined in the kernel. Looking at
+http://support.amd.com/us/Processor_TechDocs/26094.PDF, Page 196, it
+states that "This register is typically programmed by BIOS and not by
+the Kernel software".
 
-The client driver should request each virtual channel corresponding
-to each target device it wants to transfer data with.
+So, in any case we may not be able to disable machine-check exceptions
+(MCEs) only within the context of kexec'ed kernel. Let me know if I've
+missed something here.
 
-In the dmac driver - transfers queued for all virtual channels that are
-backed by the same physical channel, could be added to the same
-list and executed in FIFO manner.
+> But, regardless, according to Vivek, the "makedumpfile" tool should be
+> able to jump over poisoned pages and you don't need all the hoopla above
+> at all, right?
+>
 
-That way, there won't be any need to hook target device info per transfer
-and more importantly "struct dma_chan" would continue to mean
-link between fixed 'endpoints'.
+In short, the answer is yes. We could add a new string, say
+"CRASH_REASON=PANIC_MCE" to VMCOREINFO elf-note which can be parsed by
+'makedumpfile' and get away without adding the new NT_NOCOREDUMP
+elf-note. Parsing through the log_buf to lookout for panic string from
+inside 'makedumpfile' appears to be a clumsy solution though.
+
+The suggestion to make NT_NOCOREDUMP to contain more fine-granular
+information can be met by using meaningful strings for VMCOREINFO.
+
+---
+
+In this context, I wish to quickly recollect the issues we've discussed
+thus far, their proposed solutions and re-evaluate the need for new elf-note.
+
+i) Scenario1: System crashes because of a fatal MCE
+
+Proposed Solution: Add a new string in the VMCOREINFO elf-note from
+within the MCE panic path to indicate cause of crash. 'makedumpfile'
+recognises this string to collect a slimdump instead of the normal dump.
+
+ii) Scenario2: System with PG_hwpoison (or landmine!) pages crashes because
+of a software bug. In this case, kexec kernel would normally reboot because
+of reading the PG_poison page. I'll soon get a new version of the patchset
+implementing this.
+
+Solution: Maintain a linked list of PFNs when the corresponding 'struct page'
+has been marked PG_hwpoison. We could export/put this list to use in
+quite a few ways.
+
+- Make it a policy in the kernel to not operate upon a 'read' request
+  for such pages. Return '0' from copy_oldmem_page() function if the PFN
+  is part of the PG_hwpoison list. I don't see a reason why anybody
+  would be interested in reading the contents of a corrupt page, so
+  making it standard kernel behaviour should be acceptable (or so I
+  hope :-)).
+
+  The list of PFNs must be exported (How? more on that below) to
+  user-space, so that downstream tools such as 'crash' recognise that
+  the vmcore (corresponding to PG_hwpoison memory regions) contains
+  'distorted' data.
+
+- Export the PG_hwpoison PFN list through a new elf-note. Given that
+  the PFN list can be long and of indeterminate size (at compile time),
+  I'm not sure if individually adding each PFN to the VMCOREINFO note
+  would be a good idea and hence the new elf-note.
+
+  Then teach 'makedumpfile' to recognise these PFNs (by exporting their
+  VADDR or somesuch mechanism) and avoid reading those pages from
+  /proc/vmcore. Also collect these PFNs and pass it down to 'crash' to
+  help it identify the 'distorted' memory locations.
+
+The system in kexec-ed kernel could still crash because of fatal MCEs in
+its own memory region or new uncorrected memory errors in the old
+kernel's memory (error happened after the crash) and can be potentially
+'read' during memory copy operation. However the probability of these
+occurrences is assumed to be small given the short lifetime of the
+kexec-ed kernel.
+
+While we don't actually need a new elf-note for i), I suspect
+it might not be the case for resolving ii).
+
+Kindly let me know your thoughts on this.
+
+Thanks,
+K.Prasad
+
+P.S.: A quick definition of terms used above
+-------------------------------------------
+Fatal or unrecoverable MCE - A Machine Check Exception (MCE) that causes
+the system to panic. The exception might be triggered due to a faulty
+piece of memory in DIMM or cache. It is triggered due to 'consumption'
+(read/write) of a memory location with uncorrected memory error.
+
+PG_hwpoison - This is a page flag (marked in 'struct page') when an
+uncorrected memory error is detected (through means such as memory
+scrubbing) but is not 'consumed' yet. The page is flagged to prevent it
+from re-entering the memory stream. Causes the system to crash when
+the page with this flag is consumed.
+
