@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab1JKHtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:49:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45413 "EHLO arroyo.ext.ti.com"
+	id S1753127Ab1JKHvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:51:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34971 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab1JKHtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:49:14 -0400
+	id S1752327Ab1JKHvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 03:51:10 -0400
 From: Keshava Munegowda <keshava_mgowda@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
@@ -14,8 +14,8 @@ CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
         <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
         <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
 Subject: [PATCH 2/5 v14] arm: omap: usb: ehci and ohci hwmod structures for omap3
-Date: Tue, 11 Oct 2011 13:19:15 +0530
-Message-ID: <1318319355-20168-1-git-send-email-keshava_mgowda@ti.com>
+Date: Tue, 11 Oct 2011 13:21:10 +0530
+Message-ID: <1318319470-20409-1-git-send-email-keshava_mgowda@ti.com>
 X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
 Content-Type: text/plain
