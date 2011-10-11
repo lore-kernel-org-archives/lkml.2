@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab1JKRHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:07:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33723 "EHLO mx2.suse.de"
+	id S1755632Ab1JKRHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:07:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33739 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755591Ab1JKRHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:07:30 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:10 2011
-Message-Id: <20111011165710.136001599@pistachio.kroah.org>
+	id S1755615Ab1JKRHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:07:37 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:13 2011
+Message-Id: <20111011165713.842995901@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:22 -0600
+Date: Tue, 11 Oct 2011 10:55:46 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Eric Piel <eric.piel@tremplin-utc.net>,
-        Samu Onkalo <samu.p.onkalo@nokia.com>, Andrew Morton <akpm@google.com>
-Subject: [12/38] lis3: fix regression of HP DriveGuard with 8bit chip
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [36/38] ftrace: Fix regression where ftrace breaks when modules are loaded
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 05faadcf59507e8eea57ffbeea9cbb14c9a2ab3d upstream.
+commit f7bc8b61f65726ff98f52e286b28e294499d7a08 upstream.
 
-Commit 2a7fade7e03 ("hwmon: lis3: Power on corrections") caused a
-regression on HP laptops with 8bit chip.  Writing CTRL2_BOOT_8B bit seems
-clearing the BIOS setup, and no proper interrupt for DriveGuard will be
-triggered any more.
+Enabling function tracer to trace all functions, then load a module and
+then disable function tracing will cause ftrace to fail.
 
-Since the init code there is basically only for embedded devices, put a
-pdata check so that the problematic initialization will be skipped for
-hp_accel stuff.
+This can also happen by enabling function tracing on the command line:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: Eric Piel <eric.piel@tremplin-utc.net>
-Cc: Samu Onkalo <samu.p.onkalo@nokia.com>
-Signed-off-by: Andrew Morton <akpm@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+  ftrace=function
+
+and during boot up, modules are loaded, then you disable function tracing
+with 'echo nop > current_tracer' you will trigger a bug in ftrace that
+will shut itself down.
+
+The reason is, the new ftrace code keeps ref counts of all ftrace_ops that
+are registered for tracing. When one or more ftrace_ops are registered,
+all the records that represent the functions that the ftrace_ops will
+trace have a ref count incremented. If this ref count is not zero,
+when the code modification runs, that function will be enabled for tracing.
+If the ref count is zero, that function will be disabled from tracing.
+
+To make sure the accounting was working, FTRACE_WARN_ON()s were added
+to updating of the ref counts.
+
+If the ref count hits its max (> 2^30 ftrace_ops added), or if
+the ref count goes below zero, a FTRACE_WARN_ON() is triggered which
+disables all modification of code.
+
+Since it is common for ftrace_ops to trace all functions in the kernel,
+instead of creating > 20,000 hash items for the ftrace_ops, the hash
+count is just set to zero, and it represents that the ftrace_ops is
+to trace all functions. This is where the issues arrise.
+
+If you enable function tracing to trace all functions, and then add
+a module, the modules function records do not get the ref count updated.
+When the function tracer is disabled, all function records ref counts
+are subtracted. Since the modules never had their ref counts incremented,
+they go below zero and the FTRACE_WARN_ON() is triggered.
+
+The solution to this is rather simple. When modules are loaded, and
+their functions are added to the the ftrace pool, look to see if any
+ftrace_ops are registered that trace all functions. And for those,
+update the ref count for the module function records.
+
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
 ---
- drivers/misc/lis3lv02d/lis3lv02d.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ kernel/trace/ftrace.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
 
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -375,12 +375,14 @@ void lis3lv02d_poweron(struct lis3lv02d
- 	 *      both have been read. So the value read will always be correct.
- 	 * Set BOOT bit to refresh factory tuning values.
- 	 */
--	lis3->read(lis3, CTRL_REG2, &reg);
--	if (lis3->whoami ==  WAI_12B)
--		reg |= CTRL2_BDU | CTRL2_BOOT;
--	else
--		reg |= CTRL2_BOOT_8B;
--	lis3->write(lis3, CTRL_REG2, reg);
-+	if (lis3->pdata) {
-+		lis3->read(lis3, CTRL_REG2, &reg);
-+		if (lis3->whoami ==  WAI_12B)
-+			reg |= CTRL2_BDU | CTRL2_BOOT;
-+		else
-+			reg |= CTRL2_BOOT_8B;
-+		lis3->write(lis3, CTRL_REG2, reg);
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1744,10 +1744,36 @@ static cycle_t		ftrace_update_time;
+ static unsigned long	ftrace_update_cnt;
+ unsigned long		ftrace_update_tot_cnt;
+ 
++static int ops_traces_mod(struct ftrace_ops *ops)
++{
++	struct ftrace_hash *hash;
++
++	hash = ops->filter_hash;
++	return !!(!hash || !hash->count);
++}
++
+ static int ftrace_update_code(struct module *mod)
+ {
+ 	struct dyn_ftrace *p;
+ 	cycle_t start, stop;
++	unsigned long ref = 0;
++
++	/*
++	 * When adding a module, we need to check if tracers are
++	 * currently enabled and if they are set to trace all functions.
++	 * If they are, we need to enable the module functions as well
++	 * as update the reference counts for those function records.
++	 */
++	if (mod) {
++		struct ftrace_ops *ops;
++
++		for (ops = ftrace_ops_list;
++		     ops != &ftrace_list_end; ops = ops->next) {
++			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
++			    ops_traces_mod(ops))
++				ref++;
++		}
 +	}
  
- 	/* LIS3 power on delay is quite long */
- 	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+ 	start = ftrace_now(raw_smp_processor_id());
+ 	ftrace_update_cnt = 0;
+@@ -1760,7 +1786,7 @@ static int ftrace_update_code(struct mod
+ 
+ 		p = ftrace_new_addrs;
+ 		ftrace_new_addrs = p->newlist;
+-		p->flags = 0L;
++		p->flags = ref;
+ 
+ 		/*
+ 		 * Do the initial record conversion from mcount jump
+@@ -1783,7 +1809,7 @@ static int ftrace_update_code(struct mod
+ 		 * conversion puts the module to the correct state, thus
+ 		 * passing the ftrace_make_call check.
+ 		 */
+-		if (ftrace_start_up) {
++		if (ftrace_start_up && ref) {
+ 			int failed = __ftrace_replace_code(p, 1);
+ 			if (failed) {
+ 				ftrace_bug(failed, p->ip);
 
 
