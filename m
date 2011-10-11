@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab1JKGSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 02:18:32 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47579 "EHLO
+	id S1752972Ab1JKGTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:19:13 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47602 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1JKGSa (ORCPT
+	with ESMTP id S1751881Ab1JKGTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 02:18:30 -0400
-Date: Tue, 11 Oct 2011 08:18:19 +0200
+	Tue, 11 Oct 2011 02:19:10 -0400
+Date: Tue, 11 Oct 2011 08:18:48 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Jeff Layton <jlayton@redhat.com>
 Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
         linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
         linux-nfs@vger.kernel.org, john@Calva.COM,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] allow freezing of tasks with netfs calls in flight
-Message-ID: <20111011061819.GA1377@ucw.cz>
+Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake
+ TASK_KILLABLE tasks too
+Message-ID: <20111011061847.GB1377@ucw.cz>
 References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+ <1317210761-11518-2-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1317210761-11518-2-git-send-email-jlayton@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 Hi!
 
-> We've had a number of reports recently of people with NFS and CIFS
-> mounts that were unable to suspend or hibernate their machines. Here
-> are a couple of Fedora bugs that illustrate the problem:
+> TASK_KILLABLE is often used to put tasks to sleep for quite some time.
+> One of the most common uses is to put tasks to sleep while waiting for
+> replies from a server on a networked filesystem (such as CIFS or NFS).
 > 
->     https://bugzilla.redhat.com/show_bug.cgi?id=712088
->     https://bugzilla.redhat.com/show_bug.cgi?id=717735
+> Unfortunately, fake_signal_wake_up does not currently wake up tasks
+> that are sleeping in TASK_KILLABLE state. This means that even if the
+> code were in place to allow them to freeze while in this sleep, it
+> wouldn't work anyway.
 > 
-> When it occurs the problem is pretty clear. We have a task that's
-> sleeping in the kernel in TASK_KILLABLE sleep, generally waiting
-> for a reply to come in. Often though, userspace has already taken
-> down the interface so that reply will never come. The process then
-> fails to freeze and the suspend fails.
+> This patch changes this function to wake tasks in this state as well.
+> This should be harmless -- if the code doing the sleeping doesn't have
+> handling to deal with freezer events, it should just go back to sleep.
 
-Userspace should not take interface down for suspend (*). Why do that?
-
-
-> This patch fixes this by allowing the TASK_KILLABLE sleeps in NFS and
-> CIFS to be awoken by the freezer and then to try to freeze. If a freeze
-> event does occur, then the code will treat it as if a schedule() has
-> already occured.
-
-Looks like good idea...
-
-(*) unless absolutely neccessary. openvpn?
+I'm pretty sure this will break something; but that does not mean it
+is bad idea, just that it should be merged early and tested a lot.
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
