@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1JKJdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:33:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48145 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266Ab1JKJdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:33:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,522,1312182000"; 
-   d="scan'208";a="60992454"
-Date: Tue, 11 Oct 2011 17:33:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build warnings after merge of the writeback tree
-Message-ID: <20111011093308.GA1690@localhost>
-References: <20111011195704.67c267dbb3c6eaaacf5d7a39@canb.auug.org.au>
- <20111011091725.GA31349@localhost>
- <20111011202736.2c0a7ac57a4a5c9c43564f13@canb.auug.org.au>
+	id S1754173Ab1JKJgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:36:41 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43395 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab1JKJgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 05:36:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011202736.2c0a7ac57a4a5c9c43564f13@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CANejiEXACbyvq=_ChAsb7D3ZoBQtqs6uS-s7NPU26e3X-tyPLA@mail.gmail.com>
+References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
+	<CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
+	<CANejiEURP-tuBtCfocNjrs1MgK8NMzQttRkPEWeXJ40fNov20Q@mail.gmail.com>
+	<CACVXFVOcSOe+_XpNdKGBCMzdFcs4=ViZbf7hPLnieZUhPewzmA@mail.gmail.com>
+	<CANejiEUNAZsaAJBXrfi8+5E5GCK4KFUcOSiZarGEwqz2idT2EA@mail.gmail.com>
+	<CACVXFVM_KU3Re87FT6k55EKNFXZ-NdhhuUoff8H71s7fWxjTUA@mail.gmail.com>
+	<CANejiEXACbyvq=_ChAsb7D3ZoBQtqs6uS-s7NPU26e3X-tyPLA@mail.gmail.com>
+Date: Tue, 11 Oct 2011 17:36:39 +0800
+Message-ID: <CACVXFVOqzr4S0-pFG_09Z47PugCWuDxLnGQX9AFm_QGEv3StgQ@mail.gmail.com>
+Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        mark gross <mgross@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 05:27:36PM +0800, Stephen Rothwell wrote:
-> Hi,
-> 
-> On Tue, 11 Oct 2011 17:17:25 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
-> >
-> > On Tue, Oct 11, 2011 at 04:57:04PM +0800, Stephen Rothwell wrote:
-> > > 
-> > > After merging the writeback tree, today's linux-next build (powerpc
-> > > allnoconfig) produced these warnings:
-> > > 
-> > > mm/page-writeback.c: In function 'bdi_position_ratio':
-> > > mm/page-writeback.c:622:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-> > > page-writeback.c:635:4: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-> > > 
-> > > Introduced by commits 6c14ae1e92c7 ("writeback: dirty position control")
-> > > and 8927f66c4ede ("writeback: dirty position control - bdi reserve area").
-> > 
-> > Ah sorry!  The below patch should fix it. Shall I update the original
-> > commits in place, or append this patch as a new commit?
-> 
-> That choice is up to you as the maintainer of that tree.  Either works
-> for me (appending is easier for you and me, and the warning is not a
-> problem as far as bisection is concerned).
+Hi,
 
-Got it!
+On Tue, Oct 11, 2011 at 1:32 PM, Shaohua Li <shli@kernel.org> wrote:
+> 2011/10/11 Ming Lei <tom.leiming@gmail.com>:
+>> Hi,
+>>
+>> On Tue, Oct 11, 2011 at 10:26 AM, Shaohua Li <shli@kernel.org> wrote:
+>>> 2011/10/11 Ming Lei <tom.leiming@gmail.com>:
+>>>> Hi,
+>>>>
+>>>> On Tue, Oct 11, 2011 at 9:49 AM, Shaohua Li <shli@kernel.org> wrote:
+>>>>
+>>>>> As Alan explained, PM_QOS_CPU_DMA_LATENCY is for dma snooping. For example,
+>>>>> in x86, cpu snoop dma. when cpu is in idle state, cpu need snoop
+>>>>> device dma activity, there
+>>>>> is latency involved for idle state.
+>>>>>
+>>>>
+>>>> I see, thanks for your clarification.
+>>>>
+>>>> I also have two further questions about it:
+>>>>
+>>>> - Except for dma snooping purpose, are there any other cases in which
+>>>> PM_QOS_CPU_DMA_LATENCY is required?
+>>> it's the main motivation, IIRC, don't know other platforms
+>>
+>> If so, maybe all device drivers which support DMA transfer should
+>> have used PM_QOS_CPU_DMA_LATENCY, but why only few drivers
+>> did it?
+> depends on your device. Say cpu takes 1s to snoop dma in idle state, so device
+> dma will cost more than 1s. if your device can work with such latency, no
+> problem then.
+>
 
-> > Fix powerpc compile warnings
-> > 
-> > mm/page-writeback.c: In function 'bdi_position_ratio':
-> > mm/page-writeback.c:622:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-> > page-writeback.c:635:4: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-> > 
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> 
-> If you do keep it separate, you could add a
-> 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> above your SOB line.
+Sorry, I am still a bit confused.
 
-OK!
+As you said before, for x86, some deep cpu idle states may stop dma
+snoop, so introduce PM_QOS_CPU_DMA_LATENCY to prevent cpuidle from
+entering such kind of deep idle state if I/O dma is in progress.  I
+understand the cpu dma pm qos should always be applied before starting
+any dma transfer, Otherwise, cpu local cache may not be updated after
+dma is over when cpu is returned from the deep idle state.
 
-Thanks,
-Fengguang
+If so, the latency is only related with the exit latency of cpu idle
+state in which dma snoop is stopped, instead of being related with I/O
+devices.
 
+Please correct me if the above is wrong.
+
+
+thanks,
+-- 
+Ming Lei
