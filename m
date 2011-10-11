@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab1JKOYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 10:24:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13382 "EHLO mga01.intel.com"
+	id S1754823Ab1JKOdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 10:33:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47204 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab1JKOYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 10:24:45 -0400
+	id S1752947Ab1JKOde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 10:33:34 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,523,1312182000"; 
-   d="scan'208";a="76969843"
-Subject: Re: [PATCH 1/4] dmaengine: at_hdmac: platform data move to use
- .id_table
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="62135594"
+Subject: Re: [PATCH 3/4] ARM: at91/dma: remove platform data from DMA
+ controller
 From: Vinod Koul <vinod.koul@intel.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: linux-arm-kernel@lists.infradead.org, robherring2@gmail.com,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         grant.likely@secretlab.ca
-In-Reply-To: <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
+In-Reply-To: <2b6ff9c8a28c955849f13b90c5ef258ceea19eaa.1318264339.git.nicolas.ferre@atmel.com>
 References: <1314075338.22120.3.camel@vkoul-udesk3>
 	 <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com>
+	 <2b6ff9c8a28c955849f13b90c5ef258ceea19eaa.1318264339.git.nicolas.ferre@atmel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Oct 2011 19:46:52 +0530
-Message-ID: <1318342612.1546.352.camel@vkoul-udesk3>
+Date: Tue, 11 Oct 2011 19:55:41 +0530
+Message-ID: <1318343141.1546.353.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,156 +31,93 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2011-10-10 at 18:37 +0200, Nicolas Ferre wrote:
-> We remove platform data from DMA controller and move
-> to the use of .id_table to distinguish between compatible
-> types. The two implementations allow to determine the
-> number of channels and the capabilities of the controller.
+> DMA controller can deduce its configuration data from
+> the platform. Remove the platform data and match device
+> types with the compatible ones.
+This looks like remove, you should fix the changelog of patch 1 then.
 > 
 > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->  drivers/dma/at_hdmac.c      |   48 ++++++++++++++++++++++++++++++++++---------
->  drivers/dma/at_hdmac_regs.h |    8 +++++++
->  2 files changed, 46 insertions(+), 10 deletions(-)
+>  arch/arm/mach-at91/at91sam9g45_devices.c |    9 +--------
+>  arch/arm/mach-at91/at91sam9rl_devices.c  |    8 +-------
+>  2 files changed, 2 insertions(+), 15 deletions(-)
 > 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index fcfa0a8..fef57bc 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -1175,6 +1175,18 @@ static void atc_free_chan_resources(struct dma_chan *chan)
+> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+> index 600bffb..c9b897f 100644
+> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
+> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+> @@ -38,10 +38,6 @@
+>  #if defined(CONFIG_AT_HDMAC) || defined(CONFIG_AT_HDMAC_MODULE)
+>  static u64 hdmac_dmamask = DMA_BIT_MASK(32);
 >  
->  /*--  Module Management  -----------------------------------------------*/
+> -static struct at_dma_platform_data atdma_pdata = {
+> -	.nr_channels	= 8,
+> -};
+> -
+>  static struct resource hdmac_resources[] = {
+>  	[0] = {
+>  		.start	= AT91_BASE_SYS + AT91_DMA,
+> @@ -56,12 +52,11 @@ static struct resource hdmac_resources[] = {
+>  };
 >  
-> +static struct platform_device_id atdma_devtypes[] = {
-> +	{
-> +		.name = "at91sam9rl_dma",
-> +		.driver_data = ATDMA_DEVTYPE_SAM9RL,
-> +	}, {
-> +		.name = "at91sam9g45_dma",
-> +		.driver_data = ATDMA_DEVTYPE_SAM9G45,
-> +	}, {
-> +		/* sentinel */
-> +	}
-> +};
-> +
->  /**
->   * at_dma_off - disable DMA controller
->   * @atdma: the Atmel HDAMC device
-> @@ -1193,18 +1205,32 @@ static void at_dma_off(struct at_dma *atdma)
+>  static struct platform_device at_hdmac_device = {
+> -	.name		= "at_hdmac",
+> +	.name		= "at91sam9g45_dma",
+>  	.id		= -1,
+>  	.dev		= {
+>  				.dma_mask		= &hdmac_dmamask,
+>  				.coherent_dma_mask	= DMA_BIT_MASK(32),
+> -				.platform_data		= &atdma_pdata,
+>  	},
+>  	.resource	= hdmac_resources,
+>  	.num_resources	= ARRAY_SIZE(hdmac_resources),
+> @@ -69,8 +64,6 @@ static struct platform_device at_hdmac_device = {
 >  
->  static int __init at_dma_probe(struct platform_device *pdev)
+>  void __init at91_add_device_hdmac(void)
 >  {
-> -	struct at_dma_platform_data *pdata;
->  	struct resource		*io;
->  	struct at_dma		*atdma;
->  	size_t			size;
->  	int			irq;
->  	int			err;
->  	int			i;
-> +	u32                     nr_channels;
-> +	dma_cap_mask_t          cap_mask = {};
-> +	enum atdma_devtype	atdmatype;
-> +
-> +	dma_cap_set(DMA_MEMCPY, cap_mask);
-> +
-> +	/* get DMA parameters from controller type */
-> +	atdmatype = platform_get_device_id(pdev)->driver_data;
+> -	dma_cap_set(DMA_MEMCPY, atdma_pdata.cap_mask);
+> -	dma_cap_set(DMA_SLAVE, atdma_pdata.cap_mask);
+>  	platform_device_register(&at_hdmac_device);
+>  }
+>  #else
+> diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+> index aacb19d..81954f7 100644
+> --- a/arch/arm/mach-at91/at91sam9rl_devices.c
+> +++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+> @@ -33,10 +33,6 @@
+>  #if defined(CONFIG_AT_HDMAC) || defined(CONFIG_AT_HDMAC_MODULE)
+>  static u64 hdmac_dmamask = DMA_BIT_MASK(32);
 >  
-> -	/* get DMA Controller parameters from platform */
-> -	pdata = pdev->dev.platform_data;
-> -	if (!pdata || pdata->nr_channels > AT_DMA_MAX_NR_CHANNELS)
-> +	switch (atdmatype) {
-> +	case ATDMA_DEVTYPE_SAM9RL:
-> +		nr_channels = 2;
-> +		break;
-> +	case ATDMA_DEVTYPE_SAM9G45:
-> +		nr_channels = 8;
-> +		dma_cap_set(DMA_SLAVE, cap_mask);
-> +		break;
-> +	default:
->  		return -EINVAL;
-> +	}
+> -static struct at_dma_platform_data atdma_pdata = {
+> -	.nr_channels	= 2,
+> -};
+> -
+>  static struct resource hdmac_resources[] = {
+>  	[0] = {
+>  		.start	= AT91_BASE_SYS + AT91_DMA,
+> @@ -51,12 +47,11 @@ static struct resource hdmac_resources[] = {
+>  };
 >  
->  	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!io)
-> @@ -1215,14 +1241,15 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  		return irq;
+>  static struct platform_device at_hdmac_device = {
+> -	.name		= "at_hdmac",
+> +	.name		= "at91sam9rl_dma",
+>  	.id		= -1,
+>  	.dev		= {
+>  				.dma_mask		= &hdmac_dmamask,
+>  				.coherent_dma_mask	= DMA_BIT_MASK(32),
+> -				.platform_data		= &atdma_pdata,
+>  	},
+>  	.resource	= hdmac_resources,
+>  	.num_resources	= ARRAY_SIZE(hdmac_resources),
+> @@ -64,7 +59,6 @@ static struct platform_device at_hdmac_device = {
 >  
->  	size = sizeof(struct at_dma);
-> -	size += pdata->nr_channels * sizeof(struct at_dma_chan);
-> +	size += nr_channels * sizeof(struct at_dma_chan);
->  	atdma = kzalloc(size, GFP_KERNEL);
->  	if (!atdma)
->  		return -ENOMEM;
->  
-> -	/* discover transaction capabilites from the platform data */
-> -	atdma->dma_common.cap_mask = pdata->cap_mask;
-> -	atdma->all_chan_mask = (1 << pdata->nr_channels) - 1;
-> +	/* discover transaction capabilites */
-capabilities
-> +	atdma->dma_common.cap_mask = cap_mask;
-> +	atdma->all_chan_mask = (1 << nr_channels) - 1;
-> +	atdma->devtype = atdmatype;
->  
->  	size = resource_size(io);
->  	if (!request_mem_region(io->start, size, pdev->dev.driver->name)) {
-> @@ -1268,7 +1295,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  
->  	/* initialize channels related values */
->  	INIT_LIST_HEAD(&atdma->dma_common.channels);
-> -	for (i = 0; i < pdata->nr_channels; i++) {
-> +	for (i = 0; i < nr_channels; i++) {
->  		struct at_dma_chan	*atchan = &atdma->chan[i];
->  
->  		atchan->chan_common.device = &atdma->dma_common;
-> @@ -1313,7 +1340,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
->  	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
->  	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
->  	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
-> -	  pdata->nr_channels);
-> +	  nr_channels);
-indent?
->  
->  	dma_async_device_register(&atdma->dma_common);
->  
-> @@ -1495,6 +1522,7 @@ static const struct dev_pm_ops at_dma_dev_pm_ops = {
->  static struct platform_driver at_dma_driver = {
->  	.remove		= __exit_p(at_dma_remove),
->  	.shutdown	= at_dma_shutdown,
-> +	.id_table	= atdma_devtypes,
->  	.driver = {
->  		.name	= "at_hdmac",
->  		.pm	= &at_dma_dev_pm_ops,
-> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-> index aa4c9ae..d7d6737 100644
-> --- a/drivers/dma/at_hdmac_regs.h
-> +++ b/drivers/dma/at_hdmac_regs.h
-> @@ -248,9 +248,16 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
->  
->  /*--  Controller  ------------------------------------------------------*/
->  
-> +enum atdma_devtype {
-> +	ATDMA_DEVTYPE_UNDEFINED = 0,
-> +	ATDMA_DEVTYPE_SAM9RL,	/* compatible with SAM9RL DMA controller */
-> +	ATDMA_DEVTYPE_SAM9G45,	/* compatible with SAM9G45 DMA controller */
-> +};
-> +
->  /**
->   * struct at_dma - internal representation of an Atmel HDMA Controller
->   * @chan_common: common dmaengine dma_device object members
-> + * @atdma_devtype: identifier of DMA controller compatibility
->   * @ch_regs: memory mapped register base
->   * @clk: dma controller clock
->   * @save_imr: interrupt mask register that is saved on suspend/resume cycle
-> @@ -260,6 +267,7 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
->   */
->  struct at_dma {
->  	struct dma_device	dma_common;
-> +	enum atdma_devtype	devtype;
->  	void __iomem		*regs;
->  	struct clk		*clk;
->  	u32			save_imr;
-Little confused at this, where is the remove of existing platfrom data
-per the changelog?
+>  void __init at91_add_device_hdmac(void)
+>  {
+> -	dma_cap_set(DMA_MEMCPY, atdma_pdata.cap_mask);
+>  	platform_device_register(&at_hdmac_device);
+>  }
+>  #else
+
 
 -- 
 ~Vinod
