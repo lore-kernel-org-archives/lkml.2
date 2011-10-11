@@ -1,123 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1JKK2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:28:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50882 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab1JKK2A convert rfc822-to-8bit (ORCPT
+	id S1754573Ab1JKKia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:38:30 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:36524 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab1JKKi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:28:00 -0400
-Subject: Re: sched: ARM: arch_scale_freq_power
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linaro-dev@lists.linaro.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>
-Date: Tue, 11 Oct 2011 12:27:28 +0200
-In-Reply-To: <CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
-References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
-	 <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
-	 <1318319852.14400.65.camel@laptop>
-	 <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
-	 <1318324399.14400.71.camel@laptop>
-	 <CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1318328848.8395.45.camel@twins>
-Mime-Version: 1.0
+	Tue, 11 Oct 2011 06:38:28 -0400
+X-SpamScore: -24
+X-BigFish: VPS-24(zz179dN1432N98dKzz1202hzz15d4Rz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LSWDJX-01-5YO-02
+X-M-MSG: 
+Date: Tue, 11 Oct 2011 12:38:20 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+Message-ID: <20111011103820.GF2138@amd.com>
+References: <20110927100505.GH2138@amd.com>
+ <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
+ <20110927131222.GL2138@amd.com>
+ <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+ <20110927181438.GM2138@amd.com>
+ <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
+ <20111010094738.GW2138@amd.com>
+ <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
+ <20111010153609.GB2138@amd.com>
+ <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-11 at 11:40 +0200, Vincent Guittot wrote:
-> On 11 October 2011 11:13, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
-> >> I have several goals. The 1st one is that I need to put more load on
-> >> some cpus when I have packages with different cpu frequency.
-> >
-> > That should be rather easy.
-> >
+On Mon, Oct 10, 2011 at 06:49:32PM -0400, Ohad Ben-Cohen wrote:
+> -int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
+> +int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int size)
+>  {
+> -       size_t size;
+> +       int order, unmapped_size, unmapped_order, total_unmapped = 0;
 > 
-> I agree, I was mainly wondering If I should use a [1-1024] or a
-> [1024-xxxx] range and it seems that both can be used according : SMT
-> uses <1024 and x86 turbo mode uses >1024
-
-Well, turbo mode would typically only boost a cpu 25% or so, and only
-while idling other cores to keep under its thermal limit. So its not
-sufficient to actually affect the capacity calculation much if at all.
-
-> >> Then, I have some use cases which have several running tasks but a low
-> >> cpu load. In this case, the small tasks are spread on several cpu by
-> >> the load_balance whereas they could be easily handled by one cpu
-> >> without significant performance modification.
-> >
-> > That shouldn't be done using cpu_power, we have sched_smt_power_savings
-> > and sched_mc_power_savings for stuff like that.
-> >
+>         if (unlikely(domain->ops->unmap == NULL))
+>                 return -ENODEV;
 > 
-> sched_mc_power_saving works fine when we have more than 2 cpus but
-> can't apply on a dual core because it needs at least 2 sched_groups
-> and the nr_running of these sched_groups must be higher than 0 but
-> smaller than group_capacity which is 1 on a dual core system.
+> -       size         = PAGE_SIZE << gfp_order;
+> +       /*
+> +        * The virtual address, as well as the size of the mapping, must be
+> +        * aligned (at least) to the size of the smallest page supported
+> +        * by the hardware
+> +        */
+> +       if (!IS_ALIGNED(iova | size, domain->ops->min_pagesz)) {
+> +               pr_err("unaligned: iova 0x%lx size 0x%x min_pagesz 0x%x\n",
+> +                       iova, size, domain->ops->min_pagesz);
+> +               return -EINVAL;
+> +       }
+> +
+> +       pr_debug("unmap this: iova 0x%lx size 0x%x\n", iova, size);
+> +
+> +       while (size > total_unmapped) {
+> +               order = get_order(size - total_unmapped);
 
-SD_POWERSAVINGS_BALANCE does /=2 to nr_running, effectively doubling the
-capacity iirc. And I know some IBM dudes were toying with the idea of
-playing tricks with the capacity numbers, but that never went anywhere.
+Hmm, this actually unmaps more than requested, even in the symetric
+case. Imgine the user wants to unmap a 12kb region, then order
+will be 4 and this code will tell the iommu-driver to unmap 16kb.
 
-> > Although I would really like to kill all those different
-> > sched_*_power_savings knobs and reduce it to one.
-> >
-> >> If the cpu_power is
-> >> higher than 1024, the cpu is no more seen out of capacity by the
-> >> load_balance as soon as a short process is running and teh main result
-> >> is that the small tasks will stay on the same cpu. This configuration
-> >> is mainly usefull for ARM dual core system when we want to power gate
-> >> one cpu. I use cyclictest to simulate such use case.
-> >
-> > Yeah, but that's wrong.
+You need to make sure that you don;t pass larger regions then requested
+to the low-level driver. Some logic like in the iommu_map function
+should do it.
+
+> +
+> +               unmapped_order = domain->ops->unmap(domain, iova, order);
+> +               if (unmapped_order < 0)
+> +                       break;
+> +
+> +               pr_debug("unmapped: iova 0x%lx order %d\n", iova,
+> +                                                       unmapped_order);
+> +
+> +               unmapped_size = 0x1000UL << unmapped_order;
+
+Please use PAGE_SIZE instead of 0x1000UL.
+
 > 
-> That's the only way I have found to gathers small task without any
-> relationship on one cpu. Do you know any better solution ?
+> -       BUG_ON(!IS_ALIGNED(iova, size));
+> +               iova += unmapped_size;
+> +               total_unmapped += unmapped_size;
+> +       }
+> 
+> -       return domain->ops->unmap(domain, iova, gfp_order);
+> +       return total_unmapped;
+>  }
+>  EXPORT_SYMBOL_GPL(iommu_unmap);
+> 
+> diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
+> index e8fdb88..4a8f761 100644
+> --- a/drivers/iommu/omap-iovmm.c
+> +++ b/drivers/iommu/omap-iovmm.c
+> @@ -409,7 +409,6 @@ static int map_iovm_area(struct iommu_domain
+> *domain, struct iovm_struct *new,
+>         unsigned int i, j;
+>         struct scatterlist *sg;
+>         u32 da = new->da_start;
+> -       int order;
+> 
+>         if (!domain || !sgt)
+>                 return -EINVAL;
+> @@ -428,12 +427,10 @@ static int map_iovm_area(struct iommu_domain
+> *domain, struct iovm_struct *new,
+>                 if (bytes_to_iopgsz(bytes) < 0)
+>                         goto err_out;
+> 
+> -               order = get_order(bytes);
+> -
+>                 pr_debug("%s: [%d] %08x %08x(%x)\n", __func__,
+>                          i, da, pa, bytes);
+> 
+> -               err = iommu_map(domain, da, pa, order, flags);
+> +               err = iommu_map(domain, da, pa, bytes, flags);
+>                 if (err)
+>                         goto err_out;
+> 
+> @@ -448,10 +445,9 @@ err_out:
+>                 size_t bytes;
+> 
+>                 bytes = sg->length + sg->offset;
+> -               order = get_order(bytes);
+> 
+>                 /* ignore failures.. we're already handling one */
+> -               iommu_unmap(domain, da, order);
+> +               iommu_unmap(domain, da, bytes);
+> 
+>                 da += bytes;
+>         }
+> @@ -474,13 +470,11 @@ static void unmap_iovm_area(struct iommu_domain
+> *domain, struct omap_iommu *obj,
+>         start = area->da_start;
+>         for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+>                 size_t bytes;
+> -               int order;
+> 
+>                 bytes = sg->length + sg->offset;
+> -               order = get_order(bytes);
+> 
+> -               err = iommu_unmap(domain, start, order);
+> -               if (err < 0)
+> +               err = iommu_unmap(domain, start, bytes);
+> +               if (err < bytes)
+>                         break;
+> 
+>                 dev_dbg(obj->dev, "%s: unmap %08x(%x) %08x\n",
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index 710291f..a10a86c 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -48,6 +48,22 @@ struct iommu_domain {
+> 
+>  #ifdef CONFIG_IOMMU_API
+> 
+> +/**
+> + * struct iommu_ops - iommu ops and capabilities
+> + * @domain_init: init iommu domain
+> + * @domain_destroy: destroy iommu domain
+> + * @attach_dev: attach device to an iommu domain
+> + * @detach_dev: detach device from an iommu domain
+> + * @map: map a physically contiguous memory region to an iommu domain
+> + * @unmap: unmap a physically contiguous memory region from an iommu domain
+> + * @iova_to_phys: translate iova to physical address
+> + * @domain_has_cap: domain capabilities query
+> + * @commit: commit iommu domain
+> + * @pgsize_bitmap: bitmap of supported page sizes
+> + * @min_pagesz: smallest page size supported. note: this member is private
+> + *             to the IOMMU core, and maintained only for efficiency sake;
+> + *             drivers don't need to set it.
+> + */
+>  struct iommu_ops {
+>         int (*domain_init)(struct iommu_domain *domain);
+>         void (*domain_destroy)(struct iommu_domain *domain);
+> @@ -62,6 +78,8 @@ struct iommu_ops {
+>         int (*domain_has_cap)(struct iommu_domain *domain,
+>                               unsigned long cap);
+>         void (*commit)(struct iommu_domain *domain);
+> +       unsigned long pgsize_bitmap;
+> +       unsigned int min_pagesz;
+>  };
+> 
+>  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+> @@ -73,9 +91,9 @@ extern int iommu_attach_device(struct iommu_domain *domain,
+>  extern void iommu_detach_device(struct iommu_domain *domain,
+>                                 struct device *dev);
+>  extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
+> -                    phys_addr_t paddr, int gfp_order, int prot);
+> +                    phys_addr_t paddr, int size, int prot);
+>  extern int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+> -                      int gfp_order);
+> +                      int size);
+>  extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+>                                       unsigned long iova);
+>  extern int iommu_domain_has_cap(struct iommu_domain *domain,
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index ca409be..26b3199 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
+> @@ -111,7 +111,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct
+> kvm_memory_slot *slot)
+> 
+>                 /* Map into IO address space */
+>                 r = iommu_map(domain, gfn_to_gpa(gfn), pfn_to_hpa(pfn),
+> -                             get_order(page_size), flags);
+> +                             page_size, flags);
+>                 if (r) {
+>                         printk(KERN_ERR "kvm_iommu_map_address:"
+>                                "iommu failed to map pfn=%llx\n", pfn);
+> @@ -292,15 +292,15 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+> 
+>         while (gfn < end_gfn) {
+>                 unsigned long unmap_pages;
+> -               int order;
+> +               int size;
+> 
+>                 /* Get physical address */
+>                 phys = iommu_iova_to_phys(domain, gfn_to_gpa(gfn));
+>                 pfn  = phys >> PAGE_SHIFT;
+> 
+>                 /* Unmap address from IO address space */
+> -               order       = iommu_unmap(domain, gfn_to_gpa(gfn), 0);
+> -               unmap_pages = 1ULL << order;
+> +               size       = iommu_unmap(domain, gfn_to_gpa(gfn), PAGE_SIZE);
+> +               unmap_pages = 1ULL << get_order(size);
+> 
+>                 /* Unpin all pages we just unmapped to not leak any memory */
+>                 kvm_unpin_pages(kvm, pfn, unmap_pages);
 
-How do you know the task is 'small' ?
+-- 
+AMD Operating System Research Center
 
-For that you would need to track a time-weighted effective load average
-of the task and we don't have that.
-
-[ how bad is all this u64 math on ARM btw? and when will ARM finally
-  agree all this 32bit nonsense is a waste of time and silicon? ]
-
-But yeah, the whole nr_running vs capacity thing was traditionally to
-deal with spreading single tasks around. And traditional power aware
-scheduling was mostly about packing those on sockets (keeps other
-sockets idle) instead of spreading them around sockets (optimizes
-cache).
-
-Now I wouldn't at all mind you ripping out all that
-sched_*_power_savings crap and replacing it, I doubt it actually works
-anyway. I haven't got many patches on the subject, and I know I don't
-have the equipment to measure power usage.
-
-Also, the few patches I got mostly made the sched_*_power_savings mess
-bigger, which I refuse to do (what sysad wants to have a 27-state space
-to configure his power aware scheduling). This has mostly made people go
-away instead of fixing things up :-(
-
-As to what the replacement would have to look like, dunno, its not
-something I've really thought much about, but maybe the time-weighted
-stuff is the only sane approach, that combined with options on how to
-spread tasks (core, socket, node, etc..).
-
-I really think changing the load-balancer is the right way to go about
-solving your power issue (hot-plugging a cpu really is an insane way to
-idle a core) and I'm open to discussing what would work for you.
-
-All I really ask is to not cobble something together, the load-balancer
-is a horridly complex thing already and the last thing it needs is more
-special cases that don't interact properly.
-
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
