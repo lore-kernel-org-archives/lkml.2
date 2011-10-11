@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab1JKRGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:06:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33528 "EHLO mx2.suse.de"
+	id S1755476Ab1JKRGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:06:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33534 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab1JKRGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:06:07 -0400
+	id S1755062Ab1JKRGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:06:12 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:13 2011
-Message-Id: <20111011165713.233109819@pistachio.kroah.org>
+Message-Id: <20111011165713.389661875@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:42 -0600
+Date: Tue, 11 Oct 2011 10:55:43 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        davem@davemloft.net, eric.dumazet@gmail.com,
-        Jason Wang <jasowang@redhat.com>
-Subject: [32/38] ipv6: fix NULL dereference in udp6_ufo_fragment()
+        Mark Nelson <mdnelson8@gmail.com>, Jeff Garzik <jgarzik@pobox.com>
+Subject: [33/38] ahci: Enable SB600 64bit DMA on Asus M3A
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,100 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Mark Nelson <mdnelson8@gmail.com>
 
-This patch fixes the issue caused by ef81bb40bf15f350fe865f31fa42f1082772a576
-which is a backport of upstream 87c48fa3b4630905f98268dde838ee43626a060c. The
-problem does not exist in upstream.
+commit 3c4aa91f21f65b7b40bdfb015eacbcb8453ccae2 upstream.
 
-We do not check whether route is attached before trying to assign ip
-identification through route dest which lead NULL pointer dereference. This
-happens when host bridge transmit a packet from guest.
+Like e65cc194f7628ecaa02462f22f42fb09b50dcd49 this patch enables 64bit DMA
+for the AHCI SATA controller of a board that has the SB600 southbridge. In
+this case though we're enabling 64bit DMA for the Asus M3A motherboard. It
+is a new enough board that all of the BIOS releases since the initial
+release (0301 from 2007-10-22) work correctly with 64bit DMA enabled.
 
-This patch changes ipv6_select_ident() to accept in6_addr as its paramter and
-fix the issue by using the destination address in ipv6 header when no route is
-attached.
-
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mark Nelson <mdnelson8@gmail.com>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/net/ipv6.h    |    2 +-
- net/ipv6/ip6_output.c |   10 +++++-----
- net/ipv6/udp.c        |    4 +++-
- 3 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -463,7 +463,7 @@ static inline int ipv6_addr_diff(const s
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
- }
- 
--extern void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt);
-+extern void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr);
- 
- /*
-  *	Prototypes exported by ipv6
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -620,9 +620,9 @@ static u32 __ipv6_select_ident(const str
- 	return hash + newid;
- }
- 
--void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-+void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr)
- {
--	fhdr->identification = htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
-+	fhdr->identification = htonl(__ipv6_select_ident(addr));
- }
- 
- int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-@@ -709,7 +709,7 @@ int ip6_fragment(struct sk_buff *skb, in
- 		skb_reset_network_header(skb);
- 		memcpy(skb_network_header(skb), tmp_hdr, hlen);
- 
--		ipv6_select_ident(fh, rt);
-+		ipv6_select_ident(fh, &rt->rt6i_dst.addr);
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		fh->frag_off = htons(IP6_MF);
-@@ -855,7 +855,7 @@ slow_path:
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		if (!frag_id) {
--			ipv6_select_ident(fh, rt);
-+			ipv6_select_ident(fh, &rt->rt6i_dst.addr);
- 			frag_id = fh->identification;
- 		} else
- 			fh->identification = frag_id;
-@@ -1146,7 +1146,7 @@ static inline int ip6_ufo_append_data(st
- 		skb_shinfo(skb)->gso_size = (mtu - fragheaderlen -
- 					     sizeof(struct frag_hdr)) & ~7;
- 		skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
--		ipv6_select_ident(&fhdr, rt);
-+		ipv6_select_ident(&fhdr, &rt->rt6i_dst.addr);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
- 
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1309,6 +1309,7 @@ static struct sk_buff *udp6_ufo_fragment
- 	u8 frag_hdr_sz = sizeof(struct frag_hdr);
- 	int offset;
- 	__wsum csum;
-+	struct rt6_info *rt = (struct rt6_info *)skb_dst(skb);
- 
- 	mss = skb_shinfo(skb)->gso_size;
- 	if (unlikely(skb->len <= mss))
-@@ -1359,7 +1360,8 @@ static struct sk_buff *udp6_ufo_fragment
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
-+	ipv6_select_ident(fptr,
-+			  rt ? &rt->rt6i_dst.addr : &ipv6_hdr(skb)->daddr);
- 
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
+---
+ drivers/ata/ahci.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -812,6 +812,18 @@ static bool ahci_sb600_enable_64bit(stru
+ 				DMI_MATCH(DMI_BOARD_NAME, "MS-7376"),
+ 			},
+ 		},
++		/*
++		 * All BIOS versions for the Asus M3A support 64bit DMA.
++		 * (all release versions from 0301 to 1206 were tested)
++		 */
++		{
++			.ident = "ASUS M3A",
++			.matches = {
++				DMI_MATCH(DMI_BOARD_VENDOR,
++					  "ASUSTeK Computer INC."),
++				DMI_MATCH(DMI_BOARD_NAME, "M3A"),
++			},
++		},
+ 		{ }
+ 	};
+ 	const struct dmi_system_id *match;
 
 
