@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1JKMnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 08:43:46 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45309 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753424Ab1JKMnp (ORCPT
+	id S1752551Ab1JKMpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 08:45:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46109 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab1JKMpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 08:43:45 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 1/2 v2] pch_dma: Fix suspend issue
-Date: Tue, 11 Oct 2011 21:43:21 +0900
-Message-Id: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-X-Mailer: git-send-email 1.7.4.4
+	Tue, 11 Oct 2011 08:45:40 -0400
+X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XVzCnAS-rJtFtI2rsK4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Commits missed for stable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, stable <stable@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Date: Tue, 11 Oct 2011 08:45:38 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318337139.7904.170.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, executing suspend/hibernation,
-memory access violation occurs.
+It's come to my attention that a bug that was fixed by:
 
-In pch_dma_save_regs() called by suspend(),
-you can see the following code.
+43dd61c9a09bd413e837df829e6bfb42159be52a
+ftrace: Fix regression of :mod:module function enabling
 
-static void pch_dma_save_regs(struct pch_dma *pd)
-{
-snip...
-        list_for_each_entry_safe(chan, _c, &pd->dma.channels, device_node) {
-                pd_chan = to_pd_chan(chan);
 
-                pd->ch_regs[i].dev_addr = channel_readl(pd_chan, DEV_ADDR);
-                pd->ch_regs[i].mem_addr = channel_readl(pd_chan, MEM_ADDR);
-                pd->ch_regs[i].size = channel_readl(pd_chan, SIZE);
-                pd->ch_regs[i].next = channel_readl(pd_chan, NEXT);
+Exists in the -rt kernel. As the -rt kernel is based off of 3.0.6, this
+means that the bug also exists in the stable tree. Without the fix, the
+kernel will crash if the root user tries to use the :mod: functionality
+of ftrace.
 
-                i++;
-        }
-}
+I also believe that the commit:
 
-Max loop count is 12 defined at pci_table.
-So, this caused memory access violation.
 
-This patch fixes the issue
- - Modify array size (MAX_CHAN_NR)
+f7bc8b61f65726ff98f52e286b28e294499d7a08
+ftrace: Fix regression where ftrace breaks when modules are loaded
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
----
- drivers/dma/pch_dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+is missing from both stable and -rt as well.
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index ff5b38f..e72bfeb 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -59,7 +59,7 @@
- #define DMA_DESC_FOLLOW_WITHOUT_IRQ	0x2
- #define DMA_DESC_FOLLOW_WITH_IRQ	0x3
- 
--#define MAX_CHAN_NR			8
-+#define MAX_CHAN_NR			12
- 
- static unsigned int init_nr_desc_per_channel = 64;
- module_param(init_nr_desc_per_channel, uint, 0644);
--- 
-1.7.4.4
+Greg, can you add the above two commits to the stable branch.
+
+Thomas, you may want to add these to -rt, or wait till 3.0.7 comes out.
+
+-- Steve
+
 
