@@ -1,89 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab1JKQPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:15:41 -0400
-Received: from shutemov.name ([188.40.19.243]:38133 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874Ab1JKQPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:15:40 -0400
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH, v10 0/3] Introduce timer slack controller
-Date: Tue, 11 Oct 2011 19:15:26 +0300
-Message-Id: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.4.5
+	id S1755114Ab1JKQVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:21:39 -0400
+Received: from nm3-vm1.bullet.mail.in.yahoo.com ([121.101.151.208]:37073 "HELO
+	nm3-vm1.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752818Ab1JKQVh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 12:21:37 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 245846.34499.bm@omp1004.mail.in.yahoo.com
+X-YMail-OSG: sAAVSrwVM1nD.c3C0x5q_Iu3As1tu6HfwDJ5fcehu4LHG6Z
+ .PkqL1oYY9q5AqMT0E1t1XaRLhzY4uhV5awjpNBol6pN9b9VL39HLtj62Db.
+ w0YdmuF0_HM.VQNWORH8mU8IlJjjfGOWFpW.F.dcKPPSvbEAs6ILytCuqP53
+ LFI_mgTE9ZjoKs9CbKLprHTWvnYJ7aFjskA6kJOB_N.FyFm7SDTE1nDAm7a9
+ FkNuawEiIDMvM7An988sZmDCOv6m2jPYWJgvkU4ARNX2TdUaIBvfhRxvJa_r
+ ehEz0MQjTxDcmqsgXYvwc78xaEewTV_q3dE4n9t5Y_qdNKOO8O3QoCvBsXUJ
+ _xkBKzyUClPCruL..0Izds.XbotPk_hO5opOZegks4dUgGnffoSCD37NYdXv
+ 2D5B2E9Hp_rUaiRE7ueTHQ.cJprxKvuCUuj7UlMQ542RV3wLQQip6b0YtUvp
+ ru6mjt9M6ZCibNLagNrFK1kq5UvSHw2rc3Fp7dpY9yoke6CliagsFVSVBVVz
+ o44Egtj.0cKArp863eIE1d5jd7FJsNIm_zN3dAVtORJbhGV_BtUemlXy7jD3
+ _HEI-
+X-RocketYMMF: love_chinmay2002
+X-Mailer: YahooMailClassic/14.0.7 YahooMailWebService/0.8.114.317681
+Message-ID: <1318350090.58466.YahooMailClassic@web95315.mail.in2.yahoo.com>
+Date: Tue, 11 Oct 2011 21:51:30 +0530 (IST)
+From: Gloria Lusen <rsm_mmko2@rediffmail.com>
+Reply-To: gloria_lusen69@yahoo.fr
+Subject: Good Day,
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Changelog:
-
-v10 [7 month later, thanks to A Plumber's Wish List]:
- - rebased to linux-next-20111011
-v9:
- - update documentation
- - minor cleanup
-v8:
- - change hiearchy rules
- - introduce timer_slack.effective_slack_ns
- - get_task_timer_slack() -> task_get_effective_timer_slack()
- - task_get_effective_timer_slack() splited in separate patch
- - implement PR_GET_EFFECTIVE_TIMERSLACK
-v7:
- - totally reworked interface and rewritten from scratch
-   (See Documentation/cgroups/timer_slack.txt for more information)
-v6:
- - add documentation
- - use notifier_call_chain() instead of check hook
- - fix validate_change()
- - cleanup
-v5:
- - -EBUSY on writing to timer_slack.min_slack_ns/max_slack_ns if a child has
-   wider min-max range
-v4:
- - hierarchy support
- - drop dummy_timer_slack_check()
- - workaround lockdep false (?) positive
- - allow 0 as timer slack value
-v3:
- - rework interface
- - s/EXPORT_SYMBOL/EXPORT_SYMBOL_GPL/
-v2:
- - fixed with CONFIG_CGROUP_TIMER_SLACK=y
-v1:
- - initial revision
-
-Kirill A. Shutemov (3):
-  hrtimer: introduce effective timer slack
-  hrtimer: implement PR_GET_EFFECTIVE_TIMERSLACK
-  cgroups: introduce timer slack controller
-
- Documentation/cgroups/timer_slack.txt |   72 +++++++++++++++++++
- fs/select.c                           |    7 +--
- include/linux/cgroup_subsys.h         |    7 ++
- include/linux/prctl.h                 |    6 ++
- include/linux/sched.h                 |   10 +++
- init/Kconfig                          |    8 ++
- kernel/Makefile                       |    1 +
- kernel/cgroup_timer_slack.c           |  124 +++++++++++++++++++++++++++++++++
- kernel/fork.c                         |    4 +
- kernel/futex.c                        |    4 +-
- kernel/hrtimer.c                      |    2 +-
- kernel/sys.c                          |    3 +
- 12 files changed, 240 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/cgroups/timer_slack.txt
- create mode 100644 kernel/cgroup_timer_slack.c
-
--- 
-1.7.6.3
-
+Good Day,
+How are you and your family, i am sorry for bagging into your privacy, i am Gloria Lusen 18 years old and the only child of my late parent, please i am seeking for your assistance for a relocation and transferring of my inherited fund to your country,(USD$ 9.500.000) dollars I wait for your reply for more information you might need regarding the fund and my position.
+Thank you and God bless you.
+Yours Daughter,
+Gloria Lusen.
