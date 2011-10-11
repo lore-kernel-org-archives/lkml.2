@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1JKJqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:46:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:59003 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754149Ab1JKJp7 (ORCPT
+	id S1754411Ab1JKJzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:55:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37613 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab1JKJzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:45:59 -0400
-X-Authenticated: #1242716
-X-Provags-ID: V01U2FsdGVkX18zzzAM+B8zayrwLqmgcNoUo2Fd3pe2Dyq7/XQgrP
-	7NsSj8p5crdQY6
-Message-ID: <4E941054.8090608@gmx.de>
-Date: Tue, 11 Oct 2011 11:45:56 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Firefox/7.0.1 SeaMonkey/2.4.1
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org
-Subject: [Patch V2 2/2] gpio-pca953x: fix gpio_base and add verbosity
-Content-Type: text/plain; charset=ISO-8859-15
+	Tue, 11 Oct 2011 05:55:12 -0400
+Subject: [PATCH] ASoC: Writing register default value for the reset register
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 17:55:00 +0800
+Message-ID: <1318326900.3526.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I messed up the porting from my work files to clean git repo.
-This should be right now.
-Inspired by the gpio-pcf857x driver, this patch will output information
-about the instantiated gpio-chip, including gpio start and end, chip
-type and if irq is used.
+The WM8983 can be reset by performing a write of any value to
+the software reset register.
+To avoid writing to the software reset register while resume,
+we should write the same value in wm8983_reg_defs to software
+reset register in wm8983_probe().
+The write to the reset register is suppressed by the cache
+restore code when it skips writes of default registers.
 
-Signed-off-by: Hartmut Knaack <knaack.h@gmx.de>
--------------------------------------------------------------
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index 0721d85..f1a4fad 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -687,6 +687,12 @@ static int __devinit pca953x_probe(struct
-i2c_client *client,
- 	if (ret)
- 		goto out_failed_irq;
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8983.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-+	dev_info(&client->dev, "gpios %d..%d added on a %s%s\n",
-+		 chip->gpio_chip.base,
-+		 chip->gpio_chip.base + chip->gpio_chip.ngpio - 1,
-+		 client->name,
-+		 client->irq ? " (irq ignored)" : "");
-+
- 	if (pdata && pdata->setup) {
- 		ret = pdata->setup(client, chip->gpio_chip.base,
- 				chip->gpio_chip.ngpio, pdata->context);
+diff --git a/sound/soc/codecs/wm8983.c b/sound/soc/codecs/wm8983.c
+index 17f04ec..93ee284 100644
+--- a/sound/soc/codecs/wm8983.c
++++ b/sound/soc/codecs/wm8983.c
+@@ -1007,7 +1007,7 @@ static int wm8983_probe(struct snd_soc_codec *codec)
+ 		return ret;
+ 	}
+ 
+-	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0x8983);
++	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0);
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "Failed to issue reset: %d\n", ret);
+ 		return ret;
+-- 
+1.7.4.1
+
+
 
