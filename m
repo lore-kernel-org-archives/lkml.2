@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab1JKNOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:14:21 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:40010 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753398Ab1JKNOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:14:21 -0400
-Date: Tue, 11 Oct 2011 13:14:28 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kay Sievers <kay.sievers@vrfy.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, lennart@poettering.net,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Andrew Morgan <morgan@kernel.org>, KaiGai Kohei <kaigai@kaigai.gr.jp>
-Subject: Re: A Plumber???s Wish List for Linux
-Message-ID: <20111011131428.GA13346@hallyn.com>
-References: <1317943022.1095.25.camel@mop>
- <20111007111231.6e11d18e@lxorguk.ukuu.org.uk>
- <CAPXgP12nDB2NX6hZabmkUZA9n0PZadi6Yv70LNms8fz9+MnVoA@mail.gmail.com>
- <20111007113820.3b8424a8@lxorguk.ukuu.org.uk>
- <CAPXgP11K4_eVn4_emEYVzCVUsm-BXDyStk7DnDmFpMTL=404Gg@mail.gmail.com>
- <20111007152137.GE28351@carfax.org.uk>
- <20111010111813.GF17912@twin.jikos.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010111813.GF17912@twin.jikos.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754733Ab1JKNOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:14:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab1JKNOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 09:14:42 -0400
+Date: Tue, 11 Oct 2011 09:14:04 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "Pavel Machek" <pavel@ucw.cz>, <smfrench@gmail.com>, <rjw@sisk.pl>,
+        <linux-pm@lists.linux-foundation.org>, <linux-cifs@vger.kernel.org>,
+        <linux-nfs@vger.kernel.org>, <john@Calva.COM>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle freeze
+ events
+Message-ID: <20111011091404.208a03b5@tlielax.poochiereds.net>
+In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B91E852@SACMVEXC2-PRD.hq.netapp.com>
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+	<1317210761-11518-4-git-send-email-jlayton@redhat.com>
+	<20111011061923.GC1377@ucw.cz>
+	<20111011061221.2a4a212f@tlielax.poochiereds.net>
+	<2E1EB2CF9ED1CB4AA966F0EB76EAB4430B91E852@SACMVEXC2-PRD.hq.netapp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 11 Oct 2011 05:52:57 -0700
+"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
 
-Unfortunately I'd deleted the early part of this thread before noticing
-the mention on lwn+lkml.org, but fwiw detection of the last supported
-capability has been brought up before (with patchsets floated (By KaiGai
-I'm pretty sure) which exported the list of capabilities through /sys or
-/security), and I agree it's something we need.
+> > -----Original Message-----
+> > From: Jeff Layton [mailto:jlayton@redhat.com]
+> > Sent: Tuesday, October 11, 2011 6:12 AM
+> > To: Pavel Machek
+> > Cc: Myklebust, Trond; smfrench@gmail.com; rjw@sisk.pl; linux-
+> > pm@lists.linux-foundation.org; linux-cifs@vger.kernel.org; linux-
+> > nfs@vger.kernel.org; john@Calva.COM; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle
+> freeze
+> > events
+> > 
+> > On Tue, 11 Oct 2011 08:19:23 +0200
+> > Pavel Machek <pavel@ucw.cz> wrote:
+> > 
+> > > On Wed 2011-09-28 07:52:40, Jeff Layton wrote:
+> > > > Allow the wait_on_bit_killable sleeps in SUNRPC layer to respect
+> the
+> > > > freezer. This should allow suspend and hibernate events to occur,
+> > > > even when there are RPC's pending on the wire.
+> > >
+> > > Will the RPC protocols used handle that correctly? What will happen
+> > > during resume?
+> > >
+> > 
+> > That depends on the state of the socket during resume. If the
+> > suspend/resume is quick enough, then the socket may still be
+> connected, or
+> > if we're using UDP then we might just get the reply and carry on
+> successfully.
+> > Otherwise, the call will eventually time out, or will be cancelled
+> when the
+> > kernel finds that the socket has been closed.
+> > 
+> > Either way, this should do the right thing.
+> 
+> Well... The problem when this sort of thing happens is with the replay
+> cache. If the RPC in question was a mkdir, for instance, then replaying
+> the RPC call when you wake up can be problematic because chances are
+> that the server will have forgotten who created the directory, and so
+> will reply with EEXIST instead of OK.
+> However this is a generic problem when the client is unable to talk to
+> the server for a while, and is not particular to suspend.
+> 
 
--serge
+Yeah, that's always a problem. You can hit the same thing if you just
+unplug the cable from the network interface at an inopportune time.
+
+I think this patch is really the best we can do under those
+circumstances. Eventually we'll all be on 4.1 with sessions and this
+problem will go away, right? ;)
+
+-- 
+Jeff Layton <jlayton@redhat.com>
