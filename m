@@ -1,172 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab1JKDSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 23:18:44 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44481 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab1JKDSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 23:18:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=WfSSVD1gSf0GoA73iCReoOKbctgNg2V2R0v91Bp7XJcPyLmNt4xd8ZFYz5nYOjixz
-	FaUtxcaczC0xkS6yyFcbA==
-Subject: [PATCH 02/12] PCI: pass available resources into pci_create_bus()
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Deng-Cheng Zhu <dczhu@mips.com>, linux-kernel@vger.kernel.org
-Date: Mon, 10 Oct 2011 21:18:35 -0600
-Message-ID: <20111011031835.5149.98333.stgit@bhelgaas.mtv.corp.google.com>
-In-Reply-To: <20111011030726.5149.23793.stgit@bhelgaas.mtv.corp.google.com>
-References: <20111011030726.5149.23793.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1754109Ab1JKDZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 23:25:35 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45629 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab1JKDZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 23:25:34 -0400
+Date: Mon, 10 Oct 2011 23:25:23 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+Message-ID: <20111011032523.GB7948@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Matt Helsley <matthltc@us.ibm.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Lennart Poettering <mzxreary@0pointer.de>,
+	Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+	harald@redhat.com, david@fubar.dk, greg@kroah.com,
+	Linux Containers <containers@lists.osdl.org>,
+	Linux Containers <lxc-devel@lists.sourceforge.net>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Daniel Lezcano <daniel.lezcano@free.fr>,
+	Paul Menage <paul@paulmenage.org>
+References: <1317943022.1095.25.camel@mop>
+ <20111007074904.GC16723@count0.beaverton.ibm.com>
+ <20111007160113.GB14201@tango.0pointer.de>
+ <m17h4g2jqy.fsf@fess.ebiederm.org>
+ <20111010163140.GA22191@tango.0pointer.de>
+ <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org>
+ <20111011020530.GG16723@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111011020530.GG16723@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default resources given to a bus by pci_create_bus()
-are ioport_resource and iomem_resource, i.e., the entire address
-space.  Architectures are expected to correct these later, typically
-in pcibios_fixup_bus(), but code such as PCI quirks that run in the
-interim see incorrect resource information.
+On Mon, Oct 10, 2011 at 07:05:30PM -0700, Matt Helsley wrote:
+> Yes, it does detract from the unique advantages of using a container.
+> However, I think the value here is not the effeciency of the initial
+> system configuration but the fact that it gives users a better place to
+> start.
+> 
+> Right now we're effectively asking users to start with non-working
+> and/or unfamiliar systems and repair them until they work.
 
-This patch adds a "resources" argument to pci_create_bus() so
-architecture code can supply the correct resources at the beginning.
+If things are not working with containers, I would submit to you that
+we're doing something wrong(tm).  Things should just work, except that
+processes in one container can't use more than their fair share (as
+dictated by policy) of memory, CPU, networking, and I/O bandwidth.
 
-Based on original patch by Deng-Cheng Zhu.
+Something which is baked in my world view of containers (which I
+suspect is not shared by other people who are interested in using
+containers) is that given that kernel is shared, trying to use
+containers to provide better security isolation between mutually
+suspicious users is hopeless.  That is, it's pretty much impossible to
+prevent a user from finding one or more zero day local privilege
+escalation bugs that will allow a user to break root.  And at that
+point, they will be able to penetrate the kernel, and from there,
+break security of other processes.
 
-Reference: http://www.spinics.net/lists/mips/msg41654.html
-Reference: https://lkml.org/lkml/2011/8/26/88
-CC: Deng-Cheng Zhu <dczhu@mips.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/microblaze/pci/pci-common.c |    3 ++-
- arch/powerpc/kernel/pci-common.c |    3 ++-
- arch/sparc/kernel/pci.c          |    3 ++-
- arch/x86/pci/acpi.c              |    2 +-
- drivers/pci/probe.c              |   17 +++++++++++++----
- include/linux/pci.h              |    3 ++-
- 6 files changed, 22 insertions(+), 9 deletions(-)
+So if you want that kind of security isolation, you shouldn't be using
+containers in the first place.  You should be using KVM or Xen, and
+then only after spending a huge amount of effort fuzz testing the
+KVM/Xen paravirtualization interfaces.  So at least in my mind, adding
+vast amounts of complexities to try to provide security isolation via
+containers is really not worth it.  And if that's the model, then it's
+a lot easier to make containers to run jobs in containers that don't
+require changes to the distro plus huge increase of complexity for
+containers in the kernel....
 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 4cfae20..9c35aa6 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -1581,7 +1581,8 @@ static void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
- 
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		printk(KERN_ERR "Failed to create bus for PCI domain %04x\n",
- 		       hose->global_number);
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index 32656f1..2ede26a 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -1703,7 +1703,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
- 
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		pr_err("Failed to create bus for PCI domain %04x\n",
- 			hose->global_number);
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 1e94f94..77c38bb 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -689,7 +689,8 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_pbm_info *pbm,
- 
- 	printk("PCI: Scanning PBM %s\n", node->full_name);
- 
--	bus = pci_create_bus(parent, pbm->pci_first_busno, pbm->pci_ops, pbm);
-+	bus = pci_create_bus(parent, pbm->pci_first_busno,
-+			     pbm->pci_ops, pbm, NULL);
- 	if (!bus) {
- 		printk(KERN_ERR "Failed to create bus for %s\n",
- 		       node->full_name);
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 039d913..9bf7aaa 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -353,7 +353,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(sd);
- 	} else {
--		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd);
-+		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd, NULL);
- 		if (bus) {
- 			get_current_resources(device, busnum, domain, bus);
- 			bus->subordinate = pci_scan_child_bus(bus);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 6ab6bd3..6a8e1c6 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1529,11 +1529,13 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- }
- 
- struct pci_bus * pci_create_bus(struct device *parent,
--		int bus, struct pci_ops *ops, void *sysdata)
-+		int bus, struct pci_ops *ops, void *sysdata,
-+		struct list_head *resources)
- {
- 	int error;
- 	struct pci_bus *b, *b2;
- 	struct device *dev;
-+	struct pci_bus_resource *bus_res, *n;
- 
- 	b = pci_alloc_bus();
- 	if (!b)
-@@ -1583,8 +1585,15 @@ struct pci_bus * pci_create_bus(struct device *parent,
- 	pci_create_legacy_files(b);
- 
- 	b->number = b->secondary = bus;
--	b->resource[0] = &ioport_resource;
--	b->resource[1] = &iomem_resource;
-+
-+	/* Add initial resources to the bus */
-+	if (resources) {
-+		list_for_each_entry_safe(bus_res, n, resources, list)
-+			list_move_tail(&bus_res->list, &b->resources);
-+	} else {
-+		b->resource[0] = &ioport_resource;
-+		b->resource[1] = &iomem_resource;
-+	}
- 
- 	return b;
- 
-@@ -1605,7 +1614,7 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- {
- 	struct pci_bus *b;
- 
--	b = pci_create_bus(parent, bus, ops, sysdata);
-+	b = pci_create_bus(parent, bus, ops, sysdata, NULL);
- 	if (b)
- 		b->subordinate = pci_scan_child_bus(b);
- 	return b;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 6841e7f..f5e1b4a 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -667,7 +667,8 @@ static inline struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *o
- 	return root_bus;
- }
- struct pci_bus *pci_create_bus(struct device *parent, int bus,
--			       struct pci_ops *ops, void *sysdata);
-+			       struct pci_ops *ops, void *sysdata,
-+			       struct list_head *resources);
- struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
- 				int busnr);
- void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
-
+						- Ted
