@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1JKNXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:23:39 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38892 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab1JKNXh (ORCPT
+	id S1754258Ab1JKNbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:31:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60724 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752902Ab1JKNbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:23:37 -0400
-Message-ID: <1318339433.2538.25.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [RFC PATCH net 1/2] [BUGFIX] bonding: use local function
- pointer of bond->recv_probe in bond_handle_frame
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Date: Tue, 11 Oct 2011 15:23:53 +0200
-In-Reply-To: <4E943E53.6010601@hitachi.com>
-References: <20111007124925.7089.27260.stgit@ltc219.sdl.hitachi.co.jp>
-	 <20111007124954.7089.9776.stgit@ltc219.sdl.hitachi.co.jp>
-	 <CAM_iQpXZmX2GPb99tF7xMEup52o8AfeUi+0awvHr7C9LVWTjEg@mail.gmail.com>
-	 <4E943E53.6010601@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 11 Oct 2011 09:31:23 -0400
+Date: Tue, 11 Oct 2011 14:31:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: Writing register default value for the reset
+ register
+Message-ID: <20111011133118.GB3471@opensource.wolfsonmicro.com>
+References: <1318326900.3526.2.camel@phoenix>
+ <20111011123305.GA2899@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111011123305.GA2899@opensource.wolfsonmicro.com>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 11 octobre 2011 à 22:02 +0900, HAYASAKA Mitsuo a écrit :
-> Hi WANG Cong
-> 
-> Thank you for your comments.
-> 
-> (2011/10/07 22:24), Américo Wang wrote:
-> > On Fri, Oct 7, 2011 at 8:49 PM, Mitsuo Hayasaka
-> > <mitsuo.hayasaka.hu@hitachi.com> wrote:
-> >> The bond->recv_probe is called in bond_handle_frame() when
-> >> a packet is received, but bond_close() sets it to NULL. So,
-> >> a panic occurs when both functions work in parallel.
-> >>
-> >> Why this happen:
-> >> After null pointer check of bond->recv_probe, an sk_buff is
-> >> duplicated and bond->recv_probe is called in bond_handle_frame.
-> >> So, a panic occurs when bond_close() is called between the
-> >> check and call of bond->recv_probe.
-> >>
-> >> Patch:
-> >> This patch uses a local function pointer of bond->recv_probe
-> >> in bond_handle_frame(). So, it can avoid the null pointer
-> >> dereference.
-> >>
-> > 
-> > Hmm, I don't doubt it can fix the problem, I am wondering if
-> > bond->recv_probe should be protected by bond->lock...
-> 
-> Indeed, in general any resources should be protected from the asynchronous
-> workers.
-> 
-> At first, I thought it should be handled with lock protection, as well.
-> However, I guess that using bond->lock on this kind of hot-path may
-> introduces unnecessary overhead. In addition, this code works well
-> without the strict lock protection. So, I think this change is the
-> right way to fix it.
+On Tue, Oct 11, 2011 at 01:33:05PM +0100, Dimitris Papastamos wrote:
+> On Tue, Oct 11, 2011 at 05:55:00PM +0800, Axel Lin wrote:
+> > The WM8983 can be reset by performing a write of any value to
+> > the software reset register.
 
-Maybe, but then ACCESS_ONCE() is needed to prevent compiler to
-'optimize' the temporary variable.
+> > -	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0x8983);
+> > +	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0);
 
-Or use rcu_dereference() to make the whole thing really safe and self
-documented.
+> We should probably just handle the reset register specially during
+> resume.
 
-
-
+I really don't think it's worth the code complexity to add special
+handling like that, this is a trivial patch which avoids the need for
+any extra infrastructure.
