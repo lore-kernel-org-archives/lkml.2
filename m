@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab1JKSkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:40:21 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35593 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab1JKSkT (ORCPT
+	id S1755443Ab1JKSl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:41:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61366 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab1JKSl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:40:19 -0400
+	Tue, 11 Oct 2011 14:41:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, claudio@evidence.eu.com,
+        jesper.nilsson@axis.com, alan@lxorguk.ukuu.org.uk,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [RFC PATCH] tty/serial: RS485 bindings for device tree
+Date: Tue, 11 Oct 2011 20:41:04 +0200
+Message-ID: <3289709.mzRgbAUyPT@wuerfel>
+User-Agent: KMail/4.7.1 (Linux/3.1.0-rc8nosema+; KDE/4.7.1; x86_64; ; )
+In-Reply-To: <4E947CA6.9010703@atmel.com>
+References: <1318353208-24422-1-git-send-email-nicolas.ferre@atmel.com> <4E947CA6.9010703@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAP2e6W9BCV5Wg5rTLrDLaU45NCt9PaSV5zZHT5OA88hqNvounw@mail.gmail.com>
-References: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
-	<CAP2e6W9oQWLxe7pJxk=Awn1HTueeu41ZV7TFF+V9tHF07_Mxag@mail.gmail.com>
-	<20111011161153.GA6697@suse.de>
-	<CANK3SE1tdJm93BK+U01Ep7Q2B=+aUJmgxkrQ537oPrqB2YZ4nA@mail.gmail.com>
-	<CAP2e6W9BCV5Wg5rTLrDLaU45NCt9PaSV5zZHT5OA88hqNvounw@mail.gmail.com>
-Date: Tue, 11 Oct 2011 22:40:18 +0400
-Message-ID: <CAHj3AVnRzOQEVJu6sfE-pZt9QN_q75Pf6LEeGfdKm-NdxjFC_Q@mail.gmail.com>
-Subject: Re: [PATCH 4/4] staging: et131x: Update TODO list
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: Ramesh R <rshlinux@gmail.com>
-Cc: Mark Einon <mark.einon@gmail.com>, devel@driverdev.osuosl.org,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:f2FMVwcCOchHSEjnsX6FLhipEvYrdOechQxozO4JN6t
+ 3W6cUPusThu0M1LpMW0NFemH29b++sf2qqvwGLzhHZCPFxPkXo
+ TZ9+AtERharSjufHiSB0fzxPKqPRTibxtaRrYG9fIUHuP8EMGJ
+ G3hYya+sTbea4yz6KJ/qw/mEW9fJ062fRo9cXhOCwBlYRZzUVL
+ Xc51oze6n6vxBmzFxydZAT/6A8Q+dUzymuOWJeTDKdaUak75qG
+ FKVUUCzNbCzhYf4f0gGeo1kx3VMMOHbg9dwMHWRfSL/yB4jRRZ
+ 50NI+5hEmBcT1iAUVTnL7itGIuuAyIGiv4hrZwvPdeNFCZ5Ioj
+ u3VMB/9+I0kvisUReZyA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you look at the patch once again then you find some
-
-On Tue, Oct 11, 2011 at 9:25 PM, Ramesh R <rshlinux@gmail.com> wrote:
-> Thanks Mark,
->
-> Are there any open items left in the TODO list for this driver at this point?
->
-> Regards
-> Ramesh
->
-> On Tue, Oct 11, 2011 at 9:25 AM, Mark Einon <mark.einon@gmail.com> wrote:
->> On 11 October 2011 17:11, Greg KH <gregkh@suse.de> wrote:
->>> On Tue, Oct 11, 2011 at 09:00:35AM -0700, Ramesh R wrote:
->>>> Hi Mark,
->>>>
->>>> I wish to contribute to this project - From the latest TODO list in
->>>> the README document
->>>>
->>>> drivers/staging/et131x/README
->>>>
->>>> If I were to start with the coding style cleanups, is there a coding
->>>> standard available for reference? Please advice.
->>>
->>> Documentation/CodingStyle
->>>
->> Ramesh,
->>
->> There are no significant coding style issues with this particular
->> driver at this time, as far as I (and the checkpatch script) are aware
->> of.
->> I suggest you check other staging/ drivers for these sorts of issues.
->>
->> Cheers,
->>
->> Mark
->>
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->
+On Tuesday 11 October 2011 19:28:06 Nicolas Ferre wrote:
+> 
+> > +Optional properties:
+> > +- linux,rs485-enabled-at-boot-time: empty property telling to enable the rs485
+> > +  feature at boot time. It can be disabled later with proper ioctl.
+> 
+> +- linux,rs485-rx-during-tx: empty property that enable the receiving of data
+> +  even whilst sending data.
 
 
+This does not sound too linux specific. If it's a hardware property, don't
+use the 'linux,' prefix and just make it 'rs484-full-duplex' or such.
 
--- 
-Regards,
-Denis
+	Arnd
