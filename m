@@ -1,96 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414Ab1JKV7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:59:38 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54924 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751348Ab1JKV7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:59:36 -0400
-Message-ID: <4E94BC46.5080505@xenotime.net>
-Date: Tue, 11 Oct 2011 14:59:34 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1751426Ab1JKWAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 18:00:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34263 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084Ab1JKWAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 18:00:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Documentation/power: Update docs about suspend and CPU hotplug
+Date: Wed, 12 Oct 2011 00:02:49 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: rdunlap@xenotime.net, len.brown@intel.com, pavel@ucw.cz,
+        a.p.zijlstra@chello.nl, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20111011201958.10065.78949.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111011201958.10065.78949.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Andrei Warkentin <awarkentin@vmware.com>
-CC: Namjae Jeon <linkinjeon@gmail.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next:
- Tree for Oct 11 (mmc))
-References: <1172297901.46681.1318361517579.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1172297901.46681.1318361517579.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201110120002.49278.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/11 12:31, Andrei Warkentin wrote:
-> Hi Randy,
+On Tuesday, October 11, 2011, Srivatsa S. Bhat wrote:
+> Update the documentation about the interaction between the suspend (S3) call
+> path and the CPU hotplug infrastructure.
+> This patch focusses only on the activities of the freezer, cpu hotplug and
+> the notifications involved. It outlines how regular CPU hotplug differs from
+> the way it is invoked during suspend and also tries to explain the locking
+> involved.
 > 
-> ----- Original Message -----
->> From: "Randy Dunlap" <rdunlap@xenotime.net>
->> To: "Stephen Rothwell" <sfr@canb.auug.org.au>
->> Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris Ball"
->> <cjb@laptop.org>
->> Sent: Tuesday, October 11, 2011 2:49:39 PM
->> Subject: Re: linux-next: Tree for Oct 11 (mmc)
->>
->> On 10/11/11 02:11, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> The linux-next tree is now available from
->>> git://github.com/sfrothwell/linux-next.git as a temporary measure
->>> while
->>> the kernel.org servers are unavailable.
->>>
->>> It may also turn up on git.kernel.org (depending on the mirroring).
->>>  The
->>> patch set is still absent, however.
->>>
->>> Changes since 20111007:
->>
->>
->> When CONFIG_BLOCK is not enabled:
->>
->> In file included from
->> next-2011-1011/drivers/mmc/card/sdio_uart.c:43:0:
->> next-2011-1011/include/linux/mmc/card.h:175:12: error:
->> 'DISK_NAME_LEN' undeclared here (not in a function)
->>
->> Deleting the #include <linux/mmc/card.h> fixes the sdio_uart.c build.
->> However, the same problem occurs in mmc/core/core.c:
->>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
 > 
-> Because linux/genhd is now included, oops. I'm pretty positive this is due to the "mmc : general purpose partition support" patch pulled recently. I am adding NamJae, who was the author.
+>  Documentation/power/00-INDEX                   |    2 
+>  Documentation/power/suspend-and-cpuhotplug.txt |  113 ++++++++++++++++++++++++
+>  2 files changed, 115 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/power/suspend-and-cpuhotplug.txt
 > 
->> In file included from next-2011-1011/drivers/mmc/core/core.c:30:0:
->> next-2011-1011/include/linux/mmc/card.h:175:12: error:
->> 'DISK_NAME_LEN' undeclared here (not in a function)
->>
->> Should mmc/core/ depend on BLOCK?  or should it just be made
->> to build even when BLOCK is not enabled?
->>
-> 
-> I don't think there should be a direct dependency on BLOCK. I have two suggestions -
-> 1) Have our own define similar to (and in fact smaller):
->    linux/genhd.h:#define DISK_NAME_LEN                     32
-> 2) Put the MMC physical partition code under an #ifdef CONFIG_BLOCK, which is a reasonable
->    proposition, given that there wouldn't be any need to parse physical partition info if
->    it would never be consumed by the MMC block driver.
-> 
-> Thoughts?
+> diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+> index 45e9d4a..a4d682f 100644
+> --- a/Documentation/power/00-INDEX
+> +++ b/Documentation/power/00-INDEX
+> @@ -26,6 +26,8 @@ s2ram.txt
+>  	- How to get suspend to ram working (and debug it when it isn't)
+>  states.txt
+>  	- System power management states
+> +suspend-and-cpuhotplug.txt
+> +	- Explains the interaction between Suspend-to-RAM (S3) and CPU hotplug
+>  swsusp-and-swap-files.txt
+>  	- Using swap files with software suspend (to disk)
+>  swsusp-dmcrypt.txt
+> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> new file mode 100644
+> index 0000000..d0ba411
+> --- /dev/null
+> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> @@ -0,0 +1,113 @@
+> +Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+> +   (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>, GPL
+> +
+> +
+> +I. How does the Suspend-to-RAM code interact with CPU hotplug infrastructure?
+> +
+> +Well, a picture speaks more than a thousand words... So ASCII art follows :-)
+> +
+> +[This depicts the current design in the kernel, and focusses only on the
+> +interactions between suspend call paths involving the freezer and cpu hotplug
+> +and also tries to explain the locking involved. It also outlines the
+> +notifications involved.]
+> +
+> +On a high level, the suspend-resume cycle goes like this:
+> +
+> +|Freeze| -> |Disable nonboot| -> |Do suspend| -> |Enable nonboot| -> |Thaw |
+> +|tasks |    |     cpus      |    |          |    |     cpus     |    |tasks|
+> +
+> +
+> +More details follow:
+> +
+> +Regular CPU hotplug                                   Suspend call path
+> +-------------------                              ---------------------------
+> +
+> +Write 0 (or 1) to                                     Write 'mem' to
+> +/sys/devices/system/cpu/cpu*/online                   /sys/power/state
+> +     sysfs file                                          syfs file
+> +         |                                                   |
+> +         |                                                   v
+> +         |                                         Acquire pm_mutex lock
+> +         |                                                   |
+> +         |                                                   v
+> +         |                                Send PM_SUSPEND_PREPARE notifications
+> +         |                                                   |
+> +         |                                                   v
+> +         |                                              Freeze tasks
 
-Agreed on part 2).  Do part 1) if it is required, but it's usually better
-not to duplicate constants or structs etc.
-IOW, can DISK_NAME_LEN in linux/genhd.h be exposed even when CONFIG_BLOCK
-is not enabled?
+OK, so something appears to be missing here.  Namely, the task writing to
+/sys/devices/system/cpu/cpu*/online should be frozen at this point or
+suspend should be aborted.  I suppose neither of these happens and I wonder
+why exactly.
+
+Thanks,
+Rafael
 
 
+> +         |                                                   |
+> +         |                                                   |
+> +         v                                                   v
+> +     cpu_down()                                 disable_nonboot_cpus() /*start*/
+> +         |                                                   |
+> +         v                                                   v
+> +Acquire cpu_add_remove_lock                     Acquire cpu_add_remove_lock
+> +         |                                                   |
+> +         v                                                   v
+> +If cpu_hotplug_disabled is 1                 Iterate over CURRENTLY online CPUs
+> +   return gracefully                                         |
+> +         |                                                   |
+> +         |                                                   |           ----
+> +         v                                                   v               |
+> +           \                                               /                 |
+> +             --------                             --------                   |
+> +                      \                         /                            |
+> +                        --------       --------                              |L
+> +                                 \____/                                      |
+> +                                   |                                         |
+> +                                   v                                         |O
+> +                              _cpu_down()                                    |
+> +                     [This takes cpuhotplug.lock                             |
+> +                      before taking down the CPU                             |
+> +                      and releases it when done]                             |O
+> +                   While it is at it, notifications                          |
+> +                   are sent when notable events occur,                       |
+> +                   by running all registered callbacks.                      |
+> +                                   |                                         |O
+> +                                  / \                                        |
+> +                                 /   \                                       |
+> +                                <     >                                      |
+> +        _______________________/       \_____________________                |P
+> +       |                                                     |               |
+> +       v                                                     v               |
+> +Release cpu_add_remove_lock                      Note down these cpus in     |
+> +[That's it!, for                                     frozen_cpus mask    ----
+> + regular CPU hotplug]                                        |
+> +                                                             v
+> +                                                  Disable regular cpu hotplug
+> +                                              by setting cpu_hotplug_disabled=1
+> +                                                             |
+> +                                                             v
+> +                                                Release cpu_add_remove_lock
+> +                                                             |
+> +                                                             v
+> +                                          /* disable_nonboot_cpus() complete */
+> +                                                             |
+> +                                                             v
+> +                                                        Do suspend
+> +
+> +
+> +Resuming back is likewise, with the counterparts being (in the order of
+> +execution during resume):
+> +* enable_nonboot_cpus() which involves:
+> +   |  Acquire cpu_add_remove_lock
+> +   |  Reset cpu_hotplug_disabled to 0, thereby enabling regular cpu hotplug
+> +   |  Call _cpu_up() [for all those cpus in the frozen_cpus mask, in a loop]
+> +   |  Release cpu_add_remove_lock
+> +   v
+> +
+> +* thaw tasks
+> +* send PM_POST_SUSPEND notifications
+> +* Release pm_mutex lock.
+> +
+> +It is to be noted here that the pm_mutex lock is acquired at the very
+> +beginning, when we are just starting out to suspend, and then released only
+> +after the entire cycle is complete (i.e., suspend + resume).
+> +
+> +
+> +Important files and functions/entry points:
+> +------------------------------------------
+> +
+> +kernel/power/process.c : freeze_processes(), thaw_processes()
+> +kernel/power/suspend.c : suspend_prepare(), suspend_enter(), suspend_finish()
+> +kernel/cpu.c: cpu_[up|down](), _cpu_[up|down](), [disable|enable]_nonboot_cpus()
+> +
+> 
+> 
+> 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
