@@ -1,77 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab1JKTfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:35:42 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:46359 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754933Ab1JKTfl convert rfc822-to-8bit (ORCPT
+	id S1755484Ab1JKTsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:48:03 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49756 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754933Ab1JKTsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:35:41 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>
-CC: Rik van Riel <riel@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Date: Tue, 11 Oct 2011 15:32:11 -0400
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Index: AcyHnTfmFReYnxFBTPGiWHi2BA2a6wAraVyg
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
- <20111010153723.6397924f.akpm@linux-foundation.org>
-In-Reply-To: <20111010153723.6397924f.akpm@linux-foundation.org>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=34 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110110228
+	Tue, 11 Oct 2011 15:48:01 -0400
+Date: Tue, 11 Oct 2011 20:47:46 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] pata_sil680: minor CodingStyle fixups
+Message-ID: <20111011204746.2c7448ff@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110112021.51236.bzolnier@gmail.com>
+References: <201110112021.51236.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2011 06:37 PM, Andrew Morton wrote:
-> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes 
-> <rientjes@google.com> wrote:
+On Tue, 11 Oct 2011 20:21:50 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Subject: [PATCH] pata_sil680: minor CodingStyle fixups
 > 
->> On Thu, 1 Sep 2011, Rik van Riel wrote:
->
-> The page allocator already tries harder if the caller has 
-> rt_task(current).  Why is this inadequate?  Can we extend this idea 
-> further to fix whatever-the-problem-is?
+> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 
-Actually page allocator decreases min watermark to 3/4 * min watermark
-for rt-task. But in our case some applications create a lot of
-processes and if all of them are rt-task, the amount of watermark
-bonus(1/4 * min watermark) is not enough.
-
-If we can tune the amount of bonus, it may be fine. But that is
-almost all same as extra free kbytes.
-
-> Does there exist anything like a test case which demonstrates the need 
-> for this feature?
-
-Unfortunately I don't have a real test case but just simple one.
-And in my simple test case, I can avoid direct reclaim if we set
-workload as rt-task.
-
-The simple test case I used is following:
-http://marc.info/?l=linux-mm&m=131605773321672&w=2
-
-Regards,
-Satoru
+Acked-by: Alan Cox <alan@linux.intel.com>
