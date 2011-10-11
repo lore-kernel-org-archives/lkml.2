@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab1JKPrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 11:47:15 -0400
-Received: from smail3.alcatel.fr ([64.208.49.56]:52837 "EHLO smail3.alcatel.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754966Ab1JKPrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 11:47:14 -0400
-X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 11:47:14 EDT
-Message-ID: <4E946279.8090800@alcatel-lucent.com>
-Date: Tue, 11 Oct 2011 17:36:25 +0200
-From: Thanh-Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1755013Ab1JKPsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 11:48:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64020 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab1JKPsR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 11:48:17 -0400
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin ZORES <Benjamin.Zores@alcatel-lucent.com>
-Subject: [PATCH] binfmt_elf.c: core file shrinking
+In-Reply-To: <20111011145332.GA29114@elliptictech.com>
+References: <1318260152-2786-1-git-send-email-mark.einon@gmail.com> <20111011145332.GA29114@elliptictech.com>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Tue, 11 Oct 2011 16:47:57 +0100
+Message-ID: <CANK3SE08pTAPyEKHAGhqacpBcEk8eq8R6o9=z3kK-Qx0+hwm-Q@mail.gmail.com>
+Subject: Re: [PATCH 4/4] staging: et131x: Update TODO list
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vma_shrink function looks for the 1st allocated and the last
-allocated page. Only this part is dumped to the disk (the virual
-start address and the size are dupdated to reflect the new dumped
-information).
+On 11 October 2011 15:53, Nick Bowler <nbowler@elliptictech.com> wrote:
+> Hi Mark,
+>
+> On 2011-10-10 16:22 +0100, Mark Einon wrote:
+>> diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+>> index d383e80..c67f83e 100644
+>> --- a/drivers/staging/et131x/README
+>> +++ b/drivers/staging/et131x/README
+>> @@ -2,13 +2,18 @@ This is a driver for the ET1310 network device.
+>>
+>>  Based on the driver found at https://sourceforge.net/projects/et131x/
+>>
+>> -Cleaned up immensely by Olaf Hartman and Christoph
+>> -Hellwig <hch@infradead.org>
+>> +Cleaned up immensely by Olaf Hartman and Christoph Hellwig <hch@infradead.org>
+>
+> It seems that a fragment from your earlier patch, "staging: et131x:
+> Removing Olaf Hartmann's email as it bounces", got mixed up with this
+> one.
 
-Signed-off-by: Thanh Lam NGUYEN <thanh-lam.nguyen@alcatel-lucent.com>
-Signed-off-by: Benjamin ZORES <Benjamin.Zores@alcatel-lucent.com>
----
- linux/fs/binfmt_elf.c |   54
-++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 55 insertions(+), 4 deletions(-)
+Hi Nick,
 
---- linux/fs/binfmt_elf.c
-+++ linux/fs/binfmt_elf.c
-@@ -1085,6 +1085,48 @@
-  * Jeremy Fitzhardinge <jeremy@sw.oz.au>
-  */
+Well spotted!
 
-+/*
-+ * Search for 1st and last allocated page from vma_start to vma_end.
-+ * Update vma_start and vma_end to reflect the result.
-+ */
-+void vma_shrink(struct vm_area_struct *vma, unsigned long *vma_start,
-+		unsigned long *vma_end)
-+{
-+	int allocated;
-+	unsigned long start, addr, end;
-+
-+	allocated = 0;
-+	start = end = *vma_start;
-+	for (addr = *vma_start; _addr < *vma_end; addr += PAGE_SIZE) {
-+		struct page *page;
-+		if (get_user_pages(current, current->mm, addr, 1, 0, 1,
-+				   &page, NULL) <= 0) {
-+			/* NO PAGE */
-+			if (!allocated)
-+				start = addr;
-+		} else {
-+			if (page == ZERO_PAGE(0)) {
-+				/* ZERO PAGE */
-+				if (!allocated)
-+					start = addr;
-+			} else {
-+				/* ALLOCATED PAGE */
-+				if (!allocated)
-+					start = addr;
-+				end = addr;
-+				allocated = 1;
-+			}
-+			page_cache_release(page);
-+		}
-+	}
-+	if (end < start)
-+		end = start;
-+	if (allocated)
-+		end += PAGE_SIZE;
-+	*vma_start = start;
-+	*vma_end = end;
-+}
-+
- /*
-  * Decide what to dump of a segment, part, all or none.
-  */
-@@ -1980,13 +2022,19 @@ static int elf_core_dump(struct coredump_params
-*cprm)
- 	for (vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		struct elf_phdr phdr;
-+		unsigned long start = vma->vm_start;
-+		unsigned long end = vma->vm_end;
-  		phdr.p_type = PT_LOAD;
- 		phdr.p_offset = offset;
--		phdr.p_vaddr = vma->vm_start;
- 		phdr.p_paddr = 0;
- 		phdr.p_filesz = vma_dump_size(vma, cprm->mm_flags);
--		phdr.p_memsz = vma->vm_end - vma->vm_start;
-+		if (phdr.p_filesz) {
-+			vma_shrink(vma, &start, &end);
-+			phdr.p_filesz = end-start;
-+		}
-+		phdr.p_vaddr = start;
-+		phdr.p_memsz = vma->vm_end - phdr.p_vaddr;
- 		offset += phdr.p_filesz;
- 		phdr.p_flags = vma->vm_flags & VM_READ ? PF_R : 0;
- 		if (vma->vm_flags & VM_WRITE)
-@@ -2018,11 +2066,15 @@ static int elf_core_dump(struct coredump_params
-*cprm)
- 	for (vma = first_vma(current, gate_vma); vma != NULL;
- 			vma = next_vma(vma, gate_vma)) {
- 		unsigned long addr;
-+		unsigned long start;
- 		unsigned long end;
- -		end = vma->vm_start + vma_dump_size(vma, cprm->mm_flags);
-+		start = vma->vm_start;
-+		end = start + vma_dump_size(vma, cprm->mm_flags);
-+		if (start < end)
-+			vma_shrink(vma, &start, &end);
- -		for (addr = vma->vm_start; addr < end; addr += PAGE_SIZE) {
-+		for (addr = start; addr < end; addr += PAGE_SIZE) {
- 			struct page *page;
- 			int stop;
+Actually, I was just sneaking in the removal of a carriage return
+which I didn't do in the earlier patch.
 
----
-=~=~=~=~=~=~=~=~=~=~=~=~==~=~=~=~=~=~=~=~=~=~=~=~=~=~=
-Thanh lam NGUYEN
-Prestataire externe ALTEN        | ALTEN Subcontractor
-pour ALCATEL-LUCENT              | in ALCATEL-LUCENT
+I didn't think that anyone would mind, being in an unnoticeable README
+file in the staging directory of a staging-next tree - inhabiting a
+small, insignificant blue green planet, circling a star we call the
+Sun, in an unfashionable outer spiral arm of a galaxy known as the
+Milky Way.
 
-email: tlnguyen@webmail.alten.fr
+Let me know if its a problem.
 
+Best regards,
+
+Mark
