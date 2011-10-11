@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab1JKStn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:49:43 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:60150 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755213Ab1JKStl (ORCPT
+	id S1755164Ab1JKSwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:52:10 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:51498 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab1JKSwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:49:41 -0400
-Message-ID: <4E948FC3.2080801@xenotime.net>
-Date: Tue, 11 Oct 2011 11:49:39 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Tue, 11 Oct 2011 14:52:07 -0400
+Date: Tue, 11 Oct 2011 12:52:05 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Felipe Balbi <balbi@ti.com>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        "Munegowda, Keshava" <keshava_mgowda@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
+        tony@atomide.com, johnstul@us.ibm.com, vishwanath.bs@ti.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+In-Reply-To: <20111011140839.GF12293@legolas.emea.dhcp.ti.com>
+Message-ID: <alpine.DEB.2.00.1110111136280.1664@utopia.booyaka.com>
+References: <20111011081352.GC10155@legolas.emea.dhcp.ti.com> <Pine.LNX.4.44L0.1110111000460.2177-100000@iolanthe.rowland.org> <20111011140839.GF12293@legolas.emea.dhcp.ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Subject: Re: linux-next: Tree for Oct 11 (mmc)
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
-In-Reply-To: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/11 02:11, Stephen Rothwell wrote:
-> Hi all,
-> 
-> The linux-next tree is now available from
-> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> the kernel.org servers are unavailable.
-> 
-> It may also turn up on git.kernel.org (depending on the mirroring).  The
-> patch set is still absent, however.
-> 
-> Changes since 20111007:
+Hi Felipe
 
+On Tue, 11 Oct 2011, Felipe Balbi wrote:
 
-When CONFIG_BLOCK is not enabled:
+> maybe, but let's go with EXPORT_SYMBOL_GPL(). My only concern is that
+> this IP comes from synopsys, and I'm not really keen on adding
+> OMAP-specific, integration-related knowledge on a driver which was
+> supposed to be reusable ;-)
+>
+> But at least for the time being, I guess that's what we need to do ;-)
 
-In file included from next-2011-1011/drivers/mmc/card/sdio_uart.c:43:0:
-next-2011-1011/include/linux/mmc/card.h:175:12: error: 'DISK_NAME_LEN' undeclared here (not in a function)
+Which IP is coming from Synopsys - the TLL ?  The EXPORT_SYMBOL approach 
+shouldn't add anything OMAP-specific to the TLL driver.  So the exported 
+symbols should still be usable by drivers on other SoCs.  But perhaps I am 
+misunderstanding your point?
 
-Deleting the #include <linux/mmc/card.h> fixes the sdio_uart.c build.
-However, the same problem occurs in mmc/core/core.c:
-
-In file included from next-2011-1011/drivers/mmc/core/core.c:30:0:
-next-2011-1011/include/linux/mmc/card.h:175:12: error: 'DISK_NAME_LEN' undeclared here (not in a function)
-
-Should mmc/core/ depend on BLOCK?  or should it just be made
-to build even when BLOCK is not enabled?
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+- Paul
