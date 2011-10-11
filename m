@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1JKSZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:25:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46351 "EHLO
+	id S1755419Ab1JKSZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:25:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65369 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab1JKSZT (ORCPT
+	with ESMTP id S1755356Ab1JKSZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:25:19 -0400
+	Tue, 11 Oct 2011 14:25:30 -0400
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 To: Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH] pata_artop: unify ->prereset methods
-Date: Tue, 11 Oct 2011 19:45:52 +0200
+Subject: [PATCH 1/3] pata_cmd64x: add cmd64x_fixup()
+Date: Tue, 11 Oct 2011 19:56:03 +0200
 User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
 Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Message-Id: <201110111945.52701.bzolnier@gmail.com>
+Message-Id: <201110111956.03480.bzolnier@gmail.com>
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
@@ -23,82 +23,104 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_artop: unify ->prereset methods
+Subject: [PATCH] pata_cmd64x: add cmd64x_fixup()
 
-* Unify ->prereset methods for ATP850 and ATP86x[R] chipsets.
+Factor out common code from cmd64x_[re]init_one() to cmd64x_fixup().
 
-* Fix ->prereset documentation while at it.
+Remove stale comment and fix a minor CodingStyle issue while at it.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 ---
 earlier references:
-https://lkml.org/lkml/2009/11/25/315
+https://lkml.org/lkml/2009/11/25/355
 
- drivers/ata/pata_artop.c |   26 +++++---------------------
- 1 file changed, 5 insertions(+), 21 deletions(-)
+ drivers/ata/pata_cmd64x.c |   42 ++++++++++++++++++++----------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
 
-Index: b/drivers/ata/pata_artop.c
+Index: b/drivers/ata/pata_cmd64x.c
 ===================================================================
---- a/drivers/ata/pata_artop.c
-+++ b/drivers/ata/pata_artop.c
-@@ -39,31 +39,15 @@
+--- a/drivers/ata/pata_cmd64x.c
++++ b/drivers/ata/pata_cmd64x.c
+@@ -288,6 +288,22 @@ static struct ata_port_operations cmd648
+ 	.cable_detect	= cmd648_cable_detect,
+ };
  
- static int clock = 0;
- 
--static int artop6210_pre_reset(struct ata_link *link, unsigned long deadline)
--{
--	struct ata_port *ap = link->ap;
--	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
--	const struct pci_bits artop_enable_bits[] = {
--		{ 0x4AU, 1U, 0x02UL, 0x02UL },	/* port 0 */
--		{ 0x4AU, 1U, 0x04UL, 0x04UL },	/* port 1 */
--	};
--
--	if (!pci_test_config_bits(pdev, &artop_enable_bits[ap->port_no]))
--		return -ENOENT;
--
--	return ata_sff_prereset(link, deadline);
--}
--
- /**
-- *	artop6260_pre_reset	-	check for 40/80 pin
-+ *	artop62x0_pre_reset	-	probe begin
-  *	@link: link
-  *	@deadline: deadline jiffies for the operation
-  *
-- *	The ARTOP hardware reports the cable detect bits in register 0x49.
-  *	Nothing complicated needed here.
-  */
- 
--static int artop6260_pre_reset(struct ata_link *link, unsigned long deadline)
-+static int artop62x0_pre_reset(struct ata_link *link, unsigned long deadline)
++static void cmd64x_fixup(struct pci_dev *pdev)
++{
++	u8 mrdmode;
++
++	pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 64);
++	pci_read_config_byte(pdev, MRDMODE, &mrdmode);
++	mrdmode &= ~0x30;	/* IRQ set up */
++	mrdmode |= 0x02;	/* Memory read line enable */
++	pci_write_config_byte(pdev, MRDMODE, mrdmode);
++
++	/* PPC specific fixup copied from old driver */
++#ifdef CONFIG_PPC
++	pci_write_config_byte(pdev, UDIDETCR0, 0xF0);
++#endif
++}
++
+ static int cmd64x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
  {
- 	static const struct pci_bits artop_enable_bits[] = {
- 		{ 0x4AU, 1U, 0x02UL, 0x02UL },	/* port 0 */
-@@ -73,7 +57,7 @@ static int artop6260_pre_reset(struct at
- 	struct ata_port *ap = link->ap;
- 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
+ 	static const struct ata_port_info cmd_info[6] = {
+@@ -336,7 +352,7 @@ static int cmd64x_init_one(struct pci_de
+ 		&cmd_info[id->driver_data],
+ 		NULL
+ 	};
+-	u8 mrdmode, reg;
++	u8 reg;
+ 	int rc;
+ 	struct pci_dev *bridge = pdev->bus->self;
+ 	/* mobility split bridges don't report enabled ports correctly */
+@@ -368,11 +384,7 @@ static int cmd64x_init_one(struct pci_de
+ 			cntrl_ch0_ok = 0;
+ 	}
  
--	/* Odd numbered device ids are the units with enable bits (the -R cards) */
-+	/* Odd numbered device ids are the units with enable bits. */
- 	if ((pdev->device & 1) &&
- 	    !pci_test_config_bits(pdev, &artop_enable_bits[ap->port_no]))
- 		return -ENOENT;
-@@ -317,7 +301,7 @@ static struct ata_port_operations artop6
- 	.cable_detect		= ata_cable_40wire,
- 	.set_piomode		= artop6210_set_piomode,
- 	.set_dmamode		= artop6210_set_dmamode,
--	.prereset		= artop6210_pre_reset,
-+	.prereset		= artop62x0_pre_reset,
- 	.qc_defer		= artop6210_qc_defer,
- };
+-	pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 64);
+-	pci_read_config_byte(pdev, MRDMODE, &mrdmode);
+-	mrdmode &= ~ 0x30;	/* IRQ set up */
+-	mrdmode |= 0x02;	/* Memory read line enable */
+-	pci_write_config_byte(pdev, MRDMODE, mrdmode);
++	cmd64x_fixup(pdev);
  
-@@ -326,7 +310,7 @@ static struct ata_port_operations artop6
- 	.cable_detect		= artop6260_cable_detect,
- 	.set_piomode		= artop6260_set_piomode,
- 	.set_dmamode		= artop6260_set_dmamode,
--	.prereset		= artop6260_pre_reset,
-+	.prereset		= artop62x0_pre_reset,
- };
+ 	/* check for enabled ports */
+ 	pci_read_config_byte(pdev, CNTRL, &reg);
+@@ -388,13 +400,6 @@ static int cmd64x_init_one(struct pci_de
+ 		ppi[1] = &ata_dummy_port_info;
+ 	}
  
+-	/* Force PIO 0 here.. */
+-
+-	/* PPC specific fixup copied from old driver */
+-#ifdef CONFIG_PPC
+-	pci_write_config_byte(pdev, UDIDETCR0, 0xF0);
+-#endif
+-
+ 	return ata_pci_bmdma_init_one(pdev, ppi, &cmd64x_sht, NULL, 0);
+ }
  
+@@ -402,21 +407,14 @@ static int cmd64x_init_one(struct pci_de
+ static int cmd64x_reinit_one(struct pci_dev *pdev)
+ {
+ 	struct ata_host *host = dev_get_drvdata(&pdev->dev);
+-	u8 mrdmode;
+ 	int rc;
+ 
+ 	rc = ata_pci_device_do_resume(pdev);
+ 	if (rc)
+ 		return rc;
+ 
+-	pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 64);
+-	pci_read_config_byte(pdev, MRDMODE, &mrdmode);
+-	mrdmode &= ~ 0x30;	/* IRQ set up */
+-	mrdmode |= 0x02;	/* Memory read line enable */
+-	pci_write_config_byte(pdev, MRDMODE, mrdmode);
+-#ifdef CONFIG_PPC
+-	pci_write_config_byte(pdev, UDIDETCR0, 0xF0);
+-#endif
++	cmd64x_fixup(pdev);
++
+ 	ata_host_resume(host);
+ 	return 0;
+ }
