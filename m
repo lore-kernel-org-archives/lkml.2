@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab1JKTBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:01:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61312 "EHLO mx1.redhat.com"
+	id S1755291Ab1JKTKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:10:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33966 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab1JKTBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:01:34 -0400
-Date: Tue, 11 Oct 2011 20:56:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
-	thread is singlestepping.
-Message-ID: <20111011185653.GA10215@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com> <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com> <20111005180139.GA5704@redhat.com> <20111006054710.GB17591@linux.vnet.ibm.com> <20111007165828.GA32319@redhat.com> <20111010122556.GB16268@linux.vnet.ibm.com> <20111010182535.GA6934@redhat.com> <20111011172603.GD16268@linux.vnet.ibm.com>
+	id S1754879Ab1JKTKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 15:10:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [RESEND PATCH 2/2] PM/runtime: handle ->runtime_suspend failure correctly
+Date: Tue, 11 Oct 2011 21:12:35 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1318131626-9373-1-git-send-email-tom.leiming@gmail.com> <201110102340.57242.rjw@sisk.pl> <CACVXFVNSq2cLin4VQjFHWz+oH96Zwfq_jJ7vR2PurU+3vb6RpQ@mail.gmail.com>
+In-Reply-To: <CACVXFVNSq2cLin4VQjFHWz+oH96Zwfq_jJ7vR2PurU+3vb6RpQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011172603.GD16268@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110112112.35595.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11, Srikar Dronamraju wrote:
->
-> * Oleg Nesterov <oleg@redhat.com> [2011-10-10 20:25:35]:
->
-> > Yes, I think this is possible, and probably you do not even need
-> > set_restore_sigmask().
+On Tuesday, October 11, 2011, Ming Lei wrote:
+> Hi
+> 
+> 2011/10/11 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Sunday, October 09, 2011, tom.leiming@gmail.com wrote:
+> >> From: Ming Lei <ming.lei@canonical.com>
+> >>
+> >> If ->runtime_suspend returns -EAGAIN or -EBUSY, the device should
+> >> still be in ACTIVE state, so it is not needed to send idle notification
+> >> to its parent; if ->runtime_suspend returns other fatal failure, it
+> >> doesn't make sense to send idle notification to its parent.
+> >>
+> >> So skip these when failure is returned from ->runtime_suspend, also add
+> >> comments for this handling in rpm_suspend.
+> >>
+> >> This patch also updates comments for rpm_suspend:
+> >>
+> >> - 'Cancel a pending idle notification' should be put before, also
+> >> should be changed as 'Cancel a pending idle notification or
+> >> autosuspend/suspend'
 > >
-> > But. There are some problems with this approach too.
+> > That should be a different patch I think?
+> 
+> OK, I will split it into two.
+> 
 > >
-> > Firstly, even if you block all signals, there are other reasons for
-> > TIF_SIGPENDING which you can't control. For example, the task can be
-> > frozen or it can stop in UTASK_SSTEP state. Not good, if we have
-> > enough threads, this can lead to the "soft" deadlock. Say, a group
-> > stop can never finish because a thread sleeps in xol_wait_event()
-> > "forever".
+> >> - idle notification for suspend failure has been removed, so update
+> >> comments for it
+> >>
+> >> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> >> ---
+> >> v1: some minor change on Alan's suggestion
+> >> ---
+> >>  drivers/base/power/runtime.c |   34 +++++++++++++++++++---------------
+> >>  1 files changed, 19 insertions(+), 15 deletions(-)
+> >>
+> >> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> >> index 441b5a3..e3c6a8f 100644
+> >> --- a/drivers/base/power/runtime.c
+> >> +++ b/drivers/base/power/runtime.c
+> >> @@ -284,14 +284,17 @@ static int rpm_callback(int (*cb)(struct device *), struct device *dev)
+> >>   * @dev: Device to suspend.
+> >>   * @rpmflags: Flag bits.
+> >>   *
+> >> - * Check if the device's runtime PM status allows it to be suspended.  If
+> >> - * another suspend has been started earlier, either return immediately or wait
+> >> - * for it to finish, depending on the RPM_NOWAIT and RPM_ASYNC flags.  Cancel a
+> >> - * pending idle notification.  If the RPM_ASYNC flag is set then queue a
+> >> - * suspend request; otherwise run the ->runtime_suspend() callback directly.
+> >> - * If a deferred resume was requested while the callback was running then carry
+> >> - * it out; otherwise send an idle notification for the device (if the suspend
+> >> - * failed) or for its parent (if the suspend succeeded).
+> >> + * Check if the device's runtime PM status allows it to be suspended. Cancel
+> >> + * a pending idle notification or autosuspend/suspend. If another suspend has
+> >> + * been started earlier, either return immediately or wait for it to finish,
+> >> + * depending on the RPM_NOWAIT and RPM_ASYNC flags. If the RPM_ASYNC flag is
+> >> + * set then queue a suspend request; otherwise run the ->runtime_suspend()
+> >> + * callback directly. If ->runtime_suspend returns failure, just cancel
+> >> + * pending request and wake up waited tasks, then return immediatelly.
+> >> + * After ->runtime_suspend succeeded, if a deferred resume was requested
+> >> + * while the callback was running then carry it out; otherwise send an idle
+> >> + * notification for its parent (if both ignore_children and irq_safe
+> >> + * are not set).
+> >>   *
+> >>   * This function must be called under dev->power.lock with interrupts disabled.
+> >>   */
+> >> @@ -410,15 +413,16 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+> >>                       dev->power.runtime_error = 0;
+> >>               else
+> >>                       pm_runtime_cancel_pending(dev);
+> >> -     } else {
+> >> +             wake_up_all(&dev->power.wait_queue);
+> >> +             goto out;
+> >> +     }
+> >>   no_callback:
 > >
->
-> My idea was to block signals just across singlestep only. I.e
-> we dont block signals while we contend for the slot.
+> > I don't think the change above is correct.  The code below
+> > no_callback only should be executed if retval is zero.
+> 
+> The 'goto out' above no_callback will bypass this, won't it?
 
-Yes, yes, I see. But, once again, this can only protect from kill().
+Yes, it will, sorry.  It seems I was confused by the removal of
+"} else {".
 
-The task can stop even if you block all signals, another thread
-can initiate the group stop and set JOBCTL_STOP_PENDING + TIF_SIGPENDING.
-And note that it can stop _before_ it returns to user mode to step
-over the xol insn.
+OK, so this is technically correct.
 
-In theory the tasks like this can consume all slots, and if we have
-yet another thread waiting in xol_wait_event(), we deadlock. Although
-in this case SIGCONT helps, but this group stop can never finish.
+Please resubmit with the unrelated comment changes splitted out.
 
-> > Another problem is that it is not possible to block the "implicit"
-> > SIGKILL sent by exec/exit_group/etc. This mean the task can exit
-> > without sstep_complete/xol_free_insn_slot/etc. Mostly this is fine,
-> > we have free_uprobe_utask()->xol_free_insn_slot(). But in theory
-> > this can deadlock afaics. Suppose that the coredumping is in progress,
-> > the killed UTASK_SSTEP task hangs in exit_mm() waiting for other
-> > threads. If we have enough threads like this, we can deadlock with
-> > another thread sleeping in xol_wait_event().
->
-> Shouldnt the behaviour be the same as threads that did a
-> select,sigsuspend?
-
-Hmm. I don't understand... Could you explain?
-
-Firstly, select/sigsuspend can't block SIGKILL, but this doesn't matter.
-My point was, the task can exit in UTASK_SSTEP state, and without
-xol_free_insn_slot(). And this (in theory) can lead to the "real"
-deadlock.
-
-> > However the first problem looks nasty, even if it is not very serious.
-> > And, otoh, it doesn't look right to block SIGKILL, the task can loop
-> > forever executing the xol insn (see below).
-> >
-> >
-> >
-> > What do you think about the patch below? On top of 25/26, uncompiled,
-> > untested. With this patch the task simply refuses to react to
-> > TIF_SIGPENDING until sstep_complete().
-> >
->
-> Your patch looks very simple and clean.
-> Will test this patch and revert.
-
-Great. I'll think a bit more and send you the "final" version tomorrow.
-Assuming we can change sstep_complete() as we discussed, it doesn't need
-fatal_signal_pending().
-
-HOWEVER. There is yet another problem. Another thread can, say, unmap()
-xol_vma. In this case we should ensure that the task can't fault in an
-endless loop.
-
-> > And, unless I missed something, this makes
-> > free_uprobe_utask()->xol_free_insn_slot() unnecessary.
->
-> What if a fatal (SIGKILL) signal was delivered only to that thread
-
-this is not possible, in this case all threads are killed. But,
-
-> or a fatal signal for a thread-group but more
-> than one thread-group share the mm?
-
-Yes, this is possible.
-
-Sorry for confusion. Yes, if we have the fatal_signal_pending() check
-in sstep_complete(), then we do need
-free_uprobe_utask()->xol_free_insn_slot(). But this check was added
-only to illustrate another problem with the self-repeating insns.
-
-And. With "HOWEVER" above, we probably need this xol_free anyway.
-
-> you have already commented why blocking signals is a problem, but I
-> still thought I will post the patch that I had to let you know what I
-> was thinking before I saw your patch.
->
-> While task is processing a singlestep due to uprobes breakpoint hit,
-> block signals from the time it enables singlestep to the time it disables
-> singlestep.
-
-OK, it is too late for me today, I'll take a look tomorrow.
-
-This approach has some advantages too, perhaps we should make something
-"in between".
-
-Oleg.
-
+Thanks,
+Rafael
