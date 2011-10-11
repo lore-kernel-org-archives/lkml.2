@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab1JKBSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 21:18:45 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:49518 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab1JKBSn (ORCPT
+	id S1753217Ab1JKB24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 21:28:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58585 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1JKB2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 21:18:43 -0400
-Date: Mon, 10 Oct 2011 19:18:42 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-In-Reply-To: <alpine.DEB.2.00.1110101455590.5205@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.00.1110101851570.5205@utopia.booyaka.com>
-References: <1317901099-2519-1-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1110070305040.4611@utopia.booyaka.com> <CAP05o4J39MotDTOv-O2ahvWfxL-7jC-L3FGsNXbmDy8HNg=W3g@mail.gmail.com> <alpine.DEB.2.00.1110070330220.4611@utopia.booyaka.com>
- <CAP05o4KLAnNHcvNbNWqJFN710JMNAy2emYzCt2xHF+m-Kvwveg@mail.gmail.com> <CAP05o4+ybhZwRaXZPgS-ZdTL_0gjz1VLf6LuUtMgm_txNPwrnw@mail.gmail.com> <alpine.DEB.2.00.1110101455590.5205@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 10 Oct 2011 21:28:55 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111010172557.332bfe30@lxorguk.ukuu.org.uk>
+References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
+Date: Tue, 11 Oct 2011 09:28:54 +0800
+Message-ID: <CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
+Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi,
 
-On Mon, 10 Oct 2011, Paul Walmsley wrote:
+On Tue, Oct 11, 2011 at 12:25 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Mon, 10 Oct 2011 22:31:34 +0800
+> Ming Lei <tom.leiming@gmail.com> wrote:
+>
+>> Hi,
+>>
+>> Looks like it is a bit difficult to understand PM_QOS_CPU_DMA_LATENCY
+>> from the words' meaning.
+>>
+>> After searching from google, I don't find some useful information about
+>> the root cause for introducing PM_QOS_CPU_DMA_LATENCY. I understand
+>> it is very similar to interrupt latency. Also from the comment for
+>> omap_pm_set_max_mpu_wakeup_lat in file[1], the description is basically same
+>> with interrupt latency.
+>>
+>> >From comments of pm_qos_add_request usages in drivers, it can be understood
+>> as interrupt latency too, IMO.
+>>
+>> So, could we think that PM_QOS_CPU_DMA_LATENCY is interrupt latency?
+>
+> No. Well it may be on some platforms but it isn't the same thing. On some
+> devices a DMA transfer doesn't need the CPU involved but needs the CPU to
+> respond within a set timescale (eg for coherency or bus arbitration). It
 
-> Basically, the existing OMAP USB subsystem MFD driver should create a TLL 
-> device.  Then the existing Linux driver probing system can associate the 
-> TLL driver with the TLL device.
+I understand only the CPU can respond after it is notified by a
+interrupt event,
+don't I?
 
-This part isn't right.  After staring at the OMAP34xx TRM, it looks like 
-the TLL modules have a separate interconnect port.  See for example the 
-OMAP34xx TRM Rev. ZR Table 2-3 "L4-Core Memory Space Mapping".
+Also could you give a example about how the CPU responds to a DMA transfer
+within a set timescale if it is required?
 
-So then the TLL device should be created by the code in 
-arch/arm/mach-omap2/usb-host.c, as one of Keshava's patches does.  And 
-indeed we have separate hwmods for the TLL IP blocks -- although both the 
-OMAP3 and OMAP4 hwmod data that was posted are missing important fields.
-
-So drivers/omap-usb-host.c shouldn't create a new TLL device.  You just 
-need to pull all of the TLL code and data out of that MFD driver into a 
-new TLL driver under drivers/usb somewhere.
-
-Then you'll need some way for the EHCI/OHCI code to figure out which 
-USBTLL device handles each port.  I'd suggest that, unless there is some 
-explicit Linux USB core support for associating a TLL port with a host 
-controller port, that the code in arch/arm/mach-omap2/usb-host.c register 
-the USBTLL device first (the opposite of what it does now), then pass 
-the pointer to the USBTLL's struct device via platform_data to 
-drivers/mfd/omap-usb-host.c.  Then that can either be passed via 
-platform_data to the EHCI/OHCI drivers, or the EHCI/OHCI drivers can call 
-a drivers/mfd/omap-usb-host.c function to retrieve that struct device 
-pointer.
+> is not the same thing as IRQ latency.
 
 
-- Paul
+thanks,
+-- 
+Ming Lei
