@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab1JKCFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 22:05:44 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47092 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab1JKCFn (ORCPT
+	id S1754041Ab1JKCIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 22:08:11 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:38885 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1JKCIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 22:05:43 -0400
-Date: Mon, 10 Oct 2011 19:05:30 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: "Ted Ts'o" <tytso@mit.edu>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Matt Helsley <matthltc@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-Message-ID: <20111011020530.GG16723@count0.beaverton.ibm.com>
-References: <1317943022.1095.25.camel@mop>
- <20111007074904.GC16723@count0.beaverton.ibm.com>
- <20111007160113.GB14201@tango.0pointer.de>
- <m17h4g2jqy.fsf@fess.ebiederm.org>
- <20111010163140.GA22191@tango.0pointer.de>
- <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
- <20111011013201.GA7948@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011013201.GA7948@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11101102-1780-0000-0000-000000287FD4
+	Mon, 10 Oct 2011 22:08:10 -0400
+Date: Tue, 11 Oct 2011 13:07:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        Boojin Kim <boojin.kim@samsung.com>, Vinod Koul <vinod.koul@intel.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: linux-next: manual merge of the s5p tree with the arm tree
+Message-Id: <20111011130751.c8d3890734c7dd2b4c014439@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Oct_2011_13_07_51_+1100_z4CLThnHz9E_Yv7G"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 09:32:01PM -0400, Ted Ts'o wrote:
-> On Mon, Oct 10, 2011 at 01:59:10PM -0700, Eric W. Biederman wrote:
-> > Lennart Poettering <mzxreary@0pointer.de> writes:
-> > 
-> > > To make a standard distribution run nicely in a Linux container you
-> > > usually have to make quite a number of modifications to it and disable
-> > > certain things from the boot process. Ideally however, one could simply
-> > > boot the same image on a real machine and in a container and would just
-> > > do the right thing, fully stateless. And for that you need to be able to
-> > > detect containers, and currently you can't.
-> > 
-> > I agree getting to the point where we can run a standard distribution
-> > unmodified in a container sounds like a reasonable goal.
-> 
-> Hmm, interesting.  It's not clear to me that running a full standard
-> distribution in a container is always going to be what everyone wants
-> to do.
-> 
-> The whole point of containers versus VM's is that containers are
-> lighter weight.  And one of the ways that containers can be lighter
-> weight is if you don't have to have N copies of udev, dbus, running in
-> each container/VM.
-> 
-> If you end up so much overhead to provide the desired security and/or
-> performance isolation, then it becomes fair to ask the question
-> whether you might as well pay a tad bit more and get even better
-> security and isolation by using a VM solution....
-> 
-> 	     	       	  	     - Ted
+--Signature=_Tue__11_Oct_2011_13_07_51_+1100_z4CLThnHz9E_Yv7G
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it does detract from the unique advantages of using a container.
-However, I think the value here is not the effeciency of the initial
-system configuration but the fact that it gives users a better place to
-start.
+Hi Kukjin,
 
-Right now we're effectively asking users to start with non-working
-and/or unfamiliar systems and repair them until they work.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-exynos4/Kconfig between commit 15e0d9e37c7f ("ARM: pm: let
+platforms select cpu_suspend support") from the arm tree and commits
+bf856fbb5e10 ("ARM: EXYNOS4: Use generic DMA PL330 driver"), 0da3beadcbed
+("ARM: S5P: Make the common S5P PM code conditionally compile") and
+e2e13621b267 ("ARM: S5P: Make the sleep code common for S5P series SoCs")
+from the s5p tree.
 
-By enabling unmodified distro installs in a container we're starting
-at the other end. The choices may not be the most efficient but the
-user may begin tuning from a working configuration. They can learn
-about and tune those parts that prove significant for their workload.
-This is better because in the end it's not just about how efficient the
-user  can make their containers but how much effort they will spend
-achieving and maintainingg that efficiency over time.
-
+I did the obvious fixup (see below) and can carry the fix as necessary.
+--=20
 Cheers,
-	-Matt Helsley
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/mach-exynos4/Kconfig
+index a652735,dd660eb..0000000
+--- a/arch/arm/mach-exynos4/Kconfig
++++ b/arch/arm/mach-exynos4/Kconfig
+@@@ -11,8 -11,9 +11,10 @@@ if ARCH_EXYNOS
+ =20
+  config CPU_EXYNOS4210
+  	bool
+- 	select S3C_PL330_DMA
++ 	select SAMSUNG_DMADEV
++ 	select S5P_PM if PM
++ 	select S5P_SLEEP if PM
+ +	select ARM_CPU_SUSPEND if PM
+  	help
+  	  Enable EXYNOS4210 CPU support
+ =20
+
+--Signature=_Tue__11_Oct_2011_13_07_51_+1100_z4CLThnHz9E_Yv7G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOk6T3AAoJEECxmPOUX5FErD8P/2kaeOTig8itBsXSDf13o2GB
+tWVsNEGOXDJxjv+ZuNDAmyvhoEyKevsvYm1zVOG8afDrmv62NVtUcahKMbxKdAXI
+gxe6gstULigFgvhOjMyL0xw4q/gfKdLgEia/viszHHUpDjb0v+pQ/x/cevO7Ex2E
+20LUBplHYmaAXXxVVSBgpUvUExbj78Ui9f+DyxQ80lR7EGXaOSRMQ823So+OCtVG
+4QOQqMx3zPmXwhfUvnPXrSJWWHiMJW8n1fkpxuPrUqHVARqF08KFjDTtGOtcExsu
+MCOurC4niXxok5dTgWJke1Bkypr4bX3TOiq0K+iqNa8pjAVOQuu2EPgrC+ZKVX46
+mGn60vWSNdlh5/B8TgSIwLU+SxOxYLQ8a75axScKpbKG6xRAxQkNAWYabd5xmUXe
+zaiU1apXcXwUV+93RLlJCyr91iUtzViXyy83BMLCqpCmclXqf+Yb/HqHHhWiDCzf
+KMra9BbiWeXOIN961xlt0BBzjgnsZ31RHiGWUXLx805T9RxrLLuayg4B1lhSmxtv
+cQZNr/ZwjXTDdSylau89Iw0WZtzeWrVocZ1OotJeCQZ/vmErYUZngpE0mYR8e4ww
+6leOESNe28dKlIBDdDC1rQ9oZKwpyZkOJ51rBocgYy/ntmy5n9U3pIyJEI8ccRgo
+cDM4h9NMB3zrc261zLR9
+=C2je
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Oct_2011_13_07_51_+1100_z4CLThnHz9E_Yv7G--
