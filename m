@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab1JKVyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:54:47 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63077 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab1JKVyp (ORCPT
+	id S1751364Ab1JKVzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:55:10 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:44256 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751084Ab1JKVzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:54:45 -0400
-Date: Tue, 11 Oct 2011 14:54:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/3] ipc/sem.c: handle spurious wakeups
-Message-Id: <20111011145441.228e4c94.akpm@linux-foundation.org>
-In-Reply-To: <1316885831-11996-1-git-send-email-manfred@colorfullife.com>
-References: <1316885831-11996-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Oct 2011 17:55:09 -0400
+Message-ID: <4E94BB3B.9030508@xenotime.net>
+Date: Tue, 11 Oct 2011 14:55:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: gpio-regulator add dependency on GENERIC_GPIO
+References: <201110112311.02195.heiko@sntech.de>
+In-Reply-To: <201110112311.02195.heiko@sntech.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Sep 2011 19:37:11 +0200
-Manfred Spraul <manfred@colorfullife.com> wrote:
+On 10/11/11 14:11, Heiko Stübner wrote:
+> Without GENERIC_GPIO "struct gpio" is undefined leading to errors.
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
-> semtimedop() does not handle spurious wakeups, it returns -EINTR to user space.
-> Most other schedule() users would just loop and not return to user space.
-> The patch adds such a loop to semtimedop()
+Works for me.  Thanks.
 
-What is a "spurious wakeup" and how can a process receive one?
-
-I'm wondering about the userspace-visible effects of this change, and
-any compatibility issues?
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
 
+> ---
+>  drivers/regulator/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index 5e0c7b6..9713b1b 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -66,6 +66,7 @@ config REGULATOR_USERSPACE_CONSUMER
+>  
+>  config REGULATOR_GPIO
+>  	tristate "GPIO regulator support"
+> +	depends on GENERIC_GPIO
+>  	help
+>  	  This driver provides support for regulators that can be
+>  	  controlled via gpios.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
