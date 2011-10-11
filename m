@@ -1,35 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab1JKNIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:08:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25996 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752997Ab1JKNIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:08:09 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHmpFF8vT8HVU3RL95p_s9ec2RJ1+o4K2TOrWX2QJrvwog@mail.gmail.com>
-References: <CAOH1cHmpFF8vT8HVU3RL95p_s9ec2RJ1+o4K2TOrWX2QJrvwog@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> 
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: dhowells@redhat.com,
-        Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-Date: Tue, 11 Oct 2011 14:07:00 +0100
-Message-ID: <1448.1318338420@redhat.com>
+	id S1754677Ab1JKNIp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:08:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41948 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab1JKNIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 09:08:44 -0400
+Date: Tue, 11 Oct 2011 08:08:36 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge@hallyn.com
+Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
+Message-ID: <20111011130836.GA5106@sergelap>
+References: <20110920185354.GA19629@sergelap>
+ <20110921175357.GA25590@redhat.com>
+ <20110923163113.GA3820@sergelap>
+ <20110923173656.GA5233@redhat.com>
+ <20110923212025.GA21330@sergelap>
+ <20110924163709.GA6776@redhat.com>
+ <20110925201723.GA5288@sergelap>
+ <20110926160619.GA13736@redhat.com>
+ <20111004174213.GA24179@sergelap>
+ <20111009190022.GA13853@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111009190022.GA13853@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Moseley <moseleymark@gmail.com> wrote:
+Quoting Oleg Nesterov (oleg@redhat.com):
+> Sorry, I missed this email...
+> 
+> On 10/04, Serge E. Hallyn wrote:
+> >
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > > --- x/kernel/signal.c
+> > > +++ x/kernel/signal.c
+> > > @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
+> > >  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+> > >  }
+> > >
+> > > +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
+> > > +{
+> > > +#ifdef CONFIG_USER_NS
+> > > +	if (current_user_ns() == task_cred_xxx(t, user_ns)))
+> > > +#endif
+> > > +		return;
+> > > +
+> > > +	if (SI_FROMKERNEL(info))
+> > > +		switch (info->si_code & __SI_MASK) {
+> > > +			default:
+> > > +				return;
+> > > +
+> > > +			case __SI_CHLD:
+> >
+> > If I'm reading this right, this will catch do_notify_parent, which is
+> > sending signals not from current.
+> 
+> Argh, indeed. So we need to modify the callers.
+> 
+> OTOH, this is only possible if the debugger notifies tracee->real_parent,
+> or we reparent to /sbin/init.
 
-> [37818.485559] kernel BUG at fs/fscache/object-list.c:64!
+Right.  (I thought we decided that was the case anyway, but maybe I was
+missing something)
 
-Hmmm...  An object is being added to the object list twice.  It may indicate a
-free before an object is finished with.  Do you have slab debugging turned on?
+> Anyways, yes, I forgot about this. Thanks.
+> 
+> Oleg.
 
-David
+I'll try to get the new patch out this week, else early next.  (Shouldn't
+take long to write, but testing is another matter)
+
+thanks,
+-serge
