@@ -1,1959 +1,699 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab1JKRAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:00:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35872 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755051Ab1JKRAk (ORCPT
+	id S1755223Ab1JKRBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:01:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37801 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab1JKRBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:00:40 -0400
-X-Sasl-enc: ofv9y5MJyXsCVQqX33QoeN5dyYSYHEeTeEnSz8zOAC49 1318352438
-Date: Tue, 11 Oct 2011 11:00:26 -0600
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/38] 3.0.7-stable review
-Message-ID: <20111011170026.GB31075@kroah.com>
-References: <20111011165903.GA30976@kroah.com>
+	Tue, 11 Oct 2011 13:01:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R+My9LyyhiUvIEro"
-Content-Disposition: inline
-In-Reply-To: <20111011165903.GA30976@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [46.116.27.118]
+In-Reply-To: <20111011103820.GF2138@amd.com>
+References: <20110927100505.GH2138@amd.com> <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
+ <20110927131222.GL2138@amd.com> <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
+ <20110927181438.GM2138@amd.com> <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
+ <20111010094738.GW2138@amd.com> <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
+ <20111010153609.GB2138@amd.com> <CAK=WgbbnuO67X46sqS87q2vw2TWq3Ekvw5p1PmXvXinQXMyowg@mail.gmail.com>
+ <20111011103820.GF2138@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 11 Oct 2011 19:01:23 +0200
+Message-ID: <CAK=WgbYOUZNX0OmRwZNO1mMG+3DZXwff+S60ESWixf04HOcbtw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
+ supported by the hardware
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 11, 2011 at 12:38 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> You need to make sure that you don;t pass larger regions then requested
+> to the low-level driver. Some logic like in the iommu_map function
+> should do it.
 
---R+My9LyyhiUvIEro
-Content-Type: multipart/mixed; boundary="ZfOjI3PrQbgiZnxM"
-Content-Disposition: inline
+You're right. But the solution IMHO should be getting rid of that size
+-> order -> size conversion which we do back and forth, as it's kinda
+pointless.
 
+> Please use PAGE_SIZE instead of 0x1000UL.
 
---ZfOjI3PrQbgiZnxM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This one would go away too if we remove the size -> order -> size
+conversions. In fact, iommu_unmap() just becomes so much simpler when
+we do that.
 
-Here is the 3.0.7-rc1 patch.
+I'm attaching two patches: first one that removes the
+size->order->size conversions we have, and then the usual pgsize patch
+rebased to it.
 
-greg k-h
+Please take a look,
 
---ZfOjI3PrQbgiZnxM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="patch-3.0.7-rc1"
-Content-Transfer-Encoding: quoted-printable
+Thanks,
+Ohad.
 
-diff --git a/Makefile b/Makefile
-index 7767a64..5436c8f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION =3D 3
- PATCHLEVEL =3D 0
--SUBLEVEL =3D 6
--EXTRAVERSION =3D
-+SUBLEVEL =3D 7
-+EXTRAVERSION =3D -rc1
- NAME =3D Sneaky Weasel
-=20
- # *DOCUMENTATION*
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index f8b9392..9a9706c 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -6,6 +6,7 @@ config UX500_SOC_COMMON
- 	select ARM_GIC
- 	select HAS_MTU
- 	select ARM_ERRATA_753970
-+	select ARM_ERRATA_754322
-=20
- menu "Ux500 SoC"
-=20
-diff --git a/arch/mips/jz4740/gpio.c b/arch/mips/jz4740/gpio.c
-index 73031f7..4397972 100644
---- a/arch/mips/jz4740/gpio.c
-+++ b/arch/mips/jz4740/gpio.c
-@@ -18,7 +18,7 @@
- #include <linux/init.h>
-=20
- #include <linux/spinlock.h>
--#include <linux/sysdev.h>
-+#include <linux/syscore_ops.h>
- #include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
-@@ -86,7 +86,6 @@ struct jz_gpio_chip {
- 	spinlock_t lock;
-=20
- 	struct gpio_chip gpio_chip;
--	struct sys_device sysdev;
- };
-=20
- static struct jz_gpio_chip jz4740_gpio_chips[];
-@@ -459,49 +458,47 @@ static struct jz_gpio_chip jz4740_gpio_chips[] =3D {
- 	JZ4740_GPIO_CHIP(D),
- };
-=20
--static inline struct jz_gpio_chip *sysdev_to_chip(struct sys_device *dev)
-+static void jz4740_gpio_suspend_chip(struct jz_gpio_chip *chip)
+>From 7102bda53a425872591f14f850ab031b1ca5dae1 Mon Sep 17 00:00:00 2001
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 11 Oct 2011 16:50:38 +0200
+Subject: [PATCH 1/2] iommu/core: stop converting bytes to page order
+back and forth
+
+Express sizes in bytes rather than in page order, to eliminate the
+size->order->size conversions we have whenever the IOMMU API is calling
+the low level drivers' map/unmap methods.
+
+Adopt all existing drivers.
+
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+---
+ drivers/iommu/amd_iommu.c   |   13 +++++--------
+ drivers/iommu/intel-iommu.c |   11 ++++-------
+ drivers/iommu/iommu.c       |    8 +++++---
+ drivers/iommu/msm_iommu.c   |   19 +++++++------------
+ drivers/iommu/omap-iommu.c  |   14 +++++---------
+ include/linux/iommu.h       |    6 +++---
+ 6 files changed, 29 insertions(+), 42 deletions(-)
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 764e3da..32d502e 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2702,9 +2702,8 @@ static int amd_iommu_attach_device(struct
+iommu_domain *dom,
+ }
+
+ static int amd_iommu_map(struct iommu_domain *dom, unsigned long iova,
+-			 phys_addr_t paddr, int gfp_order, int iommu_prot)
++			 phys_addr_t paddr, size_t page_size, int iommu_prot)
  {
--	return container_of(dev, struct jz_gpio_chip, sysdev);
-+	chip->suspend_mask =3D readl(chip->base + JZ_REG_GPIO_MASK);
-+	writel(~(chip->wakeup), chip->base + JZ_REG_GPIO_MASK_SET);
-+	writel(chip->wakeup, chip->base + JZ_REG_GPIO_MASK_CLEAR);
- }
-=20
--static int jz4740_gpio_suspend(struct sys_device *dev, pm_message_t state)
-+static int jz4740_gpio_suspend(void)
- {
--	struct jz_gpio_chip *chip =3D sysdev_to_chip(dev);
-+	int i;
-=20
--	chip->suspend_mask =3D readl(chip->base + JZ_REG_GPIO_MASK);
--	writel(~(chip->wakeup), chip->base + JZ_REG_GPIO_MASK_SET);
--	writel(chip->wakeup, chip->base + JZ_REG_GPIO_MASK_CLEAR);
-+	for (i =3D 0; i < ARRAY_SIZE(jz4740_gpio_chips); i++)
-+		jz4740_gpio_suspend_chip(&jz4740_gpio_chips[i]);
-=20
- 	return 0;
- }
-=20
--static int jz4740_gpio_resume(struct sys_device *dev)
-+static void jz4740_gpio_resume_chip(struct jz_gpio_chip *chip)
- {
--	struct jz_gpio_chip *chip =3D sysdev_to_chip(dev);
- 	uint32_t mask =3D chip->suspend_mask;
-=20
- 	writel(~mask, chip->base + JZ_REG_GPIO_MASK_CLEAR);
- 	writel(mask, chip->base + JZ_REG_GPIO_MASK_SET);
-+}
-=20
--	return 0;
-+static void jz4740_gpio_resume(void)
-+{
-+	int i;
-+
-+	for (i =3D ARRAY_SIZE(jz4740_gpio_chips) - 1; i >=3D 0 ; i--)
-+		jz4740_gpio_resume_chip(&jz4740_gpio_chips[i]);
- }
-=20
--static struct sysdev_class jz4740_gpio_sysdev_class =3D {
--	.name =3D "gpio",
-+static struct syscore_ops jz4740_gpio_syscore_ops =3D {
- 	.suspend =3D jz4740_gpio_suspend,
- 	.resume =3D jz4740_gpio_resume,
- };
-=20
--static int jz4740_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int i=
-d)
-+static void jz4740_gpio_chip_init(struct jz_gpio_chip *chip, unsigned int =
-id)
- {
--	int ret, irq;
--
--	chip->sysdev.id =3D id;
--	chip->sysdev.cls =3D &jz4740_gpio_sysdev_class;
--	ret =3D sysdev_register(&chip->sysdev);
--
--	if (ret)
--		return ret;
-+	int irq;
-=20
- 	spin_lock_init(&chip->lock);
-=20
-@@ -519,22 +516,17 @@ static int jz4740_gpio_chip_init(struct jz_gpio_chip =
-*chip, unsigned int id)
- 		irq_set_chip_and_handler(irq, &jz_gpio_irq_chip,
- 					 handle_level_irq);
- 	}
--
--	return 0;
- }
-=20
- static int __init jz4740_gpio_init(void)
- {
- 	unsigned int i;
--	int ret;
--
--	ret =3D sysdev_class_register(&jz4740_gpio_sysdev_class);
--	if (ret)
--		return ret;
-=20
- 	for (i =3D 0; i < ARRAY_SIZE(jz4740_gpio_chips); ++i)
- 		jz4740_gpio_chip_init(&jz4740_gpio_chips[i], i);
-=20
-+	register_syscore_ops(&jz4740_gpio_syscore_ops);
-+
- 	printk(KERN_INFO "JZ4740 GPIO initialized\n");
-=20
- 	return 0;
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 581531d..8e073d8 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -511,6 +511,11 @@ static void __init read_obp_translations(void)
- 		for (i =3D 0; i < prom_trans_ents; i++)
- 			prom_trans[i].data &=3D ~0x0003fe0000000000UL;
- 	}
-+
-+	/* Force execute bit on.  */
-+	for (i =3D 0; i < prom_trans_ents; i++)
-+		prom_trans[i].data |=3D (tlb_type =3D=3D hypervisor ?
-+				       _PAGE_EXEC_4V : _PAGE_EXEC_4U);
- }
-=20
- static void __init hypervisor_tlb_lock(unsigned long vaddr,
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 68c3c13..7fc35a1 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -43,6 +43,17 @@ static const struct dmi_system_id pci_use_crs_table[] __=
-initconst =3D {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
-                 },
-         },
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=3D30552 */
-+	/* 2006 AMD HT/VIA system with two host bridges */
-+	{
-+		.callback =3D set_use_crs,
-+		.ident =3D "ASUS M2V-MX SE",
-+		.matches =3D {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
-+			DMI_MATCH(DMI_BOARD_NAME, "M2V-MX SE"),
-+			DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
-+		},
-+	},
- 	{}
- };
-=20
-@@ -361,6 +372,20 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct a=
-cpi_pci_root *root)
- 		}
- 	}
-=20
-+	/* After the PCI-E bus has been walked and all devices discovered,
-+	 * configure any settings of the fabric that might be necessary.
-+	 */
-+	if (bus) {
-+		struct pci_bus *child;
-+		list_for_each_entry(child, &bus->children, node) {
-+			struct pci_dev *self =3D child->self;
-+			if (!self)
-+				continue;
-+
-+			pcie_bus_configure_settings(child, self->pcie_mpss);
-+		}
-+	}
-+
- 	if (!bus)
- 		kfree(sd);
-=20
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index cab6960..1e9ab9b 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -812,6 +812,18 @@ static bool ahci_sb600_enable_64bit(struct pci_dev *pd=
-ev)
- 				DMI_MATCH(DMI_BOARD_NAME, "MS-7376"),
- 			},
- 		},
-+		/*
-+		 * All BIOS versions for the Asus M3A support 64bit DMA.
-+		 * (all release versions from 0301 to 1206 were tested)
-+		 */
-+		{
-+			.ident =3D "ASUS M3A",
-+			.matches =3D {
-+				DMI_MATCH(DMI_BOARD_VENDOR,
-+					  "ASUSTeK Computer INC."),
-+				DMI_MATCH(DMI_BOARD_NAME, "M3A"),
-+			},
-+		},
- 		{ }
- 	};
- 	const struct dmi_system_id *match;
-diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/=
-atombios_dp.c
-index 7ad43c6..79e8ebc 100644
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -115,6 +115,7 @@ static int radeon_dp_aux_native_write(struct radeon_con=
-nector *radeon_connector,
- 	u8 msg[20];
- 	int msg_bytes =3D send_bytes + 4;
- 	u8 ack;
-+	unsigned retry;
-=20
- 	if (send_bytes > 16)
- 		return -1;
-@@ -125,20 +126,22 @@ static int radeon_dp_aux_native_write(struct radeon_c=
-onnector *radeon_connector,
- 	msg[3] =3D (msg_bytes << 4) | (send_bytes - 1);
- 	memcpy(&msg[4], send, send_bytes);
-=20
--	while (1) {
-+	for (retry =3D 0; retry < 4; retry++) {
- 		ret =3D radeon_process_aux_ch(dig_connector->dp_i2c_bus,
- 					    msg, msg_bytes, NULL, 0, delay, &ack);
--		if (ret < 0)
-+		if (ret =3D=3D -EBUSY)
-+			continue;
-+		else if (ret < 0)
- 			return ret;
- 		if ((ack & AUX_NATIVE_REPLY_MASK) =3D=3D AUX_NATIVE_REPLY_ACK)
--			break;
-+			return send_bytes;
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) =3D=3D AUX_NATIVE_REPLY_DEFER)
- 			udelay(400);
- 		else
- 			return -EIO;
- 	}
-=20
--	return send_bytes;
-+	return -EIO;
- }
-=20
- static int radeon_dp_aux_native_read(struct radeon_connector *radeon_conne=
-ctor,
-@@ -149,26 +152,31 @@ static int radeon_dp_aux_native_read(struct radeon_co=
-nnector *radeon_connector,
- 	int msg_bytes =3D 4;
- 	u8 ack;
+-	unsigned long page_size = 0x1000UL << gfp_order;
+ 	struct protection_domain *domain = dom->priv;
+ 	int prot = 0;
  	int ret;
-+	unsigned retry;
-=20
- 	msg[0] =3D address;
- 	msg[1] =3D address >> 8;
- 	msg[2] =3D AUX_NATIVE_READ << 4;
- 	msg[3] =3D (msg_bytes << 4) | (recv_bytes - 1);
-=20
--	while (1) {
-+	for (retry =3D 0; retry < 4; retry++) {
- 		ret =3D radeon_process_aux_ch(dig_connector->dp_i2c_bus,
- 					    msg, msg_bytes, recv, recv_bytes, delay, &ack);
--		if (ret =3D=3D 0)
--			return -EPROTO;
--		if (ret < 0)
-+		if (ret =3D=3D -EBUSY)
-+			continue;
-+		else if (ret < 0)
- 			return ret;
- 		if ((ack & AUX_NATIVE_REPLY_MASK) =3D=3D AUX_NATIVE_REPLY_ACK)
- 			return ret;
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) =3D=3D AUX_NATIVE_REPLY_DEFER)
- 			udelay(400);
-+		else if (ret =3D=3D 0)
-+			return -EPROTO;
- 		else
- 			return -EIO;
- 	}
+@@ -2721,13 +2720,11 @@ static int amd_iommu_map(struct iommu_domain
+*dom, unsigned long iova,
+ 	return ret;
+ }
+
+-static int amd_iommu_unmap(struct iommu_domain *dom, unsigned long iova,
+-			   int gfp_order)
++static size_t amd_iommu_unmap(struct iommu_domain *dom, unsigned long iova,
++			   size_t page_size)
+ {
+ 	struct protection_domain *domain = dom->priv;
+-	unsigned long page_size, unmap_size;
+-
+-	page_size  = 0x1000UL << gfp_order;
++	size_t unmap_size;
+
+ 	mutex_lock(&domain->api_lock);
+ 	unmap_size = iommu_unmap_page(domain, iova, page_size);
+@@ -2735,7 +2732,7 @@ static int amd_iommu_unmap(struct iommu_domain
+*dom, unsigned long iova,
+
+ 	domain_flush_tlb_pde(domain);
+
+-	return get_order(unmap_size);
++	return unmap_size;
+ }
+
+ static phys_addr_t amd_iommu_iova_to_phys(struct iommu_domain *dom,
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 2d53c3d..96a9bd4 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3821,12 +3821,11 @@ static void intel_iommu_detach_device(struct
+iommu_domain *domain,
+
+ static int intel_iommu_map(struct iommu_domain *domain,
+ 			   unsigned long iova, phys_addr_t hpa,
+-			   int gfp_order, int iommu_prot)
++			   size_t size, int iommu_prot)
+ {
+ 	struct dmar_domain *dmar_domain = domain->priv;
+ 	u64 max_addr;
+ 	int prot = 0;
+-	size_t size;
+ 	int ret;
+
+ 	if (iommu_prot & IOMMU_READ)
+@@ -3836,7 +3835,6 @@ static int intel_iommu_map(struct iommu_domain *domain,
+ 	if ((iommu_prot & IOMMU_CACHE) && dmar_domain->iommu_snooping)
+ 		prot |= DMA_PTE_SNP;
+
+-	size     = PAGE_SIZE << gfp_order;
+ 	max_addr = iova + size;
+ 	if (dmar_domain->max_addr < max_addr) {
+ 		u64 end;
+@@ -3859,11 +3857,10 @@ static int intel_iommu_map(struct iommu_domain *domain,
+ 	return ret;
+ }
+
+-static int intel_iommu_unmap(struct iommu_domain *domain,
+-			     unsigned long iova, int gfp_order)
++static size_t intel_iommu_unmap(struct iommu_domain *domain,
++			     unsigned long iova, size_t size)
+ {
+ 	struct dmar_domain *dmar_domain = domain->priv;
+-	size_t size = PAGE_SIZE << gfp_order;
+
+ 	dma_pte_clear_range(dmar_domain, iova >> VTD_PAGE_SHIFT,
+ 			    (iova + size - 1) >> VTD_PAGE_SHIFT);
+@@ -3871,7 +3868,7 @@ static int intel_iommu_unmap(struct iommu_domain *domain,
+ 	if (dmar_domain->max_addr == iova + size)
+ 		dmar_domain->max_addr = iova;
+
+-	return gfp_order;
++	return size;
+ }
+
+ static phys_addr_t intel_iommu_iova_to_phys(struct iommu_domain *domain,
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 63ca9ba..5d042e8 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -168,13 +168,13 @@ int iommu_map(struct iommu_domain *domain,
+unsigned long iova,
+
+ 	BUG_ON(!IS_ALIGNED(iova | paddr, size));
+
+-	return domain->ops->map(domain, iova, paddr, gfp_order, prot);
++	return domain->ops->map(domain, iova, paddr, size, prot);
+ }
+ EXPORT_SYMBOL_GPL(iommu_map);
+
+ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
+ {
+-	size_t size;
++	size_t size, unmapped;
+
+ 	if (unlikely(domain->ops->unmap == NULL))
+ 		return -ENODEV;
+@@ -183,7 +183,9 @@ int iommu_unmap(struct iommu_domain *domain,
+unsigned long iova, int gfp_order)
+
+ 	BUG_ON(!IS_ALIGNED(iova, size));
+
+-	return domain->ops->unmap(domain, iova, gfp_order);
++	unmapped = domain->ops->unmap(domain, iova, size);
 +
-+	return -EIO;
++	return get_order(unmapped);
  }
-=20
- static void radeon_write_dpcd_reg(struct radeon_connector *radeon_connecto=
-r,
-@@ -232,7 +240,9 @@ int radeon_dp_i2c_aux_ch(struct i2c_adapter *adapter, i=
-nt mode,
- 	for (retry =3D 0; retry < 4; retry++) {
- 		ret =3D radeon_process_aux_ch(auxch,
- 					    msg, msg_bytes, reply, reply_bytes, 0, &ack);
--		if (ret < 0) {
-+		if (ret =3D=3D -EBUSY)
-+			continue;
-+		else if (ret < 0) {
- 			DRM_DEBUG_KMS("aux_ch failed %d\n", ret);
- 			return ret;
- 		}
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/ev=
-ergreen.c
-index c975581..ea7a24e 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1593,48 +1593,6 @@ static u32 evergreen_get_tile_pipe_to_backend_map(st=
-ruct radeon_device *rdev,
- 	return backend_map;
+ EXPORT_SYMBOL_GPL(iommu_unmap);
+
+diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
+index 5865dd2..13718d9 100644
+--- a/drivers/iommu/msm_iommu.c
++++ b/drivers/iommu/msm_iommu.c
+@@ -352,7 +352,7 @@ fail:
  }
-=20
--static void evergreen_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
--
--	tmp =3D RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	case 2:
--	case 3:
--	default:
--		/* default mapping */
--		mc_shared_chremap =3D 0x00fac688;
--		break;
--	}
--
--	switch (rdev->family) {
--	case CHIP_HEMLOCK:
--	case CHIP_CYPRESS:
--	case CHIP_BARTS:
--		tcp_chan_steer_lo =3D 0x54763210;
--		tcp_chan_steer_hi =3D 0x0000ba98;
--		break;
--	case CHIP_JUNIPER:
--	case CHIP_REDWOOD:
--	case CHIP_CEDAR:
--	case CHIP_PALM:
--	case CHIP_SUMO:
--	case CHIP_SUMO2:
--	case CHIP_TURKS:
--	case CHIP_CAICOS:
--	default:
--		tcp_chan_steer_lo =3D 0x76543210;
--		tcp_chan_steer_hi =3D 0x0000ba98;
--		break;
--	}
--
--	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
--	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static void evergreen_gpu_init(struct radeon_device *rdev)
+
+ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+-			 phys_addr_t pa, int order, int prot)
++			 phys_addr_t pa, size_t len, int prot)
  {
- 	u32 cc_rb_backend_disable =3D 0;
-@@ -2080,8 +2038,6 @@ static void evergreen_gpu_init(struct radeon_device *=
-rdev)
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
-=20
--	evergreen_program_channel_remap(rdev);
--
- 	num_shader_engines =3D ((RREG32(GB_ADDR_CONFIG) & NUM_SHADER_ENGINES(3)) =
->> 12) + 1;
- 	grbm_gfx_index =3D INSTANCE_BROADCAST_WRITES;
-=20
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index 0b132a3..0c460c4 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -569,36 +569,6 @@ static u32 cayman_get_tile_pipe_to_backend_map(struct =
-radeon_device *rdev,
- 	return backend_map;
- }
-=20
--static void cayman_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
--
--	tmp =3D RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	case 2:
--	case 3:
--	default:
--		/* default mapping */
--		mc_shared_chremap =3D 0x00fac688;
--		break;
--	}
--
--	switch (rdev->family) {
--	case CHIP_CAYMAN:
--	default:
--		//tcp_chan_steer_lo =3D 0x54763210
--		tcp_chan_steer_lo =3D 0x76543210;
--		tcp_chan_steer_hi =3D 0x0000ba98;
--		break;
--	}
--
--	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
--	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static u32 cayman_get_disable_mask_per_asic(struct radeon_device *rdev,
- 					    u32 disable_mask_per_se,
- 					    u32 max_disable_mask_per_se,
-@@ -841,8 +811,6 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
-=20
--	cayman_program_channel_remap(rdev);
--
- 	/* primary versions */
- 	WREG32(CC_RB_BACKEND_DISABLE, cc_rb_backend_disable);
- 	WREG32(CC_SYS_RB_BACKEND_DISABLE, cc_rb_backend_disable);
-diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/r=
-adeon/radeon_connectors.c
-index d1b36f8..05b8b2c 100644
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -68,11 +68,11 @@ void radeon_connector_hotplug(struct drm_connector *con=
-nector)
- 	if (connector->connector_type =3D=3D DRM_MODE_CONNECTOR_DisplayPort) {
- 		int saved_dpms =3D connector->dpms;
-=20
--		if (radeon_hpd_sense(rdev, radeon_connector->hpd.hpd) &&
--		    radeon_dp_needs_link_train(radeon_connector))
--			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
--		else
-+		/* Only turn off the display it it's physically disconnected */
-+		if (!radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
- 			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-+		else if (radeon_dp_needs_link_train(radeon_connector))
-+			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
- 		connector->dpms =3D saved_dpms;
- 	}
- }
-diff --git a/drivers/gpu/drm/radeon/radeon_cursor.c b/drivers/gpu/drm/radeo=
-n/radeon_cursor.c
-index 3189a7e..f59a682 100644
---- a/drivers/gpu/drm/radeon/radeon_cursor.c
-+++ b/drivers/gpu/drm/radeon/radeon_cursor.c
-@@ -208,6 +208,13 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
- 	int xorigin =3D 0, yorigin =3D 0;
- 	int w =3D radeon_crtc->cursor_width;
-=20
-+	if (ASIC_IS_AVIVO(rdev)) {
-+		/* avivo cursor are offset into the total surface */
-+		x +=3D crtc->x;
-+		y +=3D crtc->y;
-+	}
-+	DRM_DEBUG("x %d y %d c->x %d c->y %d\n", x, y, crtc->x, crtc->y);
-+
- 	if (x < 0)
- 		xorigin =3D -x + 1;
- 	if (y < 0)
-@@ -221,11 +228,6 @@ int radeon_crtc_cursor_move(struct drm_crtc *crtc,
- 		int i =3D 0;
- 		struct drm_crtc *crtc_p;
-=20
--		/* avivo cursor are offset into the total surface */
--		x +=3D crtc->x;
--		y +=3D crtc->y;
--		DRM_DEBUG("x %d y %d c->x %d c->y %d\n", x, y, crtc->x, crtc->y);
--
- 		/* avivo cursor image can't end on 128 pixel boundary or
- 		 * go past the end of the frame if both crtcs are enabled
- 		 */
-diff --git a/drivers/gpu/drm/radeon/radeon_encoders.c b/drivers/gpu/drm/rad=
-eon/radeon_encoders.c
-index 13690f3..8a171b2 100644
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -1755,9 +1755,12 @@ static int radeon_atom_pick_dig_encoder(struct drm_e=
-ncoder *encoder)
- 	/* DCE4/5 */
- 	if (ASIC_IS_DCE4(rdev)) {
- 		dig =3D radeon_encoder->enc_priv;
--		if (ASIC_IS_DCE41(rdev))
--			return radeon_crtc->crtc_id;
--		else {
-+		if (ASIC_IS_DCE41(rdev)) {
-+			if (dig->linkb)
-+				return 1;
-+			else
-+				return 0;
-+		} else {
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 				if (dig->linkb)
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index 4de5189..f2516e6 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -536,55 +536,6 @@ static u32 r700_get_tile_pipe_to_backend_map(struct ra=
-deon_device *rdev,
- 	return backend_map;
- }
-=20
--static void rv770_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer, mc_shared_chremap, tmp;
--	bool force_no_swizzle;
--
--	switch (rdev->family) {
--	case CHIP_RV770:
--	case CHIP_RV730:
--		force_no_swizzle =3D false;
--		break;
--	case CHIP_RV710:
--	case CHIP_RV740:
--	default:
--		force_no_swizzle =3D true;
--		break;
--	}
--
--	tmp =3D RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	default:
--		/* default mapping */
--		mc_shared_chremap =3D 0x00fac688;
--		break;
--	case 2:
--	case 3:
--		if (force_no_swizzle)
--			mc_shared_chremap =3D 0x00fac688;
--		else
--			mc_shared_chremap =3D 0x00bbc298;
--		break;
--	}
--
--	if (rdev->family =3D=3D CHIP_RV740)
--		tcp_chan_steer =3D 0x00ef2a60;
--	else
--		tcp_chan_steer =3D 0x00fac688;
--
--	/* RV770 CE has special chremap setup */
--	if (rdev->pdev->device =3D=3D 0x944e) {
--		tcp_chan_steer =3D 0x00b08b08;
--		mc_shared_chremap =3D 0x00b08b08;
--	}
--
--	WREG32(TCP_CHAN_STEER, tcp_chan_steer);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static void rv770_gpu_init(struct radeon_device *rdev)
- {
- 	int i, j, num_qd_pipes;
-@@ -784,8 +735,6 @@ static void rv770_gpu_init(struct radeon_device *rdev)
- 	WREG32(DCP_TILING_CONFIG, (gb_tiling_config & 0xffff));
- 	WREG32(HDP_TILING_CONFIG, (gb_tiling_config & 0xffff));
-=20
--	rv770_program_channel_remap(rdev);
--
- 	WREG32(CC_RB_BACKEND_DISABLE,      cc_rb_backend_disable);
- 	WREG32(CC_GC_SHADER_PIPE_CONFIG,   cc_gc_shader_pipe_config);
- 	WREG32(GC_USER_SHADER_PIPE_CONFIG, cc_gc_shader_pipe_config);
-diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
-index 2747980..16f69be 100644
---- a/drivers/ide/ide-disk.c
-+++ b/drivers/ide/ide-disk.c
-@@ -435,7 +435,12 @@ static int idedisk_prep_fn(struct request_queue *q, st=
-ruct request *rq)
- 	if (!(rq->cmd_flags & REQ_FLUSH))
- 		return BLKPREP_OK;
-=20
--	cmd =3D kzalloc(sizeof(*cmd), GFP_ATOMIC);
-+	if (rq->special) {
-+		cmd =3D rq->special;
-+		memset(cmd, 0, sizeof(*cmd));
-+	} else {
-+		cmd =3D kzalloc(sizeof(*cmd), GFP_ATOMIC);
-+	}
-=20
- 	/* FIXME: map struct ide_taskfile on rq->cmd[] */
- 	BUG_ON(cmd =3D=3D NULL);
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 451c3bb..ebdae6e 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -1184,14 +1184,15 @@ static void dm_table_set_integrity(struct dm_table =
-*t)
- 		return;
-=20
- 	template_disk =3D dm_table_get_integrity_disk(t, true);
--	if (!template_disk &&
--	    blk_integrity_is_initialized(dm_disk(t->md))) {
-+	if (template_disk)
-+		blk_integrity_register(dm_disk(t->md),
-+				       blk_get_integrity(template_disk));
-+	else if (blk_integrity_is_initialized(dm_disk(t->md)))
- 		DMWARN("%s: device no longer has a valid integrity profile",
- 		       dm_device_name(t->md));
--		return;
--	}
--	blk_integrity_register(dm_disk(t->md),
--			       blk_get_integrity(template_disk));
-+	else
-+		DMWARN("%s: unable to establish an integrity profile",
-+		       dm_device_name(t->md));
- }
-=20
- void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 8554082..bc83428 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -61,6 +61,11 @@
- static void autostart_arrays(int part);
- #endif
-=20
-+/* pers_list is a list of registered personalities protected
-+ * by pers_lock.
-+ * pers_lock does extra service to protect accesses to
-+ * mddev->thread when the mutex cannot be held.
-+ */
- static LIST_HEAD(pers_list);
- static DEFINE_SPINLOCK(pers_lock);
-=20
-@@ -690,7 +695,12 @@ static void mddev_unlock(mddev_t * mddev)
- 	} else
- 		mutex_unlock(&mddev->reconfig_mutex);
-=20
-+	/* was we've dropped the mutex we need a spinlock to
-+	 * make sur the thread doesn't disappear
-+	 */
-+	spin_lock(&pers_lock);
- 	md_wakeup_thread(mddev->thread);
-+	spin_unlock(&pers_lock);
- }
-=20
- static mdk_rdev_t * find_rdev_nr(mddev_t *mddev, int nr)
-@@ -6186,11 +6196,18 @@ mdk_thread_t *md_register_thread(void (*run) (mddev=
-_t *), mddev_t *mddev,
- 	return thread;
- }
-=20
--void md_unregister_thread(mdk_thread_t *thread)
-+void md_unregister_thread(mdk_thread_t **threadp)
- {
-+	mdk_thread_t *thread =3D *threadp;
- 	if (!thread)
- 		return;
- 	dprintk("interrupting MD-thread pid %d\n", task_pid_nr(thread->tsk));
-+	/* Locking ensures that mddev_unlock does not wake_up a
-+	 * non-existent thread
-+	 */
-+	spin_lock(&pers_lock);
-+	*threadp =3D NULL;
-+	spin_unlock(&pers_lock);
-=20
- 	kthread_stop(thread->tsk);
- 	kfree(thread);
-@@ -7125,8 +7142,7 @@ static void reap_sync_thread(mddev_t *mddev)
- 	mdk_rdev_t *rdev;
-=20
- 	/* resync has finished, collect result */
--	md_unregister_thread(mddev->sync_thread);
--	mddev->sync_thread =3D NULL;
-+	md_unregister_thread(&mddev->sync_thread);
- 	if (!test_bit(MD_RECOVERY_INTR, &mddev->recovery) &&
- 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery)) {
- 		/* success...*/
-diff --git a/drivers/md/md.h b/drivers/md/md.h
-index 1c26c7a..ce4e328 100644
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -475,7 +475,7 @@ extern int register_md_personality(struct mdk_personali=
-ty *p);
- extern int unregister_md_personality(struct mdk_personality *p);
- extern mdk_thread_t * md_register_thread(void (*run) (mddev_t *mddev),
- 				mddev_t *mddev, const char *name);
--extern void md_unregister_thread(mdk_thread_t *thread);
-+extern void md_unregister_thread(mdk_thread_t **threadp);
- extern void md_wakeup_thread(mdk_thread_t *thread);
- extern void md_check_recovery(mddev_t *mddev);
- extern void md_write_start(mddev_t *mddev, struct bio *bi);
-diff --git a/drivers/md/multipath.c b/drivers/md/multipath.c
-index 3535c23..d5b5fb3 100644
---- a/drivers/md/multipath.c
-+++ b/drivers/md/multipath.c
-@@ -514,8 +514,7 @@ static int multipath_stop (mddev_t *mddev)
- {
- 	multipath_conf_t *conf =3D mddev->private;
-=20
--	md_unregister_thread(mddev->thread);
--	mddev->thread =3D NULL;
-+	md_unregister_thread(&mddev->thread);
- 	blk_sync_queue(mddev->queue); /* the unplug fn references 'conf'*/
- 	mempool_destroy(conf->pool);
- 	kfree(conf->multipaths);
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index f7431b6..3a9e59f 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2045,8 +2045,7 @@ static int stop(mddev_t *mddev)
- 	raise_barrier(conf);
- 	lower_barrier(conf);
-=20
--	md_unregister_thread(mddev->thread);
--	mddev->thread =3D NULL;
-+	md_unregister_thread(&mddev->thread);
- 	if (conf->r1bio_pool)
- 		mempool_destroy(conf->r1bio_pool);
- 	kfree(conf->mirrors);
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 6e84668..17cb6ab 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -2331,7 +2331,7 @@ static int run(mddev_t *mddev)
- 	return 0;
-=20
- out_free_conf:
--	md_unregister_thread(mddev->thread);
-+	md_unregister_thread(&mddev->thread);
- 	if (conf->r10bio_pool)
- 		mempool_destroy(conf->r10bio_pool);
- 	safe_put_page(conf->tmppage);
-@@ -2349,8 +2349,7 @@ static int stop(mddev_t *mddev)
- 	raise_barrier(conf, 0);
- 	lower_barrier(conf);
-=20
--	md_unregister_thread(mddev->thread);
--	mddev->thread =3D NULL;
-+	md_unregister_thread(&mddev->thread);
- 	blk_sync_queue(mddev->queue); /* the unplug fn references 'conf'*/
- 	if (conf->r10bio_pool)
- 		mempool_destroy(conf->r10bio_pool);
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index b72edf3..2581ba1 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -5162,8 +5162,7 @@ static int run(mddev_t *mddev)
-=20
- 	return 0;
- abort:
--	md_unregister_thread(mddev->thread);
--	mddev->thread =3D NULL;
-+	md_unregister_thread(&mddev->thread);
- 	if (conf) {
- 		print_raid5_conf(conf);
- 		free_conf(conf);
-@@ -5177,8 +5176,7 @@ static int stop(mddev_t *mddev)
- {
- 	raid5_conf_t *conf =3D mddev->private;
-=20
--	md_unregister_thread(mddev->thread);
--	mddev->thread =3D NULL;
-+	md_unregister_thread(&mddev->thread);
- 	if (mddev->queue)
- 		mddev->queue->backing_dev_info.congested_fn =3D NULL;
- 	free_conf(conf);
-diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/li=
-s3lv02d.c
-index b928bc1..8b51cd6 100644
---- a/drivers/misc/lis3lv02d/lis3lv02d.c
-+++ b/drivers/misc/lis3lv02d/lis3lv02d.c
-@@ -375,12 +375,14 @@ void lis3lv02d_poweron(struct lis3lv02d *lis3)
- 	 *      both have been read. So the value read will always be correct.
- 	 * Set BOOT bit to refresh factory tuning values.
- 	 */
--	lis3->read(lis3, CTRL_REG2, &reg);
--	if (lis3->whoami =3D=3D  WAI_12B)
--		reg |=3D CTRL2_BDU | CTRL2_BOOT;
--	else
--		reg |=3D CTRL2_BOOT_8B;
--	lis3->write(lis3, CTRL_REG2, reg);
-+	if (lis3->pdata) {
-+		lis3->read(lis3, CTRL_REG2, &reg);
-+		if (lis3->whoami =3D=3D  WAI_12B)
-+			reg |=3D CTRL2_BDU | CTRL2_BOOT;
-+		else
-+			reg |=3D CTRL2_BOOT_8B;
-+		lis3->write(lis3, CTRL_REG2, reg);
-+	}
-=20
- 	/* LIS3 power on delay is quite long */
- 	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 99d39a6..d513d47 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -564,40 +564,38 @@ static void mxs_mmc_request(struct mmc_host *mmc, str=
-uct mmc_request *mrq)
-=20
- static void mxs_mmc_set_clk_rate(struct mxs_mmc_host *host, unsigned int r=
-ate)
- {
--	unsigned int ssp_rate, bit_rate;
--	u32 div1, div2;
-+	unsigned int ssp_clk, ssp_sck;
-+	u32 clock_divide, clock_rate;
- 	u32 val;
-=20
--	ssp_rate =3D clk_get_rate(host->clk);
-+	ssp_clk =3D clk_get_rate(host->clk);
-=20
--	for (div1 =3D 2; div1 < 254; div1 +=3D 2) {
--		div2 =3D ssp_rate / rate / div1;
--		if (div2 < 0x100)
-+	for (clock_divide =3D 2; clock_divide <=3D 254; clock_divide +=3D 2) {
-+		clock_rate =3D DIV_ROUND_UP(ssp_clk, rate * clock_divide);
-+		clock_rate =3D (clock_rate > 0) ? clock_rate - 1 : 0;
-+		if (clock_rate <=3D 255)
- 			break;
- 	}
-=20
--	if (div1 >=3D 254) {
-+	if (clock_divide > 254) {
- 		dev_err(mmc_dev(host->mmc),
- 			"%s: cannot set clock to %d\n", __func__, rate);
- 		return;
- 	}
-=20
--	if (div2 =3D=3D 0)
--		bit_rate =3D ssp_rate / div1;
--	else
--		bit_rate =3D ssp_rate / div1 / div2;
-+	ssp_sck =3D ssp_clk / clock_divide / (1 + clock_rate);
-=20
- 	val =3D readl(host->base + HW_SSP_TIMING);
- 	val &=3D ~(BM_SSP_TIMING_CLOCK_DIVIDE | BM_SSP_TIMING_CLOCK_RATE);
--	val |=3D BF_SSP(div1, TIMING_CLOCK_DIVIDE);
--	val |=3D BF_SSP(div2 - 1, TIMING_CLOCK_RATE);
-+	val |=3D BF_SSP(clock_divide, TIMING_CLOCK_DIVIDE);
-+	val |=3D BF_SSP(clock_rate, TIMING_CLOCK_RATE);
- 	writel(val, host->base + HW_SSP_TIMING);
-=20
--	host->clk_rate =3D bit_rate;
-+	host->clk_rate =3D ssp_sck;
-=20
- 	dev_dbg(mmc_dev(host->mmc),
--		"%s: div1 %d, div2 %d, ssp %d, bit %d, rate %d\n",
--		__func__, div1, div2, ssp_rate, bit_rate, rate);
-+		"%s: clock_divide %d, clock_rate %d, ssp_clk %d, rate_actual %d, rate_re=
-quested %d\n",
-+		__func__, clock_divide, clock_rate, ssp_clk, ssp_sck, rate);
- }
-=20
- static void mxs_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-diff --git a/drivers/net/e1000e/ich8lan.c b/drivers/net/e1000e/ich8lan.c
-index 3369d1f..ee77b94 100644
---- a/drivers/net/e1000e/ich8lan.c
-+++ b/drivers/net/e1000e/ich8lan.c
-@@ -137,8 +137,9 @@
- #define HV_PM_CTRL		PHY_REG(770, 17)
-=20
- /* PHY Low Power Idle Control */
--#define I82579_LPI_CTRL			PHY_REG(772, 20)
--#define I82579_LPI_CTRL_ENABLE_MASK	0x6000
-+#define I82579_LPI_CTRL				PHY_REG(772, 20)
-+#define I82579_LPI_CTRL_ENABLE_MASK		0x6000
-+#define I82579_LPI_CTRL_FORCE_PLL_LOCK_COUNT	0x80
-=20
- /* EMI Registers */
- #define I82579_EMI_ADDR         0x10
-@@ -1611,6 +1612,7 @@ static s32 e1000_k1_workaround_lv(struct e1000_hw *hw)
- 	s32 ret_val =3D 0;
- 	u16 status_reg =3D 0;
- 	u32 mac_reg;
-+	u16 phy_reg;
-=20
- 	if (hw->mac.type !=3D e1000_pch2lan)
- 		goto out;
-@@ -1625,12 +1627,19 @@ static s32 e1000_k1_workaround_lv(struct e1000_hw *=
-hw)
- 		mac_reg =3D er32(FEXTNVM4);
- 		mac_reg &=3D ~E1000_FEXTNVM4_BEACON_DURATION_MASK;
-=20
--		if (status_reg & HV_M_STATUS_SPEED_1000)
-+		ret_val =3D e1e_rphy(hw, I82579_LPI_CTRL, &phy_reg);
-+		if (ret_val)
-+			goto out;
-+
-+		if (status_reg & HV_M_STATUS_SPEED_1000) {
- 			mac_reg |=3D E1000_FEXTNVM4_BEACON_DURATION_8USEC;
--		else
-+			phy_reg &=3D ~I82579_LPI_CTRL_FORCE_PLL_LOCK_COUNT;
-+		} else {
- 			mac_reg |=3D E1000_FEXTNVM4_BEACON_DURATION_16USEC;
--
-+			phy_reg |=3D I82579_LPI_CTRL_FORCE_PLL_LOCK_COUNT;
-+		}
- 		ew32(FEXTNVM4, mac_reg);
-+		ret_val =3D e1e_wphy(hw, I82579_LPI_CTRL, phy_reg);
- 	}
-=20
- out:
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wirele=
-ss/rt2x00/rt2x00queue.c
-index ab8c16f..2886d25 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -556,15 +556,21 @@ int rt2x00queue_write_tx_frame(struct data_queue *que=
-ue, struct sk_buff *skb,
- 			       bool local)
- {
- 	struct ieee80211_tx_info *tx_info;
--	struct queue_entry *entry =3D rt2x00queue_get_entry(queue, Q_INDEX);
-+	struct queue_entry *entry;
- 	struct txentry_desc txdesc;
- 	struct skb_frame_desc *skbdesc;
- 	u8 rate_idx, rate_flags;
-+	int ret =3D 0;
-+
-+	spin_lock(&queue->tx_lock);
-+
-+	entry =3D rt2x00queue_get_entry(queue, Q_INDEX);
-=20
- 	if (unlikely(rt2x00queue_full(queue))) {
- 		ERROR(queue->rt2x00dev,
- 		      "Dropping frame due to full tx queue %d.\n", queue->qid);
--		return -ENOBUFS;
-+		ret =3D -ENOBUFS;
-+		goto out;
- 	}
-=20
- 	if (unlikely(test_and_set_bit(ENTRY_OWNER_DEVICE_DATA,
-@@ -573,7 +579,8 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue=
-, struct sk_buff *skb,
- 		      "Arrived at non-free entry in the non-full queue %d.\n"
- 		      "Please file bug report to %s.\n",
- 		      queue->qid, DRV_PROJECT);
--		return -EINVAL;
-+		ret =3D -EINVAL;
-+		goto out;
- 	}
-=20
- 	/*
-@@ -635,7 +642,8 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue=
-, struct sk_buff *skb,
- 	if (unlikely(rt2x00queue_write_tx_data(entry, &txdesc))) {
- 		clear_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags);
- 		entry->skb =3D NULL;
--		return -EIO;
-+		ret =3D -EIO;
-+		goto out;
- 	}
-=20
- 	set_bit(ENTRY_DATA_PENDING, &entry->flags);
-@@ -644,7 +652,9 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue=
-, struct sk_buff *skb,
- 	rt2x00queue_write_tx_descriptor(entry, &txdesc);
- 	rt2x00queue_kick_tx_queue(queue, &txdesc);
-=20
--	return 0;
-+out:
-+	spin_unlock(&queue->tx_lock);
-+	return ret;
- }
-=20
- int rt2x00queue_clear_beacon(struct rt2x00_dev *rt2x00dev,
-@@ -1185,6 +1195,7 @@ static void rt2x00queue_init(struct rt2x00_dev *rt2x0=
-0dev,
- 			     struct data_queue *queue, enum data_queue_qid qid)
- {
- 	mutex_init(&queue->status_lock);
-+	spin_lock_init(&queue->tx_lock);
- 	spin_lock_init(&queue->index_lock);
-=20
- 	queue->rt2x00dev =3D rt2x00dev;
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.h b/drivers/net/wirele=
-ss/rt2x00/rt2x00queue.h
-index 167d458..ad3d527 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.h
-@@ -432,6 +432,7 @@ enum data_queue_flags {
-  * @flags: Entry flags, see &enum queue_entry_flags.
-  * @status_lock: The mutex for protecting the start/stop/flush
-  *	handling on this queue.
-+ * @tx_lock: Spinlock to serialize tx operations on this queue.
-  * @index_lock: Spinlock to protect index handling. Whenever @index, @inde=
-x_done or
-  *	@index_crypt needs to be changed this lock should be grabbed to prevent
-  *	index corruption due to concurrency.
-@@ -458,6 +459,7 @@ struct data_queue {
+ 	struct msm_priv *priv;
  	unsigned long flags;
-=20
- 	struct mutex status_lock;
-+	spinlock_t tx_lock;
- 	spinlock_t index_lock;
-=20
- 	unsigned int count;
-diff --git a/drivers/pci/hotplug/pcihp_slot.c b/drivers/pci/hotplug/pcihp_s=
-lot.c
-index 749fdf0..3ffd9c1 100644
---- a/drivers/pci/hotplug/pcihp_slot.c
-+++ b/drivers/pci/hotplug/pcihp_slot.c
-@@ -158,47 +158,6 @@ static void program_hpp_type2(struct pci_dev *dev, str=
-uct hpp_type2 *hpp)
- 	 */
+@@ -363,7 +363,6 @@ static int msm_iommu_map(struct iommu_domain
+*domain, unsigned long va,
+ 	unsigned long *sl_pte;
+ 	unsigned long sl_offset;
+ 	unsigned int pgprot;
+-	size_t len = 0x1000UL << order;
+ 	int ret = 0, tex, sh;
+
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+@@ -463,8 +462,8 @@ fail:
+ 	return ret;
  }
-=20
--/* Program PCIE MaxPayload setting on device: ensure parent maxpayload <=
-=3D device */
--static int pci_set_payload(struct pci_dev *dev)
--{
--       int pos, ppos;
--       u16 pctl, psz;
--       u16 dctl, dsz, dcap, dmax;
--       struct pci_dev *parent;
--
--       parent =3D dev->bus->self;
--       pos =3D pci_find_capability(dev, PCI_CAP_ID_EXP);
--       if (!pos)
--               return 0;
--
--       /* Read Device MaxPayload capability and setting */
--       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &dctl);
--       pci_read_config_word(dev, pos + PCI_EXP_DEVCAP, &dcap);
--       dsz =3D (dctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5;
--       dmax =3D (dcap & PCI_EXP_DEVCAP_PAYLOAD);
--
--       /* Read Parent MaxPayload setting */
--       ppos =3D pci_find_capability(parent, PCI_CAP_ID_EXP);
--       if (!ppos)
--               return 0;
--       pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
--       psz =3D (pctl &  PCI_EXP_DEVCTL_PAYLOAD) >> 5;
--
--       /* If parent payload > device max payload -> error
--        * If parent payload > device payload -> set speed
--        * If parent payload <=3D device payload -> do nothing
--        */
--       if (psz > dmax)
--               return -1;
--       else if (psz > dsz) {
--               dev_info(&dev->dev, "Setting MaxPayload to %d\n", 128 << ps=
-z);
--               pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
--                                     (dctl & ~PCI_EXP_DEVCTL_PAYLOAD) +
--                                     (psz << 5));
--       }
--       return 0;
--}
--
- void pci_configure_slot(struct pci_dev *dev)
+
+-static int msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
+-			    int order)
++static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
++			    size_t len)
  {
- 	struct pci_dev *cdev;
-@@ -210,9 +169,9 @@ void pci_configure_slot(struct pci_dev *dev)
- 			(dev->class >> 8) =3D=3D PCI_CLASS_BRIDGE_PCI)))
- 		return;
-=20
--       ret =3D pci_set_payload(dev);
--       if (ret)
--               dev_warn(&dev->dev, "could not set device max payload\n");
-+	if (dev->bus && dev->bus->self)
-+		pcie_bus_configure_settings(dev->bus,
-+					    dev->bus->self->pcie_mpss);
-=20
- 	memset(&hpp, 0, sizeof(hpp));
- 	ret =3D pci_get_hp_params(dev, &hpp);
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index d549bbc..9e8e0d4 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -77,6 +77,8 @@ unsigned long pci_cardbus_mem_size =3D DEFAULT_CARDBUS_ME=
-M_SIZE;
- unsigned long pci_hotplug_io_size  =3D DEFAULT_HOTPLUG_IO_SIZE;
- unsigned long pci_hotplug_mem_size =3D DEFAULT_HOTPLUG_MEM_SIZE;
-=20
-+enum pcie_bus_config_types pcie_bus_config =3D PCIE_BUS_TUNE_OFF;
+ 	struct msm_priv *priv;
+ 	unsigned long flags;
+@@ -474,7 +473,6 @@ static int msm_iommu_unmap(struct iommu_domain
+*domain, unsigned long va,
+ 	unsigned long *sl_table;
+ 	unsigned long *sl_pte;
+ 	unsigned long sl_offset;
+-	size_t len = 0x1000UL << order;
+ 	int i, ret = 0;
+
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+@@ -544,15 +542,12 @@ static int msm_iommu_unmap(struct iommu_domain
+*domain, unsigned long va,
+
+ 	ret = __flush_iotlb(domain);
+
+-	/*
+-	 * the IOMMU API requires us to return the order of the unmapped
+-	 * page (on success).
+-	 */
+-	if (!ret)
+-		ret = order;
+ fail:
+ 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+-	return ret;
 +
- /*
-  * The default CLS is used if arch didn't set CLS explicitly and not
-  * all pci devices agree on the same value.  Arch can override either
-@@ -3223,6 +3225,67 @@ out:
- EXPORT_SYMBOL(pcie_set_readrq);
-=20
- /**
-+ * pcie_get_mps - get PCI Express maximum payload size
-+ * @dev: PCI device to query
-+ *
-+ * Returns maximum payload size in bytes
-+ *    or appropriate error value.
-+ */
-+int pcie_get_mps(struct pci_dev *dev)
-+{
-+	int ret, cap;
-+	u16 ctl;
++	/* the IOMMU API requires us to return how many bytes were unmapped */
++	len = ret ? 0 : len;
++	return len;
+ }
+
+ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index 9ee2c38..1bb2971 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -1019,12 +1019,11 @@ static void iopte_cachep_ctor(void *iopte)
+ }
+
+ static int omap_iommu_map(struct iommu_domain *domain, unsigned long da,
+-			 phys_addr_t pa, int order, int prot)
++			 phys_addr_t pa, size_t bytes, int prot)
+ {
+ 	struct omap_iommu_domain *omap_domain = domain->priv;
+ 	struct omap_iommu *oiommu = omap_domain->iommu_dev;
+ 	struct device *dev = oiommu->dev;
+-	size_t bytes = PAGE_SIZE << order;
+ 	struct iotlb_entry e;
+ 	int omap_pgsz;
+ 	u32 ret, flags;
+@@ -1049,19 +1048,16 @@ static int omap_iommu_map(struct iommu_domain
+*domain, unsigned long da,
+ 	return ret;
+ }
+
+-static int omap_iommu_unmap(struct iommu_domain *domain, unsigned long da,
+-			    int order)
++static size_t omap_iommu_unmap(struct iommu_domain *domain, unsigned long da,
++			    size_t size)
+ {
+ 	struct omap_iommu_domain *omap_domain = domain->priv;
+ 	struct omap_iommu *oiommu = omap_domain->iommu_dev;
+ 	struct device *dev = oiommu->dev;
+-	size_t unmap_size;
+
+-	dev_dbg(dev, "unmapping da 0x%lx order %d\n", da, order);
++	dev_dbg(dev, "unmapping da 0x%lx size %u\n", da, size);
+
+-	unmap_size = iopgtable_clear_entry(oiommu, da);
+-
+-	return unmap_size ? get_order(unmap_size) : -EINVAL;
++	return iopgtable_clear_entry(oiommu, da);
+ }
+
+ static int
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 710291f..6b6ed21 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -54,9 +54,9 @@ struct iommu_ops {
+ 	int (*attach_dev)(struct iommu_domain *domain, struct device *dev);
+ 	void (*detach_dev)(struct iommu_domain *domain, struct device *dev);
+ 	int (*map)(struct iommu_domain *domain, unsigned long iova,
+-		   phys_addr_t paddr, int gfp_order, int prot);
+-	int (*unmap)(struct iommu_domain *domain, unsigned long iova,
+-		     int gfp_order);
++		   phys_addr_t paddr, size_t size, int prot);
++	size_t (*unmap)(struct iommu_domain *domain, unsigned long iova,
++		     size_t size);
+ 	phys_addr_t (*iova_to_phys)(struct iommu_domain *domain,
+ 				    unsigned long iova);
+ 	int (*domain_has_cap)(struct iommu_domain *domain,
+-- 
+1.7.4.1
+
+
+>From 1ddc6ad8ef8618f9a4d04bdc960c1b0f694beb49 Mon Sep 17 00:00:00 2001
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 10 Oct 2011 23:50:55 +0200
+Subject: [PATCH 2/2] iommu/core: split mapping to page sizes as
+supported by the hardware
+
+When mapping a memory region, split it to page sizes as supported
+by the iommu hardware. Always prefer bigger pages, when possible,
+in order to reduce the TLB pressure.
+
+The logic to do that is now added to the IOMMU core, so neither the iommu
+drivers themselves nor users of the IOMMU API have to duplicate it.
+
+This allows a more lenient granularity of mappings; traditionally the
+IOMMU API took 'order' (of a page) as a mapping size, and directly let
+the low level iommu drivers handle the mapping, but now that the IOMMU
+core can split arbitrary memory regions into pages, we can remove this
+limitation, so users don't have to split those regions by themselves.
+
+Currently the supported page sizes are advertised once and they then
+remain static. That works well for OMAP and MSM but it would probably
+not fly well with intel's hardware, where the page size capabilities
+seem to have the potential to be different between several DMA
+remapping devices.
+
+register_iommu() currently sets a default pgsize behavior, so we can convert
+the IOMMU drivers in subsequent patches. After all the drivers
+are converted, the temporary default settings will be removed.
+
+Mainline users of the IOMMU API (kvm and omap-iovmm) are adopted
+to deal with bytes instead of page order.
+
+Many thanks to Joerg Roedel <Joerg.Roedel@amd.com> for significant review!
+
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Hiroshi DOYU <hdoyu@nvidia.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: kvm@vger.kernel.org
+---
+ drivers/iommu/iommu.c      |  112 +++++++++++++++++++++++++++++++++++++++----
+ drivers/iommu/omap-iovmm.c |   17 ++----
+ include/linux/iommu.h      |   24 ++++++++-
+ virt/kvm/iommu.c           |    8 ++--
+ 4 files changed, 132 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 5d042e8..9355632 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -16,6 +16,8 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
+
++#define pr_fmt(fmt)    "%s: " fmt, __func__
 +
-+	cap =3D pci_pcie_cap(dev);
-+	if (!cap)
+ #include <linux/device.h>
+ #include <linux/kernel.h>
+ #include <linux/bug.h>
+@@ -47,6 +49,19 @@ int bus_set_iommu(struct bus_type *bus, struct
+iommu_ops *ops)
+ 	if (bus->iommu_ops != NULL)
+ 		return -EBUSY;
+
++	/*
++	 * Set the default pgsize values, which retain the existing
++	 * IOMMU API behavior: drivers will be called to map
++	 * regions that are sized/aligned to order of 4KiB pages.
++	 *
++	 * This will be removed once all drivers are migrated.
++	 */
++	if (!ops->pgsize_bitmap)
++		ops->pgsize_bitmap = ~0xFFFUL;
++
++	/* find out the minimum page size only once */
++	ops->min_pagesz = 1 << __ffs(ops->pgsize_bitmap);
++
+ 	bus->iommu_ops = ops;
+
+ 	/* Do IOMMU specific setup for this bus-type */
+@@ -157,35 +172,110 @@ int iommu_domain_has_cap(struct iommu_domain *domain,
+ EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
+
+ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+-	      phys_addr_t paddr, int gfp_order, int prot)
++	      phys_addr_t paddr, size_t size, int prot)
+ {
+-	size_t size;
++	unsigned long orig_iova = iova;
++	size_t orig_size = size;
++	int ret = 0;
+
+ 	if (unlikely(domain->ops->map == NULL))
+ 		return -ENODEV;
+
+-	size         = PAGE_SIZE << gfp_order;
++	/*
++	 * both the virtual address and the physical one, as well as
++	 * the size of the mapping, must be aligned (at least) to the
++	 * size of the smallest page supported by the hardware
++	 */
++	if (!IS_ALIGNED(iova | paddr | size, domain->ops->min_pagesz)) {
++		pr_err("unaligned: iova 0x%lx pa 0x%lx size 0x%x min_pagesz "
++			"0x%x\n", iova, (unsigned long)paddr,
++			size, domain->ops->min_pagesz);
 +		return -EINVAL;
++	}
 +
-+	ret =3D pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
-+	if (!ret)
-+		ret =3D 128 << ((ctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5);
++	pr_debug("map: iova 0x%lx pa 0x%lx size 0x%x\n", iova,
++				(unsigned long)paddr, size);
++
++	while (size) {
++		unsigned long pgsize, addr_merge = iova | paddr;
++		unsigned int pgsize_idx;
++
++		/* Max page size that still fits into 'size' */
++		pgsize_idx = __fls(size);
++
++		/* need to consider alignment requirements ? */
++		if (likely(addr_merge)) {
++			/* Max page size allowed by both iova and paddr */
++			unsigned int align_pgsize_idx = __ffs(addr_merge);
++
++			pgsize_idx = min(pgsize_idx, align_pgsize_idx);
++		}
++
++		/* build a mask of acceptable page sizes */
++		pgsize = (1UL << (pgsize_idx + 1)) - 1;
+
+-	BUG_ON(!IS_ALIGNED(iova | paddr, size));
++		/* throw away page sizes not supported by the hardware */
++		pgsize &= domain->ops->pgsize_bitmap;
+
+-	return domain->ops->map(domain, iova, paddr, size, prot);
++		/* make sure we're still sane */
++		BUG_ON(!pgsize);
++
++		/* pick the biggest page */
++		pgsize_idx = __fls(pgsize);
++		pgsize = 1UL << pgsize_idx;
++
++		pr_debug("mapping: iova 0x%lx pa 0x%lx pgsize %lu\n", iova,
++					(unsigned long)paddr, pgsize);
++
++		ret = domain->ops->map(domain, iova, paddr, pgsize, prot);
++		if (ret)
++			break;
++
++		iova += pgsize;
++		paddr += pgsize;
++		size -= pgsize;
++	}
++
++	/* unroll mapping in case something went wrong */
++	if (ret)
++		iommu_unmap(domain, orig_iova, orig_size - size);
 +
 +	return ret;
-+}
-+
-+/**
-+ * pcie_set_mps - set PCI Express maximum payload size
-+ * @dev: PCI device to query
-+ * @rq: maximum payload size in bytes
-+ *    valid values are 128, 256, 512, 1024, 2048, 4096
-+ *
-+ * If possible sets maximum payload size
-+ */
-+int pcie_set_mps(struct pci_dev *dev, int mps)
-+{
-+	int cap, err =3D -EINVAL;
-+	u16 ctl, v;
-+
-+	if (mps < 128 || mps > 4096 || !is_power_of_2(mps))
-+		goto out;
-+
-+	v =3D ffs(mps) - 8;
-+	if (v > dev->pcie_mpss)
-+		goto out;
-+	v <<=3D 5;
-+
-+	cap =3D pci_pcie_cap(dev);
-+	if (!cap)
-+		goto out;
-+
-+	err =3D pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
-+	if (err)
-+		goto out;
-+
-+	if ((ctl & PCI_EXP_DEVCTL_PAYLOAD) !=3D v) {
-+		ctl &=3D ~PCI_EXP_DEVCTL_PAYLOAD;
-+		ctl |=3D v;
-+		err =3D pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
-+	}
-+out:
-+	return err;
-+}
-+
-+/**
-  * pci_select_bars - Make BAR mask from the type of resource
-  * @dev: the PCI device for which BAR mask is made
-  * @flags: resource type mask to be selected
-@@ -3505,6 +3568,14 @@ static int __init pci_setup(char *str)
- 				pci_hotplug_io_size =3D memparse(str + 9, &str);
- 			} else if (!strncmp(str, "hpmemsize=3D", 10)) {
- 				pci_hotplug_mem_size =3D memparse(str + 10, &str);
-+			} else if (!strncmp(str, "pcie_bus_tune_off", 17)) {
-+				pcie_bus_config =3D PCIE_BUS_TUNE_OFF;
-+			} else if (!strncmp(str, "pcie_bus_safe", 13)) {
-+				pcie_bus_config =3D PCIE_BUS_SAFE;
-+			} else if (!strncmp(str, "pcie_bus_perf", 13)) {
-+				pcie_bus_config =3D PCIE_BUS_PERFORMANCE;
-+			} else if (!strncmp(str, "pcie_bus_peer2peer", 18)) {
-+				pcie_bus_config =3D PCIE_BUS_PEER2PEER;
- 			} else {
- 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
- 						str);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index bafb3c3..4045c31 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -860,6 +860,8 @@ void set_pcie_port_type(struct pci_dev *pdev)
- 	pdev->pcie_cap =3D pos;
- 	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
- 	pdev->pcie_type =3D (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
-+	pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
-+	pdev->pcie_mpss =3D reg16 & PCI_EXP_DEVCAP_PAYLOAD;
  }
-=20
- void set_pcie_hotplug_bridge(struct pci_dev *pdev)
-@@ -1327,6 +1329,163 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
- 	return nr;
- }
-=20
-+static int pcie_find_smpss(struct pci_dev *dev, void *data)
-+{
-+	u8 *smpss =3D data;
-+
-+	if (!pci_is_pcie(dev))
-+		return 0;
-+
-+	/* For PCIE hotplug enabled slots not connected directly to a
-+	 * PCI-E root port, there can be problems when hotplugging
-+	 * devices.  This is due to the possibility of hotplugging a
-+	 * device into the fabric with a smaller MPS that the devices
-+	 * currently running have configured.  Modifying the MPS on the
-+	 * running devices could cause a fatal bus error due to an
-+	 * incoming frame being larger than the newly configured MPS.
-+	 * To work around this, the MPS for the entire fabric must be
-+	 * set to the minimum size.  Any devices hotplugged into this
-+	 * fabric will have the minimum MPS set.  If the PCI hotplug
-+	 * slot is directly connected to the root port and there are not
-+	 * other devices on the fabric (which seems to be the most
-+	 * common case), then this is not an issue and MPS discovery
-+	 * will occur as normal.
-+	 */
-+	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
-+	     (dev->bus->self &&
-+	      dev->bus->self->pcie_type !=3D PCI_EXP_TYPE_ROOT_PORT)))
-+		*smpss =3D 0;
-+
-+	if (*smpss > dev->pcie_mpss)
-+		*smpss =3D dev->pcie_mpss;
-+
-+	return 0;
-+}
-+
-+static void pcie_write_mps(struct pci_dev *dev, int mps)
-+{
-+	int rc, dev_mpss;
-+
-+	dev_mpss =3D 128 << dev->pcie_mpss;
-+
-+	if (pcie_bus_config =3D=3D PCIE_BUS_PERFORMANCE) {
-+		if (dev->bus->self) {
-+			dev_dbg(&dev->bus->dev, "Bus MPSS %d\n",
-+				128 << dev->bus->self->pcie_mpss);
-+
-+			/* For "MPS Force Max", the assumption is made that
-+			 * downstream communication will never be larger than
-+			 * the MRRS.  So, the MPS only needs to be configured
-+			 * for the upstream communication.  This being the case,
-+			 * walk from the top down and set the MPS of the child
-+			 * to that of the parent bus.
-+			 */
-+			mps =3D 128 << dev->bus->self->pcie_mpss;
-+			if (mps > dev_mpss)
-+				dev_warn(&dev->dev, "MPS configured higher than"
-+					 " maximum supported by the device.  If"
-+					 " a bus issue occurs, try running with"
-+					 " pci=3Dpcie_bus_safe.\n");
-+		}
-+
-+		dev->pcie_mpss =3D ffs(mps) - 8;
-+	}
-+
-+	rc =3D pcie_set_mps(dev, mps);
-+	if (rc)
-+		dev_err(&dev->dev, "Failed attempting to set the MPS\n");
-+}
-+
-+static void pcie_write_mrrs(struct pci_dev *dev, int mps)
-+{
-+	int rc, mrrs, dev_mpss;
-+
-+	/* In the "safe" case, do not configure the MRRS.  There appear to be
-+	 * issues with setting MRRS to 0 on a number of devices.
-+	 */
-+
-+	if (pcie_bus_config !=3D PCIE_BUS_PERFORMANCE)
-+		return;
-+
-+	dev_mpss =3D 128 << dev->pcie_mpss;
-+
-+	/* For Max performance, the MRRS must be set to the largest supported
-+	 * value.  However, it cannot be configured larger than the MPS the
-+	 * device or the bus can support.  This assumes that the largest MRRS
-+	 * available on the device cannot be smaller than the device MPSS.
-+	 */
-+	mrrs =3D min(mps, dev_mpss);
-+
-+	/* MRRS is a R/W register.  Invalid values can be written, but a
-+	 * subsequent read will verify if the value is acceptable or not.
-+	 * If the MRRS value provided is not acceptable (e.g., too large),
-+	 * shrink the value until it is acceptable to the HW.
-+ 	 */
-+	while (mrrs !=3D pcie_get_readrq(dev) && mrrs >=3D 128) {
-+		dev_warn(&dev->dev, "Attempting to modify the PCI-E MRRS value"
-+			 " to %d.  If any issues are encountered, please try "
-+			 "running with pci=3Dpcie_bus_safe\n", mrrs);
-+		rc =3D pcie_set_readrq(dev, mrrs);
-+		if (rc)
-+			dev_err(&dev->dev,
-+				"Failed attempting to set the MRRS\n");
-+
-+		mrrs /=3D 2;
-+	}
-+}
-+
-+static int pcie_bus_configure_set(struct pci_dev *dev, void *data)
-+{
-+	int mps =3D 128 << *(u8 *)data;
-+
-+	if (!pci_is_pcie(dev))
-+		return 0;
-+
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
-+
-+	pcie_write_mps(dev, mps);
-+	pcie_write_mrrs(dev, mps);
-+
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
-+
-+	return 0;
-+}
-+
-+/* pcie_bus_configure_mps requires that pci_walk_bus work in a top-down,
-+ * parents then children fashion.  If this changes, then this code will not
-+ * work as designed.
-+ */
-+void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
-+{
-+	u8 smpss;
-+
-+	if (!pci_is_pcie(bus->self))
-+		return;
-+
-+	if (pcie_bus_config =3D=3D PCIE_BUS_TUNE_OFF)
-+		return;
-+
-+	/* FIXME - Peer to peer DMA is possible, though the endpoint would need
-+	 * to be aware to the MPS of the destination.  To work around this,
-+	 * simply force the MPS of the entire system to the smallest possible.
-+	 */
-+	if (pcie_bus_config =3D=3D PCIE_BUS_PEER2PEER)
-+		smpss =3D 0;
-+
-+	if (pcie_bus_config =3D=3D PCIE_BUS_SAFE) {
-+		smpss =3D mpss;
-+
-+		pcie_find_smpss(bus->self, &smpss);
-+		pci_walk_bus(bus, pcie_find_smpss, &smpss);
-+	}
-+
-+	pcie_bus_configure_set(bus->self, &smpss);
-+	pci_walk_bus(bus, pcie_bus_configure_set, &smpss);
-+}
-+EXPORT_SYMBOL_GPL(pcie_bus_configure_settings);
-+
- unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+ EXPORT_SYMBOL_GPL(iommu_map);
+
+-int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
++size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+size_t size)
  {
- 	unsigned int devfn, pass, max =3D bus->secondary;
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_e=
-xpander.c
-index c9e3dc0..16ad97d 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -1769,10 +1769,12 @@ static void sas_unregister_devs_sas_addr(struct dom=
-ain_device *parent,
- 		sas_disable_routing(parent, phy->attached_sas_addr);
- 	}
- 	memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
--	sas_port_delete_phy(phy->port, phy->phy);
--	if (phy->port->num_phys =3D=3D 0)
--		sas_port_delete(phy->port);
--	phy->port =3D NULL;
-+	if (phy->port) {
-+		sas_port_delete_phy(phy->port, phy->phy);
-+		if (phy->port->num_phys =3D=3D 0)
-+			sas_port_delete(phy->port);
-+		phy->port =3D NULL;
-+	}
- }
-=20
- static int sas_discover_bfs_by_root_level(struct domain_device *root,
-diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-index f461925..a2a1a83 100644
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -1240,10 +1240,9 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
- 					qla2x00_sp_compl(ha, sp);
- 				} else {
- 					ctx =3D sp->ctx;
--					if (ctx->type =3D=3D SRB_LOGIN_CMD ||
--					    ctx->type =3D=3D SRB_LOGOUT_CMD) {
--						ctx->u.iocb_cmd->free(sp);
--					} else {
-+					if (ctx->type =3D=3D SRB_ELS_CMD_RPT ||
-+					    ctx->type =3D=3D SRB_ELS_CMD_HST ||
-+					    ctx->type =3D=3D SRB_CT_CMD) {
- 						struct fc_bsg_job *bsg_job =3D
- 						    ctx->u.bsg_job;
- 						if (bsg_job->request->msgcode
-@@ -1255,6 +1254,8 @@ qla2x00_abort_all_cmds(scsi_qla_host_t *vha, int res)
- 						kfree(sp->ctx);
- 						mempool_free(sp,
- 							ha->srb_mempool);
-+					} else {
-+						ctx->u.iocb_cmd->free(sp);
- 					}
- 				}
- 			}
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..044c13f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1411,6 +1411,8 @@ int search_binary_handler(struct linux_binprm *bprm,s=
-truct pt_regs *regs)
- 			    printable(bprm->buf[2]) &&
- 			    printable(bprm->buf[3]))
- 				break; /* -ENOEXEC */
-+			if (try)
-+				break; /* -ENOEXEC */
- 			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
- #endif
- 		}
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9d88e1c..f0c0e8a 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -19,6 +19,8 @@
-=20
- #include <asm/ftrace.h>
-=20
-+struct ftrace_hash;
-+
- #ifdef CONFIG_FUNCTION_TRACER
-=20
- extern int ftrace_enabled;
-@@ -29,8 +31,6 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
-=20
- typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip);
-=20
--struct ftrace_hash;
--
- enum {
- 	FTRACE_OPS_FL_ENABLED		=3D 1 << 0,
- 	FTRACE_OPS_FL_GLOBAL		=3D 1 << 1,
-@@ -123,7 +123,8 @@ stack_trace_sysctl(struct ctl_table *table, int write,
- struct ftrace_func_command {
- 	struct list_head	list;
- 	char			*name;
--	int			(*func)(char *func, char *cmd,
-+	int			(*func)(struct ftrace_hash *hash,
-+					char *func, char *cmd,
- 					char *params, int enable);
- };
-=20
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index c446b5c..722a18e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -251,7 +251,8 @@ struct pci_dev {
- 	u8		revision;	/* PCI revision, low byte of class word */
- 	u8		hdr_type;	/* PCI header type (`multi' flag masked out) */
- 	u8		pcie_cap;	/* PCI-E capability offset */
--	u8		pcie_type;	/* PCI-E device/port type */
-+	u8		pcie_type:4;	/* PCI-E device/port type */
-+	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
- 	u8		rom_base_reg;	/* which config register controls the ROM */
- 	u8		pin;  		/* which interrupt pin this device uses */
-=20
-@@ -617,6 +618,17 @@ struct pci_driver {
- /* these external functions are only available when PCI support is enabled=
- */
- #ifdef CONFIG_PCI
-=20
-+extern void pcie_bus_configure_settings(struct pci_bus *bus, u8 smpss);
-+
-+enum pcie_bus_config_types {
-+	PCIE_BUS_TUNE_OFF,
-+	PCIE_BUS_SAFE,
-+	PCIE_BUS_PERFORMANCE,
-+	PCIE_BUS_PEER2PEER,
-+};
-+
-+extern enum pcie_bus_config_types pcie_bus_config;
-+
- extern struct bus_type pci_bus_type;
-=20
- /* Do NOT directly access these two variables, unless you are arch specifi=
-c pci
-@@ -796,6 +808,8 @@ int pcix_get_mmrbc(struct pci_dev *dev);
- int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc);
- int pcie_get_readrq(struct pci_dev *dev);
- int pcie_set_readrq(struct pci_dev *dev, int rq);
-+int pcie_get_mps(struct pci_dev *dev);
-+int pcie_set_mps(struct pci_dev *dev, int mps);
- int __pci_reset_function(struct pci_dev *dev);
- int pci_reset_function(struct pci_dev *dev);
- void pci_update_resource(struct pci_dev *dev, int resno);
-diff --git a/include/linux/ptp_classify.h b/include/linux/ptp_classify.h
-index e07e274..1dc420b 100644
---- a/include/linux/ptp_classify.h
-+++ b/include/linux/ptp_classify.h
-@@ -51,6 +51,7 @@
- #define PTP_CLASS_V2_VLAN (PTP_CLASS_V2 | PTP_CLASS_VLAN)
-=20
- #define PTP_EV_PORT 319
-+#define PTP_GEN_BIT 0x08 /* indicates general message, if set in message t=
-ype */
-=20
- #define OFF_ETYPE	12
- #define OFF_IHL		14
-@@ -116,14 +117,20 @@ static inline int ptp_filter_init(struct sock_filter =
-*f, int len)
- 	{OP_OR,		0,   0, PTP_CLASS_IPV6		}, /*              */ \
- 	{OP_RETA,	0,   0, 0			}, /*              */ \
- /*L3x*/	{OP_RETK,	0,   0, PTP_CLASS_NONE		}, /*              */ \
--/*L40*/	{OP_JEQ,	0,   6, ETH_P_8021Q		}, /* f goto L50   */ \
-+/*L40*/	{OP_JEQ,	0,   9, ETH_P_8021Q		}, /* f goto L50   */ \
- 	{OP_LDH,	0,   0, OFF_ETYPE + 4		}, /*              */ \
--	{OP_JEQ,	0,   9, ETH_P_1588		}, /* f goto L60   */ \
-+	{OP_JEQ,	0,  15, ETH_P_1588		}, /* f goto L60   */ \
-+	{OP_LDB,	0,   0, ETH_HLEN + VLAN_HLEN	}, /*              */ \
-+	{OP_AND,	0,   0, PTP_GEN_BIT		}, /*              */ \
-+	{OP_JEQ,	0,  12, 0			}, /* f goto L6x   */ \
- 	{OP_LDH,	0,   0, ETH_HLEN + VLAN_HLEN	}, /*              */ \
- 	{OP_AND,	0,   0, PTP_CLASS_VMASK		}, /*              */ \
- 	{OP_OR,		0,   0, PTP_CLASS_VLAN		}, /*              */ \
- 	{OP_RETA,	0,   0, 0			}, /*              */ \
--/*L50*/	{OP_JEQ,	0,   4, ETH_P_1588		}, /* f goto L61   */ \
-+/*L50*/	{OP_JEQ,	0,   7, ETH_P_1588		}, /* f goto L61   */ \
-+	{OP_LDB,	0,   0, ETH_HLEN		}, /*              */ \
-+	{OP_AND,	0,   0, PTP_GEN_BIT		}, /*              */ \
-+	{OP_JEQ,	0,   4, 0			}, /* f goto L6x   */ \
- 	{OP_LDH,	0,   0, ETH_HLEN		}, /*              */ \
- 	{OP_AND,	0,   0, PTP_CLASS_VMASK		}, /*              */ \
- 	{OP_OR,		0,   0, PTP_CLASS_L2		}, /*              */ \
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 14a6c7b..4ef452b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1937,7 +1937,6 @@ static inline void disable_sched_clock_irqtime(void) =
-{}
-=20
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
--extern unsigned long long thread_group_sched_runtime(struct task_struct *t=
-ask);
-=20
- /* sched_exec is called by processes performing an exec */
- #ifdef CONFIG_SMP
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 3b5ac1f..c39121f 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -463,7 +463,7 @@ static inline int ipv6_addr_diff(const struct in6_addr =
-*a1, const struct in6_add
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
- }
-=20
--extern void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt);
-+extern void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr=
-);
-=20
- /*
-  *	Prototypes exported by ipv6
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 58f405b..c8008dd 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -250,7 +250,7 @@ void thread_group_cputime(struct task_struct *tsk, stru=
-ct task_cputime *times)
- 	do {
- 		times->utime =3D cputime_add(times->utime, t->utime);
- 		times->stime =3D cputime_add(times->stime, t->stime);
--		times->sum_exec_runtime +=3D t->se.sum_exec_runtime;
-+		times->sum_exec_runtime +=3D task_sched_runtime(t);
- 	} while_each_thread(tsk, t);
- out:
- 	rcu_read_unlock();
-@@ -312,7 +312,8 @@ static int cpu_clock_sample_group(const clockid_t which=
-_clock,
- 		cpu->cpu =3D cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched =3D thread_group_sched_runtime(p);
-+		thread_group_cputime(p, &cputime);
-+		cpu->sched =3D cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 8b37360..063d7a4 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3713,30 +3713,6 @@ unsigned long long task_sched_runtime(struct task_st=
-ruct *p)
- }
-=20
- /*
-- * Return sum_exec_runtime for the thread group.
-- * In case the task is currently running, return the sum plus current's
-- * pending runtime that have not been accounted yet.
-- *
-- * Note that the thread group might have other running tasks as well,
-- * so the return value not includes other pending runtime that other
-- * running tasks might have.
-- */
--unsigned long long thread_group_sched_runtime(struct task_struct *p)
--{
--	struct task_cputime totals;
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns;
--
--	rq =3D task_rq_lock(p, &flags);
--	thread_group_cputime(p, &totals);
--	ns =3D totals.sum_exec_runtime + do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
--/*
-  * Account user cpu time to a process.
-  * @p: the process that the cpu time gets accounted to
-  * @cputime: the cpu time spent in user space since the last update
-@@ -4335,7 +4311,7 @@ static inline void sched_submit_work(struct task_stru=
-ct *tsk)
- 		blk_schedule_flush_plug(tsk);
- }
-=20
--asmlinkage void schedule(void)
-+asmlinkage void __sched schedule(void)
- {
- 	struct task_struct *tsk =3D current;
-=20
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 10d0182..17f2319 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1038,7 +1038,7 @@ select_task_rq_rt(struct task_struct *p, int sd_flag,=
- int flags)
- 	 */
- 	if (curr && unlikely(rt_task(curr)) &&
- 	    (curr->rt.nr_cpus_allowed < 2 ||
--	     curr->prio < p->prio) &&
-+	     curr->prio <=3D p->prio) &&
- 	    (p->rt.nr_cpus_allowed > 1)) {
- 		int target =3D find_lowest_rq(p);
-=20
-@@ -1569,7 +1569,7 @@ static void task_woken_rt(struct rq *rq, struct task_=
-struct *p)
- 	    p->rt.nr_cpus_allowed > 1 &&
- 	    rt_task(rq->curr) &&
- 	    (rq->curr->rt.nr_cpus_allowed < 2 ||
--	     rq->curr->prio < p->prio))
-+	     rq->curr->prio <=3D p->prio))
- 		push_rt_tasks(rq);
- }
-=20
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 908038f..ef9271b 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1744,10 +1744,36 @@ static cycle_t		ftrace_update_time;
- static unsigned long	ftrace_update_cnt;
- unsigned long		ftrace_update_tot_cnt;
-=20
-+static int ops_traces_mod(struct ftrace_ops *ops)
-+{
-+	struct ftrace_hash *hash;
-+
-+	hash =3D ops->filter_hash;
-+	return !!(!hash || !hash->count);
-+}
-+
- static int ftrace_update_code(struct module *mod)
- {
- 	struct dyn_ftrace *p;
- 	cycle_t start, stop;
-+	unsigned long ref =3D 0;
-+
+-	size_t size, unmapped;
++	size_t unmapped, left = size;
+
+ 	if (unlikely(domain->ops->unmap == NULL))
+ 		return -ENODEV;
+
+-	size         = PAGE_SIZE << gfp_order;
 +	/*
-+	 * When adding a module, we need to check if tracers are
-+	 * currently enabled and if they are set to trace all functions.
-+	 * If they are, we need to enable the module functions as well
-+	 * as update the reference counts for those function records.
++	 * The virtual address, as well as the size of the mapping, must be
++	 * aligned (at least) to the size of the smallest page supported
++	 * by the hardware
 +	 */
-+	if (mod) {
-+		struct ftrace_ops *ops;
-+
-+		for (ops =3D ftrace_ops_list;
-+		     ops !=3D &ftrace_list_end; ops =3D ops->next) {
-+			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
-+			    ops_traces_mod(ops))
-+				ref++;
-+		}
++	if (!IS_ALIGNED(iova | size, domain->ops->min_pagesz)) {
++		pr_err("unaligned: iova 0x%lx size 0x%x min_pagesz 0x%x\n",
++			iova, size, domain->ops->min_pagesz);
++		return -EINVAL;
 +	}
-=20
- 	start =3D ftrace_now(raw_smp_processor_id());
- 	ftrace_update_cnt =3D 0;
-@@ -1760,7 +1786,7 @@ static int ftrace_update_code(struct module *mod)
-=20
- 		p =3D ftrace_new_addrs;
- 		ftrace_new_addrs =3D p->newlist;
--		p->flags =3D 0L;
-+		p->flags =3D ref;
-=20
- 		/*
- 		 * Do the initial record conversion from mcount jump
-@@ -1783,7 +1809,7 @@ static int ftrace_update_code(struct module *mod)
- 		 * conversion puts the module to the correct state, thus
- 		 * passing the ftrace_make_call check.
- 		 */
--		if (ftrace_start_up) {
-+		if (ftrace_start_up && ref) {
- 			int failed =3D __ftrace_replace_code(p, 1);
- 			if (failed) {
- 				ftrace_bug(failed, p->ip);
-@@ -2407,10 +2433,9 @@ ftrace_match_module_records(struct ftrace_hash *hash=
-, char *buff, char *mod)
-  */
-=20
- static int
--ftrace_mod_callback(char *func, char *cmd, char *param, int enable)
-+ftrace_mod_callback(struct ftrace_hash *hash,
-+		    char *func, char *cmd, char *param, int enable)
- {
--	struct ftrace_ops *ops =3D &global_ops;
--	struct ftrace_hash *hash;
- 	char *mod;
- 	int ret =3D -EINVAL;
-=20
-@@ -2430,11 +2455,6 @@ ftrace_mod_callback(char *func, char *cmd, char *par=
-am, int enable)
- 	if (!strlen(mod))
- 		return ret;
-=20
--	if (enable)
--		hash =3D ops->filter_hash;
--	else
--		hash =3D ops->notrace_hash;
++
++	pr_debug("unmap this: iova 0x%lx size 0x%x\n", iova, size);
++
++	while (left) {
++		unmapped = domain->ops->unmap(domain, iova, left);
++		if (!unmapped)
++			break;
+
+-	BUG_ON(!IS_ALIGNED(iova, size));
++		pr_debug("unmapped: iova 0x%lx size %u\n", iova, unmapped);
+
+-	unmapped = domain->ops->unmap(domain, iova, size);
++		iova += unmapped;
++		left -= unmapped;
++	}
+
+-	return get_order(unmapped);
++	return size - left;
+ }
+ EXPORT_SYMBOL_GPL(iommu_unmap);
+
+diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
+index e8fdb88..0b7b14c 100644
+--- a/drivers/iommu/omap-iovmm.c
++++ b/drivers/iommu/omap-iovmm.c
+@@ -409,7 +409,6 @@ static int map_iovm_area(struct iommu_domain
+*domain, struct iovm_struct *new,
+ 	unsigned int i, j;
+ 	struct scatterlist *sg;
+ 	u32 da = new->da_start;
+-	int order;
+
+ 	if (!domain || !sgt)
+ 		return -EINVAL;
+@@ -428,12 +427,10 @@ static int map_iovm_area(struct iommu_domain
+*domain, struct iovm_struct *new,
+ 		if (bytes_to_iopgsz(bytes) < 0)
+ 			goto err_out;
+
+-		order = get_order(bytes);
 -
- 	ret =3D ftrace_match_module_records(hash, func, mod);
- 	if (!ret)
- 		ret =3D -EINVAL;
-@@ -2760,7 +2780,7 @@ static int ftrace_process_regex(struct ftrace_hash *h=
-ash,
- 	mutex_lock(&ftrace_cmd_mutex);
- 	list_for_each_entry(p, &ftrace_commands, list) {
- 		if (strcmp(p->name, command) =3D=3D 0) {
--			ret =3D p->func(func, command, next, enable);
-+			ret =3D p->func(hash, func, command, next, enable);
- 			goto out_unlock;
- 		}
+ 		pr_debug("%s: [%d] %08x %08x(%x)\n", __func__,
+ 			 i, da, pa, bytes);
+
+-		err = iommu_map(domain, da, pa, order, flags);
++		err = iommu_map(domain, da, pa, bytes, flags);
+ 		if (err)
+ 			goto err_out;
+
+@@ -448,10 +445,9 @@ err_out:
+ 		size_t bytes;
+
+ 		bytes = sg->length + sg->offset;
+-		order = get_order(bytes);
+
+ 		/* ignore failures.. we're already handling one */
+-		iommu_unmap(domain, da, order);
++		iommu_unmap(domain, da, bytes);
+
+ 		da += bytes;
  	}
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 8d0e1cc..c7b0c6a 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -324,7 +324,8 @@ ftrace_trace_onoff_unreg(char *glob, char *cmd, char *p=
-aram)
- }
-=20
- static int
--ftrace_trace_onoff_callback(char *glob, char *cmd, char *param, int enable)
-+ftrace_trace_onoff_callback(struct ftrace_hash *hash,
-+			    char *glob, char *cmd, char *param, int enable)
- {
- 	struct ftrace_probe_ops *ops;
- 	void *count =3D (void *)-1;
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 1661296..e17596b 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -620,9 +620,9 @@ static u32 __ipv6_select_ident(const struct in6_addr *a=
-ddr)
- 	return hash + newid;
- }
-=20
--void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-+void ipv6_select_ident(struct frag_hdr *fhdr, struct in6_addr *addr)
- {
--	fhdr->identification =3D htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
-+	fhdr->identification =3D htonl(__ipv6_select_ident(addr));
- }
-=20
- int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-@@ -709,7 +709,7 @@ int ip6_fragment(struct sk_buff *skb, int (*output)(str=
-uct sk_buff *))
- 		skb_reset_network_header(skb);
- 		memcpy(skb_network_header(skb), tmp_hdr, hlen);
-=20
--		ipv6_select_ident(fh, rt);
-+		ipv6_select_ident(fh, &rt->rt6i_dst.addr);
- 		fh->nexthdr =3D nexthdr;
- 		fh->reserved =3D 0;
- 		fh->frag_off =3D htons(IP6_MF);
-@@ -855,7 +855,7 @@ slow_path:
- 		fh->nexthdr =3D nexthdr;
- 		fh->reserved =3D 0;
- 		if (!frag_id) {
--			ipv6_select_ident(fh, rt);
-+			ipv6_select_ident(fh, &rt->rt6i_dst.addr);
- 			frag_id =3D fh->identification;
- 		} else
- 			fh->identification =3D frag_id;
-@@ -1146,7 +1146,7 @@ static inline int ip6_ufo_append_data(struct sock *sk,
- 		skb_shinfo(skb)->gso_size =3D (mtu - fragheaderlen -
- 					     sizeof(struct frag_hdr)) & ~7;
- 		skb_shinfo(skb)->gso_type =3D SKB_GSO_UDP;
--		ipv6_select_ident(&fhdr, rt);
-+		ipv6_select_ident(&fhdr, &rt->rt6i_dst.addr);
- 		skb_shinfo(skb)->ip6_frag_id =3D fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
-=20
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 29213b5..0d920c5 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1309,6 +1309,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_bu=
-ff *skb, u32 features)
- 	u8 frag_hdr_sz =3D sizeof(struct frag_hdr);
- 	int offset;
- 	__wsum csum;
-+	struct rt6_info *rt =3D (struct rt6_info *)skb_dst(skb);
-=20
- 	mss =3D skb_shinfo(skb)->gso_size;
- 	if (unlikely(skb->len <=3D mss))
-@@ -1359,7 +1360,8 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_bu=
-ff *skb, u32 features)
- 	fptr =3D (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr =3D nexthdr;
- 	fptr->reserved =3D 0;
--	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
-+	ipv6_select_ident(fptr,
-+			  rt ? &rt->rt6i_dst.addr : &ipv6_hdr(skb)->daddr);
-=20
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
-diff --git a/sound/soc/codecs/wm8753.c b/sound/soc/codecs/wm8753.c
-index ffa2ffe..aa091a0 100644
---- a/sound/soc/codecs/wm8753.c
-+++ b/sound/soc/codecs/wm8753.c
-@@ -1454,8 +1454,8 @@ static int wm8753_probe(struct snd_soc_codec *codec)
- 	/* set the update bits */
- 	snd_soc_update_bits(codec, WM8753_LDAC, 0x0100, 0x0100);
- 	snd_soc_update_bits(codec, WM8753_RDAC, 0x0100, 0x0100);
--	snd_soc_update_bits(codec, WM8753_LDAC, 0x0100, 0x0100);
--	snd_soc_update_bits(codec, WM8753_RDAC, 0x0100, 0x0100);
-+	snd_soc_update_bits(codec, WM8753_LADC, 0x0100, 0x0100);
-+	snd_soc_update_bits(codec, WM8753_RADC, 0x0100, 0x0100);
- 	snd_soc_update_bits(codec, WM8753_LOUT1V, 0x0100, 0x0100);
- 	snd_soc_update_bits(codec, WM8753_ROUT1V, 0x0100, 0x0100);
- 	snd_soc_update_bits(codec, WM8753_LOUT2V, 0x0100, 0x0100);
-diff --git a/sound/soc/pxa/zylonite.c b/sound/soc/pxa/zylonite.c
-index b644575..2b8350b 100644
---- a/sound/soc/pxa/zylonite.c
-+++ b/sound/soc/pxa/zylonite.c
-@@ -196,20 +196,20 @@ static int zylonite_probe(struct snd_soc_card *card)
- 	if (clk_pout) {
- 		pout =3D clk_get(NULL, "CLK_POUT");
- 		if (IS_ERR(pout)) {
--			dev_err(&pdev->dev, "Unable to obtain CLK_POUT: %ld\n",
-+			dev_err(card->dev, "Unable to obtain CLK_POUT: %ld\n",
- 				PTR_ERR(pout));
- 			return PTR_ERR(pout);
- 		}
-=20
- 		ret =3D clk_enable(pout);
- 		if (ret !=3D 0) {
--			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
-+			dev_err(card->dev, "Unable to enable CLK_POUT: %d\n",
- 				ret);
- 			clk_put(pout);
- 			return ret;
- 		}
-=20
--		dev_dbg(&pdev->dev, "MCLK enabled at %luHz\n",
-+		dev_dbg(card->dev, "MCLK enabled at %luHz\n",
- 			clk_get_rate(pout));
- 	}
-=20
-@@ -241,7 +241,7 @@ static int zylonite_resume_pre(struct snd_soc_card *car=
-d)
- 	if (clk_pout) {
- 		ret =3D clk_enable(pout);
- 		if (ret !=3D 0)
--			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
-+			dev_err(card->dev, "Unable to enable CLK_POUT: %d\n",
- 				ret);
- 	}
-=20
+@@ -466,7 +462,8 @@ static void unmap_iovm_area(struct iommu_domain
+*domain, struct omap_iommu *obj,
+ 	size_t total = area->da_end - area->da_start;
+ 	const struct sg_table *sgt = area->sgt;
+ 	struct scatterlist *sg;
+-	int i, err;
++	int i;
++	size_t unmapped;
 
---ZfOjI3PrQbgiZnxM--
+ 	BUG_ON(!sgtable_ok(sgt));
+ 	BUG_ON((!total) || !IS_ALIGNED(total, PAGE_SIZE));
+@@ -474,13 +471,11 @@ static void unmap_iovm_area(struct iommu_domain
+*domain, struct omap_iommu *obj,
+ 	start = area->da_start;
+ 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+ 		size_t bytes;
+-		int order;
 
---R+My9LyyhiUvIEro
-Content-Type: application/pgp-signature
+ 		bytes = sg->length + sg->offset;
+-		order = get_order(bytes);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+-		err = iommu_unmap(domain, start, order);
+-		if (err < 0)
++		unmapped = iommu_unmap(domain, start, bytes);
++		if (unmapped < bytes)
+ 			break;
 
-iQIcBAEBAgAGBQJOlHYpAAoJEDjbvchgkmk+EmUP/08r1RIAfsBp5oV78A2k0jrr
-H738K/e/OeTBhoT+hlMF/G8ewHm4RAFE2kUNT7xVzcn6x2T7r/NGmMBxUzn0G333
-PkLKrN/Bg2T0jrW8x7/5ZFga1K2otIAakIfsFJYEiXFyeKjpQB14dRHgeDuZV3q2
-12kcFenMf9+TzYJKhVKM/jvCZg4TaQGXyki7aVWTBS2PMzLk2LDQpI2qJ3OkbUZK
-HT+g0vn6ovd41XDOcG2o/Ss2fy8Mce6vtBEDpXtPZBQUqdbIBNPU7ajggCHQQ1Rw
-AAOHmZDgipRBeUfJyH/+wOMyyRqy8p2zj5NlT8orLi5JZBgQIsj+UdY9CNyJ2CAz
-N5sHbtByCINwwzT1fuaFJYG2NoFCF0VLn450YFKsGnL5GCUcFMDZ/hObTUhARBpD
-Y4MsGaxvP7MW+u2eDBtKUJQeDfbCY2gLGQxc7DbYTOTpn1/7WRA1z+FKV1RAZq1R
-ZQU5Wt5uQm3Z62jFt5sbV6L8FST+hXx88Wt4R9rgz8npVIJIxFAqXjH+KdkUhCn4
-/pbutOAGS5g1W0CkB7t8UdJ2HFh2+GF7uXrYLcYw3h7bCve9P6fqsqH994JKGekV
-VrggRg+W1HCRerKMrgcuiweaIsvzDmzKaB2S8KHXBBuOwOHRbLYaMf1lV+r80n6h
-2LopxsNN1qjsRL7yDYPL
-=0Asf
------END PGP SIGNATURE-----
+ 		dev_dbg(obj->dev, "%s: unmap %08x(%x) %08x\n",
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 6b6ed21..76d7ce4 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -48,6 +48,22 @@ struct iommu_domain {
 
---R+My9LyyhiUvIEro--
+ #ifdef CONFIG_IOMMU_API
+
++/**
++ * struct iommu_ops - iommu ops and capabilities
++ * @domain_init: init iommu domain
++ * @domain_destroy: destroy iommu domain
++ * @attach_dev: attach device to an iommu domain
++ * @detach_dev: detach device from an iommu domain
++ * @map: map a physically contiguous memory region to an iommu domain
++ * @unmap: unmap a physically contiguous memory region from an iommu domain
++ * @iova_to_phys: translate iova to physical address
++ * @domain_has_cap: domain capabilities query
++ * @commit: commit iommu domain
++ * @pgsize_bitmap: bitmap of supported page sizes
++ * @min_pagesz: smallest page size supported. note: this member is private
++ *		to the IOMMU core, and maintained only for efficiency sake;
++ *		drivers don't need to set it.
++ */
+ struct iommu_ops {
+ 	int (*domain_init)(struct iommu_domain *domain);
+ 	void (*domain_destroy)(struct iommu_domain *domain);
+@@ -62,6 +78,8 @@ struct iommu_ops {
+ 	int (*domain_has_cap)(struct iommu_domain *domain,
+ 			      unsigned long cap);
+ 	void (*commit)(struct iommu_domain *domain);
++	unsigned long pgsize_bitmap;
++	unsigned int min_pagesz;
+ };
+
+ extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
+@@ -73,9 +91,9 @@ extern int iommu_attach_device(struct iommu_domain *domain,
+ extern void iommu_detach_device(struct iommu_domain *domain,
+ 				struct device *dev);
+ extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
+-		     phys_addr_t paddr, int gfp_order, int prot);
+-extern int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
+-		       int gfp_order);
++		     phys_addr_t paddr, size_t size, int prot);
++extern size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
++		       size_t size);
+ extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+ 				      unsigned long iova);
+ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index ca409be..35ed096 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -111,7 +111,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct
+kvm_memory_slot *slot)
+
+ 		/* Map into IO address space */
+ 		r = iommu_map(domain, gfn_to_gpa(gfn), pfn_to_hpa(pfn),
+-			      get_order(page_size), flags);
++			      page_size, flags);
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
+@@ -292,15 +292,15 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+
+ 	while (gfn < end_gfn) {
+ 		unsigned long unmap_pages;
+-		int order;
++		size_t size;
+
+ 		/* Get physical address */
+ 		phys = iommu_iova_to_phys(domain, gfn_to_gpa(gfn));
+ 		pfn  = phys >> PAGE_SHIFT;
+
+ 		/* Unmap address from IO address space */
+-		order       = iommu_unmap(domain, gfn_to_gpa(gfn), 0);
+-		unmap_pages = 1ULL << order;
++		size       = iommu_unmap(domain, gfn_to_gpa(gfn), PAGE_SIZE);
++		unmap_pages = 1ULL << get_order(size);
+
+ 		/* Unpin all pages we just unmapped to not leak any memory */
+ 		kvm_unpin_pages(kvm, pfn, unmap_pages);
+-- 
+1.7.4.1
