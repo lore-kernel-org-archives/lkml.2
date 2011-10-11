@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab1JKIFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 04:05:48 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51684 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab1JKIFr (ORCPT
+	id S1752838Ab1JKIJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 04:09:40 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:58544 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab1JKIJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 04:05:47 -0400
-Date: Tue, 11 Oct 2011 19:05:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: manual merge of the hwspinlock tree with the arm-soc
- tree
-Message-Id: <20111011190534.b3663a8392cc0905b6c4a466@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Oct_2011_19_05_34_+1100_VrshzAzwHrVwWUMR"
+	Tue, 11 Oct 2011 04:09:37 -0400
+X-IronPort-AV: E=Sophos;i="4.68,522,1312156800"; 
+   d="scan'208";a="8318635"
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/blk[front|back]: Enhance	 discard
+ support with secure erasing support.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Dong Yang Li <lidongyang@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Oct 2011 09:09:35 +0100
+In-Reply-To: <4E940E21020000780005AA29@nat28.tlf.novell.com>
+References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
+	 <1318260494-27985-4-git-send-email-konrad.wilk@oracle.com>
+	 <1318263187.21903.464.camel@zakaz.uk.xensource.com>
+	 <20111010164250.GG28646@phenom.oracle.com>
+	 <1318274402.27397.13.camel@dagon.hellion.org.uk>
+	 <20111010195749.GA5755@phenom.oracle.com>
+	 <4E940E21020000780005AA29@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1318320575.21903.490.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Oct_2011_19_05_34_+1100_VrshzAzwHrVwWUMR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-10-11 at 08:36 +0100, Jan Beulich wrote:
+> >>> On 10.10.11 at 21:57, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > On Mon, Oct 10, 2011 at 08:20:02PM +0100, Ian Campbell wrote:
+> >> On Mon, 2011-10-10 at 17:42 +0100, Konrad Rzeszutek Wilk wrote:
+> >> > On Mon, Oct 10, 2011 at 05:13:07PM +0100, Ian Campbell wrote:
+> >> 
+> >> > > In any case it should also be posted against the canonical inter-guest
+> >> > > interface definition in the xen tree for review with that in mind.
+> >> > 
+> >> > Yes! But I was thinking to first let this one rattle a bit and see what
+> >> > folks thought about it before submitting the xen-devel.
+> >> 
+> >> It's a good idea to get ABI changes out for review before the
+> >> implementation rattles around so much that changing it becomes hard.
+> > 
+> > OK, lets drop this until we get that straigthen out. I've posted
+> > http://lists.xensource.com/archives/html/xen-devel/2011-10/msg00642.html the 
+> > changes to
+> > Xen ABI.
+> 
+> Yeah, but that didn't get adjusted after IanC's comments (structure
+> alignment, BLKIF_OP_DISCARD_FLAG_SECURE value).
+> 
+> Further I wonder why you don't use the "reserved" field instead of
+> extending the structure at the end.
 
-Hi Ohad,
+I hadn't noticed that field, yes using that would be preferable since it
+retains ABI compatibility.
 
-Today's linux-next merge of the hwspinlock tree got a conflict in
-arch/arm/mach-omap2/hwspinlock.c between commit 3528c58eb9e8 ("OMAP:
-omap_device: when building return platform_device instead of
-omap_device") from the arm-soc tree and commit c3c1250e93a7
-("hwspinlock/core/omap: fix id issues on multiple hwspinlock devices")
-from the hwspinlock tree.
+> 
+> Jan
+> 
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-omap2/hwspinlock.c
-index 0b3ae9d,eb7e509..0000000
---- a/arch/arm/mach-omap2/hwspinlock.c
-+++ b/arch/arm/mach-omap2/hwspinlock.c
-@@@ -48,13 -53,14 +53,14 @@@ int __init hwspinlocks_init(void
-  	if (oh =3D=3D NULL)
-  		return -EINVAL;
- =20
-- 	pdev =3D omap_device_build(dev_name, 0, oh, NULL, 0,
- -	od =3D omap_device_build(dev_name, 0, oh, &omap_hwspinlock_pdata,
-++	pdev =3D omap_device_build(dev_name, 0, oh, &omap_hwspinlock_pdata,
-+ 				sizeof(struct hwspinlock_pdata),
-  				omap_spinlock_latency,
-  				ARRAY_SIZE(omap_spinlock_latency), false);
- -	if (IS_ERR(od)) {
- +	if (IS_ERR(pdev)) {
-  		pr_err("Can't build omap_device for %s:%s\n", dev_name,
-  								oh_name);
- -		retval =3D PTR_ERR(od);
- +		retval =3D PTR_ERR(pdev);
-  	}
- =20
-  	return retval;
-
---Signature=_Tue__11_Oct_2011_19_05_34_+1100_VrshzAzwHrVwWUMR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOk/jOAAoJEECxmPOUX5FEq7kP/0UWq2OmbadCo9unZG9s867W
-cdnqHiPuyDzwc5L5qeMH+LWG0QWRx6SiunuLWlYfXkhUXK9N1UBJvUF+KrnPuEYp
-UJaGcB222HndwhBFe3zrihg6dRzMCWmruqei9lMpSnaxQlEJaBFrhlp1YM7rTIEh
-N8jrlnfy9X+MOR2Iz1VhLsMNs6iou5IAUxkylyqbYWD7NsfpPk3lr+hKotEx7472
-6JzyxOSkHDyj84QMfw97oi48pQEzg+ao25Du9ezUWV/WmY2IMaxdjzYfwqd7v62l
-sRT+Fowv04H+5j2uvr8XVPhdbmXFgLoyZQXS0zJndrA1zkdmYHayj2D7J/dxWJw3
-SliuD3DFiD4UL6vfstonReiuI/iT5p9L+i6oXOeAJc62bpFJRQlnUGk6MxNsCUpV
-pfmeYmBOMLFn8LXX7ln9JeQkFU4qfXYv8RuIuUAMr5cRq6y0COy6V9Zmh4j+wzD2
-o+BbXTVvw0HBcipmdhfuYlXtD7w0YqbRwKuU5h3dKVZ5Lji/ykXHTCdPs9RT6Wu0
-yFWnJkhHPIQv2EuYKpeZtOJlVnIfSaChzFgz33cs6CWik4L6reY2/wZR/gMcTicX
-0LCvKtBfMbs/OMO4FXE2AqEPwBofnuqYAC45Wcbl3ulfZHJj1zK1F1I7sH+WwZ4q
-pHQnKN5lNDC4PIbr2Jvk
-=d1v6
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_Oct_2011_19_05_34_+1100_VrshzAzwHrVwWUMR--
