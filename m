@@ -1,97 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab1JKT4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:56:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755454Ab1JKT4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:56:34 -0400
-Date: Tue, 11 Oct 2011 15:56:12 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shli@kernel.org>, Jeff Moyer <jmoyer@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        device-mapper development <dm-devel@redhat.com>,
-        Christophe Saout <christophe@saout.de>, linux-kernel@vger.kernel.org
-Subject: Re: Block regression since 3.1-rc3
-Message-ID: <20111011195611.GA26277@redhat.com>
-References: <1317397918.27140.15.camel@localhost>
- <x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
- <1317729761.25998.4.camel@localhost>
- <x49bottoq57.fsf@segfault.boston.devel.redhat.com>
- <CANejiEXnXJ7LkyqHyH1S2c4A95Si7v0-gDmRD824r3ROntaDCA@mail.gmail.com>
- <20111008161421.GA5743@redhat.com>
- <20111010213316.GM8100@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010213316.GM8100@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932108Ab1JKT46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:56:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35151 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932065Ab1JKT44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 15:56:56 -0400
+Date: Tue, 11 Oct 2011 20:56:16 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pata_cs5520: remove incorrect warning message
+Message-ID: <20111011205616.15d0b3b3@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110112000.44960.bzolnier@gmail.com>
+References: <201110112000.44960.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10 2011 at  5:33pm -0400,
-Tejun Heo <tj@kernel.org> wrote:
+On Tue, 11 Oct 2011 20:00:44 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-> Hello, Mike.
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Subject: [PATCH] pata_cs5520: remove incorrect warning message
 > 
-> On Sat, Oct 08, 2011 at 12:14:21PM -0400, Mike Snitzer wrote:
-> > Unless others have an immediate ah-ha moment, I'd suggest we revert
-> > commit 4853abaae7e4a2a (block: fix flush machinery for stacking drivers
-> > with differring flush flags).  Whereby avoiding unnecessarily reentering
-> > the flush machinery.
-> 
-> I don't object to the immediate fix but think that adding such special
-> case is gonna make the thing even more brittle and make future changes
-> even more difficult.  Those one off cases tend to cause pretty severe
-> headache when someone wants to evolve common code, so let's please
-> find out what went wrong and fix it properly so that everyone follows
-> the same set of rules.
+> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 
-Are you referring to Jeff's fix as "the immediate fix"?  Christophe
-seems to have had success with it after all.
+Nothing incorrect about it. It's rather useful information for debugging
+CS5520 problems. Users should never see it - and I've not seen it
+occuring on any standard VSA releases.
 
-As for the special case that you're suggesting makes the code more
-brittle, etc.  If you could be more specific that'd be awesome.
+Do you have any examples of it confusing users or even showing up ? 
 
-Jeff asked a question about the need to kick the queue in this case (as
-he didn't feel he had a proper justification for why it was needed).
-
-If we can get a proper patch header together to justify Jeff's patch
-that'd be great.  And then revisit any of the special casing you'd like
-us to avoid in >= 3.2?
-
-(we're obviously _very_ short on time for a 3.1 fix right now).
-
-> > If commit ed8b752bccf256 (dm table: set flush capability based on
-> > underlying devices) is in place the flush gets fed directly to
-> > scsi_request_fn, which is fine because the request-based DM's
-> > request_queue's flush_flags reflect the flush capabilities of the
-> > underlying device(s).
-> > 
-> > We are then covered relative to the only request-based DM use-case
-> > people care about (e.g. dm-multipath, which doesn't use stacked
-> > request-based DM).
-> > 
-> > We can revisit upholding the purity of the flush machinery for stacked
-> > devices in >= 3.2.
-> 
-> Hmmm... another rather nasty assumption the current flush code makes
-> is that every flush request has either zero or single bio attached to
-> it.  The assumption has always been there for quite some time now.
-
-OK.
-
-> That somehow seems broken by request based dm (either that or wrong
-> request is taking INSERT_FLUSH path).
-
-Where was this issue of a flush having multiple bios reported?
-
-> Is it possible that a rq /w single bio can end up with multiple bios
-> after cloning?
-
-No, blk_rq_prep_clone() just clones the bio(s) that are attached to the
-request being cloned.
-
-Mike
+Alan
