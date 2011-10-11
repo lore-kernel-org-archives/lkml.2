@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1JKJhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:37:22 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:54423 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab1JKJhU (ORCPT
+	id S1754250Ab1JKJi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:38:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40951 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab1JKJi6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:37:20 -0400
-Message-ID: <4E940E46.5000600@linux.vnet.ibm.com>
-Date: Tue, 11 Oct 2011 15:07:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 11 Oct 2011 05:38:58 -0400
 MIME-Version: 1.0
+In-Reply-To: <1318324399.14400.71.camel@laptop>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+	<CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+	<1318319852.14400.65.camel@laptop>
+	<CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
+	<1318324399.14400.71.camel@laptop>
+Date: Tue, 11 Oct 2011 15:08:57 +0530
+Message-ID: <CAP245DXbj5nEB2ya5BWVYinvr2RQ+m7vmuHHT3fD1iVZZQ2C5g@mail.gmail.com>
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Amit Kucheria <amit.kucheria@linaro.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, bp@amd64.org, pavel@ucw.cz,
-        len.brown@intel.com, mingo@elte.hu, akpm@linux-foundation.org,
-        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
-        rusty@rustcorp.com.au, rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com,
-        ashok.raj@intel.com, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
-        hpa@zytor.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
-References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <20111010123242.15067.48238.stgit@srivatsabhat.in.ibm.com> <4E92E8E0.4090004@linux.vnet.ibm.com>  <20111010170027.GD8100@google.com> <1318324714.14400.74.camel@laptop>
-In-Reply-To: <1318324714.14400.74.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 02:48 PM, Peter Zijlstra wrote:
-> On Mon, 2011-10-10 at 10:00 -0700, Tejun Heo wrote:
-> 
->> On Mon, Oct 10, 2011 at 06:15:20PM +0530, Srivatsa S. Bhat wrote:
->>> Would it be better to hook into the suspend/hibernate notifiers and
->>> use them to exclude cpu hotplug from suspend/hibernate, instead of
->>> trying to take pm_mutex lock like this?
->>
->> If this change is determined to be necessary, I think it would be
->> better to make it explicit.  Exclusion through callbacks often makes
->> the locking just more obscure.
-> 
-> Agreed.
-> 
+On Tue, Oct 11, 2011 at 2:43 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
+>> I have several goals. The 1st one is that I need to put more load on
+>> some cpus when I have packages with different cpu frequency.
+>
+> That should be rather easy.
+>
+>> I also study if I can follow the real cpu frequency but it seems to be
+>> not so easy.
+>
+> Why not?
+>
+>>  I have noticed that the cpu_power is updated periodical
+>> except when we have a lot of newly_idle events.
+>
+> We can certainly fix that.
+>
+>> Then, I have some use cases which have several running tasks but a low
+>> cpu load. In this case, the small tasks are spread on several cpu by
+>> the load_balance whereas they could be easily handled by one cpu
+>> without significant performance modification.
+>
+> That shouldn't be done using cpu_power, we have sched_smt_power_savings
+> and sched_mc_power_savings for stuff like that.
 
-That change is not exactly necessary. I was only wondering if that would be
-a cleaner way of dealing with this problem, in the sense that instead of
-making this look like a workaround to some bug, we could make it look well-
-designed - the PM notifies that its going to suspend/hibernate; so whoever
-wants to take actions is free to do so - and it so happens that the cpu
-hotplug wants to get mutually excluded from suspend/hibernate and it
-implements that exclusion ie., disables further cpu hotplug from happening
-till suspend/hibernate is complete and blocks suspend/hibernate till it is
-done with an ongoing cpu hotplug operation. And then the suspend/hibernate
-continues normally, after returning from the notification path...
+AFAICT, sched_mc assume all cores to have the same capacity - which is
+certainly true of the x86 architecture. But in ARM you can see hybrid
+cores[1] designed using different fab technology, so that some cores
+can run at 'n' GHz and some at 'm' GHz. The idea being that when there
+isn't much to do (e.g periodic keep alives for messaging, email, etc.)
+you don't wake up the higher power-consuming cores.
 
-But now I see that, apart from probably making the locking more obscure, it
-has another disadvantage: the code will get bloated unnecessarily, considering:
+>From TFA[1],  "Sheeva was already capable of 1.2GHz, but the new
+design can go up to 1.5GHz. But only two of the 628's Sheeva cores run
+at the full 1.5GHz. The third one is down-clocked to 624MHz, and
+interesting design choice that saves on power but adds some extra
+utility. In a sense, the 628 could be called a 2.5-core design."
 
-    - defining a callback for suspend/hibernate notifier in the cpu hotplug
-      code
-    - registering/unregistering it with the PM code
-    - then implementing the mutual exclusion in that callback
+Are we mistaken in thinking that sched_mc can not currently handle
+this usecase? How would we 'tune' sched_mc to do this w/o playing with
+cpu_power?
 
-And this current patchset achieves the same end goal without bloating the
-code and without obscuring the locking.
+> Although I would really like to kill all those different
+> sched_*_power_savings knobs and reduce it to one.
+>
+>> If the cpu_power is
+>> higher than 1024, the cpu is no more seen out of capacity by the
+>> load_balance as soon as a short process is running and teh main result
+>> is that the small tasks will stay on the same cpu. This configuration
+>> is mainly usefull for ARM dual core system when we want to power gate
+>> one cpu. I use cyclictest to simulate such use case.
+>
+> Yeah, but that's wrong.
 
-So, probably its not worth hooking into the notifiers after all...
-Hence we can go with this patchset itself.
+What is wrong - the use case simulation using cyclictest? Can you
+suggest better tools?
 
--- 
 Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+/Amit
+
+[1] http://arstechnica.com/gadgets/news/2010/09/marvells-tri-core-chip-has-near-ps3-level-graphics.ars
