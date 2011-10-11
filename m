@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364Ab1JKVzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:55:10 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:44256 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751084Ab1JKVzJ (ORCPT
+	id S1751392Ab1JKV4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:56:55 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:29224 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751011Ab1JKV4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:55:09 -0400
-Message-ID: <4E94BB3B.9030508@xenotime.net>
-Date: Tue, 11 Oct 2011 14:55:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	Tue, 11 Oct 2011 17:56:54 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAN24lE55LabZ/2dsb2JhbABDqC2BBoFTAQEFJxMcIxAIAxguFCUDIROIBbggAw6GXWEEnFeJBA
+Date: Wed, 12 Oct 2011 08:56:49 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Sage Weil <sage@newdream.net>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, ceph-devel@vger.kernel.org,
+        rwheeler@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: add d_prune dentry operation
+Message-ID: <20111011215649.GB3159@dastard>
+References: <1317875170-9349-1-git-send-email-sage@newdream.net>
+ <1317875170-9349-2-git-send-email-sage@newdream.net>
+ <20111006212118.GA24109@infradead.org>
+ <Pine.LNX.4.64.1110061507550.29500@cobra.newdream.net>
+ <20111010051141.GV3159@dastard>
+ <Pine.LNX.4.64.1110100850020.26361@cobra.newdream.net>
+ <20111010162115.GB751@infradead.org>
+ <Pine.LNX.4.64.1110110838500.32350@cobra.newdream.net>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: gpio-regulator add dependency on GENERIC_GPIO
-References: <201110112311.02195.heiko@sntech.de>
-In-Reply-To: <201110112311.02195.heiko@sntech.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1110110838500.32350@cobra.newdream.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/11 14:11, Heiko Stübner wrote:
-> Without GENERIC_GPIO "struct gpio" is undefined leading to errors.
+On Tue, Oct 11, 2011 at 08:39:24AM -0700, Sage Weil wrote:
+> On Mon, 10 Oct 2011, Christoph Hellwig wrote:
+> > On Mon, Oct 10, 2011 at 09:19:43AM -0700, Sage Weil wrote:
+> > > Let me know if the below is clearer.  The requirement is that ->d_prune be 
+> > > called prior to unhashing (and then destroying) a victim dentry.  I'm a 
+> > > little worried about mixing that in with the lru helpers because it is 
+> > > only indirectly related to whether the dentry is on the LRU, and that may 
+> > > confuse people.  A cleaned up opencoded patch is here:
+> > > 
+> > > 	https://github.com/NewDreamNetwork/ceph-client/commit/784a6aa6dc7baf2069c40988d79130dba17c7068
+> > > 
+> > > and the updated dentry_lru_prune() wrapper version is below.
+> > 
+> > Long term what I really want is a helper for doing more of the real
+> > removal in single place.  This is one step towards it, and the series
+> > from Dave is another.
 > 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-
-Works for me.  Thanks.
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-
-> ---
->  drivers/regulator/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> Ah, makes sense.
 > 
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index 5e0c7b6..9713b1b 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -66,6 +66,7 @@ config REGULATOR_USERSPACE_CONSUMER
->  
->  config REGULATOR_GPIO
->  	tristate "GPIO regulator support"
-> +	depends on GENERIC_GPIO
->  	help
->  	  This driver provides support for regulators that can be
->  	  controlled via gpios.
+> Dave, is the revised patch more clear?  
 
+Yeah, I kind of understand what it is doing now, and the comments
+will remind me when I start digging in this code again. Thanks.
 
+Cheers,
+
+Dave.
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Dave Chinner
+david@fromorbit.com
