@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751067Ab1JKEJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 00:09:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42679 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab1JKEJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 00:09:31 -0400
-Date: Mon, 10 Oct 2011 20:59:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Miller <davem@davemloft.net>
-Cc: hpa@zytor.com, rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: stable mailing list?
-Message-ID: <20111011035924.GC29668@suse.de>
-References: <1318290984.7904.127.camel@gandalf.stny.rr.com>
- <20111011000759.GA28709@suse.de>
- <4E9389A5.1080300@zytor.com>
- <20111010.230500.1524387763129785129.davem@davemloft.net>
+	id S1751402Ab1JKE0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 00:26:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43498 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JKE0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 00:26:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=REFwgzLsF+YKVjG3Yqdt38yPBggl929sbqqzo47vZRYpN3gtAWHZoYz0t9xSIIUfN
+	dX/qVT0Ogox2gb2wounXw==
+Date: Mon, 10 Oct 2011 21:26:00 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
+cc: Greg KH <greg@kroah.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, nfont@linux.vnet.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: memory hotplug: Check if pages are correctly reserved
+ on a per-section basis
+In-Reply-To: <20111010164152.5485fbaf.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1110102125040.12035@chino.kir.corp.google.com>
+References: <20111010071119.GE6418@suse.de> <20111010150038.ac161977.akpm@linux-foundation.org> <20111010232403.GA30513@kroah.com> <20111010162813.7a470ae4.akpm@linux-foundation.org> <20111010233531.GA7234@kroah.com>
+ <20111010164152.5485fbaf.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010.230500.1524387763129785129.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 11:05:00PM -0400, David Miller wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Date: Mon, 10 Oct 2011 17:11:17 -0700
-> 
-> > On 10/10/2011 05:07 PM, Greg KH wrote:
-> >> On Mon, Oct 10, 2011 at 07:56:23PM -0400, Steven Rostedt wrote:
-> >>> I received a bounce from stable@kernel.org. What should we be Ccing to?
-> >> 
-> >> You should be marking your patch with a:
-> >> 	Cc: stable <stable@kernel.org>
-> >> 
-> >> and when it hits Linus's tree, I properly pick it up.  Right now, the
-> >> mailing list isn't working, and I am considering just having it point to
-> >> a vger list as that makes more sense.  I'll ask Dave to set this up when
-> >> I land as I'm traveling at the moment...
-> >> 
-> > 
-> > Hi Dave,
-> > 
-> > Can you set up <stable@vger.kernel.org> and we'll point
-> > <stable@kernel.org> to it?
-> 
-> Done.
+On Mon, 10 Oct 2011, Andrew Morton wrote:
 
-Wonderful, thanks for doing this.
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 2840ed4..ffb69cd 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -224,13 +224,48 @@ int memory_isolate_notify(unsigned long val, void *v)
+>  }
+>  
+>  /*
+> + * The probe routines leave the pages reserved, just as the bootmem code does.
+> + * Make sure they're still that way.
+> + */
+> +static bool pages_correctly_reserved(unsigned long start_pfn,
+> +					unsigned long nr_pages)
+> +{
+> +	int i, j;
+> +	struct page *page;
+> +	unsigned long pfn = start_pfn;
+> +
+> +	/*
+> +	 * memmap between sections is not contiguous except with
+> +	 * SPARSEMEM_VMEMMAP. We lookup the page once per section
+> +	 * and assume memmap is contiguous within each section
+> +	 */
+> +	for (i = 0; i < sections_per_block; i++, pfn += PAGES_PER_SECTION) {
+> +		if (WARN_ON_ONCE(!pfn_valid(pfn)))
+> +			return false;
+> +		page = pfn_to_page(pfn);
+> +
+> +		for (j = 0; j < PAGES_PER_SECTION; j++) {
+> +			if (PageReserved(page + i))
 
-greg k-h
+page + j
+
+> +				continue;
+> +
+> +			printk(KERN_WARNING "section number %ld page number %d "
+> +				"not reserved, was it already online?\n",
+> +				pfn_to_section_nr(pfn), j);
+> +
+> +			return false;
+> +		}
+> +	}
+> +
+> +	return true;
+> +}
+> +
+> +/*
+>   * MEMORY_HOTPLUG depends on SPARSEMEM in mm/Kconfig, so it is
+>   * OK to have direct references to sparsemem variables in here.
+>   */
+>  static int
+>  memory_block_action(unsigned long phys_index, unsigned long action)
+>  {
+> -	int i;
+>  	unsigned long start_pfn, start_paddr;
+>  	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+>  	struct page *first_page;
+> @@ -238,26 +273,13 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+>  
+>  	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+>  
+> -	/*
+> -	 * The probe routines leave the pages reserved, just
+> -	 * as the bootmem code does.  Make sure they're still
+> -	 * that way.
+> -	 */
+> -	if (action == MEM_ONLINE) {
+> -		for (i = 0; i < nr_pages; i++) {
+> -			if (PageReserved(first_page+i))
+> -				continue;
+> -
+> -			printk(KERN_WARNING "section number %ld page number %d "
+> -				"not reserved, was it already online?\n",
+> -				phys_index, i);
+> -			return -EBUSY;
+> -		}
+> -	}
+> -
+>  	switch (action) {
+>  		case MEM_ONLINE:
+>  			start_pfn = page_to_pfn(first_page);
+> +
+> +			if (!pages_correctly_reserved(start_pfn, nr_pages))
+> +				return -EBUSY;
+> +
+>  			ret = online_pages(start_pfn, nr_pages);
+>  			break;
+>  		case MEM_OFFLINE:
