@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1JKRHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:07:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33691 "EHLO mx2.suse.de"
+	id S1755575Ab1JKRHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:07:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33702 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab1JKRHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:07:04 -0400
+	id S1755518Ab1JKRHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:07:10 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:11 2011
-Message-Id: <20111011165711.199285973@pistachio.kroah.org>
+Message-Id: <20111011165711.350745036@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:29 -0600
+Date: Tue, 11 Oct 2011 10:55:30 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [19/38] drm/radeon/kms: fix channel_remap setup (v2)
+        Richard Cochran <richard.cochran@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [20/38] ptp: fix L2 event message recognition
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,207 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 12d5180bd7e683a4ae80830b82ba67e7b7fac7b2 upstream.
+commit f75159e9936143177b442afc78150b7a7ad8aa07 upstream.
 
-Most asics just use the hw default value which requires
-no explicit programming.  For those that need a different
-value, the vbios will program it properly.  As such,
-there's no need to program these registers explicitly
-in the driver.  Changing MC_SHARED_CHREMAP requires a reload
-of all data in vram otherwise its contents will be scambled.
+The IEEE 1588 standard defines two kinds of messages, event and general
+messages. Event messages require time stamping, and general do not. When
+using UDP transport, two separate ports are used for the two message
+types.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=40103
+The BPF designed to recognize event messages incorrectly classifies L2
+general messages as event messages. This commit fixes the issue by
+extending the filter to check the message type field for L2 PTP packets.
+Event messages are be distinguished from general messages by testing
+the "general" bit.
 
-v2: drop now unused channel_remap functions.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   44 -------------------------------
- drivers/gpu/drm/radeon/ni.c        |   32 -----------------------
- drivers/gpu/drm/radeon/rv770.c     |   51 -------------------------------------
- 3 files changed, 127 deletions(-)
+ include/linux/ptp_classify.h |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1593,48 +1593,6 @@ static u32 evergreen_get_tile_pipe_to_ba
- 	return backend_map;
- }
+--- a/include/linux/ptp_classify.h
++++ b/include/linux/ptp_classify.h
+@@ -51,6 +51,7 @@
+ #define PTP_CLASS_V2_VLAN (PTP_CLASS_V2 | PTP_CLASS_VLAN)
  
--static void evergreen_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
--
--	tmp = RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	case 2:
--	case 3:
--	default:
--		/* default mapping */
--		mc_shared_chremap = 0x00fac688;
--		break;
--	}
--
--	switch (rdev->family) {
--	case CHIP_HEMLOCK:
--	case CHIP_CYPRESS:
--	case CHIP_BARTS:
--		tcp_chan_steer_lo = 0x54763210;
--		tcp_chan_steer_hi = 0x0000ba98;
--		break;
--	case CHIP_JUNIPER:
--	case CHIP_REDWOOD:
--	case CHIP_CEDAR:
--	case CHIP_PALM:
--	case CHIP_SUMO:
--	case CHIP_SUMO2:
--	case CHIP_TURKS:
--	case CHIP_CAICOS:
--	default:
--		tcp_chan_steer_lo = 0x76543210;
--		tcp_chan_steer_hi = 0x0000ba98;
--		break;
--	}
--
--	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
--	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static void evergreen_gpu_init(struct radeon_device *rdev)
- {
- 	u32 cc_rb_backend_disable = 0;
-@@ -2080,8 +2038,6 @@ static void evergreen_gpu_init(struct ra
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ #define PTP_EV_PORT 319
++#define PTP_GEN_BIT 0x08 /* indicates general message, if set in message type */
  
--	evergreen_program_channel_remap(rdev);
--
- 	num_shader_engines = ((RREG32(GB_ADDR_CONFIG) & NUM_SHADER_ENGINES(3)) >> 12) + 1;
- 	grbm_gfx_index = INSTANCE_BROADCAST_WRITES;
- 
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -569,36 +569,6 @@ static u32 cayman_get_tile_pipe_to_backe
- 	return backend_map;
- }
- 
--static void cayman_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
--
--	tmp = RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	case 2:
--	case 3:
--	default:
--		/* default mapping */
--		mc_shared_chremap = 0x00fac688;
--		break;
--	}
--
--	switch (rdev->family) {
--	case CHIP_CAYMAN:
--	default:
--		//tcp_chan_steer_lo = 0x54763210
--		tcp_chan_steer_lo = 0x76543210;
--		tcp_chan_steer_hi = 0x0000ba98;
--		break;
--	}
--
--	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
--	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static u32 cayman_get_disable_mask_per_asic(struct radeon_device *rdev,
- 					    u32 disable_mask_per_se,
- 					    u32 max_disable_mask_per_se,
-@@ -841,8 +811,6 @@ static void cayman_gpu_init(struct radeo
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
- 
--	cayman_program_channel_remap(rdev);
--
- 	/* primary versions */
- 	WREG32(CC_RB_BACKEND_DISABLE, cc_rb_backend_disable);
- 	WREG32(CC_SYS_RB_BACKEND_DISABLE, cc_rb_backend_disable);
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -536,55 +536,6 @@ static u32 r700_get_tile_pipe_to_backend
- 	return backend_map;
- }
- 
--static void rv770_program_channel_remap(struct radeon_device *rdev)
--{
--	u32 tcp_chan_steer, mc_shared_chremap, tmp;
--	bool force_no_swizzle;
--
--	switch (rdev->family) {
--	case CHIP_RV770:
--	case CHIP_RV730:
--		force_no_swizzle = false;
--		break;
--	case CHIP_RV710:
--	case CHIP_RV740:
--	default:
--		force_no_swizzle = true;
--		break;
--	}
--
--	tmp = RREG32(MC_SHARED_CHMAP);
--	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
--	case 0:
--	case 1:
--	default:
--		/* default mapping */
--		mc_shared_chremap = 0x00fac688;
--		break;
--	case 2:
--	case 3:
--		if (force_no_swizzle)
--			mc_shared_chremap = 0x00fac688;
--		else
--			mc_shared_chremap = 0x00bbc298;
--		break;
--	}
--
--	if (rdev->family == CHIP_RV740)
--		tcp_chan_steer = 0x00ef2a60;
--	else
--		tcp_chan_steer = 0x00fac688;
--
--	/* RV770 CE has special chremap setup */
--	if (rdev->pdev->device == 0x944e) {
--		tcp_chan_steer = 0x00b08b08;
--		mc_shared_chremap = 0x00b08b08;
--	}
--
--	WREG32(TCP_CHAN_STEER, tcp_chan_steer);
--	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
--}
--
- static void rv770_gpu_init(struct radeon_device *rdev)
- {
- 	int i, j, num_qd_pipes;
-@@ -784,8 +735,6 @@ static void rv770_gpu_init(struct radeon
- 	WREG32(DCP_TILING_CONFIG, (gb_tiling_config & 0xffff));
- 	WREG32(HDP_TILING_CONFIG, (gb_tiling_config & 0xffff));
- 
--	rv770_program_channel_remap(rdev);
--
- 	WREG32(CC_RB_BACKEND_DISABLE,      cc_rb_backend_disable);
- 	WREG32(CC_GC_SHADER_PIPE_CONFIG,   cc_gc_shader_pipe_config);
- 	WREG32(GC_USER_SHADER_PIPE_CONFIG, cc_gc_shader_pipe_config);
+ #define OFF_ETYPE	12
+ #define OFF_IHL		14
+@@ -116,14 +117,20 @@ static inline int ptp_filter_init(struct
+ 	{OP_OR,		0,   0, PTP_CLASS_IPV6		}, /*              */ \
+ 	{OP_RETA,	0,   0, 0			}, /*              */ \
+ /*L3x*/	{OP_RETK,	0,   0, PTP_CLASS_NONE		}, /*              */ \
+-/*L40*/	{OP_JEQ,	0,   6, ETH_P_8021Q		}, /* f goto L50   */ \
++/*L40*/	{OP_JEQ,	0,   9, ETH_P_8021Q		}, /* f goto L50   */ \
+ 	{OP_LDH,	0,   0, OFF_ETYPE + 4		}, /*              */ \
+-	{OP_JEQ,	0,   9, ETH_P_1588		}, /* f goto L60   */ \
++	{OP_JEQ,	0,  15, ETH_P_1588		}, /* f goto L60   */ \
++	{OP_LDB,	0,   0, ETH_HLEN + VLAN_HLEN	}, /*              */ \
++	{OP_AND,	0,   0, PTP_GEN_BIT		}, /*              */ \
++	{OP_JEQ,	0,  12, 0			}, /* f goto L6x   */ \
+ 	{OP_LDH,	0,   0, ETH_HLEN + VLAN_HLEN	}, /*              */ \
+ 	{OP_AND,	0,   0, PTP_CLASS_VMASK		}, /*              */ \
+ 	{OP_OR,		0,   0, PTP_CLASS_VLAN		}, /*              */ \
+ 	{OP_RETA,	0,   0, 0			}, /*              */ \
+-/*L50*/	{OP_JEQ,	0,   4, ETH_P_1588		}, /* f goto L61   */ \
++/*L50*/	{OP_JEQ,	0,   7, ETH_P_1588		}, /* f goto L61   */ \
++	{OP_LDB,	0,   0, ETH_HLEN		}, /*              */ \
++	{OP_AND,	0,   0, PTP_GEN_BIT		}, /*              */ \
++	{OP_JEQ,	0,   4, 0			}, /* f goto L6x   */ \
+ 	{OP_LDH,	0,   0, ETH_HLEN		}, /*              */ \
+ 	{OP_AND,	0,   0, PTP_CLASS_VMASK		}, /*              */ \
+ 	{OP_OR,		0,   0, PTP_CLASS_L2		}, /*              */ \
 
 
