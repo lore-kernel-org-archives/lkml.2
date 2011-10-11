@@ -1,66 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab1JKK4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:56:06 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49846 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754520Ab1JKK4F convert rfc822-to-8bit (ORCPT
+	id S1754668Ab1JKLEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 07:04:13 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52419 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab1JKLEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:56:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111011110728.13004b1c@lxorguk.ukuu.org.uk>
-References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
-	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
-	<CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
-	<20111011110728.13004b1c@lxorguk.ukuu.org.uk>
-Date: Tue, 11 Oct 2011 18:56:03 +0800
-Message-ID: <CACVXFVODp5o0=+6pwG+K_LV=rtCJo-5J3Os10orwijZJq4r4Ng@mail.gmail.com>
-Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM List <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Oct 2011 07:04:11 -0400
+From: Josh Wu <josh.wu@atmel.com>
+To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, plagnioj@jcrosoft.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, s.nawrocki@samsung.com,
+        Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH v4 1/3] [media] at91: add code to enable/disable ISI_MCK clock
+Date: Tue, 11 Oct 2011 19:03:38 +0800
+Message-Id: <1318331020-22031-2-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1318331020-22031-1-git-send-email-josh.wu@atmel.com>
+References: <1318331020-22031-1-git-send-email-josh.wu@atmel.com>
+X-OriginalArrivalTime: 11 Oct 2011 11:03:44.0680 (UTC) FILETIME=[7177EA80:01CC8805]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 6:07 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> > No. Well it may be on some platforms but it isn't the same thing. On some
->> > devices a DMA transfer doesn't need the CPU involved but needs the CPU to
->> > respond within a set timescale (eg for coherency or bus arbitration). It
->>
->> I understand only the CPU can respond after it is notified by a
->> interrupt event, don't I?
->
-> The instruction stream being executed maybe, but not things like the cache
->
->> Also could you give a example about how the CPU responds to a DMA transfer
->> within a set timescale if it is required?
->
-> The kind of thing you are dealing with is
->
->        DMA engine requests a cache line of data
->        CPU wakes out of sleep, completes bus transaction
+This patch
+- add ISI_MCK clock enable/disable code.
+- change field name in isi_platform_data structure
 
-I think the CPU should be woken up by interrupt from DMA engine, so
-it is still a kind of interrupt latency?
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+ drivers/media/video/atmel-isi.c |   34 +++++++++++++++++++++++++++++++---
+ include/media/atmel-isi.h       |    4 +++-
+ 2 files changed, 34 insertions(+), 4 deletions(-)
 
-Also looks like it is a bit odd that why CPU is involved to complete the
-bus transaction which should have been done by DMA engine only.
-Is there a practical example about this?
-
->        CPU goes back to sleep
->        DMA engine starts outputting data bits over SPI bus or similar
->
->        repeat until done
->
-> so it's not instruction level stuff, merely bus traffic.
->
-
-
-thanks,
+diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
+index 774715d..0617163 100644
+--- a/drivers/media/video/atmel-isi.c
++++ b/drivers/media/video/atmel-isi.c
+@@ -90,7 +90,10 @@ struct atmel_isi {
+ 	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
+ 
+ 	struct completion		complete;
++	/* ISI peripherial clock */
+ 	struct clk			*pclk;
++	/* ISI_MCK, feed to camera sensor to generate pixel clock */
++	struct clk			*mck;
+ 	unsigned int			irq;
+ 
+ 	struct isi_platform_data	*pdata;
+@@ -773,6 +776,12 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = clk_enable(isi->mck);
++	if (ret) {
++		clk_disable(isi->pclk);
++		return ret;
++	}
++
+ 	isi->icd = icd;
+ 	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
+ 		 icd->devnum);
+@@ -786,6 +795,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
+ 
+ 	BUG_ON(icd != isi->icd);
+ 
++	clk_disable(isi->mck);
+ 	clk_disable(isi->pclk);
+ 	isi->icd = NULL;
+ 
+@@ -869,7 +879,7 @@ static int isi_camera_set_bus_param(struct soc_camera_device *icd, u32 pixfmt)
+ 
+ 	if (isi->pdata->has_emb_sync)
+ 		cfg1 |= ISI_CFG1_EMB_SYNC;
+-	if (isi->pdata->isi_full_mode)
++	if (isi->pdata->full_mode)
+ 		cfg1 |= ISI_CFG1_FULL_MODE;
+ 
+ 	isi_writel(isi, ISI_CTRL, ISI_CTRL_DIS);
+@@ -907,6 +917,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+ 			isi->fb_descriptors_phys);
+ 
+ 	iounmap(isi->regs);
++	clk_put(isi->mck);
+ 	clk_put(isi->pclk);
+ 	kfree(isi);
+ 
+@@ -925,7 +936,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	struct isi_platform_data *pdata;
+ 
+ 	pdata = dev->platform_data;
+-	if (!pdata || !pdata->data_width_flags) {
++	if (!pdata || !pdata->data_width_flags || !pdata->mck_hz) {
+ 		dev_err(&pdev->dev,
+ 			"No config available for Atmel ISI\n");
+ 		return -EINVAL;
+@@ -954,6 +965,21 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&isi->video_buffer_list);
+ 	INIT_LIST_HEAD(&isi->dma_desc_head);
+ 
++	/* Get ISI_MCK, provided by programmable clock or external clock */
++	isi->mck = clk_get(dev, "isi_mck");
++	if (IS_ERR_OR_NULL(isi->mck)) {
++		dev_err(dev, "Failed to get isi_mck\n");
++		ret = PTR_ERR(isi->mck);
++		if (isi->mck == NULL)
++			ret = -EINVAL;
++		goto err_alloc_descriptors;
++	}
++
++	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
++	ret = clk_set_rate(isi->mck, pdata->mck_hz);
++	if (ret < 0)
++		goto err_set_mck_rate;
++
+ 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
+ 				sizeof(struct fbd) * MAX_BUFFER_NUM,
+ 				&isi->fb_descriptors_phys,
+@@ -961,7 +987,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	if (!isi->p_fb_descriptors) {
+ 		ret = -ENOMEM;
+ 		dev_err(&pdev->dev, "Can't allocate descriptors!\n");
+-		goto err_alloc_descriptors;
++		goto err_set_mck_rate;
+ 	}
+ 
+ 	for (i = 0; i < MAX_BUFFER_NUM; i++) {
+@@ -1023,6 +1049,8 @@ err_alloc_ctx:
+ 			sizeof(struct fbd) * MAX_BUFFER_NUM,
+ 			isi->p_fb_descriptors,
+ 			isi->fb_descriptors_phys);
++err_set_mck_rate:
++	clk_put(isi->mck);
+ err_alloc_descriptors:
+ 	kfree(isi);
+ err_alloc_isi:
+diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
+index 26cece5..6568230 100644
+--- a/include/media/atmel-isi.h
++++ b/include/media/atmel-isi.h
+@@ -110,10 +110,12 @@ struct isi_platform_data {
+ 	u8 hsync_act_low;
+ 	u8 vsync_act_low;
+ 	u8 pclk_act_falling;
+-	u8 isi_full_mode;
++	u8 full_mode;
+ 	u32 data_width_flags;
+ 	/* Using for ISI_CFG1 */
+ 	u32 frate;
++	/* Using for ISI_MCK */
++	u32 mck_hz;
+ };
+ 
+ #endif /* __ATMEL_ISI_H__ */
 -- 
-Ming Lei
+1.6.3.3
+
