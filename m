@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab1JKRDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:03:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33197 "EHLO mx2.suse.de"
+	id S1755274Ab1JKRDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:03:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33226 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab1JKRDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:03:20 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:08 2011
-Message-Id: <20111011165708.765830979@pistachio.kroah.org>
+	id S1754748Ab1JKRDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:03:30 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:09 2011
+Message-Id: <20111011165708.910764998@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:13 -0600
+Date: Tue, 11 Oct 2011 10:55:14 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [03/38] PCI: Remove MRRS modification from MPS setting code
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jon Mason <mason@myri.com>
+Subject: [04/38] pci: Dont crash when reading mpss from root complex
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,117 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <mason@myri.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit ed2888e906b56769b4ffabb9c577190438aa68b8 upstream.
+commit 1a4b1a41b8a3d5256019854e851beed063b34344 upstream.
 
-Modifying the Maximum Read Request Size to 0 (value of 128Bytes) has
-massive negative ramifications on some devices.  Without knowing which
-devices have this issue, do not modify from the default value when
-walking the PCI-E bus in pcie_bus_safe mode.  Also, make pcie_bus_safe
-the default procedure.
+In pcie_find_smpss(), we have the following statement:
 
-Tested-by: Sven Schnelle <svens@stackframe.org>
-Tested-by: Simon Kirby <sim@hostway.ca>
-Tested-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-and-tested-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42162
-Signed-off-by: Jon Mason <mason@myri.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+ 	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+	    dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
+
+The problem is that at least on my machine, this gets called for the
+root complex (virtual P2P bridge), and dev->bus->self is NULL since
+the parent bus for this is not itself anchor to a PCI device.
+
+This adds the necessary NULL check.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Jon Mason <mason@myri.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c   |    2 +-
- drivers/pci/probe.c |   45 ++++++++++++++++++++++++---------------------
- 2 files changed, 25 insertions(+), 22 deletions(-)
+ drivers/pci/probe.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -77,7 +77,7 @@ unsigned long pci_cardbus_mem_size = DEF
- unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
- unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
- 
--enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
-+enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_SAFE;
- 
- /*
-  * The default CLS is used if arch didn't set CLS explicitly and not
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -1397,34 +1397,37 @@ static void pcie_write_mps(struct pci_de
+@@ -1352,7 +1352,8 @@ static int pcie_find_smpss(struct pci_de
+ 	 * will occur as normal.
+ 	 */
+ 	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
+-	    dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
++	     (dev->bus->self &&
++	      dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT)))
+ 		*smpss = 0;
  
- static void pcie_write_mrrs(struct pci_dev *dev, int mps)
- {
--	int rc, mrrs;
--
--	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
--		int dev_mpss = 128 << dev->pcie_mpss;
--
--		/* For Max performance, the MRRS must be set to the largest
--		 * supported value.  However, it cannot be configured larger
--		 * than the MPS the device or the bus can support.  This assumes
--		 * that the largest MRRS available on the device cannot be
--		 * smaller than the device MPSS.
--		 */
--		mrrs = mps < dev_mpss ? mps : dev_mpss;
--	} else
--		/* In the "safe" case, configure the MRRS for fairness on the
--		 * bus by making all devices have the same size
--		 */
--		mrrs = mps;
-+	int rc, mrrs, dev_mpss;
- 
-+	/* In the "safe" case, do not configure the MRRS.  There appear to be
-+	 * issues with setting MRRS to 0 on a number of devices.
-+	 */
-+
-+	if (pcie_bus_config != PCIE_BUS_PERFORMANCE)
-+		return;
-+
-+	dev_mpss = 128 << dev->pcie_mpss;
-+
-+	/* For Max performance, the MRRS must be set to the largest supported
-+	 * value.  However, it cannot be configured larger than the MPS the
-+	 * device or the bus can support.  This assumes that the largest MRRS
-+	 * available on the device cannot be smaller than the device MPSS.
-+	 */
-+	mrrs = min(mps, dev_mpss);
- 
- 	/* MRRS is a R/W register.  Invalid values can be written, but a
--	 * subsiquent read will verify if the value is acceptable or not.
-+	 * subsequent read will verify if the value is acceptable or not.
- 	 * If the MRRS value provided is not acceptable (e.g., too large),
- 	 * shrink the value until it is acceptable to the HW.
-  	 */
- 	while (mrrs != pcie_get_readrq(dev) && mrrs >= 128) {
-+		dev_warn(&dev->dev, "Attempting to modify the PCI-E MRRS value"
-+			 " to %d.  If any issues are encountered, please try "
-+			 "running with pci=pcie_bus_safe\n", mrrs);
- 		rc = pcie_set_readrq(dev, mrrs);
- 		if (rc)
--			dev_err(&dev->dev, "Failed attempting to set the MRRS\n");
-+			dev_err(&dev->dev,
-+				"Failed attempting to set the MRRS\n");
- 
- 		mrrs /= 2;
- 	}
-@@ -1437,13 +1440,13 @@ static int pcie_bus_configure_set(struct
- 	if (!pci_is_pcie(dev))
- 		return 0;
- 
--	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
- 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
- 
- 	pcie_write_mps(dev, mps);
- 	pcie_write_mrrs(dev, mps);
- 
--	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
-+	dev_dbg(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
- 		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
- 
- 	return 0;
+ 	if (*smpss > dev->pcie_mpss)
 
 
