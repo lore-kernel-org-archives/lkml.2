@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751147Ab1JKGhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 02:37:23 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:43832 "EHLO
+	id S1751358Ab1JKGkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:40:22 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:44763 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab1JKGhV (ORCPT
+	with ESMTP id S1750712Ab1JKGkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 02:37:21 -0400
-Date: Tue, 11 Oct 2011 17:37:14 +1100
+	Tue, 11 Oct 2011 02:40:20 -0400
+Date: Tue, 11 Oct 2011 17:40:14 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: linux-next: build failure after merge of the gpio tree
-Message-Id: <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
-In-Reply-To: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
-References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Input tree moved back to kernel.org
+Message-Id: <20111011174014.f9e23daea8f8c8526096131a@canb.auug.org.au>
+In-Reply-To: <20111011011224.GA11832@core.coreip.homeip.net>
+References: <20111011011224.GA11832@core.coreip.homeip.net>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET"
+ boundary="Signature=_Tue__11_Oct_2011_17_40_14_+1100_gaju+SHAkw8a9v5B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET
+--Signature=_Tue__11_Oct_2011_17_40_14_+1100_gaju+SHAkw8a9v5B
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Grant,
+Hi Dmitry,=20
 
-On Thu, 6 Oct 2011 14:48:26 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On Mon, 10 Oct 2011 18:12:24 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.c=
+om> wrote:
 >
-> After merging the gpio tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> I have moved input tree back to its original place on kernel.org:
 >=20
-> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
-> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
-> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
 >=20
-> Presumably caused by commits 54be566317b6 ("gpio-ml-ioh: Support
-> interrupt function") and 38eb18a6f92d ("gpio-pch: Support interrupt
-> function").
+> The structure is still the same: 'for-linus' branch for current work and
+> 'next' (same as master) branch for the next merge window. I will try
+> keeping version on github up to date as well.
 >=20
-> I have used the gpio tree from next-20111005 for today.
+> Stephen, could you please update linux-next once more?
 
-I am still getting this build failure.
+I will switch back tomorrow.
+
+> BTW, does anyone know how one can update project description with
+> gitolite?
+
+echo <description> | ssh gitolite@ra.kernel.org setdesc <repo>
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET
+--Signature=_Tue__11_Oct_2011_17_40_14_+1100_gaju+SHAkw8a9v5B
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOk+QaAAoJEECxmPOUX5FEg+UP/jeieEU8UymcXxtomxyjtlCQ
-wKb6IYlBZKol2EhkhOGIPAROp9meJMOaI/dpFVG9EJNhUPvNDSoKSv2jZiIeQ9yI
-/sKiRv8DTGxgJ+qmDgoGpL+goe0lXuLJdDuM+1xkMCzPCFiw34c1YCAhNHmcgfMa
-IkugqDxDcAYo0TaXu63uBpG739XwdwT3S9oKIYuXhLdxBZaBwkr+sZadMSqRrgwA
-rl3HTyQioS+oicJ+pqC+ODS66HmX1iXa0ASEi9BfF4XLjy95M8rUQZqwnoRpFkEj
-QAvtCL4/u3mEOH/qQYccP0wYD+iLts/HIqxBo0IJcK0QCxrwqc8SMAgS6h0BqQhz
-EYQZ9RlLiCcVUp225ZaXzJbkLb123Iegr0lWX8w+jkrnPWqRhuKKnd/jn9MYW5Cb
-qfzVXwif7jbDqx27h56zf0slOys17j1HCG70tI3jFCzZLZMuZ087QuZBqVkJqR8Y
-7a0XAQ69426xx6DmTIg6eXYLkHE4mQ5/mwF7nU2pEqBM2Y7J5PxlcjajZVQ3dmv0
-yAPjv30fhMPDal8rYrjNPC2epElrUIVqxRmO0Rm4TxiZDThgYCLJmJc0cxOwz85J
-14qMwrqhqlF3FEvrtSbrXSnMkPvu+EKWzZkgkXnsXQcqbaBdgSulB1eaq2sQhfw5
-TrnCz0c9HlN0NQkp27+W
-=ufny
+iQIcBAEBCAAGBQJOk+TOAAoJEECxmPOUX5FE+98QAI3VM7XvWN/l2lWOj9F+NU/J
+oSn2bjfeaCuW7jCkt+t6S/QblZEKxo3gHtoyQ037J+R/0451iFlUfxA/phFnc50X
+fuOluyMQos2BlwpCSzc+hqE0rNN8pBeidTYix6GvXmibuo8U8dVlOVypWmCu4iJA
+hY4AS/ICLxdJ/Q9IQp/xpv82MXzPxb4XJNQFhDXGdodtefVuRByMio3hETmcmAQp
+maunNV+ujoqqjK+W/wKuai/F3Aako26wVKOr1+sgaMS87D+ftIYwYf6Nr6BgSJMn
+IonL/nSLPsluwluxbQPCT1ErBb2DyJA5w8xldhfLcJk8+o1DnuH7ZnOyGM2kLbAk
+bHEGp34zqJ/gNtM9TuS2frUtFhImE8castgmGzu8yEHC+CqAhYFwkkzdoRsGUDxY
+hesTS3Uf573jT+x9qtEZxDOYuDR6Qpo2A19eLF0pX/GT+E97qryBgSGTgxzTkQXe
+WsaBV6oCBKfZy90zprOT2HSBtc2cH4T9EWWLGbO0pgs9oEzoB8q3/e3dkrOFR5m9
++eqWoTM5Nxeh9OtVjqEo6vaerJH+WCgbbs9TJvzRDge/yov7XT1DkgHl3FfdgpvL
+eUkJ83SPw1g6lzu/ZTgVWHdFmaOPE76ZD+rGiUxeCHA6z1toelCfPCluMI7+u131
+WzvVLlhZVyp7vNApbsKb
+=IYKa
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET--
+--Signature=_Tue__11_Oct_2011_17_40_14_+1100_gaju+SHAkw8a9v5B--
