@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab1JKMlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 08:41:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39806 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab1JKMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 08:41:39 -0400
-Message-ID: <4E943980.8040807@suse.cz>
-Date: Tue, 11 Oct 2011 14:41:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.20) Gecko/20110804 SUSE/3.1.12 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Johann Felix Soden <johfel@gmx.de>, Jiri Kosina <jkosina@suse.cz>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754495Ab1JKMnr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 08:43:47 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45315 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753253Ab1JKMnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 08:43:45 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix file references in Kconfig files
-References: <1317683499.5990.2.camel@LAPJFS> <4E934066.80109@xenotime.net>	 <alpine.LNX.2.00.1110102350170.14768@pobox.suse.cz>	 <1318288249.12675.6.camel@LAPJFS> <1318320079.18122.38.camel@x61.thuisdomein>
-In-Reply-To: <1318320079.18122.38.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 2/2] pch_dma: Modify redundant memory allocation
+Date: Tue, 11 Oct 2011 21:43:22 +0900
+Message-Id: <1318337002-10041-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.10.2011 10:01, Paul Bolle wrote:
-> On Tue, 2011-10-11 at 01:10 +0200, Johann Felix Soden wrote:
->> This patch fixes file references to moved or deleted files
->> outside of Documentation/.
-> 
-> Apparently you grepped on something like "<file:.*". This triggers an
-> issue I've been wondering about a bit.
-> 
-> Would anyone know why some file references are wrapped in a "<file:" -
-> ">" pair while others are not? The same thing can be seen with "http://"
-> links: some are wrapped in angle brackets while others are not. What do
-> these brackets (and the "file:" prefix) actually provide?
+nr_channels is defined in "struct pch_dma".
+and struct pch_dma_chan is defined in "struct pch_dma".
+So, "sizeof(struct pch_dma_chan) * nr_channels" is unnecessary.
 
-I guess the plan was to display these references as clickable links in
-the graphical front-ends, but this has never been implemented.
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+---
+ drivers/dma/pch_dma.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Michal
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index e72bfeb..d78f526 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -811,8 +811,7 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
+ 	int i;
+ 
+ 	nr_channels = id->driver_data;
+-	pd = kzalloc(sizeof(struct pch_dma)+
+-		sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
++	pd = kzalloc(sizeof(struct pch_dma), GFP_KERNEL);
+ 	if (!pd)
+ 		return -ENOMEM;
+ 
+-- 
+1.7.4.4
+
