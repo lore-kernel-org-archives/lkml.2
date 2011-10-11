@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab1JKROo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:14:44 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41848 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab1JKROk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:14:40 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: David Miller <davem@davemloft.net>
-Subject: [PATCH] ide: ide_port_wait_ready() fix
-Date: Tue, 11 Oct 2011 19:13:18 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Message-Id: <201110111913.18492.bzolnier@gmail.com>
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+	id S1755062Ab1JKRUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:20:21 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:59730 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab1JKRUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:20:20 -0400
+Date: Tue, 11 Oct 2011 13:20:19 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
+Message-ID: <20111011172019.GI10838@kvack.org>
+References: <20111011165903.GA30976@kroah.com> <20111011165708.466042477@pistachio.kroah.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111011165708.466042477@pistachio.kroah.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] ide: ide_port_wait_ready() fix
+Hello Greg,
 
-Fix for commit a20b2a4 ("ide: skip probe if there are no devices on
-the port (v2)").  We must check for slave device before failing.
+On Tue, Oct 11, 2011 at 10:55:11AM -0600, Greg KH wrote:
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -77,6 +77,8 @@ unsigned long pci_cardbus_mem_size = DEF
+>  unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+>  unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
+>  
+> +enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
+> +
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
- drivers/ide/ide-probe.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+This version of the patch incorrectly defaults to the new performance 
+mode.  Since we haven't even had that code in the 3.1 release yet, I don't 
+think it is suitable for a stable release.  This patch should be revised 
+to a version with default set to safe/don't-touch mode if it is to be 
+included.
 
-Index: b/drivers/ide/ide-probe.c
-===================================================================
---- a/drivers/ide/ide-probe.c
-+++ b/drivers/ide/ide-probe.c
-@@ -598,7 +598,7 @@ static int ide_port_wait_ready(ide_hwif_
- {
- 	const struct ide_tp_ops *tp_ops = hwif->tp_ops;
- 	ide_drive_t *drive;
--	int i, rc;
-+	int i, rc, prev_rc = 0;
- 
- 	printk(KERN_DEBUG "Probing IDE interface %s...\n", hwif->name);
- 
-@@ -623,8 +623,10 @@ static int ide_port_wait_ready(ide_hwif_
- 			tp_ops->write_devctl(hwif, ATA_DEVCTL_OBS);
- 			mdelay(2);
- 			rc = ide_wait_not_busy(hwif, 35000);
--			if (rc)
-+			if (prev_rc && rc)
- 				goto out;
-+			prev_rc = rc;
-+			rc = 0;
- 		} else
- 			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
- 					  drive->name);
+		-ben
