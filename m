@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab1JKQQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:16:06 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:5768 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859Ab1JKQQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:16:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=lj6JW6rg3yc63WqM0z1O9OWTwfUGtuTFm9Ie5Yrk4nu3NQfm1xZtxMM5j1j18LTea
-	JKjJ4tFTXan0cgNzUEASA==
-MIME-Version: 1.0
-In-Reply-To: <1318319295.29415.452.camel@pasglop>
-References: <1314845309-3277-1-git-send-email-dczhu@mips.com>
- <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
- <CAErSpo5HNKi7NSKBbyL3o39Ow+Xkncyccrj5PQNaoeMdLHJsFQ@mail.gmail.com>
- <BD04AF0D5BE72443A0B69C1C0486AD3ECE8D8973@exchdb03.mips.com> <1318319295.29415.452.camel@pasglop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 11 Oct 2011 10:15:34 -0600
-Message-ID: <CAErSpo5rU8aa=-joApUTYbsQrbrRz9x-7VA3V3H9gDg7k7nj+w@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 0/2] Pass resources to pci_create_bus() and fix
- MIPS PCI resources
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "Zhu, DengCheng" <dczhu@mips.com>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
-        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1755169Ab1JKQPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:15:42 -0400
+Received: from shutemov.name ([188.40.19.243]:38154 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754859Ab1JKQPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 12:15:40 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH, v10 2/3] hrtimer: implement PR_GET_EFFECTIVE_TIMERSLACK
+Date: Tue, 11 Oct 2011 19:15:28 +0300
+Message-Id: <1318349729-3108-3-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.4.5
+In-Reply-To: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 1:48 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-> I must admit I don't completely understand what this patch is about,
-> other than it will most probably break the way we do resource management
-> on powerpc :-)
->
-> I don't understand the point about conflicts in scan_slot and I don't
-> see what you win by "settling down early". Also keep in mind that the
-> resources read from the device need to be remapped on some archs like
-> powerpc which we do from a header quirk at the moment.
+PR_GET_EFFECTIVE_TIMERSLACK allows process to know its effective timer
+slack value.
 
-These patches only deal with root bus resources, i.e., the
-non-architected PCI host bridge windows.  They don't have anything to
-do with normal PCI BARs.
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ include/linux/prctl.h |    6 ++++++
+ kernel/sys.c          |    3 +++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
 
-MIPS sets up root buses differently than powerpc, so it has a problem
-that powerpc doesn't have.  Here's the original MIPS flow (before this
-series):
+diff --git a/include/linux/prctl.h b/include/linux/prctl.h
+index a3baeb2..3199458 100644
+--- a/include/linux/prctl.h
++++ b/include/linux/prctl.h
+@@ -102,4 +102,10 @@
+ 
+ #define PR_MCE_KILL_GET 34
+ 
++/*
++ * Get effective timerslack value for the process.
++ * It can be higher than PR_GET_TIMERSLACK.
++ */
++#define PR_GET_EFFECTIVE_TIMERSLACK 35
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 6fecef0..4b86e41 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1798,6 +1798,9 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		case PR_GET_TIMERSLACK:
+ 			error = current->timer_slack_ns;
+ 			break;
++		case PR_GET_EFFECTIVE_TIMERSLACK:
++			error = task_get_effective_timer_slack(current);
++			break;
+ 		case PR_SET_TIMERSLACK:
+ 			if (arg2 <= 0)
+ 				current->timer_slack_ns =
+-- 
+1.7.6.3
 
-              pci_scan_bus
-                pci_scan_bus_parented
-                  pci_create_bus        <-- A create root bus
-                  pci_scan_child_bus
-                    pci_scan_slot
-                      pci_scan_single_device
-                        pci_scan_device
-                          pci_setup_device
-                            pci_fixup_device (pci_fixup_early)  <-- B
-                        pci_device_add
-                          pci_fixup_device (pci_fixup_header)   <-- C
-                    pcibios_fixup_bus   <-- D fill in root bus resources
-
-At point A, we allocate a struct pci_bus for the root bus.
-pci_create_bus() fills in defaults for the resources available on that
-bus: ioport_resource and iomem_resource, which cover all possible
-address space.  Later at point D, we replace those defaults with the
-correct resources (hose->io_resource and hose->mem_resource in this
-MIPS case).
-
-The problem is that the root bus resources are wrong during the
-interval between A and D.  Anything that looks at them may break.  In
-the case Deng-Cheng found, the quirk_piix4_acpi() fixup at point C
-claimed a region, which incorrectly became the child of
-ioport_resource instead of host->io_resource.
-
-Deng-Cheng's patches close this window by basically combining the
-fixup at D with the root bus creation at A.
-
-Powerpc doesn't have the same problem because it calls
-pci_create_bus() directly so it can fix the root bus resources with
-pcibios_setup_phb_resources() *before* it scans the bus.
-
-Even though powerpc and many other architectures don't have the MIPS
-problem, I think it's worth changing the code because the existing
-pattern is poor.  In almost all cases, we know what the host bridge
-apertures are before we create the root bus.  It's error-prone to have
-pci_create_bus() fill in default resources, then rely on the
-architecture to fix that up later.  I think it's better to supply the
-resources up front.
-
-Bjorn
