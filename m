@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab1JKUWd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 16:22:33 -0400
-Received: from s15407518.onlinehome-server.info ([82.165.136.167]:33327 "EHLO
-	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751262Ab1JKUWc (ORCPT
+	id S1751852Ab1JKUWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 16:22:39 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:21697 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1JKUWf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 16:22:32 -0400
-From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: Tree for Oct 11 (gpio regulator)
-Date: Tue, 11 Oct 2011 22:22:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au> <4E9499BB.6030607@xenotime.net>
-In-Reply-To: <4E9499BB.6030607@xenotime.net>
+	Tue, 11 Oct 2011 16:22:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=ZrHVsxGqEMXqHSUhngHiNpKHad/AbkQ9rN4PXW6yB1G42wnDojdXHhejoKF1mGjKE
+	OBqcrYkqSs8fEZ9aEdcEg==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110112222.24646.heiko@sntech.de>
+In-Reply-To: <20111011195611.GA2956@kroah.com>
+References: <20111011165903.GA30976@kroah.com> <20111011165708.466042477@pistachio.kroah.org>
+ <20111011172019.GI10838@kvack.org> <CAErSpo6JFTm4y35Nz7aNUgM3ynX52fM1-AwX7OTOwm3cminv1Q@mail.gmail.com>
+ <20111011192447.GC1112@kroah.com> <CAErSpo47Yw3Vygs5=OVmtUuLsB9FxJeYBm20UYem-Z3L7B0UhQ@mail.gmail.com>
+ <20111011195611.GA2956@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 11 Oct 2011 14:22:11 -0600
+Message-ID: <CAErSpo7pVC2DxVDmE-oJm6KmaVbWKi2OdCiSastoGQdfMgg+Kg@mail.gmail.com>
+Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
+To: Greg KH <greg@kroah.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Tue, Oct 11, 2011 at 1:56 PM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Oct 11, 2011 at 01:47:47PM -0600, Bjorn Helgaas wrote:
+>> On Tue, Oct 11, 2011 at 1:24 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Tue, Oct 11, 2011 at 12:14:05PM -0600, Bjorn Helgaas wrote:
+>>
+>> >> It's not obvious that this fits the criteria for -stable
+>> >> (Documentation/stable_kernel_rules.txt).
+>> >>
+>> >> For example, I can't tell what real problem this fixes.
+>> >
+>> > Yeah, it's not obvious, but I have had a lot of reports that 3.0 does
+>> > not work on some systems without this set of patches.  Now figuring out
+>> > of those same systems ever worked at all is getting to be quite
+>> > difficult as I don't have access to the hardware, and the people that do
+>> > aren't responding to test requests.  But from what I gather, 2.6.32 did
+>> > work on these boxes, so it is a regression somehow, but I am not
+>> > positive of this.
+>>
+>> I'd like to know more about this regression.
+>
+> It shows up as an oops that prevents the machine from booting.
+>
+>> > Now I'm very open to pushback, and if people really don't want these in
+>> > (i.e. the PCI maintainer(s) say no), then I'll drop them and work with
+>> > the distros to get them into their trees so that their customers's
+>> > systems will work properly.
+>>
+>> If distros want these patches, does that mean they have bug reports?
+>> URLs to them would be helpful.
+>
+> All of the ones I have are "private" at the moment due to the hardware
+> and product being tested by the users, sorry.
+>
+> I really wish that some of the people who had this problem would post
+> publically, and I guess we could just say, because they aren't being
+> public about it, it shouldn't go into a stable tree.  And I don't have a
+> problem with that.
 
-Am Dienstag 11 Oktober 2011, 21:32:11 schrieb Randy Dunlap:
-> On 10/11/11 02:11, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > The linux-next tree is now available from
-> > git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> > the kernel.org servers are unavailable.
-> > 
-> > It may also turn up on git.kernel.org (depending on the mirroring).  The
-> > patch set is still absent, however.
-> > 
-> > Changes since 20111007:
-> > 
-> > The gpio tree still has its build failure so I used the version from
-> > next-20111005.
-> 
-> (maybe fixed there?)
-> (i386 build)
-> 
-> drivers/regulator/gpio-regulator.c:121:3: error: invalid use of undefined
-> type 'struct gpio' drivers/regulator/gpio-regulator.c:121:29: error:
-> dereferencing pointer to incomplete type
-> drivers/regulator/gpio-regulator.c:191:32: error: invalid application of
-> 'sizeof' to incomplete type 'struct gpio'
-> drivers/regulator/gpio-regulator.c:281:3: error: invalid use of undefined
-> type 'struct gpio' drivers/regulator/gpio-regulator.c:281:20: error:
-> dereferencing pointer to incomplete type
-> 
-> (GPIOLIB is not enabled.)
-> Full randconfig file is attached.
+I think accepting patches without our having a chance to see the
+problem sets a bad precedent.  It's quite common to see patches that
+"solve" the problem, but do it in the wrong way.
 
-thanks for catching this.
+If the hardware is secret, maybe they could open a new, sanitized bug
+report?  It should be easy to remove the valuable details from the
+dmesg log and oops.
 
-I would guess the Kconfig entry of the gpio-regulator needs a
-		"depends on GENERIC_GPIO"
-as it won't be able to function without gpiolib - correct?
-
-Heiko
+Bjorn
