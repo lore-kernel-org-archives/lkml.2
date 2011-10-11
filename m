@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1JKPZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 11:25:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37833 "EHLO mx1.redhat.com"
+	id S1754893Ab1JKPZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 11:25:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26869 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754857Ab1JKPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754856Ab1JKPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 11 Oct 2011 11:25:45 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
@@ -15,165 +15,148 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
         gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/3] x86, NMI: Add NMI IPI selftest
-Date: Tue, 11 Oct 2011 11:24:45 -0400
-Message-Id: <1318346686-12349-3-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/3] x86, reboot:  Use NMI instead of REBOOT_VECTOR to stop cpus
+Date: Tue, 11 Oct 2011 11:24:44 -0400
+Message-Id: <1318346686-12349-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
 References: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch modified the stop cpus path to use NMI instead of IRQ
-as the way to communicate to the other cpus to shutdown.  There were some
-concerns that various machines may have problems with using an NMI IPI.
+A recent discussion started talking about the locking on the pstore fs
+and how it relates to the kmsg infrastructure.  We noticed it was possible
+for userspace to r/w to the pstore fs (grabbing the locks in the process)
+and block the panic path from r/w to the same fs.
 
-This patch creates a selftest to check if NMI IPI is working at boot.
-The idea is to help catch any issues before the machine panics and we
-learn the hard way. :-)
+The reason was the cpu with the lock could be doing work while the crashing
+cpu is panic'ing.  Busting those spinlocks might cause those cpus to step
+on each other's data.  Fine, fair enough.
 
-If the selftest fails, the code tries to fall back to the original IRQ
-method.
+It was suggested it would be nice to serialize the panic path (ie stop
+the other cpus) and have only one cpu running.  This would allow us to
+bust the spinlocks and not worry about another cpu stepping on the data.
+
+Of course, smp_send_stop() does this in the panic case.  kmsg_dump() would
+have to be moved to be called after it.  Easy enough.
+
+The only problem is on x86 the smp_send_stop() function calls the
+REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and its backend
+ERST would do), block this IPI and thus do not stop.  This makes it
+difficult to reliably log data to the pstore fs.
+
+The patch below switches from the REBOOT_VECTOR to NMI (and mimics what
+kdump does).  Switching to NMI allows us to deliver the IPI when irqs are
+disabled, increasing the reliability of this function.
+
+However, Andi carefully noted that on some machines this approach does not
+work because of broken BIOSes or whatever.
+
+To help accomodate this, the next couple of patches will run a selftest and
+provide a knob to disable.
+
+V2:
+  uses atomic ops to serialize the cpu that shuts everyone down
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/Kconfig.debug     |   12 +++++++++
- arch/x86/include/asm/smp.h |    1 +
- arch/x86/kernel/smp.c      |    5 ++++
- arch/x86/kernel/smpboot.c  |   57 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index c0f8a5c..18261c2 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -284,4 +284,16 @@ config DEBUG_STRICT_USER_COPY_CHECKS
- 
- 	  If unsure, or if you run an older (pre 4.4) gcc, say N.
- 
-+config DEBUG_NMI_IPI_SELFTEST
-+	bool "NMI IPI Selftest"
-+	depends on DEBUG_KERNEL
-+	---help---
-+	  Enabling this option turns on a quick NMI IPI selftest to
-+	  verify that sending an NMI this way works for the panic and
-+	  kdump paths.
-+
-+	  This might help diagnose strange hangs in those paths.
-+
-+	  If unsure, say N.
-+
- endmenu
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 73b11bc..916f89d 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -149,6 +149,7 @@ static inline void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- }
- 
- void cpu_disable_common(void);
-+void native_smp_disable_nmi_ipi(void);
- void native_smp_prepare_boot_cpu(void);
- void native_smp_prepare_cpus(unsigned int max_cpus);
- void native_smp_cpus_done(unsigned int max_cpus);
+[note] this patch sits on top of another NMI infrastructure change I have
+submitted, so the nmi registeration might not apply cleanly without that patch.
+---
+ arch/x86/kernel/smp.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 56 insertions(+), 2 deletions(-)
+
 diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 7bdbf6a..f54e07a 100644
+index 013e7eb..7bdbf6a 100644
 --- a/arch/x86/kernel/smp.c
 +++ b/arch/x86/kernel/smp.c
-@@ -247,6 +247,11 @@ static void native_irq_stop_other_cpus(int wait)
- 	local_irq_restore(flags);
- }
- 
-+void native_smp_disable_nmi_ipi(void)
-+{
-+	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
-+}
-+
- /*
-  * Reschedule call back.
-  */
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 9f548cb..dcb889f 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -71,6 +71,7 @@
- 
- #include <asm/smpboot_hooks.h>
- #include <asm/i8259.h>
+@@ -28,6 +28,7 @@
+ #include <asm/mmu_context.h>
+ #include <asm/proto.h>
+ #include <asm/apic.h>
 +#include <asm/nmi.h>
- 
- /* State of each CPU */
- DEFINE_PER_CPU(int, cpu_state) = { 0 };
-@@ -415,6 +416,57 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
- 		return cpu_llc_shared_mask(cpu);
+ /*
+  *	Some notes on x86 processor bugs affecting SMP operation:
+  *
+@@ -147,6 +148,59 @@ void native_send_call_func_ipi(const struct cpumask *mask)
+ 	free_cpumask_var(allbutself);
  }
  
-+#ifdef CONFIG_DEBUG_NMI_IPI_SELFTEST
-+/* check to see if NMI IPIs work on this machine */
-+static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __read_mostly;
++static atomic_t stopping_cpu = ATOMIC_INIT(-1);
 +
-+static int check_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
++static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
 +{
-+	int cpu = raw_smp_processor_id();
-+
-+	if (cpumask_test_cpu(cpu, to_cpumask(nmi_ipi_mask))) {
-+		cpumask_clear_cpu(cpu, to_cpumask(nmi_ipi_mask));
++	/* We are registered on stopping cpu too, avoid spurious NMI */
++	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
 +		return NMI_HANDLED;
-+	}
 +
-+	return NMI_DONE;
++	stop_this_cpu(NULL);
++
++	return NMI_HANDLED;
 +}
 +
-+static bool check_nmi_ipi(void)
++static void native_nmi_stop_other_cpus(int wait)
 +{
++	unsigned long flags;
 +	unsigned long timeout;
 +
-+	if (num_online_cpus() > 1) {
-+		cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
-+		cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
++	if (reboot_force)
++		return;
 +
-+		if (register_nmi_handler(NMI_LOCAL, check_nmi_ipi_callback,
-+					 NMI_FLAG_FIRST, "check_nmi_ipi"))
-+			return false;
++	/*
++	 * Use an own vector here because smp_call_function
++	 * does lots of things not suitable in a panic situation.
++	 */
++	if (num_online_cpus() > 1) {
++		/* did someone beat us here? */
++		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id() != -1))
++			return;
++
++		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
++					 NMI_FLAG_FIRST, "smp_stop"))
++			return;		/* return what? */
 +
 +		/* sync above data before sending NMI */
 +		wmb();
 +
 +		apic->send_IPI_allbutself(NMI_VECTOR);
 +
-+		/* Don't wait longer than a second */
++		/*
++		 * Don't wait longer than a second if the caller
++		 * didn't ask us to wait.
++		 */
 +		timeout = USEC_PER_SEC;
-+		while (!cpumask_empty(to_cpumask(nmi_ipi_mask)) && timeout--)
++		while (num_online_cpus() > 1 && (wait || timeout--))
 +			udelay(1);
-+
-+		/* What happens if we timeout, do we still unregister?? */
-+		unregister_nmi_handler(NMI_LOCAL, "check_nmi_ipi");
-+
-+		if (!timeout) {
-+			pr_warn("CPU does not support NMI IPIs\n");
-+			return false;
-+		}
 +	}
-+	pr_info("NMI IPIs selftest passed\n");
-+	return true;
-+}
-+#endif
 +
- static void impress_friends(void)
- {
- 	int cpu;
-@@ -1142,6 +1194,11 @@ void __init native_smp_cpus_done(unsigned int max_cpus)
- {
- 	pr_debug("Boot done.\n");
++	local_irq_save(flags);
++	disable_local_APIC();
++	local_irq_restore(flags);
++}
++
+ /*
+  * this function calls the 'stop' function on all other CPUs in the system.
+  */
+@@ -159,7 +213,7 @@ asmlinkage void smp_reboot_interrupt(void)
+ 	irq_exit();
+ }
  
-+#ifdef CONFIG_DEBUG_NMI_IPI_SELFTEST
-+	/* if NMI IPI doesn't work, fallback to old irq method for panic */
-+	if (check_nmi_ipi())
-+		native_smp_disable_nmi_ipi();
-+#endif
- 	impress_friends();
- #ifdef CONFIG_X86_IO_APIC
- 	setup_ioapic_dest();
+-static void native_stop_other_cpus(int wait)
++static void native_irq_stop_other_cpus(int wait)
+ {
+ 	unsigned long flags;
+ 	unsigned long timeout;
+@@ -229,7 +283,7 @@ struct smp_ops smp_ops = {
+ 	.smp_prepare_cpus	= native_smp_prepare_cpus,
+ 	.smp_cpus_done		= native_smp_cpus_done,
+ 
+-	.stop_other_cpus	= native_stop_other_cpus,
++	.stop_other_cpus	= native_nmi_stop_other_cpus,
+ 	.smp_send_reschedule	= native_smp_send_reschedule,
+ 
+ 	.cpu_up			= native_cpu_up,
 -- 
 1.7.6.4
 
