@@ -1,129 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab1JKUvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 16:51:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35689 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab1JKUvF convert rfc822-to-8bit (ORCPT
+	id S1752278Ab1JKUw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 16:52:58 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51702 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab1JKUw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 16:51:05 -0400
-Date: Tue, 11 Oct 2011 16:50:35 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Li Dongyang <lidongyang@novell.com>
-Cc: Jan Beulich <JBeulich@suse.com>, hch@infradead.org,
-        Dong Yang Li <lidongyang@suse.com>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/blkback: Fix the inhibition to
- map pages when discarding sector ranges.
-Message-ID: <20111011205035.GA22668@phenom.oracle.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
- <4E940B99020000780005AA12@victor.provo.novell.com>
- <CAKH3R4-HJZBE-yWk=Dwkuwy13z1vdUrgEoJ9zFhTJgXgYfHHfA@mail.gmail.com>
- <20111011183909.GA2357@phenom.oracle.com>
+	Tue, 11 Oct 2011 16:52:57 -0400
+Date: Tue, 11 Oct 2011 13:52:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        device-mapper development <dm-devel@redhat.com>,
+        Christophe Saout <christophe@saout.de>, linux-kernel@vger.kernel.org
+Subject: Re: Block regression since 3.1-rc3
+Message-ID: <20111011205251.GA6281@google.com>
+References: <1317397918.27140.15.camel@localhost>
+ <x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
+ <1317729761.25998.4.camel@localhost>
+ <x49bottoq57.fsf@segfault.boston.devel.redhat.com>
+ <CANejiEXnXJ7LkyqHyH1S2c4A95Si7v0-gDmRD824r3ROntaDCA@mail.gmail.com>
+ <20111008161421.GA5743@redhat.com>
+ <20111010213316.GM8100@google.com>
+ <20111011195611.GA26277@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111011183909.GA2357@phenom.oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4E94AC31.00A4:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <20111011195611.GA26277@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 02:39:09PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Tue, Oct 11, 2011 at 03:33:11PM +0800, Li Dongyang wrote:
-> > On Tue, Oct 11, 2011 at 3:25 PM, Jan Beulich <JBeulich@suse.com> wrote:
-> > >>>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > >> The 'operation' parameters are the ones provided to the bio layer while
-> > >> the req->operation are the ones passed in between the backend and
-> > >> frontend. We used the wrong 'operation' value to squash the
-> > >> call to map pages when processing the discard operation resulting
-> > >> in mapping the pages unnecessarily.
-> > >>
-> > >> CC: Li Dongyang <lidongyang@novell.com>
-> > >> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > >> ---
-> > >>  drivers/block/xen-blkback/blkback.c |    2 +-
-> > >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> > >>
-> > >> diff --git a/drivers/block/xen-blkback/blkback.c
-> > >> b/drivers/block/xen-blkback/blkback.c
-> > >> index 184b133..3da9a40 100644
-> > >> --- a/drivers/block/xen-blkback/blkback.c
-> > >> +++ b/drivers/block/xen-blkback/blkback.c
-> > >> @@ -707,7 +707,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
-> > >>        * the hypercall to unmap the grants - that is all done in
-> > >>        * xen_blkbk_unmap.
-> > >>        */
-> > >> -     if (operation != BLKIF_OP_DISCARD &&
-> > >> +     if (operation != REQ_DISCARD &&
-> > >
-> > > Why is that check necessary in the first place? xen_blkbk_map() doesn't
-> > > do any harm when req->nr_segments is zero (as could also be the case
-> > > on WRITE_FLUSH ones).
-> > >
-> > Ah, you are right, we could remove this check then, Thanks
-> 
-> Except that req->nr_segments for blkif__request_discard is actually
-> the reserved field.
-> 
-> See:
-> 
-> struct blkif_request {
->     uint8_t        operation;    /* BLKIF_OP_???                         */
->     uint8_t        nr_segments;  /* number of segments                   */
->     blkif_vdev_t   handle;       /* only for read/write requests         */
-> .. snip..
-> 
-> and:
-> struct blkif_request_discard {
->     uint8_t        operation;    /* BLKIF_OP_DISCARD                     */
->                                  /* ignored if 'discard-secure=0'        */
-> #define BLKIF_OP_DISCARD_FLAG_SECURE (1<<0)
->     uint8_t        flag;         /* BLKIF_OP_DISCARD_FLAG_SECURE or 0    */
->     blkif_vdev_t   handle;       /* same as for read/write requests      */
-> 
-> which will throw off the logic for nr_segments all wrong since for some
-> discard operations it would read the nr_segments as 1.
-> 
-> So we do need some logic in there to work with this.
+Hello, Mike.
 
+On Tue, Oct 11, 2011 at 03:56:12PM -0400, Mike Snitzer wrote:
+> > I don't object to the immediate fix but think that adding such special
+> > case is gonna make the thing even more brittle and make future changes
+> > even more difficult.  Those one off cases tend to cause pretty severe
+> > headache when someone wants to evolve common code, so let's please
+> > find out what went wrong and fix it properly so that everyone follows
+> > the same set of rules.
+> 
+> Are you referring to Jeff's fix as "the immediate fix"?  Christophe
+> seems to have had success with it after all.
 
-So a patch like this (and there is another on top that moves the setting
-of nseg) should do it.
+I meant reverting the previous commit.  Oops... it seems like I
+misread Jeff's patch.  Please read on.
 
+> As for the special case that you're suggesting makes the code more
+> brittle, etc.  If you could be more specific that'd be awesome.
 
-commit 12679b29b2f828454f833e17e9090ed576c63afc
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Mon Oct 10 00:47:49 2011 -0400
+I was still talking about the previous attempt of making dm treated
+special by flush machinery.  (the purity thing someone was talking
+about)
 
-    xen/blkback: Fix the inhibition to map pages when discarding sector ranges.
-    
-    The 'operation' parameters are the ones provided to the bio layer while
-    the req->operation are the ones passed in between the backend and
-    frontend. We used the wrong 'operation' value to squash the
-    call to map pages when processing the discard operation resulting
-    in an hypercall that did nothing. Lets guard against going in the
-    mapping function by checking for the amount of segments.
-    
-    CC: Li Dongyang <lidongyang@novell.com>
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Jeff asked a question about the need to kick the queue in this case (as
+> he didn't feel he had a proper justification for why it was needed).
+> 
+> If we can get a proper patch header together to justify Jeff's patch
+> that'd be great.  And then revisit any of the special casing you'd like
+> us to avoid in >= 3.2?
+> 
+> (we're obviously _very_ short on time for a 3.1 fix right now).
+...
+> > Hmmm... another rather nasty assumption the current flush code makes
+> > is that every flush request has either zero or single bio attached to
+> > it.  The assumption has always been there for quite some time now.
+> 
+> OK.
+> 
+> > That somehow seems broken by request based dm (either that or wrong
+> > request is taking INSERT_FLUSH path).
+> 
+> Where was this issue of a flush having multiple bios reported?
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index c15c559..94e659d 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -707,8 +707,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
- 	 * the hypercall to unmap the grants - that is all done in
- 	 * xen_blkbk_unmap.
- 	 */
--	if (operation != BLKIF_OP_DISCARD &&
--			xen_blkbk_map(req, pending_req, seg))
-+	if (nseg && xen_blkbk_map(req, pending_req, seg))
- 		goto fail_flush;
- 
- 	/*
+I was misreading Jeff's patch, so the problem is request w/o bio
+reaching INSERT_FLUSH, not rq's with multiple bio's.  Sorry about
+that.  Having another look...
+
+Ah, okay, so, blk-flush on the lower layer device is seeing
+q->flush_rq of the upper layer which doesn't have bio.  Yes, the
+BUG_ON() change looks correct to me.  That or we can do
+
+  BUG_ON(rq->bio != rq->bio_tail); /* assumes zero or single bio rq */
+
+As for the blk_run_queue_async(), it's a bit confusing.  Currently,
+the block layer isn't clear about who's responsible kicking the queue
+after putting a request onto elevator and I suppose Jeff put it there
+because blk_insert_cloned_request() doesn't kick the queue.
+
+Hmm... Jeff, you also added blk_run_queue_async() call in
+4853abaae7e4a too.  Is there a reason why blk_insert_cloned_request()
+isn't calling __blk_run_queue() or async variant of it like
+blk_insert_request() does?
+
+At any rate, the queue kicking is a different issue.  Let's not mix
+the two here.  The BUG_ON() change looks good to me.
+
+Thank you.
+
+-- 
+tejun
