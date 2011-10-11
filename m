@@ -1,128 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab1JKCrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 22:47:23 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:49974 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1JKCrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 22:47:21 -0400
-Date: Mon, 10 Oct 2011 20:47:20 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Ming Lei <tom.leiming@gmail.com>
-cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        "parthab@india.ti.com" <parthab@india.ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, "Gadiyar, Anand" <gadiyar@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 1/5 v11] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-In-Reply-To: <CACVXFVOVv_AeQv_834ca9FM2BK8Hd4jgggLDAGdhbeVyhiaycw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1110102021110.5205@utopia.booyaka.com>
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221213500.10719@utopia.booyaka.com> <4E7B8C68.7020407@ti.com> <alpine.DEB.2.00.1109221524560.10719@utopia.booyaka.com>
- <CACVXFVOVv_AeQv_834ca9FM2BK8Hd4jgggLDAGdhbeVyhiaycw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753026Ab1JKDBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 23:01:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49210 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739Ab1JKDBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 23:01:37 -0400
+Message-ID: <4E93B1CE.4070908@cn.fujitsu.com>
+Date: Tue, 11 Oct 2011 11:02:38 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="155748971-841624508-1318301240=:5205"
+To: handai handai <handai.szj@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Fwd: Re: cgroup umount bug]
+References: <1318146066.2168.10.camel@handai-OptiPlex-780> <CAFj3OHVh391k5p2aXKP4R6YGEfCmm5GMOTnAMSpvbnyYzrNUDg@mail.gmail.com>
+In-Reply-To: <CAFj3OHVh391k5p2aXKP4R6YGEfCmm5GMOTnAMSpvbnyYzrNUDg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-10-11 10:59:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-10-11 10:59:51,
+	Serialize complete at 2011-10-11 10:59:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+>> I'm not sure from what you write whether you're aware of this, but
+>> to work around this, you can then
+>>
+>>  mount -t cgroup -o cpu /mnt
+>>  for i in `cat /mnt/test/tasks`; do
+>>  echo $i > /mnt/tasks
+>>  done
+>>  rmdir /mnt/test
+>>  umount /mnt
+>>
+>> and now you can
+>>
+>>  mount -cgroup -o cpu,cpuset cgroup /mnt
+>>
+> 
+> I know that I can bypass this problem by deleting subgroups before
+> unmount. But there is no document mentioning that I should do this to
+> avoid it. But even if there is, users may still directly umount it
+> accidentally, then he should try to remember what he has done and back
+> to the scene to make it up, or he may need to reboot his server to do
+> another test : ( .
 
---155748971-841624508-1318301240=:5205
-Content-Type: TEXT/PLAIN; charset=windows-1252
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+You can check /proc/cgroups:
 
-Hello Ming,
+# mount -t cgroup -o cpu,cpuset cgroup /mnt
+# mkdir /mnt/sub
+# umount /mnt
+# cat /proc/cgroups 
+#subsys_name    hierarchy       num_cgroups     enabled
+cpuset  1       2       1
+cpu     1       2       1
+memory  0       1       1
+devices 0       1       1
+freezer 0       1       1
+net_cls 0       1       1
+blkio   0       1       1
 
-On Wed, 28 Sep 2011, Ming Lei wrote:
-
-> On Fri, Sep 23, 2011 at 7:31 AM, Paul Walmsley <paul@pwsan.com> wrote:
->=20
-> > The idea of the main_clk was not intended to be PRCM or OCP or even
-> > OMAP-specific. =A0It's just intended to represent a clock that is used =
-to
-> > drive the register logic inside the IP block. =A0Therefore it must be
-> > enabled before any register access may occur. =A0Even if clock gating i=
-s
-> > handled by some higher-level interface (e.g., at the IP block level), t=
-he
-> > main_clk has a rate, so it also implies an upper limit on how quickly
-> > register operations can occur. =A0I suppose that all of the IP block's
-> > clocks could be "optional clocks," but we know that every IP block with
-> > registers requires at least one clock to work, and that should be the
-> > main_clk.
->=20
-> I am a bit confused about you comment on "main_clk".
->=20
-> >From hwmod related source code, main_clk is the function clock
-> of one module(hwmod), such as: on omap4, for uart3, main_clk is
-> uart3_fck.
->=20
-> But from[1] and [2] of omap4 PRM, we can find that interface clock
-> is required to provide register access instead of function clock.
-
-As far as I know, the two cases that you cite are basically documentation=
-=20
-bugs in the TRM.  In my experience, for IP blocks on OMAPs, a functional=20
-clock has to be enabled in order for register accesses to succeed.  It's=20
-possible there may be a few odd IP blocks that behave differently, but I=20
-can't think of any off the top of my head.
-
-There are three cases that I've come across that might be interesting to=20
-you.
-
-The first involves IP blocks that use their interface clock as their=20
-functional clock, such as the MAILBOXES IP block.  In this case, there is=
-=20
-no separate functional clock that is needed for register accesses to=20
-complete, and therefore the main_clk should be the interface clock.
-
-The second case involves IP blocks that can receive functional clocks from=
-=20
-an off-chip source (i.e., not via a PRCM-controlled clock), such as the=20
-McBSP IP block.  For these IP blocks, it could be that register accesses=20
-might still succeed even if the module's PRCM-provided functional clock is=
-=20
-off.  I haven't tested this personally.
-
-The third case involves IP blocks with multiple functional clocks, such as=
-=20
-the OMAP3 USBHOST subsystem.  What we found on OMAP3 was that only one of=
-=20
-these two clocks needs to be enabled for register accesses to succeed. =20
-Some functional clocks might control parts of an IP block that have=20
-nothing to do with register access.
-
-> This is a bit conflictive with what you description, so could you
-> give a further comments about main_clk, function clock and interface
-> clock?
-
-I don't know why there are these documentation discrepancies.  I can=20
-guess, but probably I'd better not :-)  Hope the above helped.
-
-> [1], 23.3.4.2 Clock Configuration
-> =09Each UART uses a 48-MHz functional clock for its logic
-> =09and to generate external interface signals. Each UART
-> =09uses an interface clock for register accesses.
->=20
-> [2], 3.1.1.1.1 Module Interface and Functional Clocks
-> =09The interface clocks have the following characteristics:
-> =09=95 They ensure proper communication between any module/subsystem
-> =09and the interconnect.
-> =09=95 In most cases, they supply the system interconnect interface
-> =09and registers of the module.
-
-regards,
-
-- Paul
---155748971-841624508-1318301240=:5205--
+> So, since there is nothing good to permit incompletely unmount, why
+> not prevent the potential problem by prohibiting this behavior at
+> first ?
+> 
