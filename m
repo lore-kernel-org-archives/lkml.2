@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1JKSqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:46:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:39996 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab1JKSqT convert rfc822-to-8bit (ORCPT
+	id S1755343Ab1JKStn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:49:43 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:60150 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755213Ab1JKStl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:46:19 -0400
-Date: Tue, 11 Oct 2011 14:39:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Li Dongyang <lidongyang@novell.com>
-Cc: Jan Beulich <JBeulich@suse.com>, hch@infradead.org,
-        Dong Yang Li <lidongyang@suse.com>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] xen/blkback: Fix the inhibition to
- map pages when discarding sector ranges.
-Message-ID: <20111011183909.GA2357@phenom.oracle.com>
-References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
- <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
- <4E940B99020000780005AA12@victor.provo.novell.com>
- <CAKH3R4-HJZBE-yWk=Dwkuwy13z1vdUrgEoJ9zFhTJgXgYfHHfA@mail.gmail.com>
+	Tue, 11 Oct 2011 14:49:41 -0400
+Message-ID: <4E948FC3.2080801@xenotime.net>
+Date: Tue, 11 Oct 2011 11:49:39 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CAKH3R4-HJZBE-yWk=Dwkuwy13z1vdUrgEoJ9zFhTJgXgYfHHfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E948EF4.0189:SCFMA922111,ss=1,re=-4.000,fgs=0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Subject: Re: linux-next: Tree for Oct 11 (mmc)
+References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
+In-Reply-To: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 03:33:11PM +0800, Li Dongyang wrote:
-> On Tue, Oct 11, 2011 at 3:25 PM, Jan Beulich <JBeulich@suse.com> wrote:
-> >>>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> >> The 'operation' parameters are the ones provided to the bio layer while
-> >> the req->operation are the ones passed in between the backend and
-> >> frontend. We used the wrong 'operation' value to squash the
-> >> call to map pages when processing the discard operation resulting
-> >> in mapping the pages unnecessarily.
-> >>
-> >> CC: Li Dongyang <lidongyang@novell.com>
-> >> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >> ---
-> >>  drivers/block/xen-blkback/blkback.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/block/xen-blkback/blkback.c
-> >> b/drivers/block/xen-blkback/blkback.c
-> >> index 184b133..3da9a40 100644
-> >> --- a/drivers/block/xen-blkback/blkback.c
-> >> +++ b/drivers/block/xen-blkback/blkback.c
-> >> @@ -707,7 +707,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
-> >>        * the hypercall to unmap the grants - that is all done in
-> >>        * xen_blkbk_unmap.
-> >>        */
-> >> -     if (operation != BLKIF_OP_DISCARD &&
-> >> +     if (operation != REQ_DISCARD &&
-> >
-> > Why is that check necessary in the first place? xen_blkbk_map() doesn't
-> > do any harm when req->nr_segments is zero (as could also be the case
-> > on WRITE_FLUSH ones).
-> >
-> Ah, you are right, we could remove this check then, Thanks
+On 10/11/11 02:11, Stephen Rothwell wrote:
+> Hi all,
+> 
+> The linux-next tree is now available from
+> git://github.com/sfrothwell/linux-next.git as a temporary measure while
+> the kernel.org servers are unavailable.
+> 
+> It may also turn up on git.kernel.org (depending on the mirroring).  The
+> patch set is still absent, however.
+> 
+> Changes since 20111007:
 
-Except that req->nr_segments for blkif__request_discard is actually
-the reserved field.
 
-See:
+When CONFIG_BLOCK is not enabled:
 
-struct blkif_request {
-    uint8_t        operation;    /* BLKIF_OP_???                         */
-    uint8_t        nr_segments;  /* number of segments                   */
-    blkif_vdev_t   handle;       /* only for read/write requests         */
-.. snip..
+In file included from next-2011-1011/drivers/mmc/card/sdio_uart.c:43:0:
+next-2011-1011/include/linux/mmc/card.h:175:12: error: 'DISK_NAME_LEN' undeclared here (not in a function)
 
-and:
-struct blkif_request_discard {
-    uint8_t        operation;    /* BLKIF_OP_DISCARD                     */
-                                 /* ignored if 'discard-secure=0'        */
-#define BLKIF_OP_DISCARD_FLAG_SECURE (1<<0)
-    uint8_t        flag;         /* BLKIF_OP_DISCARD_FLAG_SECURE or 0    */
-    blkif_vdev_t   handle;       /* same as for read/write requests      */
+Deleting the #include <linux/mmc/card.h> fixes the sdio_uart.c build.
+However, the same problem occurs in mmc/core/core.c:
 
-which will throw off the logic for nr_segments all wrong since for some
-discard operations it would read the nr_segments as 1.
+In file included from next-2011-1011/drivers/mmc/core/core.c:30:0:
+next-2011-1011/include/linux/mmc/card.h:175:12: error: 'DISK_NAME_LEN' undeclared here (not in a function)
 
-So we do need some logic in there to work with this.
+Should mmc/core/ depend on BLOCK?  or should it just be made
+to build even when BLOCK is not enabled?
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
