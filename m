@@ -1,36 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1JKTUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:20:46 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34316 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab1JKTUo (ORCPT
+	id S1755458Ab1JKTUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:20:52 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:41235 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755356Ab1JKTUp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:20:44 -0400
-Date: Tue, 11 Oct 2011 15:20:40 -0400 (EDT)
-Message-Id: <20111011.152040.662786307819949300.davem@davemloft.net>
-To: bzolnier@gmail.com
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cy82c693: fix PCI device selection
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201110111937.32501.bzolnier@gmail.com>
-References: <201110111937.32501.bzolnier@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 11 Oct 2011 12:20:42 -0700 (PDT)
+	Tue, 11 Oct 2011 15:20:45 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Tue, 11 Oct 2011 15:20:14 -0400
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AcyFZ5CbDfuWvVnPRqCPUu/MZXTaewC4sTqA
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBBC@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+ <20110901100650.6d884589.rdunlap@xenotime.net>
+ <20110901152650.7a63cb8b@annuminas.surriel.com>
+ <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110110223
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Date: Tue, 11 Oct 2011 19:37:32 +0200
+On 10/07/2011 11:08 PM, David Rientjes wrote:
+> On Thu, 1 Sep 2011, Rik van Riel wrote:
+>
+> I also
+> think that it will cause regressions on other cpu intensive workloads 
+> that don't require this extra freed memory because it works as a 
+> global heuristic and is not tied to any specific application.
 
-> While at it remove redundant pci_get_slot() call as cy82c693_init_one()
-> already takes care of keeping the reference on the second port's PCI
-> device.
+It's yes and no. It may cause regressions on the workloads due to
+less amount of available memory. But it may improve the workloads'
+performance because they can avoid direct reclaim due to extra
+free memory.
 
-Please do not submit unrelated changes with a bug fix, and as IDE is
-in long-term maintainence I would not accept a risky refinement like
-this anyways.
+Of course if one doesn't need extra free memory, one can turn it
+off. I think we can add this feature to cgroup if we want to set
+it for any specific process or process group. (Before that we
+need to implement min_free_kbytes for cgroup and the implementation
+of extra free kbytes strongly depends on it.)
+
+> I think it would be far better to reclaim beyond above the high 
+> watermark if the types of workloads that need this tunable can be 
+> somehow detected (the worst case scenario is being a prctl() that does 
+> synchronous reclaim above the watermark so admins can identify these 
+> workloads), or be able to mark allocations within the kernel as 
+> potentially coming in large bursts where allocation is problematic.
+
+It may work. But isn't it difficult and/or complex to decide
+how much memory we should reclaim beyond high watermark
+automatically?
+
+I believe that extra free kbytes is far simpler than them.
+
+Regards,
+Satoru
