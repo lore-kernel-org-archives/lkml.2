@@ -1,106 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab1JKMxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 08:53:45 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:57339 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab1JKMxn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 08:53:43 -0400
-X-AuditID: 12074422-b7ff56d00000092f-44-4e943c5684e2
-Subject: Re: Detecting if you are running in a container
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <m1ty7ghvvn.fsf@fess.ebiederm.org>
-Date: Tue, 11 Oct 2011 08:53:46 -0400
-Cc: Theodore Tso <tytso@MIT.EDU>, Matt Helsley <matthltc@us.ibm.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu>
-References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org> <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-X-Mailer: Apple Mail (2.1244.3)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsUixCmqrRtmM8XPYPZNU4tb726xWiy7tZfJ
-	YtqtHcwW/7e1sFucWzCD0eL5p+2sFpc3nGOzuLxrDpvF3EcTGS3urXjIbPG2fw27xe5N4hbn
-	L5xjd+D1mPTpDqNH/7rPrB59746yeVzbHenx9mGAx9yHd9k8di/4zOQxYdt3Vo/3+66yeZy7
-	1sfs8XmTnMfH9Z4eUw61swTwRnHZpKTmZJalFunbJXBlXN7wnLXgqEzF9mntzA2M+8W6GDk5
-	JARMJA5/amWHsMUkLtxbzwZiCwnsY5R4PCemi5ELyN7AKLF3dQ8LhHOaSaK97RBrFyMHh7CA
-	hcTsQ9YgJq+AscTrf0wgvcwCWhI3/r0Es9kElCTufNrPAlLCKaAvsXQ1M0iYRUBVYuKO8+wQ
-	5Q0sEn+npkDY2hLLFr4Gq+EVsJKY3nSXHWLrFGaJ1619rCAJEaA5N99PYoO4WV5icctnxgmM
-	grMQrpiF5IpZSMYuYGRexSibklulm5uYmVOcmqxbnJyYl5dapGuql5tZopeaUrqJERSN7C5K
-	Oxh/HlQ6xCjAwajEw7uxe7KfEGtiWXFl7iFGSQ4mJVHebOspfkJ8SfkplRmJxRnxRaU5qcWH
-	GCU4mJVEeJ1+ApXzpiRWVqUW5cOkpDlYlMR5uXY6+AkJpCeWpGanphakFsFkZTg4lCR4X4EM
-	FSxKTU+tSMvMKUFIM3FwggznARr+EKSGt7ggMbc4Mx0if4pRUUqclxeY7oQEQBIZpXlwvbBk
-	+YpRHOgVYd5HIO08wEQL1/0KaDAT0ODpUyaBDC5JREhJNTDKitVrZFzlPeDocnAv51H7uRym
-	zn0n/ZwyltReWLegfHJp4owX6jsmL3+Q9v6OV+O69Ys7YyoEDG/MvqxjJHREtuLI/8mr2ffO
-	08mcy2FXZ/uDu5dhIXPnA0fOa1KLfU0NFpkoARNBkYP2w48PnTdOiZuQn+ob2nGcK0X6+rmP
-	/L0CYfusrJVYijMSDbWYi4oTAUy2u5hxAwAA
+	id S1753497Ab1JKMyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 08:54:09 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50359 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752373Ab1JKMyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 08:54:08 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <ming@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <mjg@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>
+Subject: [PATCH] x86, efi: Calling __pa() with an ioremap'd address is invalid
+Date: Tue, 11 Oct 2011 13:54:05 +0100
+Message-Id: <1318337645-7112-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Matt Fleming <matt.fleming@intel.com>
 
-On Oct 11, 2011, at 2:42 AM, Eric W. Biederman wrote:
+If we encounter an efi_memory_desc_t without EFI_MEMORY_WB set in
+->attribute we currently call set_memory_uc(), which in turn calls
+__pa() on a potentially ioremap'd address. On CONFIG_X86_32 this is
+invalid, resulting in the following oops,
 
-> I am totally in favor of not starting the entire world.  But just
-> like I find it convienient to loopback mount an iso image to see
-> what is on a disk image.  It would be handy to be able to just
-> download a distro image and play with it, without doing anything
-> special.
+  BUG: unable to handle kernel paging request at f7f22280
+  IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
+  *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in:
 
-Agreed, but what's wrong with firing up KVM to play with a distro image?  Personally, I don't consider that "doing something special".
+  Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
+   EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
+   EIP is at reserve_ram_pages_type+0x89/0x210
+   EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
+   ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
+   DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+  Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
+  Stack:
+   80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
+   c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
+   00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
+  Call Trace:
+   [<c104f8ca>] ? page_is_ram+0x1a/0x40
+   [<c1025aff>] reserve_memtype+0xdf/0x2f0
+   [<c1024dc9>] set_memory_uc+0x49/0xa0
+   [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
+   [<c19216d4>] start_kernel+0x291/0x2f2
+   [<c19211c7>] ? loglevel+0x1b/0x1b
+   [<c19210bf>] i386_start_kernel+0xbf/0xc8
 
-> 
->> Things should just work, except that
->> processes in one container can't use more than their fair share (as
->> dictated by policy) of memory, CPU, networking, and I/O bandwidth.
-> 
-> You have to be careful with the limiters.  The fundamental reason
-> why containers are more efficient than hardware virtualization is
-> that with containers we can do over commit of resources, especially
-> memory.  I keep seeing implementations of resource limiters that want
-> to do things in a heavy handed way that break resource over commit.
+Let efi_ioremap() handle marking regions as uncached, whether that is
+by calling ioremap_nocache() or calling set_memory_uc() on a
+non-ioremap'd address.
 
-Oh, sure.   Resource limiting is something that should be done only when there are other demands on the resource in question.   Put another way, it should be considered more of a resource guarantee than a resource limit.   (You will have at least 10% of the CPU, not at most 10% of the CPU.)
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <ming@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Huang Ying <huang.ying.caritas@gmail.com>
+Cc: stable@kernel.org
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/include/asm/efi.h     |   11 +++++++++--
+ arch/x86/platform/efi/efi.c    |   21 +++++++++++----------
+ arch/x86/platform/efi/efi_64.c |   12 ++++++++++--
+ 3 files changed, 30 insertions(+), 14 deletions(-)
 
-> 
-> I don't know what concern you have security wise, but the problem that
-> wants to be solved with user namespaces is something you hit much
-> earlier than when you worry about sharing a kernel between mutually
-> distrusting users.  Right now root inside a container is root rout
-> outside of a container just like in a chroot jail.  Where this becomes a
-> problem is that people change things like like
-> /proc/sys/kernel/print-fatal-signals expecting it to be a setting local
-> to their sand box when in fact the global setting and things start
-> behaving weirdly for other users.  Running sysctl -a during bootup 
-> has that problem in spades.
-
-The moment you start caring about global sysctl settings is the moment I start wondering whether or not VM and separate kernel images is the better solution.   Do we really want to add so much complexity that we are multiplexing different sysctl settings across containers?   To my mind, that way lies madness, and in some cases, it simply can't be done from a semantics perspective.
-
-> 
-> With my sysadmin hat on I would not want to touch two untrusting groups
-> of users on the same machine.  Because of the probability there is at
-> least one security hole that can be found and exploited to allow
-> privilege escalation.
-> 
-> With my kernel developer hat on I can't just say surrender to the
-> idea that there will in fact be a privilege escalation bug that
-> is easy to exploit.  The code has to be built and designed so that
-> privilege escalation is difficult.  Otherwise we might as well
-> assume if you visit a website an stealthy worm has taken over your
-> computer.
-
-Oh, I agree that we should try to stop privilege escalation attacks.  And it will be a grand and glorious fight, like Leonidas and his 300 men at the pass at Thermopylae.   :-)   Or it will be like Steve Jobs struggling against cancer.  It's a fight that you know that you're going to lose, but it's not about winning or losing but how much you accomplish and how you fight that counts.
-
-Personally, though, if the issue is worries about visiting a website, the primary protection against that has got to be done  at the browser level (i.e., the process level sandboxing done by Chrome).
-
--- Ted
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 7093e4a..d0ccbc4 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -33,7 +33,14 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
+ #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
+ 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
+ 
+-#define efi_ioremap(addr, size, type)		ioremap_cache(addr, size)
++static inline void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
++					u32 type, u64 attr)
++{
++	if (type == EFI_MEMORY_MAPPED_IO || !(attr & EFI_MEMORY_WB))
++		return ioremap_nocache(addr, size);
++	else
++		return ioremap_cache(addr, size);
++}
+ 
+ #else /* !CONFIG_X86_32 */
+ 
+@@ -85,7 +92,7 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
+ 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
+ 
+ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+-				 u32 type);
++				 u32 type, u64 attr);
+ 
+ #endif /* CONFIG_X86_32 */
+ 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 3ae4128..87f2295 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -670,10 +670,18 @@ void __init efi_enter_virtual_mode(void)
+ 		end_pfn = PFN_UP(end);
+ 		if (end_pfn <= max_low_pfn_mapped
+ 		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped))
++			&& end_pfn <= max_pfn_mapped)) {
+ 			va = __va(md->phys_addr);
+-		else
+-			va = efi_ioremap(md->phys_addr, size, md->type);
++
++			if (!(md->attribute & EFI_MEMORY_WB)) {
++				addr = (u64) (unsigned long)va;
++				npages = md->num_pages;
++				memrange_efi_to_native(&addr, &npages);
++				set_memory_uc(addr, npages);
++			}
++		} else
++			va = efi_ioremap(md->phys_addr, size,
++					 md->type, md->attribute);
+ 
+ 		md->virt_addr = (u64) (unsigned long) va;
+ 
+@@ -683,13 +691,6 @@ void __init efi_enter_virtual_mode(void)
+ 			continue;
+ 		}
+ 
+-		if (!(md->attribute & EFI_MEMORY_WB)) {
+-			addr = md->virt_addr;
+-			npages = md->num_pages;
+-			memrange_efi_to_native(&addr, &npages);
+-			set_memory_uc(addr, npages);
+-		}
+-
+ 		systab = (u64) (unsigned long) efi_phys.systab;
+ 		if (md->phys_addr <= systab && systab < end) {
+ 			systab += md->virt_addr - md->phys_addr;
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index ac3aa54..6d6e877 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -82,9 +82,10 @@ void __init efi_call_phys_epilog(void)
+ }
+ 
+ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+-				 u32 type)
++				 u32 type, u64 attr)
+ {
+ 	unsigned long last_map_pfn;
++	u64 addr, npages;
+ 
+ 	if (type == EFI_MEMORY_MAPPED_IO)
+ 		return ioremap(phys_addr, size);
+@@ -92,7 +93,14 @@ void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
+ 	last_map_pfn = init_memory_mapping(phys_addr, phys_addr + size);
+ 	if ((last_map_pfn << PAGE_SHIFT) < phys_addr + size) {
+ 		unsigned long top = last_map_pfn << PAGE_SHIFT;
+-		efi_ioremap(top, size - (top - phys_addr), type);
++		efi_ioremap(top, size - (top - phys_addr), type, attr);
++	}
++
++	if (!(attr & EFI_MEMORY_WB)) {
++		addr = (u64)(unsigned long)__va(phys_addr);
++		npages = size >> EFI_PAGE_SHIFT;
++		memrange_efi_to_native(&addr, &npages);
++		set_memory_uc(addr, npages);
+ 	}
+ 
+ 	return (void __iomem *)__va(phys_addr);
+-- 
+1.7.4.4
 
