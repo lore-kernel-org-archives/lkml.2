@@ -1,99 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab1JKFtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 01:49:17 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:51789 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750956Ab1JKFtP (ORCPT
+	id S1752085Ab1JKFvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 01:51:08 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:40966 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1JKFvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 01:49:15 -0400
-Message-ID: <4E93D8D2.1050703@ti.com>
-Date: Tue, 11 Oct 2011 11:19:06 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 5/5] regulator: map consumer regulator based on device
+	Tue, 11 Oct 2011 01:51:04 -0400
+Date: Tue, 11 Oct 2011 16:50:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the omap_dss2 tree with the arm-soc
  tree
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-6-git-send-email-rnayak@ti.com> <20111010173506.GH3607@opensource.wolfsonmicro.com>
-In-Reply-To: <20111010173506.GH3607@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-Id: <20111011165056.7220219065d219bf4ee1f91c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Oct_2011_16_50_56_+1100_70QG16D28EnZMD52"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__11_Oct_2011_16_50_56_+1100_70QG16D28EnZMD52
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
->> @@ -1178,6 +1225,10 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
->>   			goto found;
->>   		}
->>   	}
->> +	if (!dev)
->> +		list_for_each_entry(rdev,&regulator_list, list)
->> +			if (strcmp(rdev_get_name(rdev), id))
->> +				goto found;
->>
->
-> This looks really strange, we didn't remove any old lookup code and the
-> DT lookup jumps to found by iself so why are we adding code here?
+Hi Tomi,
 
-The old lookup code looks up using the regulator_map_list, and the dt
-lookup depends on a dev pointer to extract the of_node.
-This above code was needed for cases when a regulator_get() would be
-called on dt builds without specifying a device pointer, like the
-cpufreq implementations you mentioned.
-This is what I tried putting in the comments above the lookup code.
+Today's linux-next merge of the omap_dss2 tree got a conflict in
+arch/arm/mach-omap2/board-h4.c between commit be7324605873 ("ARM: OMAP2+:
+Remove custom init_irq for remaining boards") from the arm-soc tree and
+commit cbf1455bfc9f ("OMAP: H4: Port the display driver to new DSS2")
+from the omap_dss2 tree.
 
-	/*
-          * Lookup happens in 3 ways
-          * 1. If a dev and dev->of_node exist, look for a
-          * regulator mapping in dt node.
-          * 2. Check if a match can be found in regulator_map_list
-          * if regulator info is still passed in non-dt way
-          * 3. if !dev, then just look for a matching regulator name.
-          * Useful for dt builds using regulator_get() without specifying
-          * a device.
-          */
+Just context changes If fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I know its quite complicated but thats because we need to support both
-the legacy and the dt based lookups.
+diff --cc arch/arm/mach-omap2/board-h4.c
+index a65effe,f7c09de..0000000
+--- a/arch/arm/mach-omap2/board-h4.c
++++ b/arch/arm/mach-omap2/board-h4.c
+@@@ -285,10 -301,17 +300,6 @@@ static struct omap_usb_config h4_usb_co
+  	.hmc_mode	=3D 0x00,		/* 0:dev|otg 1:disable 2:disable */
+  };
+ =20
+- static struct omap_board_config_kernel h4_config[] __initdata =3D {
+- 	{ OMAP_TAG_LCD,		&h4_lcd_config },
+- };
+-=20
+ -static void __init omap_h4_init_early(void)
+ -{
+ -	omap2_init_common_infrastructure();
+ -	omap2_init_common_devices(NULL, NULL);
+ -}
+ -
+ -static void __init omap_h4_init_irq(void)
+ -{
+ -	omap2_init_irq();
+ -}
+ -
+  static struct at24_platform_data m24c01 =3D {
+  	.byte_len	=3D SZ_1K / 8,
+  	.page_size	=3D 16,
+@@@ -359,17 -379,24 +367,19 @@@ static void __init omap_h4_init(void
+  	platform_add_devices(h4_devices, ARRAY_SIZE(h4_devices));
+  	omap2_usbfs_init(&h4_usb_config);
+  	omap_serial_init();
+ +	omap_sdrc_init(NULL, NULL);
+  	h4_init_flash();
++=20
++ 	omap_display_init(&h4_dss_data);
+  }
+ =20
+ -static void __init omap_h4_map_io(void)
+ -{
+ -	omap2_set_globals_242x();
+ -	omap242x_map_common_io();
+ -}
+ -
+  MACHINE_START(OMAP_H4, "OMAP2420 H4 board")
+  	/* Maintainer: Paul Mundt <paul.mundt@nokia.com> */
+ -	.boot_params	=3D 0x80000100,
+ +	.atag_offset	=3D 0x100,
+  	.reserve	=3D omap_reserve,
+ -	.map_io		=3D omap_h4_map_io,
+ -	.init_early	=3D omap_h4_init_early,
+ -	.init_irq	=3D omap_h4_init_irq,
+ +	.map_io		=3D omap242x_map_io,
+ +	.init_early	=3D omap2420_init_early,
+ +	.init_irq	=3D omap2_init_irq,
+  	.init_machine	=3D omap_h4_init,
+  	.timer		=3D &omap2_timer,
+  MACHINE_END
 
->
->> +	if (supply) {
->> +		struct regulator_dev *r;
->> +		struct device_node *node;
->> +
->> +		/* first do a dt based lookup */
->> +		if (dev) {
->> +			node = of_get_regulator(dev, supply);
->> +			if (node)
->> +				list_for_each_entry(r,&regulator_list, list)
->> +					if (node == r->dev.parent->of_node)
->> +						goto found;
->>   		}
->>
->> -		if (!found) {
->> -			dev_err(dev, "Failed to find supply %s\n",
->> -				init_data->supply_regulator);
->> -			ret = -ENODEV;
->> -			goto scrub;
->> -		}
->> +		/* next try doing it non-dt way */
->> +		list_for_each_entry(r,&regulator_list, list)
->> +			if (strcmp(rdev_get_name(r), supply) == 0)
->> +				goto found;
->>
->> +		dev_err(dev, "Failed to find supply %s\n", supply);
->> +		ret = -ENODEV;
->> +		goto scrub;
->> +
->> +found:
->
-> This is all getting *really* complicated and illegible.  I'm not sure
-> what the best way to structure is but erroring out early looks useful.
+--Signature=_Tue__11_Oct_2011_16_50_56_+1100_70QG16D28EnZMD52
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOk9lAAAoJEECxmPOUX5FE1CcP/jydPAjDrrtQMXXQmXAF+oOo
+kd8aab8KdZfKcF/yNdoLQexcrP4jwFd+mOyUopOY5OMYs43iDJ5uWmh3wVvFSu/J
+19PP0I/aNPNWUCrpy/Ykt8FDakxkmxF7LT/0Z0DBx6H+61eDthHSU54vIgOKnHhs
++30Qv+tqAPp5yt4aTAua3Vt8ZqfrJgR+rVhTdNmHEkRPUqtfKhT4cFE5Z8Sy+KPU
+qS4hzxf1hq+BlTAO4aA4IZNOYQY1VDPe7Khsib186PODgT56tdqFmfGEKBUCVMrD
+REUtGERHWZFKJqxYT+f5xNpyCl3jrKc/PGmrUKeHsJymF7MGRy9Bu8MQ2rGZbIiA
+ZLCud3xCCaefXvediHCSyZrO+Vts+6JRb2Xy8oy0FiNHgb9AdiZO33R4bhCi+4Gi
+QKHpPOB6HQvM4MUYBWBLJUBdKrFEjzkmoAluAG5t5Fv4kAgYsZ3zahcHWLR3G59A
+zosZjyOzNVExXnVMSg6U2FwIlq8AhWfzqRuh701mKyRTVCe7QquiAWPyPvcgNquY
+arQfYztgZ+R/OM7cEA4eJb3n/v30KmZC+pwqAtmhpOxqhpd9F3b7p1wFPqNCYfor
+di9S2uP52X4mfZt1mOeRGQGdJMa4QINxtGA2PsqKkP6UvAbFcKqID+LtO1PNurOa
+QKBR8e2vr2qRxtq18yl0
+=ylqA
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Oct_2011_16_50_56_+1100_70QG16D28EnZMD52--
