@@ -1,204 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab1JKWKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 18:10:44 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21488
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750956Ab1JKWKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 18:10:42 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LSX9LN-01-3A3-02
-X-M-MSG: 
-From: Jacob Shin <jacob.shin@amd.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space for HT hole around 1TB
-Date: Tue, 11 Oct 2011 17:09:35 -0500
-Message-ID: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751483Ab1JKW0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 18:26:00 -0400
+Received: from mail.lang.hm ([64.81.33.126]:60112 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956Ab1JKWZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 18:25:59 -0400
+Date: Tue, 11 Oct 2011 15:25:27 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Matt Helsley <matthltc@us.ibm.com>
+cc: "Ted Ts'o" <tytso@mit.edu>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+In-Reply-To: <20111011020530.GG16723@count0.beaverton.ibm.com>
+Message-ID: <alpine.DEB.2.02.1110111520210.28233@asgard.lang.hm>
+References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The entire HT hole and also the unused address range before that hole
-need to be excluded from direct mapping. Otherwise speculative
-accesses to that reserved region can happen which cause machine
-checks.
+On Mon, 10 Oct 2011, Matt Helsley wrote:
 
-Cc: stable@kernel.org   # > 2.6.32
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
----
- arch/x86/include/asm/e820.h           |    1 +
- arch/x86/include/asm/hypertransport.h |    7 +++++
- arch/x86/include/asm/processor.h      |   16 +++++++++++++
- arch/x86/kernel/cpu/amd.c             |   40 +++++++++++++++++++++++++++++++++
- arch/x86/kernel/e820.c                |    6 +++++
- arch/x86/kernel/setup.c               |    8 +++++-
- 6 files changed, 76 insertions(+), 2 deletions(-)
+> On Mon, Oct 10, 2011 at 09:32:01PM -0400, Ted Ts'o wrote:
+>> On Mon, Oct 10, 2011 at 01:59:10PM -0700, Eric W. Biederman wrote:
+>>> Lennart Poettering <mzxreary@0pointer.de> writes:
+>>>
+>>>> To make a standard distribution run nicely in a Linux container you
+>>>> usually have to make quite a number of modifications to it and disable
+>>>> certain things from the boot process. Ideally however, one could simply
+>>>> boot the same image on a real machine and in a container and would just
+>>>> do the right thing, fully stateless. And for that you need to be able to
+>>>> detect containers, and currently you can't.
+>>>
+>>> I agree getting to the point where we can run a standard distribution
+>>> unmodified in a container sounds like a reasonable goal.
+>>
+>> Hmm, interesting.  It's not clear to me that running a full standard
+>> distribution in a container is always going to be what everyone wants
+>> to do.
+>>
+>> The whole point of containers versus VM's is that containers are
+>> lighter weight.  And one of the ways that containers can be lighter
+>> weight is if you don't have to have N copies of udev, dbus, running in
+>> each container/VM.
+>>
+>> If you end up so much overhead to provide the desired security and/or
+>> performance isolation, then it becomes fair to ask the question
+>> whether you might as well pay a tad bit more and get even better
+>> security and isolation by using a VM solution....
+>>
+>> 	     	       	  	     - Ted
+>
+> Yes, it does detract from the unique advantages of using a container.
+> However, I think the value here is not the effeciency of the initial
+> system configuration but the fact that it gives users a better place to
+> start.
+>
+> Right now we're effectively asking users to start with non-working
+> and/or unfamiliar systems and repair them until they work.
+>
+> By enabling unmodified distro installs in a container we're starting
+> at the other end. The choices may not be the most efficient but the
+> user may begin tuning from a working configuration. They can learn
+> about and tune those parts that prove significant for their workload.
+> This is better because in the end it's not just about how efficient the
+> user  can make their containers but how much effort they will spend
+> achieving and maintainingg that efficiency over time.
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 908b969..7e4d417 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -117,6 +117,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
- 
- extern unsigned long e820_end_of_ram_pfn(void);
- extern unsigned long e820_end_of_low_ram_pfn(void);
-+extern unsigned long e820_end_of_ram_under_ht_pfn(void);
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
- 
- void memblock_x86_fill(void);
-diff --git a/arch/x86/include/asm/hypertransport.h b/arch/x86/include/asm/hypertransport.h
-index 334b1a8..c1d5a08 100644
---- a/arch/x86/include/asm/hypertransport.h
-+++ b/arch/x86/include/asm/hypertransport.h
-@@ -42,4 +42,11 @@
- #define HT_IRQ_HIGH_DEST_ID(v)						\
- 	((((v) >> 8) << HT_IRQ_HIGH_DEST_ID_SHIFT) & HT_IRQ_HIGH_DEST_ID_MASK)
- 
-+/*
-+ * Memory Region Reserved for HyperTransport
-+ */
-+
-+#define HT_RESERVED_MEM_START           0xfd00000000ULL
-+#define HT_RESERVED_MEM_END             0x10000000000ULL
-+
- #endif /* _ASM_X86_HYPERTRANSPORT_H */
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 0d1171c..73ae54f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -970,6 +970,22 @@ extern int set_tsc_mode(unsigned int val);
- 
- extern int amd_get_nb_id(int cpu);
- 
-+#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
-+extern int amd_with_ram_above_ht(void);
-+extern unsigned long amd_init_high_memory_mapping(void);
-+#else
-+static inline int amd_with_ram_above_ht(void)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned long amd_init_high_memory_mapping(void)
-+{
-+	BUG();
-+	return 0;
-+}
-+#endif
-+
- struct aperfmperf {
- 	u64 aperf, mperf;
- };
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b13ed39..a57b010 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -7,6 +7,7 @@
- #include <asm/apic.h>
- #include <asm/cpu.h>
- #include <asm/pci-direct.h>
-+#include <asm/hypertransport.h>
- 
- #ifdef CONFIG_X86_64
- # include <asm/numa_64.h>
-@@ -755,3 +756,42 @@ bool cpu_has_amd_erratum(const int *erratum)
- }
- 
- EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
-+
-+#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
-+int __cpuinit amd_with_ram_above_ht(void)
-+{
-+	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
-+	    max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_START)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/*
-+ * On AMD systems, memory region 0xfd_0000_0000 ~ 0xff_ffff_ffff is reserved by
-+ * HyperTransport and cannot be used by the processor. On systems with more than
-+ * 1TB of RAM, BIOS may take memory immediately below the HT region and "hoist"
-+ * it up above the HT region, leaving a hole.
-+ */
-+unsigned long __cpuinit amd_init_high_memory_mapping(void)
-+{
-+	unsigned long ret;
-+
-+	/* remove HT region from the e820 map, if it's declared as usable */
-+	e820_remove_range(HT_RESERVED_MEM_START,
-+			  HT_RESERVED_MEM_END - HT_RESERVED_MEM_START,
-+			  E820_RAM, 1);
-+	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+
-+	/* direct mapping of high memory under HT */
-+	ret = init_memory_mapping(1UL << 32,
-+		e820_end_of_ram_under_ht_pfn() << PAGE_SHIFT);
-+
-+	/* skip HT region, direct mapping of high memory above HT */
-+	if (max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_END)
-+		ret = init_memory_mapping(HT_RESERVED_MEM_END,
-+					  max_pfn << PAGE_SHIFT);
-+
-+	return ret;
-+}
-+#endif
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 3e2ef84..c0ba036 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -22,6 +22,7 @@
- #include <asm/e820.h>
- #include <asm/proto.h>
- #include <asm/setup.h>
-+#include <asm/hypertransport.h>
- 
- /*
-  * The e820 map is the map that gets modified e.g. with command line parameters
-@@ -826,6 +827,11 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
- 	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
- }
- 
-+unsigned long __init e820_end_of_ram_under_ht_pfn(void)
-+{
-+	return e820_end_pfn(HT_RESERVED_MEM_START >> PAGE_SHIFT, E820_RAM);
-+}
-+
- static void early_panic(char *msg)
- {
- 	early_printk(msg);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index afaf384..84d0968 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -937,8 +937,12 @@ void __init setup_arch(char **cmdline_p)
- 
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
-+		if (amd_with_ram_above_ht())
-+			max_pfn_mapped = amd_init_high_memory_mapping();
-+		else
-+			max_pfn_mapped = init_memory_mapping(1UL << 32,
-+				max_pfn << PAGE_SHIFT);
-+
- 		/* can we preseve max_low_pfn ?*/
- 		max_low_pfn = max_pfn;
- 	}
--- 
-1.7.1
+what's needed isn't a way to run all the daemons, processes and startup 
+scripts that a distro uses in a container without conflicting with the 
+parent, but instead a easy way to create the appropriate config changes in 
+the parent, bind mounts, cgroups, etc  for the container and startup the 
+apps that are wanted in the container.
 
+This needs to be something with a lot of knowledge and hooks in the 
+parent, so it's not just a matter of adding a way to detect "am I in a 
+container" or not.
 
+when I run things in containers, I want to bind mount some things from the 
+parent, I want to configure syslog to listen on /dev/log inside the 
+container, and then I want to starup just the processes I am planning to 
+use inside the container, not all the daemons and other processes that I 
+need to run the service the container is built for.
+
+David Lang
