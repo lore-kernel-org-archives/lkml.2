@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab1JKHCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:02:45 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14492 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750712Ab1JKHCo (ORCPT
+	id S1751771Ab1JKHGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:06:10 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61235 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1JKHGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:02:44 -0400
-Message-ID: <4E93EA10.4030405@dsn.lapis-semi.com>
-Date: Tue, 11 Oct 2011 16:02:40 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	Tue, 11 Oct 2011 03:06:07 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: linux-next: build failure after merge of the gpio tree
-References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au> <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
-In-Reply-To: <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Date: Tue, 11 Oct 2011 09:06:06 +0200
+Message-ID: <CAC9WiBhJCePE9=vB5=Jii10kXjnB67D97JFkBsxFMSD0qdWzLQ@mail.gmail.com>
+Subject: 3.1-rc9: 2 ironlake crashes in the same day
+From: Francis Moreau <francis.moro@gmail.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/11 15:37), Stephen Rothwell wrote:
-> Hi Grant,
-> 
-> On Thu, 6 Oct 2011 14:48:26 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
->>
->> After merging the gpio tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
->> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
->> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
->> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
->>
->> Presumably caused by commits 54be566317b6 ("gpio-ml-ioh: Support
->> interrupt function") and 38eb18a6f92d ("gpio-pch: Support interrupt
->> function").
->>
->> I have used the gpio tree from next-20111005 for today.
-> 
-> I am still getting this build failure.
-> 
-I built this driver with success using linux-3.0.
-I want to try to build with the same as your build environment.
-Where can I get your environment ?
+Hello,
 
-Thanks,
+Yesterday I encountered 2 different video crashes that led to X being unusable.
+
+Here's the log for the first one:
+
+ [419692.139514] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429557.280034] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+elapsed... GPU hung
+ [429557.287415] [drm:init_ring_common] *ERROR* failed to set render
+ring head to zero ctl 00000000 head 2100f39c tail 00000000 start
+00001000
+ [429557.287423] [drm:init_ring_common] *ERROR* render ring
+initialization failed ctl 0001f003 head 2100f39c tail 00000000 start
+00001000
+ [429557.374977] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429557.662980] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429559.484115] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+elapsed... GPU hung
+ [429559.484368] [drm:i915_reset] *ERROR* GPU hanging too fast,
+declaring wedged!
+ [429559.484374] [drm:i915_reset] *ERROR* Failed to reset chip.
+ [429619.362973] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429619.573296] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429657.186958] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429675.135961] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [429694.101906] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+ [   13.171255] intel ips 0000:00:1f.6: failed to get i915 symbols,
+graphics turbo disabled
+
+And here's the second log:
+
+
+[   20.703141] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21528.205341] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21528.415574] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21530.096757] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21530.307944] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21533.506178] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21534.011096] [drm:drm_edid_block_valid] *ERROR* EDID checksum is
+invalid, remainder is 226
+[21534.011099] Raw EDID:
+[21534.011101]          00 ff ff ff ff ff ff 00 4c 2d 1b 07 30 32 30 30
+[21534.011102]          2a 14 01 03 80 30 1b 78 2a 78 f1 a6 55 48 9b 26
+[21534.011103]          12 50 54 bf ef 80 71 4f 81 00 81 40 81 80 95 00
+[21534.011105]          95 0f a9 40 b3 00 02 3a 80 18 71 38 2d 40 58 2c
+[21534.011106]          45 00 dd 0c 11 00 00 1e 01 1d ff ff ff ff ff ff
+[21534.011107]          ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[21534.011108]          ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[21534.011110]          ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+[21561.055845] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21561.388017] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+[21581.971189] [drm:ironlake_update_pch_refclk] *ERROR* enabling SSC on PCH
+
+I think it worthed a report.
+
+Thanks
 -- 
-tomoya
-ROHM Co., Ltd.
+Francis
