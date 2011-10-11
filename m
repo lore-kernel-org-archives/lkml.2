@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1JKHry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:47:54 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:48224 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab1JKHrx (ORCPT
+	id S1753099Ab1JKHsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:48:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39310 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab1JKHsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:47:53 -0400
-X-RZG-AUTH: :OGUIemC4aeq7VQ5CklLnl+lamhSiPJ/bKwJ+V5E0wcy/mIEnnv9YT5uzQcU=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4E93F49C.3060008@pruetz.net>
-Date: Tue, 11 Oct 2011 09:47:40 +0200
-From: =?ISO-8859-15?Q?Tilo_Pr=FCtz?= <tilo@pruetz.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20111005 Thunderbird/7.0.1
+	Tue, 11 Oct 2011 03:48:15 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
+        <b-cousson@ti.com>, <paul@pwsan.com>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v14] omap: usb: host: Runtime PM preparation for EHCI and OHCI drivers
+Date: Tue, 11 Oct 2011 13:18:08 +0530
+Message-ID: <1318319288-20122-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: tytso@mit.edu, adilger.kernel@dilger.ca
-Subject: Kernel Bug in ext4/inode.c
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-X-Bogosity: Unsure, tests=bogofilter, spamicity=0.493672, version=1.2.2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-I am running a server with Gentoo Linux and kernel 2.6.39. This server
-also is my DVR using MythTV. Every now and then the server locks up
-(actually I have activated reboot on oops to work around the problem).
+The Hwmod structures for ehci and ohci drivers are implemented for
+EHCI and OHCI drivers of OMAP3 and OMAP4.
+The ehci and ohci drivers does not use the APIs of the usbhs
+core driver; the runtime pm APIs are used for clock
+enable/disable.
 
-Sometimes I have a kernel report in the syslog:
+TODO:
+ - Adding mux-information to Hwmods.
+ - Aggressive Clock Management around USB bus suspend/resume.
+ - Remote Wakeup support implementation using IO-ring Wakeup
+   on EHCI/OHCI pads via PRCM IRQ chain handler.
 
-------------[ cut here ]------------
-kernel BUG at fs/ext4/inode.c:2118!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/virtual/net/ppp0/uevent
-CPU 0
-Modules linked in: ppp_async crc_ccitt nvidia(P) fcpci(P) scsi_wait_scan
+In Version 14:
+        - for omap3 and omap4,
+		Masters are added for the TLL hwmod
+	- for omap3, 
+		OCPIF_SWSUP_IDLE option is removed for interface clocks
 
-Pid: 27841, comm: mythbackend Tainted: P            2.6.39-gentoo-r3
-#2 System manufacturer System Product Name/M2N-E
-RIP: 0010:[<ffffffff8116f580>]  [<ffffffff8116f580>]
-mpage_da_submit_io+0x268/0x3bf
-RSP: 0018:ffff88004262bba8  EFLAGS: 00010286
-RAX: ffffea000048b650 RBX: ffffea000051d118 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff880000826890 RDI: 0000000000005d38
-RBP: ffff88004262bcf8 R08: 000000000d654538 R09: 0100000000002820
-R10: 0000000000005d0d R11: 0000000000000000 R12: ffff88004262bde8
-R13: ffff88004262bd28 R14: ffff88005ef46150 R15: 0000000000005d37
-FS:  00007fbeb053f700(0000) GS:ffff88007fc00000(0000)
-knlGS:00000000f74aa8e0
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007fdcb7a36000 CR3: 000000006b721000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process mythbackend (pid: 27841, threadinfo ffff88004262a000, task
-ffff88007fb83330)
-Stack:
- ffff88007b193b88 ffff88004262bc98 ffff88004741c138 000004ac00001424
- ffff88004262bc28 0000000000005d70 ffff88005ef46298 00000000811a337f
- 0000000000005d70 000000010000000e ffff88004262bc30 0000100000000000
-Call Trace:
- [<ffffffff811731df>] mpage_da_map_and_submit+0x2c6/0x2dc
- [<ffffffff8117390a>] ext4_da_writepages+0x2d4/0x465
- [<ffffffff810aafd6>] do_writepages+0x1c/0x26
- [<ffffffff810a3bc0>] __filemap_fdatawrite_range+0x4b/0x4d
- [<ffffffff810a3bea>] filemap_write_and_wait_range+0x28/0x51
- [<ffffffff810fcba1>] vfs_fsync_range+0x30/0x75
- [<ffffffff810fcc3b>] vfs_fsync+0x17/0x19
- [<ffffffff810fcc66>] do_fsync+0x29/0x3e
- [<ffffffff810fcc89>] sys_fdatasync+0xe/0x12
- [<ffffffff8155f4fb>] system_call_fastpath+0x16/0x1b
-Code: c1 00 02 00 00 74 09 f0 80 60 01 fd 4c 89 40 18 4c 8b 08 41 f7
-c1 00 10 00 00 75 09 4c 8b 08 41 80 e1 20 74 0a 4c 39 40 18 74 04 <0f>
-0b eb fe 41 f6 45 12 80 74 05 f0 80 48 02 80 f0 80 60 01 ef
-RIP  [<ffffffff8116f580>] mpage_da_submit_io+0x268/0x3bf
- RSP <ffff88004262bba8>
----[ end trace c228cd85b8ef2f99 ]---
+In version 13:
+       - for omap3, the ehci 120mhz clock is conditional enabled
+         if ehci is selected for atleast one port in the omap platform.
+       - the hardware erratas information is added.
+       - the patches are split in to two series
+               i) The hwmod and preparation for run time pm of ehci and
+                       ohci drivers ( this series)
+               ii) The Runtime pm support for ehci and ohci drivers.
+         Since the patches are split , both the series are SHOULD be
+         applied to make the ehci and ohci drivers are functional with
+         runtime pm support.
+
+In version 12:
+ - The ehci, ohci and usb_host_hs hwmods combined as a single hwmod
+   usb_host_hs.
+ - for omap3
+       the usbhost_ick and and usbtll_ick clocks are changed as interface
+       clocks. The usbtll_fck, usbhost_48m_fck clocks are changed as main
+       clocks and the 120mhz functional clock is changed to optional clock
+ - the usbhs mfd driver enable/disable this optional clock in
+   runtime_resume and runtime_suspend callbacks of pm_runtime_get_sync
+   and pm_runtime_put_sync APIs.
 
 
-What can I do to avoid such crashes and what can I do to give you more
-information (e.g. how to create a kernel dump).
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
 
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  omap: usb: host: Replace usbhs core driver APIs by Runtime pm APIs
 
-Best regards
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 ++--
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  230 ++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  220 ++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/usb-host.c             |  100 ++++--------
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |    2 +-
+ drivers/usb/host/ehci-omap.c               |   17 +--
+ drivers/usb/host/ohci-omap3.c              |   18 +--
+ 9 files changed, 515 insertions(+), 111 deletions(-)
 
-Tilo Prütz
