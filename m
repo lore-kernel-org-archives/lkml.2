@@ -1,113 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab1JKIZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 04:25:32 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:37974 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1JKIZa (ORCPT
+	id S1753451Ab1JKI05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 04:26:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49223 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab1JKI0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 04:25:30 -0400
-Date: Tue, 11 Oct 2011 19:25:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IkhlaWtvIFN0w7xibmVyIg==?= <heiko@sntech.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20111011192515.1f69837816e4cebd1e097385@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Oct_2011_19_25_15_+1100_y8NEAoe15B1/aD3."
+	Tue, 11 Oct 2011 04:26:54 -0400
+MIME-Version: 1.0
+Date: Tue, 11 Oct 2011 13:56:52 +0530
+Message-ID: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
+Subject: [Patch] SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        NamJae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Oct_2011_19_25_15_+1100_y8NEAoe15B1/aD3.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
 
-Hi Paul,
+It has been observed that a number of USB HDD's do not respond correctly
+to SCSI mode sense command(retrieve caching pages) which results in their
+Write Cache being discarded by queue requests i.e., WCE if left set to
+'0'(disabled). So, in order to identify the devices correctly - give it
+a last try using SG_ATA_16 after failure from normal routine.
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
 
-drivers/regulator/gpio-regulator.c: In function 'gpio_regulator_probe':
-drivers/regulator/gpio-regulator.c:209:24: error: 'THIS_MODULE' undeclared =
-(first use in this function)
-drivers/regulator/gpio-regulator.c:209:24: note: each undeclared identifier=
- is reported only once for each function it appears in
-drivers/regulator/gpio-regulator.c: At top level:
-drivers/regulator/gpio-regulator.c:338:13: error: 'THIS_MODULE' undeclared =
-here (not in a function)
-drivers/regulator/gpio-regulator.c:354:15: error: expected declaration spec=
-ifiers or '...' before string constant
-drivers/regulator/gpio-regulator.c:355:20: error: expected declaration spec=
-ifiers or '...' before string constant
-drivers/regulator/gpio-regulator.c:356:16: error: expected declaration spec=
-ifiers or '...' before string constant
-drivers/regulator/gpio-regulator.c:357:14: error: expected declaration spec=
-ifiers or '...' before string constant
+diff -Nurp linux-Orig/drivers/scsi/sd.c linux-Updated/drivers/scsi/sd.c
+--- linux-Orig/drivers/scsi/sd.c	2011-10-11 11:02:48.000000000 +0530
++++ linux-Updated/drivers/scsi/sd.c	2011-10-11 11:10:09.000000000 +0530
+@@ -56,6 +56,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/unaligned.h>
 
-Caused by commit 3f0292ae8bb1 ("regulator: Add driver for gpio-controlled
-regulators") from the regulator tree interacting with the module.h split
-up.
++#include <scsi/sg.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <scsi/scsi_dbg.h>
+@@ -134,6 +135,58 @@ static const char *sd_cache_types[] = {
+ 	"write back, no read (daft)"
+ };
 
-I have applied the following patch for today.  Mark, Liam, this should be
-applied to the regulator tree.
++/* Relevant Structure and Function to be used to Retrieve
++ * Caching Information from USB HDD - this is picked from
++ * source code of 'hdparm'
++ *
++ *
++ * Definitions and structures for use with SG_IO + ATA_16:
++ * */
++#define SG_ATA_16               0x85
++#define SG_ATA_16_LEN           16
++
++#define ATA_OP_IDENTIFY		0xec
++
++/*
++ * Some useful ATA register bits
++ */
++enum {
++        ATA_USING_LBA           = (1 << 6),
++        ATA_STAT_DRQ            = (1 << 3),
++        ATA_STAT_ERR            = (1 << 0),
++};
++
++struct ata_lba_regs {
++        __u8    feat;
++        __u8    nsect;
++        __u8    lbal;
++        __u8    lbam;
++        __u8    lbah;
++};
++struct ata_tf {
++        __u8                    dev;
++        __u8                    command;
++        __u8                    error;
++        __u8                    status;
++        __u8                    is_lba48;
++        struct ata_lba_regs     lob;
++        struct ata_lba_regs     hob;
++};
++
++__u64 tf_to_lba (struct ata_tf *tf)
++{
++        __u32 lba24, lbah;
++        __u64 lba64;
++
++        lba24 = (tf->lob.lbah << 16) | (tf->lob.lbam << 8) | (tf->lob.lbal);
++        if (tf->is_lba48)
++                lbah = (tf->hob.lbah << 16) | (tf->hob.lbam << 8) |
+(tf->hob.lbal);
++        else
++                lbah = (tf->dev & 0x0f);
++        lba64 = (((__u64)lbah) << 24) | (__u64)lba24;
++        return lba64;
++}
++
+ static ssize_t
+ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 		    const char *buf, size_t count)
+@@ -1839,6 +1892,18 @@ sd_read_cache_type(struct scsi_disk *sdk
+ 	int old_rcd = sdkp->RCD;
+ 	int old_dpofua = sdkp->DPOFUA;
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 11 Oct 2011 19:22:29 +1100
-Subject: [PATCH] regulator: using module related services requires module.h
++	struct ata_tf tf;
++	struct sg_io_hdr io_hdr;
++	unsigned char cdb[SG_ATA_16_LEN] = {0};
++	unsigned char sb[32] = {0};
++	unsigned char buf[512] = {0};
++	unsigned short wce_word = 0;
++	void *data_cmd = buf;
++
++	memset(cdb, 0, SG_ATA_16_LEN);
++	memset(&tf, 0, sizeof(struct ata_tf));
++	memset(&io_hdr, 0, sizeof(struct sg_io_hdr));
++
+        first_len = 4;
+        if (sdp->skip_ms_page_8) {
+                if (sdp->type == TYPE_RBC)
+@@ -1961,7 +2026,6 @@ Page_found:
+ 				  sdkp->DPOFUA ? "supports DPO and FUA"
+ 				  : "doesn't support DPO or FUA");
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/regulator/gpio-regulator.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+-		return;
+ 	}
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-re=
-gulator.c
-index abf32ad..24d4477 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -31,6 +31,7 @@
- #include <linux/gpio.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/module.h>
-=20
- struct gpio_regulator_data {
- 	struct regulator_desc desc;
---=20
-1.7.6.3
+ bad_sense:
+@@ -1974,8 +2038,64 @@ bad_sense:
+ 		sd_printk(KERN_ERR, sdkp, "Asking for cache data failed\n");
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__11_Oct_2011_19_25_15_+1100_y8NEAoe15B1/aD3.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOk/1rAAoJEECxmPOUX5FErFYP/Rt8p6sw9BflovSMgcPLDfHg
-vu5oU1cxxrkUgCBNlH721Jp/H6BSAtCHtuuvWSEZystQViXySsDcJaFgBbj6hs0K
-wpdQ2cKJjYQtBPt0M1FX9fwN0kvwRPnRKiAPq3pcFVrJoieHGpWVFBysK/ua/96Y
-o0Wuk4wwn5wMk8pSNqlm6PrJPSENzSy/y2xXrjhz8y8uvNA9zzyI8vbTGuED/ssO
-a3gHbGbiN8iUXKgkNhZEYOxweull28yvgW1YMzQypwvMIrukeZVsOqMxyqxtZX6B
-G8L7DsSN91Dsyb52mmP58gfpi9WS+Acx1WXXLg0qdiUnTEmiIommHrWAKBBIxK2Q
-t1CykjZnPO07LSTZpqSHp9c7dpLUqWi44Uyw3akLTK0ptXlX+8sXVoc0oDfO3Olj
-5ahkSYmUUmBGmMYaCnrUUlE2VqUSWCqf8p5eNUga6YAh2IzTMiu4A+VzAWQDr/t5
-tR+nn1lTW4dAByLQ19PFdTCfTaduAMpS+co+TmE64sjf1qDDMHHLt0zcARa6JyGe
-x34xsYjRqsA1idOe6UUyrK5YqRd41OWInpLcgz0d0I4VC2aUHcT3r1qEm0h+6naj
-Ywl1MFh1q1/8VtCHcPe+PBWW1ABkgUSTBuBzjWovT3DkYF4rArO1WHzcmKfyHvmS
-McPH8VKQg5jsKDp7vJ8E
-=3gvy
------END PGP SIGNATURE-----
-
---Signature=_Tue__11_Oct_2011_19_25_15_+1100_y8NEAoe15B1/aD3.--
+ defaults:
+-	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
+-	sdkp->WCE = 0;
++	if (sdkp->WCE)
++		return;
++	else {
++		sd_printk(KERN_ERR, sdkp, "Normal Routine Failed: Trying ATA_16\n");
++		
++		/* The below are necessary parameters which are to set - in order
++		to make use of ATA_OP_IDENTIFY command */
++		tf.lob.lbal = 0;
++	        tf.lob.lbam = 0;
++	        tf.lob.lbah = 0;
++	        tf.lob.nsect = 1; //Number of Sectors to Read
++	        tf.lob.feat = 0;
++
++		/* Command Descriptor Block For SCSI 	*/
++	        cdb[0] = SG_ATA_16;
++	        cdb[1] = 0x08;
++	        cdb[2] = 0x0e;
++	        cdb[6] = 0x01; //No. of Sectors To Read
++	        cdb[13] = ATA_USING_LBA;
++	        cdb[14] = ATA_OP_IDENTIFY;
++
++	        io_hdr.cmd_len = SG_ATA_16_LEN;
++	        io_hdr.interface_id = SG_INTERFACE_ID_ORIG;
++	        io_hdr.mx_sb_len= sizeof(sb);
++	        io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
++	        io_hdr.dxfer_len = sizeof(buf);
++	        io_hdr.dxferp = data_cmd;
++	        io_hdr.cmdp = cdb;
++	        io_hdr.sbp = sb;
++	        io_hdr.pack_id = tf_to_lba(&tf);
++        	io_hdr.timeout = 0;
++
++	        if (!scsi_cmd_ioctl(sdkp->disk->queue, sdkp->disk,
+O_RDONLY|O_NONBLOCK, SG_IO, &io_hdr))
++        	{
++#if 0
++#define DUMP_BYTES_BUFFER(x...) printk( x )
++			int i;
++			for (i = 0; i < 32; i++)
++        	                DUMP_BYTES_BUFFER(" %02x", sb[i]);
++	                DUMP_BYTES_BUFFER("\n");
++	                for (i = 0; i < 512; i++)
++        	                DUMP_BYTES_BUFFER(" %02x", buf[i]);
++	                DUMP_BYTES_BUFFER("\n");
++        	        printk(KERN_ERR"82 - [0x%x], 85 -
+[0x%x]\n",((unsigned short*)data_cmd)[82],((unsigned
+short*)data_cmd)[85]);
++#endif
++			/* '6th' Bit in Word 85 Corresponds to Write Cache being Enabled/disabled*/
++                	wce_word = le16_to_cpu(((unsigned short*)data_cmd)[85]);
++	                if (wce_word & 0x20) {
++        	                sdkp->WCE = 1;
++                		sd_printk(KERN_NOTICE, sdkp, "Write Cache Enabled
+after ATA_16 response\n");
++			} else
++				goto write_through;
++	        } else {
++write_through:
++	        	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
++		        sdkp->WCE = 0;
++        	}
++	}
+ 	sdkp->RCD = 0;
+ 	sdkp->DPOFUA = 0;
+ }
