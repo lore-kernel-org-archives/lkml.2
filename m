@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab1JKNGD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:06:03 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:59705 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab1JKNGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:06:01 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Tue, 11 Oct 2011 15:05:47 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [Linaro-mm-sig] [PATCHv16 0/9] Contiguous Memory Allocator
-In-reply-to: <4E9427B6.8050306@stericsson.com>
-To: "'Maxime Coquelin'" <maxime.coquelin-nonst@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        benjamin.gaignard@linaro.org,
-        "'Ludovic BARRE'" <ludovic.barre@stericsson.com>,
-        vincent.guittot@linaro.org
-Message-id: <00cb01cc8816$7e474600$7ad5d200$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AcyICRvWRrwjXzW0TbaP67J5/S+UDAADSj9w
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <4E92E003.4060901@stericsson.com>
- <00b001cc87e5$dc818cc0$9584a640$%szyprowski@samsung.com>
- <4E93F088.60006@stericsson.com>
- <00b301cc8803$93b5b3e0$bb211ba0$%szyprowski@samsung.com>
- <4E9427B6.8050306@stericsson.com>
+	id S1754672Ab1JKNGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:06:39 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:4495
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753398Ab1JKNGh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 09:06:37 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1447M1432Nzz1202hzz8275ch8275bhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-FB-SS: 13,
+From: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dept_Infinipath <Dept_Infinipath@qlogic.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roland Dreier <roland@purestorage.com>
+Date: Tue, 11 Oct 2011 06:06:29 -0700
+Subject: RE: [PATCH -next] infiniband: fix ipath_chip_init.c build errors
+Thread-Topic: [PATCH -next] infiniband: fix ipath_chip_init.c build errors
+Thread-Index: AcyFNAs0MoRrsv6lSU+esHqfJvocIwC4lnCQ
+Message-ID: <35AAF1E4A771E142979F27B51793A48888433C0972@AVEXMB1.qlogic.org>
+References: <20111007174230.702f4a0bf1fe71dab5e10961@canb.auug.org.au>
+ <4E8F683D.9020604@xenotime.net>
+In-Reply-To: <4E8F683D.9020604@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Add <linux/stat.h> to fix build errors:
+>
+> drivers/infiniband/hw/ipath/ipath_init_chip.c:54:1: error: 'S_IRUGO'
+> undeclared here (not in a function)
+> drivers/infiniband/hw/ipath/ipath_init_chip.c:54:1: error: bit-field
+> '<anonymous>' width not an integer constant
+> drivers/infiniband/hw/ipath/ipath_init_chip.c:67:1: error: 'S_IWUSR'
+> undeclared here (not in a function)
+> drivers/infiniband/hw/ipath/ipath_init_chip.c:67:1: error: bit-field
+> '<anonymous>' width not an integer constant
+>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-On Tuesday, October 11, 2011 1:26 PM Maxime Coquelin wrote:
+Thanks for the patch!
 
-> On 10/11/2011 12:50 PM, Marek Szyprowski wrote:
-> > Hello,
-> >
-> > On Tuesday, October 11, 2011 9:30 AM Maxime Coquelin wrote:
-> >
-> >> On 10/11/2011 09:17 AM, Marek Szyprowski wrote:
-> >>> On Monday, October 10, 2011 2:08 PM Maxime Coquelin wrote:
-> >>>
-> >>>        During our stress tests, we encountered some problems :
-> >>>
-> >>>        1) Contiguous allocation lockup:
-> >>>            When system RAM is full of Anon pages, if we try to allocate a
-> >>> contiguous buffer greater than the min_free value, we face a
-> >>> dma_alloc_from_contiguous lockup.
-> >>>            The expected result would be dma_alloc_from_contiguous() to fail.
-> >>>            The problem is reproduced systematically on our side.
-> >>> Thanks for the report. Do you use Android's lowmemorykiller? I haven't
-> >>> tested CMA on Android kernel yet. I have no idea how it will interfere
-> >>> with Android patches.
-> >>>
-> >> The software used for this test (v16) is a generic 3.0 Kernel and a
-> >> minimal filesystem using Busybox.
-> > I'm really surprised. Could you elaborate a bit how to trigger this issue?
-> 
-> At system startup, I drop caches (sync && echo 3 >
-> /proc/sys/vm/drop_caches) and check how much memory is free.
-> For example, in my case, only 15MB is used on the 270MB available on the
-> system, so I got 255MB of free memory. Note that the min_free is 4MB in
-> my case.
-> In userspace, I allocate 230MB using malloc(), the free memory is now 25MB.
-> Finaly, I ask for a contiguous allocation of 64MB using CMA, the result
-> is a lockup in dma_alloc_from_contiguous().
+Acked-by: Mike Marciniszyn <mike.marciniszyn@qlogic.com>
 
-Thanks for hint. I've managed to reproduce this issue. I will post fix asap.
 
-> > I've did several tests and I never get a lockup. Allocation failed from time
-> > to time though.
-> When it succeed, what is the behaviour on your side? Is the OOM triggered?
-
-OOM was never triggered.
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
