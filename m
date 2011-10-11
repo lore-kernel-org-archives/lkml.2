@@ -1,87 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1JKMES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 08:04:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40565 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab1JKMER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 08:04:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,523,1312182000"; 
-   d="scan'208";a="76920899"
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Vinod Koul <vinod.koul@intel.com>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, Barry Song <21cnbao@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-In-Reply-To: <CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1317200618.1573.1765.camel@vkoul-udesk3>
-	 <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	 <1317295068.1573.1780.camel@vkoul-udesk3>
-	 <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	 <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	 <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	 <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	 <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	 <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	 <20111003161349.GB28287@flint.arm.linux.org.uk>
-	 <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	 <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	 <1317966346.1573.2252.camel@vkoul-udesk3>
-	 <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	 <1317997177.1573.2275.camel@vkoul-udesk3>
-	 <CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
-	 <1318229592.1573.2298.camel@vkoul-udesk3>
-	 <CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-	 <1318238296.1546.3.camel@vkoul-udesk3>
-	 <CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
-	 <1318243501.1546.12.camel@vkoul-udesk3>
-	 <CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
-	 <1318262559.1546.31.camel@vkoul-udesk3>
-	 <CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
+	id S1753383Ab1JKMVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 08:21:09 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57562 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab1JKMVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 08:21:07 -0400
+Subject: [PATCH] ASoC: ak4642: convert to soc-cache
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Oct 2011 17:26:25 +0530
-Message-ID: <1318334185.1546.344.camel@vkoul-udesk3>
+Date: Tue, 11 Oct 2011 20:20:53 +0800
+Message-ID: <1318335653.3573.1.camel@phoenix>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-10 at 21:58 +0530, Jassi Brar wrote:
-> On 10 October 2011 21:32, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Mon, 2011-10-10 at 16:46 +0530, Jassi Brar wrote:
-> >> On 10 October 2011 16:15, Vinod Koul <vinod.koul@intel.com> wrote:
-> >> >
-> >> > But I am fine if we find a common ground and merge the two where dmac
-> >> > can cleanly identify direction and mode it is operating.
-> >> >
-> >> The client would set the xfer_direction and dmac would interpret as
-> >>
-> >> enum xfer_direction {
-> >>      MEM_TO_MEM,   ->  Async/Memcpy mode
-> >>      MEM_TO_DEV,    ->  Slave mode & From Memory to Device
-> >>      DEV_TO_MEM,    ->  Slave mode & From Device to Memory
-> >>      DEV_TO_DEV,     ->  Slave mode & From Device to Device
-> >> }
-> >>
-> >> How could it get any cleaner?
-> > Consider the case of a dmac driver which supports interleaved dma as
-> > well as memcpy and slave
-> > It needs to interpret dma_data_direction for later cases and
-> > xfer_direction for former ones.
-> dma_data_direction is the mapping attribute of a buffer and is not meant to
-> tell type of source and destination of a transfer.
-> xfer_direction is meant for that purpose.
-> So I'd rather convert device_prep_dma_cyclic and device_prep_slave_sg
-> to use xfer_direction.
-If the conversion id done for all drivers, then it should be fine...
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+Hi Kuninori,
+This patch converts ak4642 to use soc-cache APIs.
+I don't have this hardware, I'd appreciate if you can test this patch.
 
+Thanks,
+Axel
+
+ sound/soc/codecs/ak4642.c |   82 ++++++--------------------------------------
+ 1 files changed, 12 insertions(+), 70 deletions(-)
+
+diff --git a/sound/soc/codecs/ak4642.c b/sound/soc/codecs/ak4642.c
+index 68fc16c..80a9fe8 100644
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -157,7 +157,6 @@ static const struct snd_kcontrol_new ak4642_snd_controls[] = {
+ struct ak4642_priv {
+ 	unsigned int sysclk;
+ 	enum snd_soc_control_type control_type;
+-	void *control_data;
+ };
+ 
+ /*
+@@ -176,64 +175,6 @@ static const u16 ak4642_reg[AK4642_CACHEREGNUM] = {
+ 	0x0000,
+ };
+ 
+-/*
+- * read ak4642 register cache
+- */
+-static inline unsigned int ak4642_read_reg_cache(struct snd_soc_codec *codec,
+-	unsigned int reg)
+-{
+-	u16 *cache = codec->reg_cache;
+-	if (reg >= AK4642_CACHEREGNUM)
+-		return -1;
+-	return cache[reg];
+-}
+-
+-/*
+- * write ak4642 register cache
+- */
+-static inline void ak4642_write_reg_cache(struct snd_soc_codec *codec,
+-	u16 reg, unsigned int value)
+-{
+-	u16 *cache = codec->reg_cache;
+-	if (reg >= AK4642_CACHEREGNUM)
+-		return;
+-
+-	cache[reg] = value;
+-}
+-
+-/*
+- * write to the AK4642 register space
+- */
+-static int ak4642_write(struct snd_soc_codec *codec, unsigned int reg,
+-	unsigned int value)
+-{
+-	u8 data[2];
+-
+-	/* data is
+-	 *   D15..D8 AK4642 register offset
+-	 *   D7...D0 register data
+-	 */
+-	data[0] = reg & 0xff;
+-	data[1] = value & 0xff;
+-
+-	if (codec->hw_write(codec->control_data, data, 2) == 2) {
+-		ak4642_write_reg_cache(codec, reg, value);
+-		return 0;
+-	} else
+-		return -EIO;
+-}
+-
+-static int ak4642_sync(struct snd_soc_codec *codec)
+-{
+-	u16 *cache = codec->reg_cache;
+-	int i, r = 0;
+-
+-	for (i = 0; i < AK4642_CACHEREGNUM; i++)
+-		r |= ak4642_write(codec, i, cache[i]);
+-
+-	return r;
+-};
+-
+ static int ak4642_dai_startup(struct snd_pcm_substream *substream,
+ 			      struct snd_soc_dai *dai)
+ {
+@@ -253,8 +194,8 @@ static int ak4642_dai_startup(struct snd_pcm_substream *substream,
+ 		 */
+ 		snd_soc_update_bits(codec, MD_CTL4, DACH, DACH);
+ 		snd_soc_update_bits(codec, MD_CTL3, BST1, BST1);
+-		ak4642_write(codec, L_IVC, 0x91); /* volume */
+-		ak4642_write(codec, R_IVC, 0x91); /* volume */
++		snd_soc_write(codec, L_IVC, 0x91); /* volume */
++		snd_soc_write(codec, R_IVC, 0x91); /* volume */
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMVCM | PMMIN | PMDAC,
+ 						     PMVCM | PMMIN | PMDAC);
+ 		snd_soc_update_bits(codec, PW_MGMT2, PMHP_MASK,	PMHP);
+@@ -273,9 +214,9 @@ static int ak4642_dai_startup(struct snd_pcm_substream *substream,
+ 		 * This operation came from example code of
+ 		 * "ASAHI KASEI AK4642" (japanese) manual p94.
+ 		 */
+-		ak4642_write(codec, SG_SL1, PMMP | MGAIN0);
+-		ak4642_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
+-		ak4642_write(codec, ALC_CTL1, ALC | LMTH0);
++		snd_soc_write(codec, SG_SL1, PMMP | MGAIN0);
++		snd_soc_write(codec, TIMER, ZTM(0x3) | WTM(0x3));
++		snd_soc_write(codec, ALC_CTL1, ALC | LMTH0);
+ 		snd_soc_update_bits(codec, PW_MGMT1, PMVCM | PMADL,
+ 						     PMVCM | PMADL);
+ 		snd_soc_update_bits(codec, PW_MGMT3, PMADR, PMADR);
+@@ -463,7 +404,7 @@ static struct snd_soc_dai_driver ak4642_dai = {
+ 
+ static int ak4642_resume(struct snd_soc_codec *codec)
+ {
+-	ak4642_sync(codec);
++	snd_soc_cache_sync(codec);
+ 	return 0;
+ }
+ 
+@@ -471,11 +412,15 @@ static int ak4642_resume(struct snd_soc_codec *codec)
+ static int ak4642_probe(struct snd_soc_codec *codec)
+ {
+ 	struct ak4642_priv *ak4642 = snd_soc_codec_get_drvdata(codec);
++	int ret;
+ 
+ 	dev_info(codec->dev, "AK4642 Audio Codec %s", AK4642_VERSION);
+ 
+-	codec->hw_write		= (hw_write_t)i2c_master_send;
+-	codec->control_data	= ak4642->control_data;
++	ret = snd_soc_codec_set_cache_io(codec, 8, 8, ak4642->control_type);
++	if (ret < 0) {
++		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
++		return ret;
++	}
+ 
+ 	snd_soc_add_controls(codec, ak4642_snd_controls,
+ 			     ARRAY_SIZE(ak4642_snd_controls));
+@@ -486,8 +431,6 @@ static int ak4642_probe(struct snd_soc_codec *codec)
+ static struct snd_soc_codec_driver soc_codec_dev_ak4642 = {
+ 	.probe			= ak4642_probe,
+ 	.resume			= ak4642_resume,
+-	.read			= ak4642_read_reg_cache,
+-	.write			= ak4642_write,
+ 	.reg_cache_size		= ARRAY_SIZE(ak4642_reg),
+ 	.reg_word_size		= sizeof(u8),
+ 	.reg_cache_default	= ak4642_reg,
+@@ -505,7 +448,6 @@ static __devinit int ak4642_i2c_probe(struct i2c_client *i2c,
+ 		return -ENOMEM;
+ 
+ 	i2c_set_clientdata(i2c, ak4642);
+-	ak4642->control_data = i2c;
+ 	ak4642->control_type = SND_SOC_I2C;
+ 
+ 	ret =  snd_soc_register_codec(&i2c->dev,
 -- 
-~Vinod
+1.7.4.1
+
+
 
