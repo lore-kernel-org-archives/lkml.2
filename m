@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab1JKH76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:59:58 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:43722 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752010Ab1JKH75 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:59:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAP05o4+Y3_-mFYdsta4DM7EfkYEq1-6psjvawN5pCWX++8jm8A@mail.gmail.com>
-References: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1110101835070.5205@utopia.booyaka.com>
-	<CAP05o4+Y3_-mFYdsta4DM7EfkYEq1-6psjvawN5pCWX++8jm8A@mail.gmail.com>
-Date: Tue, 11 Oct 2011 13:29:55 +0530
-Message-ID: <CAP05o4K8BBwh5nbQpuc180WD2=ON+wksEz=gku=Y4GDQzx=BdA@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753414Ab1JKIBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 04:01:40 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:36883 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab1JKIBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 04:01:40 -0400
+Subject: Re: [PATCH] Fix file references in Kconfig files
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Johann Felix Soden <johfel@gmx.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1318288249.12675.6.camel@LAPJFS>
+References: <1317683499.5990.2.camel@LAPJFS> <4E934066.80109@xenotime.net>
+	 <alpine.LNX.2.00.1110102350170.14768@pobox.suse.cz>
+	 <1318288249.12675.6.camel@LAPJFS>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 10:01:19 +0200
+Message-ID: <1318320079.18122.38.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 11:18 AM, Munegowda, Keshava
-<keshava_mgowda@ti.com> wrote:
-> On Tue, Oct 11, 2011 at 6:08 AM, Paul Walmsley <paul@pwsan.com> wrote:
->> Hi
->>
->> so I just noticed another problem with these hwmods:
->>
->> On Thu, 6 Oct 2011, Keshava Munegowda wrote:
->>
->>> Following 2 hwmod structures are added
->>>     1. usb_host_hs
->>>          The hwmod of usbhs with uhh, ehci and ohci base addresses
->>>          functional clock and ehci, ohci irqs
->>>
->>>     2. usb_tll_hs
->>>           hwmod of usbhs with the TLL base address and irq.
->>>
->>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->>> Reviewed-by: Partha Basak <parthab@india.ti.com>
->>> ---
->>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
->>>  1 files changed, 227 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>> index 59fdb9f..b8ca690 100644
->>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>
->> ...
->>
->>> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
->>
->> This interface is missing a .master and .slave.  It must have both.  So,
->> dropping this patch until it's fixed.
->>
->> Clearly we also need to modify the hwmod code needs to reject any
->> instances where either .master or .slave is NULL.
->>
->>
->> - Paul
->
-> Hi Paul
->           I will fix it today only and I will send the updated
-> patches in couple of hours.
-> please help me to make it in this merge window.
->
+On Tue, 2011-10-11 at 01:10 +0200, Johann Felix Soden wrote:
+> This patch fixes file references to moved or deleted files
+> outside of Documentation/.
+
+Apparently you grepped on something like "<file:.*". This triggers an
+issue I've been wondering about a bit.
+
+Would anyone know why some file references are wrapped in a "<file:" -
+">" pair while others are not? The same thing can be seen with "http://"
+links: some are wrapped in angle brackets while others are not. What do
+these brackets (and the "file:" prefix) actually provide?
 
 
-Hi Paul
-      I have posted v14 of the patches; please do review
-if it is OK, please merge to your branch for 3.2 version
-please let me know if you have any comments here.
+Paul Bolle
 
- Thanks and Regards
- keshava
