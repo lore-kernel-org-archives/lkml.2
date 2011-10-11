@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab1JKP0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 11:26:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2062 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754760Ab1JKPZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 11:25:41 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/3] x86, NMI: knob to disable using NMI IPIs to stop cpus
-Date: Tue, 11 Oct 2011 11:24:46 -0400
-Message-Id: <1318346686-12349-4-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
-References: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
+	id S1754864Ab1JKPcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 11:32:00 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:35713 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab1JKPb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 11:31:59 -0400
+Subject: [PATCH] [TRIVIAL] ARM: pxa: Fix typo 'CONFIG_BACKLIGHT_PWM__MODULE'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 17:31:55 +0200
+Message-ID: <1318347115.5754.3.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some machines may exhibit problems using the NMI to stop other cpus.
-This knob just allows one to revert back to the original behaviour to help
-diagnose the problem.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/kernel/smp.c               |    8 ++++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+Untested (I don't think I've got the hardware, nor have I got the
+toolchain at hand, etc.).
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6ca1f5c..dab6439 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1761,6 +1761,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
- 			Timer usage (for AMD Geode machines).
- 
-+	nonmi_ipi	[X86] Disable using NMI IPIs during panic/reboot to
-+			shutdown the other cpus.  Instead use the REBOOT_VECTOR
-+			irq.
-+
- 	nopat		[X86] Disable PAT (page attribute table extension of
- 			pagetables) support.
- 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index f54e07a..cc8026a 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -283,6 +283,14 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+int __init nonmi_ipi_setup(char *str)
-+{
-+        native_smp_disable_nmi_ipi();
-+        return 1;
-+}
-+
-+__setup("nonmi_ipi", nonmi_ipi_setup);
-+
- struct smp_ops smp_ops = {
- 	.smp_prepare_boot_cpu	= native_smp_prepare_boot_cpu,
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
+ arch/arm/mach-pxa/colibri-pxa270-income.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c b/arch/arm/mach-pxa/colibri-pxa270-income.c
+index 80538b8..248804b 100644
+--- a/arch/arm/mach-pxa/colibri-pxa270-income.c
++++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
+@@ -183,7 +183,7 @@ static inline void income_lcd_init(void) {}
+ /******************************************************************************
+  * Backlight
+  ******************************************************************************/
+-#if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM__MODULE)
++#if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM_MODULE)
+ static struct platform_pwm_backlight_data income_backlight_data = {
+ 	.pwm_id		= 0,
+ 	.max_brightness	= 0x3ff,
 -- 
-1.7.6.4
+1.7.4.4
 
