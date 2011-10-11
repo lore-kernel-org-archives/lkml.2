@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab1JKBcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 21:32:15 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:42813 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab1JKBcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 21:32:14 -0400
-Date: Mon, 10 Oct 2011 21:32:01 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Matt Helsley <matthltc@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel@vger.kernel.org, harald@redhat.com, david@fubar.dk,
-        greg@kroah.com, Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-Message-ID: <20111011013201.GA7948@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Lennart Poettering <mzxreary@0pointer.de>,
-	Matt Helsley <matthltc@us.ibm.com>,
-	Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-	harald@redhat.com, david@fubar.dk, greg@kroah.com,
-	Linux Containers <containers@lists.osdl.org>,
-	Linux Containers <lxc-devel@lists.sourceforge.net>,
-	"Serge E. Hallyn" <serge@hallyn.com>,
-	Daniel Lezcano <daniel.lezcano@free.fr>,
-	Paul Menage <paul@paulmenage.org>
-References: <1317943022.1095.25.camel@mop>
- <20111007074904.GC16723@count0.beaverton.ibm.com>
- <20111007160113.GB14201@tango.0pointer.de>
- <m17h4g2jqy.fsf@fess.ebiederm.org>
- <20111010163140.GA22191@tango.0pointer.de>
- <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+	id S1753689Ab1JKBkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 21:40:55 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41428 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab1JKBky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 10 Oct 2011 21:40:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E939E5D.3010208@jp.fujitsu.com>
+Date: Tue, 11 Oct 2011 10:39:41 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Abdelghani Ouchabane <abdelghani@ezono.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
+References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com>
+In-Reply-To: <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 01:59:10PM -0700, Eric W. Biederman wrote:
-> Lennart Poettering <mzxreary@0pointer.de> writes:
-> 
-> > To make a standard distribution run nicely in a Linux container you
-> > usually have to make quite a number of modifications to it and disable
-> > certain things from the boot process. Ideally however, one could simply
-> > boot the same image on a real machine and in a container and would just
-> > do the right thing, fully stateless. And for that you need to be able to
-> > detect containers, and currently you can't.
-> 
-> I agree getting to the point where we can run a standard distribution
-> unmodified in a container sounds like a reasonable goal.
+(2011/10/08 1:36), Bjorn Helgaas wrote:
+> On Fri, Oct 7, 2011 at 10:22 AM, Abdelghani Ouchabane
+> <abdelghani@ezono.com>  wrote:
+>> Bjorn Helgaas wrote:
+>>>
+>>> [added cc: linux-pci@vger.kernel.org]
+>>>
+>>> On Fri, Oct 7, 2011 at 1:16 AM, Abdelghani Ouchabane
+>>> <abdelghani@ezono.com>  wrote:
+>>>
+>>>>
+>>>> Hallo,
+>>>>
+>>>>   We are developing a FPGA board connected to a Fedora 15 PC host over
+>>>> PCIe.
+>>>> Right now, in the implementation and debug phase, I often need to power
+>>>> off
+>>>> and
+>>>> power on the device or try different boards. This causes a problem with
+>>>> the
+>>>> Fedora 15 running on the AMD PC.
+>>>>
+>>>> Typically the PC is booted when I need to insert the device under test.
+>>>> As
+>>>> expected, the Linux doesn't find the device and the software app cannot
+>>>> talk
+>>>> to it.
+>>>>
+>>>> * If I do "lspci -v" then it does not list our device.
+>>>>
+>>>
+>>> Do you have pciehp enabled and loaded?  I would think a PCIe hot-add
+>>> should automatically rescan the bus.  Does dmesg say anything when you
+>>> do the hot-add?
+>>>
+>>
+>> Thanks Bjorn,
+>>
+>> Yes, I have them :
+>>
+>> ****************************************************************************************************
+>> lsmod :
+>>
+>> pciehp                 20282  0
+>> cgosdrv                17632  0
+>> ****************************************************************************************************
+>> /etc/modprobe.d/pciehp.conf
+>> alias pci:v00001234d00000002sv00001234sd00000001bc11sc80i00 pciehp
+>> options pciehp pciehp_force=1 pciehp_debug=1
+>> ****************************************************************************************************
+>>
+>> After I plug my board in,  I executed  echo 1>  /sys/bus/pci/rescan
+>
 
-Hmm, interesting.  It's not clear to me that running a full standard
-distribution in a container is always going to be what everyone wants
-to do.
+Can you try echo 1 > /sys/bus/pci/slots/XXX/power?
+(XXX: slot number)
 
-The whole point of containers versus VM's is that containers are
-lighter weight.  And one of the ways that containers can be lighter
-weight is if you don't have to have N copies of udev, dbus, running in
-each container/VM.
+> It seems like a pciehp bug that you have to rescan explicitly.  But
+> I'm not a pciehp expert and I haven't looked at the code.
 
-If you end up so much overhead to provide the desired security and/or
-performance isolation, then it becomes fair to ask the question
-whether you might as well pay a tad bit more and get even better
-security and isolation by using a VM solution....
+The pciehp automatically scans the bus on presence changed event
+(e.g. board is pluged in) if the hot-plug controller supports
+surprise removal. Otherwise, you need to power on slot explicitly
+by "echo 1 > /sys/bus/pci/slots/XXX/power". So one possibility is
+that your controller doesn't support surprise removal. We can
+check it by looking at the pciehp's debug output. Can you send
+whole dmesg output?
 
-	     	       	  	     - Ted
+Regards,
+Kenji Kaneshige
+
+
+>
+>>>> * But our software returns : 0xFFFFFFFF
+>
+> This is reading from your device's memory region.  It looks like the
+> device is configured correctly (BAR values are reasonable and memory
+> decoding is enabled) and I assume the bridges leading to it are
+> configured correctly (if you posted the complete dmesg log we could
+> tell for sure).  After that point, Linux is out of the way and it's
+> just a question of whether your device responds correctly to the
+> memory access.
+>
+> Are you sure the device is supposed to return something other than
+> 0xFFFFFFFF?  If it's memory, can you write to it and read the new
+> value back?  Can you use a PCIe analyzer and see if the device is
+> responding correctly on the bus?
+>
+> Other than the possible pciehp rescan problem, this just looks like a
+> problem with your FPGA.
+>
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+
+
