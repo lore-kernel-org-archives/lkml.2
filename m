@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1JKQVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:21:39 -0400
-Received: from nm3-vm1.bullet.mail.in.yahoo.com ([121.101.151.208]:37073 "HELO
-	nm3-vm1.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752818Ab1JKQVh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:21:37 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 245846.34499.bm@omp1004.mail.in.yahoo.com
-X-YMail-OSG: sAAVSrwVM1nD.c3C0x5q_Iu3As1tu6HfwDJ5fcehu4LHG6Z
- .PkqL1oYY9q5AqMT0E1t1XaRLhzY4uhV5awjpNBol6pN9b9VL39HLtj62Db.
- w0YdmuF0_HM.VQNWORH8mU8IlJjjfGOWFpW.F.dcKPPSvbEAs6ILytCuqP53
- LFI_mgTE9ZjoKs9CbKLprHTWvnYJ7aFjskA6kJOB_N.FyFm7SDTE1nDAm7a9
- FkNuawEiIDMvM7An988sZmDCOv6m2jPYWJgvkU4ARNX2TdUaIBvfhRxvJa_r
- ehEz0MQjTxDcmqsgXYvwc78xaEewTV_q3dE4n9t5Y_qdNKOO8O3QoCvBsXUJ
- _xkBKzyUClPCruL..0Izds.XbotPk_hO5opOZegks4dUgGnffoSCD37NYdXv
- 2D5B2E9Hp_rUaiRE7ueTHQ.cJprxKvuCUuj7UlMQ542RV3wLQQip6b0YtUvp
- ru6mjt9M6ZCibNLagNrFK1kq5UvSHw2rc3Fp7dpY9yoke6CliagsFVSVBVVz
- o44Egtj.0cKArp863eIE1d5jd7FJsNIm_zN3dAVtORJbhGV_BtUemlXy7jD3
- _HEI-
-X-RocketYMMF: love_chinmay2002
-X-Mailer: YahooMailClassic/14.0.7 YahooMailWebService/0.8.114.317681
-Message-ID: <1318350090.58466.YahooMailClassic@web95315.mail.in2.yahoo.com>
-Date: Tue, 11 Oct 2011 21:51:30 +0530 (IST)
-From: Gloria Lusen <rsm_mmko2@rediffmail.com>
-Reply-To: gloria_lusen69@yahoo.fr
-Subject: Good Day,
-To: undisclosed recipients:;
+	id S1754913Ab1JKQVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:21:36 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37037 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752818Ab1JKQVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 12:21:35 -0400
+X-Sasl-enc: WlztXur4rqam+7NHPxkENUG6ubg1vPG6YoZ66sSh5jBO 1318350094
+Date: Tue, 11 Oct 2011 10:20:23 -0600
+From: Greg KH <greg@kroah.com>
+To: Pelle Windestam <pelle@windestam.se>
+Cc: Pelle Windestam <iceaway@gmail.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] staging: panel: Fixed checkpatch warning about
+ simple_strtoul()
+Message-ID: <20111011162023.GA16261@kroah.com>
+References: <1314728964-20863-1-git-send-email-iceaway@gmail.com>
+ <CAOdCkm2mtU8v4YrU2-r2aRJOFKruk0mWUV9T67gheykM=74DfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOdCkm2mtU8v4YrU2-r2aRJOFKruk0mWUV9T67gheykM=74DfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 11, 2011 at 12:11:31PM +0200, Pelle Windestam wrote:
+> On Tue, Aug 30, 2011 at 8:29 PM, Pelle Windestam <iceaway@gmail.com> wrote:
+> > Fixed the checkpatch warning about sing simple_strtoul instead of
+> > kstrtoul() in panel.c.
+> >
+> > Signed-off-by: Pelle Windestam <iceaway@gmail.com>
+> > ---
+> >  drivers/staging/panel/panel.c |   10 ++++------
+> >  1 files changed, 4 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+> > index b303b7e..4683d5f 100644
+> > --- a/drivers/staging/panel/panel.c
+> > +++ b/drivers/staging/panel/panel.c
+> > @@ -1179,16 +1179,14 @@ static inline int handle_lcd_special_code(void)
+> >                        break;
+> >
+> >                while (*esc) {
+> > -                       char *endp;
+> > -
+> >                        if (*esc == 'x') {
+> >                                esc++;
+> > -                               lcd_addr_x = simple_strtoul(esc, &endp, 10);
+> > -                               esc = endp;
+> > +                               if (kstrtoul(esc, 10, &lcd_addr_x) < 0)
+> > +                                       break;
+> >                        } else if (*esc == 'y') {
+> >                                esc++;
+> > -                               lcd_addr_y = simple_strtoul(esc, &endp, 10);
+> > -                               esc = endp;
+> > +                               if (kstrtoul(esc, 10, &lcd_addr_y) < 0)
+> > +                                       break;
+> >                        } else
+> >                                break;
+> >                }
+> > --
+> > 1.7.3.4
+> >
+> >
+> 
+> Was there any reason for not accepting this patch?
 
-Good Day,
-How are you and your family, i am sorry for bagging into your privacy, i am Gloria Lusen 18 years old and the only child of my late parent, please i am seeking for your assistance for a relocation and transferring of my inherited fund to your country,(USD$ 9.500.000) dollars I wait for your reply for more information you might need regarding the fund and my position.
-Thank you and God bless you.
-Yours Daughter,
-Gloria Lusen.
+I don't recall ever seeing it before, care to resend it against the
+latest linux-next tree so I can apply it?
+
+thanks,
+
+greg k-h
