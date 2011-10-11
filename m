@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab1JKPMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 11:12:19 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:56261 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754149Ab1JKPMS (ORCPT
+	id S1754829Ab1JKPQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 11:16:56 -0400
+Received: from mail917.opentransfer.com ([98.130.1.192]:52459 "EHLO
+	mail917.opentransfer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab1JKPQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 11:12:18 -0400
-Date: Tue, 11 Oct 2011 10:53:32 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] staging: et131x: Update TODO list
-Message-ID: <20111011145332.GA29114@elliptictech.com>
-References: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
+	Tue, 11 Oct 2011 11:16:54 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 11:16:54 EDT
+Message-ID: <20111011111014.58942wbenudejpzq@98.130.1.192>
+Date: Tue, 11 Oct 2011 11:10:14 -0400
+From: "Account Update" <info@update.com>
+Reply-to: acc.update1@9.cn
+To: undisclosed-recipients:;
+Subject: Confirm Your Account
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-On 2011-10-10 16:22 +0100, Mark Einon wrote:
-> diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
-> index d383e80..c67f83e 100644
-> --- a/drivers/staging/et131x/README
-> +++ b/drivers/staging/et131x/README
-> @@ -2,13 +2,18 @@ This is a driver for the ET1310 network device.
->  
->  Based on the driver found at https://sourceforge.net/projects/et131x/
->  
-> -Cleaned up immensely by Olaf Hartman and Christoph
-> -Hellwig <hch@infradead.org>
-> +Cleaned up immensely by Olaf Hartman and Christoph Hellwig <hch@infradead.org>
 
-It seems that a fragment from your earlier patch, "staging: et131x:
-Removing Olaf Hartmann's email as it bounces", got mixed up with this
-one.
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+
+This message is sent automatically from Our Webmaster  
+AdministratorUpgrade/Maintenance Program periodically sent to all our  
+Email User for Upgrade/Maintenance. Just before this message was sent,  
+you have 18 Megabytes (MB) Message Storage in your mail.
+
+help us re-set your WEBSPACE on our database prior to maintaining your  
+Email Storage Capacity. To prevent your account from being deleted,  
+you must reply to this e-mail and provide us with the  
+Information&#146;s below for confirmation that you still operate this  
+email on regular basis:
+
+Email Account Username ( )
+Email Account password ( )
+Reconfirm Account Password ( )
+
+Your account will be automatically deleted if you fail to confirm your  
+account withing 24 Hours.
+WEBMAIL TECHNICAL SUPPORT TEAM
