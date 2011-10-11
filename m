@@ -1,297 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab1JKHvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:51:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34971 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab1JKHvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:51:10 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <khilman@ti.com>,
-        <b-cousson@ti.com>, <paul@pwsan.com>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
-Subject: [PATCH 2/5 v14] arm: omap: usb: ehci and ohci hwmod structures for omap3
-Date: Tue, 11 Oct 2011 13:21:10 +0530
-Message-ID: <1318319470-20409-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753317Ab1JKHv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:51:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38538 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab1JKHvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 03:51:25 -0400
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org
+In-Reply-To: <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+	 <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 09:57:32 +0200
+Message-ID: <1318319852.14400.65.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following 2 hwmod structures are added
-    1. usb_host_hs
-         The hwmod of usbhs with uhh, ehci and ohci base addresses
-         functional clock and ehci, ohci irqs
+On Tue, 2011-10-11 at 12:46 +0530, Amit Kucheria wrote:
+> Adding Peter to the discussion..
 
-    2. usb_tll_hs
-          hwmod of usbhs with the TLL base address and irq.
+Right, CCing the folks who actually wrote the code you're asking
+questions about always helps ;-)
 
-Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-Reviewed-by: Partha Basak <parthab@india.ti.com>
+> On Thu, Oct 6, 2011 at 5:06 PM, Vincent Guittot
+> <vincent.guittot@linaro.org> wrote:
+> > I work to link the cpu_power of ARM cores to their frequency by using
+> > arch_scale_freq_power. 
+
+Why and how? In particular note that if you're using something like the
+on-demand cpufreq governor this isn't going to work.
+
+> It's explained in the kernel that cpu_power is
+> > used to distribute load on cpus and a cpu with more cpu_power will
+> > pick up more load. The default value is SCHED_POWER_SCALE and I
+> > increase the value if I want a cpu to have more load than another one.
+> > Is there an advised range for cpu_power value as well as some time
+> > scale constraints for updating the cpu_power value ?
+
+Basically 1024 is the unit and denotes the capacity of a full core at
+'normal' speed. 
+
+Typically cpufreq would down-clock a core and thus you'd end up with a
+smaller number (linearly proportional to the freq ratio etc. although if
+you want to go really fancy you could determine the actual
+throughput/freq curves).
+
+Things like x86 turbo mode would result in a >1024 value.
+
+Things like SMT would typically result in <1024 and the SMT sum over the
+core >1024 (if you're lucky).
+
+> > I'm also wondering why this scheduler feature is currently disable by default ?
+
+Because the only implementation in existence (x86) is broken and I
+haven't gotten around to fixing it. Arguable we should disable that for
+the time being, see below.
+
+> In discussions with Vincent regarding this, I've wondered whether
+> cpu_power wouldn't be better renamed to cpu_capacity since that is
+> what it really seems to describe.
+
+Possibly, but its been cpu_power for ages and we use capacity to
+describe something else.
+
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  230 ++++++++++++++++++++++++++++
- 1 files changed, 230 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/sched.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 59fdb9f..c06b4a4 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -84,6 +84,8 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
- static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
- static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
- static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
-+static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
-+static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
+diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
+index a640ae5..90ae68c 100644
+--- a/arch/x86/kernel/cpu/sched.c
++++ b/arch/x86/kernel/cpu/sched.c
+@@ -6,7 +6,14 @@
+ #include <asm/cpufeature.h>
+ #include <asm/processor.h>
  
- /* L3 -> L4_CORE interface */
- static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
-@@ -3196,6 +3198,229 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
- 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
- };
- 
-+/*
-+ * 'usb_host_hs' class
-+ * high-speed multi-port usb host controller
-+ */
-+static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
-+	.master		= &omap34xx_usb_host_hs_hwmod,
-+	.slave		= &omap3xxx_l3_main_hwmod,
-+	.clk		= "core_l3_ick",
-+	.user		= OCP_USER_MPU,
-+};
-+
-+static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.syss_offs	= 0x0014,
-+	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
-+			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
-+			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
-+};
-+
-+static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
-+	.name = "usb_host_hs",
-+	.sysc = &omap34xx_usb_host_hs_sysc,
-+};
-+
-+static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
-+	&omap34xx_usb_host_hs__l3_main_2,
-+};
-+
-+static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
-+	{
-+		.name		= "uhh",
-+		.pa_start	= 0x48064000,
-+		.pa_end		= 0x480643ff,
-+		.flags		= ADDR_TYPE_RT
-+	},
-+	{
-+		.name		= "ohci",
-+		.pa_start	= 0x48064400,
-+		.pa_end		= 0x480647ff,
-+	},
-+	{
-+		.name		= "ehci",
-+		.pa_start	= 0x48064800,
-+		.pa_end		= 0x48064cff,
-+	},
-+	{}
-+};
-+
-+static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__ick = {
-+	.master         = &omap3xxx_l4_core_hwmod,
-+	.slave          = &omap34xx_usb_host_hs_hwmod,
-+	.clk		= "usbhost_ick",
-+	.addr		= omap34xx_usb_host_hs_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
-+	&omap34xx_usb_host_hs__ick,
-+};
-+
-+static struct omap_hwmod_opt_clk omap34xx_usb_host_hs_opt_clks[] = {
-+	  { .role = "ehci_logic_fck", .clk = "usbhost_120m_fck", },
-+};
-+
-+static struct omap_hwmod_irq_info omap34xx_usb_host_hs_irqs[] = {
-+	{ .name = "ohci-irq", .irq = 76 },
-+	{ .name = "ehci-irq", .irq = 77 },
-+	{ .irq = -1 }
-+};
-+
-+static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
-+	.name		= "usb_host_hs",
-+	.class		= &omap34xx_usb_host_hs_hwmod_class,
-+	.clkdm_name	= "l3_init_clkdm",
-+	.mpu_irqs	= omap34xx_usb_host_hs_irqs,
-+	.main_clk	= "usbhost_48m_fck",
-+	.prcm = {
-+		.omap2 = {
-+			.module_offs = OMAP3430ES2_USBHOST_MOD,
-+			.prcm_reg_id = 1,
-+			.module_bit = OMAP3430ES2_EN_USBHOST1_SHIFT,
-+			.idlest_reg_id = 1,
-+			.idlest_idle_bit = OMAP3430ES2_ST_USBHOST_IDLE_SHIFT,
-+			.idlest_stdby_bit = OMAP3430ES2_ST_USBHOST_STDBY_SHIFT,
-+		},
-+	},
-+	.opt_clks	= omap34xx_usb_host_hs_opt_clks,
-+	.opt_clks_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_opt_clks),
-+	.slaves		= omap34xx_usb_host_hs_slaves,
-+	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
-+	.masters	= omap34xx_usb_host_hs_masters,
-+	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_masters),
-+
-+	/*
-+	 * Errata: USBHOST Configured In Smart-Idle Can Lead To a Deadlock
-+	 * id: i660
-+	 *
-+	 * Description:
-+	 * In the following configuration :
-+	 * - USBHOST module is set to smart-idle mode
-+	 * - PRCM asserts idle_req to the USBHOST module ( This typically
-+	 *   happens when the system is going to a low power mode : all ports
-+	 *   have been suspended, the master part of the USBHOST module has
-+	 *   entered the standby state, and SW has cut the functional clocks)
-+	 * - an USBHOST interrupt occurs before the module is able to answer
-+	 *   idle_ack, typically a remote wakeup IRQ.
-+	 * Then the USB HOST module will enter a deadlock situation where it
-+	 * is no more accessible nor functional.
-+	 *
-+	 * Workaround:
-+	 * Don't use smart idle; use only force idle, hence HWMOD_SWSUP_SIDLE
-+	 */
-+
-+	/* Errata: USB host EHCI may stall when entering smart-standby mode
-+	 * Id: i571
-+	 *
-+	 * Description:
-+	 * When the USBHOST module is set to smart-standby mode, and when it is
-+	 * ready to enter the standby state (i.e. all ports are suspended and
-+	 * all attached devices are in suspend mode), then it can wrongly assert
-+	 * the Mstandby signal too early while there are still some residual OCP
-+	 * transactions ongoing. If this condition occurs, the internal state
-+	 * machine may go to an undefined state and the USB link may be stuck
-+	 * upon the next resume.
-+	 *
-+	 * Workaround:
-+	 * Don't use smart standby; use only force standby,
-+	 * hence HWMOD_SWSUP_MSTANDBY
-+	 */
-+
-+	/* During system boot; If the hwmod framework resets the module
-+	 * the module will have smart idle settings; which can lead to deadlock
-+	 * (above Errata Id:i660); so, dont reset the module during boot;
-+	 * Use HWMOD_INIT_NO_RESET.
-+	 */
-+
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
-+			  HWMOD_INIT_NO_RESET,
-+	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
-+};
+-#ifdef CONFIG_SMP
++#if 0 /* def CONFIG_SMP */
 +
 +/*
-+ * 'usb_tll_hs' class
-+ * usb_tll_hs module is the adapter on the usb_host_hs ports
++ * Currently broken, we need to filter out idle time because the aperf/mperf
++ * ratio measures actual throughput, not capacity. This means that if a logical
++ * cpu idles it will report less capacity and receive less work, which isn't
++ * what we want.
 + */
-+static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.syss_offs	= 0x0014,
-+	.sysc_flags	= (SYSC_HAS_CLOCKACTIVITY | SYSC_HAS_SIDLEMODE |
-+			   SYSC_HAS_ENAWAKEUP | SYSC_HAS_SOFTRESET |
-+			   SYSC_HAS_AUTOIDLE),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
-+};
-+
-+static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
-+	.name = "usb_tll_hs",
-+	.sysc = &omap34xx_usb_tll_hs_sysc,
-+};
-+
-+static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
-+	{ .name = "tll-irq", .irq = 78 },
-+	{ .irq = -1 }
-+};
-+
-+static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
-+	{
-+		.name		= "tll",
-+		.pa_start	= 0x48062000,
-+		.pa_end		= 0x48062fff,
-+		.flags		= ADDR_TYPE_RT
-+	},
-+	{}
-+};
-+
-+static struct omap_hwmod_ocp_if omap34xx_usb_tll_hs__l3_main_2 = {
-+	.master		= &omap34xx_usb_tll_hs_hwmod,
-+	.slave		= &omap3xxx_l3_main_hwmod,
-+	.clk		= "core_l3_ick",
-+	.user		= OCP_USER_MPU,
-+};
-+
-+static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_masters[] = {
-+	&omap34xx_usb_tll_hs__l3_main_2,
-+};
-+
-+static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
-+	.clk		= "usbtll_ick",
-+	.addr		= omap34xx_usb_tll_hs_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
-+	&omap34xx_ick_cfg__usb_tll_hs,
-+};
-+
-+static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
-+	.name		= "usb_tll_hs",
-+	.class		= &omap34xx_usb_tll_hs_hwmod_class,
-+	.clkdm_name	= "l3_init_clkdm",
-+	.mpu_irqs	= omap34xx_usb_tll_hs_irqs,
-+	.main_clk	= "usbtll_fck",
-+	.prcm = {
-+		.omap2 = {
-+			.module_offs = CORE_MOD,
-+			.prcm_reg_id = 3,
-+			.module_bit = OMAP3430ES2_EN_USBTLL_SHIFT,
-+			.idlest_reg_id = 3,
-+			.idlest_idle_bit = OMAP3430ES2_ST_USBTLL_SHIFT,
-+		},
-+	},
-+	.slaves		= omap34xx_usb_tll_hs_slaves,
-+	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
-+	.masters	= omap34xx_usb_tll_hs_masters,
-+	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_masters),
-+	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
-+};
-+
- static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_l3_main_hwmod,
- 	&omap3xxx_l4_core_hwmod,
-@@ -3225,6 +3450,11 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_uart2_hwmod,
- 	&omap3xxx_uart3_hwmod,
- 	&omap3xxx_uart4_hwmod,
-+
-+	/* usb host class */
-+	&omap34xx_usb_host_hs_hwmod,
-+	&omap34xx_usb_tll_hs_hwmod,
-+
- 	/* dss class */
- 	&omap3430es1_dss_core_hwmod,
- 	&omap3xxx_dss_core_hwmod,
--- 
-1.6.0.4
+ 
+ static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
+ 
+
 
