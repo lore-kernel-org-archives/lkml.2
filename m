@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1JKNlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:41:25 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41744 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab1JKNlX (ORCPT
+	id S1754781Ab1JKNlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:41:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47639 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1JKNlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:41:23 -0400
-Date: Tue, 11 Oct 2011 15:41:14 +0200
+	Tue, 11 Oct 2011 09:41:51 -0400
+Date: Tue, 11 Oct 2011 15:41:45 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Li Zefan <lizf@cn.fujitsu.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>,
+        Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
         Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH 10/10] cgroups: Add a task counter subsystem
-Message-ID: <20111011134106.GB16777@somewhere.redhat.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
+Message-ID: <20111011134141.GC16777@somewhere.redhat.com>
 References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
- <1317668832-10784-11-git-send-email-fweisbec@gmail.com>
- <20111006092348.GB28820@shutemov.name>
+ <4E8D500B.5030508@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111006092348.GB28820@shutemov.name>
+In-Reply-To: <4E8D500B.5030508@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 06, 2011 at 12:23:48PM +0300, Kirill A. Shutemov wrote:
-> On Mon, Oct 03, 2011 at 09:07:12PM +0200, Frederic Weisbecker wrote:
-> > Add a new subsystem to limit the number of running tasks,
-> > similar to the NR_PROC rlimit but in the scope of a cgroup.
+On Thu, Oct 06, 2011 at 02:51:55PM +0800, Li Zefan wrote:
+> > Frederic Weisbecker (9):
+> >   cgroups: Add res_counter_write_u64() API
+> >   cgroups: New resource counter inheritance API
+> >   cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
+> >   cgroups: New cancel_attach_task subsystem callback
+> >   cgroups: Ability to stop res charge propagation on bounded ancestor
+> >   res_counter: Allow charge failure pointer to be null
+> >   cgroups: Pull up res counter charge failure interpretation to caller
+> >   cgroups: Allow subsystems to cancel a fork
+> >   cgroups: Add a task counter subsystem
 > > 
-> > The user can set an upper bound limit that is checked every
-> > time a task forks in a cgroup or is moved into a cgroup
-> > with that subsystem binded.
+> > Kirill A. Shutemov (1):
+> >   cgroups: Add res counter common ancestor searching
 > > 
-> > The primary goal is to protect against forkbombs that explode
-> > inside a container. The traditional NR_PROC rlimit is not
-> > efficient in that case because if we run containers in parallel
-> > under the same user, one of these could starve all the others
-> > by spawning a high number of tasks close to the user wide limit.
+> >  Documentation/cgroups/cgroups.txt          |   13 ++-
+> >  Documentation/cgroups/resource_counter.txt |   20 +++-
+> >  Documentation/cgroups/task_counter.txt     |  153 ++++++++++++++++++
+> >  block/blk-cgroup.c                         |   12 +-
+> >  include/linux/cgroup.h                     |   28 +++-
+> >  include/linux/cgroup_subsys.h              |    8 +
+> >  include/linux/res_counter.h                |   27 +++-
+> >  init/Kconfig                               |    9 +
+> >  kernel/Makefile                            |    1 +
+> >  kernel/cgroup.c                            |   58 ++++++--
+> >  kernel/cgroup_freezer.c                    |    9 +-
+> >  kernel/cgroup_task_counter.c               |  239 ++++++++++++++++++++++++++++
+> >  kernel/cpuset.c                            |    6 +-
+> >  kernel/events/core.c                       |    5 +-
+> >  kernel/exit.c                              |    2 +-
+> >  kernel/fork.c                              |    7 +-
+> >  kernel/res_counter.c                       |   97 ++++++++++--
+> >  kernel/sched.c                             |    6 +-
+> >  18 files changed, 644 insertions(+), 56 deletions(-)
+> >  create mode 100644 Documentation/cgroups/task_counter.txt
+> >  create mode 100644 kernel/cgroup_task_counter.c
 > > 
-> > This is a prevention against forkbombs, so it's not deemed to
-> > cure the effects of a forkbomb when the system is in a state
-> > where it's not responsive. It's aimed at preventing from ever
-> > reaching that state and stop the spreading of tasks early.
-> > While defining the limit on the allowed number of tasks, it's
-> > up to the user to find the right balance between the resource
-> > its containers may need and what it can afford to provide.
-> > 
-> > As it's totally dissociated from the rlimit NR_PROC, both
-> > can be complementary: the cgroup task counter can set an upper
-> > bound per container and the rlmit can be an upper bound on the
-> > overall set of containers.
-> > 
-> > Also this subsystem can be used to kill all the tasks in a cgroup
-> > without races against concurrent forks, by setting the limit of
-> > tasks to 0, any further forks can be rejected. This is a good
-> > way to kill a forkbomb in a container, or simply kill any container
-> > without the need to retry an unbound number of times.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Thanks a lot for your acks Kirill!
+Thanks a lot!
