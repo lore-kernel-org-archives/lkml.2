@@ -1,39 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752883Ab1JJIUO (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Mon, 10 Oct 2011 04:20:14 -0400
-Received: from nm27.bullet.mail.bf1.yahoo.com ([98.139.212.186]:42827 "HELO
-        nm27.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with SMTP id S1752705Ab1JJIUN convert rfc822-to-8bit
-        (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 10 Oct 2011 04:20:13 -0400
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Mon, 10 Oct 2011 04:20:12 EDT
+        id S1754736Ab1JKPQu (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Tue, 11 Oct 2011 11:16:50 -0400
+Received: from nm15.bullet.mail.bf1.yahoo.com ([98.139.212.174]:25800 "HELO
+        nm15.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with SMTP id S1750699Ab1JKPQt (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Tue, 11 Oct 2011 11:16:49 -0400
 X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 596434.74750.bm@omp1050.mail.bf1.yahoo.com
-X-YMail-OSG: Pm7tqrEVM1nVVqB3HyaH_G97m.IvhNUojlv2zcLqd7OM7vM
- pjlKRdkQsIK_DQjh38I21QXA2aDFF_5EPlpgU20xTQbGTzEJCOPExgIIG2TP
- fRnFGG48XjWVOb5atGLU5QIe4d845Q5R4VRlGVZ06e4N.80Otrw_oixh2ZJb
- YeYQ5jubUz0uATlGJf4DGcXvM0IQZnmHrkj7kZz_GsRZ37Z_MXQR3R6GEHqm
- 3poKhf0fUxH7H0UL1SScO1xF.P5F2scEb5g3w.17jCeA74W6MF.b5y.cX6_P
- fqxD5FeVoBPY8KDEEEW1wyP8sjWxV4HR55veeSEAdWWM0T53MXRFybqBZr6L
- W4XeTHXvmzVJRQndrAzzQJo88VbR4hS6Q9s1W8j2Op.0ID40wP3gQ5N1wqI7
- uStCAcV_MXsCQx6qRtRtOzOodVddC.WZvNAgsL.iaJ_rgzAhpGK9vhXMEVSB
- oMh.XOKQD6UbW9Jod9KUt6PCVLccoGFY74P2H2d2REe_yEjNuo43Nak.0dfO
- E_WwDzVHyGt_YkI.w8csp
+X-Yahoo-Newman-Id: 688948.44683.bm@omp1054.mail.bf1.yahoo.com
+X-YMail-OSG: 2238apUVM1m7r4CENNEjuzmTjOs5vOoT2_Y4M9ocZS3Aa2o
+ I90FT7Ei2VxX.Ow92XRR4qlprZJOcQkr5EyJ9.pYt1_02ff5CY3MRldxCepp
+ G_1zdNvtKruk2rJakhaWh44EvBo.uXdFL2wBQI22U3LYOZa6BhYL1hBahwcg
+ D_CiW0UTt33GVwRMruQ8z.G69xzc4jDTuYJ1ODBwoVZr.I3fu7lgZ99F7OG3
+ JkFE1iqJk8Mn7_3ET5zLGF_oN.OWcMOEG359r4PcHI3Jm0EI9Lpp2lKmNyOf
+ F_0058UYgqHcPVhAVIa8cmC8IJcmwDVg8But0bo4ebKFe3I9FQsoDbxbNSFs
+ 5Tlb6Lsqz8aRn53kAFT07KmxaKdrzE.dziPrGn5fwDI0LcTnORW_ptnlIoWt
+ GENviQ4XAv9wR0Qcy53mF83HHlCxD9.t5xGkgZSisd5qg0vOyy62j0ONek6o
+ Z2muXMwL3_BI2vgE6RqcNROraR.sEop65MM9UbebrZZyN_OYDDD.1UgyDcFr
+ Rdn8YNQ--
 X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1318234457.25379.yint-ygo-j2me@web161306.mail.bf1.yahoo.com>
-Date: Mon, 10 Oct 2011 01:14:17 -0700 (PDT)
-From: Nagendra Tomar <tomer_iisc@yahoo.com>
+Message-ID: <1318346207.2526.yint-ygo-j2me@web31701.mail.mud.yahoo.com>
+Date: Tue, 11 Oct 2011 08:16:47 -0700 (PDT)
+From: Balbir Singh <balbir_soni@yahoo.com>
 Subject: 
-To: phani@redshiftnetworks.com, ajitkhaparde@gmail.com,
-        ashish.agrawal@lycos.com, prashanth_konkimalla@adaptec.com,
-        krishnanandt@serverengines.com, josh_lehan@adaptec.com,
-        linux-kernel@vger.kernel.org, praveen_madhavan@adaptec.com
+To: vladimir@acm.org, jetdirect@india.hp.com,
+        celestin.john@pearsoned.co.in, xkmonika1@ti.com,
+        ken.dimaggio@csetalent.com, linux-kernel@vger.kernel.org,
+        rkiran@adobe.com, kkiran@secf.com, vikramk@india.hp.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Hi! I’ve found a very nice shop with real cheap meds!.. http://www.joel-robert.fr/sites.friend.php?jSID=62l4
+Real help for you.... http://strapius.sc49.info/com.page.php?zGIS=08g6
