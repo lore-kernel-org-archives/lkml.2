@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1JKJHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:07:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39258 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab1JKJHS (ORCPT
+	id S1753905Ab1JKJIC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:08:02 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:48113 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752612Ab1JKJH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:07:18 -0400
-Subject: Re: sched: ARM: arch_scale_freq_power
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linaro-dev@lists.linaro.org
-In-Reply-To: <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
-References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
-	 <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
-	 <1318319852.14400.65.camel@laptop>
-	 <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 11 Oct 2011 11:13:19 +0200
-Message-ID: <1318324399.14400.71.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Oct 2011 05:07:59 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Andrew Lynn <andrew.lynn@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 4/4] mfd/ab8500-core: expose TurnOnStatus in sysfs
+Date: Tue, 11 Oct 2011 10:49:47 +0200
+Message-ID: <1318322987-11536-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
-> I have several goals. The 1st one is that I need to put more load on
-> some cpus when I have packages with different cpu frequency.
+From: Andrew Lynn <andrew.lynn@stericsson.com>
 
-That should be rather easy.
+Expose TurnOnStatus (Power key, RTC alarm, Vbus detect, etc) in
+sysfs. This magic value can be read by system users to determine
+what caused the platform to turn on last (this) time.
 
-> I also study if I can follow the real cpu frequency but it seems to be
-> not so easy.
+Signed-off-by: Andrew Lynn <andrew.lynn@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Reviewed-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab8500-core.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-Why not?
-
->  I have noticed that the cpu_power is updated periodical
-> except when we have a lot of newly_idle events.
-
-We can certainly fix that.
-
-> Then, I have some use cases which have several running tasks but a low
-> cpu load. In this case, the small tasks are spread on several cpu by
-> the load_balance whereas they could be easily handled by one cpu
-> without significant performance modification. 
-
-That shouldn't be done using cpu_power, we have sched_smt_power_savings
-and sched_mc_power_savings for stuff like that.
-
-Although I would really like to kill all those different
-sched_*_power_savings knobs and reduce it to one.
-
-> If the cpu_power is
-> higher than 1024, the cpu is no more seen out of capacity by the
-> load_balance as soon as a short process is running and teh main result
-> is that the small tasks will stay on the same cpu. This configuration
-> is mainly usefull for ARM dual core system when we want to power gate
-> one cpu. I use cyclictest to simulate such use case. 
-
-Yeah, but that's wrong.
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 41da973..1e91738 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -92,6 +92,8 @@
+ #define AB8500_REV_REG			0x80
+ #define AB8500_SWITCH_OFF_STATUS	0x00
+ 
++#define AB8500_TURN_ON_STATUS		0x00
++
+ /*
+  * Map interrupt numbers to the LATCH and MASK register offsets, Interrupt
+  * numbers are indexed into this array with (num / 8).
+@@ -812,12 +814,40 @@ static ssize_t show_switch_off_status(struct device *dev,
+ 	return sprintf(buf, "%#x\n", value);
+ }
+ 
++/*
++ * ab8500 has turned on due to (TURN_ON_STATUS):
++ * 0x01 PORnVbat
++ * 0x02 PonKey1dbF
++ * 0x04 PonKey2dbF
++ * 0x08 RTCAlarm
++ * 0x10 MainChDet
++ * 0x20 VbusDet
++ * 0x40 UsbIDDetect
++ * 0x80 Reserved
++ */
++static ssize_t show_turn_on_status(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int ret;
++	u8 value;
++	struct ab8500 *ab8500;
++
++	ab8500 = dev_get_drvdata(dev);
++	ret = get_register_interruptible(ab8500, AB8500_SYS_CTRL1_BLOCK,
++		AB8500_TURN_ON_STATUS, &value);
++	if (ret < 0)
++		return ret;
++	return sprintf(buf, "%#x\n", value);
++}
++
+ static DEVICE_ATTR(chip_id, S_IRUGO, show_chip_id, NULL);
+ static DEVICE_ATTR(switch_off_status, S_IRUGO, show_switch_off_status, NULL);
++static DEVICE_ATTR(turn_on_status, S_IRUGO, show_turn_on_status, NULL);
+ 
+ static struct attribute *ab8500_sysfs_entries[] = {
+ 	&dev_attr_chip_id.attr,
+ 	&dev_attr_switch_off_status.attr,
++	&dev_attr_turn_on_status.attr,
+ 	NULL,
+ };
+ 
+-- 
+1.7.3.2
 
