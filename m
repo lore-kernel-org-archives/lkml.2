@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1JKR6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:58:16 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48465 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab1JKR6P (ORCPT
+	id S1755328Ab1JKSOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:14:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54094 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab1JKSOd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:58:15 -0400
-Date: Tue, 11 Oct 2011 23:08:40 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
- thread is singlestepping.
-Message-ID: <20111011173840.GE16268@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com>
- <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com>
- <1317128626.15383.61.camel@twins>
- <20110927131213.GE3685@linux.vnet.ibm.com>
- <20111005180139.GA5704@redhat.com>
- <20111006054710.GB17591@linux.vnet.ibm.com>
- <20111007165828.GA32319@redhat.com>
- <20111010122556.GB16268@linux.vnet.ibm.com>
- <20111010182535.GA6934@redhat.com>
- <20111011172422.GA7878@redhat.com>
+	Tue, 11 Oct 2011 14:14:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:content-transfer-encoding;
+	b=UJji3iF08iMrWXYgrG1CQrCySmzzD1maOhNTknWPhUJ0W+D4FTEc+CbHSy/esIyE1
+	DkdQjKDJaZdL+s86oFwXw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111011172422.GA7878@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111011172019.GI10838@kvack.org>
+References: <20111011165903.GA30976@kroah.com> <20111011165708.466042477@pistachio.kroah.org>
+ <20111011172019.GI10838@kvack.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 11 Oct 2011 12:14:05 -0600
+Message-ID: <CAErSpo6JFTm4y35Nz7aNUgM3ynX52fM1-AwX7OTOwm3cminv1Q@mail.gmail.com>
+Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jon Mason <mason@myri.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > HOWEVER! I simply do not know what should we do if the probed insn
-> > is something like asm("1:; jmp 1b;"). IIUC, in this sstep_complete()
-> > never returns true. The patch also adds the fatal_signal_pending()
-> > check to make this task killlable, but the problem is: whatever we do,
-> > I do not think it is correct to disable/delay the signals in this case.
-> > With any approach.
-> >
-> > What do you think? Maybe we should simply disallow to probe such insns?
-> 
-> Or. Could you explain why we can't simply remove the
-> "if (vaddr == current->utask->xol_vaddr)" check from sstep_complete() ?
+On Tue, Oct 11, 2011 at 11:20 AM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+> Hello Greg,
+>
+> On Tue, Oct 11, 2011 at 10:55:11AM -0600, Greg KH wrote:
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -77,6 +77,8 @@ unsigned long pci_cardbus_mem_size = DEF
+>>  unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+>>  unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
+>>
+>> +enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
+>> +
+>
+> This version of the patch incorrectly defaults to the new performance
+> mode.  Since we haven't even had that code in the 3.1 release yet, I don't
+> think it is suitable for a stable release.  This patch should be revised
+> to a version with default set to safe/don't-touch mode if it is to be
+> included.
 
+It's not obvious that this fits the criteria for -stable
+(Documentation/stable_kernel_rules.txt).
 
-Yes, we could remove the check and rely on just the DIE_DEBUG to say
-that singlestep has occurred. This was mostly needed when we were not
-handling signals on singlestep.
-
-> In some sense, imho this looks more correct for "rep" or jmp/call self.
-> The task will trap again on the same (original) address, and
-> handler_chain() will be called to notify the consumers.
-> 
-> But. I am really, really ignorant in this area, I am almost sure this
-> is not that simple.
-> 
-
-Thats being modest.
-
--- 
-Thanks and Regards
-Srikar
+For example, I can't tell what real problem this fixes.
