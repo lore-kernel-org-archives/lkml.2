@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab1JKRDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:03:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33181 "EHLO mx2.suse.de"
+	id S1755247Ab1JKRDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:03:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33187 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab1JKRDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:03:04 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:10 2011
-Message-Id: <20111011165709.987686550@pistachio.kroah.org>
+	id S1754748Ab1JKRDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:03:10 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:08 2011
+Message-Id: <20111011165708.619251000@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:21 -0600
+Date: Tue, 11 Oct 2011 10:55:12 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [11/38] posix-cpu-timers: Cure SMP wobbles
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [02/38] PCI: export pcie_bus_configure_settings symbol
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,224 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Jon Mason <mason@myri.com>
 
-commit d670ec13178d0fd8680e6742a2bc6e04f28f87d8 upstream.
+commit debc3b778508f59696ff188f0feca271dcbfa7d9 upstream.
 
-David reported:
+pcie_bus_configure_settings needs to be exported if the PCI hotplug
+driver is being compiled as a module.
 
-  Attached below is a watered-down version of rt/tst-cpuclock2.c from
-  GLIBC.  Just build it with "gcc -o test test.c -lpthread -lrt" or
-  similar.
-
-  Run it several times, and you will see cases where the main thread
-  will measure a process clock difference before and after the nanosleep
-  which is smaller than the cpu-burner thread's individual thread clock
-  difference.  This doesn't make any sense since the cpu-burner thread
-  is part of the top-level process's thread group.
-
-  I've reproduced this on both x86-64 and sparc64 (using both 32-bit and
-  64-bit binaries).
-
-  For example:
-
-  [davem@boricha build-x86_64-linux]$ ./test
-  process: before(0.001221967) after(0.498624371) diff(497402404)
-  thread:  before(0.000081692) after(0.498316431) diff(498234739)
-  self:    before(0.001223521) after(0.001240219) diff(16698)
-  [davem@boricha build-x86_64-linux]$
-
-  The diff of 'process' should always be >= the diff of 'thread'.
-
-  I make sure to wrap the 'thread' clock measurements the most tightly
-  around the nanosleep() call, and that the 'process' clock measurements
-  are the outer-most ones.
-
-  ---
-  #include <unistd.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <time.h>
-  #include <fcntl.h>
-  #include <string.h>
-  #include <errno.h>
-  #include <pthread.h>
-
-  static pthread_barrier_t barrier;
-
-  static void *chew_cpu(void *arg)
-  {
-	  pthread_barrier_wait(&barrier);
-	  while (1)
-		  __asm__ __volatile__("" : : : "memory");
-	  return NULL;
-  }
-
-  int main(void)
-  {
-	  clockid_t process_clock, my_thread_clock, th_clock;
-	  struct timespec process_before, process_after;
-	  struct timespec me_before, me_after;
-	  struct timespec th_before, th_after;
-	  struct timespec sleeptime;
-	  unsigned long diff;
-	  pthread_t th;
-	  int err;
-
-	  err = clock_getcpuclockid(0, &process_clock);
-	  if (err)
-		  return 1;
-
-	  err = pthread_getcpuclockid(pthread_self(), &my_thread_clock);
-	  if (err)
-		  return 1;
-
-	  pthread_barrier_init(&barrier, NULL, 2);
-	  err = pthread_create(&th, NULL, chew_cpu, NULL);
-	  if (err)
-		  return 1;
-
-	  err = pthread_getcpuclockid(th, &th_clock);
-	  if (err)
-		  return 1;
-
-	  pthread_barrier_wait(&barrier);
-
-	  err = clock_gettime(process_clock, &process_before);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(my_thread_clock, &me_before);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(th_clock, &th_before);
-	  if (err)
-		  return 1;
-
-	  sleeptime.tv_sec = 0;
-	  sleeptime.tv_nsec = 500000000;
-	  nanosleep(&sleeptime, NULL);
-
-	  err = clock_gettime(th_clock, &th_after);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(my_thread_clock, &me_after);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(process_clock, &process_after);
-	  if (err)
-		  return 1;
-
-	  diff = process_after.tv_nsec - process_before.tv_nsec;
-	  printf("process: before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 process_before.tv_sec, process_before.tv_nsec,
-		 process_after.tv_sec, process_after.tv_nsec, diff);
-	  diff = th_after.tv_nsec - th_before.tv_nsec;
-	  printf("thread:  before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 th_before.tv_sec, th_before.tv_nsec,
-		 th_after.tv_sec, th_after.tv_nsec, diff);
-	  diff = me_after.tv_nsec - me_before.tv_nsec;
-	  printf("self:    before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 me_before.tv_sec, me_before.tv_nsec,
-		 me_after.tv_sec, me_after.tv_nsec, diff);
-
-	  return 0;
-  }
-
-This is due to us using p->se.sum_exec_runtime in
-thread_group_cputime() where we iterate the thread group and sum all
-data. This does not take time since the last schedule operation (tick
-or otherwise) into account. We can cure this by using
-task_sched_runtime() at the cost of having to take locks.
-
-This also means we can (and must) do away with
-thread_group_sched_runtime() since the modified thread_group_cputime()
-is now more accurate and would deadlock when called from
-thread_group_sched_runtime().
-
-Aside of that it makes the function safe on 32 bit systems. The old
-code added t->se.sum_exec_runtime unprotected. sum_exec_runtime is a
-64bit value and could be changed on another cpu at the same time.
-
-Reported-by: David Miller <davem@davemloft.net>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1314874459.7945.22.camel@twins
-Tested-by: David Miller <davem@davemloft.net>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Jon Mason <mason@myri.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/sched.h     |    1 -
- kernel/posix-cpu-timers.c |    5 +++--
- kernel/sched.c            |   24 ------------------------
- 3 files changed, 3 insertions(+), 27 deletions(-)
+ drivers/pci/probe.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1937,7 +1937,6 @@ static inline void disable_sched_clock_i
- 
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
--extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
- 
- /* sched_exec is called by processes performing an exec */
- #ifdef CONFIG_SMP
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -250,7 +250,7 @@ void thread_group_cputime(struct task_st
- 	do {
- 		times->utime = cputime_add(times->utime, t->utime);
- 		times->stime = cputime_add(times->stime, t->stime);
--		times->sum_exec_runtime += t->se.sum_exec_runtime;
-+		times->sum_exec_runtime += task_sched_runtime(t);
- 	} while_each_thread(tsk, t);
- out:
- 	rcu_read_unlock();
-@@ -312,7 +312,8 @@ static int cpu_clock_sample_group(const
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched = thread_group_sched_runtime(p);
-+		thread_group_cputime(p, &cputime);
-+		cpu->sched = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3713,30 +3713,6 @@ unsigned long long task_sched_runtime(st
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1471,6 +1471,7 @@ void pcie_bus_configure_settings(struct
+ 	pcie_bus_configure_set(bus->self, &smpss);
+ 	pci_walk_bus(bus, pcie_bus_configure_set, &smpss);
  }
++EXPORT_SYMBOL_GPL(pcie_bus_configure_settings);
  
- /*
-- * Return sum_exec_runtime for the thread group.
-- * In case the task is currently running, return the sum plus current's
-- * pending runtime that have not been accounted yet.
-- *
-- * Note that the thread group might have other running tasks as well,
-- * so the return value not includes other pending runtime that other
-- * running tasks might have.
-- */
--unsigned long long thread_group_sched_runtime(struct task_struct *p)
--{
--	struct task_cputime totals;
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns;
--
--	rq = task_rq_lock(p, &flags);
--	thread_group_cputime(p, &totals);
--	ns = totals.sum_exec_runtime + do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
--/*
-  * Account user cpu time to a process.
-  * @p: the process that the cpu time gets accounted to
-  * @cputime: the cpu time spent in user space since the last update
+ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+ {
 
 
