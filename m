@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab1JKV4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:56:55 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:29224 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751011Ab1JKV4y (ORCPT
+	id S1751414Ab1JKV7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:59:38 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54924 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751348Ab1JKV7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:56:54 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAN24lE55LabZ/2dsb2JhbABDqC2BBoFTAQEFJxMcIxAIAxguFCUDIROIBbggAw6GXWEEnFeJBA
-Date: Wed, 12 Oct 2011 08:56:49 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Sage Weil <sage@newdream.net>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, ceph-devel@vger.kernel.org,
-        rwheeler@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: add d_prune dentry operation
-Message-ID: <20111011215649.GB3159@dastard>
-References: <1317875170-9349-1-git-send-email-sage@newdream.net>
- <1317875170-9349-2-git-send-email-sage@newdream.net>
- <20111006212118.GA24109@infradead.org>
- <Pine.LNX.4.64.1110061507550.29500@cobra.newdream.net>
- <20111010051141.GV3159@dastard>
- <Pine.LNX.4.64.1110100850020.26361@cobra.newdream.net>
- <20111010162115.GB751@infradead.org>
- <Pine.LNX.4.64.1110110838500.32350@cobra.newdream.net>
+	Tue, 11 Oct 2011 17:59:36 -0400
+Message-ID: <4E94BC46.5080505@xenotime.net>
+Date: Tue, 11 Oct 2011 14:59:34 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1110110838500.32350@cobra.newdream.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrei Warkentin <awarkentin@vmware.com>
+CC: Namjae Jeon <linkinjeon@gmail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next:
+ Tree for Oct 11 (mmc))
+References: <1172297901.46681.1318361517579.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <1172297901.46681.1318361517579.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 08:39:24AM -0700, Sage Weil wrote:
-> On Mon, 10 Oct 2011, Christoph Hellwig wrote:
-> > On Mon, Oct 10, 2011 at 09:19:43AM -0700, Sage Weil wrote:
-> > > Let me know if the below is clearer.  The requirement is that ->d_prune be 
-> > > called prior to unhashing (and then destroying) a victim dentry.  I'm a 
-> > > little worried about mixing that in with the lru helpers because it is 
-> > > only indirectly related to whether the dentry is on the LRU, and that may 
-> > > confuse people.  A cleaned up opencoded patch is here:
-> > > 
-> > > 	https://github.com/NewDreamNetwork/ceph-client/commit/784a6aa6dc7baf2069c40988d79130dba17c7068
-> > > 
-> > > and the updated dentry_lru_prune() wrapper version is below.
-> > 
-> > Long term what I really want is a helper for doing more of the real
-> > removal in single place.  This is one step towards it, and the series
-> > from Dave is another.
+On 10/11/11 12:31, Andrei Warkentin wrote:
+> Hi Randy,
 > 
-> Ah, makes sense.
+> ----- Original Message -----
+>> From: "Randy Dunlap" <rdunlap@xenotime.net>
+>> To: "Stephen Rothwell" <sfr@canb.auug.org.au>
+>> Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris Ball"
+>> <cjb@laptop.org>
+>> Sent: Tuesday, October 11, 2011 2:49:39 PM
+>> Subject: Re: linux-next: Tree for Oct 11 (mmc)
+>>
+>> On 10/11/11 02:11, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> The linux-next tree is now available from
+>>> git://github.com/sfrothwell/linux-next.git as a temporary measure
+>>> while
+>>> the kernel.org servers are unavailable.
+>>>
+>>> It may also turn up on git.kernel.org (depending on the mirroring).
+>>>  The
+>>> patch set is still absent, however.
+>>>
+>>> Changes since 20111007:
+>>
+>>
+>> When CONFIG_BLOCK is not enabled:
+>>
+>> In file included from
+>> next-2011-1011/drivers/mmc/card/sdio_uart.c:43:0:
+>> next-2011-1011/include/linux/mmc/card.h:175:12: error:
+>> 'DISK_NAME_LEN' undeclared here (not in a function)
+>>
+>> Deleting the #include <linux/mmc/card.h> fixes the sdio_uart.c build.
+>> However, the same problem occurs in mmc/core/core.c:
+>>
 > 
-> Dave, is the revised patch more clear?  
+> Because linux/genhd is now included, oops. I'm pretty positive this is due to the "mmc : general purpose partition support" patch pulled recently. I am adding NamJae, who was the author.
+> 
+>> In file included from next-2011-1011/drivers/mmc/core/core.c:30:0:
+>> next-2011-1011/include/linux/mmc/card.h:175:12: error:
+>> 'DISK_NAME_LEN' undeclared here (not in a function)
+>>
+>> Should mmc/core/ depend on BLOCK?  or should it just be made
+>> to build even when BLOCK is not enabled?
+>>
+> 
+> I don't think there should be a direct dependency on BLOCK. I have two suggestions -
+> 1) Have our own define similar to (and in fact smaller):
+>    linux/genhd.h:#define DISK_NAME_LEN                     32
+> 2) Put the MMC physical partition code under an #ifdef CONFIG_BLOCK, which is a reasonable
+>    proposition, given that there wouldn't be any need to parse physical partition info if
+>    it would never be consumed by the MMC block driver.
+> 
+> Thoughts?
 
-Yeah, I kind of understand what it is doing now, and the comments
-will remind me when I start digging in this code again. Thanks.
+Agreed on part 2).  Do part 1) if it is required, but it's usually better
+not to duplicate constants or structs etc.
+IOW, can DISK_NAME_LEN in linux/genhd.h be exposed even when CONFIG_BLOCK
+is not enabled?
 
-Cheers,
 
-Dave.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
