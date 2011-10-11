@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab1JKOQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 10:16:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44736 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754767Ab1JKOQe (ORCPT
+	id S1754807Ab1JKORM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 10:17:12 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:51783 "EHLO
+	homiemail-a40.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753496Ab1JKORL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 10:16:34 -0400
-Date: Tue, 11 Oct 2011 15:16:31 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: Writing register default value for the reset
-	register
-Message-ID: <20111011141631.GA5323@opensource.wolfsonmicro.com>
-References: <1318326900.3526.2.camel@phoenix> <20111011123305.GA2899@opensource.wolfsonmicro.com> <20111011133118.GB3471@opensource.wolfsonmicro.com>
+	Tue, 11 Oct 2011 10:17:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=HuAZPcR4Lvz9y5DYx3vxRGmAjPzWd0ugdGSbeQOe9O4WazkJxY95H9vdHfXN7
+	Y7gFD4wnpQIw98PyHvl5yDfzOkKOOQr92qs3/W9MpRCw83I8zIIifVMwnBsPsRHV
+	AYWVBr8frAwiRECtBebC05Hp5N7nXy6N13qFa2/Of9hyA0=
+Message-ID: <4E944FD1.8030302@shealevy.com>
+Date: Tue, 11 Oct 2011 10:16:49 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011133118.GB3471@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: linux-kernel@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Alban Crequy <alban.crequy@collabora.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davide Libenzi <davidel@xmailserver.org>, netdev@vger.kernel.org
+Subject: Re: Hang with "runaway loop modprobe net-pf-1" on Linux 3.0.4
+References: <7ca3debde28dcc206c1f6f787df5c619.squirrel@webmail.shealevy.com> <4E877A22.6070605@shealevy.com>
+In-Reply-To: <4E877A22.6070605@shealevy.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 02:31:18PM +0100, Mark Brown wrote:
-> On Tue, Oct 11, 2011 at 01:33:05PM +0100, Dimitris Papastamos wrote:
-> > On Tue, Oct 11, 2011 at 05:55:00PM +0800, Axel Lin wrote:
-> > > The WM8983 can be reset by performing a write of any value to
-> > > the software reset register.
-> 
-> > > -	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0x8983);
-> > > +	ret = snd_soc_write(codec, WM8983_SOFTWARE_RESET, 0);
-> 
-> > We should probably just handle the reset register specially during
-> > resume.
-> 
-> I really don't think it's worth the code complexity to add special
-> handling like that, this is a trivial patch which avoids the need for
-> any extra infrastructure.
+On 10/1/11 4:37 PM, Shea Levy wrote:
+> On 09/29/2011 08:38 AM, shea@shealevy.com wrote:
+>> Hello,
+>>
+>> My initrd mounts /proc and /sys, puts a tmpfs at /dev, then loads 
+>> ext4. On
+>> 2.6.39 (and earlier), this works fine and the initrd init continues
+>> happily. On 3.0.4, however, the kernel spits out
+>>
+>>> request_module: runaway loop modprobe net-pf-1
+>> a few times then hangs. If I drop into a shell before loading ext4 
+>> and run
+>> modprobe unix, the same problem occurs. The modprobe used is dynamically
+>> linked with glibc (which is included in the initrd), and it is the same
+>> modprobe on the working and non-working systems. From my searches, it
+>> appears that CONFIG_UNIX=y instead of =m would probably solve this
+>> problem, but I'd rather keep it as a module if it's possible to get it
+>> working. What's going wrong here? Why does it work on 2.6.39 but not
+>> 3.0.4?
+>>
+>> Regards,
+>> Shea Levy
+>>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> CC'ing af_unix.c maintainers. Also, I had the same problem with 3.0.
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+This ended up being a problem with how my distro builds its initrd, 
+sorry for the noise.
 
-Aw I thought this code was using the old style open coded syncing
-functions, which would be trivial and perhaps idiomatic to simply
-check for the reset register and continue.
-
-Thanks,
-Dimitris
+For the curious: The problem had to do with moving the depmod logic out 
+of the main Makefile and into scripts/depmod.sh. My distro doesn't use a 
+single global directory for all modules, so we needed to remove the '-b 
+"$INSTALL_MOD_PATH"' from the depmod command that's run after module 
+installation. We did this with a sed on the Makefile, which was a noop 
+once that code was moved into a different file.
