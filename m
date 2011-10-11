@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1JKGTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 02:19:34 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47671 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1JKGTb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 02:19:31 -0400
-Date: Tue, 11 Oct 2011 08:19:23 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@Calva.COM,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle freeze
- events
-Message-ID: <20111011061923.GC1377@ucw.cz>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
- <1317210761-11518-4-git-send-email-jlayton@redhat.com>
+	id S1752619Ab1JKGYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:24:43 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53458 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751819Ab1JKGYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 02:24:42 -0400
+Date: Tue, 11 Oct 2011 08:22:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [3.1 patch] x86: default to vsyscall=native
+Message-ID: <20111011062253.GA3589@elte.hu>
+References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
+ <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
+ <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
+ <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
+ <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
+ <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
+ <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
+ <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
+ <20111010114840.GC17079@elte.hu>
+ <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1317210761-11518-4-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2011-09-28 07:52:40, Jeff Layton wrote:
-> Allow the wait_on_bit_killable sleeps in SUNRPC layer to respect the
-> freezer. This should allow suspend and hibernate events to occur, even
-> when there are RPC's pending on the wire.
 
-Will the RPC protocols used handle that correctly? What will happen
-during resume?
+* Andrew Lutomirski <luto@mit.edu> wrote:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> > Andrew?
+> 
+> I think I know what the root cause is and I have most of a patch to 
+> fix it.  It doesn't compile (yet), it's a little less trivial than 
+> I'd like for something this late in the -rc cycle, and it adds 16 
+> bytes to thread_struct (ugh!).
+> 
+> I think I can make a follow-up patch that removes 32 bytes of 
+> per-thread state to restore my karma, though, but that will 
+> definitely not be 3.1 material.
+
+Ok, i've queued up the vsyscall=native patch in tip:x86/urgent for 
+now - we can re-try in v3.2 (perhaps) if a satisfactory solution is 
+found.
+
+Thanks,
+
+	Ingo
