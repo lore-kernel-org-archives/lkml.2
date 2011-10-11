@@ -1,255 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab1JKQDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:03:22 -0400
+	id S1755097Ab1JKQDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:03:32 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:32878 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab1JKQDU convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755081Ab1JKQDb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:03:20 -0400
+	Tue, 11 Oct 2011 12:03:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1110111010210.2177-100000@iolanthe.rowland.org>
-References: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1110111010210.2177-100000@iolanthe.rowland.org>
-Date: Tue, 11 Oct 2011 21:33:18 +0530
-Message-ID: <CADDb1s0EqcNHZ7onpMiyj+XqQCEx_vjF_yrpX1neA7_G9o2Axw@mail.gmail.com>
-Subject: Re: [Patch] SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal
- routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        NamJae Jeon <linkinjeon@gmail.com>
+In-Reply-To: <1318328848.8395.45.camel@twins>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+	<CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+	<1318319852.14400.65.camel@laptop>
+	<CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
+	<1318324399.14400.71.camel@laptop>
+	<CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
+	<1318328848.8395.45.camel@twins>
+Date: Tue, 11 Oct 2011 18:03:30 +0200
+Message-ID: <CAKfTPtDgKcTucAR-YW27boAeUu1Ur6Txw6hLm3B48jw+sgEUOw@mail.gmail.com>
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 7:49 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Tue, 11 Oct 2011, Amit Sahrawat wrote:
->
->> SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
+On 11 October 2011 12:27, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-10-11 at 11:40 +0200, Vincent Guittot wrote:
+>> On 11 October 2011 11:13, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> > On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
+>> >> I have several goals. The 1st one is that I need to put more load on
+>> >> some cpus when I have packages with different cpu frequency.
+>> >
+>> > That should be rather easy.
+>> >
 >>
->> It has been observed that a number of USB HDD's do not respond correctly
->> to SCSI mode sense command(retrieve caching pages) which results in their
->> Write Cache being discarded by queue requests i.e., WCE if left set to
->> '0'(disabled). So, in order to identify the devices correctly - give it
->> a last try using SG_ATA_16 after failure from normal routine.
->>
->> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
->>
->> diff -Nurp linux-Orig/drivers/scsi/sd.c linux-Updated/drivers/scsi/sd.c
->> --- linux-Orig/drivers/scsi/sd.c      2011-10-11 11:02:48.000000000 +0530
->> +++ linux-Updated/drivers/scsi/sd.c   2011-10-11 11:10:09.000000000 +0530
->> @@ -56,6 +56,7 @@
->>  #include <asm/uaccess.h>
->>  #include <asm/unaligned.h>
->>
->> +#include <scsi/sg.h>
->>  #include <scsi/scsi.h>
->>  #include <scsi/scsi_cmnd.h>
->>  #include <scsi/scsi_dbg.h>
->> @@ -134,6 +135,58 @@ static const char *sd_cache_types[] = {
->>       "write back, no read (daft)"
->>  };
->>
->> +/* Relevant Structure and Function to be used to Retrieve
->> + * Caching Information from USB HDD - this is picked from
->> + * source code of 'hdparm'
->> + *
->> + *
->> + * Definitions and structures for use with SG_IO + ATA_16:
->> + * */
->> +#define SG_ATA_16               0x85
->> +#define SG_ATA_16_LEN           16
->> +
->> +#define ATA_OP_IDENTIFY              0xec
->> +
->> +/*
->> + * Some useful ATA register bits
->> + */
->> +enum {
->> +        ATA_USING_LBA           = (1 << 6),
->> +        ATA_STAT_DRQ            = (1 << 3),
->> +        ATA_STAT_ERR            = (1 << 0),
->> +};
->> +
->> +struct ata_lba_regs {
->> +        __u8    feat;
->> +        __u8    nsect;
->> +        __u8    lbal;
->> +        __u8    lbam;
->> +        __u8    lbah;
->> +};
->> +struct ata_tf {
->> +        __u8                    dev;
->> +        __u8                    command;
->> +        __u8                    error;
->> +        __u8                    status;
->> +        __u8                    is_lba48;
->> +        struct ata_lba_regs     lob;
->> +        struct ata_lba_regs     hob;
->> +};
+>> I agree, I was mainly wondering If I should use a [1-1024] or a
+>> [1024-xxxx] range and it seems that both can be used according : SMT
+>> uses <1024 and x86 turbo mode uses >1024
 >
-> Don't these things already exist in some standard header file?  If not,
-> shouldn't they be added in a more central location?
->
->> +__u64 tf_to_lba (struct ata_tf *tf)
->> +{
->> +        __u32 lba24, lbah;
->> +        __u64 lba64;
->> +
->> +        lba24 = (tf->lob.lbah << 16) | (tf->lob.lbam << 8) | (tf->lob.lbal);
->> +        if (tf->is_lba48)
->> +                lbah = (tf->hob.lbah << 16) | (tf->hob.lbam << 8) |
->> (tf->hob.lbal);
->> +        else
->> +                lbah = (tf->dev & 0x0f);
->> +        lba64 = (((__u64)lbah) << 24) | (__u64)lba24;
->> +        return lba64;
->> +}
->> +
->>  static ssize_t
->>  sd_store_cache_type(struct device *dev, struct device_attribute *attr,
->>                   const char *buf, size_t count)
->> @@ -1839,6 +1892,18 @@ sd_read_cache_type(struct scsi_disk *sdk
->>       int old_rcd = sdkp->RCD;
->>       int old_dpofua = sdkp->DPOFUA;
->>
->> +     struct ata_tf tf;
->> +     struct sg_io_hdr io_hdr;
->> +     unsigned char cdb[SG_ATA_16_LEN] = {0};
->> +     unsigned char sb[32] = {0};
->> +     unsigned char buf[512] = {0};
->
-> Arrays generally should not have static initializers.  Also, a 512-byte
-> array is too large to allocate on the stack.  And there's already a
-> 512-byte array available -- it's named "buffer".
->
->> +     unsigned short wce_word = 0;
->
-> There's no reason to initialize this variable.
->
->> +     void *data_cmd = buf;
->
-> Why do you need to alias a perfectly good variable?
->
->> +
->> +     memset(cdb, 0, SG_ATA_16_LEN);
->> +     memset(&tf, 0, sizeof(struct ata_tf));
->> +     memset(&io_hdr, 0, sizeof(struct sg_io_hdr));
->
-> There's no point initializing these things before you know that they
-> will be used.
->
->> +
->>         first_len = 4;
->>         if (sdp->skip_ms_page_8) {
->>                 if (sdp->type == TYPE_RBC)
->> @@ -1961,7 +2026,6 @@ Page_found:
->>                                 sdkp->DPOFUA ? "supports DPO and FUA"
->>                                 : "doesn't support DPO or FUA");
->>
->> -             return;
->>       }
->>
->>  bad_sense:
->> @@ -1974,8 +2038,64 @@ bad_sense:
->>               sd_printk(KERN_ERR, sdkp, "Asking for cache data failed\n");
->>
->>  defaults:
->> -     sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
->> -     sdkp->WCE = 0;
->> +     if (sdkp->WCE)
->> +             return;
->> +     else {
->> +             sd_printk(KERN_ERR, sdkp, "Normal Routine Failed: Trying ATA_16\n");
->
-> Instead of adding an awful lot of code inside an "else" clause, it
-> would be better to put this into its own subroutine.
->
->> +
->> +             /* The below are necessary parameters which are to set - in order
->> +             to make use of ATA_OP_IDENTIFY command */
->> +             tf.lob.lbal = 0;
->> +             tf.lob.lbam = 0;
->> +             tf.lob.lbah = 0;
->> +             tf.lob.nsect = 1; //Number of Sectors to Read
->> +             tf.lob.feat = 0;
->> +
->> +             /* Command Descriptor Block For SCSI    */
->> +             cdb[0] = SG_ATA_16;
->> +             cdb[1] = 0x08;
->> +             cdb[2] = 0x0e;
->> +             cdb[6] = 0x01; //No. of Sectors To Read
->> +             cdb[13] = ATA_USING_LBA;
->> +             cdb[14] = ATA_OP_IDENTIFY;
->> +
->> +             io_hdr.cmd_len = SG_ATA_16_LEN;
->> +             io_hdr.interface_id = SG_INTERFACE_ID_ORIG;
->> +             io_hdr.mx_sb_len= sizeof(sb);
->> +             io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
->> +             io_hdr.dxfer_len = sizeof(buf);
->> +             io_hdr.dxferp = data_cmd;
->> +             io_hdr.cmdp = cdb;
->> +             io_hdr.sbp = sb;
->> +             io_hdr.pack_id = tf_to_lba(&tf);
->> +             io_hdr.timeout = 0;
->> +
->> +             if (!scsi_cmd_ioctl(sdkp->disk->queue, sdkp->disk,
->> O_RDONLY|O_NONBLOCK, SG_IO, &io_hdr))
->
-> Do you really need to do an ioctl?  Why not call scsi_execute_req()
-> directly?
->
->> +             {
->> +#if 0
->> +#define DUMP_BYTES_BUFFER(x...) printk( x )
->> +                     int i;
->> +                     for (i = 0; i < 32; i++)
->> +                             DUMP_BYTES_BUFFER(" %02x", sb[i]);
->> +                     DUMP_BYTES_BUFFER("\n");
->> +                     for (i = 0; i < 512; i++)
->> +                             DUMP_BYTES_BUFFER(" %02x", buf[i]);
->> +                     DUMP_BYTES_BUFFER("\n");
->> +                     printk(KERN_ERR"82 - [0x%x], 85 -
->> [0x%x]\n",((unsigned short*)data_cmd)[82],((unsigned
->> short*)data_cmd)[85]);
->> +#endif
->
-> For the final patch submission, of course this section should be
-> removed.
->
->> +                     /* '6th' Bit in Word 85 Corresponds to Write Cache being Enabled/disabled*/
->> +                     wce_word = le16_to_cpu(((unsigned short*)data_cmd)[85]);
->> +                     if (wce_word & 0x20) {
->> +                             sdkp->WCE = 1;
->> +                             sd_printk(KERN_NOTICE, sdkp, "Write Cache Enabled
->> after ATA_16 response\n");
->> +                     } else
->> +                             goto write_through;
->> +             } else {
->> +write_through:
->> +                     sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
->> +                     sdkp->WCE = 0;
->> +             }
->> +     }
->>       sdkp->RCD = 0;
->>       sdkp->DPOFUA = 0;
->>  }
->
-> Besides the potential problems raised by other people, these structural
-> weaknesses in the patch should be fixed.
->
-> Alan Stern
->
+> Well, turbo mode would typically only boost a cpu 25% or so, and only
+> while idling other cores to keep under its thermal limit. So its not
+> sufficient to actually affect the capacity calculation much if at all.
 >
 
-Thanks Alan for the thorough review, I will consider all your points.
-Also, will try and make use of scsi_execute_req() instead of ioctl().
+OK
 
-Regards,
-Amit Sahrawat
+>> >> Then, I have some use cases which have several running tasks but a low
+>> >> cpu load. In this case, the small tasks are spread on several cpu by
+>> >> the load_balance whereas they could be easily handled by one cpu
+>> >> without significant performance modification.
+>> >
+>> > That shouldn't be done using cpu_power, we have sched_smt_power_savings
+>> > and sched_mc_power_savings for stuff like that.
+>> >
+>>
+>> sched_mc_power_saving works fine when we have more than 2 cpus but
+>> can't apply on a dual core because it needs at least 2 sched_groups
+>> and the nr_running of these sched_groups must be higher than 0 but
+>> smaller than group_capacity which is 1 on a dual core system.
+>
+> SD_POWERSAVINGS_BALANCE does /=2 to nr_running, effectively doubling the
+> capacity iirc. And I know some IBM dudes were toying with the idea of
+> playing tricks with the capacity numbers, but that never went anywhere.
+>
+
+yes but it's only a special case for 2 tasks on a dual core and the
+SD_WAKE_AFFINE flag and cpu_idle_sibling can overwrite this decision.
+
+>> > Although I would really like to kill all those different
+>> > sched_*_power_savings knobs and reduce it to one.
+>> >
+>> >> If the cpu_power is
+>> >> higher than 1024, the cpu is no more seen out of capacity by the
+>> >> load_balance as soon as a short process is running and teh main result
+>> >> is that the small tasks will stay on the same cpu. This configuration
+>> >> is mainly usefull for ARM dual core system when we want to power gate
+>> >> one cpu. I use cyclictest to simulate such use case.
+>> >
+>> > Yeah, but that's wrong.
+>>
+>> That's the only way I have found to gathers small task without any
+>> relationship on one cpu. Do you know any better solution ?
+>
+> How do you know the task is 'small' ?
+>
+
+I want to use cpufreq to be notified that we have a large/small cpu
+load. If we have several tasks but the cpu uses the lowest frequency,
+it "should" mean that we have small tasks that are running (less than
+20ms*95% of added duration) and we could gather them on one cpu (by
+increasing the cpu_power on a dual core).
+
+> For that you would need to track a time-weighted effective load average
+> of the task and we don't have that.
+>
+
+yes, that's why I use cpufreq until better option, like a
+time-weighted load average, is available
+
+> [ how bad is all this u64 math on ARM btw? and when will ARM finally
+>  agree all this 32bit nonsense is a waste of time and silicon? ]
+>
+> But yeah, the whole nr_running vs capacity thing was traditionally to
+> deal with spreading single tasks around. And traditional power aware
+> scheduling was mostly about packing those on sockets (keeps other
+> sockets idle) instead of spreading them around sockets (optimizes
+> cache).
+>
+> Now I wouldn't at all mind you ripping out all that
+> sched_*_power_savings crap and replacing it, I doubt it actually works
+> anyway. I haven't got many patches on the subject, and I know I don't
+> have the equipment to measure power usage.
+>
+> Also, the few patches I got mostly made the sched_*_power_savings mess
+> bigger, which I refuse to do (what sysad wants to have a 27-state space
+> to configure his power aware scheduling). This has mostly made people go
+> away instead of fixing things up :-(
+>
+> As to what the replacement would have to look like, dunno, its not
+> something I've really thought much about, but maybe the time-weighted
+> stuff is the only sane approach, that combined with options on how to
+> spread tasks (core, socket, node, etc..).
+>
+> I really think changing the load-balancer is the right way to go about
+> solving your power issue (hot-plugging a cpu really is an insane way to
+> idle a core) and I'm open to discussing what would work for you.
+>
+
+Great. My 1st goal was not to modify the load-balancer and sched_mc
+(or as less as possible) and to study how I could tune the scheduler
+parameters to have the best power consumption on ARM platform. Now,
+changing the load-balancer is probably a better solution.
+
+> All I really ask is to not cobble something together, the load-balancer
+> is a horridly complex thing already and the last thing it needs is more
+> special cases that don't interact properly.
+>
+>
+>
