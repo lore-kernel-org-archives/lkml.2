@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab1JKHJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:09:38 -0400
-Received: from smtp2.infineon.com ([217.10.60.23]:10131 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1JKHJh (ORCPT
+	id S1751473Ab1JKHQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:16:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43056 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1JKHQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:09:37 -0400
-X-SBRS: None
-From: <Peter.Huewe@infineon.com>
-To: <a.miskiewicz@gmail.com>, <stefanb@linux.vnet.ibm.com>
-CC: <m.selhorst@sirrix.com>, <tpmdd-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: RE: [tpmdd-devel] Linux 3.1-rc9
-Thread-Topic: [tpmdd-devel] Linux 3.1-rc9
-Thread-Index: AQHMhsU9m74BwT4/7k65B/XioNR54ZV0ubOAgADpEQCAAAvlAIAABIcAgAAJ4ICAAPzEoA==
-Date: Tue, 11 Oct 2011 07:09:31 +0000
-Message-ID: <74A44E99E3274B4CB570415926B37D440732DB@MUCSE501.eu.infineon.com>
-References: <CA+55aFxPNszU5UHFrDDYnshLEMupaviFwhgEsgmPkqpmuWNZ8A@mail.gmail.com>
-	<201110101905.52769.a.miskiewicz@gmail.com>
-	<4E9329BC.8030704@linux.vnet.ibm.com>
- <201110101957.25322.a.miskiewicz@gmail.com>
-In-Reply-To: <201110101957.25322.a.miskiewicz@gmail.com>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.8.248]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 11 Oct 2011 03:16:09 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+Date: Tue, 11 Oct 2011 12:46:07 +0530
+Message-ID: <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9B79ji0028582
 
------Original Message-----
-From: Arkadiusz MiÅ›kiewicz [mailto:a.miskiewicz@gmail.com]
->> I guess the BIOS seems not to be initializing the TPM correctly. Any
->> chance you can get a hold of a BIOS update for your machine?
+Adding Peter to the discussion..
 
-> Then I looked into bios options on this thinkpad t400 and there are 3 possible
-> TPM settings: Enabled, Invisible, Disabled.
+On Thu, Oct 6, 2011 at 5:06 PM, Vincent Guittot
+<vincent.guittot@linaro.org> wrote:
+> I work to link the cpu_power of ARM cores to their frequency by using
+> arch_scale_freq_power. It's explained in the kernel that cpu_power is
+> used to distribute load on cpus and a cpu with more cpu_power will
+> pick up more load. The default value is SCHED_POWER_SCALE and I
+> increase the value if I want a cpu to have more load than another one.
+> Is there an advised range for cpu_power value as well as some time
+> scale constraints for updating the cpu_power value ?
+> I'm also wondering why this scheduler feature is currently disable by default ?
+>
+> Regards,
+> Vincent
 
-> Invisible is - visible but not working - according to bios help. No idea why
-> such option exists but I had it enabled.
-
-> I guess there is some way to make "Invisible" mode properly handled in Linux,
-> too.
-
-Invisible here probably means that the bios simply does not send a TPM_Startup which is needed to get the TPM running.
-(and maybe it even let's physical presence untouched too).
-If the driver would send a TPM_Startup(STATE) (which usually should not cause any problems, since if you send it twice the second one simply gets 'ignored' with a "invalid postinit" return code)
-the tpm would probably work in the invisible case too.
-
-
-Thanks,
-Peter
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+In discussions with Vincent regarding this, I've wondered whether
+cpu_power wouldn't be better renamed to cpu_capacity since that is
+what it really seems to describe.
