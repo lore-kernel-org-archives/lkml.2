@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1JKRHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:07:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33664 "EHLO mx2.suse.de"
+	id S1755565Ab1JKRHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:07:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33691 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab1JKRHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:07:00 -0400
+	id S1755553Ab1JKRHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:07:04 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:11 2011
-Message-Id: <20111011165711.046792794@pistachio.kroah.org>
+Message-Id: <20111011165711.199285973@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:28 -0600
+Date: Tue, 11 Oct 2011 10:55:29 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexander.deucher@amd.com>,
-        Brad Campbell <lists2009@fnarfbargle.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [18/38] drm/radeon/kms: add retry limits for native DP aux defer
+Subject: [19/38] drm/radeon/kms: fix channel_remap setup (v2)
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,81 +28,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6375bda073724ead7df08746866b724b1799a295 upstream.
+commit 12d5180bd7e683a4ae80830b82ba67e7b7fac7b2 upstream.
 
-The previous code could potentially loop forever.  Limit
-the number of DP aux defer retries to 4 for native aux
-transactions, same as i2c over aux transactions.
+Most asics just use the hw default value which requires
+no explicit programming.  For those that need a different
+value, the vbios will program it properly.  As such,
+there's no need to program these registers explicitly
+in the driver.  Changing MC_SHARED_CHREMAP requires a reload
+of all data in vram otherwise its contents will be scambled.
 
-Noticed by: Brad Campbell <lists2009@fnarfbargle.com>
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=40103
+
+v2: drop now unused channel_remap functions.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Brad Campbell <lists2009@fnarfbargle.com>
+Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |   44 -------------------------------
+ drivers/gpu/drm/radeon/ni.c        |   32 -----------------------
+ drivers/gpu/drm/radeon/rv770.c     |   51 -------------------------------------
+ 3 files changed, 127 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -115,6 +115,7 @@ static int radeon_dp_aux_native_write(st
- 	u8 msg[20];
- 	int msg_bytes = send_bytes + 4;
- 	u8 ack;
-+	unsigned retry;
- 
- 	if (send_bytes > 16)
- 		return -1;
-@@ -125,20 +126,20 @@ static int radeon_dp_aux_native_write(st
- 	msg[3] = (msg_bytes << 4) | (send_bytes - 1);
- 	memcpy(&msg[4], send, send_bytes);
- 
--	while (1) {
-+	for (retry = 0; retry < 4; retry++) {
- 		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
- 					    msg, msg_bytes, NULL, 0, delay, &ack);
- 		if (ret < 0)
- 			return ret;
- 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
--			break;
-+			return send_bytes;
- 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
- 			udelay(400);
- 		else
- 			return -EIO;
- 	}
- 
--	return send_bytes;
-+	return -EIO;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1593,48 +1593,6 @@ static u32 evergreen_get_tile_pipe_to_ba
+ 	return backend_map;
  }
  
- static int radeon_dp_aux_native_read(struct radeon_connector *radeon_connector,
-@@ -149,13 +150,14 @@ static int radeon_dp_aux_native_read(str
- 	int msg_bytes = 4;
- 	u8 ack;
- 	int ret;
-+	unsigned retry;
+-static void evergreen_program_channel_remap(struct radeon_device *rdev)
+-{
+-	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
+-
+-	tmp = RREG32(MC_SHARED_CHMAP);
+-	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+-	case 0:
+-	case 1:
+-	case 2:
+-	case 3:
+-	default:
+-		/* default mapping */
+-		mc_shared_chremap = 0x00fac688;
+-		break;
+-	}
+-
+-	switch (rdev->family) {
+-	case CHIP_HEMLOCK:
+-	case CHIP_CYPRESS:
+-	case CHIP_BARTS:
+-		tcp_chan_steer_lo = 0x54763210;
+-		tcp_chan_steer_hi = 0x0000ba98;
+-		break;
+-	case CHIP_JUNIPER:
+-	case CHIP_REDWOOD:
+-	case CHIP_CEDAR:
+-	case CHIP_PALM:
+-	case CHIP_SUMO:
+-	case CHIP_SUMO2:
+-	case CHIP_TURKS:
+-	case CHIP_CAICOS:
+-	default:
+-		tcp_chan_steer_lo = 0x76543210;
+-		tcp_chan_steer_hi = 0x0000ba98;
+-		break;
+-	}
+-
+-	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
+-	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
+-	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
+-}
+-
+ static void evergreen_gpu_init(struct radeon_device *rdev)
+ {
+ 	u32 cc_rb_backend_disable = 0;
+@@ -2080,8 +2038,6 @@ static void evergreen_gpu_init(struct ra
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
  
- 	msg[0] = address;
- 	msg[1] = address >> 8;
- 	msg[2] = AUX_NATIVE_READ << 4;
- 	msg[3] = (msg_bytes << 4) | (recv_bytes - 1);
+-	evergreen_program_channel_remap(rdev);
+-
+ 	num_shader_engines = ((RREG32(GB_ADDR_CONFIG) & NUM_SHADER_ENGINES(3)) >> 12) + 1;
+ 	grbm_gfx_index = INSTANCE_BROADCAST_WRITES;
  
--	while (1) {
-+	for (retry = 0; retry < 4; retry++) {
- 		ret = radeon_process_aux_ch(dig_connector->dp_i2c_bus,
- 					    msg, msg_bytes, recv, recv_bytes, delay, &ack);
- 		if (ret < 0)
-@@ -169,6 +171,8 @@ static int radeon_dp_aux_native_read(str
- 		else
- 			return -EIO;
- 	}
-+
-+	return -EIO;
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -569,36 +569,6 @@ static u32 cayman_get_tile_pipe_to_backe
+ 	return backend_map;
  }
  
- static void radeon_write_dpcd_reg(struct radeon_connector *radeon_connector,
+-static void cayman_program_channel_remap(struct radeon_device *rdev)
+-{
+-	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
+-
+-	tmp = RREG32(MC_SHARED_CHMAP);
+-	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+-	case 0:
+-	case 1:
+-	case 2:
+-	case 3:
+-	default:
+-		/* default mapping */
+-		mc_shared_chremap = 0x00fac688;
+-		break;
+-	}
+-
+-	switch (rdev->family) {
+-	case CHIP_CAYMAN:
+-	default:
+-		//tcp_chan_steer_lo = 0x54763210
+-		tcp_chan_steer_lo = 0x76543210;
+-		tcp_chan_steer_hi = 0x0000ba98;
+-		break;
+-	}
+-
+-	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
+-	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
+-	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
+-}
+-
+ static u32 cayman_get_disable_mask_per_asic(struct radeon_device *rdev,
+ 					    u32 disable_mask_per_se,
+ 					    u32 max_disable_mask_per_se,
+@@ -841,8 +811,6 @@ static void cayman_gpu_init(struct radeo
+ 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
+ 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ 
+-	cayman_program_channel_remap(rdev);
+-
+ 	/* primary versions */
+ 	WREG32(CC_RB_BACKEND_DISABLE, cc_rb_backend_disable);
+ 	WREG32(CC_SYS_RB_BACKEND_DISABLE, cc_rb_backend_disable);
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -536,55 +536,6 @@ static u32 r700_get_tile_pipe_to_backend
+ 	return backend_map;
+ }
+ 
+-static void rv770_program_channel_remap(struct radeon_device *rdev)
+-{
+-	u32 tcp_chan_steer, mc_shared_chremap, tmp;
+-	bool force_no_swizzle;
+-
+-	switch (rdev->family) {
+-	case CHIP_RV770:
+-	case CHIP_RV730:
+-		force_no_swizzle = false;
+-		break;
+-	case CHIP_RV710:
+-	case CHIP_RV740:
+-	default:
+-		force_no_swizzle = true;
+-		break;
+-	}
+-
+-	tmp = RREG32(MC_SHARED_CHMAP);
+-	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+-	case 0:
+-	case 1:
+-	default:
+-		/* default mapping */
+-		mc_shared_chremap = 0x00fac688;
+-		break;
+-	case 2:
+-	case 3:
+-		if (force_no_swizzle)
+-			mc_shared_chremap = 0x00fac688;
+-		else
+-			mc_shared_chremap = 0x00bbc298;
+-		break;
+-	}
+-
+-	if (rdev->family == CHIP_RV740)
+-		tcp_chan_steer = 0x00ef2a60;
+-	else
+-		tcp_chan_steer = 0x00fac688;
+-
+-	/* RV770 CE has special chremap setup */
+-	if (rdev->pdev->device == 0x944e) {
+-		tcp_chan_steer = 0x00b08b08;
+-		mc_shared_chremap = 0x00b08b08;
+-	}
+-
+-	WREG32(TCP_CHAN_STEER, tcp_chan_steer);
+-	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
+-}
+-
+ static void rv770_gpu_init(struct radeon_device *rdev)
+ {
+ 	int i, j, num_qd_pipes;
+@@ -784,8 +735,6 @@ static void rv770_gpu_init(struct radeon
+ 	WREG32(DCP_TILING_CONFIG, (gb_tiling_config & 0xffff));
+ 	WREG32(HDP_TILING_CONFIG, (gb_tiling_config & 0xffff));
+ 
+-	rv770_program_channel_remap(rdev);
+-
+ 	WREG32(CC_RB_BACKEND_DISABLE,      cc_rb_backend_disable);
+ 	WREG32(CC_GC_SHADER_PIPE_CONFIG,   cc_gc_shader_pipe_config);
+ 	WREG32(GC_USER_SHADER_PIPE_CONFIG, cc_gc_shader_pipe_config);
 
 
