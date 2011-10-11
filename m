@@ -1,83 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab1JKNIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:08:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41948 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab1JKNIo (ORCPT
+	id S1754643Ab1JKNKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:10:21 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57836 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752997Ab1JKNKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:08:44 -0400
-Date: Tue, 11 Oct 2011 08:08:36 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge@hallyn.com
-Subject: Re: [PATCH] user namespace: make signal.c respect user namespaces
-Message-ID: <20111011130836.GA5106@sergelap>
-References: <20110920185354.GA19629@sergelap>
- <20110921175357.GA25590@redhat.com>
- <20110923163113.GA3820@sergelap>
- <20110923173656.GA5233@redhat.com>
- <20110923212025.GA21330@sergelap>
- <20110924163709.GA6776@redhat.com>
- <20110925201723.GA5288@sergelap>
- <20110926160619.GA13736@redhat.com>
- <20111004174213.GA24179@sergelap>
- <20111009190022.GA13853@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111009190022.GA13853@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 11 Oct 2011 09:10:19 -0400
+Subject: Re: [PATCH] x86, efi: Calling __pa() with an ioremap'd address is
+ invalid
+From: Matt Fleming <matt@console-pimps.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <ming@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>
+In-Reply-To: <20111011130333.GA4117@srcf.ucam.org>
+References: <1318337645-7112-1-git-send-email-matt@console-pimps.org>
+	 <20111011130333.GA4117@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 14:10:17 +0100
+Message-ID: <1318338617.4060.109.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> Sorry, I missed this email...
-> 
-> On 10/04, Serge E. Hallyn wrote:
-> >
-> > Quoting Oleg Nesterov (oleg@redhat.com):
-> > > --- x/kernel/signal.c
-> > > +++ x/kernel/signal.c
-> > > @@ -1019,6 +1019,27 @@ static inline int legacy_queue(struct si
-> > >  	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
-> > >  }
-> > >
-> > > +static inline fixup_uid(struct siginfo *info, struct task_struct *t)
-> > > +{
-> > > +#ifdef CONFIG_USER_NS
-> > > +	if (current_user_ns() == task_cred_xxx(t, user_ns)))
-> > > +#endif
-> > > +		return;
-> > > +
-> > > +	if (SI_FROMKERNEL(info))
-> > > +		switch (info->si_code & __SI_MASK) {
-> > > +			default:
-> > > +				return;
-> > > +
-> > > +			case __SI_CHLD:
-> >
-> > If I'm reading this right, this will catch do_notify_parent, which is
-> > sending signals not from current.
-> 
-> Argh, indeed. So we need to modify the callers.
-> 
-> OTOH, this is only possible if the debugger notifies tracee->real_parent,
-> or we reparent to /sbin/init.
+On Tue, 2011-10-11 at 14:03 +0100, Matthew Garrett wrote:
+> Is there any chance of unifying the 32 and 64-bit code here as well?
 
-Right.  (I thought we decided that was the case anyway, but maybe I was
-missing something)
+I was under the impression that this wasn't possible for the cached case
+because the 32-bit code path uses ioremap_cache() whereas 64-bit uses
+init_memory_mapping() and __va().
 
-> Anyways, yes, I forgot about this. Thanks.
-> 
-> Oleg.
+Unless I'm missing something?
 
-I'll try to get the new patch out this week, else early next.  (Shouldn't
-take long to write, but testing is another matter)
-
-thanks,
--serge
