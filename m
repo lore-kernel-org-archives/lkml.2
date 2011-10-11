@@ -1,204 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab1JKI05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 04:26:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49223 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1JKI0y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 04:26:54 -0400
+	id S1753207Ab1JKIeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 04:34:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56469 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751949Ab1JKIeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 04:34:11 -0400
+Message-ID: <4E940018.1010908@cn.fujitsu.com>
+Date: Tue, 11 Oct 2011 16:36:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Tue, 11 Oct 2011 13:56:52 +0530
-Message-ID: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
-Subject: [Patch] SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        NamJae Jeon <linkinjeon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
+References: <4E7AF758.7060900@cn.fujitsu.com> <20111006175333.GA3959@amt.cnet> <4E8FCC37.8090409@cn.fujitsu.com> <4E91926D.8060206@redhat.com> <4E91A3AA.1000309@redhat.com>
+In-Reply-To: <4E91A3AA.1000309@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-10-11 16:32:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-10-11 16:32:30,
+	Serialize complete at 2011-10-11 16:32:30
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
+On 10/09/2011 09:37 PM, Avi Kivity wrote:
+> On 10/09/2011 02:24 PM, Avi Kivity wrote:
+>> On 10/08/2011 06:06 AM, Xiao Guangrong wrote:
+>>> On 10/07/2011 01:53 AM, Marcelo Tosatti wrote:
+>>> >  On Thu, Sep 22, 2011 at 04:52:40PM +0800, Xiao Guangrong wrote:
+>>> >>  This patchset is against https://github.com/avikivity/kvm.git next branch.
+>>> >>
+>>> >>  In this version, some changes come from Avi's comments:
+>>> >>  - fix instruction retried for nested guest
+>>> >>  - skip write-flooding for the sp whose level is 1
+>>> >>  - rename some functions
+>>> >
+>>> >  Please rebase.
+>>> >
+>>> >
+>>>
+>>> Marcelo,
+>>>
+>>> These patches can be applied without any conflict and it also works well,
+>>> the current code was pulled from https://github.com/avikivity/kvm.git next branch.
+>>>
+>>> What problem did you meet when you applied these? :(
+>>
+>> I guess it was a user error - it applies cleanly here too (and pushed to next, thanks).
+>>
+> 
+> However, it seems to reduce performance.
+> 
 
-It has been observed that a number of USB HDD's do not respond correctly
-to SCSI mode sense command(retrieve caching pages) which results in their
-Write Cache being discarded by queue requests i.e., WCE if left set to
-'0'(disabled). So, in order to identify the devices correctly - give it
-a last try using SG_ATA_16 after failure from normal routine.
-
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-
-diff -Nurp linux-Orig/drivers/scsi/sd.c linux-Updated/drivers/scsi/sd.c
---- linux-Orig/drivers/scsi/sd.c	2011-10-11 11:02:48.000000000 +0530
-+++ linux-Updated/drivers/scsi/sd.c	2011-10-11 11:10:09.000000000 +0530
-@@ -56,6 +56,7 @@
- #include <asm/uaccess.h>
- #include <asm/unaligned.h>
-
-+#include <scsi/sg.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_dbg.h>
-@@ -134,6 +135,58 @@ static const char *sd_cache_types[] = {
- 	"write back, no read (daft)"
- };
-
-+/* Relevant Structure and Function to be used to Retrieve
-+ * Caching Information from USB HDD - this is picked from
-+ * source code of 'hdparm'
-+ *
-+ *
-+ * Definitions and structures for use with SG_IO + ATA_16:
-+ * */
-+#define SG_ATA_16               0x85
-+#define SG_ATA_16_LEN           16
-+
-+#define ATA_OP_IDENTIFY		0xec
-+
-+/*
-+ * Some useful ATA register bits
-+ */
-+enum {
-+        ATA_USING_LBA           = (1 << 6),
-+        ATA_STAT_DRQ            = (1 << 3),
-+        ATA_STAT_ERR            = (1 << 0),
-+};
-+
-+struct ata_lba_regs {
-+        __u8    feat;
-+        __u8    nsect;
-+        __u8    lbal;
-+        __u8    lbam;
-+        __u8    lbah;
-+};
-+struct ata_tf {
-+        __u8                    dev;
-+        __u8                    command;
-+        __u8                    error;
-+        __u8                    status;
-+        __u8                    is_lba48;
-+        struct ata_lba_regs     lob;
-+        struct ata_lba_regs     hob;
-+};
-+
-+__u64 tf_to_lba (struct ata_tf *tf)
-+{
-+        __u32 lba24, lbah;
-+        __u64 lba64;
-+
-+        lba24 = (tf->lob.lbah << 16) | (tf->lob.lbam << 8) | (tf->lob.lbal);
-+        if (tf->is_lba48)
-+                lbah = (tf->hob.lbah << 16) | (tf->hob.lbam << 8) |
-(tf->hob.lbal);
-+        else
-+                lbah = (tf->dev & 0x0f);
-+        lba64 = (((__u64)lbah) << 24) | (__u64)lba24;
-+        return lba64;
-+}
-+
- static ssize_t
- sd_store_cache_type(struct device *dev, struct device_attribute *attr,
- 		    const char *buf, size_t count)
-@@ -1839,6 +1892,18 @@ sd_read_cache_type(struct scsi_disk *sdk
- 	int old_rcd = sdkp->RCD;
- 	int old_dpofua = sdkp->DPOFUA;
-
-+	struct ata_tf tf;
-+	struct sg_io_hdr io_hdr;
-+	unsigned char cdb[SG_ATA_16_LEN] = {0};
-+	unsigned char sb[32] = {0};
-+	unsigned char buf[512] = {0};
-+	unsigned short wce_word = 0;
-+	void *data_cmd = buf;
-+
-+	memset(cdb, 0, SG_ATA_16_LEN);
-+	memset(&tf, 0, sizeof(struct ata_tf));
-+	memset(&io_hdr, 0, sizeof(struct sg_io_hdr));
-+
-        first_len = 4;
-        if (sdp->skip_ms_page_8) {
-                if (sdp->type == TYPE_RBC)
-@@ -1961,7 +2026,6 @@ Page_found:
- 				  sdkp->DPOFUA ? "supports DPO and FUA"
- 				  : "doesn't support DPO or FUA");
-
--		return;
- 	}
-
- bad_sense:
-@@ -1974,8 +2038,64 @@ bad_sense:
- 		sd_printk(KERN_ERR, sdkp, "Asking for cache data failed\n");
-
- defaults:
--	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
--	sdkp->WCE = 0;
-+	if (sdkp->WCE)
-+		return;
-+	else {
-+		sd_printk(KERN_ERR, sdkp, "Normal Routine Failed: Trying ATA_16\n");
-+		
-+		/* The below are necessary parameters which are to set - in order
-+		to make use of ATA_OP_IDENTIFY command */
-+		tf.lob.lbal = 0;
-+	        tf.lob.lbam = 0;
-+	        tf.lob.lbah = 0;
-+	        tf.lob.nsect = 1; //Number of Sectors to Read
-+	        tf.lob.feat = 0;
-+
-+		/* Command Descriptor Block For SCSI 	*/
-+	        cdb[0] = SG_ATA_16;
-+	        cdb[1] = 0x08;
-+	        cdb[2] = 0x0e;
-+	        cdb[6] = 0x01; //No. of Sectors To Read
-+	        cdb[13] = ATA_USING_LBA;
-+	        cdb[14] = ATA_OP_IDENTIFY;
-+
-+	        io_hdr.cmd_len = SG_ATA_16_LEN;
-+	        io_hdr.interface_id = SG_INTERFACE_ID_ORIG;
-+	        io_hdr.mx_sb_len= sizeof(sb);
-+	        io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
-+	        io_hdr.dxfer_len = sizeof(buf);
-+	        io_hdr.dxferp = data_cmd;
-+	        io_hdr.cmdp = cdb;
-+	        io_hdr.sbp = sb;
-+	        io_hdr.pack_id = tf_to_lba(&tf);
-+        	io_hdr.timeout = 0;
-+
-+	        if (!scsi_cmd_ioctl(sdkp->disk->queue, sdkp->disk,
-O_RDONLY|O_NONBLOCK, SG_IO, &io_hdr))
-+        	{
-+#if 0
-+#define DUMP_BYTES_BUFFER(x...) printk( x )
-+			int i;
-+			for (i = 0; i < 32; i++)
-+        	                DUMP_BYTES_BUFFER(" %02x", sb[i]);
-+	                DUMP_BYTES_BUFFER("\n");
-+	                for (i = 0; i < 512; i++)
-+        	                DUMP_BYTES_BUFFER(" %02x", buf[i]);
-+	                DUMP_BYTES_BUFFER("\n");
-+        	        printk(KERN_ERR"82 - [0x%x], 85 -
-[0x%x]\n",((unsigned short*)data_cmd)[82],((unsigned
-short*)data_cmd)[85]);
-+#endif
-+			/* '6th' Bit in Word 85 Corresponds to Write Cache being Enabled/disabled*/
-+                	wce_word = le16_to_cpu(((unsigned short*)data_cmd)[85]);
-+	                if (wce_word & 0x20) {
-+        	                sdkp->WCE = 1;
-+                		sd_printk(KERN_NOTICE, sdkp, "Write Cache Enabled
-after ATA_16 response\n");
-+			} else
-+				goto write_through;
-+	        } else {
-+write_through:
-+	        	sd_printk(KERN_ERR, sdkp, "Assuming drive cache: write through\n");
-+		        sdkp->WCE = 0;
-+        	}
-+	}
- 	sdkp->RCD = 0;
- 	sdkp->DPOFUA = 0;
- }
+Ouch, will look into it soon.
