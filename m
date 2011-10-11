@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab1JKU1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 16:27:04 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26821 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab1JKU1B (ORCPT
+	id S1751982Ab1JKUdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 16:33:11 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44469 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab1JKUdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 16:27:01 -0400
-Date: Tue, 11 Oct 2011 16:08:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, rjw@sisk.pl, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, len.brown@intel.com,
-        joseph.cihula@intel.com, shane.wang@intel.com,
-        xen-devel@lists.xensource.com, linux-pm@lists.linux-foundation.org,
-        tboot-devel@lists.sourceforge.net, linux-acpi@vger.kernel.org,
-        liang.tang@oracle.com, ke.yu@intel.com, kevin.tian@intel.com,
-        jeremy@goop.org
-Subject: Re: [PATCH v2] ACPI S3 to work under Xen.
-Message-ID: <20111011200841.GA21943@phenom.oracle.com>
-References: <1317327414-24072-1-git-send-email-konrad.wilk@oracle.com>
+	Tue, 11 Oct 2011 16:33:10 -0400
+Message-ID: <4E94A7F8.9010309@linux.vnet.ibm.com>
+Date: Wed, 12 Oct 2011 02:02:56 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1317327414-24072-1-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E94A65F.024E:SCFMA922111,ss=1,re=-4.000,fgs=0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: rjw@sisk.pl, bp@amd64.org, pavel@ucw.cz, len.brown@intel.com,
+        tj@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
+        rusty@rustcorp.com.au, rdunlap@xenotime.net, vatsa@linux.vnet.ibm.com,
+        ashok.raj@intel.com, tigran@aivazian.fsnet.co.uk, tglx@linutronix.de,
+        hpa@zytor.com, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] Mutually exclude cpu online and suspend/hibernate
+References: <20111010123102.15067.23128.stgit@srivatsabhat.in.ibm.com> <20111010123242.15067.48238.stgit@srivatsabhat.in.ibm.com> <4E92E8E0.4090004@linux.vnet.ibm.com> <1318256788.14400.53.camel@laptop> <4E930C53.3010309@linux.vnet.ibm.com>
+In-Reply-To: <4E930C53.3010309@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 29, 2011 at 04:16:46PM -0400, Konrad Rzeszutek Wilk wrote:
-> Attached is an [v2] set of patches to enable S3 to work with the Xen hypervisor.
+On 10/10/2011 08:46 PM, Srivatsa S. Bhat wrote:
+> On 10/10/2011 07:56 PM, Peter Zijlstra wrote:
+>> On Mon, 2011-10-10 at 18:15 +0530, Srivatsa S. Bhat wrote:
+>>>> +     /*
+>>>> +      * Prevent cpu online and suspend/hibernate (including freezer)
+>>>> +      * operations from running in parallel. Fail cpu online if suspend or
+>>>> +      * hibernate has already started.
+>>>> +      */
+>>>> +     if (!trylock_pm_sleep())
+>>>
+>>> Would it be better to hook into the suspend/hibernate notifiers and
+>>> use them to exclude cpu hotplug from suspend/hibernate, instead of
+>>> trying to take pm_mutex lock like this?
+>>> Peter, I remember you pointing out in another patch's review
+>>> (http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087)
+>>> that introducing more locks in cpu hotplug would be a bad idea. Does that
+>>> comment hold here as well, or is this fine? 
+>>
+>> Arguably pm_mutex is already involved in the whole hotplug dance due to
+>> suspend using it, that said, I'm not at all familiar with the whole
+>> suspend/hibernate side of things.
+>>
+>> I tried having a quick look this morning but failed to find the actual
+>> code.
+>>
+>> I think it would be good to have an overview of the various locks and a
+>> small description of how they interact/nest.
+>>
 > 
-> Changes since the RFC posting [http://comments.gmane.org/gmane.linux.acpi.devel/50701] by
-> Liang Tang:
->  - Per review comments added: __unused__ attribute, support for PM1A/B if more than 16-bit,
->    copyright/license.
->  - Added support for PHYSDEVOP_restore_msi_ext call.
+> Sure. I'll put together whatever I have understood, in the form of a patch
+> to Documentation/power directory and post it tomorrow, for the benefit of
+> all.
+> 
 
-Rafael, Len,
+Here it is, just as promised :-)
+http://lkml.org/lkml/2011/10/11/393
 
-Any chance you could take look at the patches - the parts that touch the ACPI
-generic components are couple of lines? Much appreciated.
+>> I just remember being very surprised about finding out the hotplug usage
+>> of suspend/hibernate wasn't at all serialized against the regular
+>> hotplug thingies.. (see 144060fee07e9c22e179d00819c83c86fbcbf82c).
+>>
+>>
+>>
+> 
 
-Joseph was OK with the tboot sections.
+
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
