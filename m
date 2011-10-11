@@ -1,78 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1JKNf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:35:28 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45914 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab1JKNf1 convert rfc822-to-8bit (ORCPT
+	id S1752902Ab1JKNkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:40:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49154 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab1JKNkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:35:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=b7LLUifCpc8P4AmqRKDoeRXjQWiwxgl8lv4z0FAQf2sAJ3YR/Wj8hdvXxPrkrmUvX
-	9P+Are59PGL8MFXb/U10g==
+	Tue, 11 Oct 2011 09:40:35 -0400
+Date: Tue, 11 Oct 2011 15:40:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm00@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, "Daniel J. Walsh" <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Aditya Kali <adityakali@google.com>,
+        Oleg Nesterov <oleg@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Tim Hockin <thockin@hockin.org>, Tejun Heo <tj@kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Containers <containers@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
+Message-ID: <20111011134022.GA16777@somewhere.redhat.com>
+References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
+ <20111004150111.e9337268.akpm00@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111011133409.GC8151@mgebm.net>
-References: <20111007204247.GA5444@mgebm.net>
-	<20111010233842.GC24583@mgebm.net>
-	<1318319095.14400.54.camel@laptop>
-	<CABPqkBRs7iZr8pQB19Q2Gw45ntKUumE76v4K=nmXf_+wbBDY6Q@mail.gmail.com>
-	<20111011133409.GC8151@mgebm.net>
-Date: Tue, 11 Oct 2011 15:35:24 +0200
-Message-ID: <CABPqkBRkrHYJD0aA5o+uH1VmrvRqxj23cw+U73FKbZG_kgUxzw@mail.gmail.com>
-Subject: Re: Oprofile Regression Caused by commit e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25
- on PPC
-From: Stephane Eranian <eranian@google.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, anton@samba.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111004150111.e9337268.akpm00@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 3:34 PM, Eric B Munson <emunson@mgebm.net> wrote:
-> On Tue, 11 Oct 2011, Stephane Eranian wrote:
->
->> On Tue, Oct 11, 2011 at 9:44 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > On Mon, 2011-10-10 at 19:38 -0400, Eric B Munson wrote:
->> >> On Fri, 07 Oct 2011, Eric B Munson wrote:
->> >>
->> >> > This commit seems to have caused a regression with oprofile.  It is fairly easy
->> >> > to trigger, simply run oprofile monitoring an event that will fire (something
->> >> > frequent like CPU cycles) causes oprofile to fail saying that the PMU is in use.
->> >> > If I disable CONFIG_CGROUP_PERF, everything goes back to working.  I suspect the
->> >> > problem is that the PMU is being initialized without being reserved for perf.  I
->> >> > am not yet sure of the right fix yet so if you have any suggestions I would
->> >> > appreciate them.
->> >> >
->> >> > Eric
->> >>
->> >> This isn't the best description of the behavior we see, what happens is at some
->> >> point in the profiling session the MMCR register is clobbered by
->> >> perf_cgroup_switch() which calls perf_pmu_enable() without reserving the PMC
->> >> hardware.  When this happens oprofile stops counting.  It doesn't happen each
->> >> time so some runs show event counts that are reasonable, but it can also lead to
->> >> event counts that are smaller than expected, or completely missing.
->> >
->> > What kernel are you testing?
->> >
->> Looking at 3.1-rc9, I doubt it's coming from perf_cgroup_switch(). The function
->> is checking for perf context with at least of cgroup event before
->> calling perf_pmu_disable().
->> If there is no active perf context, there is no cgroup event, thus the
->> function is a nop.
->> Even if you have a competing perf session, it would have to have at
->> least one cgroup
->> event for this code to touch HW. The problem must come from somewhere else.
->>
->> >
->>
->
-> Does activating any cgroup setup a cgroup event?
->
-No, you need to explicitly request a cgroup event.
+On Tue, Oct 04, 2011 at 03:01:11PM -0700, Andrew Morton wrote:
+> On Mon,  3 Oct 2011 21:07:02 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > Hi Andrew,
+> > 
+> > This contains minor changes, mostly documentation and changelog
+> > updates, off-case build fix, and a code optimization in
+> > res_counter_common_ancestor().
+> 
+> I'd normally duck a patch series like this when we're at -rc8 and ask
+> for it to be resent late in -rc1.  But I was feeling frisky so I
+> grabbed this lot for a bit of testing and will sit on it until -rc1.
+> 
+> I'm still not convinced that the kernel has a burning need for a "task
+> counter subsystem".  Someone convince me that we should merge this!
+
+(Adding more people in Cc with whom I discussed this and who got
+nice insights about the issues and the needs).
+
+In practice we need it for Lxc to secure containers. Since you wrote
+me that email last week I've tried to think more about another
+solution to protect containers against forkbomb by reusing an exisiting
+feature instead of pushing a new subsystem and ABI.
+
+So I've been thinking about using user namespaces. The idea is
+to create the container with a process forked with CLONE_NEWUSER
+such that its NR_PROC rlimit only applies to it and its children.
+This way we can have our per container limitation given we have
+one namespace per container.
+
+But discussing this with other people, this doesn't work anymore
+as soon as we want to contain privilege processes or multi-user
+applications. Privilege processes can spawn new users at will
+and with multi-user we can't anymore have a global limit over
+the container.
+
+As far as I explored the issue, discussing this with lxc guys,
+having that limit per cgroup is the only thing that seem to
+work in any case.
+
+But if somebody finds another way to solve that with existing
+features or something more simple, I'll be happy to drop this
+patchset.
+
+> 
+> > It's hard to put some statistic numbers while testing this feature
+> > given that the result is rather binary: we launch a forkbomb and
+> > either we stop and kill it or the system become unresponsive.
+> >     
+> > Meanwhile, one can find a testsuite at this address:
+> > https://tglx.de/~fweisbec/task_counter_test.tar.gz
+> 
+> I do think that we should merge tests like this into the main tree.  So
+> I can do "cd tests ; make ; ./run-tests".  The first step is for some hero
+> to propose the (simple!) framework and to drop a first test in there.
+
+I can do that. Some general tools/test/ directory that can host this one
+and more.
+
+> > It performs several checks to ensure the interface and the behaviour
+> > are reliable after common events like moving tasks around over cgroups
+> > in a hierarchy, forking inside, etc.. It also launches a forkbomb,
+> > tries to stop and kill it. So beware, don't run it on a system that
+> > is doing serious things.
+> 
+> Good stuff, that.  Then, when people propose additions or fix bugs, I can
+> whine at them for not updating the test suite.
+> 
+> > Ensure you have CGROUP_TASK_COUNTER set
+> > before, or it may compress the Ten Plagues in your MBR and
+> > inflate the whole after your next reboot.
+> 
+> That problem would need to be fixed.  Either probe for the feature
+> up-front, or don't build the test at all if CONFIG_CGROUP_TASK_COUNTER=n.
+> 
+
+Agreed. The simplest is to try to mount this subsystem and just give
+up the test if we can't.
+
+Will fix.
+
+Thanks.
