@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab1JKW0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 18:26:30 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44016 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab1JKW02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 18:26:28 -0400
-Date: Wed, 12 Oct 2011 09:26:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: SCSI trees moved back to kernel.org
-Message-Id: <20111012092618.e35391f58873edb1cc0bb5cb@canb.auug.org.au>
-In-Reply-To: <1318351928.2992.19.camel@dabdike.int.hansenpartnership.com>
-References: <1316101053.2983.42.camel@dabdike.hansenpartnership.com>
-	<1318351928.2992.19.camel@dabdike.int.hansenpartnership.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Oct_2011_09_26_18_+1100_11aiN1g+=zbuB7Yq"
+	id S1751394Ab1JKWa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 18:30:56 -0400
+Received: from mail.lang.hm ([64.81.33.126]:46917 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab1JKWaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 18:30:55 -0400
+Date: Tue, 11 Oct 2011 15:30:25 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Theodore Tso <tytso@MIT.EDU>, Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+In-Reply-To: <m17h4bfcuv.fsf@fess.ebiederm.org>
+Message-ID: <alpine.DEB.2.02.1110111525450.28233@asgard.lang.hm>
+References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Oct_2011_09_26_18_+1100_11aiN1g+=zbuB7Yq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 11 Oct 2011, Eric W. Biederman wrote:
 
-Hi James,
-
-On Tue, 11 Oct 2011 11:52:08 -0500 James Bottomley <James.Bottomley@HansenP=
-artnership.com> wrote:
+> Theodore Tso <tytso@MIT.EDU> writes:
 >
-> OK, all the trees are back in their usual locations on kernel.org,
-> that's
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-post-merge-2.6.git
+>> On Oct 11, 2011, at 2:42 AM, Eric W. Biederman wrote:
+>>
+>>> I am totally in favor of not starting the entire world.  But just
+>>> like I find it convienient to loopback mount an iso image to see
+>>> what is on a disk image.  It would be handy to be able to just
+>>> download a distro image and play with it, without doing anything
+>>> special.
+>>
+>> Agreed, but what's wrong with firing up KVM to play with a distro
+>> image?  Personally, I don't consider that "doing something special".
+>
+> Then let me flip this around and give a much more practical use case.
+> Testing.  A very interesting number of cases involve how multiple
+> machines interact.  You can test a lot more logical machines interacting
+> with containers than you can with vms.  And you can test on all the
+> aritectures and platforms linux supports not just the handful that are
+> well supported by hardware virtualization.
 
-OK, I have switched to use those.  However the last one gives:
+but in containers, you are not really testing lots of machines, you are 
+testing lots of processes on the same machine (they share the same kernel)
 
-fatal: Couldn't find remote ref refs/heads/merge-base
+> I admit for a lot of test cases that it makes sense not to use a full
+> set of userspace daemons.  At the same time there is not particularly
+> good reason to have a design that doesn't allow you to run a full
+> userspace.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+how do you share the display between all the different containers if they 
+are trying to run the X server?
 
---Signature=_Wed__12_Oct_2011_09_26_18_+1100_11aiN1g+=zbuB7Yq
-Content-Type: application/pgp-signature
+how do you avoid all the containers binding to the same port on the 
+default IP address?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+how do you arbitrate dbus across the containers.
 
-iQIcBAEBCAAGBQJOlMKKAAoJEECxmPOUX5FE2gAQAJjIjHoCoTrTYPwLuraaejBB
-ZhcK74q4UqtiDrfrc9m7eXumbf7wLya+6jzqZB6X6c5i30xCLV52SXF/GUBkKpl4
-UgHEUeG8u6tjGLnsFPCE6cytPfD4dcoU57I+X9LVtlAuMn5xKXlj1g7NNkKjKGjO
-09JWlrTT8gY1wBLrjhksJY0bnywwdq9E7/IZA0p/h2rdH7M84QHFSHxCMKgPXJZg
-qEIp4xBV0x3fT+z4cE5bXoy2RGO0BzXpz9IqQsNTZ+NUSor39xkDYbfiwh/rG4tL
-db22es4DhfwU1Q7zA36b6T93BBH89OmNktln7Vn/+9xo0+UtQ2zkbKyfVmEFATBh
-Lf9UpF7471x9sptQJYbUXHFxCMEnyAQjkKGQuAvxREJhI1eQY5BXPsRl8z41Bh+z
-zkb2596KylDAdoSEbxwPLg4xqrKKolWmMVub4XLPDd/z6bMBV2y5w5kN/QnqG4cW
-Cj08RN7KkZ4ZkNuxPidwvrBZ5IY7BMRBN8UfLU9Xj/q+vPkMVa8oonhioEh5/R6P
-4ZX9wcaOrTekjxYrXUfRT4cX4dG/b4TrE2v8yMeJpeq6XbXOdzA/UVKpUTYGBk93
-ab1sJox7j1ICbR2y3I0aNaEgvGXH9pvwxRQnKAPNzMWB31mxBRvs7sw9MsrSDrSU
-sBYLioR9927w3ckzluN6
-=pOc1
------END PGP SIGNATURE-----
+when a new USB device gets plugged in, which container gets control of it?
 
---Signature=_Wed__12_Oct_2011_09_26_18_+1100_11aiN1g+=zbuB7Yq--
+there are a LOT of hard questions when you start talking about running a 
+full system inside a container that do not apply for other use of 
+containers.
+
+David Lang
