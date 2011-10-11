@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1JKNOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 09:14:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab1JKNOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 09:14:42 -0400
-Date: Tue, 11 Oct 2011 09:14:04 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "Pavel Machek" <pavel@ucw.cz>, <smfrench@gmail.com>, <rjw@sisk.pl>,
-        <linux-pm@lists.linux-foundation.org>, <linux-cifs@vger.kernel.org>,
-        <linux-nfs@vger.kernel.org>, <john@Calva.COM>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle freeze
- events
-Message-ID: <20111011091404.208a03b5@tlielax.poochiereds.net>
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430B91E852@SACMVEXC2-PRD.hq.netapp.com>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
-	<1317210761-11518-4-git-send-email-jlayton@redhat.com>
-	<20111011061923.GC1377@ucw.cz>
-	<20111011061221.2a4a212f@tlielax.poochiereds.net>
-	<2E1EB2CF9ED1CB4AA966F0EB76EAB4430B91E852@SACMVEXC2-PRD.hq.netapp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754724Ab1JKNRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 09:17:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46422 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab1JKNRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 09:17:09 -0400
+Date: Tue, 11 Oct 2011 09:16:18 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: build warning after merge of the moduleh tree
+Message-ID: <20111011131618.GV19986@windriver.com>
+References: <20111011202142.4d18840463055a8bdb9d1590@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111011202142.4d18840463055a8bdb9d1590@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011 05:52:57 -0700
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
+[linux-next: build warning after merge of the moduleh tree] On 11/10/2011 (Tue 20:21) Stephen Rothwell wrote:
 
-> > -----Original Message-----
-> > From: Jeff Layton [mailto:jlayton@redhat.com]
-> > Sent: Tuesday, October 11, 2011 6:12 AM
-> > To: Pavel Machek
-> > Cc: Myklebust, Trond; smfrench@gmail.com; rjw@sisk.pl; linux-
-> > pm@lists.linux-foundation.org; linux-cifs@vger.kernel.org; linux-
-> > nfs@vger.kernel.org; john@Calva.COM; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle
-> freeze
-> > events
-> > 
-> > On Tue, 11 Oct 2011 08:19:23 +0200
-> > Pavel Machek <pavel@ucw.cz> wrote:
-> > 
-> > > On Wed 2011-09-28 07:52:40, Jeff Layton wrote:
-> > > > Allow the wait_on_bit_killable sleeps in SUNRPC layer to respect
-> the
-> > > > freezer. This should allow suspend and hibernate events to occur,
-> > > > even when there are RPC's pending on the wire.
-> > >
-> > > Will the RPC protocols used handle that correctly? What will happen
-> > > during resume?
-> > >
-> > 
-> > That depends on the state of the socket during resume. If the
-> > suspend/resume is quick enough, then the socket may still be
-> connected, or
-> > if we're using UDP then we might just get the reply and carry on
-> successfully.
-> > Otherwise, the call will eventually time out, or will be cancelled
-> when the
-> > kernel finds that the socket has been closed.
-> > 
-> > Either way, this should do the right thing.
+> Hi Paul,
 > 
-> Well... The problem when this sort of thing happens is with the replay
-> cache. If the RPC in question was a mkdir, for instance, then replaying
-> the RPC call when you wake up can be problematic because chances are
-> that the server will have forgotten who created the directory, and so
-> will reply with EEXIST instead of OK.
-> However this is a generic problem when the client is unable to talk to
-> the server for a while, and is not particular to suspend.
+> After merging the moduleh tree, today's linux-next build (i386 defconfig)
+> produced this warning:
 > 
+> arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: data definition has no type or storage class [enabled by default]
+> arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL' [-Wimplicit-int]
+> arch/x86/kernel/cpu/perf_event_intel.c:1323:1: warning: parameter names (without types) in function declaration [enabled by default]
+> 
+> Introduced by commit 144d31e6f190 ("perf, intel: Use GO/HO bits in
+> perf-ctr") from the tip tree interacting with the module.h slipt up.
+> 
+> I'll add a patch tomorrow to add an include of export.h to this file.
 
-Yeah, that's always a problem. You can hit the same thing if you just
-unplug the cable from the network interface at an inopportune time.
+Hi Stephen,
 
-I think this patch is really the best we can do under those
-circumstances. Eventually we'll all be on 4.1 with sessions and this
-problem will go away, right? ;)
+I've added this and the other nmi export to the post-merge queue.  I'll
+assume for the moment that the regulator tree will pick up the 3rd one,
+like you recommended.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks,
+Paul.
+
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+
+
