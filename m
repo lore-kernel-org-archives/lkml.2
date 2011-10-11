@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab1JKIK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 04:10:58 -0400
-Received: from ezo.ezono.com ([50.22.105.208]:54812 "EHLO ezo.ezono.com"
+	id S1753715Ab1JKILx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 04:11:53 -0400
+Received: from ezo.ezono.com ([50.22.105.208]:55014 "EHLO ezo.ezono.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab1JKIKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 04:10:52 -0400
-Message-ID: <4E93FA07.306@ezono.com>
-Date: Tue, 11 Oct 2011 10:10:47 +0200
+	id S1750872Ab1JKILv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 04:11:51 -0400
+Message-ID: <4E93FA3D.2030400@ezono.com>
+Date: Tue, 11 Oct 2011 10:11:41 +0200
 From: Abdelghani Ouchabane <abdelghani@ezono.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
 Subject: Re: PCIe can not rescan for new PCIe device ( FPGA board )
-References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com>
-In-Reply-To: <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com>
+References: <4E8EA746.6030103@ezono.com> <CAErSpo6YEp2v9xzVJHsu5WSJDqb+sWZUfS-e7UmGEXENRiWmnQ@mail.gmail.com> <4E8F2758.3040408@ezono.com> <CAErSpo6Lo2bXw=yjscQ6zzRMnpMZ-cUzbBxN3dDS1D3M67sQ8g@mail.gmail.com> <4E939E5D.3010208@jp.fujitsu.com>
+In-Reply-To: <4E939E5D.3010208@jp.fujitsu.com>
 Content-Type: multipart/mixed;
- boundary="------------070705010602000904030202"
+ boundary="------------090703020608090803090508"
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
 X-AntiAbuse: Primary Hostname - ezo.ezono.com
 X-AntiAbuse: Original Domain - vger.kernel.org
@@ -28,56 +29,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------070705010602000904030202
+--------------090703020608090803090508
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: quoted-printable
 
 
->>>> * But our software returns : 0xFFFFFFFF
-> This is reading from your device's memory region.  It looks like the
-> device is configured correctly (BAR values are reasonable and memory
-> decoding is enabled) and I assume the bridges leading to it are
-> configured correctly (if you posted the complete dmesg log we could
-> tell for sure).  After that point, Linux is out of the way and it's
-> just a question of whether your device responds correctly to the
-> memory access.
-> Are you sure the device is supposed to return something other than
-> 0xFFFFFFFF?
-
-Hi Bjorn,
-
-Yes, the device should return something similar to :
-resource file =3D /sys/bus/pci/devices/0000:02:00.0/resource
-base address  =3D 0xFDFFE000
-         0xFDFFE000      0x00000000      0x00000000      0x00000000
-         0xFDFFE008      0x00000008      0x00000000      0x00000000
-         0xFDFFE010      0x00000010      0x00000001      0x00020000
-         0xFDFFE018      0x00000018      0x00000000      0x00000000
-         0xFDFFE020      0x00000020      0x00000000      0x00000000
-         0xFDFFE028      0x00000028      0x00000000      0x00000000
-         0xFDFFE030      0x00000030      0x00000000      0x00000000
-         0xFDFFE038      0x00000038      0x00000000      0x00000000
-         0xFDFFE040      0x00000040      0x30012009      0x00101449
-         0xFDFFE048      0x00000048      0x00000000      0x00000781
-         0xFDFFE050      0x00000050      0x00000000      0x00000300
-         0xFDFFE058      0x00000058      0xCAFEBABE      0xDEADBEEF
-
-> If it's memory, can you write to it and read the new
-> value back?  Can you use a PCIe analyzer and see if the device is
-> responding correctly on the bus?
-I have tried to write to the FPGA registers but I was always getting=20
-0xFFFFFFFF
+>>> After I plug my board in,  I executed  echo 1>  /sys/bus/pci/rescan
+>>
+>>
 >
-> Other than the possible pciehp rescan problem, this just looks like a
-> problem with your FPGA.
-Can it have a relation with the BIOS?
+> Can you try echo 1 > /sys/bus/pci/slots/XXX/power?
+> (XXX: slot number)
+Hallo Kenji,
+
+     I am still having the same problem after executing "echo 1 >=20
+/sys/bus/pci/slots/0000\:02\:00.0/power"
+
+>
+>> It seems like a pciehp bug that you have to rescan explicitly.  But
+>> I'm not a pciehp expert and I haven't looked at the code.
+>
+> The pciehp automatically scans the bus on presence changed event
+> (e.g. board is pluged in) if the hot-plug controller supports
+> surprise removal. Otherwise, you need to power on slot explicitly
+> by "echo 1 > /sys/bus/pci/slots/XXX/power". So one possibility is
+> that your controller doesn't support surprise removal. We can
+> check it by looking at the pciehp's debug output. Can you send
+> whole dmesg output?
+
 I attached to you the whole dmesg log.
 
 Cheers,
 Ghani
 
 
---------------070705010602000904030202
+
+--------------090703020608090803090508
 Content-Type: text/plain;
  name="dmesg-full.txt"
 Content-Transfer-Encoding: quoted-printable
@@ -1160,4 +1147,4 @@ ff 64bit pref]
 [  106.609300] pci 0000:02:00.0: BAR 4: set to [mem 0x40241000-0x40241fff=
  64bit pref] (PCI address [0x40241000-0x40241fff])
 
---------------070705010602000904030202--
+--------------090703020608090803090508--
