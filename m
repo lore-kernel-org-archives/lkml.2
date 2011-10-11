@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1JKKJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:09:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47983 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752010Ab1JKKJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:09:18 -0400
-Date: Tue, 11 Oct 2011 11:07:28 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM List <linux-pm@vger.kernel.org>
-Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
-Message-ID: <20111011110728.13004b1c@lxorguk.ukuu.org.uk>
-In-Reply-To: <CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
-References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
-	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
-	<CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1754130Ab1JKKKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:10:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab1JKKKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 06:10:32 -0400
+Date: Tue, 11 Oct 2011 06:10:00 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
+        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, john@Calva.COM,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake
+ TASK_KILLABLE tasks too
+Message-ID: <20111011061000.3a3a03fe@tlielax.poochiereds.net>
+In-Reply-To: <20111011061847.GB1377@ucw.cz>
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
+	<1317210761-11518-2-git-send-email-jlayton@redhat.com>
+	<20111011061847.GB1377@ucw.cz>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -28,25 +27,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > No. Well it may be on some platforms but it isn't the same thing. On some
-> > devices a DMA transfer doesn't need the CPU involved but needs the CPU to
-> > respond within a set timescale (eg for coherency or bus arbitration). It
+On Tue, 11 Oct 2011 08:18:48 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
+
 > 
-> I understand only the CPU can respond after it is notified by a
-> interrupt event, don't I?
+> Hi!
+> 
+> > TASK_KILLABLE is often used to put tasks to sleep for quite some time.
+> > One of the most common uses is to put tasks to sleep while waiting for
+> > replies from a server on a networked filesystem (such as CIFS or NFS).
+> > 
+> > Unfortunately, fake_signal_wake_up does not currently wake up tasks
+> > that are sleeping in TASK_KILLABLE state. This means that even if the
+> > code were in place to allow them to freeze while in this sleep, it
+> > wouldn't work anyway.
+> > 
+> > This patch changes this function to wake tasks in this state as well.
+> > This should be harmless -- if the code doing the sleeping doesn't have
+> > handling to deal with freezer events, it should just go back to sleep.
+> 
+> I'm pretty sure this will break something; but that does not mean it
+> is bad idea, just that it should be merged early and tested a lot.
+> 
 
-The instruction stream being executed maybe, but not things like the cache
+FWIW, I looked at most of the places in the kernel that do
+TASK_KILLABLE sleeps and they look like they'll handle this correctly.
+The main one I wasn't sure about was mem_cgroup_handle_oom(), but I
+think it'll do the right thing too. I certainly could have missed
+something though...
 
-> Also could you give a example about how the CPU responds to a DMA transfer
-> within a set timescale if it is required?
+In any case, would you mind merging this via the linux-pm tree for 3.2?
 
-The kind of thing you are dealing with is
-
-	DMA engine requests a cache line of data
-	CPU wakes out of sleep, completes bus transaction
-	CPU goes back to sleep
-	DMA engine starts outputting data bits over SPI bus or similar
-
-	repeat until done
-
-so it's not instruction level stuff, merely bus traffic.
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
