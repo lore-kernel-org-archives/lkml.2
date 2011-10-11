@@ -1,109 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449Ab1JKWHr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 18:07:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956Ab1JKWHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 18:07:46 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mike Snitzer <snitzer@redhat.com>, Shaohua Li <shli@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        device-mapper development <dm-devel@redhat.com>,
-        Christophe Saout <christophe@saout.de>, linux-kernel@vger.kernel.org
-Subject: Re: Block regression since 3.1-rc3
-References: <1317397918.27140.15.camel@localhost>
-	<x49pqieyw2f.fsf@segfault.boston.devel.redhat.com>
-	<1317729761.25998.4.camel@localhost>
-	<x49bottoq57.fsf@segfault.boston.devel.redhat.com>
-	<CANejiEXnXJ7LkyqHyH1S2c4A95Si7v0-gDmRD824r3ROntaDCA@mail.gmail.com>
-	<20111008161421.GA5743@redhat.com> <20111010213316.GM8100@google.com>
-	<20111011195611.GA26277@redhat.com> <20111011205251.GA6281@google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 11 Oct 2011 18:07:25 -0400
-In-Reply-To: <20111011205251.GA6281@google.com> (Tejun Heo's message of "Tue,
-	11 Oct 2011 13:52:51 -0700")
-Message-ID: <x498vor41ya.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751453Ab1JKWKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 18:10:44 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21488
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750956Ab1JKWKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 18:10:42 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LSX9LN-01-3A3-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space for HT hole around 1TB
+Date: Tue, 11 Oct 2011 17:09:35 -0500
+Message-ID: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+The entire HT hole and also the unused address range before that hole
+need to be excluded from direct mapping. Otherwise speculative
+accesses to that reserved region can happen which cause machine
+checks.
 
-> Hello, Mike.
->
-> On Tue, Oct 11, 2011 at 03:56:12PM -0400, Mike Snitzer wrote:
->> > I don't object to the immediate fix but think that adding such special
->> > case is gonna make the thing even more brittle and make future changes
->> > even more difficult.  Those one off cases tend to cause pretty severe
->> > headache when someone wants to evolve common code, so let's please
->> > find out what went wrong and fix it properly so that everyone follows
->> > the same set of rules.
->> 
->> Are you referring to Jeff's fix as "the immediate fix"?  Christophe
->> seems to have had success with it after all.
->
-> I meant reverting the previous commit.  Oops... it seems like I
-> misread Jeff's patch.  Please read on.
->
->> As for the special case that you're suggesting makes the code more
->> brittle, etc.  If you could be more specific that'd be awesome.
->
-> I was still talking about the previous attempt of making dm treated
-> special by flush machinery.  (the purity thing someone was talking
-> about)
->
->> Jeff asked a question about the need to kick the queue in this case (as
->> he didn't feel he had a proper justification for why it was needed).
->> 
->> If we can get a proper patch header together to justify Jeff's patch
->> that'd be great.  And then revisit any of the special casing you'd like
->> us to avoid in >= 3.2?
->> 
->> (we're obviously _very_ short on time for a 3.1 fix right now).
-> ...
->> > Hmmm... another rather nasty assumption the current flush code makes
->> > is that every flush request has either zero or single bio attached to
->> > it.  The assumption has always been there for quite some time now.
->> 
->> OK.
->> 
->> > That somehow seems broken by request based dm (either that or wrong
->> > request is taking INSERT_FLUSH path).
->> 
->> Where was this issue of a flush having multiple bios reported?
->
-> I was misreading Jeff's patch, so the problem is request w/o bio
-> reaching INSERT_FLUSH, not rq's with multiple bio's.  Sorry about
-> that.  Having another look...
->
-> Ah, okay, so, blk-flush on the lower layer device is seeing
-> q->flush_rq of the upper layer which doesn't have bio.  Yes, the
-> BUG_ON() change looks correct to me.  That or we can do
->
->   BUG_ON(rq->bio != rq->bio_tail); /* assumes zero or single bio rq */
->
-> As for the blk_run_queue_async(), it's a bit confusing.  Currently,
-> the block layer isn't clear about who's responsible kicking the queue
-> after putting a request onto elevator and I suppose Jeff put it there
-> because blk_insert_cloned_request() doesn't kick the queue.
->
-> Hmm... Jeff, you also added blk_run_queue_async() call in
-> 4853abaae7e4a too.  Is there a reason why blk_insert_cloned_request()
-> isn't calling __blk_run_queue() or async variant of it like
-> blk_insert_request() does?
->
-> At any rate, the queue kicking is a different issue.  Let's not mix
-> the two here.  The BUG_ON() change looks good to me.
+Cc: stable@kernel.org   # > 2.6.32
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/x86/include/asm/e820.h           |    1 +
+ arch/x86/include/asm/hypertransport.h |    7 +++++
+ arch/x86/include/asm/processor.h      |   16 +++++++++++++
+ arch/x86/kernel/cpu/amd.c             |   40 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/e820.c                |    6 +++++
+ arch/x86/kernel/setup.c               |    8 +++++-
+ 6 files changed, 76 insertions(+), 2 deletions(-)
 
-I can submit a two part series, sure.  I'll have to get back to you on
-where I think the right place for the queue kick is.  I'll look at it in
-detail tomorrow.
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 908b969..7e4d417 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,7 @@ static inline void early_memtest(unsigned long start, unsigned long end)
+ 
+ extern unsigned long e820_end_of_ram_pfn(void);
+ extern unsigned long e820_end_of_low_ram_pfn(void);
++extern unsigned long e820_end_of_ram_under_ht_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ 
+ void memblock_x86_fill(void);
+diff --git a/arch/x86/include/asm/hypertransport.h b/arch/x86/include/asm/hypertransport.h
+index 334b1a8..c1d5a08 100644
+--- a/arch/x86/include/asm/hypertransport.h
++++ b/arch/x86/include/asm/hypertransport.h
+@@ -42,4 +42,11 @@
+ #define HT_IRQ_HIGH_DEST_ID(v)						\
+ 	((((v) >> 8) << HT_IRQ_HIGH_DEST_ID_SHIFT) & HT_IRQ_HIGH_DEST_ID_MASK)
+ 
++/*
++ * Memory Region Reserved for HyperTransport
++ */
++
++#define HT_RESERVED_MEM_START           0xfd00000000ULL
++#define HT_RESERVED_MEM_END             0x10000000000ULL
++
+ #endif /* _ASM_X86_HYPERTRANSPORT_H */
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 0d1171c..73ae54f 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -970,6 +970,22 @@ extern int set_tsc_mode(unsigned int val);
+ 
+ extern int amd_get_nb_id(int cpu);
+ 
++#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
++extern int amd_with_ram_above_ht(void);
++extern unsigned long amd_init_high_memory_mapping(void);
++#else
++static inline int amd_with_ram_above_ht(void)
++{
++	return 0;
++}
++
++static inline unsigned long amd_init_high_memory_mapping(void)
++{
++	BUG();
++	return 0;
++}
++#endif
++
+ struct aperfmperf {
+ 	u64 aperf, mperf;
+ };
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b13ed39..a57b010 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -7,6 +7,7 @@
+ #include <asm/apic.h>
+ #include <asm/cpu.h>
+ #include <asm/pci-direct.h>
++#include <asm/hypertransport.h>
+ 
+ #ifdef CONFIG_X86_64
+ # include <asm/numa_64.h>
+@@ -755,3 +756,42 @@ bool cpu_has_amd_erratum(const int *erratum)
+ }
+ 
+ EXPORT_SYMBOL_GPL(cpu_has_amd_erratum);
++
++#if defined(CONFIG_CPU_SUP_AMD) && defined(CONFIG_X86_64)
++int __cpuinit amd_with_ram_above_ht(void)
++{
++	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD &&
++	    max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_START)
++		return 1;
++
++	return 0;
++}
++
++/*
++ * On AMD systems, memory region 0xfd_0000_0000 ~ 0xff_ffff_ffff is reserved by
++ * HyperTransport and cannot be used by the processor. On systems with more than
++ * 1TB of RAM, BIOS may take memory immediately below the HT region and "hoist"
++ * it up above the HT region, leaving a hole.
++ */
++unsigned long __cpuinit amd_init_high_memory_mapping(void)
++{
++	unsigned long ret;
++
++	/* remove HT region from the e820 map, if it's declared as usable */
++	e820_remove_range(HT_RESERVED_MEM_START,
++			  HT_RESERVED_MEM_END - HT_RESERVED_MEM_START,
++			  E820_RAM, 1);
++	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++
++	/* direct mapping of high memory under HT */
++	ret = init_memory_mapping(1UL << 32,
++		e820_end_of_ram_under_ht_pfn() << PAGE_SHIFT);
++
++	/* skip HT region, direct mapping of high memory above HT */
++	if (max_pfn << PAGE_SHIFT >= HT_RESERVED_MEM_END)
++		ret = init_memory_mapping(HT_RESERVED_MEM_END,
++					  max_pfn << PAGE_SHIFT);
++
++	return ret;
++}
++#endif
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 3e2ef84..c0ba036 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -22,6 +22,7 @@
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+ #include <asm/setup.h>
++#include <asm/hypertransport.h>
+ 
+ /*
+  * The e820 map is the map that gets modified e.g. with command line parameters
+@@ -826,6 +827,11 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
+ 	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
+ }
+ 
++unsigned long __init e820_end_of_ram_under_ht_pfn(void)
++{
++	return e820_end_pfn(HT_RESERVED_MEM_START >> PAGE_SHIFT, E820_RAM);
++}
++
+ static void early_panic(char *msg)
+ {
+ 	early_printk(msg);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index afaf384..84d0968 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -937,8 +937,12 @@ void __init setup_arch(char **cmdline_p)
+ 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		if (amd_with_ram_above_ht())
++			max_pfn_mapped = amd_init_high_memory_mapping();
++		else
++			max_pfn_mapped = init_memory_mapping(1UL << 32,
++				max_pfn << PAGE_SHIFT);
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
+-- 
+1.7.1
 
--Jeff
+
