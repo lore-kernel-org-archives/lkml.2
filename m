@@ -1,82 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab1JKXW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 19:22:56 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28181 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1JKXWy (ORCPT
+	id S1751849Ab1JKXhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 19:37:53 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36275 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1JKXhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 19:22:54 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type;
-	b=Tg9bbyrW5h9C8M5evbNFozHi4wO+yAkwjlZap5fdSEwde/oA2nXQsBBdyv2yeCa/+
-	2pd0V58J+BUJc+G6Rv00Q==
-Date: Tue, 11 Oct 2011 16:22:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Satoru Moriya <satoru.moriya@hds.com>, Con Kolivas <kernel@kolivas.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>, Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-Message-ID: <alpine.DEB.2.00.1110111612120.5236@chino.kir.corp.google.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 11 Oct 2011 19:37:52 -0400
+Date: Tue, 11 Oct 2011 16:37:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arne Jansen <sensille@gmx.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ulist: generic data structure to build unique lists
+Message-Id: <20111011163749.b0c27813.akpm@linux-foundation.org>
+In-Reply-To: <1318238525-28879-1-git-send-email-sensille@gmx.net>
+References: <1318238525-28879-1-git-send-email-sensille@gmx.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Satoru Moriya wrote:
+On Mon, 10 Oct 2011 11:22:05 +0200
+Arne Jansen <sensille@gmx.net> wrote:
 
-> Actually page allocator decreases min watermark to 3/4 * min watermark
-> for rt-task. But in our case some applications create a lot of
-> processes and if all of them are rt-task, the amount of watermark
-> bonus(1/4 * min watermark) is not enough.
+> ulist is a generic data structures to hold a collection of unique u64
+> values. The only operations it supports is adding to the list and
+> enumerating it.
 > 
-
-Right, if you can exhaust (1/4 * min_wmark) of memory quickly enough, 
-you'll still have latency issues.
-
-> If we can tune the amount of bonus, it may be fine. But that is
-> almost all same as extra free kbytes.
+> It is possible to store an auxiliary value along with the key.
+> The implementation is preliminary and can probably be sped up
+> significantly.
+> The main purpose of this submission is to get some idea whether this
+> data structure is worth having generally available.
 > 
-
-I don't know if your test case is the only thing that Rik is looking at, 
-but if so, then that statement makes me believe that this patch is 
-definitely in the wrong direction, so NACK on it until additional 
-information is presented.  The reasoning is simple: if tuning the bonus 
-given to rt-tasks in the page allocator itself would fix the issue, then 
-we can certainly add logic specifically for rt-tasks that can reclaim more 
-aggressively without needing any tunable from userspace (and _certainly_ 
-not a global tunable that affects every application!).
-
-> > Does there exist anything like a test case which demonstrates the need 
-> > for this feature?
+> It is used by btrfs subvolume quota to translate recursions into iterative
+> loops and to gather a unique list of roots. Once I had built this data
+> structure, several uses for it popped up.
 > 
-> Unfortunately I don't have a real test case but just simple one.
-> And in my simple test case, I can avoid direct reclaim if we set
-> workload as rt-task.
-> 
-> The simple test case I used is following:
-> http://marc.info/?l=linux-mm&m=131605773321672&w=2
-> 
+>
+> ...
+>
+> +#define ULIST_SIZE 16
+> +
+> +struct ulist_node {
+> +	u64 val;
+> +	unsigned long aux;
+> +	unsigned long next;
+> +};
+> +
+> +struct ulist {
+> +	unsigned long nnodes;
+> +	unsigned long gfp_mask;
+> +	struct ulist_node *nodes;
+> +	unsigned long nodes_alloced;
+> +	struct ulist_node int_nodes[ULIST_SIZE];
+> +};
 
-I tried proposing one of Con's patches from his BFS scheduler ("mm: adjust 
-kswapd nice level for high priority page") about 1 1/2 years ago that I 
-recall and believe may significantly help your test case.  The thread is 
-at http://marc.info/?t=126743860700002.  (There's a lot of interesting 
-things in Con's patchset that can be pulled into the VM, this isn't the 
-only one.)
+Please document your data structures.  In particular, the relationship
+between the various fields.  And ulist_node.aux and .next are rather
+mysterious.  Would prefer not to have to reverse engineer these things
+from an implementation.
 
-The patch wasn't merged back then because we wanted a test case that was 
-specifically fixed by this issue, and it may be that we have just found 
-one.  If you could try it out without any extra_free_kbytes, I think we 
-may be able to help your situation.
+> +void ulist_init(struct ulist *ulist, unsigned long gfp_mask);
+> +void ulist_fini(struct ulist *ulist);
+> +void ulist_reinit(struct ulist *ulist);
+> +struct ulist *ulist_alloc(unsigned long gfp_mask);
+> +void ulist_free(struct ulist *ulist);
+
+These are all missing EXPORT_SYMBOL.
+
+And they're all missing interface documentation ;)
+
+The locking requirements should be documented.  It appears to be
+"caller provides it".  That's a good design, but let's spell it out. 
+
+Bear in mind that some callers might wish to use rwlocks or rwsems, so
+really good documentation would tell them which interface functions
+need a read lock and which need a write lock.  Bear in mind that such
+decisions might constrain future additions to the library code.
+
+> +/* returns < 0 on error, 0 on duplicate, 1 on insert */
+> +int ulist_add(struct ulist *ulist, u64 val, unsigned long aux);
+> +
+> +struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_node *prev);
+> +
+> +#endif
+> diff --git a/lib/ulist.c b/lib/ulist.c
+> new file mode 100644
+> index 0000000..641a90f
+> --- /dev/null
+> +++ b/lib/ulist.c
+> @@ -0,0 +1,103 @@
+> +/*
+> + * Copyright (C) 2011 STRATO AG
+> + * written by Arne Jansen <sensille@gmx.net>
+> + * Distributed under the GNU GPL license version 2.
+> + *
+> + * ulist is a generic data structures to hold a collection of unique u64
+> + * values. The only operations it supports is adding to the list and
+> + * enumerating it.
+> + * It is possible to store an auxiliary value along with the key.
+> + *
+> + * The implementation is preliminary and can probably be sped up
+> + * significantly. A first step would be to store the values in an rbtree
+> + * as soon as ULIST_SIZE is exceeded.
+> + */
+> +
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/ulist.h>
+> +
+> +void ulist_init(struct ulist *ulist, unsigned long gfp_mask)
+> +{
+> +	ulist->nnodes = 0;
+> +	ulist->gfp_mask = gfp_mask;
+> +	ulist->nodes = ulist->int_nodes;
+> +	ulist->nodes_alloced = ULIST_SIZE;
+> +}
+
+Putting the gfp_mask into the ulist is a mistake, trust me.  Been there
+before.  It should be passed in as an argument by the caller.
+
+> +void ulist_fini(struct ulist *ulist)
+> +{
+> +	if (ulist->nodes_alloced > ULIST_SIZE)
+> +		kfree(ulist->nodes);
+> +}
+
+What a strange function.  I look forward to seeing the documentation.
+
+> +void ulist_reinit(struct ulist *ulist)
+> +{
+> +	ulist_fini(ulist);
+> +	ulist_init(ulist, ulist->gfp_mask);
+> +}
+> +
+> +struct ulist *ulist_alloc(unsigned long gfp_mask)
+> +{
+> +	struct ulist *ulist = kmalloc(sizeof(*ulist), gfp_mask);
+> +
+> +	if (!ulist)
+> +		return NULL;
+> +
+> +	ulist_init(ulist, gfp_mask);
+> +
+> +	return ulist;
+> +}
+> +
+> +void ulist_free(struct ulist *ulist)
+> +{
+> +	if (!ulist)
+> +		return;
+> +	ulist_fini(ulist);
+> +	kfree(ulist);
+> +}
+> +
+> +int ulist_add(struct ulist *ulist, u64 val, unsigned long aux)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ulist->nnodes; ++i) {
+> +		if (ulist->nodes[i].val == val)
+> +			return 0;
+> +	}
+> +
+> +	if (ulist->nnodes > ulist->nodes_alloced) {
+> +		u64 new_alloced = ulist->nodes_alloced + 128;
+> +		struct ulist_node *new_nodes = kmalloc(sizeof(*new_nodes) *
+> +					       new_alloced, ulist->gfp_mask);
+> +
+> +		if (!new_nodes)
+> +			return -ENOMEM;
+> +		memcpy(new_nodes, ulist->nodes,
+> +		       sizeof(*new_nodes) * ulist->nnodes);
+
+We have krealloc().
+
+> +		if (ulist->nodes_alloced > ULIST_SIZE)
+> +			kfree(ulist->nodes);
+> +		ulist->nodes = new_nodes;
+> +		ulist->nodes_alloced = new_alloced;
+> +	}
+> +	ulist->nodes[ulist->nnodes].val = val;
+> +	ulist->nodes[ulist->nnodes].aux = aux;
+> +	ulist->nodes[ulist->nnodes].next = ulist->nnodes + 1;
+> +	++ulist->nnodes;
+> +
+> +	return 1;
+> +}
+> +
+> +struct ulist_node *ulist_next(struct ulist *ulist, struct ulist_node *prev)
+> +{
+> +	if (ulist->nnodes == 0)
+> +		return NULL;
+> +
+> +	if (!prev)
+> +		return &ulist->nodes[0];
+> +
+> +	if (prev->next < 0 || prev->next >= ulist->nnodes)
+> +		return NULL;
+> +
+> +	return &ulist->nodes[prev->next];
+> +}
+
+Generally, I really do ask that you provide us a complete description
+of what this utility is supposed to do.  Once that is understood we can
+then start to determine why none of the existing container helpers were
+suitable, and were not capable of being modified to be suitable.
+
+For example, from a quick squint at the code I'm wondering why
+flex_array was unsuitable.
+
