@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab1JKXDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 19:03:18 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34823 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab1JKXDR (ORCPT
+	id S1751731Ab1JKXQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 19:16:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58631 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1JKXQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 19:03:17 -0400
-Subject: [PATCH v2] ASoC: Remove impossible case from wm8994_hw_params
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 07:03:09 +0800
-Message-ID: <1318374189.6115.3.camel@phoenix>
+	Tue, 11 Oct 2011 19:16:03 -0400
+Date: Tue, 11 Oct 2011 16:16:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, harald@redhat.com,
+        david@fubar.dk, greg@kroah.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: A =?UTF-8?Q?Plumber=E2=80=99s?= Wish List for Linux
+Message-Id: <20111011161600.6145aa6b.akpm@linux-foundation.org>
+In-Reply-To: <1317943022.1095.25.camel@mop>
+References: <1317943022.1095.25.camel@mop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We set hw_params callback for wm8994_aif3_dai_ops to wm8994_aif3_hw_params.
-Thus no need to check wm8994-aif3 in wm8994_hw_params.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-v2: original patch does not apply after commit 81204c84c "ASoC: Add WM1811 support".
+Useful email, thanks.
 
- sound/soc/codecs/wm8994.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+On Fri, 07 Oct 2011 01:17:02 +0200
+Kay Sievers <kay.sievers@vrfy.org> wrote:
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 16542de..68e769e 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2235,7 +2235,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			    struct snd_soc_dai *dai)
- {
- 	struct snd_soc_codec *codec = dai->codec;
--	struct wm8994 *control = codec->control_data;
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
- 	int aif1_reg;
- 	int aif2_reg;
-@@ -2278,15 +2277,6 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
- 			dev_dbg(codec->dev, "AIF2 using split LRCLK\n");
- 		}
- 		break;
--	case 3:
--		switch (control->type) {
--		case WM1811:
--		case WM8958:
--			aif1_reg = WM8958_AIF3_CONTROL_1;
--			break;
--		default:
--			return 0;
--		}
- 	default:
- 		return -EINVAL;
- 	}
--- 
-1.7.4.1
+> We___d like to share our current wish list of plumbing layer features we
 
+gargh.  gmail?
 
+>
+> ...
+>
+> * fork throttling mechanism as basic cgroup functionality that is
+> available in all hierarchies independent of the controllers used:
+> This is important to implement race-free killing of all members of a
+> cgroup, so that cgroup member processes cannot fork faster then a cgroup
+> supervisor process could kill them. This needs to be recursive, so that
+> not only a cgroup but all its subgroups are covered as well.
 
+Frederic Weisbecker's "cgroups: add a task counter subsystem" should
+address this.  Does it meet these requirments?  Have you tested it?
+
+>
+> ...
+>
+> * Add a timerslack cgroup controller, to allow increasing the timer
+> slack of user session cgroups when the machine is idle.
+
+Kirill Shutemov has just posted "cgroups: introduce timer slack
+controller".  Again, is that sufficient?  Have you reviewed and tested
+it?
+
+>
+> ...
+>
