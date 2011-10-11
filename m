@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab1JKTPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:15:25 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:53716 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754948Ab1JKTPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:15:23 -0400
-Message-ID: <4E9495C8.1030200@xenotime.net>
-Date: Tue, 11 Oct 2011 12:15:20 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110907 SUSE/3.1.14 Thunderbird/3.1.14
+	id S1755304Ab1JKTQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:16:47 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34001 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754879Ab1JKTQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 15:16:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH 0/4] allow freezing of tasks with netfs calls in flight
+Date: Tue, 11 Oct 2011 21:19:06 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, trond.myklebust@netapp.com,
+        smfrench@gmail.com, linux-pm@lists.linux-foundation.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, john@calva.com,
+        linux-kernel@vger.kernel.org
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com> <20111011061819.GA1377@ucw.cz> <20111011060531.09bc378a@tlielax.poochiereds.net>
+In-Reply-To: <20111011060531.09bc378a@tlielax.poochiereds.net>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Arnaud Lacombe <lacombar@gmail.com>
-Subject: [PATCH -next] jbd2: fix build when CONFIG_BUG is not enabled
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
-In-Reply-To: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201110112119.06547.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Tuesday, October 11, 2011, Jeff Layton wrote:
+> On Tue, 11 Oct 2011 08:18:19 +0200
+> Pavel Machek <pavel@ucw.cz> wrote:
+> 
+> > Hi!
+> > 
+> > > We've had a number of reports recently of people with NFS and CIFS
+> > > mounts that were unable to suspend or hibernate their machines. Here
+> > > are a couple of Fedora bugs that illustrate the problem:
+> > > 
+> > >     https://bugzilla.redhat.com/show_bug.cgi?id=712088
+> > >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
+> > > 
+> > > When it occurs the problem is pretty clear. We have a task that's
+> > > sleeping in the kernel in TASK_KILLABLE sleep, generally waiting
+> > > for a reply to come in. Often though, userspace has already taken
+> > > down the interface so that reply will never come. The process then
+> > > fails to freeze and the suspend fails.
+> > 
+> > Userspace should not take interface down for suspend (*). Why do that?
+> > 
+> 
+> I suspect that NetworkManager does this to try and allow for the case
+> where someone suspends their laptop and then wanders off to another
+> network and then resumes.
 
-Fix build error when CONFIG_BUG is not enabled:
+That's correct.
 
-fs/jbd2/transaction.c:1175:3: error: implicit declaration of function '__WARN'
+> Either way, we still want to allow suspend and hibernate to work regardless
+> of what userspace does during the process.
 
-by changing __WARN() to WARN_ON(), as suggested by
-Arnaud Lacombe <lacombar@gmail.com>.
+Very true. :-)
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnaud Lacombe <lacombar@gmail.com>
----
-
-Same build error as reported on 31-AUG-2011 for
-linux-next 20110830.
-
- fs/jbd2/transaction.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- next-2011-1011.orig/fs/jbd2/transaction.c
-+++ next-2011-1011/fs/jbd2/transaction.c
-@@ -27,6 +27,7 @@
- #include <linux/highmem.h>
- #include <linux/hrtimer.h>
- #include <linux/backing-dev.h>
-+#include <linux/bug.h>
- #include <linux/module.h>
- 
- static void __jbd2_journal_temp_unlink_buffer(struct journal_head *jh);
-@@ -1171,8 +1172,7 @@ out_unlock_bh:
- 	jbd_unlock_bh_state(bh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
--	if (ret)
--		__WARN();	/* All errors are bugs, so dump the stack */
-+	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
- 	return ret;
- }
- 
+Thanks,
+Rafael
