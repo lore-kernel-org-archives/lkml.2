@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab1JKQ1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:27:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43114 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab1JKQ1H convert rfc822-to-8bit (ORCPT
+	id S1755015Ab1JKQda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:33:30 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:43077 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab1JKQd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:27:07 -0400
+	Tue, 11 Oct 2011 12:33:29 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E946FDA.7010409@cam.ac.uk>
+Date: Tue, 11 Oct 2011 17:33:30 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111003 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1448.1318338420@redhat.com>
-References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-	<2150.1314882260@redhat.com>
-	<CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com>
-	<CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com>
-	<5149.1317036720@redhat.com>
-	<CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com>
-	<CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com>
-	<6324.1317308270@redhat.com>
-	<CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com>
-	<12748.1317313818@redhat.com>
-	<CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com>
-	<CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com>
-	<18003.1317336244@redhat.com>
-	<CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com>
-	<6261.1317385734@redhat.com>
-	<CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com>
-	<8905.1317984176@redhat.com>
-	<CAOH1cHmpFF8vT8HVU3RL95p_s9ec2RJ1+o4K2TOrWX2QJrvwog@mail.gmail.com>
-	<1448.1318338420@redhat.com>
-Date: Tue, 11 Oct 2011 09:27:07 -0700
-Message-ID: <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com>
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: Cambridge, UK key signing meeting. Thursday 13th Oct
+References: <4E8655CD.90107@zytor.com> <201110020304.28288.rjw@sisk.pl> <4E87B885.50005@zytor.com> <201110021354.57995.rjw@sisk.pl> <4E88AF15.7000503@xenotime.net> <20111002225434.GA22333@ericsson.com> <4E898636.8000306@cam.ac.uk> <20111004223440.GA7626@linux-mips.org> <alpine.LFD.2.00.1110051957270.23587@eddie.linux-mips.org> <4E8DACAF.9010400@cam.ac.uk>
+In-Reply-To: <4E8DACAF.9010400@cam.ac.uk>
+X-Enigmail-Version: 1.4a1pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 6:07 AM, David Howells <dhowells@redhat.com> wrote:
-> Mark Moseley <moseleymark@gmail.com> wrote:
->
->> [37818.485559] kernel BUG at fs/fscache/object-list.c:64!
->
-> Hmmm...  An object is being added to the object list twice.  It may indicate a
-> free before an object is finished with.  Do you have slab debugging turned on?
->
-> David
->
+On 10/06/11 14:27, Jonathan Cameron wrote:
+> Date: Thursday 13th Oct.
+> 
+> Location: Cambridge University Engineering Department, Trumpington Street
+> 
+> Time: Either 2pm or 7pm.  Please say which time/s you can make.
+> 
+> Attending so far:
+> Ralf Baechle
+> Jonathan Cameron
+> 
+> I might be able to get a few parking spaces if people give me plenty of warning.
+> 
+> Please circulate to anyone who might be interested.
+> 
+> email jic23@cam.ac.uk if you plan to attend so I can make sure we have a big enough room.
+> I might also need to give names to security if we go with the 7pm option.
+> 
+> I'll send out details and directions to those who are coming nearer the time.
+> 
+> Jonathan Cameron
 
-It's compiled in but not currently enabled. Should I do so? And
-anything I should be looking for in it?
+I've just sent out an email to those who have replied so far.  If I missed someone
+or anyone else wants to come it is at 2pm, Thurs 15th.  Email me for more details.
+
+Jonathan
