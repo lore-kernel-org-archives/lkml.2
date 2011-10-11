@@ -1,62 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1JKF7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 01:59:39 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:38521 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751317Ab1JKF7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 01:59:38 -0400
-Message-ID: <4E93DB41.2080900@ti.com>
-Date: Tue, 11 Oct 2011 11:29:29 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	id S1752122Ab1JKGPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:15:06 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:43409 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175Ab1JKGPE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 02:15:04 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
-References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111010172222.GG3607@opensource.wolfsonmicro.com>
-In-Reply-To: <20111010172222.GG3607@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111011154304.f7fefc4f7f86b4b10348578c@canb.auug.org.au>
+References: <20111011154304.f7fefc4f7f86b4b10348578c@canb.auug.org.au>
+Date: Tue, 11 Oct 2011 09:15:02 +0300
+Message-ID: <CAPo=G1yMZm-gcVsqL3V7o-y=+cFfeQxVup27_48wdtV0_LTnkQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the sound tree with the arm-soc tree
+From: "Ujfalusi, Peter" <peter.ujfalusi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 October 2011 10:52 PM, Mark Brown wrote:
-> On Mon, Oct 10, 2011 at 09:49:36PM +0530, Rajendra Nayak wrote:
+Hi Stephen,
+
+On Tue, Oct 11, 2011 at 7:43 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Takashi,
 >
->> +- regulator-change-voltage: boolean, Output voltage can be changed by software
->> +- regulator-change-current: boolean, Output current can be chnaged by software
->> +- regulator-change-mode: boolean, Operating mode can be changed by software
->> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
->> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
->> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
->> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
->> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
->> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
->> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
->> +- regulator-always-on: boolean, regulator should never be disabled
+> Today's linux-next merge of the sound tree got a conflict in
+> arch/arm/plat-omap/devices.c between commit 40246e0003f0 ("ARM: OMAP:
+> mcbsp: Move out omap_mcbsp_register_board_cfg from plat-omap/devices")
+> from the arm-soc tree and commit d231f5cbac9e ("OMAP: McPDM: Convert
+> McPDM device to omap_device") from the sound tree.
 >
-> Thinking about this I'm not sure that these should go in the device
-> tree, they're as much talking about what Linux is able to cope with as
-> they are talking about what the hardware is able to do.  Sometimes
-> they'll be fixed by the design but they are sometimes also restricted by
-> what the software is currently capable of.  DRMS is a prime example
-> here, it depends on how good we are at telling the API about how much
-> current we're using.
+> Just overlapping removals.  I fixed it up (see below) and can carry the
+> fix as necessary.
 
-So is there another way of passing these, if not through device tree?
-There are other linux specific things that need to be passed to the
-framework as well, like the state of the regulator in the various
-linux specific suspend states, like standby/mem/disk.
-So if these can't be passed through device tree, should they still
-be passed in some way through platform_data? Or is it best to identify
-the bindings as being linux specific and not generic by appending a
-"linux," to the bindings.
+Thanks, the McBSP change came via linux-omap while we had the McPDM
+changes coming via sound tree.
 
-Grant, need some help and advice.
+>
+> Mark, Liam:  That sound tree commit has a few Signed-off-by lines with no
+> email addresses.
 
+I can not track their new contact information. They used to work for TI, and I
+have been advised to give them credit for their work on this area.
+I could have added no longer valid email addresses...
+
+-- 
+Péter
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/arm/plat-omap/devices.c
+> index acd132c,40eca9b..0000000
+> --- a/arch/arm/plat-omap/devices.c
+> +++ b/arch/arm/plat-omap/devices.c
+> @@@ -24,44 -24,56 +24,11 @@@
+>  #include <plat/tc.h>
+>  #include <plat/board.h>
+>  #include <plat/mmc.h>
+>  -#include <mach/gpio.h>
+>  #include <plat/menelaus.h>
+>  -#include <plat/mcbsp.h>
+>  #include <plat/omap44xx.h>
+>
+> - #if defined(CONFIG_SND_OMAP_SOC_MCPDM) || \
+> -               defined(CONFIG_SND_OMAP_SOC_MCPDM_MODULE)
+> -
+> - static struct resource mcpdm_resources[] = {
+> -       {
+> -               .name           = "mcpdm_mem",
+> -               .start          = OMAP44XX_MCPDM_BASE,
+> -               .end            = OMAP44XX_MCPDM_BASE + SZ_4K,
+> -               .flags          = IORESOURCE_MEM,
+> -       },
+> -       {
+> -               .name           = "mcpdm_irq",
+> -               .start          = OMAP44XX_IRQ_MCPDM,
+> -               .end            = OMAP44XX_IRQ_MCPDM,
+> -               .flags          = IORESOURCE_IRQ,
+> -       },
+> - };
+> -
+> - static struct platform_device omap_mcpdm_device = {
+> -       .name           = "omap-mcpdm",
+> -       .id             = -1,
+> -       .num_resources  = ARRAY_SIZE(mcpdm_resources),
+> -       .resource       = mcpdm_resources,
+> - };
+> -
+> - static void omap_init_mcpdm(void)
+> - {
+> -       (void) platform_device_register(&omap_mcpdm_device);
+> - }
+> - #else
+> - static inline void omap_init_mcpdm(void) {}
+> - #endif
+> -
+>  /*-------------------------------------------------------------------------*/
+>
+>  -#if defined(CONFIG_OMAP_MCBSP) || defined(CONFIG_OMAP_MCBSP_MODULE)
+>  -
+>  -static struct platform_device **omap_mcbsp_devices;
+>  -
+>  -void omap_mcbsp_register_board_cfg(struct resource *res, int res_count,
+>  -                      struct omap_mcbsp_platform_data *config, int size)
+>  -{
+>  -      int i;
+>  -
+>  -      omap_mcbsp_devices = kzalloc(size * sizeof(struct platform_device *),
+>  -                                   GFP_KERNEL);
+>  -      if (!omap_mcbsp_devices) {
+>  -              printk(KERN_ERR "Could not register McBSP devices\n");
+>  -              return;
+>  -      }
+>  -
+>  -      for (i = 0; i < size; i++) {
+>  -              struct platform_device *new_mcbsp;
+>  -              int ret;
+>  -
+>  -              new_mcbsp = platform_device_alloc("omap-mcbsp", i + 1);
+>  -              if (!new_mcbsp)
+>  -                      continue;
+>  -              platform_device_add_resources(new_mcbsp, &res[i * res_count],
+>  -                                      res_count);
+>  -              new_mcbsp->dev.platform_data = &config[i];
+>  -              ret = platform_device_add(new_mcbsp);
+>  -              if (ret) {
+>  -                      platform_device_put(new_mcbsp);
+>  -                      continue;
+>  -              }
+>  -              omap_mcbsp_devices[i] = new_mcbsp;
+>  -      }
+>  -}
+>  -
+>  -#else
+>  -void omap_mcbsp_register_board_cfg(struct resource *res, int res_count,
+>  -                      struct omap_mcbsp_platform_data *config, int size)
+>  -{  }
+>  -#endif
+>  -
+>  -/*-------------------------------------------------------------------------*/
+>  -
+>  #if defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
+>        defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE)
+>
+>
