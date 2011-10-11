@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1JKFcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 01:32:14 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53238 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1JKFcJ (ORCPT
+	id S1751784Ab1JKFle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 01:41:34 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:52313 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JKFlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 01:32:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACVXFVM_KU3Re87FT6k55EKNFXZ-NdhhuUoff8H71s7fWxjTUA@mail.gmail.com>
-References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
-	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
-	<CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
-	<CANejiEURP-tuBtCfocNjrs1MgK8NMzQttRkPEWeXJ40fNov20Q@mail.gmail.com>
-	<CACVXFVOcSOe+_XpNdKGBCMzdFcs4=ViZbf7hPLnieZUhPewzmA@mail.gmail.com>
-	<CANejiEUNAZsaAJBXrfi8+5E5GCK4KFUcOSiZarGEwqz2idT2EA@mail.gmail.com>
-	<CACVXFVM_KU3Re87FT6k55EKNFXZ-NdhhuUoff8H71s7fWxjTUA@mail.gmail.com>
-Date: Tue, 11 Oct 2011 13:32:08 +0800
-X-Google-Sender-Auth: ZzdK1hdlem0FJDBL6qaX2I2UO6w
-Message-ID: <CANejiEXACbyvq=_ChAsb7D3ZoBQtqs6uS-s7NPU26e3X-tyPLA@mail.gmail.com>
-Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
-From: Shaohua Li <shli@kernel.org>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        mark gross <mgross@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM List <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 11 Oct 2011 01:41:31 -0400
+Date: Tue, 11 Oct 2011 16:41:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlBoaWxpcHBlIFLDqXRvcm5heiI=?= 
+	<philippe.retornaz@epfl.ch>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: linux-next: manual merge of the mfd tree with the arm-soc tree
+Message-Id: <20111011164122.709419a813e96d88a0bc070c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Oct_2011_16_41_22_+1100_0Lhwf/uU/+LSt.sm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/11 Ming Lei <tom.leiming@gmail.com>:
-> Hi,
->
-> On Tue, Oct 11, 2011 at 10:26 AM, Shaohua Li <shli@kernel.org> wrote:
->> 2011/10/11 Ming Lei <tom.leiming@gmail.com>:
->>> Hi,
->>>
->>> On Tue, Oct 11, 2011 at 9:49 AM, Shaohua Li <shli@kernel.org> wrote:
->>>
->>>> As Alan explained, PM_QOS_CPU_DMA_LATENCY is for dma snooping. For example,
->>>> in x86, cpu snoop dma. when cpu is in idle state, cpu need snoop
->>>> device dma activity, there
->>>> is latency involved for idle state.
->>>>
->>>
->>> I see, thanks for your clarification.
->>>
->>> I also have two further questions about it:
->>>
->>> - Except for dma snooping purpose, are there any other cases in which
->>> PM_QOS_CPU_DMA_LATENCY is required?
->> it's the main motivation, IIRC, don't know other platforms
->
-> If so, maybe all device drivers which support DMA transfer should
-> have used PM_QOS_CPU_DMA_LATENCY, but why only few drivers
-> did it?
-depends on your device. Say cpu takes 1s to snoop dma in idle state, so device
-dma will cost more than 1s. if your device can work with such latency, no
-problem then.
+--Signature=_Tue__11_Oct_2011_16_41_22_+1100_0Lhwf/uU/+LSt.sm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Samuel,
+
+Today's linux-next merge of the mfd tree got a conflict in
+arch/arm/mach-imx/mach-mx31moboard.c between commit 40d97b89bd3c
+("mx31moboard: Add poweroff support") from the arm-soc tree and commit
+1ab50c862862 ("ARM: imx/mx31moboard: Add mc13783 power button support")
+from the mfd tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-imx/mach-mx31moboard.c
+index fff7791,f7e302d..0000000
+--- a/arch/arm/mach-imx/mach-mx31moboard.c
++++ b/arch/arm/mach-imx/mach-mx31moboard.c
+@@@ -28,9 -28,7 +28,10 @@@
+  #include <linux/spi/spi.h>
+  #include <linux/types.h>
+  #include <linux/memblock.h>
+ +#include <linux/clk.h>
+ +#include <linux/io.h>
+ +#include <linux/err.h>
++ #include <linux/input.h>
+ =20
+  #include <linux/usb/otg.h>
+  #include <linux/usb/ulpi.h>
+
+--Signature=_Tue__11_Oct_2011_16_41_22_+1100_0Lhwf/uU/+LSt.sm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOk9cCAAoJEECxmPOUX5FEAaMP/Ru/MTpuhL2WcMMdUwKN7erx
+MR1/4xg0r10A7H6J+IXU8DlhWLofkRvfwb5i459ktN0kXFhgnRi0vYxAwdV7bCVp
+cXbL2aY7UCSpUYjHkhnSpH940AwFakH/3+lZxfO6224l9iNcaNehgQMfwq73kTXL
+xn+R0AUNLFNaTSJxQ9Uf1LDNOc/9EzeU3GsB9hVu5JeeWBOtaCAKj7zb0dCzg/Tn
+ad8eMFsxDmlK7Bnj+E8o1MjKdN2F8HnKTHq19wzFudlWaYLJ5wP0r4LRkvAbdr+m
+/wJAzYiHtP7hHadVlVxERZifc1pOIyhuArumoe5c09rA3sZngod4W5dcQMFeDkol
+wbg02UMBYrZXkNg/8wfMZU2zxPvXfUy+wpT+oNs2r6ouhpnODChKyMT+FQKBZGtV
+Gy/5G89rrXxFfLsoYMXorlVoEghuyb95GPYyjYC0Egw2Zu8gTmqxGmuXFquz26NH
+tLAYs51Z/HQj3et0rRfNOegNGu+QEtLLOstB23o/YoXVrWJaw3fuGkD5TcD1sVVn
+zhr5JgKFcpOjiOY/xjzUatMi/9LWHin7QpZaOBLVZiFmo5+9g5Lmrqsy/dbJNIa/
+imo67IgT4BJqaF1kFFLHLOztZ0wha5fStlRWfSC7ZdtDnjS+GZpw2zAedQGxa1Y1
+5hutZF82oLRkkV4HDh/E
+=jrBZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Oct_2011_16_41_22_+1100_0Lhwf/uU/+LSt.sm--
