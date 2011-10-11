@@ -1,102 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab1JKKVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:21:30 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:52173
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752231Ab1JKKV2 (ORCPT
+	id S1754220Ab1JKK2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:28:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50882 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1JKK2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:21:28 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zz9371K1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LSWCRG-02-3ZN-02
-X-M-MSG: 
-Date: Tue, 11 Oct 2011 12:21:15 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH v3 1/6] iommu/core: split mapping to page sizes as
- supported by the hardware
-Message-ID: <20111011102115.GE2138@amd.com>
-References: <CAK=WgbahwY+7Ux-RjW2Tw9WBSwZnYuTMZ2NQASWyOXQ3zF6qFg@mail.gmail.com>
- <20110927131222.GL2138@amd.com>
- <CAK=WgbYG2tpMJ2SikZhm=R9j5kQ6Hm8CGg=q1bko3idzF53Q3Q@mail.gmail.com>
- <20110927181438.GM2138@amd.com>
- <CAK=WgbbNs5fWHDEputZ=jzU5YN0sn0tf6AETkcsoq_Jbvc2XgQ@mail.gmail.com>
- <20111010094738.GW2138@amd.com>
- <CAK=WgbZ7Wyax1yfS1jSXw9OdwMtxxidwLO8PTsNUXX9CWzmVrw@mail.gmail.com>
- <20111010153609.GB2138@amd.com>
- <CAK=WgbYR_qx53Z7s3R=q29KYo8ebYCH9H9=2OrrWXWMv6=-iOQ@mail.gmail.com>
- <CAK=WgbbXpqfrYYU4Or_q_ZtYzF9dH41hT+zXhB9-4pKjYFjK8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbbXpqfrYYU4Or_q_ZtYzF9dH41hT+zXhB9-4pKjYFjK8w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 11 Oct 2011 06:28:00 -0400
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>
+Date: Tue, 11 Oct 2011 12:27:28 +0200
+In-Reply-To: <CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+	 <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+	 <1318319852.14400.65.camel@laptop>
+	 <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
+	 <1318324399.14400.71.camel@laptop>
+	 <CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318328848.8395.45.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 10, 2011 at 06:01:06PM -0400, Ohad Ben-Cohen wrote:
-> > On Mon, Oct 10, 2011 at 5:36 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> >> The master branch is best to base your patches on for generic work.
+On Tue, 2011-10-11 at 11:40 +0200, Vincent Guittot wrote:
+> On 11 October 2011 11:13, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
+> >> I have several goals. The 1st one is that I need to put more load on
+> >> some cpus when I have packages with different cpu frequency.
+> >
+> > That should be rather easy.
+> >
 > 
-> It looks like the master branch is missing something like this:
-> 
-> >From acb316aa4bcaf383e8cb1580e30c8635e0a34369 Mon Sep 17 00:00:00 2001
-> From: Ohad Ben-Cohen <ohad@wizery.com>
-> Date: Mon, 10 Oct 2011 23:55:51 +0200
-> Subject: [PATCH] iommu/core: fix build issue
-> 
-> Fix this:
-> 
-> drivers/iommu/iommu.c: In function 'iommu_commit':
-> drivers/iommu/iommu.c:291: error: 'iommu_ops' undeclared (first use in
-> this function)
-> 
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-> ---
->  drivers/iommu/iommu.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 909b0d2..a5131f1 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -288,7 +288,7 @@ EXPORT_SYMBOL_GPL(iommu_unmap);
-> 
->  void iommu_commit(struct iommu_domain *domain)
->  {
-> -	if (iommu_ops->commit)
-> -		iommu_ops->commit(domain);
-> +	if (domain->ops->commit)
-> +		domain->ops->commit(domain);
->  }
->  EXPORT_SYMBOL_GPL(iommu_commit);
-> -- 
-> 1.7.4.1
+> I agree, I was mainly wondering If I should use a [1-1024] or a
+> [1024-xxxx] range and it seems that both can be used according : SMT
+> uses <1024 and x86 turbo mode uses >1024
 
-Whoops. This iommu_commit branch wasn't meant to be in master already.
-I'll try to fix that.
+Well, turbo mode would typically only boost a cpu 25% or so, and only
+while idling other cores to keep under its thermal limit. So its not
+sufficient to actually affect the capacity calculation much if at all.
 
-	Joerg
+> >> Then, I have some use cases which have several running tasks but a low
+> >> cpu load. In this case, the small tasks are spread on several cpu by
+> >> the load_balance whereas they could be easily handled by one cpu
+> >> without significant performance modification.
+> >
+> > That shouldn't be done using cpu_power, we have sched_smt_power_savings
+> > and sched_mc_power_savings for stuff like that.
+> >
+> 
+> sched_mc_power_saving works fine when we have more than 2 cpus but
+> can't apply on a dual core because it needs at least 2 sched_groups
+> and the nr_running of these sched_groups must be higher than 0 but
+> smaller than group_capacity which is 1 on a dual core system.
 
--- 
-AMD Operating System Research Center
+SD_POWERSAVINGS_BALANCE does /=2 to nr_running, effectively doubling the
+capacity iirc. And I know some IBM dudes were toying with the idea of
+playing tricks with the capacity numbers, but that never went anywhere.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+> > Although I would really like to kill all those different
+> > sched_*_power_savings knobs and reduce it to one.
+> >
+> >> If the cpu_power is
+> >> higher than 1024, the cpu is no more seen out of capacity by the
+> >> load_balance as soon as a short process is running and teh main result
+> >> is that the small tasks will stay on the same cpu. This configuration
+> >> is mainly usefull for ARM dual core system when we want to power gate
+> >> one cpu. I use cyclictest to simulate such use case.
+> >
+> > Yeah, but that's wrong.
+> 
+> That's the only way I have found to gathers small task without any
+> relationship on one cpu. Do you know any better solution ?
+
+How do you know the task is 'small' ?
+
+For that you would need to track a time-weighted effective load average
+of the task and we don't have that.
+
+[ how bad is all this u64 math on ARM btw? and when will ARM finally
+  agree all this 32bit nonsense is a waste of time and silicon? ]
+
+But yeah, the whole nr_running vs capacity thing was traditionally to
+deal with spreading single tasks around. And traditional power aware
+scheduling was mostly about packing those on sockets (keeps other
+sockets idle) instead of spreading them around sockets (optimizes
+cache).
+
+Now I wouldn't at all mind you ripping out all that
+sched_*_power_savings crap and replacing it, I doubt it actually works
+anyway. I haven't got many patches on the subject, and I know I don't
+have the equipment to measure power usage.
+
+Also, the few patches I got mostly made the sched_*_power_savings mess
+bigger, which I refuse to do (what sysad wants to have a 27-state space
+to configure his power aware scheduling). This has mostly made people go
+away instead of fixing things up :-(
+
+As to what the replacement would have to look like, dunno, its not
+something I've really thought much about, but maybe the time-weighted
+stuff is the only sane approach, that combined with options on how to
+spread tasks (core, socket, node, etc..).
+
+I really think changing the load-balancer is the right way to go about
+solving your power issue (hot-plugging a cpu really is an insane way to
+idle a core) and I'm open to discussing what would work for you.
+
+All I really ask is to not cobble something together, the load-balancer
+is a horridly complex thing already and the last thing it needs is more
+special cases that don't interact properly.
+
 
