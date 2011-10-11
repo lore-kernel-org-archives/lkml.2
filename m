@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179Ab1JKVeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:34:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45706 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab1JKVeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:34:36 -0400
-Date: Tue, 11 Oct 2011 15:31:38 -0600
-From: Greg KH <gregkh@suse.de>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Greg KH <greg@kroah.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [01/38] PCI: Set PCI-E Max Payload Size on fabric
-Message-ID: <20111011213138.GA3881@suse.de>
-References: <20111011165903.GA30976@kroah.com>
- <20111011165708.466042477@pistachio.kroah.org>
- <20111011172019.GI10838@kvack.org>
- <CAErSpo6JFTm4y35Nz7aNUgM3ynX52fM1-AwX7OTOwm3cminv1Q@mail.gmail.com>
- <20111011192447.GC1112@kroah.com>
- <CAErSpo47Yw3Vygs5=OVmtUuLsB9FxJeYBm20UYem-Z3L7B0UhQ@mail.gmail.com>
- <20111011195611.GA2956@kroah.com>
- <20111011200335.GJ10838@kvack.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011200335.GJ10838@kvack.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751250Ab1JKVel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:34:41 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:46595 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1JKVei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 17:34:38 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Staging: comedi: fix printk and line over 80
+In-Reply-To: Your message of "Mon, 10 Oct 2011 19:28:53 +0530."
+             <1318255133-6986-2-git-send-email-ravishankar.km@greenturtles.in>
+From: Valdis.Kletnieks@vt.edu
+References: <1318255133-6986-1-git-send-email-ravishankar.km@greenturtles.in>
+            <1318255133-6986-2-git-send-email-ravishankar.km@greenturtles.in>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1318368870_2766P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 11 Oct 2011 17:34:30 -0400
+Message-ID: <21386.1318368870@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020202.4E94B668.0085,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 04:03:35PM -0400, Benjamin LaHaise wrote:
-> On Tue, Oct 11, 2011 at 01:56:11PM -0600, Greg KH wrote:
-> > > On Tue, Oct 11, 2011 at 1:24 PM, Greg KH <greg@kroah.com> wrote:
-> ...
-> > > I'd like to know more about this regression.
-> > 
-> > It shows up as an oops that prevents the machine from booting.
-> 
-> If it's a regression, the patch should be limited to fixing the bug.  As 
-> it stands, this patch series introduces new functionality, and because it 
-> goes through a known broken state with the first patch, it may cause 
-> failures for people if they land in the middle during a bisect.  This 
-> doesn't seem like the right approach for -stable.
+--==_Exmh_1318368870_2766P
+Content-Type: text/plain; charset=us-ascii
 
-Bisection here follows the same problems that happened in Linus's tree,
-so that's not a big deal, it happens a lot in stable patches.
+On Mon, 10 Oct 2011 19:28:53 +0530, Ravishankar Karkala Mallikarjunayya said:
+> This patch fixes a  printk and line over 80 charcter found by the
+> checkpatch.pl tool
 
-greg k-h
+> @@ -503,7 +512,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+>  		}
+>  	}
+>  
+> -	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
+> +	pr_err("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
+>  	       "card found at the requested position\n");
+>  	return -ENODEV;
+>  }
+
+As long as we're changing this code, should we be splicing the two parts of the
+string back together?  (And yes, that *does* trump the 80-col rule)
+
+--==_Exmh_1318368870_2766P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOlLZmcC3lWbTT17ARAivaAKCVEzhRaU3UIO7g7trNS8QVwYaDqgCg+1eo
+/ifse6PurHRJCORlRo6Tz94=
+=CkUw
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1318368870_2766P--
+
