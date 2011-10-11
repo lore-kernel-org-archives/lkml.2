@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab1JJU67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 16:58:59 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:58535 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab1JJU66 (ORCPT
+	id S1751536Ab1JKFkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 01:40:22 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:38763 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab1JKFkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 16:58:58 -0400
+	Tue, 11 Oct 2011 01:40:21 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Lennart Poettering <mzxreary@0pointer.de>
 Cc: Matt Helsley <matthltc@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
@@ -21,28 +21,34 @@ References: <1317943022.1095.25.camel@mop>
 	<20111007160113.GB14201@tango.0pointer.de>
 	<m17h4g2jqy.fsf@fess.ebiederm.org>
 	<20111010163140.GA22191@tango.0pointer.de>
-Date: Mon, 10 Oct 2011 13:59:10 -0700
-In-Reply-To: <20111010163140.GA22191@tango.0pointer.de> (Lennart Poettering's
-	message of "Mon, 10 Oct 2011 18:31:41 +0200")
-Message-ID: <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+	<m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+	<20111010214148.GB26510@tango.0pointer.de>
+Date: Mon, 10 Oct 2011 22:40:34 -0700
+In-Reply-To: <20111010214148.GB26510@tango.0pointer.de> (Lennart Poettering's
+	message of "Mon, 10 Oct 2011 23:41:48 +0200")
+Message-ID: <m1obxojdbh.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18tqHrLWBqMErO/01XYsxaY0FzeN3uLtu4=
+X-XM-AID: U2FsdGVkX19ObDRfjZ8CywOQvphkb7W1Zp8QK7xoZOc=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+X-Spam-Report: * -1.0 XM_URI_RBL_RM URI removed in uri.bl.xmission.com
+	*      [URIs: freedesktop.org]
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
 	*  0.8 RDNS_NONE Delivered to internal network by a host with no rDNS
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
 X-Spam-Combo: ;Lennart Poettering <mzxreary@0pointer.de>
-X-Spam-Relay-Country: 
-Subject: Detecting if you are running in a container
+X-Spam-Relay-Country: **
+Subject: Re: Detecting if you are running in a container
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -50,127 +56,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Cc's and subject updated so hopefully we get the correct people
-on this discussion to make progress.
-
 Lennart Poettering <mzxreary@0pointer.de> writes:
 
-> To make a standard distribution run nicely in a Linux container you
-> usually have to make quite a number of modifications to it and disable
-> certain things from the boot process. Ideally however, one could simply
-> boot the same image on a real machine and in a container and would just
-> do the right thing, fully stateless. And for that you need to be able to
-> detect containers, and currently you can't.
+> On Mon, 10.10.11 13:59, Eric W. Biederman (ebiederm@xmission.com) wrote:
+>
+>> > Quite a few kernel subsystems are
+>> > currently not virtualized, for example SELinux, VTs, most of sysfs, most
+>> > of /proc/sys, audit, udev or file systems (by which I mean that for a
+>> > container you probably don't want to fsck the root fs, and so on), and
+>> > containers tend to be much more lightweight than real systems.
+>> 
+>> That is an interesting viewpoint on what is not complete.  But as a
+>> listing of the tasks that distribution startup needs to do differently in
+>> a container the list seems more or less reasonable.
+>
+> Note that this is just what came to my mind while I was typing this, I
+> am quite sure there's actually more like this.
+>
+>> There are two questions 
+>> - How in the general case do we detect if we are running in a container.
+>> - How do we make reasonable tests during bootup to see if it makes sense
+>>   to perform certain actions.
+>> 
+>> For the general detection if we are running in a linux container I can
+>> see two reasonable possibilities.
+>> 
+>> - Put a file in / that let's you know by convention that you are in a
+>>   linux container.  I am inclined to do this because this is something
+>>   we can support on all kernels old and new.
+>
+> Hmpf. That would break the stateless read-only-ness of the root dir.
+>
+> After pointing the issue out to the LXC folks they are now setting
+> "container=lxc" as env var when spawning a container. In systemd-nspawn
+> I have then adopted a similar scheme. Not sure though that that isp
+> particularly nice however, since env vars are inherited further down the
+> tree where we probably don't want them.
 
-I agree getting to the point where we can run a standard distribution
-unmodified in a container sounds like a reasonable goal.
+Interesting.  That seems like a reasonable enough thing to require
+of the programs that create containers.
 
-> Quite a few kernel subsystems are
-> currently not virtualized, for example SELinux, VTs, most of sysfs, most
-> of /proc/sys, audit, udev or file systems (by which I mean that for a
-> container you probably don't want to fsck the root fs, and so on), and
-> containers tend to be much more lightweight than real systems.
+> In case you are curious: this is the code we use in systemd:
+>
+> http://cgit.freedesktop.org/systemd/tree/src/virt.c
+>
+> What matters to me though is that we can generically detect Linux
+> containers instead of specific implementations.
 
-That is an interesting viewpoint on what is not complete.  But as a
-listing of the tasks that distribution startup needs to do differently in
-a container the list seems more or less reasonable.
+>> - Allow modification to the output of uname(2).  The uts namespace
+>>   already covers uname(2) and uname is the standard method to
+>>   communicate to userspace the vageries about the OS level environment
+>>   they are running in.
+>
+> Well, I am not a particular fan of having userspace tell userspace about
+> containers. I would prefer if userspace could get that info from the
+> kernel without any explicit agreement to set some specific variable.
 
-There are two questions 
-- How in the general case do we detect if we are running in a container.
-- How do we make reasonable tests during bootup to see if it makes sense
-  to perform certain actions.
+Well userspace tells userspace about stdin and it works reliably.
 
-For the general detection if we are running in a linux container I can
-see two reasonable possibilities.
+Containers are a userspace construct built with kernel facilities.
+I don't see why asking userspace to implement a convention is any more
+important than the other things that have to be done.
 
-- Put a file in / that let's you know by convention that you are in a
-  linux container.  I am inclined to do this because this is something
-  we can support on all kernels old and new.
+We do need to document the convetions.  Just like we document the
+standard device names but I don't beyond that we should be fine.
 
-- Allow modification to the output of uname(2).  The uts namespace
-  already covers uname(2) and uname is the standard method to
-  communicate to userspace the vageries about the OS level environment
-  they are running in.
+>> My list of things that still have work left to do looks like:
+>> - cgroups.  It is not safe to create a new hierarchies with groups
+>>   that are in existing hierarchies.  So cgroups don't work.
+>
+> Well, for systemd they actually work quite fine since systemd will
+> always place its own cgroups below the cgroup it is started in. cgroups
+> hence make these things nicely stackable.
+>
+> In fact, most folks involved in cgroups userspace have agreed to these
+> rules now:
+>
+> http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
+>
+> Among other things they ask all userspace code to only create subgroups
+> below the group they are started in, so not only systemd should work
+> fine in a container environment but everything else following these
+> rules.
+>
+> In other words: so far one gets away quite nicely with the fact that the
+> cgroup tree is not virtualized.
 
+Assuming you bind mount the cgroups inside and generally don't allow
+people in a container to create cgroup hierarchies.  At the very least
+that is nasty information leakage.
 
-My list of things that still have work left to do looks like:
-- cgroups.  It is not safe to create a new hierarchies with groups
-  that are in existing hierarchies.  So cgroups don't work.
+But I am glad there is a solution for right now.
 
-- user namespace.  We are very close to have something workable
-  on this one, but until we do all of the users inside and outside
-  of a container are the same, and pass the same permission checks.
+For my uses I have yet to find control groups anything but borked.
 
-  As a result we have to drop most of roots privileges, and we have
-  to be a bit careful what binaries that can gain privileges (think suid
-  root) are in the container filesystem.
+>> - VTs.  Ptys should be well supported at this point.  For the rest
+>>   they are physical hardware that a container should not be playing with
+>>   so I would base which gettys to start up based on which device nodes
+>>   are present in /dev.
+>
+> Well, I am not sure it's that easy since device nodes tend to show up
+> dynamically in bare systems. So if you just check whether /dev/tty0 is
+> there you might end up thinking you are in a container when you actually
+> aren't simply because you did that check before udev loaded the DRI
+> driver or so.
 
-- Reboot.  I know Daniel was working on something not long ago
-  but I am not certain where he would up.
+But the point isn't to detect a container the point is to decide if
+a getty needs to be spawned.  Even with the configuration for a getty
+you need to wait for the device node to exist before spawning one.
 
-- device namespaces.  We periodically think about having a separate
-  set of devices and to support things like losetup in a container
-  that seems necessary.  Most of the time getting all of the way
-  to device namespaces seems unnecessary.
+>> - sysctls (aka /proc/sys) that is a trick one.  Until the user namespace
+>>   is fleshed out a little more sysctls are going to be a problem,
+>>   because root can write to most of them.  My gut feel says you probably
+>>   want to base that to poke at sysctls on CAP_SYS_ADMIN.  At least that
+>>   test will become true when the userspaces are rolled out, and at
+>>   that point you will want to set all of the sysctls you have permission
+>>   to.
+>
+> So what we did right now in systemd-nspawn is that the container
+> supervisor premounts /proc/sys read-only into the container. That way
+> writes to it will fail in the container, and while you get a number of
+> warnings things will work as they should (though not necessarily safely
+> since the container can still remount the fs unless you take
+> CAP_SYS_ADMIN away).
 
+That sort of works.  In practice it means you can't setup interesting
+things like forwarding in the networking stack.  But it certainly gets
+things going.
 
-As for tests on what to startup.
+>> So while I agree a check to see if something is a container seems
+>> reasonable.  I do not agree that the pid namespace is the place to put
+>> that information.  I see no natural to put that information in the
+>> pid namespace.
+>
+> Well, a simple way would be to have a line /proc/1/status called
+> "PIDNamespaceLevel:" or so which would be 0 for the root namespace, and
+> increased for each namespace nested in it. Then, processes could simply
+> read that and be happy.
 
-- udev.  All of the kernel interfaces for udev should be supported in
-  current kernels.  However I believe udev is useless because container
-  start drops CAP_MKNOD so we can't do evil things.  So I would
-  recommend basing the startup of udev on presence of CAP_MKNOD.
+Not a chance.  PIDNamespaceLevel is implementing an implementation
+detail that may well change in the lifetime of a process.  It is true
+we don't have migration mreged in the kernel yet but one of these days
+I expect we will.
 
-- VTs.  Ptys should be well supported at this point.  For the rest
-  they are physical hardware that a container should not be playing with
-  so I would base which gettys to start up based on which device nodes
-  are present in /dev.
+>> I further think there are a lot of reasonable checks for if a
+>> kernel feature is supported in the current environment I would
+>> rather pursue over hacks based the fact we are in a container.
+>
+> Well, believe me we have been tryiung to find nicer hooks that explicit
+> checks for containers, but I am quite sure that at the end of the day
+> you won't be able to go without it entirely.
 
-- sysctls (aka /proc/sys) that is a trick one.  Until the user namespace
-  is fleshed out a little more sysctls are going to be a problem,
-  because root can write to most of them.  My gut feel says you probably
-  want to base that to poke at sysctls on CAP_SYS_ADMIN.  At least that
-  test will become true when the userspaces are rolled out, and at
-  that point you will want to set all of the sysctls you have permission
-  to.
+And you have explicit information you are in a container at this point.
 
-- audit.  My memory is very fuzzy on this one.  The issue in question is
-  should we start auditd?  I believe the audit calls actually fail in a
-  container so we should be able to trigger starting auditd on if audit
-  works at all.  If we can't do it that way certainly the work should be
-  put in so that it can be done that way.
-
-- fsck.  A rw filesystem check like you mentioned earlier seems like a
-  reasonable place to be I know the OpenVz folks were talking about
-  putting containers in their own block devices for their next round of
-  supporting containers.  At which point a filesystem check on container
-  startup might not be a bad idea at all.
-
-- cgroups hierarchies.  I don't know at which point in the system
-  startup we care.  The appropriate solution would seem to be to try
-  it and if the operation fails figure it isn't supported.
-
-- selinux.  It really should be in the same category.  You should be
-  able to attempt to load a policy and have it fail in a way that
-  indicates that selinux is currently supported.  I don't know if
-  we can make that work right until we get the user namespace into
-  a usable shame.
-
-In general things in a container should work or the kernel feature
-should fail in a way that indicates that the feature is not supported.
-That currently works well for the networking stack, and with the
-pending usablilty of the user namespace it should work just about
-everywhere else as well.  For things that don't fit that model we
-need to fix the kernel.
-
-So while I agree a check to see if something is a container seems
-reasonable.  I do not agree that the pid namespace is the place to put
-that information.  I see no natural to put that information in the
-pid namespace.
-
-I further think there are a lot of reasonable checks for if a
-kernel feature is supported in the current environment I would
-rather pursue over hacks based the fact we are in a container.
+It looks like all that is left is Documentation of the conventions.
 
 Eric
