@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab1JKS3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 14:29:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65369 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab1JKSZR (ORCPT
+	id S1755364Ab1JKSgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 14:36:42 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36418 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755220Ab1JKSgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 14:25:17 -0400
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH] pata_amd: DMA modes do not have 8-bit timings
-Date: Tue, 11 Oct 2011 19:45:45 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+	Tue, 11 Oct 2011 14:36:41 -0400
 MIME-Version: 1.0
-Message-Id: <201110111945.46105.bzolnier@gmail.com>
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [83.233.40.23]
+In-Reply-To: <20111011162023.GA16261@kroah.com>
+References: <1314728964-20863-1-git-send-email-iceaway@gmail.com>
+	<CAOdCkm2mtU8v4YrU2-r2aRJOFKruk0mWUV9T67gheykM=74DfQ@mail.gmail.com>
+	<20111011162023.GA16261@kroah.com>
+Date: Tue, 11 Oct 2011 20:36:40 +0200
+Message-ID: <CAOdCkm152NgGA=rSF+-afbfCZV1XLn91tFCauDJCAorKnxEeYw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] staging: panel: Fixed checkpatch warning about simple_strtoul()
+From: Pelle Windestam <pelle@windestam.se>
+To: Greg KH <greg@kroah.com>
+Cc: Pelle Windestam <iceaway@gmail.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_amd: DMA modes do not have 8-bit timings
+On Tue, Oct 11, 2011 at 6:20 PM, Greg KH <greg@kroah.com> wrote:
+>
+> I don't recall ever seeing it before, care to resend it against the
+> latest linux-next tree so I can apply it?
+>
+> thanks,
+>
+> greg k-h
+>
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
- drivers/ata/pata_amd.c |    5 -----
- 1 file changed, 5 deletions(-)
+When I checked the linux-next tree again it appears that it has
+already been applied, sorry about not noticing that before.
 
-Index: b/drivers/ata/pata_amd.c
-===================================================================
---- a/drivers/ata/pata_amd.c
-+++ b/drivers/ata/pata_amd.c
-@@ -65,11 +65,6 @@ static void timing_setup(struct ata_port
- 	}
- 
- 	if (peer) {
--		/* This may be over conservative */
--		if (peer->dma_mode) {
--			ata_timing_compute(peer, peer->dma_mode, &apeer, T, UT);
--			ata_timing_merge(&apeer, &at, &at, ATA_TIMING_8BIT);
--		}
- 		ata_timing_compute(peer, peer->pio_mode, &apeer, T, UT);
- 		ata_timing_merge(&apeer, &at, &at, ATA_TIMING_8BIT);
- 	}
+//Pelle
