@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1JKKkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:40:36 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41245 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab1JKKkf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:40:35 -0400
+	id S1754490Ab1JKKlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:41:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58433 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab1JKKlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 06:41:37 -0400
+Message-ID: <4E941D5E.6060101@suse.de>
+Date: Tue, 11 Oct 2011 12:41:34 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-In-Reply-To: <20111010165116.GX7948@thunk.org>
-References: <1317004226.29510.172.camel@sli10-conroe>
-	<20110926073025.GB21079@infradead.org>
-	<1317022727.29510.175.camel@sli10-conroe>
-	<20110926094554.GA30827@infradead.org>
-	<1317179380.22361.8.camel@sli10-conroe>
-	<20111010165116.GX7948@thunk.org>
-Date: Tue, 11 Oct 2011 19:40:34 +0900
-X-Google-Sender-Auth: rXRVhYcKbD8NHoaF3ywg7_R9T2k
-Message-ID: <CAH9JG2X9Hik6Qs8BHKS1WqJmiB9=Ve-W0XiZ+-dfHFnN1GmXKg@mail.gmail.com>
-Subject: Re: [patch]ext4: add block plug for .writepages
-From: Kyungmin Park <kmpark@infradead.org>
-To: "Ted Ts'o" <tytso@mit.edu>, Shaohua Li <shaohua.li@intel.com>,
-        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        NamJae Jeon <linkinjeon@gmail.com>
+Subject: Re: [Patch] SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine
+ fails
+References: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
+In-Reply-To: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 1:51 AM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Wed, Sep 28, 2011 at 11:09:40AM +0800, Shaohua Li wrote:
->> I searched a little bit, looks only ext4 need it. here is the patch.
->>
->>
->> Add block plug for ext4 .writepages. Though ext4 .writepages
->> already handles request merge very well, block plug is still
->> helpful to reduce block lock contention.
->>
->> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+On 10/11/2011 10:26 AM, Amit Sahrawat wrote:
+> SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
+>
+> It has been observed that a number of USB HDD's do not respond correctly
+> to SCSI mode sense command(retrieve caching pages) which results in their
+> Write Cache being discarded by queue requests i.e., WCE if left set to
+> '0'(disabled). So, in order to identify the devices correctly - give it
+> a last try using SG_ATA_16 after failure from normal routine.
+>
+I'd be _VERY_ cautious when trying something like this.
 
-Does it require to add blk_finish_plug(&plug) when error case?
+ATA_16 is a rather recent command, and most older drives simply 
+can't cope with this. Instead they just kick the error handler and 
+go offline eventually.
 
-+        blk_start_plug(&plug);
-         while (!ret && wbc->nr_to_write > 0) {
+Shouldn't we rather use a sensible default, ie assume WCE is enabled?
 
-                ...
-                /* start a new transaction*/
-                handle = ext4_journal_start(inode, needed_blocks);
-                if (IS_ERR(handle)) {
-                        ret = PTR_ERR(handle);
-                        ext4_msg(inode->i_sb, KERN_CRIT, "%s: jbd2_start: "
-                               "%ld pages, ino %lu; err %d", __func__,
-                                wbc->nr_to_write, inode->i_ino, ret);
-+                      blk_finish_plug(&plug);
-                        goto out_writepages;
-                }
+Cheers,
 
-Thank you,
-Kyungmin Park-
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
