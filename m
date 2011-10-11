@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1JKHR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 03:17:56 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:19240 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab1JKHRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 03:17:54 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Tue, 11 Oct 2011 09:17:40 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [Linaro-mm-sig] [PATCHv16 0/9] Contiguous Memory Allocator
-In-reply-to: <4E92E003.4060901@stericsson.com>
-To: "'Maxime Coquelin'" <maxime.coquelin-nonst@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        benjamin.gaignard@linaro.org,
-        "'frq09524'" <ludovic.barre@stericsson.com>,
-        vincent.guittot@linaro.org
-Message-id: <00b001cc87e5$dc818cc0$9584a640$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AcyHRc0TOzzgUDKQTJazU2a90gsBcQAnWoSQ
-References: <1317909290-29832-1-git-send-email-m.szyprowski@samsung.com>
- <4E92E003.4060901@stericsson.com>
+	id S1751360Ab1JKHZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 03:25:50 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45031 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1JKHZs convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:5:1>);
+	Tue, 11 Oct 2011 03:25:48 -0400
+Message-Id: <4E940B99020000780005AA12@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 11 Oct 2011 08:25:45 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Dong Yang Li" <lidongyang@suse.com>
+Cc: <hch@infradead.org>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] xen/blkback: Fix the inhibition to map pages
+	 when discarding sector ranges.
+References: <1318260494-27985-1-git-send-email-konrad.wilk@oracle.com>
+ <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1318260494-27985-3-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hello,
-
-On Monday, October 10, 2011 2:08 PM Maxime Coquelin wrote:
-
-> On 10/06/2011 03:54 PM, Marek Szyprowski wrote:
-> > Welcome everyone again,
-> >
-> > Once again I decided to post an updated version of the Contiguous Memory
-> > Allocator patches.
-> >
-> > This version provides mainly a bugfix for a very rare issue that might
-> > have changed migration type of the CMA page blocks resulting in dropping
-> > CMA features from the affected page block and causing memory allocation
-> > to fail. Also the issue reported by Dave Hansen has been fixed.
-> >
-> > This version also introduces basic support for x86 architecture, what
-> > allows wide testing on KVM/QEMU emulators and all common x86 boxes. I
-> > hope this will result in wider testing, comments and easier merging to
-> > mainline.
-> >
-> > I've also dropped an examplary patch for s5p-fimc platform device
-> > private memory declaration and added the one from real life. CMA device
-> > private memory regions are defined for s5p-mfc device to let it allocate
-> > buffers from two memory banks.
-> >
-> > ARM integration code has not been changed since last version, it
-> > provides implementation of all the ideas that has been discussed during
+>>> On 10.10.11 at 17:28, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> The 'operation' parameters are the ones provided to the bio layer while
+> the req->operation are the ones passed in between the backend and
+> frontend. We used the wrong 'operation' value to squash the
+> call to map pages when processing the discard operation resulting
+> in mapping the pages unnecessarily.
 > 
-> Hello Marek,
+> CC: Li Dongyang <lidongyang@novell.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->      We are currently testing CMA (v16) on Snowball platform.
->      This feature is very promising, thanks for pushing it!
-> 
->      During our stress tests, we encountered some problems :
-> 
->      1) Contiguous allocation lockup:
->          When system RAM is full of Anon pages, if we try to allocate a
-> contiguous buffer greater than the min_free value, we face a
-> dma_alloc_from_contiguous lockup.
->          The expected result would be dma_alloc_from_contiguous() to fail.
->          The problem is reproduced systematically on our side.
+> diff --git a/drivers/block/xen-blkback/blkback.c 
+> b/drivers/block/xen-blkback/blkback.c
+> index 184b133..3da9a40 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -707,7 +707,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  	 * the hypercall to unmap the grants - that is all done in
+>  	 * xen_blkbk_unmap.
+>  	 */
+> -	if (operation != BLKIF_OP_DISCARD &&
+> +	if (operation != REQ_DISCARD &&
 
-Thanks for the report. Do you use Android's lowmemorykiller? I haven't 
-tested CMA on Android kernel yet. I have no idea how it will interfere 
-with Android patches.
+Why is that check necessary in the first place? xen_blkbk_map() doesn't
+do any harm when req->nr_segments is zero (as could also be the case
+on WRITE_FLUSH ones).
 
-> 
->      2) Contiguous allocation fail:
->          We have developed a small driver and a shell script to
-> allocate/release contiguous buffers.
->          Sometimes, dma_alloc_from_contiguous() fails to allocate the
-> contiguous buffer (about once every 30 runs).
->          We have 270MB Memory passed to the kernel in our configuration,
-> and the CMA pool is 90MB large.
->          In this setup, the overall memory is either free or full of
-> reclaimable pages.
+Jan
 
-Yeah. We also did such stress tests recently and faced this issue. I've
-spent some time investigating it but I have no solution yet. 
+>  			xen_blkbk_map(req, pending_req, seg))
+>  		goto fail_flush;
+>  
 
-The problem is caused by a page, which is put in the CMA area. This page 
-is movable, but it's address space provides no 'migratepage' method. In
-such case mm subsystem uses fallback_migrate_page() function. Sadly this
-function only returns -EAGAIN. The migration loops a few times over it
-and fails causing the fail in the allocation procedure.
 
-We are investing now which kernel code created/allocated such problematic
-pages and how to add real migration support for them.
 
->      For now, we didn't had time to investigate further theses problems.
->      Have you already faced this kind of issues?
->      Could someone testing CMA on other boards confirm/infirm theses
-> problems?
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
 
