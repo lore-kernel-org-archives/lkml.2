@@ -1,49 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab1JKQOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 12:14:18 -0400
-Received: from 2605ds1-ynoe.0.fullrate.dk ([90.184.12.24]:59757 "EHLO
-	shrek.krogh.cc" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755123Ab1JKQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 12:14:17 -0400
-X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 12:14:16 EDT
-Message-ID: <4E9469CC.4090507@krogh.cc>
-Date: Tue, 11 Oct 2011 18:07:40 +0200
-From: Jesper Krogh <jesper@krogh.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        aradford@gmail.com, xfs@oss.sgi.com
-Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O
- load
-References: <20111011091757.GA32589@otto.nzcorp.net> <20111011133448.GA10692@infradead.org> <20111011141338.GA11808@otto.nzcorp.net>
-In-Reply-To: <20111011141338.GA11808@otto.nzcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755194Ab1JKQPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 12:15:43 -0400
+Received: from shutemov.name ([188.40.19.243]:38164 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754910Ab1JKQPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 12:15:40 -0400
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>, linux-api@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, lennart@poettering.net,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH, v10 3/3] cgroups: introduce timer slack controller
+Date: Tue, 11 Oct 2011 19:15:29 +0300
+Message-Id: <1318349729-3108-4-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.4.5
+In-Reply-To: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
+References: <1318349729-3108-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-11 16:13, Anders Ossowicki wrote:
-> On Tue, Oct 11, 2011 at 03:34:48PM +0200, Christoph Hellwig wrote:
->> This is core VM code, and operates purely on on-stack variables except
->> for the page cache radix tree nodes / pages.  So this either could be a
->> core VM bug that no one has noticed yet, or memory corruption.  Can you
->> run memtest86 on the box?
-> Unfortunately not, as it is a production server. Pulling it out to memtest 256G
-> properly would take too long. But it seems unlikely to me that it should be
-> memory corruption. The machine has been running with the same (ecc) memory for
-> more than a year and neither the service processor nor the kernel (according to
-> dmesg) has caught anything before this. It would be a rare (though I admit not
-> impossible) coincidence if we got catastrophic, undetected memory corruption a
-> week after attaching a new raid controller with a new disk array.
-A sidenote that Anders forgot.. the system was stable for very long time,
-but on a 2.6.37 kernel. We upgraded to 2.6.38 to get the raid-controller
-support and then it crashed.
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Now we're trying to get the new hardware in the air on 2.6.37 with  
-backpatched
-megaraid driver for the RAID-controller.
+Every task_struct has timer_slack_ns value. This value uses to round up
+poll() and select() timeout values. This feature can be useful in
+mobile environment where combined wakeups are desired.
 
+Originally, prctl() was the only way to change timer slack value of
+a process. So you was not able change timer slack value of another
+process.
+
+cgroup subsys "timer_slack" implements timer slack controller. It
+provides a way to set minimal timer slack value for a group of tasks.
+If a task belongs to a cgroup with minimal timer slack value higher than
+task's value, cgroup's value will be applied.
+
+Timer slack controller allows to implement setting timer slack value of
+a process based on a policy. For example, you can create foreground and
+background cgroups and move tasks between them based on system state.
+
+Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ Documentation/cgroups/timer_slack.txt |   72 +++++++++++++++++++
+ include/linux/cgroup_subsys.h         |    7 ++
+ include/linux/sched.h                 |    4 +
+ init/Kconfig                          |    8 ++
+ kernel/Makefile                       |    1 +
+ kernel/cgroup_timer_slack.c           |  124 +++++++++++++++++++++++++++++++++
+ 6 files changed, 216 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/cgroups/timer_slack.txt
+ create mode 100644 kernel/cgroup_timer_slack.c
+
+diff --git a/Documentation/cgroups/timer_slack.txt b/Documentation/cgroups/timer_slack.txt
+new file mode 100644
+index 0000000..6e9cb6a
+--- /dev/null
++++ b/Documentation/cgroups/timer_slack.txt
+@@ -0,0 +1,72 @@
++Timer Slack Controller
++======================
++
++Overview
++--------
++
++Every task_struct has timer_slack_ns value. This value is used to round
++up poll() and select() timeout values. This feature can be useful in
++mobile environment where combined wakeups are desired.
++
++Originally, prctl() was the only way to change timer slack value of
++a process. So you was not able change timer slack value of another
++process.
++
++cgroup subsys "timer_slack" implements timer slack controller. It
++provides a way to set minimal timer slack value for a group of tasks.
++If a task belongs to a cgroup with minimal timer slack value higher than
++task's value, cgroup's value will be applied.
++
++Timer slack controller allows to implement setting timer slack value of
++a process based on a policy. For example, you can create foreground and
++background cgroups and move tasks between them based on system state.
++
++User interface
++--------------
++
++To get timer slack controller functionality you need to enable it in
++kernel configuration:
++
++CONFIG_CGROUP_TIMER_SLACK=y
++
++The controller provides two files:
++
++# mount -t cgroup -o timer_slack none /sys/fs/cgroup
++# ls /sys/fs/cgroup/timer_slack.*
++/sys/fs/cgroup/timer_slack.effective_slack_ns
++/sys/fs/cgroup/timer_slack.min_slack_ns
++
++By default timer_slack.min_slack_ns is 0:
++
++# cat /sys/fs/cgroup/timer_slack.min_slack_ns
++0
++
++You can set it to some value:
++
++# echo 50000 > /sys/fs/cgroup/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/timer_slack.min_slack_ns
++50000
++
++Tasks still can set task's value below 50000 using prctl(), but in this
++case cgroup's value will be applied.
++
++Timer slack controller supports hierarchical groups.
++
++# mkdir /sys/fs/cgroup/a
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++50000
++# echo 70000 > /sys/fs/cgroup/a/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++70000
++
++You can set any value you want, but effective value will the highest value
++up by hierarchy. You can see effective timer slack value for the cgroup from
++timer_slack.effective_slack_ns file:
++
++# cat /sys/fs/cgroup/a/timer_slack.effective_slack_ns
++70000
++# echo 100000 > /sys/fs/cgroup/timer_slack.min_slack_ns
++# cat /sys/fs/cgroup/a/timer_slack.min_slack_ns
++70000
++# cat /sys/fs/cgroup/a/timer_slack.effective_slack_ns
++100000
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index 5425822..2c8148f 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -72,3 +72,10 @@ SUBSYS(tasks)
+ #endif
+ 
+ /* */
++
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++SUBSYS(timer_slack)
++#endif
++
++/* */
++
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d79e300..37c19ec 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2719,11 +2719,15 @@ static inline unsigned long rlimit_max(unsigned int limit)
+ 	return task_rlimit_max(current, limit);
+ }
+ 
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++extern unsigned long task_get_effective_timer_slack(struct task_struct *tsk);
++#else
+ static inline unsigned long task_get_effective_timer_slack(
+ 		struct task_struct *tsk)
+ {
+ 	return tsk->timer_slack_ns;
+ }
++#endif
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 6dfc8c3..71ea5dd 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -603,6 +603,14 @@ config CGROUP_FREEZER
+ 	  Provides a way to freeze and unfreeze all tasks in a
+ 	  cgroup.
+ 
++config CGROUP_TIMER_SLACK
++	bool "Timer slack cgroup controller"
++	help
++	  Provides a way to set minimal timer slack value for tasks in
++	  a cgroup.
++	  It's useful in mobile devices where certain background apps
++	  are attached to a cgroup and combined wakeups are desired.
++
+ config CGROUP_DEVICE
+ 	bool "Device controller for cgroups"
+ 	help
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 7469ecc..93672f5 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_COMPAT) += compat.o
+ obj-$(CONFIG_CGROUPS) += cgroup.o
+ obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
+ obj-$(CONFIG_CGROUP_TASK_COUNTER) += cgroup_task_counter.o
++obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
+ obj-$(CONFIG_CPUSETS) += cpuset.o
+ obj-$(CONFIG_UTS_NS) += utsname.o
+ obj-$(CONFIG_USER_NS) += user_namespace.o
+diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+new file mode 100644
+index 0000000..9824807
+--- /dev/null
++++ b/kernel/cgroup_timer_slack.c
+@@ -0,0 +1,124 @@
++/*
++ * cgroup_timer_slack.c - control group timer slack subsystem
++ *
++ * Copyright Nokia Corparation, 2011
++ * Author: Kirill A. Shutemov
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/cgroup.h>
++#include <linux/slab.h>
++
++struct cgroup_subsys timer_slack_subsys;
++struct tslack_cgroup {
++	struct cgroup_subsys_state css;
++	unsigned long min_slack_ns;
++};
++
++static struct tslack_cgroup *cgroup_to_tslack(struct cgroup *cgroup)
++{
++	struct cgroup_subsys_state *css;
++
++	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
++	return container_of(css, struct tslack_cgroup, css);
++}
++
++static struct cgroup_subsys_state *tslack_create(struct cgroup_subsys *subsys,
++		struct cgroup *cgroup)
++{
++	struct tslack_cgroup *tslack_cgroup;
++
++	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
++	if (!tslack_cgroup)
++		return ERR_PTR(-ENOMEM);
++
++	if (cgroup->parent) {
++		struct tslack_cgroup *parent;
++
++		parent = cgroup_to_tslack(cgroup->parent);
++		tslack_cgroup->min_slack_ns = parent->min_slack_ns;
++	} else
++		tslack_cgroup->min_slack_ns = 0UL;
++
++	return &tslack_cgroup->css;
++}
++
++static void tslack_destroy(struct cgroup_subsys *tslack_cgroup,
++		struct cgroup *cgroup)
++{
++	kfree(cgroup_to_tslack(cgroup));
++}
++
++static u64 tslack_read_min(struct cgroup *cgroup, struct cftype *cft)
++{
++	return cgroup_to_tslack(cgroup)->min_slack_ns;
++}
++
++static int tslack_write_min(struct cgroup *cgroup, struct cftype *cft, u64 val)
++{
++	if (val > ULONG_MAX)
++		return -EINVAL;
++
++	cgroup_to_tslack(cgroup)->min_slack_ns = val;
++
++	return 0;
++}
++
++static u64 tslack_read_effective(struct cgroup *cgroup, struct cftype *cft)
++{
++	unsigned long min;
++
++	min = cgroup_to_tslack(cgroup)->min_slack_ns;
++	while (cgroup->parent) {
++		cgroup = cgroup->parent;
++		min = max(cgroup_to_tslack(cgroup)->min_slack_ns, min);
++	}
++
++	return min;
++}
++
++static struct cftype files[] = {
++	{
++		.name = "min_slack_ns",
++		.read_u64 = tslack_read_min,
++		.write_u64 = tslack_write_min,
++	},
++	{
++		.name = "effective_slack_ns",
++		.read_u64 = tslack_read_effective,
++	},
++};
++
++static int tslack_populate(struct cgroup_subsys *subsys, struct cgroup *cgroup)
++{
++	return cgroup_add_files(cgroup, subsys, files, ARRAY_SIZE(files));
++}
++
++struct cgroup_subsys timer_slack_subsys = {
++	.name		= "timer_slack",
++	.subsys_id	= timer_slack_subsys_id,
++	.create		= tslack_create,
++	.destroy	= tslack_destroy,
++	.populate	= tslack_populate,
++};
++
++unsigned long task_get_effective_timer_slack(struct task_struct *tsk)
++{
++	struct cgroup *cgroup;
++	unsigned long slack;
++
++	rcu_read_lock();
++	cgroup = task_cgroup(tsk, timer_slack_subsys.subsys_id);
++	slack = tslack_read_effective(cgroup, NULL);
++	rcu_read_unlock();
++
++	return max(tsk->timer_slack_ns, slack);
++}
 -- 
-Jesper
+1.7.6.3
+
