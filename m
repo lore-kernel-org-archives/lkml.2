@@ -1,113 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1JKJSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:18:13 -0400
-Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:41748 "EHLO
-	WA2EHSNDR003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752419Ab1JKJSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:18:07 -0400
-X-FB-OUTBOUND-SPAM: yes
-X-SpamScore: -3
-X-BigFish: VS-3(z21eNzzz1202h1082kzz8275dhz2dh87h2a8h668h839h944h41h42h)
-X-Forefront-Antispam-Report: CIP:94.101.220.16;KIP:(null);UIP:(null);IPVD:NLI;H:nzt0015e.dknz.nzcorp.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 11 Oct 2011 11:17:57 +0200
-From: Anders Ossowicki <aowi@novozymes.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <aradford@gmail.com>
-Subject: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O load
-Message-ID: <20111011091757.GA32589@otto.nzcorp.net>
-Reply-To: <aowi@novozymes.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, aradford@gmail.com
+	id S1754138Ab1JKJST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:18:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752558Ab1JKJSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 05:18:15 -0400
+Message-ID: <4E9409D3.5090507@redhat.com>
+Date: Tue, 11 Oct 2011 11:18:11 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SMTP-Mail-From: aowi@otto.nzcorp.net
-X-OriginatorOrg: novozymes.com
+To: Eric B Munson <emunson@mgebm.net>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix include dependency for mmu_notifier
+References: <1318261575-24256-1-git-send-email-emunson@mgebm.net>
+In-Reply-To: <1318261575-24256-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We seem to have hit a bug on our brand-new disk with an XFS filesystem on the
-2.6.38.8 kernel. The disk is 2 Dell MD1220 enclosures with Intel SSDs daisy
-chained behind an LSI MegaRAID SAS 9285-8e raid controller. It was under heavy
-I/O load, 1-200 MB/s r/w from postgres for about a week before the bug showed
-up. The system itself is a Dell PowerEdge R815 with 32 cpu cores and 256G
-memory. 
+On 10/10/2011 05:46 PM, Eric B Munson wrote:
+> The kvm_host struct can include an mmu_notifier struct but mmu_notifier.h is
+> not included directly.
 
-Support for the 9285-8e controller was introduced as part of a series of
-patches for drivers/scsi/megaraid in 2.6.38 (0d49016b..cd50ba8e). Given that
-the megaraid driver support for the 9285-8e controller is so new it might be
-the real source of the issue, but this is pure speculation on my part. Any
-suggestions would be most welcome.
+Thanks, applied.  Is there a .config which causes this?
 
-The full dmesg is available at
-http://dev.exherbo.org/~arkanoid/kat-dmesg-2011-10.txt
-
-BUG: unable to handle kernel paging request at 000000000040403c
-IP: [<ffffffff810f8d71>] find_get_pages+0x61/0x110
-PGD 0 
-Oops: 0000 [#1] SMP  
-last sysfs file: /sys/devices/system/cpu/cpu31/cache/index2/shared_cpu_map
-CPU 11 
-Modules linked in: btrfs zlib_deflate crc32c libcrc32c ufs qnx4 hfsplus hfs
- minix ntfs vfat msdos fat jfs xfs reiserfs nfsd exportfs nfs lockd nfs_acl
- auth_rpcgss sunrpc autofs4 psmouse serio_raw joydev ixgbe lp amd64_edac_mod
- i2c_piix4 dca parport edac_core bnx2 power_meter dcdbas mdio edac_mce_amd ses
- enclosure usbhid hid ahci mpt2sas libahci scsi_transport_sas megaraid_sas
- raid_class 
-
-Pid: 27512, comm: flush-8:32 Tainted: G        W   2.6.38.8 #1 Dell Inc.
- PowerEdge R815/04Y8PT
-RIP: 0010:[<ffffffff810f8d71>]  [<ffffffff810f8d71>] find_get_pages+0x61/0x110
-RSP: 0018:ffff881fdee55800  EFLAGS: 00010246
-RAX: ffff8814a66d7000 RBX: ffff881fdee558c0 RCX: 000000000000000e
-RDX: 0000000000000005 RSI: 0000000000000001 RDI: 0000000000404034
-RBP: ffff881fdee55850 R08: 0000000000000001 R09: 0000000000000002
-R10: ffffea00a0ff7788 R11: ffff88129306ac88 R12: 0000000000031535
-R13: 000000000000000e R14: ffff881fdee558e8 R15: 0000000000000005
-FS:  00007fec9ce13720(0000) GS:ffff88181fc80000(0000) knlGS:00000000f744d6d0
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 000000000040403c CR3: 0000000001a03000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process flush-8:32 (pid: 27512, threadinfo ffff881fdee54000, task ffff881fdf4adb80)
-Stack:
- 0000000000000000 0000000000000000 0000000000000000 ffff8832e7edf6e0
- 0000000000000000 ffff881fdee558b0 ffffea008b443c18 0000000000031535
- ffff8832e7edf590 ffff881fdee55d20 ffff881fdee55870 ffffffff81101f92
-Call Trace:
- [<ffffffff81101f92>] pagevec_lookup+0x22/0x30
- [<ffffffffa033e00d>] xfs_cluster_write+0xad/0x180 [xfs]
- [<ffffffffa033e4f4>] xfs_vm_writepage+0x414/0x4f0 [xfs]
- [<ffffffff810ffb77>] __writepage+0x17/0x40 
- [<ffffffff81100d95>] write_cache_pages+0x1c5/0x4a0
- [<ffffffff810ffb60>] ? __writepage+0x0/0x40
- [<ffffffff81101094>] generic_writepages+0x24/0x30
- [<ffffffffa033d5dd>] xfs_vm_writepages+0x5d/0x80 [xfs]
- [<ffffffff811010c1>] do_writepages+0x21/0x40
- [<ffffffff811730bf>] writeback_single_inode+0x9f/0x250
- [<ffffffff8117370b>] writeback_sb_inodes+0xcb/0x170
- [<ffffffff81174174>] writeback_inodes_wb+0xa4/0x170
- [<ffffffff8117450b>] wb_writeback+0x2cb/0x440
- [<ffffffff81035bb9>] ? default_spin_lock_flags+0x9/0x10
- [<ffffffff8158b3af>] ? _raw_spin_lock_irqsave+0x2f/0x40
- [<ffffffff811748ac>] wb_do_writeback+0x22c/0x280
- [<ffffffff811749aa>] bdi_writeback_thread+0xaa/0x260
- [<ffffffff81174900>] ? bdi_writeback_thread+0x0/0x260
- [<ffffffff81081b76>] kthread+0x96/0xa0
- [<ffffffff8100cda4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81081ae0>] ? kthread+0x0/0xa0
- [<ffffffff8100cda0>] ? kernel_thread_helper+0x0/0x10
-Code: 4e 1c 00 85 c0 89 c1 0f 84 a7 00 00 00 49 89 de 45 31 ff 31 d2 0f 1f 44
- 00 00 49 8b 06 48 8b 38 48 85 ff 74 3d 40 f6 c7 01 75 54 <44> 8b 47 08 4c 8d 57
- 08 45 85 c0 74 e5 45 8d 48 01 44 89 c0 f0  
-RIP  [<ffffffff810f8d71>] find_get_pages+0x61/0x110
-RSP <ffff881fdee55800>
-CR2: 000000000040403c
----[ end trace 84193c2a431ae14b ]--- 
 -- 
-Anders Ossowicki
+error compiling committee.c: too many arguments to function
 
