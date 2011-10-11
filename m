@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab1JKONw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 10:13:52 -0400
-Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:31147 "EHLO
-	WA2EHSNDR001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752151Ab1JKONv (ORCPT
+	id S1754728Ab1JKOQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 10:16:17 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44788 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab1JKOQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 10:13:51 -0400
-X-FB-OUTBOUND-SPAM: yes
-X-SpamScore: -6
-X-BigFish: VS-6(z21eNz98dKzz1202h1082kzzz2dh87h2a8h668h839h944h41h42h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:94.101.220.16;KIP:(null);UIP:(null);IPVD:NLI;H:nzt0015e.dknz.nzcorp.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 11 Oct 2011 16:13:38 +0200
-From: Anders Ossowicki <aowi@novozymes.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <aradford@gmail.com>, <xfs@oss.sgi.com>
-Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O load
-Message-ID: <20111011141338.GA11808@otto.nzcorp.net>
-Reply-To: <aowi@novozymes.com>
-Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
-	linux-kernel@vger.kernel.org, aradford@gmail.com, xfs@oss.sgi.com
-References: <20111011091757.GA32589@otto.nzcorp.net>
- <20111011133448.GA10692@infradead.org>
+	Tue, 11 Oct 2011 10:16:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111011133448.GA10692@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SMTP-Mail-From: aowi@otto.nzcorp.net
-X-OriginatorOrg: novozymes.com
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20111011140258.GH3471@opensource.wolfsonmicro.com>
+References: <1317857999.6291.3.camel@phoenix> <CAF+7xWnuApJfdnpj4yajfYepw8syEdeH_wHOL6wmprPv_MAZmg@mail.gmail.com>
+ <20111011140258.GH3471@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 11 Oct 2011 22:15:55 +0800
+Message-ID: <CAF+7xWnq3aa+nLgYTkCLSd8_txnGPVHNq=JbESceHhB+Dz30iA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ASoC: Remove impossible case from wm8994_hw_params
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 03:34:48PM +0200, Christoph Hellwig wrote:
-> This is core VM code, and operates purely on on-stack variables except
-> for the page cache radix tree nodes / pages.  So this either could be a
-> core VM bug that no one has noticed yet, or memory corruption.  Can you
-> run memtest86 on the box?
+2011/10/11 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Tue, Oct 11, 2011 at 06:00:55PM +0800, Axel Lin wrote:
+>
+>> Seems this patch is missed. This resend should be appliable to current code.
+>
+> I'll have ignored the original patch because it was flagged as a resend,
+> there's no point in resending patches unless there's been some noticable
+> interval.
+>
+It's because the original one does not applied to your tree.
+https://lkml.org/lkml/2011/10/5/235
+So. I resent the patch. ( Maybe I should just mark it as v2 )
 
-Unfortunately not, as it is a production server. Pulling it out to memtest 256G
-properly would take too long. But it seems unlikely to me that it should be
-memory corruption. The machine has been running with the same (ecc) memory for
-more than a year and neither the service processor nor the kernel (according to
-dmesg) has caught anything before this. It would be a rare (though I admit not
-impossible) coincidence if we got catastrophic, undetected memory corruption a
-week after attaching a new raid controller with a new disk array.
--- 
-Anders Ossowicki
-
+Regards,
+Axel
