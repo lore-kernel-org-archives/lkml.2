@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1JKRDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:03:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33249 "EHLO mx2.suse.de"
+	id S932104Ab1JKRED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:04:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33258 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070Ab1JKRDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:03:51 -0400
+	id S932070Ab1JKRD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:03:59 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:09 2011
-Message-Id: <20111011165709.236967330@pistachio.kroah.org>
+Message-Id: <20111011165709.379360439@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:16 -0600
+Date: Tue, 11 Oct 2011 10:55:17 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Mason <mason@myri.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [06/38] PCI: Disable MPS configuration by default
+        "David S. Miller" <davem@davemloft.net>
+Subject: [07/38] sparc64: Force the execute bit in OpenFirmwares translation entries.
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,97 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Mason <mason@myri.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 5f39e6705faade2e89d119958a8c51b9b6e2c53c upstream.
+In the OF 'translations' property, the template TTEs in the mappings
+never specify the executable bit.  This is the case even though some
+of these mappings are for OF's code segment.
 
-Add the ability to disable PCI-E MPS turning and using the BIOS
-configured MPS defaults.  Due to the number of issues recently
-discovered on some x86 chipsets, make this the default behavior.
+Therefore, we need to force the execute bit on in every mapping.
 
-Also, add the option for peer to peer DMA MPS configuration.  Peer to
-peer DMA is outside the scope of this patch, but MPS configuration could
-prevent it from working by having the MPS on one root port different
-than the MPS on another.  To work around this, simply make the system
-wide MPS the smallest possible value (128B).
+This problem can only really trigger on Niagara/sun4v machines and the
+history behind this is a little complicated.
 
-Signed-off-by: Jon Mason <mason@myri.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Previous to sun4v, the sun4u TTE entries lacked a hardware execute
+permission bit.  So OF didn't have to ever worry about setting
+anything to handle executable pages.  Any valid TTE loaded into the
+I-TLB would be respected by the chip.
+
+But sun4v Niagara chips have a real hardware enforced executable bit
+in their TTEs.  So it has to be set or else the I-TLB throws an
+instruction access exception with type code 6 (protection violation).
+
+We've been extremely fortunate to not get bitten by this in the past.
+
+The best I can tell is that the OF's mappings for it's executable code
+were mapped using permanent locked mappings on sun4v in the past.
+Therefore, the fact that we didn't have the exec bit set in the OF
+translations we would use did not matter in practice.
+
+Thanks to Greg Onufer for helping me track this down.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c   |    6 +++++-
- drivers/pci/probe.c |   14 +++++++++++++-
- include/linux/pci.h |    3 ++-
- 3 files changed, 20 insertions(+), 3 deletions(-)
+ arch/sparc/mm/init_64.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -77,7 +77,7 @@ unsigned long pci_cardbus_mem_size = DEF
- unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
- unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
- 
--enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_SAFE;
-+enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_TUNE_OFF;
- 
- /*
-  * The default CLS is used if arch didn't set CLS explicitly and not
-@@ -3568,10 +3568,14 @@ static int __init pci_setup(char *str)
- 				pci_hotplug_io_size = memparse(str + 9, &str);
- 			} else if (!strncmp(str, "hpmemsize=", 10)) {
- 				pci_hotplug_mem_size = memparse(str + 10, &str);
-+			} else if (!strncmp(str, "pcie_bus_tune_off", 17)) {
-+				pcie_bus_config = PCIE_BUS_TUNE_OFF;
- 			} else if (!strncmp(str, "pcie_bus_safe", 13)) {
- 				pcie_bus_config = PCIE_BUS_SAFE;
- 			} else if (!strncmp(str, "pcie_bus_perf", 13)) {
- 				pcie_bus_config = PCIE_BUS_PERFORMANCE;
-+			} else if (!strncmp(str, "pcie_bus_peer2peer", 18)) {
-+				pcie_bus_config = PCIE_BUS_PEER2PEER;
- 			} else {
- 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
- 						str);
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1459,12 +1459,24 @@ static int pcie_bus_configure_set(struct
-  */
- void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
- {
--	u8 smpss = mpss;
-+	u8 smpss;
- 
- 	if (!pci_is_pcie(bus->self))
- 		return;
- 
-+	if (pcie_bus_config == PCIE_BUS_TUNE_OFF)
-+		return;
-+
-+	/* FIXME - Peer to peer DMA is possible, though the endpoint would need
-+	 * to be aware to the MPS of the destination.  To work around this,
-+	 * simply force the MPS of the entire system to the smallest possible.
-+	 */
-+	if (pcie_bus_config == PCIE_BUS_PEER2PEER)
-+		smpss = 0;
-+
- 	if (pcie_bus_config == PCIE_BUS_SAFE) {
-+		smpss = mpss;
-+
- 		pcie_find_smpss(bus->self, &smpss);
- 		pci_walk_bus(bus, pcie_find_smpss, &smpss);
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -511,6 +511,11 @@ static void __init read_obp_translations
+ 		for (i = 0; i < prom_trans_ents; i++)
+ 			prom_trans[i].data &= ~0x0003fe0000000000UL;
  	}
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -621,8 +621,9 @@ struct pci_driver {
- extern void pcie_bus_configure_settings(struct pci_bus *bus, u8 smpss);
++
++	/* Force execute bit on.  */
++	for (i = 0; i < prom_trans_ents; i++)
++		prom_trans[i].data |= (tlb_type == hypervisor ?
++				       _PAGE_EXEC_4V : _PAGE_EXEC_4U);
+ }
  
- enum pcie_bus_config_types {
--	PCIE_BUS_PERFORMANCE,
-+	PCIE_BUS_TUNE_OFF,
- 	PCIE_BUS_SAFE,
-+	PCIE_BUS_PERFORMANCE,
- 	PCIE_BUS_PEER2PEER,
- };
- 
+ static void __init hypervisor_tlb_lock(unsigned long vaddr,
 
 
