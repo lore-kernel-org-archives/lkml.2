@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab1JKTQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:16:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34001 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879Ab1JKTQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:16:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH 0/4] allow freezing of tasks with netfs calls in flight
-Date: Tue, 11 Oct 2011 21:19:06 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, trond.myklebust@netapp.com,
-        smfrench@gmail.com, linux-pm@lists.linux-foundation.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, john@calva.com,
-        linux-kernel@vger.kernel.org
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com> <20111011061819.GA1377@ucw.cz> <20111011060531.09bc378a@tlielax.poochiereds.net>
-In-Reply-To: <20111011060531.09bc378a@tlielax.poochiereds.net>
+	id S1755374Ab1JKTRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:17:07 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:46743 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755283Ab1JKTRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 15:17:05 -0400
+Date: Tue, 11 Oct 2011 13:17:03 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Felipe Balbi <balbi@ti.com>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        "Munegowda, Keshava" <keshava_mgowda@ti.com>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, khilman@ti.com, b-cousson@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
+        tony@atomide.com, johnstul@us.ibm.com, vishwanath.bs@ti.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
+ for omap4
+In-Reply-To: <20111011191214.GC13794@legolas.emea.dhcp.ti.com>
+Message-ID: <alpine.DEB.2.00.1110111315030.1664@utopia.booyaka.com>
+References: <20111011081352.GC10155@legolas.emea.dhcp.ti.com> <Pine.LNX.4.44L0.1110111000460.2177-100000@iolanthe.rowland.org> <20111011140839.GF12293@legolas.emea.dhcp.ti.com> <alpine.DEB.2.00.1110111136280.1664@utopia.booyaka.com>
+ <20111011191214.GC13794@legolas.emea.dhcp.ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110112119.06547.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 11, 2011, Jeff Layton wrote:
-> On Tue, 11 Oct 2011 08:18:19 +0200
-> Pavel Machek <pavel@ucw.cz> wrote:
+Hi
+
+On Tue, 11 Oct 2011, Felipe Balbi wrote:
+
+> On Tue, Oct 11, 2011 at 12:52:05PM -0600, Paul Walmsley wrote:
+>
+> > On Tue, 11 Oct 2011, Felipe Balbi wrote:
+> > 
+> > > maybe, but let's go with EXPORT_SYMBOL_GPL(). My only concern is that
+> > > this IP comes from synopsys, and I'm not really keen on adding
+> > > OMAP-specific, integration-related knowledge on a driver which was
+> > > supposed to be reusable ;-)
+> > >
+> > > But at least for the time being, I guess that's what we need to do ;-)
+> > 
+> > Which IP is coming from Synopsys - the TLL ?  The EXPORT_SYMBOL approach 
 > 
-> > Hi!
-> > 
-> > > We've had a number of reports recently of people with NFS and CIFS
-> > > mounts that were unable to suspend or hibernate their machines. Here
-> > > are a couple of Fedora bugs that illustrate the problem:
-> > > 
-> > >     https://bugzilla.redhat.com/show_bug.cgi?id=712088
-> > >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
-> > > 
-> > > When it occurs the problem is pretty clear. We have a task that's
-> > > sleeping in the kernel in TASK_KILLABLE sleep, generally waiting
-> > > for a reply to come in. Often though, userspace has already taken
-> > > down the interface so that reply will never come. The process then
-> > > fails to freeze and the suspend fails.
-> > 
-> > Userspace should not take interface down for suspend (*). Why do that?
-> > 
+> TLL and UHH are OMAP-only wrappers. EHCI and OHCI are Synopsys IPs for
+> all I know.
+
+Ah, I see.
+
+> > shouldn't add anything OMAP-specific to the TLL driver.  So the exported 
+> > symbols should still be usable by drivers on other SoCs.  But perhaps I am 
+> > misunderstanding your point?
 > 
-> I suspect that NetworkManager does this to try and allow for the case
-> where someone suspends their laptop and then wanders off to another
-> network and then resumes.
+> A bit :-)
+> 
+> EHCI/OHCI will need to ask TLL to enable TLL clock, because it's
+> EHCI/OHCI who configure the port. Unless I misunderstood what Keshava
+> did (and no, I didn't just read the code, too lazy :-)
 
-That's correct.
+The calls to the TLL driver only need to go into the OMAP-specific 
+ehci-omap.c and ohci-omap3.c wrappers, as far as I can see.  So I don't 
+think there's a need to modify the generic OHCI/EHCI drivers...
 
-> Either way, we still want to allow suspend and hibernate to work regardless
-> of what userspace does during the process.
 
-Very true. :-)
-
-Thanks,
-Rafael
+- Paul
