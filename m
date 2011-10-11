@@ -1,93 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab1JKJkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 05:40:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63912 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab1JKJkU convert rfc822-to-8bit (ORCPT
+	id S1754343Ab1JKJli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:41:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1625 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab1JKJlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 05:40:20 -0400
+	Tue, 11 Oct 2011 05:41:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=RZWV9VlQ7Wta31knQf9BZ5HM1TwixSjuv0kdnTNZfgJNj/dnbztf31H7ZoJeiqmAy
+	O32WOf17k5LMY9GjMb3Ng==
+Date: Tue, 11 Oct 2011 11:41:28 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, fweisbec@gmail.com, acme@redhat.com,
+        ming.m.lin@intel.com, robert.richter@amd.com, anton@samba.org
+Subject: [BUG] perf_event: losing buffer full notifications and samples
+Message-ID: <20111011094128.GA5085@quad>
 MIME-Version: 1.0
-In-Reply-To: <1318324399.14400.71.camel@laptop>
-References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
-	<CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
-	<1318319852.14400.65.camel@laptop>
-	<CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
-	<1318324399.14400.71.camel@laptop>
-Date: Tue, 11 Oct 2011 11:40:18 +0200
-Message-ID: <CAKfTPtDzY4pORvWd3Qa6kqpNsspKN7iEskQ+7F5D=mAwQWoKNg@mail.gmail.com>
-Subject: Re: sched: ARM: arch_scale_freq_power
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 October 2011 11:13, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
->> I have several goals. The 1st one is that I need to put more load on
->> some cpus when I have packages with different cpu frequency.
->
-> That should be rather easy.
->
 
-I agree, I was mainly wondering If I should use a [1-1024] or a
-[1024-xxxx] range and it seems that both can be used according : SMT
-uses <1024 and x86 turbo mode uses >1024
+There is a serious issue with the 3.1-rc9 kernel when it comes
+to user notifications when the buffer reaches a watermark threshold
+when users are sampling on multiple events at the same time.
 
->> I also study if I can follow the real cpu frequency but it seems to be
->> not so easy.
->
-> Why not?
->
+When you do:
+	$ perf record -e cycles,cycles,cycles noploop 10
 
-In fact, the problem is not really to follow the frequency but to be
-sure that update_group_power is called often enough by load_balance.
-The newly_idle event was also one main problem.
+You expect about 10,000 samples for each event, i.e., 10s at
+1000samples/sec. However, this is not what's happening. You
+get much fewer samples, maybe 3700 samples/per event:
 
->>  I have noticed that the cpu_power is updated periodical
->> except when we have a lot of newly_idle events.
->
-> We can certainly fix that.
->
+$ perf report -D | tail -15
+Aggregated stats:
+           TOTAL events:      10998
+            MMAP events:         66
+            COMM events:          2
+          SAMPLE events:      10930
+cycles stats:
+           TOTAL events:       3644
+          SAMPLE events:       3644
+cycles stats:
+           TOTAL events:       3642
+          SAMPLE events:       3642
+cycles stats:
+           TOTAL events:       3644
+          SAMPLE events:       3644
 
-That's a good news.
+On a Intel Nehalem or even AMD64, there are 4 counters capable
+of measuring cycles, so there is plenty of space to measure without
+multiplexing (even with the NMI watchdog active).
 
->> Then, I have some use cases which have several running tasks but a low
->> cpu load. In this case, the small tasks are spread on several cpu by
->> the load_balance whereas they could be easily handled by one cpu
->> without significant performance modification.
->
-> That shouldn't be done using cpu_power, we have sched_smt_power_savings
-> and sched_mc_power_savings for stuff like that.
->
+What is also strange is that there is no LOST sample records
+in the buffer either.
 
-sched_mc_power_saving works fine when we have more than 2 cpus but
-can't apply on a dual core because it needs at least 2 sched_groups
-and the nr_running of these sched_groups must be higher than 0 but
-smaller than group_capacity which is 1 on a dual core system.
+After a very painful debugging session, I discovered when the buffer
+gets full, despite sending notification, the perf tool did not
+update the tail pointer of the buffer. At first, I thought it was
+some race condition or memory ordering problem. But the reality
+was far simpler.
 
-> Although I would really like to kill all those different
-> sched_*_power_savings knobs and reduce it to one.
->
->> If the cpu_power is
->> higher than 1024, the cpu is no more seen out of capacity by the
->> load_balance as soon as a short process is running and teh main result
->> is that the small tasks will stay on the same cpu. This configuration
->> is mainly usefull for ARM dual core system when we want to power gate
->> one cpu. I use cyclictest to simulate such use case.
->
-> Yeah, but that's wrong.
+When sampling on multiple events, perf aggregates all samples into
+a single sampling buffer controlled by the first event.
 
-That's the only way I have found to gathers small task without any
-relationship on one cpu. Do you know any better solution ?
+I checked that the arch low level handler was indeed detecting all
+the counter overflows and calling perf_event_overflow() to process
+them. Therefore at the lowest level, 30,000 samples were actually
+generated, yet only 11,000 ended up in the perf.data file. The
+interrupt throttling mechanism was not to blame here, because
+we are way below the limit.
 
->
->
-Regards,
-Vincent
+Then, I thought the ring_buffer code was to blame. Well, it was not.
+The issue is that when you sample on multiple events, any one of
+them can fire, the perf_event_overflow() is called for each event.
+One of the events can cause the buffer notification threshold to be
+crossed.  The poll notification is based on the event. But when samples
+are aggregated into a single buffer, you MUST use the event that owns
+the buffer when you notify. The perf tool ONLY polls on the events
+with a sampling buffer. In my example, it polls on the fd for the
+first event. But if the kernel sends a wakeup for the the second
+event, nothing is going to happen and the buffer will get stuck.
+
+Back in 2.6.34, perf_event_set_output() was setting the output event
+for each "aggregated" event. But in 2.6.35, Peter removed that for
+a reason I don't quite understand in this commit:
+
+commit ac9721f3f54b27a16c7e1afb2481e7ee95a70318
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Thu May 27 12:54:41 2010 +0200
+
+perf_events: Fix races and clean up perf_event and perf_mmap_data interaction
+
+
+That means that since then, the above example does not work. We are
+silently dropping samples. This needs to be fixed ASAP. The above patch
+fixes the problem, but it may have some race conditions. I also suspect
+we could stash the output event into the ring_buffer struct.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index a308820..4c50c1b 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -798,6 +798,7 @@ struct perf_event {
+ 	int				nr_siblings;
+ 	int				group_flags;
+ 	struct perf_event		*group_leader;
++        struct perf_event               *output;
+ 	struct pmu			*pmu;
+ 
+ 	enum perf_event_active_state	state;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a7f388f..7ba3bc6 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6194,6 +6194,7 @@ set:
+ 
+ 	old_rb = event->rb;
+ 	rcu_assign_pointer(event->rb, rb);
++        rcu_assign_pointer(event->output, output_event);
+ 	ret = 0;
+ unlock:
+ 	mutex_unlock(&event->mmap_mutex);
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index a2a2920..7fcd97a 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -102,6 +102,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ {
+ 	struct ring_buffer *rb;
+ 	unsigned long tail, offset, head;
++	struct perf_event *output_event;
+ 	int have_lost;
+ 	struct perf_sample_data sample_data;
+ 	struct {
+@@ -121,6 +122,10 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	if (!rb)
+ 		goto out;
+ 
++        output_event = rcu_dereference(event->output);
++        if (output_event)
++                event = output_event;
++
+ 	handle->rb	= rb;
+ 	handle->event	= event;
+ 
