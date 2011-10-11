@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab1JKGYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 02:24:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53458 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab1JKGYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 02:24:42 -0400
-Date: Tue, 11 Oct 2011 08:22:53 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [3.1 patch] x86: default to vsyscall=native
-Message-ID: <20111011062253.GA3589@elte.hu>
-References: <CAObL_7GJ_WztLEgBhPhJGhDOJmPqiPXcHPqS=1_Fa=S9_PmpNw@mail.gmail.com>
- <CAObL_7Hhdfneba2C_4Bg+M=4LCmebFL0BvZKfw0P6xO=JQukcg@mail.gmail.com>
- <CAObL_7HL1M00D7XDCtMgO1kDSh64N7LvwB0DVd7c8Afi-Ki-Gw@mail.gmail.com>
- <CAFLxGvx0Cpu0ePytdCSSzfO2or3ZL3j5QrghOE5eWHZCJt6C6g@mail.gmail.com>
- <CAObL_7FJy=BFmtuTd+CE_uF2+ra6LnQWGUp=g+1py_V9ukYvJg@mail.gmail.com>
- <CA+55aFyskjs9qPkoFom16veQXy5a-beWF95A7mCFexqanRiiKQ@mail.gmail.com>
- <CAObL_7HUhxsOVHYFovgxYu7r5YNju+n4Q45GZ9viCCW-GrxWhg@mail.gmail.com>
- <CAFLxGvx0QMrvG_ZsFE6C_xHn9JpWJ-aW-V=K9pm3OoXZc=NKxQ@mail.gmail.com>
- <20111010114840.GC17079@elte.hu>
- <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAObL_7EykEi0OkKMj=iZ=A=acyiOPqx-CbUJMu=rVrvyUN8seQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751147Ab1JKGhX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 02:37:23 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:43832 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab1JKGhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 02:37:21 -0400
+Date: Tue, 11 Oct 2011 17:37:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: linux-next: build failure after merge of the gpio tree
+Message-Id: <20111011173714.d54bbcee6c0676ddcc37a1f3@canb.auug.org.au>
+In-Reply-To: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
+References: <20111006144826.a69a5ea59d4ca94f8f7414cf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+Hi Grant,
 
-> > Andrew?
-> 
-> I think I know what the root cause is and I have most of a patch to 
-> fix it.  It doesn't compile (yet), it's a little less trivial than 
-> I'd like for something this late in the -rc cycle, and it adds 16 
-> bytes to thread_struct (ugh!).
-> 
-> I think I can make a follow-up patch that removes 32 bytes of 
-> per-thread state to restore my karma, though, but that will 
-> definitely not be 3.1 material.
+On Thu, 6 Oct 2011 14:48:26 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the gpio tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-pch.ko] undefined!
+> ERROR: "irq_setup_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
+> ERROR: "irq_alloc_generic_chip" [drivers/gpio/gpio-ml-ioh.ko] undefined!
+>=20
+> Presumably caused by commits 54be566317b6 ("gpio-ml-ioh: Support
+> interrupt function") and 38eb18a6f92d ("gpio-pch: Support interrupt
+> function").
+>=20
+> I have used the gpio tree from next-20111005 for today.
 
-Ok, i've queued up the vsyscall=native patch in tip:x86/urgent for 
-now - we can re-try in v3.2 (perhaps) if a satisfactory solution is 
-found.
+I am still getting this build failure.
 
-Thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-	Ingo
+--Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOk+QaAAoJEECxmPOUX5FEg+UP/jeieEU8UymcXxtomxyjtlCQ
+wKb6IYlBZKol2EhkhOGIPAROp9meJMOaI/dpFVG9EJNhUPvNDSoKSv2jZiIeQ9yI
+/sKiRv8DTGxgJ+qmDgoGpL+goe0lXuLJdDuM+1xkMCzPCFiw34c1YCAhNHmcgfMa
+IkugqDxDcAYo0TaXu63uBpG739XwdwT3S9oKIYuXhLdxBZaBwkr+sZadMSqRrgwA
+rl3HTyQioS+oicJ+pqC+ODS66HmX1iXa0ASEi9BfF4XLjy95M8rUQZqwnoRpFkEj
+QAvtCL4/u3mEOH/qQYccP0wYD+iLts/HIqxBo0IJcK0QCxrwqc8SMAgS6h0BqQhz
+EYQZ9RlLiCcVUp225ZaXzJbkLb123Iegr0lWX8w+jkrnPWqRhuKKnd/jn9MYW5Cb
+qfzVXwif7jbDqx27h56zf0slOys17j1HCG70tI3jFCzZLZMuZ087QuZBqVkJqR8Y
+7a0XAQ69426xx6DmTIg6eXYLkHE4mQ5/mwF7nU2pEqBM2Y7J5PxlcjajZVQ3dmv0
+yAPjv30fhMPDal8rYrjNPC2epElrUIVqxRmO0Rm4TxiZDThgYCLJmJc0cxOwz85J
+14qMwrqhqlF3FEvrtSbrXSnMkPvu+EKWzZkgkXnsXQcqbaBdgSulB1eaq2sQhfw5
+TrnCz0c9HlN0NQkp27+W
+=ufny
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__11_Oct_2011_17_37_14_+1100_LBsW4nUeb3l=X.ET--
