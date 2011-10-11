@@ -1,34 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab1JKTy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 15:54:28 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34408 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab1JKTy0 (ORCPT
+	id S1755599Ab1JKTz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 15:55:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35147 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755460Ab1JKTz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 15:54:26 -0400
-Date: Tue, 11 Oct 2011 12:54:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Satoru Moriya <satoru.moriya@hds.com>
-Cc: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-Message-Id: <20111011125419.2702b5dc.akpm@linux-foundation.org>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
-	<20111010153723.6397924f.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 11 Oct 2011 15:55:56 -0400
+Date: Tue, 11 Oct 2011 20:54:50 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pata_cs5535: no need to program PIO0 timings during
+ device init
+Message-ID: <20111011205450.279f6348@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110112004.05251.bzolnier@gmail.com>
+References: <201110112004.05251.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -36,28 +26,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011 15:32:11 -0400
-Satoru Moriya <satoru.moriya@hds.com> wrote:
+On Tue, 11 Oct 2011 20:04:05 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-> On 10/10/2011 06:37 PM, Andrew Morton wrote:
-> > On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes 
-> > <rientjes@google.com> wrote:
-> > 
-> >> On Thu, 1 Sep 2011, Rik van Riel wrote:
-> >
-> > The page allocator already tries harder if the caller has 
-> > rt_task(current).  Why is this inadequate?  Can we extend this idea 
-> > further to fix whatever-the-problem-is?
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Subject: [PATCH] pata_cs5535: no need to program PIO0 timings during device init
 > 
-> Actually page allocator decreases min watermark to 3/4 * min watermark
-> for rt-task. But in our case some applications create a lot of
-> processes and if all of them are rt-task, the amount of watermark
-> bonus(1/4 * min watermark) is not enough.
+> Core libata code takes care of it nowadays.
 > 
-> If we can tune the amount of bonus, it may be fine. But that is
-> almost all same as extra free kbytes.
+> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 
-This situation is detectable at runtime.  If realtime tasks are being
-stalled in the page allocator then start to increase the free-page
-reserves.  A little control system.
-
+Acked-by: Alan Cox <alan@linux.intel.com>
