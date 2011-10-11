@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1JKKz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:55:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33682 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338Ab1JKKz0 convert rfc822-to-8bit (ORCPT
+	id S1754641Ab1JKK4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:56:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49846 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754520Ab1JKK4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:55:26 -0400
+	Tue, 11 Oct 2011 06:56:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E941D5E.6060101@suse.de>
-References: <CADDb1s2=Ykh711grVjHV542pVJwpf1K+zzTRVEY2KH3T=wB_xg@mail.gmail.com>
-	<4E941D5E.6060101@suse.de>
-Date: Tue, 11 Oct 2011 16:25:24 +0530
-Message-ID: <CADDb1s1kDgfRX-5g3xcLrSfRbD=sQ6MecuK40w75bY8brrVBaw@mail.gmail.com>
-Subject: Re: [Patch] SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal
- routine fails
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Hannes Reinecke <hare@suse.de>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Douglas Gilbert <dgilbert@interlog.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        NamJae Jeon <linkinjeon@gmail.com>
+In-Reply-To: <20111011110728.13004b1c@lxorguk.ukuu.org.uk>
+References: <CACVXFVOkwX+974=eEY5UPysXN-t9Adg6=Wn0Ts4m0vT5zQaw3g@mail.gmail.com>
+	<20111010172557.332bfe30@lxorguk.ukuu.org.uk>
+	<CACVXFVNAFTpZEOnH+6LxUk=dXtNKvmYVx5NtuJJ1bri4XEyt5Q@mail.gmail.com>
+	<20111011110728.13004b1c@lxorguk.ukuu.org.uk>
+Date: Tue, 11 Oct 2011 18:56:03 +0800
+Message-ID: <CACVXFVODp5o0=+6pwG+K_LV=rtCJo-5J3Os10orwijZJq4r4Ng@mail.gmail.com>
+Subject: Re: [Question] PM-QoS: PM_QOS_CPU_DMA_LATENCY == interrupt latency?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <mgross@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM List <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 4:11 PM, Hannes Reinecke <hare@suse.de> wrote:
-> On 10/11/2011 10:26 AM, Amit Sahrawat wrote:
+On Tue, Oct 11, 2011 at 6:07 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> > No. Well it may be on some platforms but it isn't the same thing. On some
+>> > devices a DMA transfer doesn't need the CPU involved but needs the CPU to
+>> > respond within a set timescale (eg for coherency or bus arbitration). It
 >>
->> SCSI: Retrieve Cache Mode Using SG_ATA_16 if normal routine fails
->>
->> It has been observed that a number of USB HDD's do not respond correctly
->> to SCSI mode sense command(retrieve caching pages) which results in their
->> Write Cache being discarded by queue requests i.e., WCE if left set to
->> '0'(disabled). So, in order to identify the devices correctly - give it
->> a last try using SG_ATA_16 after failure from normal routine.
->>
-> I'd be _VERY_ cautious when trying something like this.
+>> I understand only the CPU can respond after it is notified by a
+>> interrupt event, don't I?
 >
-> ATA_16 is a rather recent command, and most older drives simply can't cope
-> with this. Instead they just kick the error handler and go offline
-> eventually.
-I tried with a number of USB HDD(around 6 with different
-manufacturer's, 1 USB SSD and pen drives) - they are responding
-correctly with this.
+> The instruction stream being executed maybe, but not things like the cache
 >
-> Shouldn't we rather use a sensible default, ie assume WCE is enabled?
-If WCE is enabled by default - that will mark QUEUE ORDERING to
-QUEUE_ORDERED_DRAIN_FLUSH(Preflush-Postflush)(ie., flushing will occur
-for all the Mass Storage devices - which in turn will keep on calling
-SYNC_CACHE for these devices(which do not have write cache)) - ie., an
-extra overhead for the devices which do not have this routine(Pen
-drives being widely used among these)
-Is there any identification(unique information) for "older drives" ?
-Please share your opinion more.
+>> Also could you give a example about how the CPU responds to a DMA transfer
+>> within a set timescale if it is required?
+>
+> The kind of thing you are dealing with is
+>
+>        DMA engine requests a cache line of data
+>        CPU wakes out of sleep, completes bus transaction
 
+I think the CPU should be woken up by interrupt from DMA engine, so
+it is still a kind of interrupt latency?
+
+Also looks like it is a bit odd that why CPU is involved to complete the
+bus transaction which should have been done by DMA engine only.
+Is there a practical example about this?
+
+>        CPU goes back to sleep
+>        DMA engine starts outputting data bits over SPI bus or similar
 >
-> Cheers,
+>        repeat until done
 >
-> Hannes
-> --
-> Dr. Hannes Reinecke                   zSeries & Storage
-> hare@suse.de                          +49 911 74053 688
-> SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-> GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+> so it's not instruction level stuff, merely bus traffic.
 >
-Regards,
-Amit Sahrawat
+
+
+thanks,
+-- 
+Ming Lei
