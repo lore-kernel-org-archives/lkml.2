@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1JKVFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 17:05:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44037 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1JKVE7 (ORCPT
+	id S1752472Ab1JKVIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 17:08:06 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:18956 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1JKVHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 17:04:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=RUDnhY1ec1VJzDX+6VK3mri7gTl4C3h8QlZHKgLYiDOUMFI1R9FhD+QJoQRnSdcXy
-	bNJDwrfSxMQwZmC6cgLag==
-Date: Tue, 11 Oct 2011 14:04:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Satoru Moriya <satoru.moriya@hds.com>
-cc: Rik van Riel <riel@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB516CBBC@USINDEVS02.corp.hds.com>
-Message-ID: <alpine.DEB.2.00.1110111343070.29761@chino.kir.corp.google.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBBC@USINDEVS02.corp.hds.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 11 Oct 2011 17:07:46 -0400
+Message-ID: <4E94B01D.2050402@cavium.com>
+Date: Tue, 11 Oct 2011 14:07:41 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <greg@kroah.com>, Dilan Lee <dilee@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [RFC PATCH v3] drivercore: Add driver probe deferral mechanism
+References: <20110922184614.25419.84606.stgit@ponder> <20111011134753.2751aeb1.akpm@linux-foundation.org>
+In-Reply-To: <20111011134753.2751aeb1.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Oct 2011 21:07:44.0416 (UTC) FILETIME=[D208CA00:01CC8859]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Satoru Moriya wrote:
+On 10/11/2011 01:47 PM, Andrew Morton wrote:
+> On Thu, 22 Sep 2011 12:51:23 -0600
+> Grant Likely<grant.likely@secretlab.ca>  wrote:
+>
+>> Allow drivers to report at probe time that they cannot get all the resources
+>> required by the device, and should be retried at a later time.
+>>
+>> This should completely solve the problem of getting devices
+>> initialized in the right order.  Right now this is mostly handled by
+>> mucking about with initcall ordering which is a complete hack, and
+>> doesn't even remotely handle the case where device drivers are in
+>> modules.  This approach completely sidesteps the issues by allowing
+>> driver registration to occur in any order, and any driver can request
+>> to be retried after a few more other drivers get probed.
+>
+> What happens is there is a circular dependency, or if a driver's
+> preconditions are never met?  AFAICT the code keeps running the probe
+> function for ever.
+>
 
-> > I also
-> > think that it will cause regressions on other cpu intensive workloads 
-> > that don't require this extra freed memory because it works as a 
-> > global heuristic and is not tied to any specific application.
-> 
-> It's yes and no. It may cause regressions on the workloads due to
-> less amount of available memory. But it may improve the workloads'
-> performance because they can avoid direct reclaim due to extra
-> free memory.
-> 
+The deferred probe functions are only run once per (other) driver 
+binding event.  So once you quit registering new drivers, no further 
+probing is done.  There is no endless loop happening here.
 
-There's only a memory-availability regression if background reclaim is 
-actually triggered in the first place, i.e. extra_free_kbytes doesn't 
-affect the watermarks themselves when reclaim is started but rather causes 
-it to, when set, reclaim more memory than otherwise.
+If the preconditions are never met, the driver will just sit in the list 
+waiting.
 
-That's not really what I was referring to; I was referring to cpu 
-intensive workloads that now incur a regression because kswapd is now 
-doing more work (potentially a significant amount of work since 
-extra_free_kbytes is unbounded) on shared machines.  These applications 
-may not be allocating memory at all and now they incur a performance 
-penalty because kswapd is taking away one of their cores.
 
-In other words, I think it's a fine solution if you're running a single 
-application with very bursty memory allocations so you need to reclaim 
-more memory when low, but that solution is troublesome if it comes at 
-the penalty of other applications and that's a direct consequence of it 
-being a global tunable.  I'd much rather identify memory allocations in 
-the kernel that causing the pain here and mitigate it by (i) attempting to 
-sanely rate limit those allocations, (ii) preallocate at least a partial 
-amount of those allocations ahead of time so avoid significant reclaim 
-all at one, or (iii) annotate memory allocations with such potential so 
-that the page allocator can add this reclaim bonus itself only in these 
-conditions.
+> If so: bad.  The kernel should detect such situations, should
+> exhaustively report them and if possible, fix them up and struggle
+> onwards.
+>
 
-> Of course if one doesn't need extra free memory, one can turn it
-> off. I think we can add this feature to cgroup if we want to set
-> it for any specific process or process group. (Before that we
-> need to implement min_free_kbytes for cgroup and the implementation
-> of extra free kbytes strongly depends on it.)
-> 
+I don't think we should actively report anything, but being able to 
+inspect the deferred probe list from user space might be useful for 
+diagnosing problems
 
-That would allow you to only reclaim additional memory when certain 
-applications tirgger it, but it's not actually a solution since another 
-task can hit a zone's low watermark and kick kswapd and then the bursty 
-memory allocations happen immediately following that and doesn't actually 
-do anything because kswapd was already running.  So I disagree, as I did 
-when per-cgroup watermark tunables were proposed, that watermarks should 
-be changed for a subset of applications unless you guarantee memory 
-isolation such that that subset of applications has exclusive access to 
-the memory zones being tuned.
+
+David Daney
+
