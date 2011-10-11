@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab1JKI5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 04:57:15 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47081 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab1JKI5N (ORCPT
+	id S1753859Ab1JKJHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 05:07:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39258 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab1JKJHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 04:57:13 -0400
-Date: Tue, 11 Oct 2011 19:57:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the writeback tree
-Message-Id: <20111011195704.67c267dbb3c6eaaacf5d7a39@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Tue, 11 Oct 2011 05:07:18 -0400
+Subject: Re: sched: ARM: arch_scale_freq_power
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, linux-kernel@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linaro-dev@lists.linaro.org
+In-Reply-To: <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
+References: <CAKfTPtB3sLWq5fHOTrFg6vfHSKnz2i17oYx9Btr0u_tWV2bsjQ@mail.gmail.com>
+	 <CAP245DX8b45Nj5SAwtLivp_vMKpwfeUrqnR2sqjnVyqiRd61gg@mail.gmail.com>
+	 <1318319852.14400.65.camel@laptop>
+	 <CAKfTPtB_eXgggeEYmNsXkvL8NsoEoz_NJFgA4E5WtAm74F515Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 11:13:19 +0200
+Message-ID: <1318324399.14400.71.camel@laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__11_Oct_2011_19_57_04_+1100_l1Og+_LpvOsIpw63"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__11_Oct_2011_19_57_04_+1100_l1Og+_LpvOsIpw63
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-10-11 at 10:51 +0200, Vincent Guittot wrote:
+> I have several goals. The 1st one is that I need to put more load on
+> some cpus when I have packages with different cpu frequency.
 
-Hi Wu,
+That should be rather easy.
 
-After merging the writeback tree, today's linux-next build (powerpc
-allnoconfig) produced these warnings:
+> I also study if I can follow the real cpu frequency but it seems to be
+> not so easy.
 
-mm/page-writeback.c: In function 'bdi_position_ratio':
-mm/page-writeback.c:622:3: warning: comparison of distinct pointer types la=
-cks a cast [enabled by default]
-page-writeback.c:635:4: warning: comparison of distinct pointer types lacks=
- a cast [enabled by default]
+Why not?
 
-Introduced by commits 6c14ae1e92c7 ("writeback: dirty position control")
-and 8927f66c4ede ("writeback: dirty position control - bdi reserve area").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>  I have noticed that the cpu_power is updated periodical
+> except when we have a lot of newly_idle events.
 
---Signature=_Tue__11_Oct_2011_19_57_04_+1100_l1Og+_LpvOsIpw63
-Content-Type: application/pgp-signature
+We can certainly fix that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Then, I have some use cases which have several running tasks but a low
+> cpu load. In this case, the small tasks are spread on several cpu by
+> the load_balance whereas they could be easily handled by one cpu
+> without significant performance modification. 
 
-iQIcBAEBCAAGBQJOlATgAAoJEECxmPOUX5FEtOMP/0y1JjvCbKt9P+3jb+IxOfG1
-B3j91uDOQ40n1lzbQeqUBe8BOT/ypcxUG32xMyTRvYvUzL6nyfCWJanHzPq6MmB6
-DYYIqJ0otDScSfdFL5Mz/Q2fqHorNJblGby01WfnghszogiH4hCNC2ckGfXRclIN
-+dC3LjC+vf4/TKdajEu+plq/uPQJNSAGjETII9rrfsmtcBaN/HWZMWjHDmUDtqJT
-UZFdJItpRmXnaqnCC2swuqZr5hh6Cka33rdWs3EOJZ56UqJxfk8rWetVa0TtqR1g
-2VITLsE7WDe9PUFdGsArvnuhX6qSBMRnTy/DY0Jk+YZe/nZGvHgrEGCo/CfDdS+s
-IOThxZ3h2zpOFpogOStddhxD05XKGR24sr5rqVFeHuD1z7Vnux8OPFULnUNZmUuD
-1dGil723ZZdLSdgdCj0gC7+Kt/e5PX6EssytuqNQ0HdjLvwirb3GesnVcZBZxHOC
-HjOtdunCktk0l6opsF3yAzzh3kBcpChzDV19ul3sjAFXsEKYamlxXLR6LkFYyJk8
-p0mnOtaXXN1jfb9/M7KBlYzto1lMdp67xBwo6lGO8GGc1gMceYzLE6QsfcmDt9sh
-3M15Dg4r+yynFliubo8cwEpKazZxoaYttZIQAfUYHLkj6xMvYA9FLFHuDnCZQNuP
-pZgoQPaxco0STA3VwO1h
-=kO3V
------END PGP SIGNATURE-----
+That shouldn't be done using cpu_power, we have sched_smt_power_savings
+and sched_mc_power_savings for stuff like that.
 
---Signature=_Tue__11_Oct_2011_19_57_04_+1100_l1Og+_LpvOsIpw63--
+Although I would really like to kill all those different
+sched_*_power_savings knobs and reduce it to one.
+
+> If the cpu_power is
+> higher than 1024, the cpu is no more seen out of capacity by the
+> load_balance as soon as a short process is running and teh main result
+> is that the small tasks will stay on the same cpu. This configuration
+> is mainly usefull for ARM dual core system when we want to power gate
+> one cpu. I use cyclictest to simulate such use case. 
+
+Yeah, but that's wrong.
+
