@@ -1,97 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1JKAPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 20:15:32 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:42274 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753885Ab1JKAPa (ORCPT
+	id S1753879Ab1JKAUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 20:20:11 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:56311 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab1JKAUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 20:15:30 -0400
-Date: Mon, 10 Oct 2011 20:15:29 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <khilman@ti.com>, <b-cousson@ti.com>, <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 1/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap4
-In-Reply-To: <20111010201055.GB8808@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1110102010310.28007-100000@netrider.rowland.org>
+	Mon, 10 Oct 2011 20:20:07 -0400
+Message-ID: <4E938A21.70708@panasas.com>
+Date: Tue, 11 Oct 2011 02:13:21 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dan Williams <dan.j.williams@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: [RFC]: do_xor_speed Broken on UML do to jiffies
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011, Felipe Balbi wrote:
 
-> > > > In fact we do already have sibling lists.  They are maintained as part 
-> > > > of the device_private structure.  What we are missing is a 
-> > > > device_for_each_sibling() routine.  It could be added pretty easily; it 
-> > > > would be similar to device_for_each_child().
-> > > 
-> > > care to point out where is ?
-> > > 
-> > > 68 struct device_private {
-> > > 69         struct klist klist_children;
-> > > 70         struct klist_node knode_parent;
-> > -------------^  Here.  The "parent" in the name refers to where the
-> >                 head of the list is stored.
-> > 
-> > > 71         struct klist_node knode_driver;
-> > > 72         struct klist_node knode_bus;
-> > > 73         void *driver_data;
-> > > 74         struct device *device;
-> > > 75 };
-> > 
-> > From device_add():
-> > 
-> > 	if (parent)
-> > 		klist_add_tail(&dev->p->knode_parent,
-> > 			       &parent->p->klist_children);
-> 
-> that's a parent -> child relationship. What we have on this case is:
-> 
->  --------------                ---------------
-> |              |              |               |          |\
-> |   UHH        |  clocks, etc |    USBTLL     |          | |
-> |              | <==========> |               | <======> | | <====> ports
-> |     -------  |              | (Transceiver- |          | |
-> |    |  EHCI | |              | less Link)    |          |/
-> |     -------  |              |               |         Port MUX
-> |              |              |               |
-> |     -------  |              |               |
-> |    |  OHCI | |              |               |
-> |     -------  |              |               |
-> |              |              |               |
->  --------------                ---------------
-> 
-> It doesn't shown here, but the TLL link is completely optional. It's
-> mainly used for modem integration, IIRC. Still, if we're using TLL, EHCI
-> and OHCI will depend on a clock provided by the USBTLL block.
-> 
-> Clearly, USBTLL isn't either a parent of UHH, nor a parent of EHCI/OHCI
-> blocks. We can, from a code perspective, make USBTLL into a parent of
-> UHH to make things simpler, but this will mean that calling
-> pm_runtime_get() will also unconditionaly turn on TLL clock, unless we
-> add some nasty hacks to allow TLL know if *HCI port is in TLL mode.
-> 
-> That's why I decided for making TLL and UHH siblings, because that's a
-> closer relationship than parent-child.
-> 
-> Can you see the problem now ?
+Remember that hang I reported a while back on UML. Well
+I'm at it again, and it still hangs and I found why.
 
-Okay, now I understand better.  The word "sibling" implies that the two 
-objects have the same parent, so a different word would describe this 
-relationship better.  Something like "friend" or "associate".
+I have dprinted jiffies and it never advances during the
+loop at do_xor_speed. Therefor it is stuck in an endless
+loop. I have also dprinted current_kernel_time() and it
+returns the same constant value as well.
 
-Or maybe, following Paul's suggestion, the driver core doesn't have to 
-be changed at all.
+Note that it does usually work on UML, only during
+the modprobe of xor.ko while that test is running, it is broken.
+It looks like some lucking is preventing the clock from ticking.
 
-Alan Stern
+However ktime_get_ts does work for me so I changed the code
+as below, so I can work. See how I put several safety
+guards, to never get hangs again.
+And I think my time based approach is more accurate then
+previous system.
+
+UML guys please investigate the jiffies issue? what is
+xor.ko not doing right?
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ crypto/xor.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 27 insertions(+), 19 deletions(-)
+
+diff --git a/crypto/xor.c b/crypto/xor.c
+index b75182d..65433f5 100644
+--- a/crypto/xor.c
++++ b/crypto/xor.c
+@@ -62,37 +62,45 @@ static struct xor_block_template *template_list;
+ static void
+ do_xor_speed(struct xor_block_template *tmpl, void *b1, void *b2)
+ {
+-	int speed;
+-	unsigned long now;
+-	int i, count, max;
++	unsigned speed, count;
++	u64 ns_begin;
++	u64 ns_end;
++	struct timespec ts;
++
+ 
+ 	tmpl->next = template_list;
+ 	template_list = tmpl;
+ 
+ 	/*
+-	 * Count the number of XORs done during a whole jiffy, and use
++	 * Count the number of XORs done during 10 miliseconds, and use
+ 	 * this to calculate the speed of checksumming.  We use a 2-page
+ 	 * allocation to have guaranteed color L1-cache layout.
+ 	 */
+-	max = 0;
+-	for (i = 0; i < 5; i++) {
+-		now = jiffies;
+-		count = 0;
+-		while (jiffies == now) {
+-			mb(); /* prevent loop optimzation */
+-			tmpl->do_2(BENCH_SIZE, b1, b2);
+-			mb();
+-			count++;
+-			mb();
+-		}
+-		if (count > max)
+-			max = count;
++	ktime_get_ts(&ts);
++	ns_begin = timespec_to_ns(&ts);
++	count = 0;
++	while (count < 4000000L) {
++		mb(); /* prevent loop optimzation */
++		tmpl->do_2(BENCH_SIZE, b1, b2);
++		mb();
++		count++;
++		mb();
++
++		ktime_get_ts(&ts);
++		ns_end = timespec_to_ns(&ts);
++		/* Test for 10 miliseconds */
++		if ((ns_end - ns_begin) > NSEC_PER_SEC / 100)
++			break;
+ 	}
+ 
+-	speed = max * (HZ * BENCH_SIZE / 1024);
++	ns_end -= ns_begin;
++	if (ns_end > 0)
++		speed = BENCH_SIZE / 1024 * count * NSEC_PER_SEC / ns_end;
++	else
++		speed = 17;
+ 	tmpl->speed = speed;
+ 
+-	printk(KERN_INFO "   %-10s: %5d.%03d MB/sec\n", tmpl->name,
++	printk(KERN_INFO "   %-10s: %5u.%03u MB/sec\n", tmpl->name,
+ 	       speed / 1000, speed % 1000);
+ }
+ 
+-- 
+1.7.2.3
 
