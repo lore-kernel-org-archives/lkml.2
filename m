@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1JKOrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 10:47:03 -0400
-Received: from bby1mta02.pmc-sierra.com ([216.241.235.117]:60362 "EHLO
-	bby1mta02.pmc-sierra.bc.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752947Ab1JKOrA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 10:47:00 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754828Ab1JKOsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 10:48:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40897 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab1JKOsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 10:48:32 -0400
+Date: Tue, 11 Oct 2011 15:48:24 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 2/6] MFD: twl6040: Cache the vibra control registers
+Message-ID: <20111011144824.GE1098@sirena.org.uk>
+References: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com>
+ <1316760584-27426-3-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [patch] [SCSI] aacraid: use lower snprintf() limit
-Date: Tue, 11 Oct 2011 07:46:55 -0700
-Message-ID: <FD2BDBE06AC58549AE9E16C08B45675D05E48085@BBY1EXM10.pmc_nt.nt.pmc-sierra.bc.ca>
-In-Reply-To: <20111006143038.GC18470@longonot.mountain>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [patch] [SCSI] aacraid: use lower snprintf() limit
-Thread-Index: AcyENPBZl1wEryDhSwWW8JB4AR0CJAD75Ylg
-References: <20111005055046.GD32077@elgon.mountain> <d97a34694e741dc6a2a71fbcd49bab49.squirrel@webmail.sf-mail.de> <FD2BDBE06AC58549AE9E16C08B45675D05D8ED9E@BBY1EXM10.pmc_nt.nt.pmc-sierra.bc.ca> <20111006143038.GC18470@longonot.mountain>
-From: "Achim Leubner" <Achim_Leubner@pmc-sierra.com>
-To: "Dan Carpenter" <dan.carpenter@oracle.com>
-Cc: "Rolf Eike Beer" <eike-kernel@sf-tec.de>,
-        "Adaptec OEM Raid Solutions" <aacraid@adaptec.com>,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
-X-OriginalArrivalTime: 11 Oct 2011 14:46:58.0538 (UTC) FILETIME=[A0D474A0:01CC8824]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1316760584-27426-3-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: Drilling for oil is boring.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agreed.
-
-Thanks,
-Achim
-
------Original Message-----
-From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
-Sent: Donnerstag, 6. Oktober 2011 16:31
-To: Achim Leubner
-Cc: Rolf Eike Beer; Adaptec OEM Raid Solutions; James E.J. Bottomley;
-linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org;
-kernel-janitors@vger.kernel.org
-Subject: Re: [patch] [SCSI] aacraid: use lower snprintf() limit
-
-On Wed, Oct 05, 2011 at 05:19:12AM -0700, Achim Leubner wrote:
-> Looks good so far. But do we really need the last two lines?
-> > +	if (len > 16)
-> > +		len = 16;
+On Fri, Sep 23, 2011 at 09:49:40AM +0300, Peter Ujfalusi wrote:
+> The vibra control register will be used from the ASoC codec driver as well.
+> In order to avoid latency issues caused by I2C read access, cache the two
+> control register within the core driver, so we do not need to reach out
+> to the chip to read it back.
 > 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-snprintf() returns the number of characters that it _would_ have
-copied if it had space.  We want to return the number of bytes
-actually copied.
+It strikes me that it might be useful to just convert the driver to
+regmap and get cache for everything...
 
-Again, the snprintf() values do fit so this change doesn't actually
-make any difference.
-
-regards,
-dan carpenter
+Anyway, could you please restructure this series to minimize the
+dependency on the input subsystem?  Then we can get the rest of it
+applied.
