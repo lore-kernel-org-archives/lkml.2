@@ -1,156 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab1JKRIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:08:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33768 "EHLO mx2.suse.de"
+	id S1755606Ab1JKRJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:09:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23418 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab1JKRH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:07:58 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:13 2011
-Message-Id: <20111011165713.698672347@pistachio.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:45 -0600
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [35/38] ftrace: Fix regression of :mod:module function enabling
-In-Reply-To: <20111011165903.GA30976@kroah.com>
+	id S1754844Ab1JKRJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:09:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="62191776"
+Subject: Re: [PATCH 1/2 v2] pch_dma: Fix suspend issue
+From: Vinod Koul <vinod.koul@intel.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+In-Reply-To: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1318337002-10041-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 11 Oct 2011 22:31:16 +0530
+Message-ID: <1318352476.1546.360.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 2011-10-11 at 21:43 +0900, Tomoya MORINAGA wrote:
+> Currently, executing suspend/hibernation,
+> memory access violation occurs.
+> 
+> In pch_dma_save_regs() called by suspend(),
+> you can see the following code.
+> 
+> static void pch_dma_save_regs(struct pch_dma *pd)
+> {
+> snip...
+>         list_for_each_entry_safe(chan, _c, &pd->dma.channels, device_node) {
+>                 pd_chan = to_pd_chan(chan);
+> 
+>                 pd->ch_regs[i].dev_addr = channel_readl(pd_chan, DEV_ADDR);
+>                 pd->ch_regs[i].mem_addr = channel_readl(pd_chan, MEM_ADDR);
+>                 pd->ch_regs[i].size = channel_readl(pd_chan, SIZE);
+>                 pd->ch_regs[i].next = channel_readl(pd_chan, NEXT);
+> 
+>                 i++;
+>         }
+> }
+> 
+> Max loop count is 12 defined at pci_table.
+> So, this caused memory access violation.
+> 
+> This patch fixes the issue
+>  - Modify array size (MAX_CHAN_NR)
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+> ---
+>  drivers/dma/pch_dma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+> index ff5b38f..e72bfeb 100644
+> --- a/drivers/dma/pch_dma.c
+> +++ b/drivers/dma/pch_dma.c
+> @@ -59,7 +59,7 @@
+>  #define DMA_DESC_FOLLOW_WITHOUT_IRQ	0x2
+>  #define DMA_DESC_FOLLOW_WITH_IRQ	0x3
+>  
+> -#define MAX_CHAN_NR			8
+> +#define MAX_CHAN_NR			12
+>  
+>  static unsigned int init_nr_desc_per_channel = 64;
+>  module_param(init_nr_desc_per_channel, uint, 0644);
+Applied only 1/2. 2/2 needs modifications
 
-------------------
+Thanks
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-commit 43dd61c9a09bd413e837df829e6bfb42159be52a upstream.
-
-The new code that allows different utilities to pick and choose
-what functions they trace broke the :mod: hook that allows users
-to trace only functions of a particular module.
-
-The reason is that the :mod: hook bypasses the hash that is setup
-to allow individual users to trace their own functions and uses
-the global hash directly. But if the global hash has not been
-set up, it will cause a bug:
-
-echo '*:mod:radeon' > /sys/kernel/debug/set_ftrace_filter
-
-produces:
-
- [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
- [drm:radeon_crtc_page_flip] *ERROR* failed to reserve new rbo buffer before flip
- BUG: unable to handle kernel paging request at ffffffff8160ec90
- IP: [<ffffffff810d9136>] add_hash_entry+0x66/0xd0
- PGD 1a05067 PUD 1a09063 PMD 80000000016001e1
- Oops: 0003 [#1] SMP Jul  7 04:02:28 phyllis kernel: [55303.858604] CPU 1
- Modules linked in: cryptd aes_x86_64 aes_generic binfmt_misc rfcomm bnep ip6table_filter hid radeon r8169 ahci libahci mii ttm drm_kms_helper drm video i2c_algo_bit intel_agp intel_gtt
-
- Pid: 10344, comm: bash Tainted: G        WC  3.0.0-rc5 #1 Dell Inc. Inspiron N5010/0YXXJJ
- RIP: 0010:[<ffffffff810d9136>]  [<ffffffff810d9136>] add_hash_entry+0x66/0xd0
- RSP: 0018:ffff88003a96bda8  EFLAGS: 00010246
- RAX: ffff8801301735c0 RBX: ffffffff8160ec80 RCX: 0000000000306ee0
- RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880137c92940
- RBP: ffff88003a96bdb8 R08: ffff880137c95680 R09: 0000000000000000
- R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff81c9df78
- R13: ffff8801153d1000 R14: 0000000000000000 R15: 0000000000000000
- FS: 00007f329c18a700(0000) GS:ffff880137c80000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: ffffffff8160ec90 CR3: 000000003002b000 CR4: 00000000000006e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process bash (pid: 10344, threadinfo ffff88003a96a000, task ffff88012fcfc470)
- Stack:
-  0000000000000fd0 00000000000000fc ffff88003a96be38 ffffffff810d92f5
-  ffff88011c4c4e00 ffff880000000000 000000000b69f4d0 ffffffff8160ec80
-  ffff8800300e6f06 0000000081130295 0000000000000282 ffff8800300e6f00
- Call Trace:
-  [<ffffffff810d92f5>] match_records+0x155/0x1b0
-  [<ffffffff810d940c>] ftrace_mod_callback+0xbc/0x100
-  [<ffffffff810dafdf>] ftrace_regex_write+0x16f/0x210
-  [<ffffffff810db09f>] ftrace_filter_write+0xf/0x20
-  [<ffffffff81166e48>] vfs_write+0xc8/0x190
-  [<ffffffff81167001>] sys_write+0x51/0x90
-  [<ffffffff815c7e02>] system_call_fastpath+0x16/0x1b
- Code: 48 8b 33 31 d2 48 85 f6 75 33 49 89 d4 4c 03 63 08 49 8b 14 24 48 85 d2 48 89 10 74 04 48 89 42 08 49 89 04 24 4c 89 60 08 31 d2
- RIP [<ffffffff810d9136>] add_hash_entry+0x66/0xd0
-  RSP <ffff88003a96bda8>
- CR2: ffffffff8160ec90
- ---[ end trace a5d031828efdd88e ]---
-
-Reported-by: Brian Marete <marete@toshnix.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- include/linux/ftrace.h         |    3 ++-
- kernel/trace/ftrace.c          |   12 +++---------
- kernel/trace/trace_functions.c |    3 ++-
- 3 files changed, 7 insertions(+), 11 deletions(-)
-
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -123,7 +123,8 @@ stack_trace_sysctl(struct ctl_table *tab
- struct ftrace_func_command {
- 	struct list_head	list;
- 	char			*name;
--	int			(*func)(char *func, char *cmd,
-+	int			(*func)(struct ftrace_hash *hash,
-+					char *func, char *cmd,
- 					char *params, int enable);
- };
- 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2407,10 +2407,9 @@ ftrace_match_module_records(struct ftrac
-  */
- 
- static int
--ftrace_mod_callback(char *func, char *cmd, char *param, int enable)
-+ftrace_mod_callback(struct ftrace_hash *hash,
-+		    char *func, char *cmd, char *param, int enable)
- {
--	struct ftrace_ops *ops = &global_ops;
--	struct ftrace_hash *hash;
- 	char *mod;
- 	int ret = -EINVAL;
- 
-@@ -2430,11 +2429,6 @@ ftrace_mod_callback(char *func, char *cm
- 	if (!strlen(mod))
- 		return ret;
- 
--	if (enable)
--		hash = ops->filter_hash;
--	else
--		hash = ops->notrace_hash;
--
- 	ret = ftrace_match_module_records(hash, func, mod);
- 	if (!ret)
- 		ret = -EINVAL;
-@@ -2760,7 +2754,7 @@ static int ftrace_process_regex(struct f
- 	mutex_lock(&ftrace_cmd_mutex);
- 	list_for_each_entry(p, &ftrace_commands, list) {
- 		if (strcmp(p->name, command) == 0) {
--			ret = p->func(func, command, next, enable);
-+			ret = p->func(hash, func, command, next, enable);
- 			goto out_unlock;
- 		}
- 	}
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -324,7 +324,8 @@ ftrace_trace_onoff_unreg(char *glob, cha
- }
- 
- static int
--ftrace_trace_onoff_callback(char *glob, char *cmd, char *param, int enable)
-+ftrace_trace_onoff_callback(struct ftrace_hash *hash,
-+			    char *glob, char *cmd, char *param, int enable)
- {
- 	struct ftrace_probe_ops *ops;
- 	void *count = (void *)-1;
-
+-- 
+~Vinod
 
