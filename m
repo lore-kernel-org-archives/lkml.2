@@ -1,51 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab1JKKNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 06:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18590 "EHLO mx1.redhat.com"
+	id S1754533Ab1JKKNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 06:13:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57306 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991Ab1JKKNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 06:13:12 -0400
-Date: Tue, 11 Oct 2011 06:12:21 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: trond.myklebust@netapp.com, smfrench@gmail.com, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, john@Calva.COM,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] sunrpc: make rpc_wait_bit_killable handle freeze
- events
-Message-ID: <20111011061221.2a4a212f@tlielax.poochiereds.net>
-In-Reply-To: <20111011061923.GC1377@ucw.cz>
-References: <1317210761-11518-1-git-send-email-jlayton@redhat.com>
-	<1317210761-11518-4-git-send-email-jlayton@redhat.com>
-	<20111011061923.GC1377@ucw.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754466Ab1JKKNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 06:13:20 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] genksyms: Do not expand internal types
+Date: Tue, 11 Oct 2011 12:12:48 +0200
+Message-Id: <1318327969-24807-3-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1318327969-24807-1-git-send-email-mmarek@suse.cz>
+References: <1318327969-24807-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011 08:19:23 +0200
-Pavel Machek <pavel@ucw.cz> wrote:
+Consider structures, unions and enums defined in the source file as
+internal and do not expand them. This way, changes to e.g. struct
+serial_private in drivers/tty/serial/8250_pci.c will not affect the
+checksum of the pciserial_* exports.
+---
+ scripts/genksyms/genksyms.c |    3 ++-
+ scripts/genksyms/genksyms.h |    4 +++-
+ scripts/genksyms/lex.l      |    8 ++++++++
+ scripts/genksyms/parse.y    |    7 +++++++
+ 4 files changed, 20 insertions(+), 2 deletions(-)
 
-> On Wed 2011-09-28 07:52:40, Jeff Layton wrote:
-> > Allow the wait_on_bit_killable sleeps in SUNRPC layer to respect the
-> > freezer. This should allow suspend and hibernate events to occur, even
-> > when there are RPC's pending on the wire.
-> 
-> Will the RPC protocols used handle that correctly? What will happen
-> during resume?
-> 
-
-That depends on the state of the socket during resume. If the
-suspend/resume is quick enough, then the socket may still be connected,
-or if we're using UDP then we might just get the reply and carry on
-successfully. Otherwise, the call will eventually time out, or will be
-cancelled when the kernel finds that the socket has been closed.
-
-Either way, this should do the right thing.
-
+diff --git a/scripts/genksyms/genksyms.c b/scripts/genksyms/genksyms.c
+index 6d3fda0..8a10649 100644
+--- a/scripts/genksyms/genksyms.c
++++ b/scripts/genksyms/genksyms.c
+@@ -40,7 +40,8 @@ static struct symbol *symtab[HASH_BUCKETS];
+ static FILE *debugfile;
+ 
+ int cur_line = 1;
+-char *cur_filename;
++char *cur_filename, *source_file;
++int in_source_file;
+ 
+ static int flag_debug, flag_dump_defs, flag_reference, flag_dump_types,
+ 	   flag_preserve, flag_warnings;
+diff --git a/scripts/genksyms/genksyms.h b/scripts/genksyms/genksyms.h
+index 7ec52ae..3bffdca 100644
+--- a/scripts/genksyms/genksyms.h
++++ b/scripts/genksyms/genksyms.h
+@@ -37,6 +37,7 @@ enum symbol_status {
+ struct string_list {
+ 	struct string_list *next;
+ 	enum symbol_type tag;
++	int in_source_file;
+ 	char *string;
+ };
+ 
+@@ -57,7 +58,8 @@ typedef struct string_list **yystype;
+ #define YYSTYPE yystype
+ 
+ extern int cur_line;
+-extern char *cur_filename;
++extern char *cur_filename, *source_file;
++extern int in_source_file;
+ 
+ struct symbol *find_symbol(const char *name, enum symbol_type ns, int exact);
+ struct symbol *add_symbol(const char *name, enum symbol_type type,
+diff --git a/scripts/genksyms/lex.l b/scripts/genksyms/lex.l
+index 400ae06..f770071 100644
+--- a/scripts/genksyms/lex.l
++++ b/scripts/genksyms/lex.l
+@@ -116,6 +116,7 @@ MC_TOKEN		([~%^&*+=|<>/-]=)|(&&)|("||")|(->)|(<<)|(>>)
+ 			  cur_node->tag =				   \
+ 			    find_symbol(cur_node->string, SYM_ENUM_CONST, 1)?\
+ 			    SYM_ENUM_CONST : SYM_NORMAL ;		   \
++			  cur_node->in_source_file = in_source_file;       \
+ 			} while (0)
+ 
+ #define APP		_APP(yytext, yyleng)
+@@ -166,6 +167,13 @@ repeat:
+       cur_filename = memcpy(xmalloc(e-file+1), file, e-file+1);
+       cur_line = atoi(yytext+2);
+ 
++      if (!source_file) {
++        source_file = xstrdup(cur_filename);
++        in_source_file = 1;
++      } else {
++        in_source_file = (strcmp(cur_filename, source_file) == 0);
++      }
++
+       goto repeat;
+     }
+ 
+diff --git a/scripts/genksyms/parse.y b/scripts/genksyms/parse.y
+index a783ad4..23c3999 100644
+--- a/scripts/genksyms/parse.y
++++ b/scripts/genksyms/parse.y
+@@ -58,6 +58,13 @@ static void record_compound(struct string_list **keyw,
+ 		       enum symbol_type type)
+ {
+ 	struct string_list *b = *body, *i = *ident, *r;
++
++	if (i->in_source_file) {
++		remove_node(keyw);
++		(*ident)->tag = type;
++		remove_list(body, ident);
++		return;
++	}
+ 	r = copy_node(i); r->tag = type;
+ 	r->next = (*keyw)->next; *body = r; (*keyw)->next = NULL;
+ 	add_symbol(i->string, type, b, is_extern);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.6.1
+
