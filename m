@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1JKREj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 13:04:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33316 "EHLO mx2.suse.de"
+	id S1755320Ab1JKRE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 13:04:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33307 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab1JKREg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 13:04:36 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:11 2011
-Message-Id: <20111011165711.661391102@pistachio.kroah.org>
+	id S1755305Ab1JKRE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 13:04:27 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Tue Oct 11 10:57:08 2011
+Message-Id: <20111011165708.466042477@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Tue, 11 Oct 2011 10:55:32 -0600
+Date: Tue, 11 Oct 2011 10:55:11 -0600
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [22/38] x86/PCI: use host bridge _CRS info on ASUS M2V-MX SE
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [01/38] PCI: Set PCI-E Max Payload Size on fabric
 In-Reply-To: <20111011165903.GA30976@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,127 +25,445 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Menzel <paulepanter@users.sourceforge.net>
+From: Jon Mason <mason@myri.com>
 
-commit 29cf7a30f8a0ce4af2406d93d5a332099be26923 upstream.
+commit b03e7495a862b028294f59fc87286d6d78ee7fa1 upstream.
 
-In summary, this DMI quirk uses the _CRS info by default for the ASUS
-M2V-MX SE by turning on `pci=use_crs` and is similar to the quirk
-added by commit 2491762cfb47 ("x86/PCI: use host bridge _CRS info on
-ASRock ALiveSATA2-GLAN") whose commit message should be read for further
-information.
+On a given PCI-E fabric, each device, bridge, and root port can have a
+different PCI-E maximum payload size.  There is a sizable performance
+boost for having the largest possible maximum payload size on each PCI-E
+device.  However, if improperly configured, fatal bus errors can occur.
+Thus, it is important to ensure that PCI-E payloads sends by a device
+are never larger than the MPS setting of all devices on the way to the
+destination.
 
-Since commit 3e3da00c01d0 ("x86/pci: AMD one chain system to use pci
-read out res") Linux gives the following oops:
+This can be achieved two ways:
 
-    parport0: PC-style at 0x378, irq 7 [PCSPP,TRISTATE]
-    HDA Intel 0000:20:01.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-    HDA Intel 0000:20:01.0: setting latency timer to 64
-    BUG: unable to handle kernel paging request at ffffc90011c08000
-    IP: [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
-    PGD 13781a067 PUD 13781b067 PMD 1300ba067 PTE 800000fd00000173
-    Oops: 0009 [#1] SMP
-    last sysfs file: /sys/module/snd_pcm/initstate
-    CPU 0
-    Modules linked in: snd_hda_intel(+) snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event tpm_tis tpm snd_seq tpm_bios psmouse parport_pc snd_timer snd_seq_device parport processor evdev snd i2c_viapro thermal_sys amd64_edac_mod k8temp i2c_core soundcore shpchp pcspkr serio_raw asus_atk0110 pci_hotplug edac_core button snd_page_alloc edac_mce_amd ext3 jbd mbcache sha256_generic cryptd aes_x86_64 aes_generic cbc dm_crypt dm_mod raid1 md_mod usbhid hid sg sd_mod crc_t10dif sr_mod cdrom ata_generic uhci_hcd sata_via pata_via libata ehci_hcd usbcore scsi_mod via_rhine mii nls_base [last unloaded: scsi_wait_scan]
-    Pid: 1153, comm: work_for_cpu Not tainted 2.6.37-1-amd64 #1 M2V-MX SE/System Product Name
-    RIP: 0010:[<ffffffffa0578402>]  [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
-    RSP: 0018:ffff88013153fe50  EFLAGS: 00010286
-    RAX: ffffc90011c08000 RBX: ffff88013029ec00 RCX: 0000000000000006
-    RDX: 0000000000000000 RSI: 0000000000000246 RDI: 0000000000000246
-    RBP: ffff88013341d000 R08: 0000000000000000 R09: 0000000000000040
-    R10: 0000000000000286 R11: 0000000000003731 R12: ffff88013029c400
-    R13: 0000000000000000 R14: 0000000000000000 R15: ffff88013341d090
-    FS:  0000000000000000(0000) GS:ffff8800bfc00000(0000) knlGS:00000000f7610ab0
-    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-    CR2: ffffc90011c08000 CR3: 0000000132f57000 CR4: 00000000000006f0
-    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-    Process work_for_cpu (pid: 1153, threadinfo ffff88013153e000, task ffff8801303c86c0)
-    Stack:
-     0000000000000005 ffffffff8123ad65 00000000000136c0 ffff88013029c400
-     ffff8801303c8998 ffff88013341d000 ffff88013341d090 ffff8801322d9dc8
-     ffff88013341d208 0000000000000000 0000000000000000 ffffffff811ad232
-    Call Trace:
-     [<ffffffff8123ad65>] ? __pm_runtime_set_status+0x162/0x186
-     [<ffffffff811ad232>] ? local_pci_probe+0x49/0x92
-     [<ffffffff8105afc5>] ? do_work_for_cpu+0x0/0x1b
-     [<ffffffff8105afc5>] ? do_work_for_cpu+0x0/0x1b
-     [<ffffffff8105afd0>] ? do_work_for_cpu+0xb/0x1b
-     [<ffffffff8105fd3f>] ? kthread+0x7a/0x82
-     [<ffffffff8100a824>] ? kernel_thread_helper+0x4/0x10
-     [<ffffffff8105fcc5>] ? kthread+0x0/0x82
-     [<ffffffff8100a820>] ? kernel_thread_helper+0x0/0x10
-    Code: f4 01 00 00 ef 31 f6 48 89 df e8 29 dd ff ff 85 c0 0f 88 2b 03 00 00 48 89 ef e8 b4 39 c3 e0 8b 7b 40 e8 fc 9d b1 e0 48 8b 43 38 <66> 8b 10 66 89 14 24 8b 43 14 83 e8 03 83 f8 01 77 32 31 d2 be
-    RIP  [<ffffffffa0578402>] azx_probe+0x3ad/0x86b [snd_hda_intel]
-     RSP <ffff88013153fe50>
-    CR2: ffffc90011c08000
-    ---[ end trace 8d1f3ebc136437fd ]---
+- A conservative approach is to use the smallest common denominator of
+  the entire tree below a root complex for every device on that fabric.
 
-Trusting the ACPI _CRS information (`pci=use_crs`) fixes this problem.
+This means for example that having a 128 bytes MPS USB controller on one
+leg of a switch will dramatically reduce performances of a video card or
+10GE adapter on another leg of that same switch.
 
-    $ dmesg | grep -i crs # with the quirk
-    PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+It also means that any hierarchy supporting hotplug slots (including
+expresscard or thunderbolt I suppose, dbl check that) will have to be
+entirely clamped to 128 bytes since we cannot predict what will be
+plugged into those slots, and we cannot change the MPS on a "live"
+system.
 
-The match has to be against the DMI board entries though since the vendor entries are not populated.
+- A more optimal way is possible, if it falls within a couple of
+  constraints:
+* The top-level host bridge will never generate packets larger than the
+  smallest TLP (or if it can be controlled independently from its MPS at
+  least)
+* The device will never generate packets larger than MPS (which can be
+  configured via MRRS)
+* No support of direct PCI-E <-> PCI-E transfers between devices without
+  some additional code to specifically deal with that case
 
-    DMI: System manufacturer System Product Name/M2V-MX SE, BIOS 0304    10/30/2007
+Then we can use an approach that basically ignores downstream requests
+and focuses exclusively on upstream requests. In that case, all we need
+to care about is that a device MPS is no larger than its parent MPS,
+which allows us to keep all switches/bridges to the max MPS supported by
+their parent and eventually the PHB.
 
-This quirk should be removed when `pci=use_crs` is enabled for machines
-from 2006 or earlier or some other solution is implemented.
+In this case, your USB controller would no longer "starve" your 10GE
+Ethernet and your hotplug slots won't affect your global MPS.
+Additionally, the hotplugged devices themselves can be configured to a
+larger MPS up to the value configured in the hotplug bridge.
 
-Using coreboot [1] with this board the problem does not exist but this
-quirk also does not affect it either. To be safe though the check is
-tightened to only take effect when the BIOS from American Megatrends is
-used.
+To choose between the two available options, two PCI kernel boot args
+have been added to the PCI calls.  "pcie_bus_safe" will provide the
+former behavior, while "pcie_bus_perf" will perform the latter behavior.
+By default, the latter behavior is used.
 
-        15:13 < ruik> but coreboot does not need that
-        15:13 < ruik> because i have there only one root bus
-        15:13 < ruik> the audio is behind a bridge
+NOTE: due to the location of the enablement, each arch will need to add
+calls to this function.  This patch only enables x86.
 
-        $ sudo dmidecode
-        BIOS Information
-                Vendor: American Megatrends Inc.
-                Version: 0304
-                Release Date: 10/30/2007
+This patch includes a number of changes recommended by Benjamin
+Herrenschmidt.
 
-[1] http://www.coreboot.org/
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=30552
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: x86@kernel.org
-Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested-by: Jordan_Hargrave@dell.com
+Signed-off-by: Jon Mason <mason@myri.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/pci/acpi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/x86/pci/acpi.c              |    9 ++
+ drivers/pci/hotplug/pcihp_slot.c |   45 ------------
+ drivers/pci/pci.c                |   67 ++++++++++++++++++
+ drivers/pci/probe.c              |  145 +++++++++++++++++++++++++++++++++++++++
+ include/linux/pci.h              |   15 +++-
+ 5 files changed, 236 insertions(+), 45 deletions(-)
 
 --- a/arch/x86/pci/acpi.c
 +++ b/arch/x86/pci/acpi.c
-@@ -43,6 +43,17 @@ static const struct dmi_system_id pci_us
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ALiveSATA2-GLAN"),
-                 },
-         },
-+	/* https://bugzilla.kernel.org/show_bug.cgi?id=30552 */
-+	/* 2006 AMD HT/VIA system with two host bridges */
-+	{
-+		.callback = set_use_crs,
-+		.ident = "ASUS M2V-MX SE",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
-+			DMI_MATCH(DMI_BOARD_NAME, "M2V-MX SE"),
-+			DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
-+		},
-+	},
- 	{}
- };
+@@ -361,6 +361,15 @@ struct pci_bus * __devinit pci_acpi_scan
+ 		}
+ 	}
  
++	/* After the PCI-E bus has been walked and all devices discovered,
++	 * configure any settings of the fabric that might be necessary.
++	 */
++	if (bus) {
++		struct pci_bus *child;
++		list_for_each_entry(child, &bus->children, node)
++			pcie_bus_configure_settings(child, child->self->pcie_mpss);
++	}
++
+ 	if (!bus)
+ 		kfree(sd);
+ 
+--- a/drivers/pci/hotplug/pcihp_slot.c
++++ b/drivers/pci/hotplug/pcihp_slot.c
+@@ -158,47 +158,6 @@ static void program_hpp_type2(struct pci
+ 	 */
+ }
+ 
+-/* Program PCIE MaxPayload setting on device: ensure parent maxpayload <= device */
+-static int pci_set_payload(struct pci_dev *dev)
+-{
+-       int pos, ppos;
+-       u16 pctl, psz;
+-       u16 dctl, dsz, dcap, dmax;
+-       struct pci_dev *parent;
+-
+-       parent = dev->bus->self;
+-       pos = pci_find_capability(dev, PCI_CAP_ID_EXP);
+-       if (!pos)
+-               return 0;
+-
+-       /* Read Device MaxPayload capability and setting */
+-       pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &dctl);
+-       pci_read_config_word(dev, pos + PCI_EXP_DEVCAP, &dcap);
+-       dsz = (dctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5;
+-       dmax = (dcap & PCI_EXP_DEVCAP_PAYLOAD);
+-
+-       /* Read Parent MaxPayload setting */
+-       ppos = pci_find_capability(parent, PCI_CAP_ID_EXP);
+-       if (!ppos)
+-               return 0;
+-       pci_read_config_word(parent, ppos + PCI_EXP_DEVCTL, &pctl);
+-       psz = (pctl &  PCI_EXP_DEVCTL_PAYLOAD) >> 5;
+-
+-       /* If parent payload > device max payload -> error
+-        * If parent payload > device payload -> set speed
+-        * If parent payload <= device payload -> do nothing
+-        */
+-       if (psz > dmax)
+-               return -1;
+-       else if (psz > dsz) {
+-               dev_info(&dev->dev, "Setting MaxPayload to %d\n", 128 << psz);
+-               pci_write_config_word(dev, pos + PCI_EXP_DEVCTL,
+-                                     (dctl & ~PCI_EXP_DEVCTL_PAYLOAD) +
+-                                     (psz << 5));
+-       }
+-       return 0;
+-}
+-
+ void pci_configure_slot(struct pci_dev *dev)
+ {
+ 	struct pci_dev *cdev;
+@@ -210,9 +169,7 @@ void pci_configure_slot(struct pci_dev *
+ 			(dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
+ 		return;
+ 
+-       ret = pci_set_payload(dev);
+-       if (ret)
+-               dev_warn(&dev->dev, "could not set device max payload\n");
++	pcie_bus_configure_settings(dev->bus, dev->bus->self->pcie_mpss);
+ 
+ 	memset(&hpp, 0, sizeof(hpp));
+ 	ret = pci_get_hp_params(dev, &hpp);
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -77,6 +77,8 @@ unsigned long pci_cardbus_mem_size = DEF
+ unsigned long pci_hotplug_io_size  = DEFAULT_HOTPLUG_IO_SIZE;
+ unsigned long pci_hotplug_mem_size = DEFAULT_HOTPLUG_MEM_SIZE;
+ 
++enum pcie_bus_config_types pcie_bus_config = PCIE_BUS_PERFORMANCE;
++
+ /*
+  * The default CLS is used if arch didn't set CLS explicitly and not
+  * all pci devices agree on the same value.  Arch can override either
+@@ -3223,6 +3225,67 @@ out:
+ EXPORT_SYMBOL(pcie_set_readrq);
+ 
+ /**
++ * pcie_get_mps - get PCI Express maximum payload size
++ * @dev: PCI device to query
++ *
++ * Returns maximum payload size in bytes
++ *    or appropriate error value.
++ */
++int pcie_get_mps(struct pci_dev *dev)
++{
++	int ret, cap;
++	u16 ctl;
++
++	cap = pci_pcie_cap(dev);
++	if (!cap)
++		return -EINVAL;
++
++	ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
++	if (!ret)
++		ret = 128 << ((ctl & PCI_EXP_DEVCTL_PAYLOAD) >> 5);
++
++	return ret;
++}
++
++/**
++ * pcie_set_mps - set PCI Express maximum payload size
++ * @dev: PCI device to query
++ * @rq: maximum payload size in bytes
++ *    valid values are 128, 256, 512, 1024, 2048, 4096
++ *
++ * If possible sets maximum payload size
++ */
++int pcie_set_mps(struct pci_dev *dev, int mps)
++{
++	int cap, err = -EINVAL;
++	u16 ctl, v;
++
++	if (mps < 128 || mps > 4096 || !is_power_of_2(mps))
++		goto out;
++
++	v = ffs(mps) - 8;
++	if (v > dev->pcie_mpss)
++		goto out;
++	v <<= 5;
++
++	cap = pci_pcie_cap(dev);
++	if (!cap)
++		goto out;
++
++	err = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
++	if (err)
++		goto out;
++
++	if ((ctl & PCI_EXP_DEVCTL_PAYLOAD) != v) {
++		ctl &= ~PCI_EXP_DEVCTL_PAYLOAD;
++		ctl |= v;
++		err = pci_write_config_word(dev, cap + PCI_EXP_DEVCTL, ctl);
++	}
++out:
++	return err;
++}
++
++/**
+  * pci_select_bars - Make BAR mask from the type of resource
+  * @dev: the PCI device for which BAR mask is made
+  * @flags: resource type mask to be selected
+@@ -3505,6 +3568,10 @@ static int __init pci_setup(char *str)
+ 				pci_hotplug_io_size = memparse(str + 9, &str);
+ 			} else if (!strncmp(str, "hpmemsize=", 10)) {
+ 				pci_hotplug_mem_size = memparse(str + 10, &str);
++			} else if (!strncmp(str, "pcie_bus_safe", 13)) {
++				pcie_bus_config = PCIE_BUS_SAFE;
++			} else if (!strncmp(str, "pcie_bus_perf", 13)) {
++				pcie_bus_config = PCIE_BUS_PERFORMANCE;
+ 			} else {
+ 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+ 						str);
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -860,6 +860,8 @@ void set_pcie_port_type(struct pci_dev *
+ 	pdev->pcie_cap = pos;
+ 	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+ 	pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
++	pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
++	pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
+ }
+ 
+ void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+@@ -1327,6 +1329,149 @@ int pci_scan_slot(struct pci_bus *bus, i
+ 	return nr;
+ }
+ 
++static int pcie_find_smpss(struct pci_dev *dev, void *data)
++{
++	u8 *smpss = data;
++
++	if (!pci_is_pcie(dev))
++		return 0;
++
++	/* For PCIE hotplug enabled slots not connected directly to a
++	 * PCI-E root port, there can be problems when hotplugging
++	 * devices.  This is due to the possibility of hotplugging a
++	 * device into the fabric with a smaller MPS that the devices
++	 * currently running have configured.  Modifying the MPS on the
++	 * running devices could cause a fatal bus error due to an
++	 * incoming frame being larger than the newly configured MPS.
++	 * To work around this, the MPS for the entire fabric must be
++	 * set to the minimum size.  Any devices hotplugged into this
++	 * fabric will have the minimum MPS set.  If the PCI hotplug
++	 * slot is directly connected to the root port and there are not
++	 * other devices on the fabric (which seems to be the most
++	 * common case), then this is not an issue and MPS discovery
++	 * will occur as normal.
++	 */
++	if (dev->is_hotplug_bridge && (!list_is_singular(&dev->bus->devices) ||
++	    dev->bus->self->pcie_type != PCI_EXP_TYPE_ROOT_PORT))
++		*smpss = 0;
++
++	if (*smpss > dev->pcie_mpss)
++		*smpss = dev->pcie_mpss;
++
++	return 0;
++}
++
++static void pcie_write_mps(struct pci_dev *dev, int mps)
++{
++	int rc, dev_mpss;
++
++	dev_mpss = 128 << dev->pcie_mpss;
++
++	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
++		if (dev->bus->self) {
++			dev_dbg(&dev->bus->dev, "Bus MPSS %d\n",
++				128 << dev->bus->self->pcie_mpss);
++
++			/* For "MPS Force Max", the assumption is made that
++			 * downstream communication will never be larger than
++			 * the MRRS.  So, the MPS only needs to be configured
++			 * for the upstream communication.  This being the case,
++			 * walk from the top down and set the MPS of the child
++			 * to that of the parent bus.
++			 */
++			mps = 128 << dev->bus->self->pcie_mpss;
++			if (mps > dev_mpss)
++				dev_warn(&dev->dev, "MPS configured higher than"
++					 " maximum supported by the device.  If"
++					 " a bus issue occurs, try running with"
++					 " pci=pcie_bus_safe.\n");
++		}
++
++		dev->pcie_mpss = ffs(mps) - 8;
++	}
++
++	rc = pcie_set_mps(dev, mps);
++	if (rc)
++		dev_err(&dev->dev, "Failed attempting to set the MPS\n");
++}
++
++static void pcie_write_mrrs(struct pci_dev *dev, int mps)
++{
++	int rc, mrrs;
++
++	if (pcie_bus_config == PCIE_BUS_PERFORMANCE) {
++		int dev_mpss = 128 << dev->pcie_mpss;
++
++		/* For Max performance, the MRRS must be set to the largest
++		 * supported value.  However, it cannot be configured larger
++		 * than the MPS the device or the bus can support.  This assumes
++		 * that the largest MRRS available on the device cannot be
++		 * smaller than the device MPSS.
++		 */
++		mrrs = mps < dev_mpss ? mps : dev_mpss;
++	} else
++		/* In the "safe" case, configure the MRRS for fairness on the
++		 * bus by making all devices have the same size
++		 */
++		mrrs = mps;
++
++
++	/* MRRS is a R/W register.  Invalid values can be written, but a
++	 * subsiquent read will verify if the value is acceptable or not.
++	 * If the MRRS value provided is not acceptable (e.g., too large),
++	 * shrink the value until it is acceptable to the HW.
++ 	 */
++	while (mrrs != pcie_get_readrq(dev) && mrrs >= 128) {
++		rc = pcie_set_readrq(dev, mrrs);
++		if (rc)
++			dev_err(&dev->dev, "Failed attempting to set the MRRS\n");
++
++		mrrs /= 2;
++	}
++}
++
++static int pcie_bus_configure_set(struct pci_dev *dev, void *data)
++{
++	int mps = 128 << *(u8 *)data;
++
++	if (!pci_is_pcie(dev))
++		return 0;
++
++	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
++		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
++
++	pcie_write_mps(dev, mps);
++	pcie_write_mrrs(dev, mps);
++
++	dev_info(&dev->dev, "Dev MPS %d MPSS %d MRRS %d\n",
++		 pcie_get_mps(dev), 128<<dev->pcie_mpss, pcie_get_readrq(dev));
++
++	return 0;
++}
++
++/* pcie_bus_configure_mps requires that pci_walk_bus work in a top-down,
++ * parents then children fashion.  If this changes, then this code will not
++ * work as designed.
++ */
++void pcie_bus_configure_settings(struct pci_bus *bus, u8 mpss)
++{
++	u8 smpss = mpss;
++
++	if (!bus->self)
++		return;
++
++	if (!pci_is_pcie(bus->self))
++		return;
++
++	if (pcie_bus_config == PCIE_BUS_SAFE) {
++		pcie_find_smpss(bus->self, &smpss);
++		pci_walk_bus(bus, pcie_find_smpss, &smpss);
++	}
++
++	pcie_bus_configure_set(bus->self, &smpss);
++	pci_walk_bus(bus, pcie_bus_configure_set, &smpss);
++}
++
+ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+ {
+ 	unsigned int devfn, pass, max = bus->secondary;
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -251,7 +251,8 @@ struct pci_dev {
+ 	u8		revision;	/* PCI revision, low byte of class word */
+ 	u8		hdr_type;	/* PCI header type (`multi' flag masked out) */
+ 	u8		pcie_cap;	/* PCI-E capability offset */
+-	u8		pcie_type;	/* PCI-E device/port type */
++	u8		pcie_type:4;	/* PCI-E device/port type */
++	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
+ 	u8		rom_base_reg;	/* which config register controls the ROM */
+ 	u8		pin;  		/* which interrupt pin this device uses */
+ 
+@@ -617,6 +618,16 @@ struct pci_driver {
+ /* these external functions are only available when PCI support is enabled */
+ #ifdef CONFIG_PCI
+ 
++extern void pcie_bus_configure_settings(struct pci_bus *bus, u8 smpss);
++
++enum pcie_bus_config_types {
++	PCIE_BUS_PERFORMANCE,
++	PCIE_BUS_SAFE,
++	PCIE_BUS_PEER2PEER,
++};
++
++extern enum pcie_bus_config_types pcie_bus_config;
++
+ extern struct bus_type pci_bus_type;
+ 
+ /* Do NOT directly access these two variables, unless you are arch specific pci
+@@ -796,6 +807,8 @@ int pcix_get_mmrbc(struct pci_dev *dev);
+ int pcix_set_mmrbc(struct pci_dev *dev, int mmrbc);
+ int pcie_get_readrq(struct pci_dev *dev);
+ int pcie_set_readrq(struct pci_dev *dev, int rq);
++int pcie_get_mps(struct pci_dev *dev);
++int pcie_set_mps(struct pci_dev *dev, int mps);
+ int __pci_reset_function(struct pci_dev *dev);
+ int pci_reset_function(struct pci_dev *dev);
+ void pci_update_resource(struct pci_dev *dev, int resno);
 
 
