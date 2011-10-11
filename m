@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab1JKFzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 01:55:41 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:50438 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab1JKFzj convert rfc822-to-8bit (ORCPT
+	id S1752542Ab1JKF7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 01:59:39 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:38521 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab1JKF7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 01:55:39 -0400
-Date: Mon, 10 Oct 2011 22:55:36 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Mihai Maruseac <mihai.maruseac@gmail.com>
-Cc: davem@davemloft.net, eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
-        therbert@google.com, jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dbaluta@ixiacom.com,
-        Mihai Maruseac <mmaruseac@ixiacom.com>
-Subject: Re: [PATCH] dev: use name hash for dev_seq_ops.
-Message-ID: <20111010225536.6ca5c042@nehalam.linuxnetplumber.net>
-In-Reply-To: <CAOMsUMLRc5dT4kGyAUMLka2f=jTOCeYt8WEkNZPY+dwkrBhPeQ@mail.gmail.com>
-References: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
-	<20111007092445.4f097ed9@nehalam.linuxnetplumber.net>
-	<CAOMsUMLRc5dT4kGyAUMLka2f=jTOCeYt8WEkNZPY+dwkrBhPeQ@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 11 Oct 2011 01:59:38 -0400
+Message-ID: <4E93DB41.2080900@ti.com>
+Date: Tue, 11 Oct 2011 11:29:29 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] regulator: helper routine to extract regulator_init_data
+References: <1318263578-7407-1-git-send-email-rnayak@ti.com> <1318263578-7407-4-git-send-email-rnayak@ti.com> <20111010172222.GG3607@opensource.wolfsonmicro.com>
+In-Reply-To: <20111010172222.GG3607@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 Oct 2011 11:43:20 +0300
-Mihai Maruseac <mihai.maruseac@gmail.com> wrote:
+On Monday 10 October 2011 10:52 PM, Mark Brown wrote:
+> On Mon, Oct 10, 2011 at 09:49:36PM +0530, Rajendra Nayak wrote:
+>
+>> +- regulator-change-voltage: boolean, Output voltage can be changed by software
+>> +- regulator-change-current: boolean, Output current can be chnaged by software
+>> +- regulator-change-mode: boolean, Operating mode can be changed by software
+>> +- regulator-change-status: boolean, Enable/Disable control for regulator exists
+>> +- regulator-change-drms: boolean, Dynamic regulator mode switching is enabled
+>> +- regulator-mode-fast: boolean, allow/set fast mode for the regulator
+>> +- regulator-mode-normal: boolean, allow/set normal mode for the regulator
+>> +- regulator-mode-idle: boolean, allow/set idle mode for the regulator
+>> +- regulator-mode-standby: boolean, allow/set standby mode for the regulator
+>> +- regulator-input-uV: Input voltage for regulator when supplied by another regulator
+>> +- regulator-always-on: boolean, regulator should never be disabled
+>
+> Thinking about this I'm not sure that these should go in the device
+> tree, they're as much talking about what Linux is able to cope with as
+> they are talking about what the hardware is able to do.  Sometimes
+> they'll be fixed by the design but they are sometimes also restricted by
+> what the software is currently capable of.  DRMS is a prime example
+> here, it depends on how good we are at telling the API about how much
+> current we're using.
 
-> On Fri, Oct 7, 2011 at 7:24 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
-> > On Fri,  7 Oct 2011 18:20:49 +0300
-> > Mihai Maruseac <mihai.maruseac@gmail.com> wrote:
-> >
-> >> Instead of using the dev->next chain and trying to resync at each call to
-> >> dev_seq_start, use this hash and store bucket number and bucket offset in
-> >> seq->private field.
-> >>
-> >> As one can notice the improvement is of 1 order of magnitude.
-> >
-> > Good idea,
-> > This will change the ordering of entries in /proc which may upset
-> > some program, not a critical flaw but worth noting.
-> >
-> > Rather than recording the bucket and offset of last entry, another
-> > alternative would be to just record the ifindex.
-> >
-> 
-> I tried to record the ifindex but I think that using it and
-> dev_get_by_index can result in an infinite loop or a NULL
-> dereferrence. If a device is removed and ifindex points to it we'll
-> get a NULL from dev_get_by_index. Checking for NULL and calling again
-> dev_get_by_index will end in an infinite loop at the end of the hlist.
-> 
-> Augmenting the structure to also contain the number of indexes when
-> the seq_file is opened returns to the current situation with two ints.
-> Also, it is more prone to bugs caused by device removal while
-> printing.
+So is there another way of passing these, if not through device tree?
+There are other linux specific things that need to be passed to the
+framework as well, like the state of the regulator in the various
+linux specific suspend states, like standby/mem/disk.
+So if these can't be passed through device tree, should they still
+be passed in some way through platform_data? Or is it best to identify
+the bindings as being linux specific and not generic by appending a
+"linux," to the bindings.
 
-If ifindex has been deleted, the code should fall back to delivering
-the next offset. That means for the rare case it would have the old
-behavior of linear searching.  There is similar code already to
-deal with /proc/net/route; it continues from the last address.
+Grant, need some help and advice.
+
