@@ -1,73 +1,374 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab1JKBMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 10 Oct 2011 21:12:30 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42933 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab1JKBM3 (ORCPT
+	id S1753376Ab1JKBQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 10 Oct 2011 21:16:32 -0400
+Received: from nm32-vm7.bullet.mail.ne1.yahoo.com ([98.138.229.55]:24699 "HELO
+	nm32-vm7.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750748Ab1JKBQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 10 Oct 2011 21:12:29 -0400
-Date: Mon, 10 Oct 2011 18:12:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linux Input <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Input tree moved back to kernel.org
-Message-ID: <20111011011224.GA11832@core.coreip.homeip.net>
+	Mon, 10 Oct 2011 21:16:31 -0400
+X-Yahoo-Newman-Id: 832995.4594.bm@smtp220.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HkNxCDsVM1nV4ZAzKGNI07ASB82e__Tymh7uXSoFCqO9Can
+ 0r2hmIiWF4wil3nACy8sT_AKsQjNwaqQIrjRUVJy7TO6jJgVb19CGi_Q0ex7
+ CWbe782B3Wgm7nsfU407qka9UQB18Hy4eqk_OufYFB1qbf1moClq3chDQPE.
+ HVB7TXyZLzqu11K8gnaTygX0IG7LLF0Yey_Yt9ynAHtNDtO9MSMJfGCu1LF7
+ 4KHIIpffMOaHSxIAZqd_p10xONZroC8ej6Yl2tl8VX0pQChN.H5uWEA.DgKc
+ dQhBwWnw9_v188hdCiuwd_NmGymgfq8mHxPhUbZSThNoQ62QXCNSlJJv963Q
+ VBBMlQEDRzdn82T.WHaHbzXjVgYo8PxD7xlE5blPe6umt9H9p8ebagOHdjyj
+ ncXjkf5YcYMyJtQeg8S6j1vmGFc.mUlEpN0tCH62bjLm8kDilnN11
+X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
+Date: Mon, 10 Oct 2011 20:16:11 -0500
+From: Andrew Watts <akwatts@ymail.com>
+To: Greg KH <greg@kroah.com>
+Cc: tmhikaru@gmail.com, Willy Tarreau <w@1wt.eu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kernel.org status: hints on how to check your machine for
+ intrusion
+Message-ID: <20111011011605.GA11706@zeus>
+References: <20110930235924.GA25176@kroah.com>
+ <20111001141751.GA8937@zeus>
+ <20111001142848.GA27058@kroah.com>
+ <20111001165659.GB18690@1wt.eu>
+ <20111001171916.GA11989@zeus>
+ <20111001175456.GC18690@1wt.eu>
+ <20111001184044.GA13608@zeus>
+ <20111002120352.GA26850@zeus>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Type: multipart/mixed; boundary="r5Pyd7+fXNt84Ff3"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111002120352.GA26850@zeus>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---y0ulUmNC+osPPQO6
+--r5Pyd7+fXNt84Ff3
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-All,
+On Sun, Oct 02, 2011 at 07:03:52AM -0500, Andy wrote:
+> Many of us would benefit from having signatures for some of the recent
+> kernels missing for your list as well as Willy's.
 
-I have moved input tree back to its original place on kernel.org:
+Using my cloned repo, I calculated SHA-256 fingerprints missing in Greg's
+list as well as MD5 hashes missing from Willy's. I hope this helps anyone
+looking for those.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
+~ Andy
 
-The structure is still the same: 'for-linus' branch for current work and
-'next' (same as master) branch for the next merge window. I will try
-keeping version on github up to date as well.
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="sha256.txt"
 
-Stephen, could you please update linux-next once more?
+sha256 signatures (002 umask 1st; 022 umask 2nd)
 
-BTW, does anyone know how one can update project description with
-gitolite?
+linux-2.6.34.tar:
+746539e5c1d3dbcadb19e73e05979f6276dba00d87f8cc94fe82b82210c61b28  -
+40f42fd33258644ec494330295e4a340df3542813e1bdd6c531a4a4c9e66133d  -
+linux-2.6.34.1.tar:
+8274ebf7c748bc7a9099a62462cd9c5f4120f1517c9ff8343d3d5ff0a5512d89  -
+fd15431e3f51ecaede55e9e7dc4ba9ff2987487583e498e11876a92dafee384c  -
+linux-2.6.34.2.tar:
+25c1235599261c76cfe2053fd55b8a9c75d523fee0ca79169d5c161c1107161e  -
+8d44af7f2c6fc44bf9780031a96f25cd28eb038d6b78170bfca39494ca02c92f  -
+linux-2.6.34.3.tar:
+244c36077e3a1cb915a0754fa673e978d307e0670e1a4ea7ad2e705cdc61acf5  -
+ac38ad5e643731696b5e7a075646be2cc7b10c39f6aec692995b2369357d3c38  -
+linux-2.6.34.4.tar:
+ac55c475b60d99d9a05361fb2552a0d93e031aae9fdf7b69035d3a0118a44dc3  -
+10e822934027be2864cbcb32cb2b28d499bd4292f662191022004dd64de27197  -
+linux-2.6.34.5.tar:
+d70bf85124b6b3932cb19e33db670022f33ceb0d397abf4117d159f427ee7a88  -
+6bb6bc698e94858f5dbc0faca0e2eb618b4c53fe03d40a9e9a72e281b3b712c2  -
+linux-2.6.34.6.tar:
+439d7db6e1f391ce5d3af2027cc4a9fc7638eef9e61c6d362652d226a17574ac  -
+66a0b5bec97200e6138ef0967c6474edd127785c6df4e65fcbf7a53ab6a6f7f6  -
+linux-2.6.34.7.tar:
+c0811c096978f48f42685798b23d855cc2a7f2c601d6fcc05559953614f4eb3d  -
+e4a939cb69a0f175309096c0c2afb72f62981d273b182b0caae6068f90ae653a  -
+linux-2.6.35.tar:
+f13307a6fb4f93e40fbd172ccbe7fb19e7b98cb78ef354a79469881efd7e14ce  -
+395327db2c94a53dfa52b19e94f7c2a9085fced016920b964870455af269c45c  -
+linux-2.6.35.1.tar:
+04f938f049eb60910842a4c2295747c9973c6ee452d76a0d09c977fe22912065  -
+26b42925d5c22af72c8d318b97aa47347701fde2a52c069a701a0bd0481cb1ae  -
+linux-2.6.35.2.tar:
+197cf215b307ebe7f03f9d1b6d79c8c0a907837d1fd96c6eab0d48108959e319  -
+42e217d51849f624d3513caee99ebff8b42d87d40cecbce020e53235dbeb9a5f  -
+linux-2.6.35.3.tar:
+95f5705c096d33f59e4a5fd51f06ad5ee16aee43ac6bdc50efcd30c9322e8dcb  -
+ca2889ac26c95654544bb87f00ebf994f37ad81495cfa7c8caab4064c6c5e6e1  -
+linux-2.6.35.4.tar:
+490049b2bf2a68d11d3e85fb1f45a6bccaab151d7fb40227b173b03be2667bd3  -
+a70c10a471d239f36be6f05f41d82fa9a6c2611778a9e935dce0027a06cf87ac  -
+linux-2.6.35.5.tar:
+7a508628ff425e363ba7a8b8fb909bc4c6f481cee0ff06ee04b7df1384b07f44  -
+3790c7415ddd3091999f0a14e4ec886e47097afe89116895a01c7cb92d3d21be  -
+linux-2.6.35.6.tar:
+14436d1c3c1b43703878f0c7b1487ed544d6a9957dd95cc8ca12e7c878da268a  -
+74d33a25a3f209fbf6106f147a8e2d821e2468e4e0eb439fcd2efc531966eb37  -
+linux-2.6.35.7.tar:
+fc756e1352dfb753bb55ec1ef5ad04b7667fbf4e65968b1cf0347e54f4039c82  -
+c44706d8f9a13796c9d57afcb99bc7eea8d5aaa8aa6d0e2262302ec2c0b602c0  -
+linux-2.6.35.8.tar:
+3c8898822eb71c9e9392a10eec6dea9ca07a3b3ba168b0568a4dd509f5ce2e39  -
+386ba52ad2d01d48df200b9bf6f6a709690533374c26debfe643e1fae874f2ee  -
+linux-2.6.35.9.tar:
+d9bbf8bec6becba1bff6cac20f736c6939d5bd9f011ea9aa9e6eacde82903337  -
+6a60d66cfd1f38feafdb1c6c65793bc449dc46afb163813d1b675a30344babc3  -
+linux-2.6.36.tar:
+2d6564d3985956c4a7a5c5b71d581577eacba0db7221057aff72fe9545a50a5f  -
+8f732856612fdb7785f9337ed7e196ab54e01f7d816a7a1ff8cd155e4fb1d24f  -
+linux-2.6.36.1.tar:
+94d383796b8d958f85ae5e35458d42c782efc4aa72720f49d3beeff1b5e184c4  -
+ec336e16bc916a59bf434adb2aef0049c8e0b47f42824f25227e3e8b10f90988  -
+linux-2.6.36.2.tar:
+7b209cea4f1606c87fee18ba536f3b14a33b8e25604a750520ce7d719c024a1d  -
+57da6fad51edc7a936aa22c26230ab082cdc4cb60f040736561eb6990a15e0af  -
+linux-2.6.36.3.tar:
+45f390f4b70a277db4513dfeb8ea7ce3fdef0ebd7d74e5170512d1fc7d486ec5  -
+582c5ab09ccbf472b2ef0cb817b7f429f940bdc69eb45e95d8e9e481cb546e63  -
+linux-2.6.36.4.tar:
+c6bcc922b5ccd16ee5645edf9137bb51bf352a86b35dc7970acc7d16b31dac80  -
+d1ea7dba02894b0bf9b6edd5655586aae4775703e80f0f0aca86dcf4e2f766d4  -
+linux-2.6.37.tar:
+0f006f4b1fd94c3397cc1cee64028415ba0b4865395de3ccced6e105efd4daba  -
+5a97390b9acfd05bf79bcc6aba42b5c64019ab8cf1fe5bd00d5b6ae4cca461ce  -
+linux-2.6.37.1.tar:
+305afde1da22f35dd05ebd2216a5e62dd2e5b2897675b3b89075a4b0e5d5582e  -
+9be49c4110c06056c1a9a17afe32b140767b18d9eb771dc383988af163b4f307  -
+linux-2.6.37.2.tar:
+a5c3dab13ec52594758574295faf54967692181f801cbcd1710f704e66c83a20  -
+dbf1f345ca961f4f1c4db325fb8567149e934ef8eb9bdf65c0b128565ec63796  -
+linux-2.6.37.3.tar:
+b7e5a1490e1d08fcef84d59a2b89c7252ce9d87e55365901f6cef26b31f8749e  -
+3d0a4b1d552b4aa791a0873e2f546e88faaed5e891f736081cfa4bc9cdadb1ee  -
+linux-2.6.37.4.tar:
+6e10e657000ba4a764695267bdecb6f7132994f2ab3dbd6ec931c6e64259b1b7  -
+b97d7a98000437ebc38db857e00ebfdeb1b622833e137acf36fcc8dbea70fe7f  -
+linux-2.6.37.5.tar:
+c3f37501503a5198ed7e198387dd74293ad9a3330bd3dba507fda05e439605df  -
+12c6bcc43643f35b600d543f9143d123f564e6a6393eb06797c86b50e90d89ff  -
+linux-2.6.37.6.tar:
+913b7028e50263036c5392d57a8aaeadf965b6ff79951a720f655031c86f5c31  -
+69abe8c4773b46e15470e47b7268fab707a506cf706ed0330068a60cee6e9fca  -
+linux-2.6.38.tar:
+8ae53dda91dc6824f168d979f9e7b123e4ca7661648a959c45df25ff35d3cb19  -
+c34c34959285170c1d9e260f29beedcfa4b7b63a462d7c3c4c01f02f8695d01f  -
+linux-2.6.38.1.tar:
+aafb2189068de36ca7a4add4beebf5d2dd1c0577f2590857d7e9aa0882d74445  -
+8bda7a79f80428444ee7cf84df2087c724fc091074b8e229a18fbe45b296657e  -
+linux-2.6.38.2.tar:
+bec1a58ad95c9227d2e6127e29dfe8f880b500ac67130d377d3d2d2443ff8798  -
+d85978d9c92eec7ebbcb2841852d54a914df7d2d4c0e1a771826ef0634d6ef67  -
+linux-2.6.38.3.tar:
+611167c44347a25fb433a1060b7041b53561f4c2ec211877eeba62b5bb01e458  -
+1974e9522704ca57c2be2ca66807e182b5344dea6840f2564203fe75b0ae12c5  -
+linux-2.6.38.4.tar:
+85485b7efff3a3d928e0ba6dc653d984bd33642179002ca43c390b473cbaffa6  -
+f9ad9a2f13b7c7518323881907a895ead28e4680464120c9f086188dc8569232  -
+linux-2.6.38.5.tar:
+cfa874a79cc402ca7674dd5f28d556ccdfe6ad7f004fdf48f2e4dd50ae2a1f17  -
+944bfb3c61fe9f4d8c5163f1baee3f43c5e5a56e90e8ba1b5beaf4dd1085eaff  -
+linux-2.6.38.6.tar:
+70b677bcce2ef1c8d51d533896ce1e4f2959d04c9cde74e3ee3a326e7bf87f37  -
+9001e4859dee32a5aedbb37c4ffc430d452a2dbb0c5f90298b8f6965ea35106d  -
+linux-2.6.38.7.tar:
+4a9b98df4640ed4ffd04c14e12771cdd49d1f418620ea1dd5d6d3764ae7fb30c  -
+de5960e33a6205aa069fec21843196891fce990300674a9bb763a618c1952a5d  -
+linux-2.6.38.8.tar:
+a4700aa87275357b38c296d029d1fc4f27dee7a21ffa1e2d2e0f180dcebd1fe2  -
+29106de74533d1ab2515cb8c26324819a248d4920bd35bd31ab52e45a552c03d  -
+linux-2.6.39.tar:
+67d7ebc2e9a7687ac73046bf71984d499eda2700f65e56456cee59e7644e0bfc  -
+5b301f400d80cf806ee5eb3f66a8c8c1baa46411f78e70db314434dd608068e1  -
+linux-2.6.39.1.tar:
+b25f63091ef909968c27fdb1299767341009525b9dbf0cec9b21dcaee86be7a6  -
+d0ef598dddaaa0148a6cfd17894ec60e284074914bf0e5fadbf89328183c5667  -
+linux-2.6.39.2.tar:
+a05107d04f02c7c350f1cd03d6fc9b98be879231afe145b476888c4512bdec10  -
+2347cca6028c5f3e0e74980c36ef0a6e0593ca44be894f60834ca138e4626a14  -
+linux-2.6.39.3.tar:
+cc98dcf11c6658ac7a2551e9d73145fff019809b2a5e61da71c8d12612e74ef9  -
+19ada681ff4dc157fab70db7c14a0ffc91b459b52615ad1dbf5aab52698c43cb  -
+linux-2.6.39.4.tar:
+c21b1191f84bd6640ef2a3d615828cee9efbf1cec78bff0305f753af9a3553c5  -
+8d2bb638a634f41d1cf95cc3ba16fecd54665ad50709629a8a25abafcbd39b82  -
+linux-3.0.tar:
+7f7498f6fe78474b986ee2fd617e4def35041547b2d6f5fd6b347dac592e399c  -
+de25a96079d037fbf4b4b74f237af18d878d2354d3fdd3c79048a2269474416b  -
+linux-3.0.1.tar:
+5296531e3dbf7bf55573a2f400403061340eec801ecbaade9793791827bd5b1f  -
+62a609a5c66b2e6fcb32204d812ae211554b9a07630c9ec78660f3682d6da529  -
+linux-3.0.2.tar:
+d2c0636033bbfc6722e71b566cdc95265cf10af300ff2c3f8fba9ab7ec63b725  -
+595062c115c7369a2659c06189080f8b079a09bdd1bd447ccbde05f1a8f6289e  -
+linux-3.0.3.tar:
+92769e812e8fc83b226e97d5732d2a0eb96e598f096b4f10085b0352be7492e1  -
+e5e75e47cb5ba91d980aab00c85a9f3e9f8faf0c59c4d5f5dd732555a5f88943  -
+linux-3.0.4.tar:
+ca42bbbffb6db60f16a7870bc1f3ddc872596d9ef1bc4794377ed1da101f14f9  -
+4d8856b2c0608568450774f4d475aba6581ca693ac92d070a0d376753e75a630  -
+linux-3.0.5.tar:
+47ecb8193563dcb5b051f289d6d3a4098dbd0083dd7ad57b519654d0c151b732  -
+9314db9104355bcfd0ec7d340dbc20252e2d9536b4ec8edc9b7c34ee22ebc4ee  -
+linux-3.0.6.tar:
+2705e2b904da860e23e00961952904642308b82c1467c2c54bec61d2460a0ef4  -
+6106c59ca1ca08cf2a356254d828342e9fd06b9ec4f680200ce489a9ad15f541  -
 
-Thanks!
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="md5.txt"
 
---=20
-Dmitry
+md5 signatures (002 umask 1st; 022 umask 2nd)
 
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature
+linux-2.6.33.6.tar:
+c0c49ff442a9a38bf19b54981c396477  -
+b3faaa2f8230135d00625379980bc435  -
+linux-2.6.33.7.tar:
+f954231ecad72c06ef7564d46406e44f  -
+737d3cb01e24c1d6bd5c99932f43e897  -
+linux-2.6.33.8.tar:
+495e5af33b256ff056accf8650986be3  -
+1b2b9b198ae88e854b550690b627bb2d  -
+linux-2.6.33.9.tar:
+faab2b03eff6543c8bf63101309b61b4  -
+6a2431cb305ea2ab01312240db27c72a  -
+linux-2.6.33.10.tar:
+d0466173fe28142b1079041d35e3d326  -
+edfc7315e1d85c033cb4edb387bc0772  -
+linux-2.6.33.11.tar:
+bd13cd19cf5ad42a027db60a557ac27b  -
+e13cb054a8fb85c0cce51e4f6fe2e18d  -
+linux-2.6.33.12.tar:
+cfb4eeb135b2f872d782b51511c039a5  -
+454b3b4f0f62635203a969f3ce242569  -
+linux-2.6.33.13.tar:
+f577df3c53a265e4a76aeecbd563d332  -
+4fbe59625fe81889b4d24be49aded371  -
+linux-2.6.33.14.tar:
+7805feff0bf8a657d16c5881459f1add  -
+b0383fa9c7010ae48c9602c926d71251  -
+linux-2.6.33.15.tar:
+a807da8ad93204739e739ddcd06afdd4  -
+135404e9a0a777284d2d8a0e1877c6c3  -
+linux-2.6.33.16.tar:
+7c7d462611cd35e979e3ff2408765bf4  -
+ef47ddc41a0c861182c57b4d9383aaed  -
+linux-2.6.33.17.tar:
+9a3f51532f5f753de84145b1bc8dde2f  -
+9d095e954d5c80e7e58e3a30f8426417  -
+linux-2.6.33.18.tar:
+5d5666fc2b7b070de62dc9b581ee2c14  -
+3db7751bcd4963c142b25ad8227d9f31  -
+linux-2.6.33.19.tar:
+4f7c313f0ec36aa080bea2a29d267978  -
+dc96354a8431dc1e95c4e70dd484f267  -
+linux-2.6.34.1.tar:
+b5ab09577bac71665b0a6afc01aa8991  -
+c7915e10a51aef83ad07ab1310dfea1f  -
+linux-2.6.34.2.tar:
+a51d818279e0402e0f9810f1a81896a4  -
+214422b2c37496a587ede9c3d8b4267e  -
+linux-2.6.34.3.tar:
+4171780e929adb9bcf845894d4b34772  -
+58a0dbd6691ef31cd7755d4d78deb5c3  -
+linux-2.6.34.4.tar:
+13f3eb829305c9662a7c61808cd78f5e  -
+7c36973983f382c10c7fa798afca34bd  -
+linux-2.6.34.5.tar:
+b52ed8d879f462f80b4171874e345ce2  -
+0342e66778f34ee3dafe429ceb0bc458  -
+linux-2.6.34.6.tar:
+6ff1290538fc568f5c5dec8be92e7304  -
+44db4c923a52e8bcbfd28e9e47a1646a  -
+linux-2.6.34.7.tar:
+20d960afa5c81924595bb631aeb25bfe  -
+468570633260e25c0892ca6ed60932e6  -
+linux-2.6.36.1.tar:
+44944e1bf4bbe6be6c9b19caabd2e46a  -
+5287acb01a7294edf9126e06b31cddf8  -
+linux-2.6.36.2.tar:
+8b6557c4f0cef60b1c0cfd389ac76c81  -
+8a89ddf731cf3e6cc74a0f705c4e64f7  -
+linux-2.6.36.3.tar:
+ac4a519bd303d1552bdf2ef28cea9400  -
+e7fdd2863fd43e661c6d42d827cff83f  -
+linux-2.6.36.4.tar:
+eb84076b4f2ffbe6ec397db09c4b76c0  -
+875cc534c1988451f56133c7cd21067f  -
+linux-2.6.37.1.tar:
+a358b14b41133571d8d006c1799c748c  -
+9dca1bc83eeb2d8f6441f0850b93d66c  -
+linux-2.6.37.2.tar:
+42865250767ded55861ae0cc569f4cdf  -
+06377a030705b5858ab0dd2df81763e6  -
+linux-2.6.37.3.tar:
+4cefa352f70a1f5b61f91a7ffcfe4f5b  -
+a7aa93bb57ae7d70da9ccf8cfa13d68d  -
+linux-2.6.37.4.tar:
+1faea970049f982abd1f735c0eaf5200  -
+59e8f872873dad91116a0da48ae148c2  -
+linux-2.6.37.5.tar:
+918d912d411ecafe07c4c536a192a860  -
+ffe1f317e1f1009d02c198507f2107f2  -
+linux-2.6.37.6.tar:
+8c5acdd2de588e03cf788f51ba49fd52  -
+8c145547c9d99611effcd439f53f5e25  -
+linux-2.6.38.1.tar:
+7e61835baf0e180582e7899a53333d36  -
+654ff6ff832e1a94abcfc76e16fc43ff  -
+linux-2.6.38.2.tar:
+28b115c1e5ef3311d83449ca55eb1e93  -
+99a6b2563f1da07024b558b45acbdd92  -
+linux-2.6.38.3.tar:
+7241f0ed5fdb946958ae07839dc37fc4  -
+1b6aab7b43d47c53330689886180ac7c  -
+linux-2.6.38.4.tar:
+7e79df0e18344fb38a5222df07124ba2  -
+2030ad771359131c8274084fea616e79  -
+linux-2.6.38.5.tar:
+c334701518dee7a785f24d10b684287e  -
+e3428c253ed44718140f7252f01b6354  -
+linux-2.6.38.6.tar:
+f78b06daf92715dba4f5524eda2db4c2  -
+a48346b83898859aa09d87ae0a06c764  -
+linux-2.6.38.7.tar:
+d8ae75de84c9c8a80b3ae3628550dbe1  -
+ff0300eeb87975a6122fc4855754acd5  -
+linux-2.6.38.8.tar:
+9f98099e7e89e6eacfefcde48c72c459  -
+33547d248cae58e362b33b50d464ccf3  -
+linux-2.6.39.1.tar:
+3ec312d569811554efce499b8f5f655d  -
+91d1831f891b6cc0be3e7974d12a3e16  -
+linux-2.6.39.2.tar:
+6d5d0821f9febfcba8ce652872240b80  -
+4e7fe20c7dec40235e54d18ff9f06f75  -
+linux-2.6.39.3.tar:
+1b9fdd3b3ce19eec99e5c22d54c466f9  -
+af224f04deb77224d0793310a2a88ee9  -
+linux-2.6.39.4.tar:
+829d4bd2e2d2f91b8ae36f52b6f38836  -
+d0a992d3c779c3ed5285d6cafa72d63b  -
+linux-3.0.1.tar:
+900437c6d0bd7dd788280d2b4c6cee69  -
+aca86780981a9ea5445c38a8aafbc2b4  -
+linux-3.0.2.tar:
+c498c8f9e6a9348876126145bd280a20  -
+e07a9dd94710799f160edc526ee75d37  -
+linux-3.0.3.tar:
+ec951f7427b62b51b09f1861563e1917  -
+f0e79c23dcc7552b3eb6ba64cd4ab8b3  -
+linux-3.0.4.tar:
+c3b5d549d03db5597396b48f08a52aec  -
+2542acc5e08e581ebf4d61e0e1ab5430  -
+linux-3.0.5.tar:
+e34805baaf276d4d6490d94d818962f5  -
+ea08e9d7cf650d29ea376d40f985ea77  -
+linux-3.0.6.tar:
+0c30f5ee57067a0d598d68d0e218b393  -
+cf075e7f519a3b9498d676869d599d3e  -
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOk5f4AAoJEH70+W8r6ZYqCXoQAKRPBh/8gAUL7HEYxiVoCrRN
-UsdfEB+tDkTc9BKhUA3ALlUr5K1iQdXPTq/yzhs/47VJGgFQbrpV2gb23o3eLFuD
-Z1IzoAOcbHCjWOKiGE3jxiLTjzlj42pix+xi1o26gNP5oFMwUY8TQE3txAZX3puV
-oVf2KAhSCgFE+OG1njty9DpPPhDAQlzPCRMpI/9ARxW3NQqt1vVIcQe+p+IDjfQD
-fuc86CTDQlFXkeWMNYxRyG01l93py9mRbIw0LStRGS4b9D2mGypA+1dGGuN/Pf9A
-3ZY//FonsqfTZeKuKl4diGqWz5njp5s6gsQxb1EChpb5/yEb7hOzt1DDcB5QJ3Nb
-TMY0NGSsFcbZ4ZiHoOpAjMIqCrIclVqMrVs9V6x2D5gifTwN8cG1BkLcUDvvpaU5
-mdbP6agMM+kLnsvuCkrvtEd+jksYh5wYYFk22TQUdkPPveiJL1pYaver2JVf5mXU
-HEgQnuKGZplUjh60CDa/8VUJzMHuw8Kcpe8sh1Sa5ToKQONlvV0xq+Cy+B76XMyp
-N1wzxrNT5d0WMQgcVhNSs3EYGLMDJQH44mXz7vYtP1l5c4snW/QbK0XEHEU2mDGt
-Xzq6OXGVLKZ6jgUzFs5msLHV+RgfKqEgiKAgEKGLP4qx4K0AWitEyLR9zfMuk91c
-Rknd2OpmnhJQHJpk32rv
-=4i/y
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
+--r5Pyd7+fXNt84Ff3--
