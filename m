@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab1JLOwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:52:18 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:36081
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751759Ab1JLOwO (ORCPT
+	id S1752476Ab1JLOwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:52:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51754 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab1JLOuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:52:14 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [alsa-devel] [PATCH 5/9] ASoC: da7210: Add support for other DAI
- word lengths, format and mode
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 20:33:21 +0530
-Message-ID: <1318431801.12107.416.camel@matrix>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+	Wed, 12 Oct 2011 10:50:16 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 04/13] vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
+Date: Wed, 12 Oct 2011 16:48:57 +0200
+Message-Id: <1318430946-7091-5-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchs adds support for following,
-(1) DAI 20 and 32 bit word sizes
-(2) DAI left and right justified formats
-(3) DAI slave mode
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Now a successful sb_prepare_remount_readonly() should ensure that no
+writable files remain for this superblock.  So turn this check into a
+WARN_ON.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- sound/soc/codecs/da7210.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+ fs/file_table.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/da7210.c b/sound/soc/codecs/da7210.c
-index 1b4554a..60f403b 100644
---- a/sound/soc/codecs/da7210.c
-+++ b/sound/soc/codecs/da7210.c
-@@ -120,12 +120,17 @@
+diff --git a/fs/file_table.c b/fs/file_table.c
+index c322794..dc9f437 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -486,8 +486,11 @@ int fs_may_remount_ro(struct super_block *sb)
+ 		if (inode->i_nlink == 0)
+ 			goto too_bad;
  
- /* DAI_CFG1 bit fields */
- #define DA7210_DAI_WORD_S16_LE		(0 << 0)
-+#define DA7210_DAI_WORD_S20_3LE		(1 << 0)
- #define DA7210_DAI_WORD_S24_LE		(2 << 0)
-+#define DA7210_DAI_WORD_S32_LE		(3 << 0)
- #define DA7210_DAI_FLEN_64BIT		(1 << 2)
-+#define DA7210_DAI_MODE_SLAVE		(0 << 7)
- #define DA7210_DAI_MODE_MASTER		(1 << 7)
- 
- /* DAI_CFG3 bit fields */
- #define DA7210_DAI_FORMAT_I2SMODE	(0 << 0)
-+#define DA7210_DAI_FORMAT_LEFT_J	(1 << 0)
-+#define DA7210_DAI_FORMAT_RIGHT_J	(2 << 0)
- #define DA7210_DAI_OE			(1 << 3)
- #define DA7210_DAI_EN			(1 << 7)
- 
-@@ -401,9 +406,15 @@ static int da7210_hw_params(struct snd_pcm_substream *substream,
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		dai_cfg1 |= DA7210_DAI_WORD_S16_LE;
- 		break;
-+	case SNDRV_PCM_FORMAT_S20_3LE:
-+		dai_cfg1 |= DA7210_DAI_WORD_S20_3LE;
-+		break;
- 	case SNDRV_PCM_FORMAT_S24_LE:
- 		dai_cfg1 |= DA7210_DAI_WORD_S24_LE;
- 		break;
-+	case SNDRV_PCM_FORMAT_S32_LE:
-+		dai_cfg1 |= DA7210_DAI_WORD_S32_LE;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -508,6 +519,9 @@ static int da7210_set_dai_fmt(struct snd_soc_dai *codec_dai, u32 fmt)
- 	case SND_SOC_DAIFMT_CBM_CFM:
- 		dai_cfg1 |= DA7210_DAI_MODE_MASTER;
- 		break;
-+	case SND_SOC_DAIFMT_CBS_CFS:
-+		dai_cfg1 |= DA7210_DAI_MODE_SLAVE;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -520,6 +534,12 @@ static int da7210_set_dai_fmt(struct snd_soc_dai *codec_dai, u32 fmt)
- 	case SND_SOC_DAIFMT_I2S:
- 		dai_cfg3 |= DA7210_DAI_FORMAT_I2SMODE;
- 		break;
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		dai_cfg3 |= DA7210_DAI_FORMAT_LEFT_J;
-+		break;
-+	case SND_SOC_DAIFMT_RIGHT_J:
-+		dai_cfg3 |= DA7210_DAI_FORMAT_RIGHT_J;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -536,7 +556,8 @@ static int da7210_set_dai_fmt(struct snd_soc_dai *codec_dai, u32 fmt)
- 	return 0;
- }
- 
--#define DA7210_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE)
-+#define DA7210_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
-+			SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
- 
- /* DAI operations */
- static struct snd_soc_dai_ops da7210_dai_ops = {
+-		/* Writeable file? */
+-		if (S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE))
++		/*
++		 * Writable file?
++		 * Should be caught by sb_prepare_remount_readonly().
++		 */
++		if (WARN_ON(S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE)))
+ 			goto too_bad;
+ 	} while_file_list_for_each_entry;
+ 	lg_global_unlock(files_lglock);
 -- 
-1.7.1
-
+1.7.3.4
 
