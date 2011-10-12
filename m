@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1JLLxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:53:40 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13409 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab1JLLxh (ORCPT
+	id S1752823Ab1JLLxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 07:53:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15027 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1JLLxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:53:37 -0400
+	Wed, 12 Oct 2011 07:53:32 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 12 Oct 2011 04:53:15 -0700
+	by hqnvupgp08.nvidia.com on Wed, 12 Oct 2011 04:53:14 -0700
 From: <pdeschrijver@nvidia.com>
 To: <pdeschrijver@nvidia.com>
 CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>
-Subject: [PATCH v9 3/3] arm/tegra: device tree support for ventana board
-Date: Wed, 12 Oct 2011 14:53:05 +0300
-Message-ID: <1318420387-6802-4-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v9 1/3] arm/tegra: prepare Seaboard pinmux code for derived boards
+Date: Wed, 12 Oct 2011 14:53:03 +0300
+Message-ID: <1318420387-6802-2-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1318420387-6802-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1318420387-6802-1-git-send-email-pdeschrijver@nvidia.com>
@@ -30,140 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 
+This patch splits out the common part of pinmux and GPIO initialization for
+seaboard and derived boards. This code is based on work done by Jong Kim
+<jongk@nvidia.com>.
+
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- arch/arm/boot/dts/tegra-ventana.dts |   32 ++++++++++++++++++++++++++++++++
- arch/arm/mach-tegra/Kconfig         |    6 ++++++
- arch/arm/mach-tegra/Makefile.boot   |    1 +
- arch/arm/mach-tegra/board-dt.c      |   26 +++++++++++++++++++++-----
- 4 files changed, 60 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/boot/dts/tegra-ventana.dts
+ arch/arm/mach-tegra/board-seaboard-pinmux.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra-ventana.dts b/arch/arm/boot/dts/tegra-ventana.dts
-new file mode 100644
-index 0000000..9b29a62
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra-ventana.dts
-@@ -0,0 +1,32 @@
-+/dts-v1/;
-+
-+/memreserve/ 0x1c000000 0x04000000;
-+/include/ "tegra20.dtsi"
-+
-+/ {
-+	model = "NVIDIA Tegra2 Ventana evaluation board";
-+	compatible = "nvidia,ventana", "nvidia,tegra20";
-+
-+	chosen {
-+		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/ram rdinit=/sbin/init";
-+	};
-+
-+	memory {
-+		reg = < 0x00000000 0x40000000 >;
-+	};
-+
-+	serial@70006300 {
-+		clock-frequency = < 216000000 >;
-+	};
-+
-+	sdhci@c8000400 {
-+		cd-gpios = <&gpio 69 0>; /* gpio PI5 */
-+		wp-gpios = <&gpio 57 0>; /* gpio PH1 */
-+		power-gpios = <&gpio 155 0>; /* gpio PT3 */
-+	};
-+
-+	sdhci@c8000600 {
-+		power-gpios = <&gpio 70 0>; /* gpio PI6 */
-+		support-8bit;
-+	};
-+};
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index d82ebab..91aff7c 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -69,6 +69,12 @@ config MACH_WARIO
-        help
-          Support for the Wario version of Seaboard
+diff --git a/arch/arm/mach-tegra/board-seaboard-pinmux.c b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+index 74f78b7..b31c765 100644
+--- a/arch/arm/mach-tegra/board-seaboard-pinmux.c
++++ b/arch/arm/mach-tegra/board-seaboard-pinmux.c
+@@ -1,5 +1,6 @@
+ /*
+- * Copyright (C) 2010 NVIDIA Corporation
++ * Copyright (C) 2010,2011 NVIDIA Corporation
++ * Copyright (C) 2011 Google, Inc.
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -160,7 +161,7 @@ static __initdata struct tegra_pingroup_config seaboard_pinmux[] = {
  
-+config MACH_VENTANA
-+       bool "Ventana board"
-+       select MACH_TEGRA_DT
-+       help
-+         Support for the nVidia Ventana development platform
-+
- choice
-         prompt "Low-level debug console UART"
-         default TEGRA_DEBUG_UART_NONE
-diff --git a/arch/arm/mach-tegra/Makefile.boot b/arch/arm/mach-tegra/Makefile.boot
-index 5e870d2..bd12c9f 100644
---- a/arch/arm/mach-tegra/Makefile.boot
-+++ b/arch/arm/mach-tegra/Makefile.boot
-@@ -4,3 +4,4 @@ initrd_phys-$(CONFIG_ARCH_TEGRA_2x_SOC)	:= 0x00800000
  
- dtb-$(CONFIG_MACH_HARMONY) += tegra-harmony.dtb
- dtb-$(CONFIG_MACH_SEABOARD) += tegra-seaboard.dtb
-+dtb-$(CONFIG_MACH_VENTANA) += tegra-ventana.dtb
-diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-index 9f47e04..d368f8d 100644
---- a/arch/arm/mach-tegra/board-dt.c
-+++ b/arch/arm/mach-tegra/board-dt.c
-@@ -47,7 +47,7 @@
  
- void harmony_pinmux_init(void);
- void seaboard_pinmux_init(void);
--
-+void ventana_pinmux_init(void);
- 
- struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
-@@ -80,9 +80,19 @@ static struct of_device_id tegra_dt_gic_match[] __initdata = {
- 	{}
+-static struct tegra_gpio_table gpio_table[] = {
++static struct tegra_gpio_table common_gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_SD2_CD,		.enable = true },
+ 	{ .gpio = TEGRA_GPIO_SD2_WP,		.enable = true },
+ 	{ .gpio = TEGRA_GPIO_SD2_POWER,		.enable = true },
+@@ -171,12 +172,17 @@ static struct tegra_gpio_table gpio_table[] = {
+ 	{ .gpio = TEGRA_GPIO_USB1,		.enable = true },
  };
  
-+static struct {
-+	char *machine;
-+	void (*init)(void);
-+} pinmux_configs[] = {
-+	{ "nvidia,harmony", harmony_pinmux_init },
-+	{ "nvidia,seaboard", seaboard_pinmux_init },
-+	{ "nvidia,ventana", ventana_pinmux_init },
-+};
-+
- static void __init tegra_dt_init(void)
+-void __init seaboard_pinmux_init(void)
++static void __init seaboard_common_pinmux_init(void)
  {
- 	struct device_node *node;
-+	int i;
+ 	tegra_pinmux_config_table(seaboard_pinmux, ARRAY_SIZE(seaboard_pinmux));
  
- 	node = of_find_matching_node_by_address(NULL, tegra_dt_gic_match,
- 						TEGRA_ARM_INT_DIST_BASE);
-@@ -91,10 +101,15 @@ static void __init tegra_dt_init(void)
+ 	tegra_drive_pinmux_config_table(seaboard_drive_pinmux,
+ 					ARRAY_SIZE(seaboard_drive_pinmux));
  
- 	tegra_clk_init_from_table(tegra_dt_clk_init_table);
- 
--	if (of_machine_is_compatible("nvidia,harmony"))
--		harmony_pinmux_init();
--	else if (of_machine_is_compatible("nvidia,seaboard"))
--		seaboard_pinmux_init();
-+	for (i = 0; i < ARRAY_SIZE(pinmux_configs); i++) {
-+		if (of_machine_is_compatible(pinmux_configs[i].machine)) {
-+			pinmux_configs[i].init();
-+			break;
-+		}
-+	}
+-	tegra_gpio_config(gpio_table, ARRAY_SIZE(gpio_table));
++	tegra_gpio_config(common_gpio_table, ARRAY_SIZE(common_gpio_table));
++}
 +
-+	WARN(i == ARRAY_SIZE(pinmux_configs),
-+		"Unknown platform! Pinmuxing not initialized\n");
- 
- 	/*
- 	 * Finished with the static registrations now; fill in the missing
-@@ -106,6 +121,7 @@ static void __init tegra_dt_init(void)
- static const char * tegra_dt_board_compat[] = {
- 	"nvidia,harmony",
- 	"nvidia,seaboard",
-+	"nvidia,ventana",
- 	NULL
- };
- 
++void __init seaboard_pinmux_init(void)
++{
++	seaboard_common_pinmux_init();
+ }
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
