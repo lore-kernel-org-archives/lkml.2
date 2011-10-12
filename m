@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1JLTCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:02:12 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46216 "EHLO
+	id S1752113Ab1JLTDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:03:53 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46244 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1JLTCL (ORCPT
+	with ESMTP id S1751537Ab1JLTDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:02:11 -0400
-Date: Wed, 12 Oct 2011 15:02:07 -0400 (EDT)
-Message-Id: <20111012.150207.1100668688848833225.davem@davemloft.net>
+	Wed, 12 Oct 2011 15:03:52 -0400
+Date: Wed, 12 Oct 2011 15:03:49 -0400 (EDT)
+Message-Id: <20111012.150349.1115347260310770962.davem@davemloft.net>
 To: bzolnier@gmail.com
 Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cy82c693: fix PCI device selection
+Subject: Re: [PATCH] ide: ide_port_wait_ready() fix
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201110121652.10495.bzolnier@gmail.com>
-References: <201110111937.32501.bzolnier@gmail.com>
-	<20111011.152040.662786307819949300.davem@davemloft.net>
-	<201110121652.10495.bzolnier@gmail.com>
+In-Reply-To: <201110121659.55961.bzolnier@gmail.com>
+References: <201110111913.18492.bzolnier@gmail.com>
+	<20111011.151739.917285592017305911.davem@davemloft.net>
+	<201110121659.55961.bzolnier@gmail.com>
 X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 12 Oct 2011 12:02:09 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 12 Oct 2011 12:03:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Date: Wed, 12 Oct 2011 16:52:10 +0200
+Date: Wed, 12 Oct 2011 16:59:55 +0200
 
 > David Miller wrote:
 > 
 >> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
->> Date: Tue, 11 Oct 2011 19:37:32 +0200
+>> Date: Tue, 11 Oct 2011 19:13:18 +0200
 >> 
->> > While at it remove redundant pci_get_slot() call as cy82c693_init_one()
->> > already takes care of keeping the reference on the second port's PCI
->> > device.
+>> > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+>> > Subject: [PATCH] ide: ide_port_wait_ready() fix
+>> > 
+>> > Fix for commit a20b2a4 ("ide: skip probe if there are no devices on
+>> > the port (v2)").  We must check for slave device before failing.
+>> > 
+>> > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 >> 
->> Please do not submit unrelated changes with a bug fix, and as IDE is
->> in long-term maintainence I would not accept a risky refinement like
->> this anyways.
+>> This will mishandle the case where there is no slave in the device
+>> list.
 > 
-> Removed code is just bogus, we cannot fail in ->set_pio_mode method.
+> I don't see it:
 > 
-> Please take a look at the code:
+> @ -598,7 +598,7 @@ static int ide_port_wait_ready(ide_hwif_
+>  {
+>  	const struct ide_tp_ops *tp_ops = hwif->tp_ops;
+>  	ide_drive_t *drive;
+> -	int i, rc;
+> +	int i, rc, prev_rc = 0;
 >  
-> -	/* select primary or secondary channel */
-> -	if (hwif->index > 0) {  /* drive is on the secondary channel */
-> -		dev = pci_get_slot(dev->bus, dev->devfn+1);
-> -		if (!dev) {
-> -			printk(KERN_ERR "%s: tune_drive: "
-> -				"Cannot find secondary interface!\n",
-> -				drive->name);
-> -			return;
-> -		}
-> -	}
+>  	printk(KERN_DEBUG "Probing IDE interface %s...\n", hwif->name);
+>  
+> @@ -623,8 +623,10 @@ static int ide_port_wait_ready(ide_hwif_
+>  			tp_ops->write_devctl(hwif, ATA_DEVCTL_OBS);
+>  			mdelay(2);
+>  			rc = ide_wait_not_busy(hwif, 35000);
+> -			if (rc)
+> +			if (prev_rc && rc)
+>  				goto out;
+> +			prev_rc = rc;
+> +			rc = 0;
+>  		} else
+>  			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
+>  					  drive->name);
 > 
-> Please apply the patch,
+> If there is no slave device but there is a master device the code falls-through
+> and returns a success.
 
-Sorry, I will not do that, please respin the patch with the unrelated
-pieces removed.  I don't care how obvious it is to you.
-
-The IDE layer is not a place for refinements or simplifications any
-longer, I'm sorry if that isn't clear to you.
-
-
+That's not what we want, if there is only a master device and no slave device
+in the list this loop is iterating over we want to return the error code
+in "rc", not zero.
