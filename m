@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1JLL4E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:56:04 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:39666 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752230Ab1JLL4C convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:56:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAP05o4K8BBwh5nbQpuc180WD2=ON+wksEz=gku=Y4GDQzx=BdA@mail.gmail.com>
-References: <1317901123-2546-1-git-send-email-keshava_mgowda@ti.com>
-	<alpine.DEB.2.00.1110101835070.5205@utopia.booyaka.com>
-	<CAP05o4+Y3_-mFYdsta4DM7EfkYEq1-6psjvawN5pCWX++8jm8A@mail.gmail.com>
-	<CAP05o4K8BBwh5nbQpuc180WD2=ON+wksEz=gku=Y4GDQzx=BdA@mail.gmail.com>
-Date: Wed, 12 Oct 2011 17:26:00 +0530
-Message-ID: <CAP05o4JndWh3zQyD6mVWzK4pNr+42bDeBm7miiGSCOxqTwyvOA@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v13] arm: omap: usb: ehci and ohci hwmod structures
- for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, khilman@ti.com,
-        b-cousson@ti.com, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752889Ab1JLL6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 07:58:52 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37095 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752747Ab1JLL6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 07:58:50 -0400
+Date: Wed, 12 Oct 2011 12:56:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>, Allen Martin <AMartin@nvidia.com>,
+        Tom Warren <twarren@nvidia.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
+ UARTs
+Message-ID: <20111012125647.6b9ec66e@lxorguk.ukuu.org.uk>
+In-Reply-To: <1318377943-24519-1-git-send-email-dianders@chromium.org>
+References: <1318377943-24519-1-git-send-email-dianders@chromium.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 1:29 PM, Munegowda, Keshava
-<keshava_mgowda@ti.com> wrote:
-> On Tue, Oct 11, 2011 at 11:18 AM, Munegowda, Keshava
-> <keshava_mgowda@ti.com> wrote:
->> On Tue, Oct 11, 2011 at 6:08 AM, Paul Walmsley <paul@pwsan.com> wrote:
->>> Hi
->>>
->>> so I just noticed another problem with these hwmods:
->>>
->>> On Thu, 6 Oct 2011, Keshava Munegowda wrote:
->>>
->>>> Following 2 hwmod structures are added
->>>>     1. usb_host_hs
->>>>          The hwmod of usbhs with uhh, ehci and ohci base addresses
->>>>          functional clock and ehci, ohci irqs
->>>>
->>>>     2. usb_tll_hs
->>>>           hwmod of usbhs with the TLL base address and irq.
->>>>
->>>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->>>> Reviewed-by: Partha Basak <parthab@india.ti.com>
->>>> ---
->>>>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  227 ++++++++++++++++++++++++++++
->>>>  1 files changed, 227 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>>> index 59fdb9f..b8ca690 100644
->>>> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>>> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->>>
->>> ...
->>>
->>>> +static struct omap_hwmod_ocp_if omap34xx_ick_cfg__usb_tll_hs = {
->>>
->>> This interface is missing a .master and .slave.  It must have both.  So,
->>> dropping this patch until it's fixed.
->>>
->>> Clearly we also need to modify the hwmod code needs to reject any
->>> instances where either .master or .slave is NULL.
->>>
->>>
->>> - Paul
->>
->> Hi Paul
->>           I will fix it today only and I will send the updated
->> patches in couple of hours.
->> please help me to make it in this merge window.
->>
->
->
-> Hi Paul
->      I have posted v14 of the patches; please do review
-> if it is OK, please merge to your branch for 3.2 version
-> please let me know if you have any comments here.
->
->  Thanks and Regards
->  keshava
+> NOTE: If we have people that are using UARTA on a Tegra and need to
+> control DTR, we'll need to either add a separate port type for UARTA
+> or we'll need to add some tegra-specific code to detect whether the
+> DTR needs to be left high.
 
+I have two problems with this change
 
-Hi Paul
-requesting to please do review the patch set
-if it is OK, please merge to your branch for 3.2 version
-please let me know if you have any comments.
+- It adds more special cases into the 8250.c core code
+- It breaks the UARTA port (which is a regression so not acceptable for
+  upstream merging)
 
-regards
-keshava
+I think you should simply provide your platform with an appropriate
+serial_in/serial_out method that does the needed masking. That way its
+kept isolated from everyone else.
+
+Alan
