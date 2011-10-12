@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab1JLAjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 20:39:00 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:16812 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750959Ab1JLAi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 20:38:59 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 2/2 v2] pch_dma: Reduce wasting memory
-Date: Wed, 12 Oct 2011 09:38:35 +0900
-Message-Id: <1318379915-8697-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1751968Ab1JLAkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 20:40:10 -0400
+Received: from claw.goop.org ([74.207.240.146]:44538 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab1JLAkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 20:40:08 -0400
+Message-ID: <4E94E1E5.4070505@goop.org>
+Date: Tue, 11 Oct 2011 17:40:05 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nr_channels is defined in "struct pch_dma".
-and struct pch_dma_chan is defined in "struct pch_dma".
-So, "sizeof(struct pch_dma_chan) * nr_channels" is unnecessary.
+Ping?
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
----
-v2: Change sizeof(struct pch_dma) to sizeof(*pd)
----
- drivers/dma/pch_dma.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 326fedc..58b215c 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -997,8 +997,7 @@ static int __devinit pch_dma_probe(struct pci_dev *pdev,
- 	int i;
- 
- 	nr_channels = id->driver_data;
--	pd = kzalloc(sizeof(struct pch_dma)+
--		sizeof(struct pch_dma_chan) * nr_channels, GFP_KERNEL);
-+	pd = kzalloc(sizeof(*pd), GFP_KERNEL);
- 	if (!pd)
- 		return -ENOMEM;
- 
--- 
-1.7.4.4
+On 09/26/2011 11:17 AM, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> Hi all,
+>
+> I'm proposing this for the next merge window v3.2.
+>
+> I originally posted this early this year, and it prompted a debate
+> about what the "proper" way that Linux should do microcode updates,
+> with the general concensus being "earlier", ideally in the bootloader
+> (or in the case of Xen, as the hypervisor boots before starting any
+> domains).  However, as far as I know there has been no progress along
+> those lines.
+>
+> I would like to therefore merge this so that a Linux kernel booting as
+> dom0 under Xen can update the microcode in the same manner as a kernel
+> booting natively.  When we work out how boot-time microcode updates
+> can be done, then we'll look at modifying Xen accordingly.  In the
+> meantime, we should have a functional parity.
+>
+> The only change to this code from the previous posting is some patch
+> restructuring so that regardless of how the platform.h ABI header gets
+> merged (since there are some other pending branches containing it), it
+> will be identical and cause no merge headaches.
+>
+> From original posting:
+>
+> This series adds a new "Xen" microcode update type, in addition to
+> Intel and AMD.
+>
+> The Xen hypervisor is responsible for performing the actual microcode
+> update (since only it knows what physical CPUs are in the system and
+> has sufficient privilege to access them), but it requires the dom0
+> kernel to provide the actual microcode update data.
+>
+> Xen update mechanism is uniform independent of the CPU type, but the
+> driver must know where to find the data file, which depends on the CPU
+> type.  And since the update hypercall updates all CPUs, we only need
+> to execute it once on any CPU - but for simplicity it just runs it only
+> on (V)CPU 0.
+>
+> Thanks,
+> 	J
+>
+> Jeremy Fitzhardinge (2):
+>   xen: add dom0_op hypercall
+>   xen: add CPU microcode update driver
+>
+> Yu Ke (1):
+>   xen/acpi: Domain0 acpi parser related platform hypercall
+>
+>  arch/ia64/include/asm/xen/interface.h |    1 +
+>  arch/x86/include/asm/microcode.h      |    9 +
+>  arch/x86/include/asm/xen/hypercall.h  |    8 +
+>  arch/x86/include/asm/xen/interface.h  |    1 +
+>  arch/x86/kernel/Makefile              |    1 +
+>  arch/x86/kernel/microcode_core.c      |    5 +-
+>  arch/x86/kernel/microcode_xen.c       |  198 ++++++++++++++++++++
+>  arch/x86/xen/Kconfig                  |    4 +
+>  include/xen/interface/platform.h      |  320 +++++++++++++++++++++++++++++++++
+>  include/xen/interface/xen.h           |    1 +
+>  10 files changed, 547 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/x86/kernel/microcode_xen.c
+>  create mode 100644 include/xen/interface/platform.h
+>
 
