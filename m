@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1JLDjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 23:39:15 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57361 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab1JLDjO (ORCPT
+	id S1751454Ab1JLDyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 23:54:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59618 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1JLDyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 23:39:14 -0400
-Message-ID: <4E950BDA.2040408@ozlabs.ru>
-Date: Wed, 12 Oct 2011 14:39:06 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: rusty@rustcorp.com.au
-Subject: [PATCH] virtio-pci: Use PCI MMIO instead of PIO when available
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Tue, 11 Oct 2011 23:54:06 -0400
+From: ming.lei@canonical.com
+To: rjw@sisk.pl
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 1/2] PM/runtime: fix comment for rpm_suspend
+Date: Wed, 12 Oct 2011 11:53:32 +0800
+Message-Id: <1318391613-24364-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently virtio-pci is specced so that configuration of the device is
-done through a PCI IO space (via BAR 0 of the virtual PCI device).
-However, use of PCI IO space (aka PIO) is long deprecated, and can be
-awkward to use on some systems (for example IBM pSeries machines
-typically have many PCI domains, and not all firmware/hypervisor
-versions necessarily support PCI PIO access on all domains).
+From: Ming Lei <ming.lei@canonical.com>
 
-Therefore, it would be preferable for the virtio virtual PCI device to
-advertise a PCI memory space (aka MMIO) BAR and have configuration
-done through this interface instead.  This can be done backwards
-compatibly by advertising the MMIO BAR in addition to the existing PIO
-BAR so that the guest driver can choose whichever interface.
+This patch fix comments for rpm_suspend:
 
-In anticipation of adding such an MMIO BAR to virtio host-side
-implementations (e.g. qemu), this patch updates the Linux virtio-pci
-driver to attempt to use BAR 2 (which will be MMIO) in preference to
-the existing PIO BAR 0.
+- 'Cancel a pending idle notification' should be put before, also
+should be changed as 'Cancel a pending idle notification,
+autosuspend or suspend'
 
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Acked-by: David Gibson <david@gibson.dropbear.id.au>
+- after suspend succeeded, idle notification for the device has
+been removed, so update comment for it
 
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ drivers/base/power/runtime.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 4fb5b2b..ddad409 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -643,9 +643,13 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
-        if (err)
-                goto out_enable_device;
-
--       vp_dev->ioaddr = pci_iomap(pci_dev, 0, 0);
--       if (vp_dev->ioaddr == NULL)
--               goto out_req_regions;
-+       vp_dev->ioaddr = pci_iomap(pci_dev, 2, 0);
-+       if (vp_dev->ioaddr == NULL) {
-+               printk(KERN_INFO "virtio_pci: no memory BAR, falling back to IO\n");
-+               vp_dev->ioaddr = pci_iomap(pci_dev, 0, 0);
-+               if (vp_dev->ioaddr == NULL)
-+                       goto out_req_regions;
-+       }
-
-        pci_set_drvdata(pci_dev, vp_dev);
-        pci_set_master(pci_dev);
-
-
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 7a6fb5e..aa23a64 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -286,14 +286,16 @@ static int rpm_callback(int (*cb)(struct device *), struct device *dev)
+  * @dev: Device to suspend.
+  * @rpmflags: Flag bits.
+  *
+- * Check if the device's runtime PM status allows it to be suspended.  If
+- * another suspend has been started earlier, either return immediately or wait
+- * for it to finish, depending on the RPM_NOWAIT and RPM_ASYNC flags.  Cancel a
+- * pending idle notification.  If the RPM_ASYNC flag is set then queue a
+- * suspend request; otherwise run the ->runtime_suspend() callback directly.
+- * If a deferred resume was requested while the callback was running then carry
+- * it out; otherwise send an idle notification for the device (if the suspend
+- * failed) or for its parent (if the suspend succeeded).
++ * Check if the device's runtime PM status allows it to be suspended.
++ * Cancel a pending idle notification, autosuspend or suspend. If
++ * another suspend has been started earlier, either return immediately
++ * or wait for it to finish, depending on the RPM_NOWAIT and RPM_ASYNC
++ * flags. If the RPM_ASYNC flag is set then queue a suspend request;
++ * otherwise run the ->runtime_suspend() callback directly. If a deferred
++ * resume was requested while the callback was running then carry it out;
++ * otherwise send an idle notification for its parent (if the suspend
++ * succeeded and both ignore_children of parent->power and irq_safe of
++ * dev->power are not set).
+  *
+  * This function must be called under dev->power.lock with interrupts disabled.
+  */
 -- 
-Alexey
+1.7.5.4
+
