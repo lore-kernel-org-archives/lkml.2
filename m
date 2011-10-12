@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab1JLAZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 20:25:58 -0400
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:51435 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959Ab1JLAZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 20:25:57 -0400
-Date: Tue, 11 Oct 2011 20:25:56 -0400
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Slow write performance with mpt2sas
-Message-ID: <20111012002556.GA32495@animx.eu.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751903Ab1JLA0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 20:26:19 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:51298 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1JLA0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 20:26:17 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Jiri Slaby <jirislaby@gmail.com>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Allen Martin <AMartin@nvidia.com>, Tom Warren <twarren@nvidia.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH v2] TTY: serial_core: Fix crash if DCD drop during suspend
+Date: Tue, 11 Oct 2011 17:25:44 -0700
+Message-Id: <1318379144-27187-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+References: <1318024753-15336-1-git-send-email-dianders@chromium.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've noticed that my SAS9212-4i4e is having write issues.  I have a raid5 of
-4 2tb seagate green drives and a raid5 of 3 300gb seagate 15k sas drives. 
-Write performance on the green drives is fairly poor.  The riad4 of 4 disks
-has a write performance of about 6-10mb/sec.  My onboard sas controller
-(1068e chip IT mode) does not have this issue (I'm using raid6 on 8 of the
-same model green drives).
+This crash was showing up 100% of the time on Tegra CPUs when an
+agetty was running on the serial port and the console was not running
+on the serial port.  The reason the Tegra saw it so reliably is that
+the Tegra CPU internally ties DTR to DCD/DSR.  That means when we
+dropped DTR during suspend we would get always get an immediate DCD
+drop.
 
-Write performance on the 15k drives in raid 5 was 140mb/sec (4gb volume).
+The specific order of operations that were running:
+* uart_suspend_port() would be called to put the uart in suspend mode
+* we'd drop DTR (ops->set_mctrl(uport, 0)).
+* the DTR drop would be looped back in the CPU to be a DCD drop.
+* the DCD drop would look to the serial driver as a hangup
+* the hangup would call uart_shutdown()
+* ... suspend / resume happens ...
+* uart_resume_port() would be called and run the code in the
+  (port->flags & ASYNC_SUSPENDED) block, which would startup the port
+  (and enable tx again).
+* Since the UART would be available for tx, we'd immediately get
+  an interrupt, eventually calling transmit_chars()
+* The transmit_chars() function would crash.  The first crash would
+  be a dereference of a NULL tty member, but since the port has been
+  shutdown that was just a symptom.
 
-Here's some information from lsi's sas2flash util:
-        Controller                     : SAS2008(B1)   
-        PCI Address                    : 00:03:00:00
-        SAS Address                    : 500605b-0-01d0-ab00
-        NVDATA Version (Default)       : 0a.03.00.02
-        NVDATA Version (Persistent)    : 0a.03.00.02
-        Firmware Product ID            : 0x2713 
-        Firmware Version               : 11.00.00.00
-        NVDATA Vendor                  : LSI
-        NVDATA Product ID              : SAS9212-4i4e
-        BIOS Version                   : 07.21.00.00
-        UEFI BSD Version               : N/A
-        FCODE Version                  : N/A
-        Board Name                     : SAS9212-4i4e
-        Board Assembly                 : H3-25134-00A
-        Board Tracer Number            : P131430410
+I have proposed a patch that would fix the Tegra CPUs here (see
+https://lkml.org/lkml/2011/10/11/444 - tty/serial: Prevent drop of DCD
+on suspend for Tegra UARTs).  However, even with that fix it is still
+possible for systems that have an externally visible DCD line to see a
+crash if the DCD drops at just the right time during suspend: thus
+this patch is still useful.
 
-I'm using stock kernel 2.6.39 compiled for 64-bit.  This sas controller has
-IR firmware.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+v2: Updated change description and comments based on deeper digging.
 
-Relevent information from dmesg:
-[    1.585459] mpt2sas version 08.100.00.00 loaded
-[    1.585564] scsi0 : Fusion MPT SAS Host
-[    1.585772] mpt2sas 0000:03:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[    1.585846] mpt2sas 0000:03:00.0: setting latency timer to 64
-[    1.585849] mpt2sas0: 64 BIT PCI BUS DMA ADDRESSING SUPPORTED, total mem (12301640 kB)
-[    1.585966] mpt2sas0: IO-APIC enabled: IRQ 16
-[    1.586027] mpt2sas0: iomem(0x00000000fac3c000), mapped(0xffffc90000020000), size(16384)
-[    1.586110] mpt2sas0: ioport(0x000000000000a000), size(256)
-[    1.872511] mpt2sas0: sending diag reset !!
-[    2.355485] Refined TSC clocksource calibration: 2133.333 MHz.
-[    2.355561] Switching to clocksource tsc
-[    2.974166] mpt2sas0: diag reset: SUCCESS
-[    3.121510] mpt2sas0: Allocated physical memory: size(3999 kB)
-[    3.121574] mpt2sas0: Current Controller Queue Depth(1753), Max Controller Queue Depth(2000)
-[    3.121659] mpt2sas0: Scatter Gather Elements per IO(128)
-[    3.353750] mpt2sas0: LSISAS2008: FWVersion(11.00.00.00), ChipRevision(0x02), BiosVersion(07.21.00.00)
-[    3.353848] mpt2sas0: Protocol=(Initiator), Capabilities=(Raid,TLR,EEDP,Snapshot Buffer,Diag Trace Buffer,Task Set Full,NCQ)
-[    3.354367] mpt2sas0: sending port enable !!
-[    4.888265] mpt2sas0: host_add: handle(0x0001), sas_addr(0x500605b001d0ab00), phys(8)
-[   10.998203] mpt2sas0: port enable: SUCCESS
+ drivers/tty/serial/serial_core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Any suggestions?
-
-PS. I am on the list.  I do prefer courtesy CC.
-
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index a3efbea..7a86b39 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -255,6 +255,13 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
+ 	}
+ 
+ 	/*
++	 * It's possible for shutdown to be called after suspend if we get
++	 * a DCD drop (hangup) at just the right time.  Clear suspended bit so
++	 * we don't try to resume a port that has been shutdown.
++	 */
++	clear_bit(ASYNCB_SUSPENDED, &port->flags);
++
++	/*
+ 	 * kill off our tasklet
+ 	 */
+ 	tasklet_kill(&state->tlet);
 -- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+1.7.3.1
+
