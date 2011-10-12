@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1JLSRm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 14:17:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33519 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab1JLSRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 14:17:41 -0400
-Message-ID: <4E95D9C2.8060709@canonical.com>
-Date: Wed, 12 Oct 2011 14:17:38 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
+	id S1753931Ab1JLSTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 14:19:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33123 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab1JLSTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 14:19:32 -0400
+Message-ID: <4E95D9E7.6090304@zytor.com>
+Date: Wed, 12 Oct 2011 11:18:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Reporting Kernel Bugs
-References: <4E95D7A6.6010603@canonical.com> <alpine.LRH.2.00.1110122011360.29079@twin.jikos.cz>
-In-Reply-To: <alpine.LRH.2.00.1110122011360.29079@twin.jikos.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@amd64.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab>
+In-Reply-To: <20111012101615.GA14966@aftab>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 02:13 PM, Jiri Kosina wrote:
-> On Wed, 12 Oct 2011, Joseph Salisbury wrote:
->
->> Is there a way to report new kernel bugs while bugzilla.kernel.org is
->> down?  I imagine many folks are now starting to have new reports stack
->> up.
->>
->> Also, is there an ETA on when bugzilla will be back available again?
->
-> Just send an e-mail to appropriate mailinglist and CC
-> responsible maintainer(s).
->
-> That's what many people prefer to bugzilla anyway.
->
-Thanks, Jiri!
+On 10/12/2011 03:16 AM, Borislav Petkov wrote:
+> 
+> Why would a xen microcode solution would even be contingent on how
+> upstream Linux solves it (and when)?
+> 
 
+Agreed... especially since Xen is "special" when it comes to booting anyway.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
