@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1JLNJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:09:28 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:54710 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab1JLNJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:09:27 -0400
-Subject: [PATCH] Drop default from "DM365 codec select" choice
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 15:09:22 +0200
-Message-ID: <1318424962.2336.22.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753315Ab1JLNJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:09:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753023Ab1JLNJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 09:09:29 -0400
+Message-ID: <4E95917D.3080507@redhat.com>
+Date: Wed, 12 Oct 2011 09:09:17 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Satoru Moriya <satoru.moriya@hds.com>,
+        David Rientjes <rientjes@google.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <20111011125419.2702b5dc.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com> <20111011135445.f580749b.akpm@linux-foundation.org>
+In-Reply-To: <20111011135445.f580749b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SND_DM365_EXTERNAL_CODEC does not exist, so it's a useless default.
+On 10/11/2011 04:54 PM, Andrew Morton wrote:
+> On Tue, 11 Oct 2011 16:23:22 -0400
+> Satoru Moriya<satoru.moriya@hds.com>  wrote:
+>
+>> On 10/11/2011 03:55 PM, Andrew Morton wrote:
+>>> On Tue, 11 Oct 2011 15:32:11 -0400
+>>> Satoru Moriya<satoru.moriya@hds.com>  wrote:
+>>>
+>>>> On 10/10/2011 06:37 PM, Andrew Morton wrote:
+>>>>> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes
+>>>>> <rientjes@google.com>  wrote:
+>>>>>
+>>>>>> On Thu, 1 Sep 2011, Rik van Riel wrote:
+>>>>
+>>>> Actually page allocator decreases min watermark to 3/4 * min
+>>>> watermark for rt-task. But in our case some applications create a lot
+>>>> of processes and if all of them are rt-task, the amount of watermark
+>>>> bonus(1/4 * min watermark) is not enough.
+>>>>
+>>>> If we can tune the amount of bonus, it may be fine. But that is
+>>>> almost all same as extra free kbytes.
+>>>
+>>> This situation is detectable at runtime.  If realtime tasks are being
+>>> stalled in the page allocator then start to increase the free-page
+>>> reserves.  A little control system.
+>>
+>> Detecting at runtime is too late for some latency critical systems.
+>> At that system, we must avoid a stall before it happens.
+>
+> It's pretty darn obvious that the kernel can easily see the situation
+> developing before it happens.  By comparing a few integers.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Testing this with "make ARCH=arm menuconfig" (and enabling a number of
-dependencies) this "choice" still defaults to the first option (as
-choices apparently do when no default is specified).
+The problem is that we may be dealing with bursts, not steady
+states of allocations.  Without knowing the size of a burst,
+we have no idea when we should wake up kswapd to get enough
+memory freed ahead of the application's allocations.
 
- sound/soc/davinci/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> Look, please don't go bending over backwards like this to defend a bad
+> patch.  It's a bad patch!  It would be better not to have to merge it.
+> Let's do something better.
 
-diff --git a/sound/soc/davinci/Kconfig b/sound/soc/davinci/Kconfig
-index 6bbf001..9e11a14 100644
---- a/sound/soc/davinci/Kconfig
-+++ b/sound/soc/davinci/Kconfig
-@@ -29,7 +29,6 @@ choice
- 	prompt "DM365 codec select"
- 	depends on SND_DAVINCI_SOC_EVM
- 	depends on MACH_DAVINCI_DM365_EVM
--	default SND_DM365_EXTERNAL_CODEC
- 
- config SND_DM365_AIC3X_CODEC
- 	bool "Audio Codec - AIC3101"
+I would love it if we could come up with something better,
+and have thought about it a lot.
+
+However, so far we do not seem to have an alternative yet :(
+
 -- 
-1.7.4.4
-
-
-
+All rights reversed
