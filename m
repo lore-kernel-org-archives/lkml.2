@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab1JLNOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:14:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab1JLNOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:14:05 -0400
-Message-ID: <4E959292.9060301@redhat.com>
-Date: Wed, 12 Oct 2011 09:13:54 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753250Ab1JLNXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:23:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49452 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1JLNXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 09:23:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 3/4] TTY: pty, release tty in all ptmx_open fail paths
+Date: Wed, 12 Oct 2011 15:23:05 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        stable@kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <4E8C6836.1090601@suse.cz> <1318411965-23917-1-git-send-email-jslaby@suse.cz> <1318411965-23917-3-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1318411965-23917-3-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Satoru Moriya <satoru.moriya@hds.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBBC@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110111343070.29761@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110111343070.29761@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201110121523.05567.arnd@arndb.de>
+X-Provags-ID: V02:K0:LnP2QBoukYV/YUQAKgd2+k94Q2p0793NMNsACQ4khtQ
+ 9cOgwJcez73QnR/J3bsP7SkZYZ91xzz+T4HyRpwmX8ZfdkZzml
+ 6d+OaNgZxZedLytRza4ja5PCT+yy5J3qT894iVtJqSh11joOSc
+ BulQeqekoOUkRBaK44ZCNVyaddz2xeeFpBeYI2TLWCB3U1UxMF
+ ySHHUcBHT0wtcItNy5gcvLu73Guek2ilFft/XeYRrAWlQJT91K
+ iTLKY/A9xPe/T6mBNwN3QG7aQak4kEsIx7MF0ycarsIStvbg4n
+ WEjUay3DZjNrWhYkY8qH4JRV9rsPYQjwuSfJ7db+mZVlCcyXEw
+ WtI0xXKvaZwRdiCUj7x4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 05:04 PM, David Rientjes wrote:
+On Wednesday 12 October 2011, Jiri Slaby wrote:
+> Mistakenly, commit 64ba3dc3143d (tty: never hold BTM while getting
+> tty_mutex) switched one fail path in ptmx_open to not free the newly
+> allocated tty.
+> 
+> Fix that by jumping to the appropriate place. And rename the labels so
+> that it's clear what is going on there.
+> 
+> Introduced-in: v2.6.36-rc2
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: stable@kernel.org
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-> In other words, I think it's a fine solution if you're running a single
-> application with very bursty memory allocations so you need to reclaim
-> more memory when low, but that solution is troublesome if it comes at
-> the penalty of other applications and that's a direct consequence of it
-> being a global tunable.  I'd much rather identify memory allocations in
-> the kernel that causing the pain here and mitigate it by (i) attempting to
-> sanely rate limit those allocations,
+Ok, I have checked that this patch returns the code into the state
+before my broken patch, that looks good.
 
-Rate limiting just increases the problem from what it was
-before the patch was introduced, because the entire purpose
-is to reduce allocation latencies by tasks with low latency
-requirements.
+I think I made the same mistake trying to understand your patch
+that I made originally when I introduced the bug, which was to
+confuse the lifetime of the pty master with the lifetime of the
+slave device, so I thought that tty_release should not be called
+if we never called ptm_driver->ops->open(), but that's actually
+a different device.
 
-> (ii) preallocate at least a partial
-> amount of those allocations ahead of time so avoid significant reclaim
-> all at one,
-
-Unless I'm mistaken, isn't this functionally equivalent to
-increasing the size of the free memory pool?
-
-> or (iii) annotate memory allocations with such potential so
-> that the page allocator can add this reclaim bonus itself only in these
-> conditions.
-
-I am not sure what you are proposing here.
-
-How would this scheme work?
-
--- 
-All rights reversed
+	Arnd
