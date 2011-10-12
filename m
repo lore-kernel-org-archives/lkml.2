@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1JLPIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 11:08:39 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:54597 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753095Ab1JLPIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 11:08:38 -0400
-Date: Wed, 12 Oct 2011 15:08:47 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: david@lang.hm
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Theodore Tso <tytso@MIT.EDU>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-Message-ID: <20111012150847.GA21061@hallyn.com>
-References: <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
- <20111011013201.GA7948@thunk.org>
- <20111011020530.GG16723@count0.beaverton.ibm.com>
- <20111011032523.GB7948@thunk.org>
- <m1ty7ghvvn.fsf@fess.ebiederm.org>
- <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu>
- <m17h4bfcuv.fsf@fess.ebiederm.org>
- <alpine.DEB.2.02.1110111525450.28233@asgard.lang.hm>
- <m139eyg7if.fsf@fess.ebiederm.org>
- <alpine.DEB.2.02.1110112208230.12310@asgard.lang.hm>
+	id S1753256Ab1JLPKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 11:10:49 -0400
+Received: from mail-dy0-f46.google.com ([209.85.220.46]:38933 "EHLO
+	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab1JLPKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 11:10:47 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com
+Subject: Re: [PATCH 0/13] read-only remount race fix v7
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+	<20111012150332.GA25289@infradead.org>
+Date: Wed, 12 Oct 2011 17:09:56 +0200
+In-Reply-To: <20111012150332.GA25289@infradead.org> (Christoph Hellwig's
+	message of "Wed, 12 Oct 2011 11:03:32 -0400")
+Message-ID: <8739eyw8jf.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1110112208230.12310@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting david@lang.hm (david@lang.hm):
-> On Tue, 11 Oct 2011, Eric W. Biederman wrote:
-> 
-> >david@lang.hm writes:
-> >
-> >>On Tue, 11 Oct 2011, Eric W. Biederman wrote:
-> >>
-> >>>Theodore Tso <tytso@MIT.EDU> writes:
-> >>>
-> >>>>On Oct 11, 2011, at 2:42 AM, Eric W. Biederman wrote:
-> >>>>
-> >>>I admit for a lot of test cases that it makes sense not to use a full
-> >>>set of userspace daemons.  At the same time there is not particularly
-> >>>good reason to have a design that doesn't allow you to run a full
-> >>>userspace.
-> >>
-> >>how do you share the display between all the different containers if they are
-> >>trying to run the X server?
-> >
-> >Either X does not start because the hardware it needs is not present or
-> >Xnest or similar gets started.
-> >
-> >>how do you avoid all the containers binding to the same port on the default IP
-> >>address?
-> >
-> >Network namespaces.
-> >
-> >>how do you arbitrate dbus across the containers.
-> >
-> >Why should you?
-> 
-> because the containers are simulating different machines, and dbus
-> doesn't work arcross different machines.
+--=-=-=
 
-Exactly - Eric is saying dbus should not be (and is not) shared among
-containers.
+Christoph Hellwig <hch@infradead.org> writes:
 
-> >>when a new USB device gets plugged in, which container gets control of
-> >>it?
-> >
-> >None of them.  Although today they may all get the uevent.  None of the
-> >containers should have permission to call mknod to mess with it.
-> 
-> why would the software inside a container not have the rights to do
-> a mknod inside the container?
+> On Wed, Oct 12, 2011 at 04:48:53PM +0200, Miklos Szeredi wrote:
+>> Here's an update of the read-only remount race fixes.
+>> 
+>> It should now fix the races after unlink.  I haven't been able to
+>> trigger the bad behavior with the test scripts provided by Toshiyuki
+>> Okajima.
+>
+> How does the test script look like?  Could we integrate it into xfstests
+> so that we have a good regular run regression test for this?
 
-Why shouldn't an unprivileged user be allowed to mknod on the host?
+Attaching the scripts.  It doesn't detect failure, currenly that needs
+to be derived from the output of the run and dmesg.
 
--serge
+Thanks,
+Miklos
+
+
+--=-=-=
+Content-Type: application/x-shellscript
+Content-Disposition: inline; filename=go.sh
+Content-Transfer-Encoding: base64
+
+IyEvYmluL3NoCgpkZCBpZj0vZGV2L3plcm8gb2Y9L3RtcC9pbWcgYnM9MWsgY291bnQ9MSBzZWVr
+PTEwMDBrID4gL2Rldi9udWxsIDI+JjEKL3NiaW4vbWtmcy5leHQ0IC1GcSAvdG1wL2ltZwptb3Vu
+dCAtbyBsb29wIC90bXAvaW1nIC9tbnQKLi93cml0ZXIuc2ggL21udCAmCkxPT1A9MTAwMDAwMDAw
+MApmb3IgKChpPTA7IGk8TE9PUDsgaSsrKSk7CmRvCiAgICAgICAgZWNobyAiWyRpXSIKICAgICAg
+ICBpZiAoKGklMiA9PSAwKSk7CiAgICAgICAgdGhlbgogICAgICAgICAgICAgICAgbW91bnQgLW8g
+cm8scmVtb3VudCxsb29wIC9tbnQKICAgICAgICBlbHNlCiAgICAgICAgICAgICAgICBtb3VudCAt
+byBydyxyZW1vdW50LGxvb3AgL21udAogICAgICAgIGZpCiAgICAgICAgc2xlZXAgMQpkb25lCg==
+--=-=-=
+Content-Type: application/x-shellscript
+Content-Disposition: inline; filename=writer.sh
+Content-Transfer-Encoding: base64
+
+IyEvYmluL3NoCgpkaXI9JDEKZm9yICgoaT0wO2k8MTAwMDAwMDA7aSsrKSk7CmRvCiAgICAgICAg
+Zm9yICgoaj0wO2o8NjQ7aisrKSk7CiAgICAgICAgZG8KICAgICAgICAgICAgICAgIGZpbGVuYW1l
+PSIkZGlyL2ZpbGUkKChpKjY0ICsgaikpIgogICAgICAgICAgICAgICAgZGQgaWY9L2Rldi96ZXJv
+IG9mPSRmaWxlbmFtZSBicz0xayBjb3VudD04ID4gL2Rldi9udWxsIDI+JjEgJgogICAgICAgIGRv
+bmUKICAgICAgICBmb3IgKChqPTA7ajw2NDtqKyspKTsKICAgICAgICBkbwogICAgICAgICAgICAg
+ICAgZmlsZW5hbWU9IiRkaXIvZmlsZSQoKGkqNjQgKyBqKSkiCiAgICAgICAgICAgICAgICBybSAt
+ZiAkZmlsZW5hbWUgPiAvZGV2L251bGwgMj4mMSAmCiAgICAgICAgZG9uZQogICAgICAgIHdhaXQK
+ICAgICAgICBpZiAoKGklMTAwID09IDAgJiYgaSA+IDApKTsKICAgICAgICB0aGVuCiAgICAgICAg
+ICAgICAgICBybSAtZiAkZGlyL2ZpbGUqCiAgICAgICAgZmkKZG9uZQpleGl0Cg==
+--=-=-=--
