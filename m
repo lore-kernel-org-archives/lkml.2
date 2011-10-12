@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1JLTgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:36:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59161 "EHLO mx1.redhat.com"
+	id S1754028Ab1JLTjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:39:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20954 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab1JLTgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:36:02 -0400
-Date: Wed, 12 Oct 2011 15:35:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "krzf83@gmail.com " <krzf83@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Morton Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: cgroup blkio bug/feedback
-Message-ID: <20111012193551.GH12845@redhat.com>
-References: <CAJ1PRSnQgaCr4s+JwmB3r_J9de5MHJKVwrxGnderYGqyVVMG3Q@mail.gmail.com>
+	id S1753649Ab1JLTjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:39:39 -0400
+Date: Wed, 12 Oct 2011 21:34:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
+	thread is singlestepping.
+Message-ID: <20111012193417.GA11004@redhat.com>
+References: <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com> <20111005180139.GA5704@redhat.com> <20111006054710.GB17591@linux.vnet.ibm.com> <20111007165828.GA32319@redhat.com> <20111010122556.GB16268@linux.vnet.ibm.com> <20111010182535.GA6934@redhat.com> <20111011172603.GD16268@linux.vnet.ibm.com> <20111011185653.GA10215@redhat.com> <20111012120112.GB11831@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJ1PRSnQgaCr4s+JwmB3r_J9de5MHJKVwrxGnderYGqyVVMG3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111012120112.GB11831@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 03, 2011 at 08:39:23PM +0200, krzf83@gmail.com  wrote:
-> I've been testing cgroup blkio controller in production eviroment for
-> many days now especialy blkio.throttle.write_iops_device and
-> blkio.throttle.read_iops_device. I'm using software raid so I have to
-> limit on devices like /dev/md2 which is 9:2 in my system. Limiting
-> works fine but every some time whole system overloads and only thing
-> to do is hard reboot. For two times this happened with cgroup that was
-> used to limit rsync-ing about 30GB of data.
+On 10/12, Srikar Dronamraju wrote:
+>
+> I think we should be okay if the test exits in UTASK_SSTEP state.
 
-So in this case rsync is reading from local disk and sending it over
-network somewhere and you are limiting the read iops of rsync process?
+Yes, and afaics we can't avoid this case, at least currently.
 
-Or rsync is doing some local buffered writes also and you are trying
-to limit those buffered writes?
+But we should move free_uprobe_utask() to mm_release(), or somewhere
+else before mm->core_state check in exit_mm().
 
-Currently throttling works primarily in throttling reads or direct IO.
-Buffered writes are not supported. In current writeback code, some IO
-shows up at the device in the context of writing application so that
-IO will still be throttled. Any IO showing in the context of flusher
-thread will be attributed to root group and will not be throttled. Anyway,
-once IO less throttling patches from Wu Fengguang are merged, then
-all the writeback will be done using flusher threads and none in
-writer's context.
+My main concern is stop/freeze in UTASK_SSTEP state. If nothing else,
+debugger can attach to the stopped task and disable the stepping. Or
+SIGKILL, it should work in this case.
 
-So my first question is what is rsync doing and what kind of limits
-have you put.(read/write and what are absolute numbers).
+> > Great. I'll think a bit more and send you the "final" version tomorrow.
+> > Assuming we can change sstep_complete() as we discussed, it doesn't need
+> > fatal_signal_pending().
+>
+> Okay.
 
-> Somewhere in the middle
-> loadavg starts to rise quicly, shell hangs at every kill command and
-> soft reboot does not work.
+Sorry. I was busy today. Tomorrow ;)
 
-Can you do alt-sysrq-t to get a dump on console regarding what various
-tasks are doing.
+> > HOWEVER. There is yet another problem. Another thread can, say, unmap()
+> > xol_vma. In this case we should ensure that the task can't fault in an
+> > endless loop.
+>
+> Hmm should we add a check in unmap() to see if the vma that we are
+> trying to unmap is the xol_vma and if so return?
 
-> When I do echo "9:2 0" >
-> blkio.throttle.read_iops_device and echo "9:2 0" >
-> blkio.throttle.write_iops_device problem was immeadetly gone.
+Oh, I am not sure. You know, I _think_ that perhaps we should do something
+diferent in the long term. In particular, this xol page should not have
+vma at all. This way we shouldn't worry about unmap/remap/mprotect.
+But even if this is possible (I am not really sure), I do not think we
+should do this right now.
 
-I suspect that it is some kind of file system serialization behind
-some throttled IO on the device. For example, if your throttlingl
-limits are low, then it might happen that rsync writer got throttled
-at device and filesystem is waiting for that IO to finish (to release
-some lock or something else) and is not allowing any other IO to
-proceed. 
+> Our assumption has been that once an xol_vma has been created, it should
+> be around till the process gets killed.
 
-Which filesystem are you using? If your limits are not very low,
-and system does not recover, then other possibility is that there
-is a bug in throttle code and we kind stop dispatching IO from
-a cgroup. While load average is going up, can you monitor the
-cgroup file "blkio.throttle.io_serviced" and see if IO dispatch
-numbers are increasing or not with time.
+Yes, I see. But afaics this assumption is currently wrong. This means
+that we should ensure the evil application can't exploit this fact.
 
-You can also take a blktrace of your md device (9:2). Remember to
-save traces on a separate disk and separate file system as if your
-existing filesystem is kind of stuck, then blktrace will not write
-anything to disk.
+Oleg.
 
-You can try one more thing and that is try changing the limit. So if
-you have iops limit as X then try setting it to X+1 and if everything
-works fine, then it might be the case that throttling logic got stuck
-and changing limits gave it an extra kick and it started working again.
-
-Also, what do you mean by that disk access is still working. How did
-you verify that?
-
-Thanks
-Vivek
