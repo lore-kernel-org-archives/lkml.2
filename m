@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab1JLLuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:50:05 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59608 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab1JLLuE (ORCPT
+	id S1752855Ab1JLLxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 07:53:35 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15029 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab1JLLxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:50:04 -0400
-Subject: [PATCH] ASoC: Make SND_SOC_SAARB and SND_SOC_TAVOREVB3 depend on
- MFD_88PM860X
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 19:49:52 +0800
-Message-ID: <1318420192.28832.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Oct 2011 07:53:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 12 Oct 2011 04:53:13 -0700
+From: <pdeschrijver@nvidia.com>
+To: <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v9 0/3] Add support for tegra2 based ventana board
+Date: Wed, 12 Oct 2011 14:53:02 +0300
+Message-ID: <1318420387-6802-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In saarb_pm860x_init() and evb3_pm860x_init(), we call
-pm860x_hs_jack_detect() and pm860x_mic_jack_detect() which in turn
-calls pm860x_set_bits().
-Thus make SND_SOC_SAARB and SND_SOC_TAVOREVB3 depend on MFD_88PM860X
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
 
-This patch fixes below build error if CONFIG_MFD_88PM860X is not configured.
+This patch set adds support for the tegra2 based ventana development board.
 
-  LD      .tmp_vmlinux1
-sound/built-in.o: In function `pm860x_write_reg_cache':
-last.c:(.text+0x29e9c): undefined reference to `pm860x_reg_write'
-sound/built-in.o: In function `pm860x_set_bias_level':
-last.c:(.text+0x29ecc): undefined reference to `pm860x_set_bits'
-last.c:(.text+0x29f00): undefined reference to `pm860x_reg_write'
-last.c:(.text+0x29f18): undefined reference to `pm860x_reg_write'
-sound/built-in.o: In function `pm860x_read_reg_cache':
-last.c:(.text+0x29f40): undefined reference to `pm860x_reg_read'
-sound/built-in.o: In function `pm860x_probe':
-last.c:(.text+0x2a034): undefined reference to `pm860x_bulk_read'
-sound/built-in.o: In function `pm860x_codec_handler':
-last.c:(.text+0x2a344): undefined reference to `pm860x_reg_read'
-last.c:(.text+0x2a354): undefined reference to `pm860x_reg_read'
-sound/built-in.o: In function `pm860x_mic_jack_detect':
-last.c:(.text+0x2a450): undefined reference to `pm860x_set_bits'
-sound/built-in.o: In function `pm860x_hs_jack_detect':
-last.c:(.text+0x2a4d0): undefined reference to `pm860x_set_bits'
-last.c:(.text+0x2a4f8): undefined reference to `pm860x_set_bits'
-last.c:(.text+0x2a510): undefined reference to `pm860x_set_bits'
-make: *** [.tmp_vmlinux1] Error 1
+Boot tested on ventana.                                                                                                                               
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/pxa/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Uses a table based approach to select the correct init function.
 
-diff --git a/sound/soc/pxa/Kconfig b/sound/soc/pxa/Kconfig
-index 33ebc46b..b12b4af 100644
---- a/sound/soc/pxa/Kconfig
-+++ b/sound/soc/pxa/Kconfig
-@@ -121,6 +121,7 @@ config SND_PXA2XX_SOC_PALM27X
- config SND_SOC_SAARB
- 	tristate "SoC Audio support for Marvell Saarb"
- 	depends on SND_PXA2XX_SOC && MACH_SAARB
-+	depends on MFD_88PM860X
- 	select SND_PXA_SOC_SSP
- 	select SND_SOC_88PM860X
- 	help
-@@ -130,6 +131,7 @@ config SND_SOC_SAARB
- config SND_SOC_TAVOREVB3
- 	tristate "SoC Audio support for Marvell Tavor EVB3"
- 	depends on SND_PXA2XX_SOC && MACH_TAVOREVB3
-+	depends on MFD_88PM860X
- 	select SND_PXA_SOC_SSP
- 	select SND_SOC_88PM860X
- 	help
--- 
-1.7.4.1
+Provoke kernel warning when no suitable pinmux table can be found.
 
+Peter De Schrijver (3):
+  arm/tegra: prepare Seaboard pinmux code for derived boards
+  arm/tegra: add support for ventana pinmuxing
+  arm/tegra: device tree support for ventana board
 
+ arch/arm/boot/dts/tegra-ventana.dts         |   32 ++++++++++++++
+ arch/arm/mach-tegra/Kconfig                 |    6 +++
+ arch/arm/mach-tegra/Makefile                |    1 +
+ arch/arm/mach-tegra/Makefile.boot           |    1 +
+ arch/arm/mach-tegra/board-dt.c              |    5 ++-
+ arch/arm/mach-tegra/board-seaboard-pinmux.c |   63 ++++++++++++++++++++++++---
+ 6 files changed, 101 insertions(+), 7 deletions(-)
+ create mode 100644 arch/arm/boot/dts/tegra-ventana.dts
 
