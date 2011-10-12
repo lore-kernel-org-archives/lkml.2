@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab1JLOxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:53:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34846 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752102Ab1JLOxM (ORCPT
+	id S1752171Ab1JLOwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:52:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60197 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1JLOuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:53:12 -0400
-Date: Wed, 12 Oct 2011 15:53:10 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg@ti.com, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        kuninori.morimoto.gx@renesas.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH 2/9] ASoC: da7210: Add support for line
- input and mic
-Message-ID: <20111012145310.GO3647@opensource.wolfsonmicro.com>
-References: <1318431492.12107.403.camel@matrix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318431492.12107.403.camel@matrix>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Oct 2011 10:50:19 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH 06/13] jfs: remove unnecessary nlink setting
+Date: Wed, 12 Oct 2011 16:48:59 +0200
+Message-Id: <1318430946-7091-7-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 08:28:12PM +0530, Ashish Chavan wrote:
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-> +static const char *da7210_mic_bias_voltage_txt[] = {
-> +	"1.5", "1.6", "2.2", "2.3"
-> +};
-> +
-> +static const struct soc_enum da7210_mic_bias =
-> +	SOC_ENUM_SINGLE(DA7210_MIC_L, 4, 4, da7210_mic_bias_voltage_txt);
-> +
+alloc_inode() initializes i_nlink to 1.  Remove unnecessary
+re-initialization.
 
-This shouldn't be application controllable, it's a board property and if
-it needs to be managed it's likely to be by in kernel things like
-accessory detection.  We do have some older drivers that do this but
-they're not good.  Use platform data.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ fs/jfs/super.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+index 06c8a67..a44eff0 100644
+--- a/fs/jfs/super.c
++++ b/fs/jfs/super.c
+@@ -485,7 +485,6 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto out_unload;
+ 	}
+ 	inode->i_ino = 0;
+-	inode->i_nlink = 1;
+ 	inode->i_size = sb->s_bdev->bd_inode->i_size;
+ 	inode->i_mapping->a_ops = &jfs_metapage_aops;
+ 	insert_inode_hash(inode);
+-- 
+1.7.3.4
+
