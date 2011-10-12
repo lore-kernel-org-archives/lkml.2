@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab1JLS6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 14:58:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33325 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab1JLS6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 14:58:15 -0400
-Message-ID: <4E95E310.3050409@zytor.com>
-Date: Wed, 12 Oct 2011 11:57:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1751458Ab1JLTA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:00:29 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17414 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab1JLTA1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:00:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:content-transfer-encoding;
+	b=Y5tBL1pod1MKXjjEgiVhEEHf4htwSqLj+idIGH518HRRS22ieRzv/oduL2w2i5Mm6
+	QPuZNfd4o1lTMtKgp3DHw==
 MIME-Version: 1.0
-To: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        quilt-dev <quilt-dev@nongnu.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v3] quilt mail: Add way to sign mail with GPG
-References: <1318262910.7904.94.camel@gandalf.stny.rr.com>  <1318379537.1887.25.camel@schurl.linbit>  <1318381107.7904.191.camel@gandalf.stny.rr.com> <1318413367.24907.15.camel@schurl.linbit>
-In-Reply-To: <1318413367.24907.15.camel@schurl.linbit>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1318393869.3686.26.camel@edumazet-laptop>
+References: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
+	<1318382887-31824-1-git-send-email-muralira@google.com>
+	<1318387734.3686.2.camel@edumazet-laptop>
+	<CAP3iWTQXHwzw-qUYVfT--uNv4pNZnu0ROJnF7B1VLeZBbrfdqw@mail.gmail.com>
+	<1318393869.3686.26.camel@edumazet-laptop>
+Date: Wed, 12 Oct 2011 12:00:23 -0700
+Message-ID: <CAP3iWTSkPinSDbi761EsUQ_ZX54e=yGioC7=c7qHRd+17-_xqw@mail.gmail.com>
+Subject: Re: [PATCH v3] net-netlink: Add a new attribute to expose TOS values
+ via netlink
+From: MuraliRaja Muniraju <muralira@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 02:56 AM, Andreas Gruenbacher wrote:
-> 
->> As for removing the temp file, I just found it was the easiest way to
->> pipe into gpg. If there's a better way to do that, I'm all ears.
-> 
-> ... how about this approach?
-> 
->     my @lines = <>;
->     map { print } @lines;
->     print "\n";
-> 
->     #-----------------------------------------------
-> 
->     sub crlf($) {
->         my $_ = shift;
->         #s/\n$/\r\n/;
->         s/^/> /;
->         return $_;
->     }
-> 
->     my $command = 'tr a-z A-Z';
->     open(PIPE, "| $command")
+Hi Eric,
+     I am planning to not add code for the TIME_WAIT case as the tos
+values are zero as they are not saved. Please let me if this is OK.
+Thanks,
+Murali
 
-open(PIPE, '|-', $command);
+On Tue, Oct 11, 2011 at 9:31 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mardi 11 octobre 2011 à 21:16 -0700, MuraliRaja Muniraju a écrit :
+>> Eric,
+>>      I think it would be useful to expose the values this way.
+>>      I shall make the changes to add TCLASS for ipv6 in the description.
+>>
+>>      Regarding the TIME_WAIT state, I think it would be better of not
+>> exposing the values because there would hardly be anything to transmit
+>> during this time.
+>>
+>
+> My remark had nothing to do with your patch actually :
+>
+> We dont store TOS/TCLASS on TIME_WAIT sockets, so you cannot report
+> value in inet_diag.
+>
+> But we do send packets on behalf of TIME_WAIT sockets ;)
+>
+> Think about ACK messages. They probably are sent with a 0 TOS/TCLASS
+> field... I am not sure its a problem or not.
+>
+>
+>
+>
 
-... please; better yet with a list (@command) so it doesn't doesn't pass
-through the shell.
 
-	-hpa
+
+-- 
+Thanks,
+Murali
