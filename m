@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab1JLFL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 01:11:29 -0400
-Received: from mail.lang.hm ([64.81.33.126]:59550 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117Ab1JLFL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 01:11:28 -0400
-Date: Tue, 11 Oct 2011 22:10:56 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Theodore Tso <tytso@MIT.EDU>, Matt Helsley <matthltc@us.ibm.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Linux Containers <containers@lists.osdl.org>,
-        Linux Containers <lxc-devel@lists.sourceforge.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-In-Reply-To: <m139eyg7if.fsf@fess.ebiederm.org>
-Message-ID: <alpine.DEB.2.02.1110112208230.12310@asgard.lang.hm>
-References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
- <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org>
- <alpine.DEB.2.02.1110111525450.28233@asgard.lang.hm> <m139eyg7if.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752384Ab1JLF2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 01:28:13 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:51487 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab1JLF2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 01:28:11 -0400
+Date: Wed, 12 Oct 2011 16:28:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: linux-next: manual merge of the staging tree with the pm tree
+Message-Id: <20111012162805.1056a7f7fe3f1140d767a601@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Oct_2011_16_28_05_+1100__5PUE.sc8q_Lnz5_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Oct 2011, Eric W. Biederman wrote:
+--Signature=_Wed__12_Oct_2011_16_28_05_+1100__5PUE.sc8q_Lnz5_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> david@lang.hm writes:
->
->> On Tue, 11 Oct 2011, Eric W. Biederman wrote:
->>
->>> Theodore Tso <tytso@MIT.EDU> writes:
->>>
->>>> On Oct 11, 2011, at 2:42 AM, Eric W. Biederman wrote:
->>>>
->>> I admit for a lot of test cases that it makes sense not to use a full
->>> set of userspace daemons.  At the same time there is not particularly
->>> good reason to have a design that doesn't allow you to run a full
->>> userspace.
->>
->> how do you share the display between all the different containers if they are
->> trying to run the X server?
->
-> Either X does not start because the hardware it needs is not present or
-> Xnest or similar gets started.
->
->> how do you avoid all the containers binding to the same port on the default IP
->> address?
->
-> Network namespaces.
->
->> how do you arbitrate dbus across the containers.
->
-> Why should you?
+Hi Greg,
 
-because the containers are simulating different machines, and dbus doesn't 
-work arcross different machines.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/Kconfig between commit a3c98b8b2ede ("PM: Introduce devfreq:
+generic DVFS framework with device-specific OPPs") from the pm tree and
+commit 46a971913611 ("Staging: hv: move hyperv code out of staging
+directory") from the staging tree.
 
->> when a new USB device gets plugged in, which container gets control of
->> it?
->
-> None of them.  Although today they may all get the uevent.  None of the
-> containers should have permission to call mknod to mess with it.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-why would the software inside a container not have the rights to do a 
-mknod inside the container?
+diff --cc drivers/Kconfig
+index a1efd75,ce3c35f..0000000
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@@ -130,6 -130,6 +130,8 @@@ source "drivers/iommu/Kconfig
+ =20
+  source "drivers/virt/Kconfig"
+ =20
++ source "drivers/hv/Kconfig"
++=20
+ +source "drivers/devfreq/Kconfig"
+ +
+  endmenu
 
->> there are a LOT of hard questions when you start talking about running a full
->> system inside a container that do not apply for other use of
->> containers.
->
-> Not really mostly the answer is that you say no.
->
-> Eric
->
+--Signature=_Wed__12_Oct_2011_16_28_05_+1100__5PUE.sc8q_Lnz5_
+Content-Type: application/pgp-signature
 
-David Lang
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOlSVlAAoJEECxmPOUX5FE/1wP/3N6WHLn9HIwzoRPPOqTgz57
+mlGWR9KdRbWkbwXI9/9uGhajXdXoj2ECzftBZUif4T+y+sud0wMNjoCCNu+LYRXI
+kAPtfmKG0NqEAr9L8HuWr4xTRRr/GnvWl+GqTu5e9ThBZN46QM3778WsrWi8N0aM
+QZgDBzMqX8p3p87U1AxnOtnLo139mNQS6u4nnQtyh2Ed4hIiLokp3OqaZKC+iyvI
+wAsf5lwQXgvzx/zSF4As9JBBpKB2Ncw6K8vtayQ5+MitDzEtD98PJn3KDdIK3xVX
+nslFwi4cjz7HE81FC2J5N1swKiACmGYvq6yqvFixVIqnvF74AoDF5GAafWTr039C
+8mD0f9N4vERIHkTKmNodlj7yn02xkxdgsdD0aXaOqdV5CVlyaKto4kCgo34eGnDr
+XRbjM/iWvzCtDSTkjUOtcNdaoMMj+8QA2SH3+QJM1WxAquFV84a1Kq3f7/PX10pM
+JSkilhwQgOqKc1mDbbrUuAPHxsJVX7pL/L5ERHLqD6w9XwENpWoKQY4HjEAY3osk
+X172TPKg3nCOd95JAhSERReksVsrRyp5UJZxG0RPA1Xf8Gr5s71o6I6JAhPnhjAS
+o1qiSbyVzIFEjXnYGsiu2XZqMcZcCHk5IHu46GZDqRw/CsC6lraM5EIH4UYjlbQO
+tzlZG0oTiBDFWxQ0LZjy
+=9lgE
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Oct_2011_16_28_05_+1100__5PUE.sc8q_Lnz5_--
