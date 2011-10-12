@@ -1,128 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1JLOyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:54:32 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:10446 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1JLOuP (ORCPT
+	id S1751995Ab1JLOuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:50:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60197 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab1JLOuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:50:15 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [alsa-devel] [PATCH 4/9] ASoC: da7210: Add support for mute and
- zero cross controls
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 20:31:35 +0530
-Message-ID: <1318431695.12107.411.camel@matrix>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+	Wed, 12 Oct 2011 10:50:11 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 0/13] read-only remount race fix v7
+Date: Wed, 12 Oct 2011 16:48:53 +0200
+Message-Id: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for below set of controls,
-(1) Mute controls for MIC, AUX, ADC and DAC
-(2) Zero cross controls for head phone, AUX, INPGA and line out
-(3) Head phone mode selection - class H or G
+Here's an update of the read-only remount race fixes.
 
-Tested on Samsung SMDK6410 board with DA7210 evaluation board.
+It should now fix the races after unlink.  I haven't been able to
+trigger the bad behavior with the test scripts provided by Toshiyuki
+Okajima.
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Toshiyuki-san, could you please test these patches too?
+
+Thanks,
+Miklos
 ---
- sound/soc/codecs/da7210.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/da7210.c b/sound/soc/codecs/da7210.c
-index b48a8af..1b4554a 100644
---- a/sound/soc/codecs/da7210.c
-+++ b/sound/soc/codecs/da7210.c
-@@ -45,6 +45,7 @@
- #define DA7210_DAC_L			0x15
- #define DA7210_DAC_R			0x16
- #define DA7210_DAC_SEL			0x17
-+#define DA7210_SOFTMUTE			0x18
- #define DA7210_DAC_EQ1_2		0x19
- #define DA7210_DAC_EQ3_4		0x1A
- #define DA7210_DAC_EQ5			0x1B
-@@ -56,6 +57,7 @@
- #define DA7210_HP_L_VOL			0x21
- #define DA7210_HP_R_VOL			0x22
- #define DA7210_HP_CFG			0x23
-+#define DA7210_ZERO_CROSS		0x24
- #define DA7210_DAI_SRC_SEL		0x25
- #define DA7210_DAI_CFG1			0x26
- #define DA7210_DAI_CFG3			0x28
-@@ -166,6 +168,9 @@
- /* AUX2 bit fields */
- #define DA7210_AUX2_EN			(1 << 3)
- 
-+/* SOFTMUTE bit fields */
-+#define DA7210_RAMP_EN			(1 << 6)
-+
- /* Default gain/vol values */
- #define DA7210_DFLT_DAC_GAIN		0x10  /* 0dB */
- #define DA7210_DFLT_OUT1_VOL		0x35  /* 0dB */
-@@ -227,6 +232,13 @@ static const char *da7210_mic_bias_voltage_txt[] = {
- static const struct soc_enum da7210_mic_bias =
- 	SOC_ENUM_SINGLE(DA7210_MIC_L, 4, 4, da7210_mic_bias_voltage_txt);
- 
-+static const char *da7210_hp_mode_txt[] = {
-+	"Class H", "Class G"
-+};
-+
-+static const struct soc_enum da7210_hp_mode_sel =
-+	SOC_ENUM_SINGLE(DA7210_HP_CFG, 0, 2, da7210_hp_mode_txt);
-+
- static const struct snd_kcontrol_new da7210_snd_controls[] = {
- 
- 	SOC_DOUBLE_R_TLV("HeadPhone Playback Volume",
-@@ -284,6 +296,24 @@ static const struct snd_kcontrol_new da7210_snd_controls[] = {
- 		       eq_gain_tlv),
- 	SOC_SINGLE_TLV("ADC EQ5 Volume", DA7210_ADC_EQ5, 0, 0xf, 1,
- 		       eq_gain_tlv),
-+
-+	/* Mute controls */
-+	SOC_SINGLE("Mic Left Mute Switch", DA7210_MIC_L, 3, 1, 0),
-+	SOC_SINGLE("Mic Right Mute Switch", DA7210_MIC_R, 3, 1, 0),
-+	SOC_SINGLE("Aux2 Mute Switch", DA7210_AUX2, 2, 1, 0),
-+	SOC_SINGLE("ADC Left Mute Switch", DA7210_ADC, 2, 1, 0),
-+	SOC_SINGLE("ADC Right Mute Switch", DA7210_ADC, 6, 1, 0),
-+	SOC_SINGLE("DAC Mute Switch", DA7210_DAC_HPF, 2, 1, 0),
-+	SOC_SINGLE("DAC Soft Mute Switch", DA7210_SOFTMUTE, 7, 1, 0),
-+	SOC_SINGLE("DAC Soft Mute Rate", DA7210_SOFTMUTE, 0, 0X7, 0),
-+
-+	/* Zero cross controls */
-+	SOC_DOUBLE("Aux1 ZC Switch", DA7210_ZERO_CROSS, 0, 1, 1, 0),
-+	SOC_DOUBLE("In PGA ZC Switch", DA7210_ZERO_CROSS, 2, 3, 1, 0),
-+	SOC_DOUBLE("Lineout ZC Switch", DA7210_ZERO_CROSS, 4, 5, 1, 0),
-+	SOC_DOUBLE("Headphone ZC Switch", DA7210_ZERO_CROSS, 6, 7, 1, 0),
-+
-+	SOC_ENUM("Headphone Class", da7210_hp_mode_sel),
- };
- 
- /* Codec private data */
-@@ -629,6 +659,8 @@ static int da7210_probe(struct snd_soc_codec *codec)
- 	/* Set default In PGA gain */
- 	snd_soc_write(codec, DA7210_IN_GAIN, DA7210_DFLT_INPGA_VOL |
- 						(DA7210_DFLT_INPGA_VOL << 4));
-+	/* Enable ramp mode for DAC gain update */
-+	snd_soc_write(codec, DA7210_SOFTMUTE, DA7210_RAMP_EN);
- 
- 	/* Diable PLL and bypass it */
- 	snd_soc_write(codec, DA7210_PLL, DA7210_PLL_FS_48000);
--- 
-1.7.1
+Miklos Szeredi (13):
+      vfs: ignore error on forced remount
+      vfs: keep list of mounts for each superblock
+      vfs: protect remounting superblock read-only
+      vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
+      hypfs: remove unnecessary nlink setting
+      jfs: remove unnecessary nlink setting
+      ocfs2: remove unnecessary nlink setting
+      logfs: remove unnecessary nlink setting
+      filesystems: add missing nlink wrappers
+      filesystems: add set_nlink()
+      vfs: protect i_nlink
+      vfs: count unlinked inodes
+      vfs: prevent remount read-only if pending removes
 
+---
+ arch/s390/hypfs/inode.c          |    6 +--
+ drivers/mtd/mtdchar.c            |    2 +-
+ drivers/staging/pohmelfs/inode.c |    2 +-
+ fs/9p/vfs_inode.c                |    4 +-
+ fs/9p/vfs_inode_dotl.c           |    4 +-
+ fs/adfs/inode.c                  |    2 +-
+ fs/affs/amigaffs.c               |    4 +-
+ fs/affs/inode.c                  |    8 ++--
+ fs/affs/namei.c                  |    6 +-
+ fs/afs/fsclient.c                |    2 +-
+ fs/afs/inode.c                   |    4 +-
+ fs/autofs4/inode.c               |    2 +-
+ fs/befs/linuxvfs.c               |    2 +-
+ fs/bfs/dir.c                     |    2 +-
+ fs/bfs/inode.c                   |    2 +-
+ fs/binfmt_misc.c                 |    2 +-
+ fs/btrfs/delayed-inode.c         |    2 +-
+ fs/btrfs/disk-io.c               |    2 +-
+ fs/btrfs/inode.c                 |    4 +-
+ fs/btrfs/tree-log.c              |    2 +-
+ fs/ceph/caps.c                   |    2 +-
+ fs/ceph/inode.c                  |    2 +-
+ fs/cifs/inode.c                  |    6 +-
+ fs/cifs/link.c                   |    2 +-
+ fs/coda/coda_linux.c             |    2 +-
+ fs/coda/dir.c                    |    2 +-
+ fs/devpts/inode.c                |    4 +-
+ fs/ecryptfs/inode.c              |   12 +++---
+ fs/efs/inode.c                   |    2 +-
+ fs/exofs/inode.c                 |    2 +-
+ fs/ext2/ialloc.c                 |    2 +-
+ fs/ext2/inode.c                  |    2 +-
+ fs/ext3/ialloc.c                 |    2 +-
+ fs/ext3/inode.c                  |    2 +-
+ fs/ext3/namei.c                  |    6 +-
+ fs/ext4/ialloc.c                 |    2 +-
+ fs/ext4/inode.c                  |    2 +-
+ fs/ext4/migrate.c                |    2 +-
+ fs/ext4/namei.c                  |    8 ++--
+ fs/fat/inode.c                   |    4 +-
+ fs/fat/namei_msdos.c             |    2 +-
+ fs/fat/namei_vfat.c              |    2 +-
+ fs/file_table.c                  |   23 ----------
+ fs/freevxfs/vxfs_inode.c         |    2 +-
+ fs/fuse/control.c                |    2 +-
+ fs/fuse/inode.c                  |    2 +-
+ fs/gfs2/glops.c                  |    2 +-
+ fs/hfs/dir.c                     |    4 +-
+ fs/hfs/inode.c                   |    4 +-
+ fs/hfsplus/dir.c                 |    4 +-
+ fs/hfsplus/inode.c               |   10 ++--
+ fs/hostfs/hostfs_kern.c          |    2 +-
+ fs/hpfs/dir.c                    |    2 +-
+ fs/hpfs/inode.c                  |   10 ++--
+ fs/hpfs/namei.c                  |    8 ++--
+ fs/hppfs/hppfs.c                 |    2 +-
+ fs/hugetlbfs/inode.c             |    2 +-
+ fs/inode.c                       |   83 +++++++++++++++++++++++++++++++++++++-
+ fs/internal.h                    |    1 +
+ fs/isofs/inode.c                 |    4 +-
+ fs/isofs/rock.c                  |    4 +-
+ fs/jffs2/dir.c                   |    6 +-
+ fs/jffs2/fs.c                    |    6 +-
+ fs/jfs/jfs_imap.c                |    6 +-
+ fs/jfs/jfs_inode.c               |    2 +-
+ fs/jfs/namei.c                   |   12 +++---
+ fs/jfs/super.c                   |    1 -
+ fs/libfs.c                       |    2 +-
+ fs/logfs/dir.c                   |    8 ++--
+ fs/logfs/inode.c                 |    3 +-
+ fs/logfs/readwrite.c             |    2 +-
+ fs/minix/inode.c                 |    4 +-
+ fs/namespace.c                   |   57 +++++++++++++++++++++++++-
+ fs/ncpfs/inode.c                 |    2 +-
+ fs/nfs/inode.c                   |    6 +-
+ fs/nilfs2/inode.c                |    4 +-
+ fs/nilfs2/namei.c                |    2 +-
+ fs/ntfs/inode.c                  |    8 ++--
+ fs/ocfs2/dir.c                   |    4 +-
+ fs/ocfs2/dlmglue.c               |    2 +-
+ fs/ocfs2/inode.c                 |    4 +-
+ fs/ocfs2/namei.c                 |   18 ++++-----
+ fs/openpromfs/inode.c            |    4 +-
+ fs/proc/base.c                   |   12 +++---
+ fs/proc/generic.c                |    2 +-
+ fs/proc/inode.c                  |    2 +-
+ fs/proc/proc_sysctl.c            |    2 +-
+ fs/qnx4/inode.c                  |    2 +-
+ fs/reiserfs/inode.c              |   10 ++--
+ fs/reiserfs/namei.c              |   16 ++++----
+ fs/romfs/super.c                 |    2 +-
+ fs/squashfs/inode.c              |   18 ++++----
+ fs/stack.c                       |    2 +-
+ fs/super.c                       |   27 ++++++++++--
+ fs/sysfs/inode.c                 |    2 +-
+ fs/sysv/inode.c                  |    2 +-
+ fs/ubifs/super.c                 |    2 +-
+ fs/ubifs/xattr.c                 |    4 +-
+ fs/udf/inode.c                   |    8 ++-
+ fs/udf/namei.c                   |   15 +++----
+ fs/ufs/ialloc.c                  |    2 +-
+ fs/ufs/inode.c                   |    4 +-
+ fs/xfs/xfs_iops.c                |    2 +-
+ include/linux/fs.h               |   66 ++++++++++--------------------
+ include/linux/mount.h            |    1 +
+ mm/shmem.c                       |    2 +-
+ 106 files changed, 389 insertions(+), 286 deletions(-)
 
