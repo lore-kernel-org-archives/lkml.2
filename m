@@ -1,72 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab1JLOyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:54:07 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:46926
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752079Ab1JLOyE (ORCPT
+	id S1752691Ab1JLOyd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:54:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60197 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab1JLOuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:54:04 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [alsa-devel] [PATCH 6/9] ASoC: da7210: bugfix for head phone
- volume control
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 20:35:34 +0530
-Message-ID: <1318431934.12107.421.camel@matrix>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+	Wed, 12 Oct 2011 10:50:14 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 03/13] vfs: protect remounting superblock read-only
+Date: Wed, 12 Oct 2011 16:48:56 +0200
+Message-Id: <1318430946-7091-4-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch takes care of reserved bits of headphone volume
-register by using correct volume range.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Tested on Samsung SMDK6410 board with DA7210 evaluation board.
+Currently remouting superblock read-only is racy in a major way.
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+With the per mount read-only infrastructure it is now possible to
+prevent most races, which this patch attempts.
+
+Before starting the remount read-only, iterate through all mounts
+belonging to the superblock and if none of them have any pending
+writes, set sb->s_readonly_remount.  This indicates that remount is in
+progress and no further write requests are allowed.  If the remount
+succeeds set MS_RDONLY and reset s_readonly_remount.
+
+If the remounting is unsuccessful just reset s_readonly_remount.
+This can result in transient EROFS errors, despite the fact the
+remount failed.  Unfortunately hodling off writes is difficult as
+remount itself may touch the filesystem (e.g. through load_nls())
+which would deadlock.
+
+Small races still remain because delayed writes due to nlink going to
+zero but inode still having a reference are not dealt with by this
+patch.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- sound/soc/codecs/da7210.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ fs/internal.h      |    1 +
+ fs/namespace.c     |   40 +++++++++++++++++++++++++++++++++++++++-
+ fs/super.c         |   22 ++++++++++++++++++----
+ include/linux/fs.h |    3 +++
+ 4 files changed, 61 insertions(+), 5 deletions(-)
 
-diff --git a/sound/soc/codecs/da7210.c b/sound/soc/codecs/da7210.c
-index 60f403b..eb12c82 100644
---- a/sound/soc/codecs/da7210.c
-+++ b/sound/soc/codecs/da7210.c
-@@ -196,12 +196,15 @@
-  * mute		: 0x10
-  * reserved	: 0x00 - 0x0F
-  *
-- * ** FIXME **
-- *
-  * Reserved area are considered as "mute".
-- * -> min = -79.5 dB
-  */
--static const DECLARE_TLV_DB_SCALE(hp_out_tlv, -7950, 150, 1);
-+static const unsigned int hp_out_tlv[] = {
-+	TLV_DB_RANGE_HEAD(2),
-+	0x0, 0x10, TLV_DB_SCALE_ITEM(TLV_DB_GAIN_MUTE, 0, 1),
-+	/* -54 dB to +15 dB */
-+	0x11, 0x3f, TLV_DB_SCALE_ITEM(-5400, 150, 0),
-+};
+diff --git a/fs/internal.h b/fs/internal.h
+index fe327c2..f925271 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -74,6 +74,7 @@ extern int finish_automount(struct vfsmount *, struct path *);
+ 
+ extern void mnt_make_longterm(struct vfsmount *);
+ extern void mnt_make_shortterm(struct vfsmount *);
++extern int sb_prepare_remount_readonly(struct super_block *);
+ 
+ extern void __init mnt_init(void);
+ 
+diff --git a/fs/namespace.c b/fs/namespace.c
+index ccbec4e..85838f5 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -311,6 +311,15 @@ static unsigned int mnt_get_writers(struct vfsmount *mnt)
+ #endif
+ }
+ 
++static int mnt_is_readonly(struct vfsmount *mnt)
++{
++	if (mnt->mnt_sb->s_readonly_remount)
++		return 1;
++	/* Order wrt setting s_flags/s_readonly_remount in do_remount() */
++	smp_rmb();
++	return __mnt_is_readonly(mnt);
++}
 +
- static const DECLARE_TLV_DB_SCALE(dac_gain_tlv, -7725, 75, 0);
- static const DECLARE_TLV_DB_SCALE(mic_vol_tlv, -600, 600, 0);
- static const DECLARE_TLV_DB_SCALE(aux2_vol_tlv, -600, 600, 0);
+ /*
+  * Most r/o checks on a fs are for operations that take
+  * discrete amounts of time, like a write() or unlink().
+@@ -349,7 +358,7 @@ int mnt_want_write(struct vfsmount *mnt)
+ 	 * MNT_WRITE_HOLD is cleared.
+ 	 */
+ 	smp_rmb();
+-	if (__mnt_is_readonly(mnt)) {
++	if (mnt_is_readonly(mnt)) {
+ 		mnt_dec_writers(mnt);
+ 		ret = -EROFS;
+ 		goto out;
+@@ -466,6 +475,35 @@ static void __mnt_unmake_readonly(struct vfsmount *mnt)
+ 	br_write_unlock(vfsmount_lock);
+ }
+ 
++int sb_prepare_remount_readonly(struct super_block *sb)
++{
++	struct vfsmount *mnt;
++	int err = 0;
++
++	br_write_lock(vfsmount_lock);
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (!(mnt->mnt_flags & MNT_READONLY)) {
++			mnt->mnt_flags |= MNT_WRITE_HOLD;
++			smp_mb();
++			if (mnt_get_writers(mnt) > 0) {
++				err = -EBUSY;
++				break;
++			}
++		}
++	}
++	if (!err) {
++		sb->s_readonly_remount = 1;
++		smp_wmb();
++	}
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (mnt->mnt_flags & MNT_WRITE_HOLD)
++			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++	}
++	br_write_unlock(vfsmount_lock);
++
++	return err;
++}
++
+ static void free_vfsmnt(struct vfsmount *mnt)
+ {
+ 	kfree(mnt->mnt_devname);
+diff --git a/fs/super.c b/fs/super.c
+index e8aad34..94c8ace 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -721,23 +721,33 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	/* If we are remounting RDONLY and current sb is read/write,
+ 	   make sure there are no rw files opened */
+ 	if (remount_ro) {
+-		if (force)
++		if (force) {
+ 			mark_files_ro(sb);
+-		else if (!fs_may_remount_ro(sb))
+-			return -EBUSY;
++		} else {
++			retval = sb_prepare_remount_readonly(sb);
++			if (retval)
++				return retval;
++
++			retval = -EBUSY;
++			if (!fs_may_remount_ro(sb))
++				goto cancel_readonly;
++		}
+ 	}
+ 
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+ 		if (retval) {
+ 			if(!force)
+-				return retval;
++				goto cancel_readonly;
+ 			/* If forced remount, go ahead despite any errors */
+ 			WARN(1, "forced remount of a %s fs returned %i\n",
+ 			     sb->s_type->name, retval);
+ 		}
+ 	}
+ 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
++	/* Needs to be ordered wrt mnt_is_readonly() */
++	smp_wmb();
++	sb->s_readonly_remount = 0;
+ 
+ 	/*
+ 	 * Some filesystems modify their metadata via some other path than the
+@@ -750,6 +760,10 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	if (remount_ro && sb->s_bdev)
+ 		invalidate_bdev(sb->s_bdev);
+ 	return 0;
++
++cancel_readonly:
++	sb->s_readonly_remount = 0;
++	return retval;
+ }
+ 
+ static void do_emergency_remount(struct work_struct *work)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 84e5df6..0979638 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1462,6 +1462,9 @@ struct super_block {
+ 	int cleancache_poolid;
+ 
+ 	struct shrinker s_shrink;	/* per-sb shrinker handle */
++
++	/* Being remounted read-only */
++	int s_readonly_remount;
+ };
+ 
+ /* superblock cache pruning functions */
 -- 
-1.7.1
-
+1.7.3.4
 
