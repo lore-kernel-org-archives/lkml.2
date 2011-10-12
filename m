@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1JLRzb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 13:55:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab1JLRza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 13:55:30 -0400
-Date: Wed, 12 Oct 2011 19:51:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <htejun@gmail.com>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org,
-        Paul Menage <menage@google.com>, Ben Blum <bblum@andrew.cmu.edu>
-Subject: Re: [PATCH 3/4] threadgroup: extend threadgroup_lock() to cover
-	exit and exec
-Message-ID: <20111012175104.GA6156@redhat.com>
-References: <1315159280-25032-1-git-send-email-htejun@gmail.com> <1315159280-25032-4-git-send-email-htejun@gmail.com> <20110918173723.GA2384@redhat.com> <20111010171105.GE8100@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111010171105.GE8100@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753800Ab1JLR4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 13:56:34 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60997 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751580Ab1JLR4d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 13:56:33 -0400
+Date: Wed, 12 Oct 2011 18:55:48 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] pata_serverworks: cleanup cable detection
+Message-ID: <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
+In-Reply-To: <201110121705.39026.bzolnier@gmail.com>
+References: <201110112011.44748.bzolnier@gmail.com>
+	<20111011205141.7a8bac1c@lxorguk.ukuu.org.uk>
+	<201110121705.39026.bzolnier@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 12 Oct 2011 17:05:38 +0200
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-On 10/10, Tejun Heo wrote:
->
-> Hope you can still remember some
-> of this one. :)
+> Alan Cox wrote:
+> 
+> > On Tue, 11 Oct 2011 20:11:44 +0200
+> > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
+> > 
+> > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > > Subject: [PATCH] pata_serverworks: cleanup cable detection
+> > > 
+> > > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > 
+> > Again no documentation although its at least a bit more obvious why
+> 
+> The patch only merges identical cable routines for Dell and Sun
+> systems into common oem_cable() one.  No behavior changes here.
 
-I am not sure ;)
-
-> On Sun, Sep 18, 2011 at 07:37:23PM +0200, Oleg Nesterov wrote:
-> > > With this change, threadgroup_lock() guarantees that the target
-> > > threadgroup will remain stable - no new task will be added, no new
-> > > PF_EXITING will be set and exec won't happen.
-> >
-> > To me, this is the only "contradictory" change,
->
-> What do you mean "contradictory"?  Can you please elaborate?
-
-Because, iirc, with this patch do_exit() does (almost) everything
-under rw_sem. OK, down_read() should be cheap, but still.
-
-See also below.
-
-> > > +	/*
-> > > +	 * Release threadgroup and make sure we are holding no locks.
-> > > +	 */
-> > > +	threadgroup_change_done(tsk);
-> >
-> > I am wondering, can't we narrow the scope of threadgroup_change_begin/done
-> > in do_exit() path?
-> >
-> > The code after 4/4 still has to check PF_EXITING, this is correct. And yes,
-> > with this patch PF_EXITING becomes stable under ->group_rwsem. But, it seems,
-> > we do not really need this?
-> >
-> > I mean, can't we change cgroup_exit() to do threadgroup_change_begin/done
-> > instead? We do not really care about PF_EXITING, we only need to ensure that
-> > we can't race with cgroup_exit(), right?
->
-> If we confine our usage to cgroup, excluding just against
-> cgroup_exit() might work although this is still a bit nasty.  ie. some
-> callbacks might not expect half torn-down tasks in methods other than
-> the exit callback.
-
-Oh, sorry, I don't understand... I already forgot the details.
-
-> Also, it makes the mechanism unnecessarily cgroup-specific without
-> gaining much if anything.
-
-Yes! And _personally_ I think it should be cgroup-specific, that is
-why I dislike the very fact do_exit() uses it directly. To me it would
-be cleaner to shift it into cgroup hooks. Yes, sure, this is subjective.
-
-In fact I still hope we can kill this sem altogether, but so far I have
-no idea how we can do this. We do need the new per-process lock to
-protect (in particular) ->thread_group. It is quite possible that it
-should be rw_semaphore. But in this case we down_write(), not _read
-in exit/fork paths, and its scope should be small.
-
-I do not think the current lock should have more users. Of course I
-can be wrong. And what exactly it protects? I mean copy_process().
-Almost everything, but this simply connects to cgroup fork hooks.
-
-Just my opinion, I am not going to insist.
-
-Oleg.
-
+So put that that in the patch info. It seems fine to me but it ought to
+be there
