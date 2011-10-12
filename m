@@ -1,49 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab1JLIFI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:05:08 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:58887 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752511Ab1JLIFG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 04:05:06 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <samuel.ortiz@intel.com>, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, linux-input@vger.kernel.org
-Subject: Re: Re: [PATCH v2 2/6] MFD: twl6040: Cache the vibra control registers
-Date: Wed, 12 Oct 2011 11:05:06 +0300
-Message-ID: <2188183.hGjzCdyui0@barack>
-User-Agent: KMail/4.7.2 (Linux/3.0.4-gentoo; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <20111011160142.GB10286@core.coreip.homeip.net>
-References: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com> <20111011144824.GE1098@sirena.org.uk> <20111011160142.GB10286@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1752744Ab1JLIHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:07:42 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:21513 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab1JLIHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 04:07:39 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-cb-4e954ac9a751
+Reply-to: pullip.cho@samsung.com
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>, joerg.roedel@amd.com,
+        "'Ohad Ben-Cohen'" <ohad@wizery.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        younglak1004.kim@samsung.com, "'Kukjin Kim'" <kgene.kim@samsung.com>
+Subject: [PATCH v4 0/2] iommu/exynos: Add IOMMU and Enhance System MMU driver
+ for Exynos4
+Date: Wed, 12 Oct 2011 17:07:37 +0900
+Organization: Samsung Electronics Co., Ltd
+Message-id: <000101cc88b6$013d1ef0$03b75cd0$%cho@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyItgEUOkjVbj2YTG2oCax9k74Udw==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 October 2011 09:01:42 Dmitry Torokhov wrote:
-> I'm OK with all patches going through MFD - I do not believe it will
-> cause any merge issues.
+Hi.
 
-Thanks Dmitry.
+This is the firth try of submitting patches about IOMMU/System MMU
 
-> For the record I still do not like returning EBUSY when device is not
-> available - I think if device can't serve any requests it should not
-> exists at all.
+Patch Summary:
+[PATCH v4 1/2] ARM: EXYNOS4: Change System MMU device definition
+[PATCH v4 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
 
-While I tend to agree with this, in embedded systems this might (not 
-certainly) cause issues. Embedded SW (middleware, high level) tends to take 
-the underlaying HW as static.
-Before I can do the dynamic input device creation/destruction I need to make 
-sure that the userspace is ready for this.
-I'm planning to address your concern regarding to twl6040, and at the same 
-time I'm going to change the twl4030 vibra/MFD/audio driver to behave in a 
-same way.
+The first patche enhances System MMU platform device definition:
+ - Removed System MMU for MDMA0 in LCD block because it is not
+   used. Use MDMA2 in TOP block.
+ - Removed System MMU ID. Instead a System MMU is bound to a device
+   That the System MMU is dedicated during machin initialization.
+   If a device driver wants to handle System MMU, it must bind its
+   device with System MMU with sysmmu_set_owner().
+ - clkdev
 
---
-Péter
+The last patch implements IOMMU API:
+ - System MMU device driver is removed from arch/arm/plat-s5p
+   to move it to driver/iommu directory.
+ - Implements IOMMU API and System MMU driver that is moved from
+   arch/arm/plat-s5p.
+ - Implements fault handling that is suggested by Ohad.
+ - Used bus_set_iommu instead of register_iommu that is suggested
+    by Joerg.
+
+
+Changes since v3:
+- Used DEFINE_RES_MEM and DEFINE_RES_IRQ macros
+   to define resources of System MMU (Russell King's comment)
+- Fixed removal of CONFIG_S5P_SLEEP definition
+  (Sylwester Nawrocki's comment)
+
+Changes since v2:
+- Add lock for System MMU private data.
+ And fixes the following problems pointed by Joerg Rodel:
+- Fix wrong argument to kmalloc() and get_free_pages()
+- Merged patches into 2 due to bisectability
+
+Changes since v1:
+Fixes of the following problems pointed by Russell King.:
+ - Missing unlocking a spinlock in exynos_iommu_attach_dev().
+ - atomic_t -> int in sysmmu_drvdata.activations
+ - sysmmu_platdata -> sysmmu_drvdata
+ - Change in error messages in irq handler
+ - Removed casting in format of error message
+ - omap_iommu_ops -> exynos_iommu_ops in the last patch.
+
+Diffstat:
+
+ arch/arm/mach-exynos4/Kconfig               |    2 -
+ arch/arm/mach-exynos4/clock.c               |   43 +-
+ arch/arm/mach-exynos4/dev-sysmmu.c          |  260 ++------
+ arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
+ arch/arm/mach-exynos4/include/mach/map.h    |    1 -
+ arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
+ arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
+ arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
+ arch/arm/plat-s5p/Kconfig                   |    8 -
+ arch/arm/plat-s5p/Makefile                  |    1 -
+ arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
+ arch/arm/plat-samsung/include/plat/sysmmu.h |   95 ---
+ drivers/iommu/Kconfig                       |   14 +
+ drivers/iommu/Makefile                      |    1 +
+ drivers/iommu/exynos_iommu.c                |  962
++++++++++++++++++++++++++++
+ 15 files changed, 1153 insertions(+), 684 deletions(-)
+
