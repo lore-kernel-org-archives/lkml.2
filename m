@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1JLMmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 08:42:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44574 "EHLO
+	id S1753241Ab1JLMmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:42:39 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44592 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab1JLMmd (ORCPT
+	with ESMTP id S1753204Ab1JLMmg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 08:42:33 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-dc-4e958b375e38
+	Wed, 12 Oct 2011 08:42:36 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-eb-4e958b3b434d
 From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-References: <1317612559-8930-1-git-send-email-tushar.behera@linaro.org>
- <20111004183840.GH2870@ponder.secretlab.ca>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>, "'Axel Lin'" <axel.lin@gmail.com>,
+        linux-kernel@vger.kernel.org
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Boojin Kim'" <boojin.kim@samsung.com>
+References: <1317961214.16109.1.camel@phoenix>
 In-reply-to: 
-Subject: RE: [PATCH] gpio/samsung: Move SoC specific codes within macro
-Date: Wed, 12 Oct 2011 21:42:32 +0900
-Message-id: <069501cc88dc$695fa400$3c1eec00$%kim@samsung.com>
+Subject: RE: [PATCH] ARM: SAMSUNG: s3c-dma-ops needs export.h for EXPORT_SYMBOL
+Date: Wed, 12 Oct 2011 21:42:36 +0900
+Message-id: <069601cc88dc$6b9a78d0$42cf6a70$%kim@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyC1dy+uPOekvC0R32rCKge0AHmewAHUBcQAXeTnwA=
+Thread-index: AcyEqHDfDDnGUALiQ/W0fYeL+9TV8gDW8ugAADSL8wA=
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,33 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Kukjin Kim wrote:
 > 
-> Grant Likely wrote:
+> Axel Lin wrote:
 > >
-> > On Mon, Oct 03, 2011 at 08:59:19AM +0530, Tushar Behera wrote:
-> > > In drivers/gpio/gpio-samsung.c, there are certain structures
-> > > and functions which are not getting used if the particular
-> > > CPU is not selected. These code segments are moved under CPU
-> > > specific macros to remove compilation warnings.
-> > >
-> > > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> > Fix below build warning:
+> >   CC      arch/arm/plat-samsung/s3c-dma-ops.o
+> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: data definition has no type
+> or
+> > storage class
+> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: type defaults to 'int' in
+> > declaration of 'EXPORT_SYMBOL'
+> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: parameter names (without
+> > types) in function declaration
 > >
-> > Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> > And fix the build error:
+> > ERROR: "s3c_dma_get_ops" [drivers/spi/spi-s3c64xx.ko] undefined!
+> > make[1]: *** [__modpost] Error 1
+> > make: *** [modules] Error 2
 > >
-> When I applied, following error was happened with s5p64x0_defconfig.
-Others, ok.
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > ---
+> > This can be reproduced by "make s3c6400_defconfig;make" on linux-next
+> > 20111006.
+> >  arch/arm/plat-samsung/s3c-dma-ops.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/plat-samsung/s3c-dma-ops.c b/arch/arm/plat-samsung/s3c-
+> > dma-ops.c
+> > index 582333c..7814949 100644
+> > --- a/arch/arm/plat-samsung/s3c-dma-ops.c
+> > +++ b/arch/arm/plat-samsung/s3c-dma-ops.c
+> > @@ -14,6 +14,7 @@
+> >  #include <linux/errno.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/types.h>
+> > +#include <linux/export.h>
+> >
+> >  #include <mach/dma.h>
+> >
+> > --
+> > 1.7.4.1
+> >
+> OK, will apply.
 > 
-> ...
-> Inconsistent kallsyms data
-> This is a bug - please report about it
-> Try make KALLSYMS_EXTRA_PASS=1 as a workaround
-> make: *** [vmlinux] Error 1
+> BTW, I don't know why the build error/warning was not happened in my tree with
+> s3c6400_defconfig. Probably other file having it?...
 > 
-> And it seems due to add condition around the 'static unsigned
-> s3c24xx_gpio_getcfg_abank()'.
-> 
-> I need to check it in detail and if any problems, let you know.
-> 
-There is no above problem now in my -next. Applied.
+Hi Axel,
+
+When I applied this in my tree, happened following error with s3c6400_defconfig.
+
+arch/arm/plat-samsung/s3c-dma-ops.c:17: fatal error: linux/export.h: No such file or directory
+
+Probably the <linux/export.h> file has been added from other tree.
+So if required, will fix with this during upcoming merge window maybe at end of.
+
 Thanks.
 
 Best regards,
