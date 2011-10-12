@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab1JLB2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 21:28:46 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11257 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab1JLB2p (ORCPT
+	id S1752139Ab1JLBpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 21:45:44 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:36608 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750980Ab1JLBpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 21:28:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=TvLiTS5Vston0u4Ee13k2KIHtkD6cuDAkGXv5nSSlFLeCu8hIPOAYeBDCuTYgKT/n
-	t7yYpSkHo+0vTLxLL6Ong==
-From: Muraliraja Muniraju <muralira@google.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Murali Raja <muralira@google.com>
-Subject: [PATCH v3] net-netlink: Add a new attribute to expose TOS values via netlink
-Date: Tue, 11 Oct 2011 18:28:07 -0700
-Message-Id: <1318382887-31824-1-git-send-email-muralira@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
-References: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
+	Tue, 11 Oct 2011 21:45:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18yAr90qGky5oK/8OifT9kDtqz+HlEVhLWniOXIPT
+	AJ5DDknL05ESol
+Subject: Re: [patch] cpusets, cgroups: disallow attaching kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <htejun@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <alpine.DEB.2.00.1110111821270.10060@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <20111010164339.GA8100@google.com> <1318342087.14615.5.camel@twins>
+	 <1318352236.6194.22.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1110111821270.10060@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Oct 2011 03:45:37 +0200
+Message-ID: <1318383937.6299.6.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Raja <muralira@google.com>
+On Tue, 2011-10-11 at 18:22 -0700, David Rientjes wrote:
+> On Tue, 11 Oct 2011, Mike Galbraith wrote:
+> 
+> > I don't know of anything other than kthreadd where moving it here, or
+> > over yonder matters one bit.
+> > 
+> 
+> Clear PF_THREAD_BOUND for watchdog or migration kthreads and change their 
+> affinity or move them into a cpuset where cpuset.cpus doesn't include the 
+> cpu they are bound to and it'll be obvious.
 
-This patch exposes the tos value for the TCP sockets when the TOS flag
-is requested in the ext_flags for the inet_diag request. This would mainly be
-used to expose TOS values for both for TCP and UDP sockets. Currently it is
-supported for TCP. When netlink support for UDP would be added the support
-to expose the TOS values would alse be done.
+Sure, I mean where Joe User can trip over an existing stumbling block.
 
-Signed-off-by: Murali Raja <muralira@google.com>
----
-Changelog since v2:
-- Adding support for IPV6 class and using right API's
-Changelog since v1:
-- Removing reserved field 
-
- include/linux/inet_diag.h |    9 ++++++++-
- net/ipv4/inet_diag.c      |    5 +++++
- 2 files changed, 13 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
-index bc8c490..e36093d 100644
---- a/include/linux/inet_diag.h
-+++ b/include/linux/inet_diag.h
-@@ -97,9 +97,10 @@ enum {
- 	INET_DIAG_INFO,
- 	INET_DIAG_VEGASINFO,
- 	INET_DIAG_CONG,
-+	INET_DIAG_TOS,
- };
- 
--#define INET_DIAG_MAX INET_DIAG_CONG
-+#define INET_DIAG_MAX INET_DIAG_TOS
- 
- 
- /* INET_DIAG_MEM */
-@@ -120,6 +121,12 @@ struct tcpvegas_info {
- 	__u32	tcpv_minrtt;
- };
- 
-+/* INET_DIAG_TOS */
-+
-+struct inet_diag_tos {
-+	__u8	idiag_tos;
-+};
-+
- #ifdef __KERNEL__
- struct sock;
- struct inet_hashinfo;
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 389a2e6..f5e2bda 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -108,6 +108,9 @@ static int inet_csk_diag_fill(struct sock *sk,
- 		       icsk->icsk_ca_ops->name);
- 	}
- 
-+	if ((ext & (1 << (INET_DIAG_TOS - 1))) && (sk->sk_family != AF_INET6))
-+		RTA_PUT_U8(skb, INET_DIAG_TOS, inet->tos);
-+
- 	r->idiag_family = sk->sk_family;
- 	r->idiag_state = sk->sk_state;
- 	r->idiag_timer = 0;
-@@ -130,6 +133,8 @@ static int inet_csk_diag_fill(struct sock *sk,
- 			       &np->rcv_saddr);
- 		ipv6_addr_copy((struct in6_addr *)r->id.idiag_dst,
- 			       &np->daddr);
-+		if (ext & (1 << (INET_DIAG_TOS - 1)))
-+			RTA_PUT_U8(skb, INET_DIAG_TOS, np->tclass);
- 	}
- #endif
- 
--- 
-1.7.3.1
+	-Mike
 
