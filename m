@@ -1,42 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1JLHxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 03:53:21 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:40330 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751743Ab1JLHxT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 03:53:19 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
-        linux-input@vger.kernel.org
-Subject: Re: Re: [PATCH v2 2/6] MFD: twl6040: Cache the vibra control registers
-Date: Wed, 12 Oct 2011 10:53:18 +0300
-Message-ID: <2683250.RVKxy9YcCb@barack>
-User-Agent: KMail/4.7.2 (Linux/3.0.4-gentoo; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <20111011144824.GE1098@sirena.org.uk>
-References: <1316760584-27426-1-git-send-email-peter.ujfalusi@ti.com> <1316760584-27426-3-git-send-email-peter.ujfalusi@ti.com> <20111011144824.GE1098@sirena.org.uk>
+	id S1752738Ab1JLHz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 03:55:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64847 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743Ab1JLHz4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 03:55:56 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+In-Reply-To: <CAOULuOYy3HKbmFa8e9MFDCrduQKZhzgZ2CTskXTWxKCmFNRSRQ@mail.gmail.com>
+References: <20111006190526.GA13883@redhat.com> <CAOULuOYy3HKbmFa8e9MFDCrduQKZhzgZ2CTskXTWxKCmFNRSRQ@mail.gmail.com>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Wed, 12 Oct 2011 09:55:36 +0200
+Message-ID: <CALxABCaNGyu5Ef+eRVXQ_JPaKUNjQ6OS76Suix4BM3YryrNXNQ@mail.gmail.com>
+Subject: Re: RFC: virtualbox tainting.
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 11 October 2011 15:48:24 Mark Brown wrote:
-> It strikes me that it might be useful to just convert the driver to
-> regmap and get cache for everything...
+On Wed, Oct 12, 2011 at 02:57, Parag Warudkar <parag.lkml@gmail.com> wrote:
+> Why can't the automatic bug filing tools have a user space list of
+> offending modules that it can use to opt out of automatically filing
+> kernel bugs? ...
 
-Good idea, I'll take a look at regmap
- 
-> Anyway, could you please restructure this series to minimize the
-> dependency on the input subsystem?  Then we can get the rest of it
-> applied.
-
-Will send the v3 series soon.
-
---
-Péter
+Maybe because an oops is not always conveniently accompanied by enough
+information
+to opt-out.
