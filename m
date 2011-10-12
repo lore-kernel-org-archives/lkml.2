@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1JLMl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 08:41:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55884 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab1JLMl6 convert rfc822-to-8bit (ORCPT
+	id S1753161Ab1JLMmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:42:35 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:44574 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab1JLMmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 08:41:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
-References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
-	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
-Date: Wed, 12 Oct 2011 13:41:57 +0100
-Message-ID: <CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
-From: Dave Airlie <airlied@gmail.com>
-To: Sumit Semwal <sumit.semwal@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        linux@arm.linux.org.uk, arnd@arndb.de, jesse.barker@linaro.org,
-        daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 12 Oct 2011 08:42:33 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-dc-4e958b375e38
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Tushar Behera'" <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+References: <1317612559-8930-1-git-send-email-tushar.behera@linaro.org>
+ <20111004183840.GH2870@ponder.secretlab.ca>
+In-reply-to: 
+Subject: RE: [PATCH] gpio/samsung: Move SoC specific codes within macro
+Date: Wed, 12 Oct 2011 21:42:32 +0900
+Message-id: <069501cc88dc$695fa400$3c1eec00$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyC1dy+uPOekvC0R32rCKge0AHmewAHUBcQAXeTnwA=
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 10:23 AM, Sumit Semwal <sumit.semwal@ti.com> wrote:
-> This is the first step in defining a dma buffer sharing mechanism.
->
-> A new buffer object dma_buf is added, with operations and API to allow easy
-> sharing of this buffer object across devices.
->
-> The framework allows:
-> - a new buffer-object to be created with fixed size.
-> - different devices to 'attach' themselves to this buffer, to facilitate
->  backing storage negotiation, using dma_buf_attach() API.
-> - association of a file pointer with each user-buffer and associated
->   allocator-defined operations on that buffer. This operation is called the
->   'export' operation.
-> - this exported buffer-object to be shared with the other entity by asking for
->   its 'file-descriptor (fd)', and sharing the fd across.
-> - a received fd to get the buffer object back, where it can be accessed using
->   the associated exporter-defined operations.
-> - the exporter and user to share the scatterlist using get_scatterlist and
->   put_scatterlist operations.
->
-> Atleast one 'attach()' call is required to be made prior to calling the
-> get_scatterlist() operation.
->
-> Couple of building blocks in get_scatterlist() are added to ease introduction
-> of sync'ing across exporter and users, and late allocation by the exporter.
->
-> mmap() file operation is provided for the associated 'fd', as wrapper over the
-> optional allocator defined mmap(), to be used by devices that might need one.
+Kukjin Kim wrote:
+> 
+> Grant Likely wrote:
+> >
+> > On Mon, Oct 03, 2011 at 08:59:19AM +0530, Tushar Behera wrote:
+> > > In drivers/gpio/gpio-samsung.c, there are certain structures
+> > > and functions which are not getting used if the particular
+> > > CPU is not selected. These code segments are moved under CPU
+> > > specific macros to remove compilation warnings.
+> > >
+> > > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> >
+> > Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> >
+> When I applied, following error was happened with s5p64x0_defconfig.
+Others, ok.
+> 
+> ...
+> Inconsistent kallsyms data
+> This is a bug - please report about it
+> Try make KALLSYMS_EXTRA_PASS=1 as a workaround
+> make: *** [vmlinux] Error 1
+> 
+> And it seems due to add condition around the 'static unsigned
+> s3c24xx_gpio_getcfg_abank()'.
+> 
+> I need to check it in detail and if any problems, let you know.
+> 
+There is no above problem now in my -next. Applied.
+Thanks.
 
-Why is this needed? it really doesn't make sense to be mmaping objects
-independent of some front-end like drm or v4l.
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-how will you know what contents are in them, how will you synchronise
-access. Unless someone has a hard use-case for this I'd say we drop it
-until someone does.
-
-Dave.
