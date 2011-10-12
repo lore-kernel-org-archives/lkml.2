@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1JLHcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 03:32:09 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41931 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625Ab1JLHcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 03:32:07 -0400
-Date: Wed, 12 Oct 2011 09:30:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com
-Subject: Re: [PATCH 1/3] x86, reboot:  Use NMI instead of REBOOT_VECTOR to
- stop cpus
-Message-ID: <20111012073025.GI18618@elte.hu>
-References: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
- <1318346686-12349-2-git-send-email-dzickus@redhat.com>
+	id S1752614Ab1JLHda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 03:33:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27574 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1JLHd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 03:33:29 -0400
+Message-ID: <4E95429E.2060100@oracle.com>
+Date: Wed, 12 Oct 2011 00:32:46 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318346686-12349-2-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/5 resend] x86, ioapic: Clean up ioapic idx and apic id usage
+References: <4E1F0BC9.1040102@kernel.org> <CAErSpo5CzU2j81moWLsHDoRxTs5107=AEAWYi3ezy3Xfw86qiQ@mail.gmail.com> <4E29BEEA.4020600@kernel.org> <20110725072831.GB22518@elte.hu>
+In-Reply-To: <20110725072831.GB22518@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet23.oracle.com [156.151.31.71]
+X-CT-RefId: str=0001.0A090203.4E9542AD.007A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Resending x86/ioapic clean up patches.
 
-* Don Zickus <dzickus@redhat.com> wrote:
+it will make sure ioapic_idx is used instead of ioapic or apic_idx to used as index.
 
-> +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> +					 NMI_FLAG_FIRST, "smp_stop"))
-> +			return;		/* return what? */
+[PATCH 1/5] x86, ioapic: Passing irq_attr struct pointer with setup_ioapic_irq()
+[PATCH 2/5] x86, ioapic: Split setup_ioapic_entry for interrupt remapped version
+[PATCH 3/5] x86, ioapic: Print out irte with right ioapic index
+[PATCH 4/5] x86, ioapic: Seperate print_IO_APIC() to only print one io apic
+[PATCH 5/5] x86, ioapic: Clean up ioapic/apic_id usage
 
-That comment looks a bit odd.
+patch1, 2, 4, 5 are cleanup related
+patch3 fixes the one idx printout.
 
-Thanks,
+Thanks
 
-	Ingo
+Yinghai Lu
