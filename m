@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab1JLM3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 08:29:37 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:33949 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab1JLM1l (ORCPT
+	id S1753197Ab1JLM3o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:29:44 -0400
+Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:54889 "EHLO
+	WA2EHSNDR003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753173Ab1JLM3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 08:27:41 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 08/13] drbd: Rename DRBD_ADM_NEED_{CONN -> RESOURCE}
-Date: Wed, 12 Oct 2011 14:27:30 +0200
-Message-Id: <1318422455-17539-9-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com>
-References: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com>
+	Wed, 12 Oct 2011 08:29:41 -0400
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: -11
+X-BigFish: VS-11(z21eNz14e0M98dKzz1202h1082kzzz2dh87h2a8h668h839h944h41h42h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:94.101.220.16;KIP:(null);UIP:(null);IPVD:NLI;H:nzt0015e.dknz.nzcorp.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 12 Oct 2011 14:29:33 +0200
+From: Anders Ossowicki <aowi@novozymes.com>
+To: Dave Chinner <david@fromorbit.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aradford@gmail.com" <aradford@gmail.com>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
+Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O load
+Message-ID: <20111012122933.GA3719@otto.nzcorp.net>
+Reply-To: <aowi@novozymes.com>
+Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"aradford@gmail.com" <aradford@gmail.com>,
+	"xfs@oss.sgi.com" <xfs@oss.sgi.com>
+References: <20111011091757.GA32589@otto.nzcorp.net>
+ <20111011133448.GA10692@infradead.org>
+ <20111011141338.GA11808@otto.nzcorp.net>
+ <20111012003526.GI3159@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111012003526.GI3159@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SMTP-Mail-From: aowi@otto.nzcorp.net
+X-OriginatorOrg: novozymes.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+On Wed, Oct 12, 2011 at 02:35:26AM +0200, Dave Chinner wrote:
+> Memory corruption can be caused by more than just a bad memory
+> stick. You've got a brand new driver running your brand new
+> controller and it may still have bugs - it might be scribbling over
+> memory it doesn't own because of off-by-one index errors, etc. It's
+> much more likely that that new hardware or driver code is the cause
+> of your problem than an undetected ECC memory error or core VM
+> problem.
+Ah, now that I agree on. A few more observations from today's experiments:
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_nl.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+First of all, there are two MegaRAID controllers in the machine. The 
+old'n'reliable 8888ELP and the new'n'wonky 9285-8e. Both are using the megaraid
+driver and the 8888ELP card ran with the megaraid driver prior to the 
+refactoring that introduced support for 9285-8e without a hitch for about a
+year.
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 0c07baf..a834097 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -165,7 +165,7 @@ int drbd_msg_put_info(const char *info)
-  * If it returns successfully, adm_ctx members are valid.
-  */
- #define DRBD_ADM_NEED_MINOR	1
--#define DRBD_ADM_NEED_CONN	2
-+#define DRBD_ADM_NEED_RESOURCE	2
- static int drbd_adm_prepare(struct sk_buff *skb, struct genl_info *info,
- 		unsigned flags)
- {
-@@ -230,18 +230,18 @@ static int drbd_adm_prepare(struct sk_buff *skb, struct genl_info *info,
- 		drbd_msg_put_info("unknown minor");
- 		return ERR_MINOR_INVALID;
- 	}
--	if (!adm_ctx.tconn && (flags & DRBD_ADM_NEED_CONN)) {
--		drbd_msg_put_info("unknown connection");
-+	if (!adm_ctx.tconn && (flags & DRBD_ADM_NEED_RESOURCE)) {
-+		drbd_msg_put_info("unknown resource");
- 		return ERR_INVALID_REQUEST;
- 	}
- 
- 	/* some more paranoia, if the request was over-determined */
- 	if (adm_ctx.mdev && adm_ctx.tconn &&
- 	    adm_ctx.mdev->tconn != adm_ctx.tconn) {
--		pr_warning("request: minor=%u, conn=%s; but that minor belongs to connection %s\n",
-+		pr_warning("request: minor=%u, resource=%s; but that minor belongs to connection %s\n",
- 				adm_ctx.minor, adm_ctx.resource_name,
- 				adm_ctx.mdev->tconn->name);
--		drbd_msg_put_info("minor exists in different connection");
-+		drbd_msg_put_info("minor exists in different resource");
- 		return ERR_INVALID_REQUEST;
- 	}
- 	if (adm_ctx.mdev &&
-@@ -1909,7 +1909,7 @@ int drbd_adm_net_opts(struct sk_buff *skb, struct genl_info *info)
- 	int rsr; /* re-sync running */
- 	struct crypto crypto = { };
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
-@@ -2042,7 +2042,7 @@ int drbd_adm_connect(struct sk_buff *skb, struct genl_info *info)
- 	int i;
- 	int err;
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
-@@ -2219,7 +2219,7 @@ int drbd_adm_disconnect(struct sk_buff *skb, struct genl_info *info)
- 	enum drbd_ret_code retcode;
- 	int err;
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
-@@ -2371,7 +2371,7 @@ int drbd_adm_resource_opts(struct sk_buff *skb, struct genl_info *info)
- 	struct res_opts res_opts;
- 	int err;
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
-@@ -3063,7 +3063,7 @@ int drbd_adm_add_minor(struct sk_buff *skb, struct genl_info *info)
- 	struct drbd_genlmsghdr *dh = info->userhdr;
- 	enum drbd_ret_code retcode;
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
-@@ -3207,7 +3207,7 @@ int drbd_adm_del_resource(struct sk_buff *skb, struct genl_info *info)
- {
- 	enum drbd_ret_code retcode;
- 
--	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_CONN);
-+	retcode = drbd_adm_prepare(skb, info, DRBD_ADM_NEED_RESOURCE);
- 	if (!adm_ctx.reply_skb)
- 		return retcode;
- 	if (retcode != NO_ERROR)
+We've gotten to a point where we can reliably reproduce this by running certain
+queries in postgresql when data from the disk is cached. E.g 
+ foo=# select count(*) from foo.sequence;
+ ERROR:  invalid page header in block 529134 of relation base/16385/58318945
+
+If we echo 3 >/proc/sys/vm/drop_caches and reload postgres, the same queries
+work. This does indeed smell like memory corruption.
+
+The 9285-8e controller has FastPath enabled.
+
+> FWIW, if it's a repeatable problem, you might want to update the
+> driver and controller firmware to something more recent and see if
+> that solves the problem....
+I upgraded the firmware (post-accident) but we're still seeing the corruption.
 -- 
-1.7.4.1
+Anders
 
