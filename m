@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab1JLBpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 21:45:44 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:36608 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750980Ab1JLBpn (ORCPT
+	id S1752161Ab1JLBzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 21:55:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56154 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab1JLBzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 21:45:43 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18yAr90qGky5oK/8OifT9kDtqz+HlEVhLWniOXIPT
-	AJ5DDknL05ESol
-Subject: Re: [patch] cpusets, cgroups: disallow attaching kthreadd
-From: Mike Galbraith <efault@gmx.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <htejun@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <alpine.DEB.2.00.1110111821270.10060@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	 <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	 <1316770936.6641.11.camel@marge.simson.net>
-	 <1316775204.7562.9.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	 <1316788392.6544.33.camel@marge.simson.net>
-	 <1318224892.6161.45.camel@marge.simson.net>
-	 <1318233815.6527.5.camel@marge.simson.net>
-	 <20111010164339.GA8100@google.com> <1318342087.14615.5.camel@twins>
-	 <1318352236.6194.22.camel@marge.simson.net>
-	 <alpine.DEB.2.00.1110111821270.10060@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 03:45:37 +0200
-Message-ID: <1318383937.6299.6.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Tue, 11 Oct 2011 21:55:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1711499402.60485.1318380603125.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+References: <CAKYAXd_MJy_3TAoM_buCmP5g3j1e=Vh5vZPJP9O_nxDrWiHsAw@mail.gmail.com>
+	<1711499402.60485.1318380603125.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Date: Wed, 12 Oct 2011 10:55:08 +0900
+Message-ID: <CAKYAXd_HAv5+kg26tGLZcDHWmD2MoQFFTwoDtFuvsqgZTcPJwA@mail.gmail.com>
+Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree
+ for Oct 11 (mmc))
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Andrei Warkentin <awarkentin@vmware.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-10-11 at 18:22 -0700, David Rientjes wrote:
-> On Tue, 11 Oct 2011, Mike Galbraith wrote:
-> 
-> > I don't know of anything other than kthreadd where moving it here, or
-> > over yonder matters one bit.
-> > 
-> 
-> Clear PF_THREAD_BOUND for watchdog or migration kthreads and change their 
-> affinity or move them into a cpuset where cpuset.cpus doesn't include the 
-> cpu they are bound to and it'll be obvious.
-
-Sure, I mean where Joe User can trip over an existing stumbling block.
-
-	-Mike
-
+2011/10/12 Andrei Warkentin <awarkentin@vmware.com>:
+> Hi,
+>
+> ----- Original Message -----
+>> From: "NamJae Jeon" <linkinjeon@gmail.com>
+>> To: "Andrei Warkentin" <awarkentin@vmware.com>
+>> Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris Ball"
+>> <cjb@laptop.org>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Randy Dunlap" <rdunlap@xenotime.net>
+>> Sent: Tuesday, October 11, 2011 8:16:51 PM
+>> Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree for Oct 11 (mmc))
+>>
+>> 2011/10/12 Andrei Warkentin <awarkentin@vmware.com>:
+>> > ----- Original Message -----
+>> >> From: "NamJae Jeon" <linkinjeon@gmail.com>
+>> >> To: "Randy Dunlap" <rdunlap@xenotime.net>, "Andrei Warkentin"
+>> >> <awarkentin@vmware.com>
+>> >> Cc: linux-next@vger.kernel.org, "LKML"
+>> >> <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris
+>> >> Ball"
+>> >> <cjb@laptop.org>, "Stephen Rothwell" <sfr@canb.auug.org.au>
+>> >> Sent: Tuesday, October 11, 2011 7:20:48 PM
+>> >> Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was:
+>> >> linux-next: Tree for Oct 11 (mmc))
+>> >>
+>> >> Hi Randy, Andrei.
+>> >>
+>> >> I suggest third option for this.
+>> >> As you know, MMC like ATA Driver and SCSI Driver etc.. can not
+>> >> enable
+>> >> without CONFIG_BLOCK
+>> >> So I think that mmc should be depended from CONFIG_BLOCK like
+>> >> other
+>> >> block device driver.
+>> >> see the their Kconfig. How do you think ?
+>> >
+>> > MMC core doesn't not imply MMC_BLOCK. You could well use SDIO
+>> > devices via MMC without any flash storage whatsoever.
+>> > What I want to say is that MMC_BLOCK already depends on BLOCK. MMC,
+>> > however, has no such functional dependence, as it
+>> > just (effectively) provides bus and device enumeration. So I think
+>> > the better solution is wrapping all MMC partition
+>> > code within mmc/core/mmc.c and card.h with CONFIG_BLOCK.
+>> yes, you're right, I found it after sending mail. If so, should I
+>> wrap
+>> CONFIG_MMC_BLOCK instead of CONFIG_MMC ? After I add CONFIG_MMC_BLOCK
+>> in core/mmc.c, card.h, I can see compile is okay.
+>> Thanks.
+>> >
+>
+> I am not sure if it should be CONFIG_MMC_BLOCK or CONFIG_BLOCK. After all, the
+> code you're wrapping doesn't really depend on CONFIG_MMC_BLOCK, it gets consumed by it, and
+> it depends (in using that one define) only on CONFIG_BLOCK. Maybe I'm overthinking it
+> and the code should just define it's own MAX_MMC_PART_NAME to be like 10 or something.
+yes, I agree your opinion,  If we define it is easy to solve.
+I will send new patch for it today.
+Thanks.
+>
+> A
+>
