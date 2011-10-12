@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1JLR4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 13:56:34 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60997 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751580Ab1JLR4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 13:56:33 -0400
-Date: Wed, 12 Oct 2011 18:55:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] pata_serverworks: cleanup cable detection
-Message-ID: <20111012185548.4fa03544@lxorguk.ukuu.org.uk>
-In-Reply-To: <201110121705.39026.bzolnier@gmail.com>
-References: <201110112011.44748.bzolnier@gmail.com>
-	<20111011205141.7a8bac1c@lxorguk.ukuu.org.uk>
-	<201110121705.39026.bzolnier@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753811Ab1JLR53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 13:57:29 -0400
+Received: from fieldses.org ([174.143.236.118]:44491 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751855Ab1JLR52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 13:57:28 -0400
+Date: Wed, 12 Oct 2011 13:57:02 -0400
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Theodore Tso <tytso@MIT.EDU>, Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+Message-ID: <20111012175702.GA23231@fieldses.org>
+References: <20111007160113.GB14201@tango.0pointer.de>
+ <m17h4g2jqy.fsf@fess.ebiederm.org>
+ <20111010163140.GA22191@tango.0pointer.de>
+ <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org>
+ <20111011020530.GG16723@count0.beaverton.ibm.com>
+ <20111011032523.GB7948@thunk.org>
+ <m1ty7ghvvn.fsf@fess.ebiederm.org>
+ <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu>
+ <m17h4bfcuv.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m17h4bfcuv.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 17:05:38 +0200
-Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-
-> Alan Cox wrote:
+On Tue, Oct 11, 2011 at 02:16:24PM -0700, Eric W. Biederman wrote:
+> It actually isn't much complexity and for the most part the code that
+> I care about in that area is already merged.  In principle all I care
+> about are having the identiy checks go from:
+> (uid1 == uid2) to ((user_ns1 == user_ns2) && (uid1 == uid2))
 > 
-> > On Tue, 11 Oct 2011 20:11:44 +0200
-> > Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
-> > 
-> > > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > > Subject: [PATCH] pata_serverworks: cleanup cable detection
-> > > 
-> > > Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> > 
-> > Again no documentation although its at least a bit more obvious why
+> There are some per subsystem sysctls that do make sense to make per
+> subsystem and that work is mostly done.  I expect there are a few
+> more in the networking stack that interesting to make per network
+> namespace.
 > 
-> The patch only merges identical cable routines for Dell and Sun
-> systems into common oem_cable() one.  No behavior changes here.
+> The only real world issue right now that I am aware of is the user
+> namespace aren't quite ready for prime-time and so people run into
+> issues where something like sysctl -a during bootup sets a bunch of
+> sysctls and they change sysctls they didn't mean to.  Once the
+> user namespaces are in place accessing a truly global sysctl will
+> result in EPERM when you are in a container and everyone will be
+> happy. ;)
+> 
+> 
+> Where all of this winds up interesting in the field of oncoming kernel
+> work is that uids are persistent and are stored in file systems.  So
+> once we have all of the permission checks in the kernel tweaked to care
+> about user namespaces we next look at the filesystems.   The easy
+> initial implementation is going to be just associating a user namespace
+> with a super block.  But farther out being able to store uids from
+> different user namespaces on the same filesystem becomes an interesting
+> problem.
 
-So put that that in the patch info. It seems fine to me but it ought to
-be there
+Yipes.  Why would anyone want to do that?
+
+--b.
+
+> We already have things like user mapping in 9p and nfsv4 so it isn't
+> wholly uncharted territory.  But it could get interesting.   Just
+> a heads up.
