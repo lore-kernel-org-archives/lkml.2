@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1JLFaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 01:30:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:38763 "EHLO
+	id S1752418Ab1JLFe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 01:34:57 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:54199 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab1JLFaY (ORCPT
+	with ESMTP id S1751256Ab1JLFe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 01:30:24 -0400
-Date: Wed, 12 Oct 2011 16:30:22 +1100
+	Wed, 12 Oct 2011 01:34:56 -0400
+Date: Wed, 12 Oct 2011 16:34:52 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: Re: linux-next: manual merge of the staging tree with the pm tree
-Message-Id: <20111012163022.1d7a57974a8bdf86f8aee051@canb.auug.org.au>
-In-Reply-To: <20111012162805.1056a7f7fe3f1140d767a601@canb.auug.org.au>
-References: <20111012162805.1056a7f7fe3f1140d767a601@canb.auug.org.au>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the staging tree with the tip tree
+Message-Id: <20111012163452.7f1822bb8dca107daf26d28b@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Oct_2011_16_30_22_+1100_cfsdwJLsM6xc.7=9"
+ boundary="Signature=_Wed__12_Oct_2011_16_34_52_+1100_KjS2T1Z9eTTy_3/i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Oct_2011_16_30_22_+1100_cfsdwJLsM6xc.7=9
+--Signature=_Wed__12_Oct_2011_16_34_52_+1100_KjS2T1Z9eTTy_3/i
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi Greg,
 
-On Wed, 12 Oct 2011 16:28:05 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/Kconfig between commit a3c98b8b2ede ("PM: Introduce devfreq:
-> generic DVFS framework with device-specific OPPs") from the pm tree and
-> commit 46a971913611 ("Staging: hv: move hyperv code out of staging
-> directory") from the staging tree.
->=20
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/hv/Makefile between commit 6f4151c89b7d ("x86: Hyper-V:
+Integrate the clocksource with Hyper-V detection code") from the tip tree
+and commit 46a971913611 ("Staging: hv: move hyperv code out of staging
+directory") from the staging tree.
 
-Also drivers/Makefile.
-
+I fixed it up (see below) and can carry the fix as necessary.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/Makefile
-index 97c957b,ef693cf..0000000
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@@ -127,5 -127,5 +127,6 @@@ obj-$(CONFIG_IOMMU_SUPPORT)	+=3D iommu
+diff --cc drivers/staging/hv/Makefile
+index 14e3c6a,e071c12..0000000
+--- a/drivers/staging/hv/Makefile
++++ b/drivers/staging/hv/Makefile
+@@@ -1,14 -1,7 +1,6 @@@
+- obj-$(CONFIG_HYPERV)		+=3D hv_vmbus.o
+ -obj-$(CONFIG_HYPERV)		+=3D hv_timesource.o
+  obj-$(CONFIG_HYPERV_STORAGE)	+=3D hv_storvsc.o
+- obj-$(CONFIG_HYPERV_BLOCK)	+=3D hv_blkvsc.o
+  obj-$(CONFIG_HYPERV_NET)	+=3D hv_netvsc.o
+- obj-$(CONFIG_HYPERV_UTILS)	+=3D hv_utils.o
+  obj-$(CONFIG_HYPERV_MOUSE)	+=3D hv_mouse.o
  =20
-  # Virtualization drivers
-  obj-$(CONFIG_VIRT_DRIVERS)	+=3D virt/
-+ obj-$(CONFIG_HYPERV)		+=3D hv/
- =20
- +obj-$(CONFIG_PM_DEVFREQ)	+=3D devfreq/
+- hv_vmbus-y :=3D vmbus_drv.o \
+- 		 hv.o connection.o channel.o \
+- 		 channel_mgmt.o ring_buffer.o
+- hv_storvsc-y :=3D storvsc_drv.o storvsc.o
+- hv_blkvsc-y :=3D blkvsc_drv.o  storvsc.o
++ hv_storvsc-y :=3D storvsc_drv.o
+  hv_netvsc-y :=3D netvsc_drv.o netvsc.o rndis_filter.o
+- hv_utils-y :=3D hv_util.o hv_kvp.o
 
---Signature=_Wed__12_Oct_2011_16_30_22_+1100_cfsdwJLsM6xc.7=9
+--Signature=_Wed__12_Oct_2011_16_34_52_+1100_KjS2T1Z9eTTy_3/i
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOlSXuAAoJEECxmPOUX5FE50UP/j7BAthslv3rfzea4oWJzxfQ
-RErpqcHgSOjId758aRLzzmKDsPuiwdFX1b3DJD2i3/LfCTcNJzWOJIFITbREh4Sm
-DauLb1Pn9hqait7o76fuaUM4rpoqKY95Doz+Bc6XCOveuuol5+7DMPqc4iClyFa9
-f6svyK6S83u2iTxlnX1o5teVn5OGvzfUvxuVBGR+vdC5bXk+krP34xr9AVQ5xbfW
-SSjO8SpCJKOh4nur/FnWkI3DKTavtJS7WHm3MkwJtjbBFDTx86SjGgtdryC0wEKN
-y3EeNBDhF2vbt/VEpMXq+AFpPC+0mLZKjeUlPtkszx5i3z/0R5YWgdKSs09QP29R
-RTugEbkxHMQCoqUMxTSQBLxKGz+Nh1+PK1NaxiyK3HpUFSZRKq2eZdvSEve1sSU2
-IVkvexOF5YDwCmq0lbTBIZS6JYUqhOVxKHrikASYj7kHvchp/5lrQoR1FE+7xH8X
-N+NIGehvkzotG1Bij1jre12RIYegSHxseF2HmCA21B+EBE174gbSh6Qx43IFBX2Y
-tvrNChGMuiicSs9ThkBmEhRo2tQpDyfm2wSHaD8NZqGCdQ+j9bri3JVqUkxfVtLr
-dV0yyxCWZ0Pe14R+F2U7PeCUEw4zFqK5uAAwHSMan1rXIlr87fiDmtjuP/OMv+yk
-zZ4zhnhe7d2+wPLnqj0A
-=Bzbx
+iQIcBAEBCAAGBQJOlSb8AAoJEECxmPOUX5FEgZ8P/0XZqluX3ndm994fm36Xgp/n
+AmsR//7QjK7FBKd80v35dP6QlILyhupwi3cjj2J4+umOWx9fPKvuHn7OwAkbTANV
+wy3pfMeIk3EBzN9KuS4kRJUemkS37encdzDG7AEH7lUHIDzfsM2zKGWLYIFomrlm
+mZlXnAvVgfvYnUmqgel3BIv/sV8DFPbR85xz4VeVyvISpYgu7AQsSKvlyRKNGFO/
+A4DWDzGsJr8Daa3Lpi1HWqwNY1WYF/E8ZgbeSDF/qUp7T//a5RkNdn/wXB3OnGpE
+tIx0RCFDoNZbn6S01U+rqbdAWXAo4qKNpV7P4yRgnqWJc58uoAjauXMPxPSVDSEK
+U7hyJVRW0dlo6aZLvAwa4WNLGIfC69+NzJ4Sd8AqK5K2lrvJA9SKQpDS+DC/yxIy
+Ogn/4a/yjSXNE2bD5f5JFFr3mviASbeLwDFUCqyIuQ7SV8ybDJgJNBtFmkaFsWz+
+03kP7l5mF0bpSl0mrb97/GGwwMJe5Tj10j9FwD62UjeHK0D5vAAexDkEMWzINlA4
+/nXIIUzSM7B90aVdINVz3QW7CSs/WEZEMQ/ZHI33BDHAjZHJRYH7BsMjGfxEVfY0
+cKdl8gEN6nCRcv+GhrMZ4rRHFAuPpRC4Y8fSrJuiWlHhACDPNxvRml/Ep88N37dy
+xC5HetRxN7Wx7T6hBXRT
+=/sly
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__12_Oct_2011_16_30_22_+1100_cfsdwJLsM6xc.7=9--
+--Signature=_Wed__12_Oct_2011_16_34_52_+1100_KjS2T1Z9eTTy_3/i--
