@@ -1,129 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1JLM1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 08:27:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37571 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab1JLM1g (ORCPT
+	id S1753143Ab1JLM1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:27:46 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33943 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1JLM1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 08:27:36 -0400
-From: Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar Karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 1/4] Staging: comedi: fix printk issue in das6402.c
-Date: Wed, 12 Oct 2011 17:56:42 +0530
-Message-Id: <1318422405-12101-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.6.4
+	Wed, 12 Oct 2011 08:27:43 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 12/13] drbd: Rename --dry-run to --tentative
+Date: Wed, 12 Oct 2011 14:27:34 +0200
+Message-Id: <1318422455-17539-13-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com>
+References: <1318422455-17539-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das6402.c file that fixes up a printk warning found by the checkpatch.pl tool
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+drbdadm already has a --dry-run option, so this option cannot directly be
+passed through to drbdsetup.  Rename the drbdsetup option to resolve this
+conflict.
+
+For backward compatibility, make --dry-run an alias of --tentative.
+
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
-Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-Converted printks to dev_printk.
+ drivers/block/drbd/drbd_main.c     |    4 ++--
+ drivers/block/drbd/drbd_receiver.c |    6 +++---
+ include/linux/drbd_genl.h          |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
- drivers/staging/comedi/drivers/das6402.c |   36 ++++++++++-------------------
- 1 files changed, 13 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
-index 6328f52..b6b235d 100644
---- a/drivers/staging/comedi/drivers/das6402.c
-+++ b/drivers/staging/comedi/drivers/das6402.c
-@@ -38,6 +38,8 @@ Devices: [Keithley Metrabyte] DAS6402 (das6402)
- This driver has suffered bitrot.
- */
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index a67b4ca..1f53f95 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -926,7 +926,7 @@ int __drbd_send_protocol(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 	rcu_read_lock();
+ 	nc = rcu_dereference(tconn->net_conf);
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/interrupt.h>
- #include "../comedidev.h"
+-	if (nc->dry_run && tconn->agreed_pro_version < 92) {
++	if (nc->tentative && tconn->agreed_pro_version < 92) {
+ 		rcu_read_unlock();
+ 		mutex_unlock(&sock->mutex);
+ 		conn_err(tconn, "--dry-run is not supported by peer");
+@@ -945,7 +945,7 @@ int __drbd_send_protocol(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 	cf = 0;
+ 	if (nc->discard_my_data)
+ 		cf |= CF_DISCARD_MY_DATA;
+-	if (nc->dry_run)
++	if (nc->tentative)
+ 		cf |= CF_DRY_RUN;
+ 	p->conn_flags    = cpu_to_be32(cf);
  
-@@ -171,24 +173,20 @@ static irqreturn_t intr_handler(int irq, void *d)
- 	struct comedi_subdevice *s = dev->subdevices;
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index ab1d36c..d55a3cb 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2836,7 +2836,7 @@ static enum drbd_conns drbd_sync_handshake(struct drbd_conf *mdev, enum drbd_rol
+ 	enum drbd_conns rv = C_MASK;
+ 	enum drbd_disk_state mydisk;
+ 	struct net_conf *nc;
+-	int hg, rule_nr, rr_conflict, dry_run;
++	int hg, rule_nr, rr_conflict, tentative;
  
- 	if (!dev->attached || devpriv->das6402_ignoreirq) {
--		printk("das6402: BUG: spurious interrupt\n");
-+		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
- 		return IRQ_HANDLED;
+ 	mydisk = mdev->state.disk;
+ 	if (mydisk == D_NEGOTIATING)
+@@ -2916,7 +2916,7 @@ static enum drbd_conns drbd_sync_handshake(struct drbd_conf *mdev, enum drbd_rol
+ 			     (hg < 0) ? "peer" : "this");
  	}
--#ifdef DEBUG
--	printk("das6402: interrupt! das6402_irqcount=%i\n",
--	       devpriv->das6402_irqcount);
--	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
--#endif
-+	dev_dbg(dev->hw_dev, "interrupt! das6402_irqcount=%i\n",
-+		devpriv->das6402_irqcount);
-+	dev_dbg(dev->hw_dev, "iobase+2=%i\n", inw_p(dev->iobase + 2));
+ 	rr_conflict = nc->rr_conflict;
+-	dry_run = nc->dry_run;
++	tentative = nc->tentative;
+ 	rcu_read_unlock();
  
- 	das6402_ai_fifo_dregs(dev, s);
- 
- 	if (s->async->buf_write_count >= devpriv->ai_bytes_to_read) {
- 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
- 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
--#ifdef DEBUG
--		printk("das6402: Got %i samples\n\n",
--		       devpriv->das6402_wordsread - diff);
--#endif
-+		dev_dbg(dev->hw_dev, "Got %i samples\n\n",
-+			devpriv->das6402_wordsread - diff);
- 		s->async->events |= COMEDI_CB_EOA;
- 		comedi_event(dev, s);
+ 	if (hg == -100) {
+@@ -2949,7 +2949,7 @@ static enum drbd_conns drbd_sync_handshake(struct drbd_conf *mdev, enum drbd_rol
+ 		}
  	}
-@@ -228,9 +226,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
- 	 */
  
- 	devpriv->das6402_ignoreirq = 1;
--#ifdef DEBUG
--	printk("das6402: Stopping acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
- 	devpriv->das6402_ignoreirq = 1;
- 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
-@@ -247,9 +243,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
- {
- 	devpriv->das6402_ignoreirq = 1;
+-	if (dry_run || test_bit(CONN_DRY_RUN, &mdev->tconn->flags)) {
++	if (tentative || test_bit(CONN_DRY_RUN, &mdev->tconn->flags)) {
+ 		if (hg == 0)
+ 			dev_info(DEV, "dry-run connect: No resync, would become Connected immediately.\n");
+ 		else
+diff --git a/include/linux/drbd_genl.h b/include/linux/drbd_genl.h
+index b93db6c..e879a93 100644
+--- a/include/linux/drbd_genl.h
++++ b/include/linux/drbd_genl.h
+@@ -164,7 +164,7 @@ GENL_struct(DRBD_NLA_NET_CONF, 5, net_conf,
+ 	__flg_field(25, DRBD_GENLA_F_MANDATORY | DRBD_F_INVARIANT,	discard_my_data)
+ 	__flg_field_def(26, DRBD_GENLA_F_MANDATORY,	tcp_cork, DRBD_TCP_CORK_DEF)
+ 	__flg_field_def(27, DRBD_GENLA_F_MANDATORY,	always_asbp, DRBD_ALWAYS_ASBP_DEF)
+-	__flg_field(28, DRBD_GENLA_F_MANDATORY | DRBD_F_INVARIANT,	dry_run)
++	__flg_field(28, DRBD_GENLA_F_MANDATORY | DRBD_F_INVARIANT,	tentative)
+ 	__flg_field_def(29,	DRBD_GENLA_F_MANDATORY,	use_rle, DRBD_USE_RLE_DEF)
+ )
  
--#ifdef DEBUG
--	printk("das6402: Starting acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Starting acquisition\n");
- 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
- 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
-@@ -329,10 +323,8 @@ static int das6402_attach(struct comedi_device *dev,
- 	if (iobase == 0)
- 		iobase = 0x300;
- 
--	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
--
- 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -340,12 +332,10 @@ static int das6402_attach(struct comedi_device *dev,
- 	/* should do a probe here */
- 
- 	irq = it->options[0];
--	printk(" ( irq = %u )", irq);
-+	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
- 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
--	if (ret < 0) {
--		printk("irq conflict\n");
-+	if (ret < 0)
- 		return ret;
--	}
- 	dev->irq = irq;
- 
- 	ret = alloc_private(dev, sizeof(struct das6402_private));
 -- 
-1.7.6.4
+1.7.4.1
 
