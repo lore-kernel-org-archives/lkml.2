@@ -1,129 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1JLUEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 16:04:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab1JLUEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 16:04:32 -0400
-Date: Wed, 12 Oct 2011 21:59:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 3.1.0-rc4-tip 26/26]   uprobes: queue signals while
-	thread is singlestepping.
-Message-ID: <20111012195935.GA12269@redhat.com>
-References: <20110920115938.25326.93059.sendpatchset@srdronam.in.ibm.com> <20110920120517.25326.57657.sendpatchset@srdronam.in.ibm.com> <1317128626.15383.61.camel@twins> <20110927131213.GE3685@linux.vnet.ibm.com> <20111005180139.GA5704@redhat.com> <20111006054710.GB17591@linux.vnet.ibm.com> <20111007165828.GA32319@redhat.com> <20111010122556.GB16268@linux.vnet.ibm.com> <20111010182535.GA6934@redhat.com> <20111011172603.GD16268@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011172603.GD16268@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753512Ab1JLUH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 16:07:26 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54508 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab1JLUHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 16:07:25 -0400
+Date: Wed, 12 Oct 2011 13:07:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>,
+        Francois Valenduc <francois.valenduc@tvcablenet.be>,
+        Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH][RFC] acpi: Prevent scheduling while atomic warning in
+ early boot
+Message-Id: <20111012130723.53880e3d.akpm@linux-foundation.org>
+In-Reply-To: <1318445342.13262.54.camel@gandalf.stny.rr.com>
+References: <1318445342.13262.54.camel@gandalf.stny.rr.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11, Srikar Dronamraju wrote:
->
-> --- a/kernel/uprobes.c
-> +++ b/kernel/uprobes.c
-> @@ -1366,6 +1366,26 @@ static bool sstep_complete(struct uprobe *uprobe, struct pt_regs *regs)
->  }
->
+On Wed, 12 Oct 2011 14:49:02 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> I hit the following bug:
+> 
+> ...
+> 
+> The commit 0a7992c90828a65 acpi: fix bogus preemption logic
+> 
+> tried again to fix the preempt logic by encapsulating the
+> ACPI_PREEMPTION_POINT() with a #ifndef CONFIG_PREEMPT and only testing
+> irqsoff. But when CONFIG_PREEMPT=n and CONFIG_DEBUG_ATOMIC_SLEEP=y, the
+> preempt count is still active. This code is called at boot up when
+> preemption is still disabled triggering the above dump.
+> 
+> Ideally, in_atomic() should not be used in general code, but I'm not
+> sure what should be used. This does silent the warning, and it should
+> not be an issue while it is still encapsulated in #ifndef CONFIG_PREEMPT
+> 
+> --- a/include/acpi/platform/aclinux.h
+> +++ b/include/acpi/platform/aclinux.h
+> @@ -59,6 +59,7 @@
+>  #include <linux/ctype.h>
+>  #include <linux/sched.h>
+>  #include <asm/system.h>
+> +#include <linux/hardirq.h>
+>  #include <linux/atomic.h>
+>  #include <asm/div64.h>
+>  #include <asm/acpi.h>
+> @@ -151,10 +152,14 @@ static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
 >  /*
-> + * While we are handling breakpoint / singlestep, ensure that a
-> + * SIGTRAP is not delivered to the task.
-> + */
-> +static void __clear_trap_flag(void)
-> +{
-> +	sigdelset(&current->pending.signal, SIGTRAP);
-> +	sigdelset(&current->signal->shared_pending.signal, SIGTRAP);
-> +}
-> +
-> +static void clear_trap_flag(void)
-> +{
-> +	if (!test_and_clear_thread_flag(TIF_SIGPENDING))
-> +		return;
-> +
-> +	spin_lock_irq(&current->sighand->siglock);
-> +	__clear_trap_flag();
-> +	spin_unlock_irq(&current->sighand->siglock);
-> +}
+>   * Used within ACPICA to show where it is safe to preempt execution
+>   * when CONFIG_PREEMPT=n
+> + *
+> + * Note we still test for !in_atomic() in case CONFIG_DEBUG_ATOMIC_SLEEP
+> + * is set. In that case, preempt_count is still updated and scheduling
+> + * here will cause a warning in early boot.
+>   */
+>  #define ACPI_PREEMPTION_POINT() \
+>  	do { \
+> -		if (!irqs_disabled()) \
+> +		if (!irqs_disabled() && !in_atomic())	\
+>  			cond_resched(); \
+>  	} while (0)
+>  #endif
 
-And this is called before and after the step.
+This macro *cannot be implemented correctly*.
 
-Confused... For what? What makes SIGTRAP special? Where does this
-signal come from? If you meant do_debug() this seems impossible,
-uprobe_exception_notify(DIE_DEBUG) returns NOTIFY_STOP.
+If CONFIG_PREEMPT=n && CONFIG_PREEMPT_COUNT=n then there is no
+indication available anywhere to tell you whether or not it is safe to
+call schedule().
 
-I certainly missed something.
+Please, delete it.  Linux just doesn't work this way.  The way the
+kernel is designed is that the calling code must know what its own
+state is.  If you know you hold spinlocks then don't call
+cond_resched().  If you know you're not holding spinlocks (or
+irq_disable, etc) then it's safe to call cond_resched().
 
-> @@ -1401,13 +1422,18 @@ void uprobe_notify_resume(struct pt_regs *regs)
->  			if (!utask)
->  				goto cleanup_ret;
->  		}
-> -		/* TODO Start queueing signals. */
->  		utask->active_uprobe = u;
->  		handler_chain(u, regs);
->  		utask->state = UTASK_SSTEP;
-> -		if (!pre_ssout(u, regs, probept))
-> +		if (!pre_ssout(u, regs, probept)) {
-> +			sigfillset(&masksigs);
-> +			sigdelsetmask(&masksigs,
-> +					sigmask(SIGKILL)|sigmask(SIGSTOP));
-> +			current->saved_sigmask = current->blocked;
-> +			set_current_blocked(&masksigs);
 
-OK, we already discussed the problems with this approach.
-
-> +			clear_trap_flag();
-
-In any case unneeded, we already blocked SIGTRAP.
-
-> @@ -1418,8 +1444,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
->  			utask->state = UTASK_RUNNING;
->  			user_disable_single_step(current);
->  			xol_free_insn_slot(current);
-> -
-> -			/* TODO Stop queueing signals. */
-> +			clear_trap_flag();
-
-This is what I can't understand.
-
-> +			set_restore_sigmask();
-
-No, this is not right. If we have a pending signal, the signal handler
-will run with the almost-all-blocked mask we set before.
-
-And this is overkill anyway, you could simply do
-set_current_blocked(&current->saved_sigmask).
-
-->saved_sigmask is only used when we return from syscall, so uprobes
-can (ab)use it safely.
-
-> @@ -1433,7 +1459,7 @@ void uprobe_notify_resume(struct pt_regs *regs)
->  		put_uprobe(u);
->  		set_instruction_pointer(regs, probept);
->  	} else
-> -		/*TODO Return SIGTRAP signal */
-> +		send_sig(SIGTRAP, current, 0);
-
-This change looks "offtopic" to the problems we are discussing.
-
-Or I missed something and this is connected to the clear_trap_flag()
-somehow?
-
-Oleg.
+As it stands, ACPI at present might be calling schedule() while holding
+spinlocks, which is deadlockable.  It cunningly arranges to only
+exhibit this buggy behaviour in situations where the kernel's
+self-checking code is incapable of reporting on the bug :(
 
