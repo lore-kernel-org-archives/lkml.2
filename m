@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1JLXIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 19:08:32 -0400
-Received: from kendy.up.ac.za ([137.215.101.101]:39370 "EHLO kendy.up.ac.za"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab1JLXI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 19:08:29 -0400
-Message-ID: <20111013010547.514267d5j8f6suvf@student.up.ac.za>
-Date: Thu, 13 Oct 2011 01:05:47 +0200
-From: WEBMASTER <s10097041@tuks.co.za>
-To: undisclosed-recipients:;
-Subject: upgrade your account.
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-Originating-IP: 196.21.189.249
-X-Remote-Browser: Opera/9.80 (Windows NT 5.1; U; Edition Campaign 14; en)
-	Presto/2.9.168 Version/11.51
-X-Scan-Signature: fcf4bd906bd36cf8da786bec2bf6438c
+	id S1753567Ab1JLXNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:13:19 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:32943 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1JLXNS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:13:18 -0400
+Date: Wed, 12 Oct 2011 19:10:15 -0400 (EDT)
+Message-Id: <20111012.191015.389657713979036834.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: muralira@google.com, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v4] net-netlink: Add a new attribute to expose TOS
+ values via netlink
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1318446934.2644.0.camel@edumazet-laptop>
+References: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
+	<1318446035-10267-1-git-send-email-muralira@google.com>
+	<1318446934.2644.0.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 12 Oct 2011 16:10:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 12 Oct 2011 21:15:34 +0200
 
-You have exceeded the storage limit on your mailbox.
-You will not be able to send or receive new mail until you upgrade your
-email quota.
+> Le mercredi 12 octobre 2011 à 12:00 -0700, Muraliraja Muniraju a écrit :
+>> From: Murali Raja <muralira@google.com>
+>> 
+>> This patch exposes the tos value for the TCP sockets when the TOS flag
+>> is requested in the ext_flags for the inet_diag request. This would mainly be
+>> used to expose TOS values for both for TCP and UDP sockets. Currently it is
+>> supported for TCP. When netlink support for UDP would be added the support
+>> to expose the TOS values would alse be done. For IPV4 tos value is exposed
+>> and for IPV6 tclass value is exposed.
+>> 
+>> Signed-off-by: Murali Raja <muralira@google.com>
+>> ---
+> 
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Copy the below link and fill the form to upgrade your account.
-http://thankstips.com/formss/use/chiform/form1.html
-
-System Administrator
-192.168.0.1
-
-
-
-This message and attachments are subject to a disclaimer. Please refer
-to www.it.up.ac.za/documentation/governance/disclaimer/ for full
-details. / Hierdie boodskap en aanhangsels is aan 'n vrywaringsklousule
-onderhewig. Volledige besonderhede is by
-www.it.up.ac.za/documentation/governance/disclaimer/ beskikbaar.
-
+Applied, thanks everyone.
