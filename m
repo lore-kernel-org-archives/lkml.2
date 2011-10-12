@@ -1,177 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab1JLSdG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 14:33:06 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:60111 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752002Ab1JLSdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 14:33:04 -0400
-Date: Wed, 12 Oct 2011 18:33:13 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
-        Andrew Morton <akpm@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        serge.hallyn@canonical.com
-Subject: [PATCH RFC] user namespace: make signal.c respect user namespaces
- (v4)
-Message-ID: <20111012183313.GA22335@hallyn.com>
+	id S1753965Ab1JLSdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 14:33:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab1JLSda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 14:33:30 -0400
+Date: Wed, 12 Oct 2011 20:29:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Tejun Heo <htejun@gmail.com>, rjw@sisk.pl, paul@paulmenage.org,
+        lizf@cn.fujitsu.com, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        fweisbec@gmail.com, matthltc@us.ibm.com, akpm@linux-foundation.org,
+        Paul Menage <menage@google.com>
+Subject: Re: [PATCH 3/4] threadgroup: extend threadgroup_lock() to cover
+	exit and exec
+Message-ID: <20111012182905.GA8580@redhat.com>
+References: <1315159280-25032-1-git-send-email-htejun@gmail.com> <1315159280-25032-4-git-send-email-htejun@gmail.com> <20110918173723.GA2384@redhat.com> <20111010171105.GE8100@google.com> <20111012175104.GA6156@redhat.com> <20111012180521.GA20715@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111012180521.GA20715@ghc17.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipc/mqueue.c: for __SI_MESQ, convert the uid being sent to recipient's
-user namespace. (new, thanks Oleg)  (XXX - Actually I don't think
-rcu_read_lock() is needed there)
+On 10/12, Ben Blum wrote:
+>
+> On Wed, Oct 12, 2011 at 07:51:04PM +0200, Oleg Nesterov wrote:
+> >
+> > > Also, it makes the mechanism unnecessarily cgroup-specific without
+> > > gaining much if anything.
+> >
+> > Yes! And _personally_ I think it should be cgroup-specific, that is
+> > why I dislike the very fact do_exit() uses it directly. To me it would
+> > be cleaner to shift it into cgroup hooks. Yes, sure, this is subjective.
+>
+> In the fork path, threadgroup_fork_read_...() is also called directly,
+> not through cgroups. Would that change too?
 
-__send_signal: convert current's uid to the recipient's user namespace
-for any siginfo which is not SI_FROMKERNEL (patch from Oleg, thanks
-again :)
+Well, if you ask me, I'd prefer to move lock/unlock into
+cgroup_fork/cgroup_post_fork ;) Although the error path plays with it
+too. But this is minor.
 
-do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
-user namespace
+> > In fact I still hope we can kill this sem altogether, but so far I have
+> > no idea how we can do this. We do need the new per-process lock to
+> > protect (in particular) ->thread_group. It is quite possible that it
+> > should be rw_semaphore. But in this case we down_write(), not _read
+> > in exit/fork paths, and its scope should be small.
+>
+> I'm confused - taking a big rwsem for writing in the fork/exit paths?
 
-ptrace_signal maps parent's uid into current's user namespace before
-including in signal to current.  IIUC Oleg has argued that this shouldn't
-matter as the debugger will play with it, but it seems like not converting
-the value currently being set is misleading.  (Oleg, if you really think
-it shouldn't be converted here, I'll drop it;  but I'm afraid it'll lead
-people to wondering why it isn't being converted and confusing them)
+Yes, we need the new lock to avoid tasklist_lock.
 
-Changelog:
-Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
-	simplify callers and help make clear what we are translating
-        (which uid into which namespace).  Passing the target task would
-	make callers even easier to read, but we pass in user_ns because
-	current_user_ns() != task_cred_xxx(current, user_ns).
-Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
-	in ptrace_signal().
-Oct 12: Base on Oleg's fixup_uid() patch.  On top of that, handle all
-	SI_FROMKERNEL cases at callers, because we can't assume sender is
-	current in those cases.
+> The point here is that even though fork/exit modify thread_group, they
+> are logical "readers"
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
----
- ipc/mqueue.c    |    7 ++++++-
- kernel/signal.c |   38 +++++++++++++++++++++++++++++++++++---
- 2 files changed, 41 insertions(+), 4 deletions(-)
+Yes I see. And this is one of the reasons why we can't use this lock
+for above.
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index ed049ea..bdf57df 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -32,6 +32,7 @@
- #include <linux/nsproxy.h>
- #include <linux/pid.h>
- #include <linux/ipc_namespace.h>
-+#include <linux/user_namespace.h>
- #include <linux/slab.h>
- 
- #include <net/sock.h>
-@@ -543,9 +544,13 @@ static void __do_notify(struct mqueue_inode_info *info)
- 			sig_i.si_errno = 0;
- 			sig_i.si_code = SI_MESGQ;
- 			sig_i.si_value = info->notify.sigev_value;
-+			/* map current pid/uid into info->owner's namespaces */
-+			rcu_read_lock();
- 			sig_i.si_pid = task_tgid_nr_ns(current,
- 						ns_of_pid(info->notify_owner));
--			sig_i.si_uid = current_uid();
-+			sig_i.si_uid = user_ns_map_uid(info->user->user_ns,
-+						current_cred(), current_uid());
-+			rcu_read_lock();
- 
- 			kill_pid_info(info->notify.sigev_signo,
- 				      &sig_i, info->notify_owner);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 291c970..025a042 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -28,6 +28,7 @@
- #include <linux/freezer.h>
- #include <linux/pid_namespace.h>
- #include <linux/nsproxy.h>
-+#include <linux/user_namespace.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/signal.h>
- 
-@@ -1019,6 +1020,29 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
- 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
- }
- 
-+/*
-+ * map the uid in struct cred into user namespace *ns
-+ */
-+static inline uid_t map_cred_ns(const struct cred *cred,
-+				struct user_namespace *ns)
-+{
-+	return user_ns_map_uid(ns, cred, cred->uid);
-+}
-+
-+static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
-+{
-+#ifdef CONFIG_USER_NS
-+	if (current_user_ns() == task_cred_xxx(t, user_ns))
-+#endif
-+		return;
-+
-+	if (SI_FROMKERNEL(info))
-+		return;
-+
-+	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
-+					current_cred(), info->si_uid);
-+}
-+
- static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
- 			int group, int from_ancestor_ns)
- {
-@@ -1088,6 +1112,9 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
- 				q->info.si_pid = 0;
- 			break;
- 		}
-+
-+		fixup_uid(info, t);
-+
- 	} else if (!is_si_special(info)) {
- 		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
- 			/*
-@@ -1618,7 +1645,8 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
- 	 */
- 	rcu_read_lock();
- 	info.si_pid = task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
--	info.si_uid = __task_cred(tsk)->uid;
-+	info.si_uid = map_cred_ns(__task_cred(tsk),
-+			task_cred_xxx(tsk->parent, user_ns));
- 	rcu_read_unlock();
- 
- 	info.si_utime = cputime_to_clock_t(cputime_add(tsk->utime,
-@@ -1703,7 +1731,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
- 	 */
- 	rcu_read_lock();
- 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
--	info.si_uid = __task_cred(tsk)->uid;
-+	info.si_uid = map_cred_ns(__task_cred(tsk),
-+			task_cred_xxx(parent, user_ns));
- 	rcu_read_unlock();
- 
- 	info.si_utime = cputime_to_clock_t(tsk->utime);
-@@ -2121,8 +2150,11 @@ static int ptrace_signal(int signr, siginfo_t *info,
- 		info->si_signo = signr;
- 		info->si_errno = 0;
- 		info->si_code = SI_USER;
-+		rcu_read_lock();
- 		info->si_pid = task_pid_vnr(current->parent);
--		info->si_uid = task_uid(current->parent);
-+		info->si_uid = map_cred_ns(__task_cred(current->parent),
-+				current_user_ns());
-+		rcu_read_unlock();
- 	}
- 
- 	/* If the (new) signal is now blocked, requeue it.  */
--- 
-1.7.0.4
+Oleg.
 
