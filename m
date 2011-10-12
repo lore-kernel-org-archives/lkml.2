@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1JLWmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 18:42:03 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:15685 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab1JLWmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 18:42:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=BJCM6NENW3rT8voh9Gqe73d5TAO0ODMjkmqlgA38C79/c973m8ul/lZxONshUWROi
-	DLO2s5bzHe3udQpdGtMaA==
-Date: Wed, 12 Oct 2011 15:41:53 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Satoru Moriya <satoru.moriya@hds.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
-Message-ID: <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <20111011125419.2702b5dc.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com> <20111011135445.f580749b.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754517Ab1JLWuU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 18:50:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34562 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab1JLWuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 18:50:18 -0400
+Message-ID: <4E96198F.4030906@zytor.com>
+Date: Wed, 12 Oct 2011 15:49:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Borislav Petkov <bp@amd64.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab>
+In-Reply-To: <20111012214013.GD28723@aftab>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011, Satoru Moriya wrote:
+The stickiest part of all of this is where to leave the microcode so the 
+kernel can get to it way early.  We could use the linked list, but that 
+would mean bootloader enabling; another idea was to stick it as a prefix 
+to the initramfs identified by a signature.
 
-> >> Also, if we increase the free-page reserves a.k.a min_free_kbytes, 
-> >> the possibility of direct reclaim on other workloads increases.
-> >> I think it's a bad side effect.
-> > 
-> > extra_free_kbytes has the same side-effect.
-> 
-> I don't think so. If we make low watermark bigger to increase
-> free-page reserves by extra_free_kbytes, the possibility of
-> direct reclaim on other workload does not increase directly
-> because min watermark is not changed. 
+	-hpa
 
-I think the point was that extra_free_kbytes needs to be tuned to cover at 
-least the amount of memory of the largest allocation burst or it doesn't 
-help to prevent latencies for rt threads and, depending on how the 
-implementation of the VM evolves, that value may change significantly over 
-time from kernel release to kernel release.
-
-For example, if we were to merge Con's patch so kswapd operates at a much 
-higher priority for rt threads later on for another issue, it may 
-significantly reduce the need for extra_free_kbytes to be set as high as 
-it is.  Everybody who is setting this in init scripts, though, will 
-continue to set the value because they have no reason to believe it should 
-be changed.  Then, we have users who start to use the tunable after Con's 
-patch has been merged and now we have widely different settings for the 
-same tunable and it can never be obsoleted because everybody is using it 
-but for different historic reasons.
-
-This is why I nack'd the patch originally: it will never be removed, it 
-is widely misunderstood, and is tied directly to the implementation of 
-reclaim which will change over time.
