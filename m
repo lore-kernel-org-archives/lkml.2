@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1JLL6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:58:52 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37095 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752747Ab1JLL6u (ORCPT
+	id S1752847Ab1JLMDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:03:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51993 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab1JLMDM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:58:50 -0400
-Date: Wed, 12 Oct 2011 12:56:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Stephen Warren <swarren@nvidia.com>,
-        Olof Johansson <olof@lixom.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>, Allen Martin <AMartin@nvidia.com>,
-        Tom Warren <twarren@nvidia.com>, linux-serial@vger.kernel.org,
+	Wed, 12 Oct 2011 08:03:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.00.1110101102330.21957@sister.anvils>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain>
+	<20110705144140.23872.86541.stgit@localhost.localdomain>
+	<alpine.LSU.2.00.1107071742250.10362@sister.anvils>
+	<20110708093859.299958df@lxorguk.ukuu.org.uk>
+	<alpine.LSU.2.00.1107080917430.1781@sister.anvils>
+	<20110711172517.46907e62@lxorguk.ukuu.org.uk>
+	<alpine.LSU.2.00.1107111033440.1752@sister.anvils>
+	<CAMeQTsb7ZMbyt8avYNOiBssERmk6vEbg7RR6TQw7CaD55MK22A@mail.gmail.com>
+	<alpine.LSU.2.00.1110101102330.21957@sister.anvils>
+Date: Wed, 12 Oct 2011 14:03:10 +0200
+Message-ID: <CAMeQTsYYfBs+Z=2NZqN-9X=XpCT5cboA3DL0=FM0zr6a=ztAUA@mail.gmail.com>
+Subject: Re: [PATCH 34/49] gma500: the GEM and GTT code is device independant
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rob Clark <rob.clark@linaro.org>, greg@kroah.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty/serial: Prevent drop of DCD on suspend for Tegra
- UARTs
-Message-ID: <20111012125647.6b9ec66e@lxorguk.ukuu.org.uk>
-In-Reply-To: <1318377943-24519-1-git-send-email-dianders@chromium.org>
-References: <1318377943-24519-1-git-send-email-dianders@chromium.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> NOTE: If we have people that are using UARTA on a Tegra and need to
-> control DTR, we'll need to either add a separate port type for UARTA
-> or we'll need to add some tegra-specific code to detect whether the
-> DTR needs to be left high.
+On Mon, Oct 10, 2011 at 8:37 PM, Hugh Dickins wrote:
+> I was surprised to see drivers/staging/gma500 appearing still to use
+> read_cache_page_gfp().  I assumed that since nobody was complaining,
+> it must be on a currently unusable path.  But you have code coming up,
+> that now enables that path?
 
-I have two problems with this change
+Yes, I have a couple of patches for getting SDVO to properly set up DDC.
+It seems we hit that path when framebuffer size exceeds a certain limit.
 
-- It adds more special cases into the 8250.c core code
-- It breaks the UARTA port (which is a regression so not acceptable for
-  upstream merging)
+> Am I right to think that your immediate problem is just the oops in
+> __read_cache_page(), that you're not yet about to hit the 4GB issue?
 
-I think you should simply provide your platform with an appropriate
-serial_in/serial_out method that does the needed masking. That way its
-kept isolated from everyone else.
+Correct, I have only seen 1GB and 2GB platforms so far. But the driver
+does support platforms that I haven't got my hands on yet.
 
-Alan
+> I haven't rushed to address the 4GB issue, but what I have in mind is
+> killing two-and-a-half birds with one stone, by putting a little cookie
+> into the swapper_space radix_tree when we free a swapcache page, that
+> specifies node/zone and hashes object/offset.
+>
+> NUMA mempolicies are too complex to be encapsulated in a sizeof(long)
+> cookie, but it should improve the common case after swapin; while
+> solving your 4GB GEM case, and vastly speeding up swapoff.
+>
+> Here's the kind of patch I imagined would be going in for gma500, that
+> specifies __GFP_DMA32 on the mapping, so even swapoff can know that
+> this object needs its pages below 4GB (even before my recent changes,
+> swapoff would have broken you by inserting higher pages in the cache)
+> - once I implement that.  But I've not tested this patch at all...
+
+There are some other issues with SDVO when running at higher resolutions
+that triggers the path. Will test your patch as soon as I get those things
+sorted out, though it looks ok to me.
+
+Thanks
+Patrik
