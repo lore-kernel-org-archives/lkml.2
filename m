@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1JLTUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:20:23 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43193 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab1JLTUV (ORCPT
+	id S1753937Ab1JLT2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:28:46 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:59865 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab1JLT2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:20:21 -0400
-Date: Wed, 12 Oct 2011 12:20:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Satoru Moriya <satoru.moriya@hds.com>,
-        David Rientjes <rientjes@google.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-Message-Id: <20111012122018.690bdf28.akpm@linux-foundation.org>
-In-Reply-To: <4E95917D.3080507@redhat.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
-	<20111010153723.6397924f.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-	<20111011125419.2702b5dc.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
-	<20111011135445.f580749b.akpm@linux-foundation.org>
-	<4E95917D.3080507@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 12 Oct 2011 15:28:45 -0400
+Subject: [PATCH] [TRIVIAL] microblaze: add missing CONFIG_ prefixes
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        microblaze-uclinux@itee.uq.edu.au
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Oct 2011 21:28:36 +0200
+Message-ID: <1318447716.8345.3.camel@x61.thuisdomein>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 09:09:17 -0400
-Rik van Riel <riel@redhat.com> wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Entirely untested. Somehow, I don't feel too bad about that. Added the
+maintainer and the mailinglist because this could change the behavior of
+this code.
 
-> On 10/11/2011 04:54 PM, Andrew Morton wrote:
-> > On Tue, 11 Oct 2011 16:23:22 -0400
-> > Satoru Moriya<satoru.moriya@hds.com>  wrote:
-> >
-> >> On 10/11/2011 03:55 PM, Andrew Morton wrote:
-> >>> On Tue, 11 Oct 2011 15:32:11 -0400
-> >>> Satoru Moriya<satoru.moriya@hds.com>  wrote:
-> >>>
-> >>>> On 10/10/2011 06:37 PM, Andrew Morton wrote:
-> >>>>> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes
-> >>>>> <rientjes@google.com>  wrote:
-> >>>>>
-> >>>>>> On Thu, 1 Sep 2011, Rik van Riel wrote:
-> >>>>
-> >>>> Actually page allocator decreases min watermark to 3/4 * min
-> >>>> watermark for rt-task. But in our case some applications create a lot
-> >>>> of processes and if all of them are rt-task, the amount of watermark
-> >>>> bonus(1/4 * min watermark) is not enough.
-> >>>>
-> >>>> If we can tune the amount of bonus, it may be fine. But that is
-> >>>> almost all same as extra free kbytes.
-> >>>
-> >>> This situation is detectable at runtime.  If realtime tasks are being
-> >>> stalled in the page allocator then start to increase the free-page
-> >>> reserves.  A little control system.
-> >>
-> >> Detecting at runtime is too late for some latency critical systems.
-> >> At that system, we must avoid a stall before it happens.
-> >
-> > It's pretty darn obvious that the kernel can easily see the situation
-> > developing before it happens.  By comparing a few integers.
-> 
-> The problem is that we may be dealing with bursts, not steady
-> states of allocations.  Without knowing the size of a burst,
-> we have no idea when we should wake up kswapd to get enough
-> memory freed ahead of the application's allocations.
+ arch/microblaze/mm/init.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-That problem remains with this patch - it just takes a larger burst.
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index 213f2d6..36a133e 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -304,11 +304,11 @@ asmlinkage void __init mmu_init(void)
+ 	/* Map in all of RAM starting at CONFIG_KERNEL_START */
+ 	mapin_ram();
+ 
+-#ifdef HIGHMEM_START_BOOL
+-	ioremap_base = HIGHMEM_START;
++#ifdef CONFIG_HIGHMEM_START_BOOL
++	ioremap_base = CONFIG_HIGHMEM_START;
+ #else
+ 	ioremap_base = 0xfe000000UL;	/* for now, could be 0xfffff000 */
+-#endif /* CONFIG_HIGHMEM */
++#endif /* CONFIG_HIGHMEM_START_BOOL */
+ 	ioremap_bot = ioremap_base;
+ 
+ 	/* Initialize the context management stuff */
+-- 
+1.7.4.4
 
-Unless the admin somehow manages to configure the tunable large enough
-to cover the largest burst, and there aren't other applications
-allocating memory during that burst, and the time between bursts is
-sufficient for kswapd to be able to sufficiently replenish free-page
-reserves.  All of which sounds rather unlikely.
 
-> > Look, please don't go bending over backwards like this to defend a bad
-> > patch.  It's a bad patch!  It would be better not to have to merge it.
-> > Let's do something better.
-> 
-> I would love it if we could come up with something better,
-> and have thought about it a lot.
-> 
-> However, so far we do not seem to have an alternative yet :(
 
-Do we actually have a real-world application which is hurting from
-this?
