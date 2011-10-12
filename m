@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab1JLJ1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 05:27:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab1JLJ1k convert rfc822-to-8bit (ORCPT
+	id S1751520Ab1JLJij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 05:38:39 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:54117 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab1JLJii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 05:27:40 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com>
-References: <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <CAOH1cHmpFF8!
- vT8HVU3RL95p_s9ec2RJ1+o4K2TOrWX2QJrvwog@mail.gmail.com> <1448.1318338420@redhat.com> 
-To: Mark Moseley <moseleymark@gmail.com>
-Cc: dhowells@redhat.com,
-        Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 12 Oct 2011 10:26:30 +0100
-Message-ID: <8997.1318411590@redhat.com>
+	Wed, 12 Oct 2011 05:38:38 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 05:38:38 EDT
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Sukadev Bhattiprolu <sukadev@us.ibm.com>, Alan Cox <alan@redhat.com>
+Subject: [PATCH 4/4] TTY: call tty_driver_lookup_tty unconditionally
+Date: Wed, 12 Oct 2011 11:32:45 +0200
+Message-Id: <1318411965-23917-4-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1318411965-23917-1-git-send-email-jslaby@suse.cz>
+References: <4E8C6836.1090601@suse.cz>
+ <1318411965-23917-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Moseley <moseleymark@gmail.com> wrote:
+Commit 4a2b5fddd5 (Move tty lookup/reopen to caller) made the call to
+tty_driver_lookup_tty conditional in tty_open. It doesn't look like it
+was an intention. Or if it was, it was not documented in the changelog
+and the code now looks weird. For example there would be no need to
+remember the tty driver and tty index. Further the condition depends
+on a tty which we drop a reference of already.
 
-> >> [37818.485559] kernel BUG at fs/fscache/object-list.c:64!
-> >
-> > Hmmm...  An object is being added to the object list twice.  It may
-> > indicate a free before an object is finished with.  Do you have slab
-> > debugging turned on?
->
-> It's compiled in but not currently enabled. Should I do so?
+If I'm looking correctly, this should not matter thanks to the locking
+currently done there. Thus, tty_driver->ttys[idx] cannot change under
+our hands. But anyway, it makes sense to change that to the old
+behaviour.
 
-It can't be turned on or off dynamically.  If CONFIG_DEBUG_SLAB is enabled, then
-it's switched on.
+Introduced-in: v2.6.28-rc2
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Cc: Alan Cox <alan@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/tty/tty_io.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
 
-> And anything I should be looking for in it?
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 1a890e2..3283d0a 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1820,7 +1820,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 
+ static int tty_open(struct inode *inode, struct file *filp)
+ {
+-	struct tty_struct *tty = NULL;
++	struct tty_struct *tty;
+ 	int noctty, retval;
+ 	struct tty_driver *driver;
+ 	int index;
+@@ -1891,17 +1891,14 @@ retry_open:
+ 		return -ENODEV;
+ 	}
+ got_driver:
+-	if (!tty) {
+-		/* check whether we're reopening an existing tty */
+-		tty = tty_driver_lookup_tty(driver, inode, index);
+-
+-		if (IS_ERR(tty)) {
+-			tty_unlock();
+-			mutex_unlock(&tty_mutex);
+-			tty_driver_kref_put(driver);
+-			tty_free_file(filp);
+-			return PTR_ERR(tty);
+-		}
++	/* check whether we're reopening an existing tty */
++	tty = tty_driver_lookup_tty(driver, inode, index);
++	if (IS_ERR(tty)) {
++		tty_unlock();
++		mutex_unlock(&tty_mutex);
++		tty_driver_kref_put(driver);
++		tty_free_file(filp);
++		return PTR_ERR(tty);
+ 	}
+ 
+ 	if (tty) {
+-- 
+1.7.7
 
-The BUG that you encountered would suggest a piece of memory is still in use as
-far as parts of fscache is concerned - but it's just been produced by the slab
-allocator again.  This is the sort of thing the slab debugger might catch.
 
-David
