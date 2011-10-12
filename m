@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab1JLNtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:49:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64039 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab1JLNte convert rfc822-to-8bit (ORCPT
+	id S1753371Ab1JLNtl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:49:41 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:54453 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753342Ab1JLNth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:49:34 -0400
+	Wed, 12 Oct 2011 09:49:37 -0400
+Message-ID: <4E959A9B.7060100@ru.mvista.com>
+Date: Wed, 12 Oct 2011 17:48:11 +0400
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <069601cc88dc$6b9a78d0$42cf6a70$%kim@samsung.com>
-References: <1317961214.16109.1.camel@phoenix> <069601cc88dc$6b9a78d0$42cf6a70$%kim@samsung.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 12 Oct 2011 21:49:13 +0800
-Message-ID: <CAF+7xWmXGovD4zdst16fdX66voauhvKFTctQLEORX9tosckfkg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: SAMSUNG: s3c-dma-ops needs export.h for EXPORT_SYMBOL
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Boojin Kim <boojin.kim@samsung.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Markus Rechberger <mrechberger@gmail.com>
+CC: Greg KH <gregkh@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+In-Reply-To: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/12 Kukjin Kim <kgene.kim@samsung.com>:
-> Kukjin Kim wrote:
->>
->> Axel Lin wrote:
->> >
->> > Fix below build warning:
->> >   CC      arch/arm/plat-samsung/s3c-dma-ops.o
->> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: data definition has no type
->> or
->> > storage class
->> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: type defaults to 'int' in
->> > declaration of 'EXPORT_SYMBOL'
->> > arch/arm/plat-samsung/s3c-dma-ops.c:130: warning: parameter names (without
->> > types) in function declaration
->> >
->> > And fix the build error:
->> > ERROR: "s3c_dma_get_ops" [drivers/spi/spi-s3c64xx.ko] undefined!
->> > make[1]: *** [__modpost] Error 1
->> > make: *** [modules] Error 2
->> >
->> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> > ---
->> > This can be reproduced by "make s3c6400_defconfig;make" on linux-next
->> > 20111006.
->> >  arch/arm/plat-samsung/s3c-dma-ops.c |    1 +
->> >  1 files changed, 1 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/arch/arm/plat-samsung/s3c-dma-ops.c b/arch/arm/plat-samsung/s3c-
->> > dma-ops.c
->> > index 582333c..7814949 100644
->> > --- a/arch/arm/plat-samsung/s3c-dma-ops.c
->> > +++ b/arch/arm/plat-samsung/s3c-dma-ops.c
->> > @@ -14,6 +14,7 @@
->> >  #include <linux/errno.h>
->> >  #include <linux/slab.h>
->> >  #include <linux/types.h>
->> > +#include <linux/export.h>
->> >
->> >  #include <mach/dma.h>
->> >
->> > --
->> > 1.7.4.1
->> >
->> OK, will apply.
->>
->> BTW, I don't know why the build error/warning was not happened in my tree with
->> s3c6400_defconfig. Probably other file having it?...
->>
-> Hi Axel,
->
-> When I applied this in my tree, happened following error with s3c6400_defconfig.
->
-> arch/arm/plat-samsung/s3c-dma-ops.c:17: fatal error: linux/export.h: No such file or directory
->
-> Probably the <linux/export.h> file has been added from other tree.
-> So if required, will fix with this during upcoming merge window maybe at end of.
->
-Cc Paul Gortmaker,
-Maybe it is only in Paul's tree now.
+On 10/12/2011 04:36 PM, Markus Rechberger wrote:
 
-Regards,
-Axel
+> We have 2 products which can perform better with increased Bulk transfers
+
+> Device No. 1:
+> According to the hardware spec of on of our product
+> Available Bulk Transfer Size are:
+> - 188 * n bytes, where n = 1 ~ 256.
+
+> Although we can drive that one with 15K as well when setting the HW
+> register down to it.
+
+> Device No. 2
+> only creates jitter video with Bulk transfer sizes which are below
+> 24064 bytes, no such chipfeature is available
+> to decrease the bulk transfer size.
+> http://sundtek.de/images/dtvjitter2.jpg
+> with transfer size of 24064:
+> http://sundtek.de/images/gooddata.jpg
+
+> The patch takes the features of Device No. 1 into account allowing a
+> maximum buffer of 48128 bytes.
+
+> Those issues have been evaluated with MacOSX and a customized patched
+> Linux version.
+> Device No. 2 also corrupts on MacOSX with too small packet sizes,
+> Windows and Mac are using 24064 bytes.
+
+    You are constantly mixing the packet size and the transfer size.
+
+> Default Bulk Transfersize of device No. 1 is around 1-2k which leads
+> to very high cpu usage, updating it to 15k lowers that one.
+
+WBR, Sergei
