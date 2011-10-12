@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1JLTS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:18:26 -0400
-Received: from claw.goop.org ([74.207.240.146]:46404 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132Ab1JLTSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:18:25 -0400
-Message-ID: <4E95E7FE.6050302@goop.org>
-Date: Wed, 12 Oct 2011 12:18:22 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Borislav Petkov <bp@amd64.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com>
-In-Reply-To: <4E95D9E7.6090304@zytor.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+	id S1753599Ab1JLTUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:20:23 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:43193 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab1JLTUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:20:21 -0400
+Date: Wed, 12 Oct 2011 12:20:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Satoru Moriya <satoru.moriya@hds.com>,
+        David Rientjes <rientjes@google.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Message-Id: <20111012122018.690bdf28.akpm@linux-foundation.org>
+In-Reply-To: <4E95917D.3080507@redhat.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+	<20111010153723.6397924f.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+	<20111011125419.2702b5dc.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
+	<20111011135445.f580749b.akpm@linux-foundation.org>
+	<4E95917D.3080507@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 11:18 AM, H. Peter Anvin wrote:
-> On 10/12/2011 03:16 AM, Borislav Petkov wrote:
->> Why would a xen microcode solution would even be contingent on how
->> upstream Linux solves it (and when)?
->>
-> Agreed... especially since Xen is "special" when it comes to booting anyway.
+On Wed, 12 Oct 2011 09:09:17 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-"Special" only in the sense that you need a new line in grub.
+> On 10/11/2011 04:54 PM, Andrew Morton wrote:
+> > On Tue, 11 Oct 2011 16:23:22 -0400
+> > Satoru Moriya<satoru.moriya@hds.com>  wrote:
+> >
+> >> On 10/11/2011 03:55 PM, Andrew Morton wrote:
+> >>> On Tue, 11 Oct 2011 15:32:11 -0400
+> >>> Satoru Moriya<satoru.moriya@hds.com>  wrote:
+> >>>
+> >>>> On 10/10/2011 06:37 PM, Andrew Morton wrote:
+> >>>>> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes
+> >>>>> <rientjes@google.com>  wrote:
+> >>>>>
+> >>>>>> On Thu, 1 Sep 2011, Rik van Riel wrote:
+> >>>>
+> >>>> Actually page allocator decreases min watermark to 3/4 * min
+> >>>> watermark for rt-task. But in our case some applications create a lot
+> >>>> of processes and if all of them are rt-task, the amount of watermark
+> >>>> bonus(1/4 * min watermark) is not enough.
+> >>>>
+> >>>> If we can tune the amount of bonus, it may be fine. But that is
+> >>>> almost all same as extra free kbytes.
+> >>>
+> >>> This situation is detectable at runtime.  If realtime tasks are being
+> >>> stalled in the page allocator then start to increase the free-page
+> >>> reserves.  A little control system.
+> >>
+> >> Detecting at runtime is too late for some latency critical systems.
+> >> At that system, we must avoid a stall before it happens.
+> >
+> > It's pretty darn obvious that the kernel can easily see the situation
+> > developing before it happens.  By comparing a few integers.
+> 
+> The problem is that we may be dealing with bursts, not steady
+> states of allocations.  Without knowing the size of a burst,
+> we have no idea when we should wake up kswapd to get enough
+> memory freed ahead of the application's allocations.
 
-But doing boot-time microcode is a lot more "special" since it would
-require distros to move the microcode files to /boot.  That would either
-mean having two sets of microcode packages, or also changing the way
-that Linux does its microcode loading (if only by changing the paths,
-but I have no idea what that implies since its all tied up with the rest
-of the firmware loading stuff).
+That problem remains with this patch - it just takes a larger burst.
 
-The whole thrust of the Xen upstreaming work has been to minimize the
-amount of arbitrary "specialness" so that its as easy as possibly for
-people and distros to deploy and use Xen.
+Unless the admin somehow manages to configure the tunable large enough
+to cover the largest burst, and there aren't other applications
+allocating memory during that burst, and the time between bursts is
+sufficient for kswapd to be able to sufficiently replenish free-page
+reserves.  All of which sounds rather unlikely.
 
-With respect to microcode loading, this patch means that users and
-distros just don't need to worry about microcode any more.  It packages
-and operates exactly like it would for native Linux, which is exactly
-how we like it.
+> > Look, please don't go bending over backwards like this to defend a bad
+> > patch.  It's a bad patch!  It would be better not to have to merge it.
+> > Let's do something better.
+> 
+> I would love it if we could come up with something better,
+> and have thought about it a lot.
+> 
+> However, so far we do not seem to have an alternative yet :(
 
-While doing the whole boot time multiboot thing may offer some small
-hypothetical technical advantages, it has the significant cost of just
-complicating the whole deployment and use story.
-
-If there were a general shift to "this is how we're going to do
-microcode in the future", then Xen will happily go along for the ride. 
-But for right now, this patch seems like the pragmatic solution.
-
-I think the real question is where there's something objectionable about
-the patch itself?
-
-Thanks,
-    J
+Do we actually have a real-world application which is hurting from
+this?
