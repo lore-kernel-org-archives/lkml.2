@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1JLSTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 14:19:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33123 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab1JLSTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 14:19:32 -0400
-Message-ID: <4E95D9E7.6090304@zytor.com>
-Date: Wed, 12 Oct 2011 11:18:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753917Ab1JLSZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 14:25:28 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45855 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab1JLSZZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 14:25:25 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab>
-In-Reply-To: <20111012101615.GA14966@aftab>
+In-Reply-To: <20111012175702.GA23231@fieldses.org>
+References: <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org>
+ <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com>
+ <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org>
+ <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org>
+ <20111012175702.GA23231@fieldses.org>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Wed, 12 Oct 2011 14:25:04 -0400
+Message-ID: <CAGZ=bqJxadNqaPCW3HufrMmQ57x082=pCDa6-mWLsdtfxHgdPw@mail.gmail.com>
+Subject: Re: Detecting if you are running in a container
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Theodore Tso <tytso@mit.edu>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 03:16 AM, Borislav Petkov wrote:
-> 
-> Why would a xen microcode solution would even be contingent on how
-> upstream Linux solves it (and when)?
-> 
+On Wed, Oct 12, 2011 at 13:57, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Tue, Oct 11, 2011 at 02:16:24PM -0700, Eric W. Biederman wrote:
+>> Where all of this winds up interesting in the field of oncoming kernel
+>> work is that uids are persistent and are stored in file systems.  So
+>> once we have all of the permission checks in the kernel tweaked to care
+>> about user namespaces we next look at the filesystems.   The easy
+>> initial implementation is going to be just associating a user namespace
+>> with a super block.  But farther out being able to store uids from
+>> different user namespaces on the same filesystem becomes an interesting
+>> problem.
+>
+> Yipes.  Why would anyone want to do that?
 
-Agreed... especially since Xen is "special" when it comes to booting anyway.
+Consider an NFS file server providing collaborative access to multiple
+independently managed domains (EG: several different universities),
+each with their own LDAP userid database and Kerberos services.
 
-	-hpa
+The common server is in its own realm and allows cross-realm
+authentication to the other university realms, using the origin realm
+to decide what namespace to map each user into.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+If you are just doing read-only operations then you don't need any
+kind of namespace persistence on the NFS server's storage.  On the
+other hand, if you want to allow users to collaborate and create ACLs
+then you need something dramatically more involved.
 
+On the wire, the kerberos server would simply identify each NFSv4 ACL
+entry with a particular realm ID, but in the backend it would need
+some filesystem-level disambiguation (possibly the recently-proposed
+RichACL features?)
+
+Cheers,
+Kyle Moffett
