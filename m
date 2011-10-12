@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab1JLP1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 11:27:22 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:22121 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab1JLP1U (ORCPT
+	id S1753293Ab1JLP2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 11:28:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46317 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab1JLP2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 11:27:20 -0400
-Message-ID: <4E95B1C1.3080507@oracle.com>
-Date: Wed, 12 Oct 2011 10:26:57 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	Wed, 12 Oct 2011 11:28:37 -0400
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 1/3] pata_serverworks: use standard cable detection methods
+Date: Wed, 12 Oct 2011 17:03:44 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop-dirty; KDE/4.6.0; x86_64; ; )
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201110112009.32126.bzolnier@gmail.com> <20111011204954.2e2280b7@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111011204954.2e2280b7@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
-        akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com,
-        mszeredi@suse.cz
-Subject: Re: [PATCH 06/13] jfs: remove unnecessary nlink setting
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu> <1318430946-7091-7-git-send-email-miklos@szeredi.hu>
-In-Reply-To: <1318430946-7091-7-git-send-email-miklos@szeredi.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E95B1CB.02AB:SCFMA922111,ss=1,re=-4.000,fgs=0
+Message-Id: <201110121704.07439.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 09:48 AM, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> alloc_inode() initializes i_nlink to 1.  Remove unnecessary
-> re-initialization.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Alan Cox wrote:
 
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-> ---
->  fs/jfs/super.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> On Tue, 11 Oct 2011 20:09:31 +0200
+> Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 > 
-> diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-> index 06c8a67..a44eff0 100644
-> --- a/fs/jfs/super.c
-> +++ b/fs/jfs/super.c
-> @@ -485,7 +485,6 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
->  		goto out_unload;
->  	}
->  	inode->i_ino = 0;
-> -	inode->i_nlink = 1;
->  	inode->i_size = sb->s_bdev->bd_inode->i_size;
->  	inode->i_mapping->a_ops = &jfs_metapage_aops;
->  	insert_inode_hash(inode);
+> > From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> > Subject: [PATCH] pata_serverworks: use standard cable detection methods
+> 
+> You forgot to explain why, or why you want to do this given its
+> explicitly contradictory to the supporting documentation.
+
+The patch doesn't change this.  It only makes use of standard cable
+helper routines instead of open-coding driver specific ones (the driver
+was added before generic cable helpers were available IIRC). 
