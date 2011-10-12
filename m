@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab1JLLWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 07:22:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:58740 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1JLLV7 (ORCPT
+	id S1752811Ab1JLLuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 07:50:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59608 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1JLLuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 07:21:59 -0400
-X-Authority-Analysis: v=1.1 cv=agqPq5NoKwAPC9P66H7dbYUCjxvmT73as08i4x3aqAA= c=1 sm=0 a=NFX316_vVeIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VwQbUJbxAAAA:8 a=dWfaLmDwyz0oxZl-BuwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1318418515.13262.21.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 0/2 v2] [GIT PULL][v3.2] tracing: queued updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Oct 2011 07:21:55 -0400
-In-Reply-To: <20111012081629.GA25086@elte.hu>
-References: <20111011152026.701326733@goodmis.org>
-	 <20111012081629.GA25086@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Oct 2011 07:50:04 -0400
+Subject: [PATCH] ASoC: Make SND_SOC_SAARB and SND_SOC_TAVOREVB3 depend on
+ MFD_88PM860X
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Oct 2011 19:49:52 +0800
+Message-ID: <1318420192.28832.1.camel@phoenix>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added hpa ]
+In saarb_pm860x_init() and evb3_pm860x_init(), we call
+pm860x_hs_jack_detect() and pm860x_mic_jack_detect() which in turn
+calls pm860x_set_bits().
+Thus make SND_SOC_SAARB and SND_SOC_TAVOREVB3 depend on MFD_88PM860X
 
-On Wed, 2011-10-12 at 10:16 +0200, Ingo Molnar wrote:
->  
-> > Please pull the latest tip/perf/core tree, which can be found at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> > tip/perf/core
-> > 
-> > Head SHA1: d696b58ca2c3ca76e784ef89a7e0453d9b7ab187
-> 
-> Hm, even after 12+ hours of wait i can only pull 177e216 from your 
-> tip/perf/core. Is this a korg delay, or did you forget to push? The 
-> perf/urgent branch was there, so i don't think it's korg delay.
+This patch fixes below build error if CONFIG_MFD_88PM860X is not configured.
 
-I just tried again, and got:
+  LD      .tmp_vmlinux1
+sound/built-in.o: In function `pm860x_write_reg_cache':
+last.c:(.text+0x29e9c): undefined reference to `pm860x_reg_write'
+sound/built-in.o: In function `pm860x_set_bias_level':
+last.c:(.text+0x29ecc): undefined reference to `pm860x_set_bits'
+last.c:(.text+0x29f00): undefined reference to `pm860x_reg_write'
+last.c:(.text+0x29f18): undefined reference to `pm860x_reg_write'
+sound/built-in.o: In function `pm860x_read_reg_cache':
+last.c:(.text+0x29f40): undefined reference to `pm860x_reg_read'
+sound/built-in.o: In function `pm860x_probe':
+last.c:(.text+0x2a034): undefined reference to `pm860x_bulk_read'
+sound/built-in.o: In function `pm860x_codec_handler':
+last.c:(.text+0x2a344): undefined reference to `pm860x_reg_read'
+last.c:(.text+0x2a354): undefined reference to `pm860x_reg_read'
+sound/built-in.o: In function `pm860x_mic_jack_detect':
+last.c:(.text+0x2a450): undefined reference to `pm860x_set_bits'
+sound/built-in.o: In function `pm860x_hs_jack_detect':
+last.c:(.text+0x2a4d0): undefined reference to `pm860x_set_bits'
+last.c:(.text+0x2a4f8): undefined reference to `pm860x_set_bits'
+last.c:(.text+0x2a510): undefined reference to `pm860x_set_bits'
+make: *** [.tmp_vmlinux1] Error 1
 
-$ git push push trace/tip/perf/core:tip/perf/core
-Enter passphrase for key '/home/rostedt/.ssh/id_rsa_korg': 
-Everything up-to-date
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/pxa/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-$ git log -1 --pretty=oneline trace/tip/perf/core
-d696b58ca2c3ca76e784ef89a7e0453d9b7ab187 tracing: Do not allocate buffer for tra
+diff --git a/sound/soc/pxa/Kconfig b/sound/soc/pxa/Kconfig
+index 33ebc46b..b12b4af 100644
+--- a/sound/soc/pxa/Kconfig
++++ b/sound/soc/pxa/Kconfig
+@@ -121,6 +121,7 @@ config SND_PXA2XX_SOC_PALM27X
+ config SND_SOC_SAARB
+ 	tristate "SoC Audio support for Marvell Saarb"
+ 	depends on SND_PXA2XX_SOC && MACH_SAARB
++	depends on MFD_88PM860X
+ 	select SND_PXA_SOC_SSP
+ 	select SND_SOC_88PM860X
+ 	help
+@@ -130,6 +131,7 @@ config SND_SOC_SAARB
+ config SND_SOC_TAVOREVB3
+ 	tristate "SoC Audio support for Marvell Tavor EVB3"
+ 	depends on SND_PXA2XX_SOC && MACH_TAVOREVB3
++	depends on MFD_88PM860X
+ 	select SND_PXA_SOC_SSP
+ 	select SND_SOC_88PM860X
+ 	help
+-- 
+1.7.4.1
 
-But if I refresh from git itself
-
-$ git remote -v 
-ftrace	git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git (fetch)
-ftrace	git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git (push)
-push	gitolite@ra.kernel.org:/pub/scm/linux/kernel/git/rostedt/linux-trace.git (fetch)
-push	gitolite@ra.kernel.org:/pub/scm/linux/kernel/git/rostedt/linux-trace.git (push)
-
-$ git remote update ftrace
-Fetching ftrace
-
-$ git log -1 --pretty=oneline ftrace/tip/perf/core
-87912fdfc1378a7e7e54a169ef9eebeafa1af04f tracing: Do not allocate buffer for tra
-
-It seems that gitolite isn't refreshing rebases?
-
-I just pushed it to tip/perf/core-2. I waited about 5 minutes, and I
-still do not see it.
-
-The urgent branch I pushed the same time as I did the first version of
-this branch.
-
--- Steve
 
 
