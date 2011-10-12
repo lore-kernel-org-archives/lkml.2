@@ -1,209 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab1JLGrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 02:47:07 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:59961
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751265Ab1JLGrF (ORCPT
+	id S1751781Ab1JLGx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 02:53:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62024 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab1JLGxz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 02:47:05 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zz1432N98dKc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-Date: Wed, 12 Oct 2011 14:46:47 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Mike Turquette <mturquette@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@pwsan.com>,
-        <linaro-dev@lists.linaro.org>, <linus.walleij@stericsson.com>,
-        <patches@linaro.org>, <eric.miao@linaro.org>,
-        <broonie@opensource.wolfsonmicro.com>, <magnus.damm@gmail.com>,
-        <amit.kucheria@linaro.org>, <richard.zhao@linaro.org>,
-        <grant.likely@secretlab.ca>, <dsaxena@linaro.org>,
-        <arnd.bergmann@linaro.org>, <shawn.guo@freescale.com>,
-        Jamie Iles <jamie@jamieiles.com>, <skannan@quicinc.com>,
-        <linux@arm.linux.org.uk>, <jeremy.kerr@canonical.com>,
-        <tglx@linutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <sboyd@quiinc.com>
-Subject: Re: [PATCH v2 4/7] clk: Add simple gated clock
-Message-ID: <20111012064646.GA31037@b20223-02.ap.freescale.net>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-5-git-send-email-mturquette@ti.com>
+	Wed, 12 Oct 2011 02:53:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1316730422-20027-5-git-send-email-mturquette@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1318400368.1546.372.camel@vkoul-udesk3>
+References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
+ <1317200618.1573.1765.camel@vkoul-udesk3> <CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
+ <1317295068.1573.1780.camel@vkoul-udesk3> <CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
+ <CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
+ <CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
+ <CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
+ <CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
+ <CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
+ <20111003161349.GB28287@flint.arm.linux.org.uk> <CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
+ <CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
+ <1317966346.1573.2252.camel@vkoul-udesk3> <CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
+ <1317997177.1573.2275.camel@vkoul-udesk3> <CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
+ <1318229592.1573.2298.camel@vkoul-udesk3> <CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
+ <1318238296.1546.3.camel@vkoul-udesk3> <CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
+ <1318243501.1546.12.camel@vkoul-udesk3> <CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
+ <1318262559.1546.31.camel@vkoul-udesk3> <CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
+ <CAGsJ_4zzN1erduhV_hwWpPgTQ-YFowoPpmC_CKaT_C2=63OtZg@mail.gmail.com> <1318400368.1546.372.camel@vkoul-udesk3>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 12 Oct 2011 14:53:34 +0800
+Message-ID: <CAGsJ_4x4CQep2V3u0o83MWra_CJXdE6aQoENSnnziVBkqnVbNA@mail.gmail.com>
+Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
+        Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 22, 2011 at 03:26:59PM -0700, Mike Turquette wrote:
-> From: Jeremy Kerr <jeremy.kerr@canonical.com>
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> Signed-off-by: Mike Turquette <mturquette@ti.com>
-> ---
-> Changes since v1:
-> Add copyright header
-> Fold in Jamie's patch for set-to-disable clks
-> Use BIT macro instead of shift
-> 
->  drivers/clk/Kconfig    |    4 ++
->  drivers/clk/Makefile   |    1 +
->  drivers/clk/clk-gate.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/clk.h    |   13 ++++++++
->  4 files changed, 96 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/clk/clk-gate.c
+2011/10/12 Vinod Koul <vinod.koul@intel.com>:
+> On Wed, 2011-10-12 at 13:41 +0800, Barry Song wrote:
+>> 2011/10/11 Jassi Brar <jaswinder.singh@linaro.org>:
+>> > On 10 October 2011 21:32, Vinod Koul <vinod.koul@intel.com> wrote:
+>> >> On Mon, 2011-10-10 at 16:46 +0530, Jassi Brar wrote:
+>> >>> On 10 October 2011 16:15, Vinod Koul <vinod.koul@intel.com> wrote:
+>> >>> >
+>> >>> > But I am fine if we find a common ground and merge the two where dmac
+>> >>> > can cleanly identify direction and mode it is operating.
+>> >>> >
+>> >>> The client would set the xfer_direction and dmac would interpret as
+>> >>>
+>> >>> enum xfer_direction {
+>> >>>      MEM_TO_MEM,   ->  Async/Memcpy mode
+>> >>>      MEM_TO_DEV,    ->  Slave mode & From Memory to Device
+>> >>>      DEV_TO_MEM,    ->  Slave mode & From Device to Memory
+>> >>>      DEV_TO_DEV,     ->  Slave mode & From Device to Device
+>> >>> }
+>> >>>
+>> >>> How could it get any cleaner?
+>> >> Consider the case of a dmac driver which supports interleaved dma as
+>> >> well as memcpy and slave
+>> >> It needs to interpret dma_data_direction for later cases and
+>> >> xfer_direction for former ones.
+>> > dma_data_direction is the mapping attribute of a buffer and is not meant to
+>> > tell type of source and destination of a transfer.
+>> > xfer_direction is meant for that purpose.
+>> > So I'd rather convert device_prep_dma_cyclic and device_prep_slave_sg
+>> > to use xfer_direction.
+>>
+>> i tend to agree with Jassi. now dma_data_direction actually is only
+>> mapping things not real transfer direction.
+>> xfer_direction is now something really telling the data transfer direction.
+>> I think that's what device_prep_dma_cyclic and device_prep_slave_sg want.
+>>
+>> actually, there is only one case we need to use dma_data_direction in
+>> dmac driver, that's unmapping async dma buffer.
+>> But the param to dma_unmap_single can be implied by xfer_direction and
+>> dma description.
+>>
+>> that's why i think we should rename dma_data_direction to
+>> dma_map_direction or something like that to avoid confusion.
+> Nope, I would leave dma_data_direction as is.
+> We should use above enum in dmaengine and all dmac drivers.
 
-I feel hard to tell the tree the clk parent, at register/init time. For the
-simple gate clk, the only way is to set .get_parent. But normally, for clk
-without any divider we set .get_parent to NULL. Maybe we can put .parent to
-struct clk_hw?
+anyway, the rename issue is trivial. i can accept the current name as
+is even it doesn't make all senses.
+The important thing is the dma_transfer_direction or
+dma_xfer_direction as Jassi and you said.
 
-Thanks
-Richard
-> 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index d8313d7..a78967c 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -12,3 +12,7 @@ config GENERIC_CLK
->  config GENERIC_CLK_FIXED
->  	bool
->  	depends on GENERIC_CLK
-> +
-> +config GENERIC_CLK_GATE
-> +	bool
-> +	depends on GENERIC_CLK
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 9a3325a..d186446 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -2,3 +2,4 @@
->  obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
->  obj-$(CONFIG_GENERIC_CLK)	+= clk.o
->  obj-$(CONFIG_GENERIC_CLK_FIXED)	+= clk-fixed.o
-> +obj-$(CONFIG_GENERIC_CLK_GATE)	+= clk-gate.o
-> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-> new file mode 100644
-> index 0000000..a1d8e79
-> --- /dev/null
-> +++ b/drivers/clk/clk-gate.c
-> @@ -0,0 +1,78 @@
-> +/*
-> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Simple clk gate implementation
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +#include <asm/io.h>
-> +
-> +#define to_clk_gate(clk) container_of(clk, struct clk_gate, hw)
-> +
-> +static unsigned long clk_gate_get_rate(struct clk_hw *clk)
-> +{
-> +	return clk_get_rate(clk_get_parent(clk->clk));
-> +}
-> +
-> +static void clk_gate_set_bit(struct clk_hw *clk)
-> +{
-> +	struct clk_gate *gate = to_clk_gate(clk);
-> +	u32 reg;
-> +
-> +	reg = __raw_readl(gate->reg);
-> +	reg |= BIT(gate->bit_idx);
-> +	__raw_writel(reg, gate->reg);
-> +}
-> +
-> +static void clk_gate_clear_bit(struct clk_hw *clk)
-> +{
-> +	struct clk_gate *gate = to_clk_gate(clk);
-> +	u32 reg;
-> +
-> +	reg = __raw_readl(gate->reg);
-> +	reg &= ~BIT(gate->bit_idx);
-> +	__raw_writel(reg, gate->reg);
-> +}
-> +
-> +static int clk_gate_enable_set(struct clk_hw *clk)
-> +{
-> +	clk_gate_set_bit(clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static void clk_gate_disable_clear(struct clk_hw *clk)
-> +{
-> +	clk_gate_clear_bit(clk);
-> +}
-> +
-> +struct clk_hw_ops clk_gate_set_enable_ops = {
-> +	.recalc_rate = clk_gate_get_rate,
-> +	.enable = clk_gate_enable_set,
-> +	.disable = clk_gate_disable_clear,
-> +};
-> +EXPORT_SYMBOL_GPL(clk_gate_set_enable_ops);
-> +
-> +static int clk_gate_enable_clear(struct clk_hw *clk)
-> +{
-> +	clk_gate_clear_bit(clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static void clk_gate_disable_set(struct clk_hw *clk)
-> +{
-> +	clk_gate_set_bit(clk);
-> +}
-> +
-> +struct clk_hw_ops clk_gate_set_disable_ops = {
-> +	.recalc_rate = clk_gate_get_rate,
-> +	.enable = clk_gate_enable_clear,
-> +	.disable = clk_gate_disable_set,
-> +};
-> +EXPORT_SYMBOL_GPL(clk_gate_set_disable_ops);
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 1903dd8..626fd0d 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -124,6 +124,19 @@ extern struct clk_hw_ops clk_fixed_ops;
->  
->  #endif /* CONFIG_GENERIC_CLK_FIXED */
->  
-> +#ifdef CONFIG_GENERIC_CLK_GATE
-> +
-> +struct clk_gate {
-> +	struct clk_hw	hw;
-> +	void __iomem	*reg;
-> +	u8		bit_idx;
-> +};
-> +
-> +extern struct clk_hw_ops clk_gate_set_enable_ops;
-> +extern struct clk_hw_ops clk_gate_set_disable_ops;
-> +
-> +#endif /* CONFIG_GENERIC_CLK_GATE */
-> +
->  /**
->   * clk_register - register and initialize a new clock
->   *
-> -- 
-> 1.7.4.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
+>
+> @Jassi: I have started doing this change for dmaengine and dmacs, and I
+> took the liberty to name this enum as dma_transfer_direction, hope you
+> are okay with that
+>
+>
+> --
+> ~Vinod
+>
+-barry
