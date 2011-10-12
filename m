@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1JLUm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 16:42:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64458 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab1JLUm1 (ORCPT
+	id S1754126Ab1JLUvC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 16:51:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33284 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1JLUvA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 16:42:27 -0400
-Date: Wed, 12 Oct 2011 13:42:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm/huge_memory: Clean up typo when copying user
- highpage
-Message-Id: <20111012134224.786191ac.akpm@linux-foundation.org>
-In-Reply-To: <20111012175148.GA27460@redhat.com>
-References: <CAJd=RBBuwmcV8srUyPGnKUp=RPKvsSd+4BbLrh--aHFGC5s7+g@mail.gmail.com>
-	<20111012175148.GA27460@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 12 Oct 2011 16:51:00 -0400
+Subject: Re: sig->cputimer.lock/rq->lock lockdep report
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ari Savolainen <ari.m.savolainen@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Date: Wed, 12 Oct 2011 22:50:51 +0200
+In-Reply-To: <CAEbykaX=HWMJmTB0VCFkfW2v2G9=FcnFZBFwrYk8bFTT_FrD-Q@mail.gmail.com>
+References: <CAEbykaX=HWMJmTB0VCFkfW2v2G9=FcnFZBFwrYk8bFTT_FrD-Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1318452651.14236.9.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 19:51:48 +0200
-Andrea Arcangeli <aarcange@redhat.com> wrote:
+On Wed, 2011-10-12 at 23:13 +0300, Ari Savolainen wrote:
+> I've got the same problem that Dave reported earlier. I bisected it to
+> commit d670ec13178d "posix-cpu-timers: Cure SMP wobbles". 
 
-> On Wed, Oct 12, 2011 at 10:39:36PM +0800, Hillf Danton wrote:
-> > Hi Andrea
-> > 
-> > When copying user highpage, the PAGE_SHIFT in the third parameter is a typo,
-> > I think, and is replaced with PAGE_SIZE.
-> 
-> That looks correct. I wonder how it was not noticed yet. Because it
-> can't go out of bound, it didn't risk to crash the kernel and it didn't
-> not risk to expose random data to the cowing task. So it shouldn't
-> have security implications as far as I can tell, but the app could
-> malfunction and crash (userland corruption only).
+https://lkml.org/lkml/2011/10/7/282
 
-Which architectures care about the copy_user_page() `vaddr' argument? 
-mips, perhaps?  I suspect the intersection between those architectures
-and archs-which-implement-hugepages is the empty set.
+Does the below work for you? (still not proud of it)
+
+---
+ include/linux/sched.h     |    3 +++
+ kernel/posix-cpu-timers.c |    6 +++++-
+ kernel/sched_stats.h      |    4 ++--
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 41d0237..ad9eafc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -503,6 +503,7 @@ struct task_cputime {
+  * @running:		non-zero when there are timers running and
+  * 			@cputime receives updates.
+  * @lock:		lock for fields in this struct.
++ * @runtime_lock:	lock for cputime.sum_exec_runtime
+  *
+  * This structure contains the version of task_cputime, above, that is
+  * used for thread group CPU timer calculations.
+@@ -511,6 +512,7 @@ struct thread_group_cputimer {
+ 	struct task_cputime cputime;
+ 	int running;
+ 	spinlock_t lock;
++	spinlock_t runtime_lock;
+ };
+ 
+ #include <linux/rwsem.h>
+@@ -2566,6 +2568,7 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+ static inline void thread_group_cputime_init(struct signal_struct *sig)
+ {
+ 	spin_lock_init(&sig->cputimer.lock);
++	spin_lock_init(&sig->cputimer.runtime_lock);
+ }
+ 
+ /*
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index c8008dd..fa189a6 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -284,9 +284,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+ 		 * it.
+ 		 */
+ 		thread_group_cputime(tsk, &sum);
++		spin_lock(&cputimer->runtime_lock);
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+-	}
++	} else
++		spin_lock(&cputimer->runtime_lock);
++
+ 	*times = cputimer->cputime;
++	spin_unlock(&cputimer->runtime_lock);
+ 	spin_unlock_irqrestore(&cputimer->lock, flags);
+ }
+ 
+diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
+index 331e01b..a7e2c1a 100644
+--- a/kernel/sched_stats.h
++++ b/kernel/sched_stats.h
+@@ -330,7 +330,7 @@ static inline void account_group_exec_runtime(struct task_struct *tsk,
+ 	if (!cputimer->running)
+ 		return;
+ 
+-	spin_lock(&cputimer->lock);
++	spin_lock(&cputimer->runtime_lock);
+ 	cputimer->cputime.sum_exec_runtime += ns;
+-	spin_unlock(&cputimer->lock);
++	spin_unlock(&cputimer->runtime_lock);
+ }
 
