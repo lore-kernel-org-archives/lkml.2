@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab1JLN0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:26:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62912 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab1JLN0U (ORCPT
+	id S1753320Ab1JLN2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:28:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56659 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab1JLN2q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:26:20 -0400
-X-Authority-Analysis: v=1.1 cv=XWD5/VRj2HUJOhsR8cgmvPBlhMACpZXxseY1Kn/ehQI= c=1 sm=0 a=NFX316_vVeIA:10 a=5SG0PmZfjMsA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VwQbUJbxAAAA:8 a=NEAV23lmAAAA:8 a=iVtBtYpV1l-ycE1rTQMA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=Xjh8pU3JKGIVh3W9GzMA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1318425974.13262.26.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 0/2 v2] [GIT PULL][v3.2] tracing: queued updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Oct 2011 09:26:14 -0400
-In-Reply-To: <1318418515.13262.21.camel@gandalf.stny.rr.com>
-References: <20111011152026.701326733@goodmis.org>
-	 <20111012081629.GA25086@elte.hu>
-	 <1318418515.13262.21.camel@gandalf.stny.rr.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6E9WKjx8Yh4L8ar+LFzT"
-X-Mailer: Evolution 3.0.3-2 
-Mime-Version: 1.0
+	Wed, 12 Oct 2011 09:28:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+	<CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
+Date: Wed, 12 Oct 2011 08:28:44 -0500
+Message-ID: <CAF6AEGs6kkGp85NoNVuq5W9i=WE86V8wvAtKydX=D3bQOc+6Pw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Rob Clark <robdclark@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 12, 2011 at 7:41 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Tue, Oct 11, 2011 at 10:23 AM, Sumit Semwal <sumit.semwal@ti.com> wrote:
+>> This is the first step in defining a dma buffer sharing mechanism.
+>>
+>> A new buffer object dma_buf is added, with operations and API to allow easy
+>> sharing of this buffer object across devices.
+>>
+>> The framework allows:
+>> - a new buffer-object to be created with fixed size.
+>> - different devices to 'attach' themselves to this buffer, to facilitate
+>>  backing storage negotiation, using dma_buf_attach() API.
+>> - association of a file pointer with each user-buffer and associated
+>>   allocator-defined operations on that buffer. This operation is called the
+>>   'export' operation.
+>> - this exported buffer-object to be shared with the other entity by asking for
+>>   its 'file-descriptor (fd)', and sharing the fd across.
+>> - a received fd to get the buffer object back, where it can be accessed using
+>>   the associated exporter-defined operations.
+>> - the exporter and user to share the scatterlist using get_scatterlist and
+>>   put_scatterlist operations.
+>>
+>> Atleast one 'attach()' call is required to be made prior to calling the
+>> get_scatterlist() operation.
+>>
+>> Couple of building blocks in get_scatterlist() are added to ease introduction
+>> of sync'ing across exporter and users, and late allocation by the exporter.
+>>
+>> mmap() file operation is provided for the associated 'fd', as wrapper over the
+>> optional allocator defined mmap(), to be used by devices that might need one.
+>
+> Why is this needed? it really doesn't make sense to be mmaping objects
+> independent of some front-end like drm or v4l.
 
---=-6E9WKjx8Yh4L8ar+LFzT
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+well, the mmap is actually implemented by the buffer allocator
+(v4l/drm).. although not sure if this was the point
 
-On Wed, 2011-10-12 at 07:21 -0400, Steven Rostedt wrote:
-> [ Added hpa ]
->=20
-> On Wed, 2011-10-12 at 10:16 +0200, Ingo Molnar wrote:
-> > =20
-> > > Please pull the latest tip/perf/core tree, which can be found at:
-> > >=20
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.g=
-it
-> > > tip/perf/core
-> > >=20
-> > > Head SHA1: d696b58ca2c3ca76e784ef89a7e0453d9b7ab187
-> >=20
-> > Hm, even after 12+ hours of wait i can only pull 177e216 from your=20
-> > tip/perf/core. Is this a korg delay, or did you forget to push? The=20
-> > perf/urgent branch was there, so i don't think it's korg delay.
->=20
-> I just tried again, and got:
->=20
-> $ git push push trace/tip/perf/core:tip/perf/core
-> Enter passphrase for key '/home/rostedt/.ssh/id_rsa_korg':=20
-> Everything up-to-date
+> how will you know what contents are in them, how will you synchronise
+> access. Unless someone has a hard use-case for this I'd say we drop it
+> until someone does.
 
-> It seems that gitolite isn't refreshing rebases?
+The intent was that this is for well defined formats.. ie. it would
+need to be a format that both v4l and drm understood in the first
+place for sharing to make sense at all..
 
+Anyways, the basic reason is to handle random edge cases where you
+need sw access to the buffer.  For example, you are decoding video and
+pull out a frame to generate a thumbnail w/ a sw jpeg encoder..
 
-There seems to be issues with kernel.org refreshing. You can get the
-same branch at my github repo:
+On gstreamer 0.11 branch, for example, there is already a map/unmap
+virtual method on the gst buffer for sw access (ie. same purpose as
+PrepareAccess/FinishAccess in EXA).  The idea w/ dmabuf mmap() support
+is that we could implement support to mmap()/munmap() before/after sw
+access.
 
-  git://github.com/rostedt/linux.git
-tip/perf/core
+With this current scheme, synchronization could be handled in
+dmabufops->mmap() and vm_ops->close()..  it is perhaps a bit heavy to
+require mmap/munmap for each sw access, but I suppose this isn't
+really for the high-performance use case.  It is just so that some
+random bit of sw that gets passed a dmabuf handle without knowing who
+allocated it can have sw access if really needed.
 
+BR,
+-R
 
-It has the same SHA1: d696b58ca2c3ca76e784ef89a7e0453d9b7ab187
-
--- Steve
-
-
---=-6E9WKjx8Yh4L8ar+LFzT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJOlZV2AAoJEIy3vGnGbaoAQlcP/RjQ5ENpIc68In9QYgKbzE/9
-vJepmwHWYunj84VB6pI6A2ZzVezOEH3SLb1ilH9tPr1BeSXJBU2ekoKMu/b064+i
-+gHwox2aQGVqETzCuf3ovOKnv4ImhcBwSYsamGmwTieKJDmOIy816uX7kF8MKgDS
-leyHTeE1+N+ISiXhXXfxVww9MAX5KCMsQ4mp0H5eddWPqZr10YvccbcyqkdE1afW
-V4ajC0Ml72mRFC5QjhO1iXhHVhsg8gyMpeq3hmaMf1K4K/IJn3pM2hoIARaR3Jvh
-yUgIKDyyd9lpfnHOBu6lOvM44hlJ2LOAmIKcjpyHxDzqA8aZUE4MOcmojkuOvlHV
-cat/tOPTZL8DQolJUCqWdbhi5FzilA7RhCBf+ijjg8R3VcKi2LwZuB4wwr6h0TiA
-K18y2uEdOlE2djRLnJa7b+EbR6d08zWXz9+W15cRx/lzkJKl9keYbu4BuDOn6YSp
-L7Wl6jnOctjz8T7U7OyAfI7lbC7AlkDpfL5xEESIRYJvzSNRSzBnDh66nMLtNADJ
-dCtqgv1HR04Q7JAI26ELbQxb8Yi6phzPJYku/yo/yXNs92YBYbFPyY6RyCbi8s27
-k3pgYfSsfw1v85El7TqDsfFeFvV78M/VBki7QYF3PLKpGmByTCvTjqNcG+3pFTsq
-D+9NoDIYRhPRYcaIID8s
-=ylfj
------END PGP SIGNATURE-----
-
---=-6E9WKjx8Yh4L8ar+LFzT--
-
+> Dave.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
