@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab1JLXxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 19:53:06 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:56410 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1JLXxE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 19:53:04 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Date: Wed, 12 Oct 2011 19:52:29 -0400
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Index: AcyJMC9QC9gAI2vVQJW3pPylNWLosgACYkTg
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516D0EA@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
- <20110901100650.6d884589.rdunlap@xenotime.net>
- <20110901152650.7a63cb8b@annuminas.surriel.com>
- <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
- <20111010153723.6397924f.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
- <20111011125419.2702b5dc.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
- <20111011135445.f580749b.akpm@linux-foundation.org>
- <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
- <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110121537380.16286@chino.kir.corp.google.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751520Ab1JLXzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:55:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34819 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab1JLXza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:55:30 -0400
+Message-ID: <4E9628D4.1000605@zytor.com>
+Date: Wed, 12 Oct 2011 16:55:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110120301
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Borislav Petkov <bp@amd64.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E96198F.4030906@zytor.com> <4E962581.2000605@goop.org>
+In-Reply-To: <4E962581.2000605@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 06:41 PM, David Rientjes wrote:
-> On Wed, 12 Oct 2011, Satoru Moriya wrote:
-> 
-> I think the point was that extra_free_kbytes needs to be tuned to 
-> cover at least the amount of memory of the largest allocation burst
+On 10/12/2011 04:40 PM, Jeremy Fitzhardinge wrote:
+> On 10/12/2011 03:49 PM, H. Peter Anvin wrote:
+>> The stickiest part of all of this is where to leave the microcode so
+>> the kernel can get to it way early.  We could use the linked list, but
+>> that would mean bootloader enabling; another idea was to stick it as a
+>> prefix to the initramfs identified by a signature.
+>
+> I think it would be easiest for the multiboot case if it were a separate
+> file, but I don't feel I'm really up on all the details.
 
-Right. In enterprise area, we strictly test the system we build
-again and again before we release it. In that situation, we can
-set extra_free_kbytes appropriately based on system's requirements
-and/or specifications etc.
+For the multiboot case, yes of course.
 
-> or it doesn't help to prevent latencies for rt threads and,
+Some bootloaders allow initramfs to be concatenated from multiple files; 
+unfortunately I'm not sure if Grub ever grew that capability.  Sigh.
 
-I thinks it also helps rt threads prevent latency as well as
-normal threads because we can start kswapd earlier and avoid
-direct reclaim.
+	-hpa
 
-> For example, if we were to merge Con's patch so kswapd operates at a 
-> much higher priority for rt threads later on for another issue, it may 
-> significantly reduce the need for extra_free_kbytes to be set as high 
-> as it is.  Everybody who is setting this in init scripts, though, will 
-> continue to set the value because they have no reason to believe it 
-> should be changed.  Then, we have users who start to use the tunable 
-> after Con's patch has been merged and now we have widely different 
-> settings for the same tunable and it can never be obsoleted because 
-> everybody is using it but for different historic reasons.
-> 
-> This is why I nack'd the patch originally: it will never be removed, 
-> it is widely misunderstood, and is tied directly to the implementation 
-> of reclaim which will change over time.
 
-I understand what you concern. But in some area such as banking,
-stock exchange, train/power/plant control sysemts etc this kind
-of tunable is welcomed because they can tune their systems at
-their own risk.
-
-Also those systems have been used for a long time without significant
-updating. If we update it or build a new system, we configure all
-tunables from scratch.
-
-Thanks,
-Satoru
