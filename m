@@ -1,87 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab1JLBzL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 21:55:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56154 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab1JLBzK (ORCPT
+	id S1752149Ab1JLB6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 21:58:49 -0400
+Received: from mail2.nsc.com ([12.238.8.132]:53826 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750980Ab1JLB6s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 21:55:10 -0400
+	Tue, 11 Oct 2011 21:58:48 -0400
+X-Greylist: delayed 1071 seconds by postgrey-1.27 at vger.kernel.org; Tue, 11 Oct 2011 21:58:48 EDT
+X-WSS-ID: 0LSXJC6-0A-JPF-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "cbou@mail.ru" <cbou@mail.ru>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 11 Oct 2011 18:40:42 -0700
+Subject: RE: [PATCH 0/3] power: Add LP8727 charger driver
+Thread-Topic: [PATCH 0/3] power: Add LP8727 charger driver
+Thread-Index: AcxtOZHwsfRfFQT8RpKYDbb2wllC3QAAdKRQBtC+qdA=
+Message-ID: <B567DBAB974C0544994013492B949F8E380FB3A334@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-In-Reply-To: <1711499402.60485.1318380603125.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-References: <CAKYAXd_MJy_3TAoM_buCmP5g3j1e=Vh5vZPJP9O_nxDrWiHsAw@mail.gmail.com>
-	<1711499402.60485.1318380603125.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Date: Wed, 12 Oct 2011 10:55:08 +0900
-Message-ID: <CAKYAXd_HAv5+kg26tGLZcDHWmD2MoQFFTwoDtFuvsqgZTcPJwA@mail.gmail.com>
-Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree
- for Oct 11 (mmc))
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Andrei Warkentin <awarkentin@vmware.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
+X-WSS-ID: 628A2FAA1LS7382701-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/12 Andrei Warkentin <awarkentin@vmware.com>:
-> Hi,
->
-> ----- Original Message -----
->> From: "NamJae Jeon" <linkinjeon@gmail.com>
->> To: "Andrei Warkentin" <awarkentin@vmware.com>
->> Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris Ball"
->> <cjb@laptop.org>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Randy Dunlap" <rdunlap@xenotime.net>
->> Sent: Tuesday, October 11, 2011 8:16:51 PM
->> Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree for Oct 11 (mmc))
->>
->> 2011/10/12 Andrei Warkentin <awarkentin@vmware.com>:
->> > ----- Original Message -----
->> >> From: "NamJae Jeon" <linkinjeon@gmail.com>
->> >> To: "Randy Dunlap" <rdunlap@xenotime.net>, "Andrei Warkentin"
->> >> <awarkentin@vmware.com>
->> >> Cc: linux-next@vger.kernel.org, "LKML"
->> >> <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris
->> >> Ball"
->> >> <cjb@laptop.org>, "Stephen Rothwell" <sfr@canb.auug.org.au>
->> >> Sent: Tuesday, October 11, 2011 7:20:48 PM
->> >> Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was:
->> >> linux-next: Tree for Oct 11 (mmc))
->> >>
->> >> Hi Randy, Andrei.
->> >>
->> >> I suggest third option for this.
->> >> As you know, MMC like ATA Driver and SCSI Driver etc.. can not
->> >> enable
->> >> without CONFIG_BLOCK
->> >> So I think that mmc should be depended from CONFIG_BLOCK like
->> >> other
->> >> block device driver.
->> >> see the their Kconfig. How do you think ?
->> >
->> > MMC core doesn't not imply MMC_BLOCK. You could well use SDIO
->> > devices via MMC without any flash storage whatsoever.
->> > What I want to say is that MMC_BLOCK already depends on BLOCK. MMC,
->> > however, has no such functional dependence, as it
->> > just (effectively) provides bus and device enumeration. So I think
->> > the better solution is wrapping all MMC partition
->> > code within mmc/core/mmc.c and card.h with CONFIG_BLOCK.
->> yes, you're right, I found it after sending mail. If so, should I
->> wrap
->> CONFIG_MMC_BLOCK instead of CONFIG_MMC ? After I add CONFIG_MMC_BLOCK
->> in core/mmc.c, card.h, I can see compile is okay.
->> Thanks.
->> >
->
-> I am not sure if it should be CONFIG_MMC_BLOCK or CONFIG_BLOCK. After all, the
-> code you're wrapping doesn't really depend on CONFIG_MMC_BLOCK, it gets consumed by it, and
-> it depends (in using that one define) only on CONFIG_BLOCK. Maybe I'm overthinking it
-> and the code should just define it's own MAX_MMC_PART_NAME to be like 10 or something.
-yes, I agree your opinion,  If we define it is easy to solve.
-I will send new patch for it today.
-Thanks.
->
-> A
->
+Hello, Power Supply Class Maintainers
+
+Would you review new LP8727 patches ?
+I'd like to share your opinion.
+
+Thanks & BR
+Milo (Woogyom) Kim
+(milo.kim@nsc.com or milo.kim@ti.com)
+
+-----Original Message-----
+From: Kim, Milo 
+Sent: Wednesday, September 07, 2011 5:54 PM
+To: 'cbouatmailru@gmail.com'
+Cc: 'linux-kernel@vger.kernel.org'; 'dwmw2@infradead.org'; 'cbou@mail.ru'
+Subject: [PATCH 0/3] power: Add LP8727 charger driver
+
+
+This patch supports the LP8727 charger driver.
+
+* General features
+National Semiconductor LP8727 is the battery charger with Micro/Mini USB interface.
+This IC includes below functions
+- I2C interface for accessing user registers
+- Single input Li-Ion battery charger
+- Charger input ID detection from Micro/Mini USB
+- Multiplexing switches on USB, UART
+
+* Driver Description
+1) Interrupt
+	When the charger events occur(attached/detached), the LP8727 generates the interrupt.
+	Then the host will read 2 interrupt registers and do ID detection, multiplexing switches and updating power supplies.
+	It takes few debounce time (about 270ms) to get updated status.
+
+2) ID detection
+	LP8727 detects the charger and the device ID is updated in register area.
+	Available device ID : TA(Travel Adaptor), Dedicated charger, USB charger and USB downstream
+
+3) Power supplies
+	Three power supplies are registered when LP8727 driver is detected.
+	- AC : adapter
+	- USB : USB charger
+	- Battery : Li-On battery
+
+	AC and USB are supplied to the battery.
+	Charging parameters can be set as changed charger type.
+	For this function, 'external_power_changed()' and 'supplied_to' are used.
+
+4) Platform data for lp8727
+	There are two reason for providing lp8727 platform data.
+ 
+	a) Supporting limited power supply properties
+	LP8727 doesn't support the fuel gauging and no way to check whether battery exists or not.
+	So below properties can't be read from the LP8727 registers
+	- POWER_SUPPLY_PROP_PRESENT
+	- POWER_SUPPLY_PROP_VOLTAGE_NOW
+	- POWER_SUPPLY_PROP_CAPACITY
+	- POWER_SUPPLY_PROP_TEMP
+
+	If the system has fuel gauging and battery detection,
+	then I would recommend mapping functions in the platform data when adding i2c device.
+   
+	Ex) static struct lp8727_platform_data lp8727_chg_pdata = {
+		.get_batt_present = dummy_get_batt_present,
+		.get_batt_level = dummy_get_batt_level;
+		.get_batt_capacity = dummy_get_batt_capacity,
+		.get_batt_temp = dummy_get_batt_temp,
+		...
+	};
+
+	When user-space gets battery properties, the mapping function is called.
+
+	Ex) static int lp8727_battery_get_property(struct power_supply *psy,
+								enum power_supply_property psp,
+								union power_supply_propval *val)
+	{
+		struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
+
+		...
+
+		// dummy_get_batt_level() will be called
+		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+			if(pchg->pdata->get_batt_level)
+				val->intval = pchg->pdata->get_batt_level();
+		break;
+
+		...
+	}
+
+	b) Supporting platform specific charging parameters
+	The values of EOC(End of Charge) and charging current depend on the charger type.(ac or usb)
+	For example, during charging battery with ac adaptor, eoc level is 10% of Vterm and charging current is 400mA.
+	(Vterm : charging termination voltage)
+	But with USB charger, charging current is set to 500mA.
+	This value is platform specific data.
+ 
+	Ex) static struct lp8727_platform_data lp8727_chg_pdata = {
+		...
+
+		.ac = {
+			.eoc_level = EOC_10P,
+			.ichg = ICHG_400mA,
+		},
+		.usb = {
+			.eoc_level = EOC_10P,
+			.ichg = ICHG_500mA,
+		},
+	};
+
+	Then this value will be updated after power_supply_changed() is called.
+ 
+	Ex) static void lp8727_charger_changed(struct power_supply *psy)
+	{
+		...
+		eoc_level = pchg->chg_parm->eoc_level;
+		ichg = pchg->chg_parm->ichg;
+		val = (ichg << 4) | eoc_level;
+		 (void)lp8727_i2c_write(pchg, CHGCTRL2, &val, 1);
+		...
+	}
+
+* Tested on OMAP3530 board
+
+
+Best Regards
+------------------------------------------------------------------------------------------------------------
+Milo (Woo Gyom) KIM
+National Semiconductor
+milo.kim@nsc.com
+------------------------------------------------------------------------------------------------------------
+
+
+
