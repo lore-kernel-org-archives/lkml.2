@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1JLVJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:09:23 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:45472 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab1JLVJW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:09:22 -0400
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Date: Wed, 12 Oct 2011 17:08:57 -0400
-Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
-Thread-Index: AcyIWAdwT01aeavTTiC9+a/R3mSRjQAyvpyA
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
-	<20111010153723.6397924f.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
-	<20111011125419.2702b5dc.akpm@linux-foundation.org>
-	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
- <20111011135445.f580749b.akpm@linux-foundation.org>
-In-Reply-To: <20111011135445.f580749b.akpm@linux-foundation.org>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754196Ab1JLVNC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:13:02 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49171 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752224Ab1JLVM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 17:12:59 -0400
+Date: Wed, 12 Oct 2011 14:03:42 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 11/28] ext4: Calculate and verify inode checksums
+Message-ID: <20111012210342.GO12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com> <1CCC75F1-41BE-49E9-8A03-372FC76E0202@dilger.ca>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=2 spamscore=2
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1110120250
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1CCC75F1-41BE-49E9-8A03-372FC76E0202@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11101221-5930-0000-0000-00000048C4B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 04:54 PM, Andrew Morton wrote:
-> On Tue, 11 Oct 2011 16:23:22 -0400
-> Satoru Moriya <satoru.moriya@hds.com> wrote:
->
->> Also, if we increase the free-page reserves a.k.a min_free_kbytes, 
->> the possibility of direct reclaim on other workloads increases.
->> I think it's a bad side effect.
+On Wed, Oct 12, 2011 at 12:45:01PM -0700, Andreas Dilger wrote:
+> On 2011-10-08, at 12:54 AM, Darrick J. Wong wrote:
+> > This patch introduces to ext4 the ability to calculate and verify inode
+> > checksums.  This requires the use of a new ro compatibility flag and some
+> > accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+> > e2fsck.
+> > 
+> > +static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
+> > +			      struct ext4_inode_info *ei)
+> > +{
+> > +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> > +	__u16 crc_lo;
+> > +	__u16 crc_hi = 0;
+> > +	__u32 crc;
+> > +
+> > +	crc_lo = raw->i_checksum_lo;
+> > +	raw->i_checksum_lo = 0;
+> > +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> > +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
+> > +		crc_hi = raw->i_checksum_hi;
+> > +		raw->i_checksum_hi = 0;
+> > +	}
+> > +
+> > +	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)raw,
+> > +			  EXT4_INODE_SIZE(inode->i_sb));
+> > +
+> > +	raw->i_checksum_lo = crc_lo;
+> > +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> > +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> > +		raw->i_checksum_hi = crc_hi;
+> > +
+> > +	return crc;
+> > +}
 > 
-> extra_free_kbytes has the same side-effect.
+> This computes both the _lo and _hi parts of the checksum and overwrites what
+> is in the inode...
 
-I don't think so. If we make low watermark bigger to increase
-free-page reserves by extra_free_kbytes, the possibility of
-direct reclaim on other workload does not increase directly
-because min watermark is not changed. 
-Of course, as David pointed out, other workloads may incur
-a regression because kswapd uses more cpu time.
+I don't follow your logic ... for the _lo component, first I save the old
+i_checksum_lo contents in crc_lo.  Then I stuff zero into i_checksum_lo.  Next
+I perform the checksum computation (with the checksum field effectively "zero")
+and put the results into crc.  Then I copy whatever I saved in crc_lo back into
+i_checksum_lo.
 
-Thanks,
-Satoru
+crc_lo, crc_hi, and crc are three separate variables, and neither crc_lo nor
+crc_hi are ever assigned any part of crc.  Therefore crc_lo and crc_hi should
+always contain the old checksum contents.
+
+Did I miss something?  Afaict the contents of raw should be the same before and
+after the call to ext4_inode_csum(), but maybe I've been looking at this too
+long. :)
+
+> > +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
+> > +				  struct ext4_inode_info *ei)
+> > +{
+> > +	__u32 provided, calculated;
+> > +
+> > +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> > +	    cpu_to_le32(EXT4_OS_LINUX) ||
+> > +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return 1;
+> > +
+> > +	provided = le16_to_cpu(raw->i_checksum_lo);
+> > +	calculated = ext4_inode_csum(inode, raw, ei);
+> 
+> This only saves the _lo part of the checksum before computing the new
+> checksum (which overwrites both _lo and _hi fields), so the _hi part
+> of the checksum is never properly validated below.
+> 
+> > +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> > +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> > +		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
+> 
+> This should be moved up to save _hi before calling ext4_inode_csum().
+> 
+> > +	else
+> > +		calculated &= 0xFFFF;
+> > +
+> > +	return provided == calculated;
+> > +}
+> 
+> > +static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
+> > +				struct ext4_inode_info *ei)
+> > +{
+> > +	__u32 crc;
+> > +
+> > +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> > +	    cpu_to_le32(EXT4_OS_LINUX) ||
+> > +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return;
+> > +
+> > +	crc = ext4_inode_csum(inode, raw, ei);
+> > +	raw->i_checksum_lo = cpu_to_le16(crc & 0xFFFF);
+> > +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
+> > +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
+> > +		raw->i_checksum_hi = cpu_to_le16(crc >> 16);
+> 
+> What is the point of storing the returned crc into raw->i_checksum_lo
+> and raw->i_checksum_hi, if this is done internal to ext4_inode_csum()
+> already?
+
+It shouldn't be doing that (see above).
+
+> Also, would it be better to call the temporary variable "csum" instead
+> of "crc", since we may use something other than crc32c as the hash
+> function in the future.
+
+I suppose.
+
+--D
+
