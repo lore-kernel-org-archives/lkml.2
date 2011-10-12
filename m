@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab1JLOtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:49:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41760 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751633Ab1JLOtm (ORCPT
+	id S1752036Ab1JLOuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:50:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51754 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1JLOuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:49:42 -0400
-Date: Wed, 12 Oct 2011 15:49:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg@ti.com, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        kuninori.morimoto.gx@renesas.com, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 1/9] ASoC: da7210: Add support for line out
- and DAC
-Message-ID: <20111012144940.GN3647@opensource.wolfsonmicro.com>
-References: <1318431375.12107.398.camel@matrix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1318431375.12107.398.camel@matrix>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 12 Oct 2011 10:50:11 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 01/13] vfs: ignore error on forced remount
+Date: Wed, 12 Oct 2011 16:48:54 +0200
+Message-Id: <1318430946-7091-2-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 08:26:15PM +0530, Ashish Chavan wrote:
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-> +	SOC_DOUBLE_R_TLV("DAC Playback Volume",
-> +			 DA7210_DAC_L, DA7210_DAC_R,
-> +			 0, 0x77, 1, dac_gain_tlv),
+On emergency remount we want to force MS_RDONLY on the super block
+even if ->remount_fs() failed for some reason.
 
-Digital Playback Volume.
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/super.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-> +	/* Set default DAC gain */
-> +	snd_soc_write(codec, DA7210_DAC_L, DA7210_DFLT_DAC_GAIN);
-> +	snd_soc_write(codec, DA7210_DAC_R, DA7210_DFLT_DAC_GAIN);
+diff --git a/fs/super.c b/fs/super.c
+index 3f56a26..363fde2 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -727,8 +727,13 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+-		if (retval)
+-			return retval;
++		if (retval) {
++			if(!force)
++				return retval;
++			/* If forced remount, go ahead despite any errors */
++			WARN(1, "forced remount of a %s fs returned %i\n",
++			     sb->s_type->name, retval);
++		}
+ 	}
+ 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
+ 
+-- 
+1.7.3.4
 
-No, use chip defaults.
