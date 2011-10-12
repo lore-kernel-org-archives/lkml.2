@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1JLIIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:08:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39124 "EHLO mx2.mail.elte.hu"
+	id S1752760Ab1JLIO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:14:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39998 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab1JLIIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 04:08:53 -0400
-Date: Wed, 12 Oct 2011 10:07:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Valdis.Kletnieks@vt.edu, git@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/20] [GIT PULL][v3.2] tracing: queued updates
-Message-ID: <20111012080711.GM18618@elte.hu>
-References: <20111010133852.829771373@goodmis.org>
- <20111011055017.GA32616@elte.hu>
- <20002.1318367320@turing-police.cc.vt.edu>
+	id S1751670Ab1JLIO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 04:14:56 -0400
+Message-ID: <4E954C78.1070501@ti.com>
+Date: Wed, 12 Oct 2011 10:14:48 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20002.1318367320@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Paul Walmsley <paul@pwsan.com>
+CC: "Kristo, Tero" <t-kristo@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv9 03/18] TEMP: OMAP3xxx: hwmod data: add PRM hwmod
+References: <1316781986-30642-1-git-send-email-t-kristo@ti.com> <1316781986-30642-4-git-send-email-t-kristo@ti.com> <alpine.DEB.2.00.1110101320180.5205@utopia.booyaka.com> <4E934D79.4080000@ti.com> <alpine.DEB.2.00.1110101416530.5205@utopia.booyaka.com> <4E936F0E.9050203@ti.com> <alpine.DEB.2.00.1110101631450.5205@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1110101631450.5205@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/11/2011 12:35 AM, Paul Walmsley wrote:
+> On Tue, 11 Oct 2011, Cousson, Benoit wrote:
+>
+>> On 10/10/2011 10:42 PM, Paul Walmsley wrote:
+>>
+>>> If it's the "3xxx" that you're objecting to in the name, we could call it
+>>> "prm2" or "prmxyz" - the '3xxx' just seemed like the most logical
+>>> approach.  The name of the hwmod class in the patch is still "prm", of
+>>> course.
+>>
+>> Yes, but that's different, the number is supposed to represent the instance
+>> number in the IP naming convention. So prm2 != prmv2.
+>
+> Heh, that works as long as there's no "prmv" IP block ;-)
+>
+>>> Thoughts?
+>>
+>> In fact the device name does not have to match the hwmod name. So we can just
+>> create an "omap2_prm" omap_device for OMAP2, "omap3_prm" omap_device for
+>> OMAP3...
+>> That will allow the relevant PRM  driver to be bound to the proper device.
+>
+> We can, we'd just need to add this extra mapping layer, so it doesn't
+> become a nasty special-case hack for each IP block that this applies to.
+>
+> Sounds like something for 3.3 (if ever...)
 
-* Valdis.Kletnieks@vt.edu <Valdis.Kletnieks@vt.edu> wrote:
+Yeah, since PRM and CM are critical pieces for the hwmod to DT 
+migration, having them DT adapted for 3.3 will be very nice.
 
-> On Tue, 11 Oct 2011 07:50:17 +0200, Ingo Molnar said:
-> 
-> >  $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/core
-> >  fatal: The remote end hung up unexpectedly
-> 
-> Is it possible to get 'git' to say something more informative than 
-> "hung up unexpectedly"? "Tree not found, check URL" or similar 
-> would be nice...
+Benoit
 
-I've Cc:-ed the Git development list which has lots of very 
-responsive gents on it eager to improve Git.
-
-I see this message dozens of times per year and i am always confused 
-about the message.
-
-Firstly, arguably, typoing something is not 'fatal' really - it's 
-just a resource that was not found on the server.
-
-Secondly, and more importantly, the reason for the failed pull is 
-indeed important to know, if you want to resolve the problem with a 
-minimum fuss:
-
- - Was it the tree that didnt exist?
- - Or the branch?
- - Or was there some other problem [such as a truly unexpectedly 
-                                    closed transport socket]?
-
-It's really useful for a painless UI flow to disambiguate failure 
-messages into clearly actionable variants.
-
-Thanks,
-
-	Ingo
