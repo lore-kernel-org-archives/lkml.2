@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab1JLTBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:01:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59909 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab1JLTBJ (ORCPT
+	id S1752093Ab1JLTBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:01:22 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33283 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1JLTBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:01:09 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=ZUwpwJYVrkXjSU1mqDzkeyqkgjZ250NmSocfySEpkpb+1tvA7B9lY2w/1ZhI7HE54
-	KL+AFfwSmF+rRjijyo3rQ==
-From: Muraliraja Muniraju <muralira@google.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Murali Raja <muralira@google.com>
-Subject: [PATCH v4] net-netlink: Add a new attribute to expose TOS values via netlink
-Date: Wed, 12 Oct 2011 12:00:35 -0700
-Message-Id: <1318446035-10267-1-git-send-email-muralira@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
-References: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
+	Wed, 12 Oct 2011 15:01:21 -0400
+Date: Wed, 12 Oct 2011 12:01:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
+ __vm_enough_memory
+Message-Id: <20111012120118.e948f40a.akpm@linux-foundation.org>
+In-Reply-To: <20111012160202.GA18666@sgi.com>
+References: <20111012160202.GA18666@sgi.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Raja <muralira@google.com>
+On Wed, 12 Oct 2011 11:02:02 -0500
+Dimitri Sivanich <sivanich@sgi.com> wrote:
 
-This patch exposes the tos value for the TCP sockets when the TOS flag
-is requested in the ext_flags for the inet_diag request. This would mainly be
-used to expose TOS values for both for TCP and UDP sockets. Currently it is
-supported for TCP. When netlink support for UDP would be added the support
-to expose the TOS values would alse be done. For IPV4 tos value is exposed
-and for IPV6 tclass value is exposed.
+> Tmpfs I/O throughput testing on UV systems has shown writeback contention
+> between multiple writer threads (even when each thread writes to a separate
+> tmpfs mount point).
+> 
+> A large part of this is caused by cacheline contention reading the vm_stat
+> array in the __vm_enough_memory check.
+> 
+> The attached test patch illustrates a possible avenue for improvement in this
+> area.  By locally caching the values read from vm_stat (and refreshing the
+> values after 2 seconds), I was able to improve tmpfs writeback performance from
+> ~300 MB/sec to ~700 MB/sec with 120 threads writing data simultaneously to
+> files on separate tmpfs mount points (tested on 3.1.0-rc9).
+> 
+> Note that this patch is simply to illustrate the gains that can be made here.
+> What I'm looking for is some guidance on an acceptable way to accomplish the
+> task of reducing contention in this area, either by caching these values in a
+> way similar to the attached patch, or by some other mechanism if this is
+> unacceptable.
 
-Signed-off-by: Murali Raja <muralira@google.com>
----
-Changelog since v3:
-- Removed the tos structure from the inet_diag.h
+Yes, the global vm_stat[] array is a problem - I'm surprised it's hung
+around for this long.  Altering the sysctl_overcommit_memory mode will
+hide the problem, but that's no good.
 
-Changelog since v2:
-- Added support for IPv6 and used better API.
+I think we've discussed switching vm_stat[] to a contention-avoiding
+counter scheme.  Simply using <percpu_counter.h> would be the simplest
+approach.  They'll introduce inaccuracies but hopefully any problems
+from that will be minor for the global page counters.
 
-Changelog since v3:
-- Removed reserved fields.
-
- include/linux/inet_diag.h |    3 ++-
- net/ipv4/inet_diag.c      |    5 +++++
- 2 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
-index bc8c490..80b480c 100644
---- a/include/linux/inet_diag.h
-+++ b/include/linux/inet_diag.h
-@@ -97,9 +97,10 @@ enum {
- 	INET_DIAG_INFO,
- 	INET_DIAG_VEGASINFO,
- 	INET_DIAG_CONG,
-+	INET_DIAG_TOS,
- };
- 
--#define INET_DIAG_MAX INET_DIAG_CONG
-+#define INET_DIAG_MAX INET_DIAG_TOS
- 
- 
- /* INET_DIAG_MEM */
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 389a2e6..f5e2bda 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -108,6 +108,9 @@ static int inet_csk_diag_fill(struct sock *sk,
- 		       icsk->icsk_ca_ops->name);
- 	}
- 
-+	if ((ext & (1 << (INET_DIAG_TOS - 1))) && (sk->sk_family != AF_INET6))
-+		RTA_PUT_U8(skb, INET_DIAG_TOS, inet->tos);
-+
- 	r->idiag_family = sk->sk_family;
- 	r->idiag_state = sk->sk_state;
- 	r->idiag_timer = 0;
-@@ -130,6 +133,8 @@ static int inet_csk_diag_fill(struct sock *sk,
- 			       &np->rcv_saddr);
- 		ipv6_addr_copy((struct in6_addr *)r->id.idiag_dst,
- 			       &np->daddr);
-+		if (ext & (1 << (INET_DIAG_TOS - 1)))
-+			RTA_PUT_U8(skb, INET_DIAG_TOS, np->tclass);
- 	}
- #endif
- 
--- 
-1.7.3.1
-
+otoh, I think we've been round this loop before and I don't recall why
+nothing happened.
