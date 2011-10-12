@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab1JLVAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:00:01 -0400
-Received: from mail-dy0-f46.google.com ([209.85.220.46]:35714 "EHLO
-	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1JLU77 (ORCPT
+	id S1754191Ab1JLVJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:09:23 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:45472 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab1JLVJW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 16:59:59 -0400
-Message-ID: <4E95FFCA.2090604@gmail.com>
-Date: Wed, 12 Oct 2011 22:59:54 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 12 Oct 2011 17:09:22 -0400
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        "hughd@google.com" <hughd@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Date: Wed, 12 Oct 2011 17:08:57 -0400
+Subject: RE: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Topic: [PATCH -v2 -mm] add extra free kbytes tunable
+Thread-Index: AcyIWAdwT01aeavTTiC9+a/R3mSRjQAyvpyA
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB516D055@USINDEVS02.corp.hds.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com>
+	<20111010153723.6397924f.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com>
+	<20111011125419.2702b5dc.akpm@linux-foundation.org>
+	<65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com>
+ <20111011135445.f580749b.akpm@linux-foundation.org>
+In-Reply-To: <20111011135445.f580749b.akpm@linux-foundation.org>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@us.ibm.com>, Alan Cox <alan@redhat.com>
-Subject: Re: [PATCH 4/4] TTY: call tty_driver_lookup_tty unconditionally
-References: <4E8C6836.1090601@suse.cz> <1318411965-23917-1-git-send-email-jslaby@suse.cz> <1318411965-23917-4-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1318411965-23917-4-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=2 spamscore=2
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1110120250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 11:32 AM, Jiri Slaby wrote:
-> Commit 4a2b5fddd5 (Move tty lookup/reopen to caller) made the call to
-> tty_driver_lookup_tty conditional in tty_open. It doesn't look like it
-> was an intention. Or if it was, it was not documented in the changelog
-> and the code now looks weird. For example there would be no need to
-> remember the tty driver and tty index. Further the condition depends
-> on a tty which we drop a reference of already.
+On 10/11/2011 04:54 PM, Andrew Morton wrote:
+> On Tue, 11 Oct 2011 16:23:22 -0400
+> Satoru Moriya <satoru.moriya@hds.com> wrote:
+>
+>> Also, if we increase the free-page reserves a.k.a min_free_kbytes, 
+>> the possibility of direct reclaim on other workloads increases.
+>> I think it's a bad side effect.
 > 
-> If I'm looking correctly, this should not matter thanks to the locking
-> currently done there. Thus, tty_driver->ttys[idx] cannot change under
-> our hands. But anyway, it makes sense to change that to the old
-> behaviour.
+> extra_free_kbytes has the same side-effect.
 
-Well, this doesn't work for ptys. devpts lookup code expects an inode to
-be one of devpts filesystem (/dev/pts/*), not something on tmpfs like
-/dev/tty. So it looks like the change was intentional, but very
-undocumented and leaving there some unused code.
+I don't think so. If we make low watermark bigger to increase
+free-page reserves by extra_free_kbytes, the possibility of
+direct reclaim on other workload does not increase directly
+because min watermark is not changed. 
+Of course, as David pointed out, other workloads may incur
+a regression because kswapd uses more cpu time.
 
-Now, I don't know what to do with the tty being around with a dropped
-reference. Maybe nothing in the presence of the BTM which I *think*
-prevents tty to go now.
-
-Also I have just found that having ptm_unix98_lookup is pointless. For
-master, we have ptmx_open which doesn't call lookup. And if it did, it
-would trigger BUG_ON in devpts_get_tty called from ptm_unix98_lookup.
-
-thanks,
--- 
-js
+Thanks,
+Satoru
