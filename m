@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab1JLVco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:32:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34150 "EHLO mail.zytor.com"
+	id S1754285Ab1JLVdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:33:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36760 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab1JLVcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:32:43 -0400
-Message-ID: <4E960746.90805@zytor.com>
-Date: Wed, 12 Oct 2011 14:31:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753093Ab1JLVdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 17:33:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Barry Song <Barry.Song@csr.com>
+Subject: Re: [PATCH] PM: HIBERNATION: do not initialise statics and externals to 0 or NULL
+Date: Wed, 12 Oct 2011 23:35:43 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        linux-pm@lists.linux-foundation.org, Barry Song <Baohua.Song@csr.com>,
+        Borislav Petkov <bp@alien8.de>
+References: <1318400958-21481-1-git-send-email-Barry.Song@csr.com>
+In-Reply-To: <1318400958-21481-1-git-send-email-Barry.Song@csr.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com>
-In-Reply-To: <20111012204048.GA22260@phenom.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201110122335.44140.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2011 01:40 PM, Konrad Rzeszutek Wilk wrote:
-> Why is it paramount to do it as early as possible? As in, even doing
-> it before Linux kernel is invoked is preferred than during initrd runtime?
+On Wednesday, October 12, 2011, Barry Song wrote:
+> From: Barry Song <Baohua.Song@csr.com>
+> 
+> Cc: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 
-It is paramount to do it as early as possible *because the CPU is 
-broken*.  That's why there is a microcode update at all.  It is 
-*supposed* to be installed by BIOS, but for whatever reason it wasn't 
-(including user doesn't want to update the BIOS), so the very fact that 
-this is done in the OS at all is a bit of a fail.
+Applied to linux-pm/linux-next.
 
-Doing it in the bootloader is messy because bootloaders typically aren't 
-SMP-aware (and really shouldn't need to be), which leaves the OS.  On 
-native hardware it should ideally be done as early in the processor 
-bringup as possible.
+Thanks,
+Rafael
 
-	-hpa
+
+> ---
+>  This patch depends on Barry Song's
+>  PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file;
+>  http://www.spinics.net/lists/linux-mmc/msg10282.html
+>  PM: HIBERNATION: add resume_delay kernel param;
+>  http://www.spinics.net/lists/linux-mmc/msg10478.html
+> 
+>  kernel/power/hibernate.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index f73a00e..19d443b 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -30,14 +30,14 @@
+>  #include "power.h"
+>  
+>  
+> -static int nocompress = 0;
+> -static int noresume = 0;
+> -static int resume_wait = 0;
+> -static int resume_delay = 0;
+> +static int nocompress;
+> +static int noresume;
+> +static int resume_wait;
+> +static int resume_delay;
+>  static char resume_file[256] = CONFIG_PM_STD_PARTITION;
+>  dev_t swsusp_resume_device;
+>  sector_t swsusp_resume_block;
+> -int in_suspend __nosavedata = 0;
+> +int in_suspend __nosavedata;
+>  
+>  enum {
+>  	HIBERNATION_INVALID,
+> 
+
