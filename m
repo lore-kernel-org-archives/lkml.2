@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab1JLOBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:01:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56349 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1JLOBi (ORCPT
+	id S1751422Ab1JLODV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:03:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59898 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1JLODU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:01:38 -0400
+	Wed, 12 Oct 2011 10:03:20 -0400
+Date: Wed, 12 Oct 2011 16:03:14 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
+        jbottomley@parallels.com
+Subject: Re: [PATCH 05/10] Make total_forks per-cgroup
+Message-ID: <20111012140310.GG14968@somewhere>
+References: <1317583287-18300-1-git-send-email-glommer@parallels.com>
+ <1317583287-18300-6-git-send-email-glommer@parallels.com>
+ <1317805535.6766.6.camel@twins>
+ <4E8C4990.1050704@parallels.com>
+ <20111011234548.GB14968@somewhere>
+ <4E954356.2000409@parallels.com>
+ <20111012125857.GE14968@somewhere>
+ <4E958F1B.80605@parallels.com>
+ <20111012130344.GF14968@somewhere>
+ <4E959038.2090801@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGuwMt6Snq=YSN4iddTv_Cu56aR_2BY1d3hjVvTdkom5MQ@mail.gmail.com>
-References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
-	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
-	<CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
-	<CAF6AEGs6kkGp85NoNVuq5W9i=WE86V8wvAtKydX=D3bQOc+6Pw@mail.gmail.com>
-	<CAPM=9twft0eBEUoCD11a2gTZHwOaPzFmZvBfE032dfK10eQ27Q@mail.gmail.com>
-	<CAF6AEGuwMt6Snq=YSN4iddTv_Cu56aR_2BY1d3hjVvTdkom5MQ@mail.gmail.com>
-Date: Wed, 12 Oct 2011 15:01:37 +0100
-Message-ID: <CAPM=9tyKjodxf9MKjG=5bBDZTuqOx4Nu31L5iNN9LrO9fsp+FA@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
-From: Dave Airlie <airlied@gmail.com>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
-        jesse.barker@linaro.org, daniel@ffwll.ch
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E959038.2090801@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But then we'd need a different set of accessors for every different
-> drm/v4l/etc driver, wouldn't we?
+On Wed, Oct 12, 2011 at 05:03:52PM +0400, Glauber Costa wrote:
+> On 10/12/2011 05:03 PM, Frederic Weisbecker wrote:
+> >On Wed, Oct 12, 2011 at 04:59:07PM +0400, Glauber Costa wrote:
+> >>On 10/12/2011 04:59 PM, Frederic Weisbecker wrote:
+> >>>On Wed, Oct 12, 2011 at 11:35:50AM +0400, Glauber Costa wrote:
+> >>>>On 10/12/2011 03:45 AM, Frederic Weisbecker wrote:
+> >>>Is your counting propagated to the parents in a hierarchy?
+> >>>For example if A is parent cgroup of B and C, does A account the
+> >>>forks happening in B and C?
+> >>
+> >>Yes.
+> >
+> >But only to the first parent or also all ancestors?
+> it keeps going until it reaches the root task group.
 
-Not any more different than you need for this, you just have a new
-interface that you request a sw object from,
-then mmap that object, and underneath it knows who owns it in the kernel.
+Using the task counter subsystem for that would involve
+a bit more complications like adding a new counter on it
+that would need to be incremented in parallel but differently.
+You would also need to bind this subsystem anytime you
+want this statistic.
 
-mmap just feels wrong in this API, which is a buffer sharing API not a
-buffer mapping API.
+I don't think it's worth doing this. You would also get the
+overhead in the exit path because the subsystem also uncharge
+one of its counters across the whole hierarchy.
 
-> I guess if sharing a buffer between multiple drm devices, there is
-> nothing stopping you from having some NOT_DMABUF_MMAPABLE flag you
-> pass when the buffer is allocated, then you don't have to support
-> dmabuf->mmap(), and instead mmap via device and use some sort of
-> DRM_CPU_PREP/FINI ioctls for synchronization..
+OTOH, it's scary to see that new feature will walk
+the entire hierarchy on every fork when CONFIG_CGROUP_SCHED=y
+And I guess that today this config is easily selected by
+distros.
 
-Or we could make a generic CPU accessor that we don't have to worry about.
+IIUC that walk also happen on every timer interrupt for
+the user/system/idle cpu time accounting?
 
-Dave.
+May be this should reside in a seperate config, so that those
+that don't care about the per cgroup stats avoid that
+overhead?
