@@ -1,54 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab1JLQcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 12:32:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46060 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab1JLQcM (ORCPT
+	id S1751691Ab1JLQfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 12:35:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:34386 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab1JLQfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 12:32:12 -0400
-X-Authority-Analysis: v=1.1 cv=cSzO76bR5tCkfUT9bEmBgR3d7VUusRLeq08eKGxa4EU= c=1 sm=0 a=NFX316_vVeIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=yLphtD8uMmanr3GfV7wA:9 a=PUjeQqilurYA:10 a=HEdnscJc8mAA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1318437128.13262.43.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 0/2 v2] [GIT PULL][v3.2] tracing: queued updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 12 Oct 2011 12:32:08 -0400
-In-Reply-To: <20111012162320.GA31857@elte.hu>
-References: <20111011152026.701326733@goodmis.org>
-	 <20111012081629.GA25086@elte.hu>
-	 <1318418515.13262.21.camel@gandalf.stny.rr.com>
-	 <1318425974.13262.26.camel@gandalf.stny.rr.com>
-	 <20111012162320.GA31857@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
+	Wed, 12 Oct 2011 12:35:07 -0400
+Message-ID: <4E95C1AF.5080803@atmel.com>
+Date: Wed, 12 Oct 2011 18:34:55 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: linux-arm-kernel@lists.infradead.org, robherring2@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH 1/4] dmaengine: at_hdmac: platform data move to use .id_table
+References: <1314075338.22120.3.camel@vkoul-udesk3>  <9723283e7097730f568bf7c2f3a93ae42c6bc5ca.1318264339.git.nicolas.ferre@atmel.com> <1318342612.1546.352.camel@vkoul-udesk3>
+In-Reply-To: <1318342612.1546.352.camel@vkoul-udesk3>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 18:23 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+On 10/11/2011 04:16 PM, Vinod Koul :
+> On Mon, 2011-10-10 at 18:37 +0200, Nicolas Ferre wrote:
+>> We remove platform data from DMA controller and move
+>> to the use of .id_table to distinguish between compatible
+>> types. The two implementations allow to determine the
+>> number of channels and the capabilities of the controller.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  drivers/dma/at_hdmac.c      |   48 ++++++++++++++++++++++++++++++++++---------
+>>  drivers/dma/at_hdmac_regs.h |    8 +++++++
+>>  2 files changed, 46 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+>> index fcfa0a8..fef57bc 100644
+>> --- a/drivers/dma/at_hdmac.c
+>> +++ b/drivers/dma/at_hdmac.c
+>> @@ -1175,6 +1175,18 @@ static void atc_free_chan_resources(struct dma_chan *chan)
+>>  
+>>  /*--  Module Management  -----------------------------------------------*/
+>>  
+>> +static struct platform_device_id atdma_devtypes[] = {
+>> +	{
+>> +		.name = "at91sam9rl_dma",
+>> +		.driver_data = ATDMA_DEVTYPE_SAM9RL,
+>> +	}, {
+>> +		.name = "at91sam9g45_dma",
+>> +		.driver_data = ATDMA_DEVTYPE_SAM9G45,
+>> +	}, {
+>> +		/* sentinel */
+>> +	}
+>> +};
+>> +
+>>  /**
+>>   * at_dma_off - disable DMA controller
+>>   * @atdma: the Atmel HDAMC device
+>> @@ -1193,18 +1205,32 @@ static void at_dma_off(struct at_dma *atdma)
+>>  
+>>  static int __init at_dma_probe(struct platform_device *pdev)
+>>  {
+>> -	struct at_dma_platform_data *pdata;
+>>  	struct resource		*io;
+>>  	struct at_dma		*atdma;
+>>  	size_t			size;
+>>  	int			irq;
+>>  	int			err;
+>>  	int			i;
+>> +	u32                     nr_channels;
+>> +	dma_cap_mask_t          cap_mask = {};
+>> +	enum atdma_devtype	atdmatype;
+>> +
+>> +	dma_cap_set(DMA_MEMCPY, cap_mask);
+>> +
+>> +	/* get DMA parameters from controller type */
+>> +	atdmatype = platform_get_device_id(pdev)->driver_data;
+>>  
+>> -	/* get DMA Controller parameters from platform */
+>> -	pdata = pdev->dev.platform_data;
+>> -	if (!pdata || pdata->nr_channels > AT_DMA_MAX_NR_CHANNELS)
+>> +	switch (atdmatype) {
+>> +	case ATDMA_DEVTYPE_SAM9RL:
+>> +		nr_channels = 2;
+>> +		break;
+>> +	case ATDMA_DEVTYPE_SAM9G45:
+>> +		nr_channels = 8;
+>> +		dma_cap_set(DMA_SLAVE, cap_mask);
+>> +		break;
+>> +	default:
+>>  		return -EINVAL;
+>> +	}
+>>  
+>>  	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>  	if (!io)
+>> @@ -1215,14 +1241,15 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  		return irq;
+>>  
+>>  	size = sizeof(struct at_dma);
+>> -	size += pdata->nr_channels * sizeof(struct at_dma_chan);
+>> +	size += nr_channels * sizeof(struct at_dma_chan);
+>>  	atdma = kzalloc(size, GFP_KERNEL);
+>>  	if (!atdma)
+>>  		return -ENOMEM;
+>>  
+>> -	/* discover transaction capabilites from the platform data */
+>> -	atdma->dma_common.cap_mask = pdata->cap_mask;
+>> -	atdma->all_chan_mask = (1 << pdata->nr_channels) - 1;
+>> +	/* discover transaction capabilites */
+> capabilities
 
-> > It has the same SHA1: d696b58ca2c3ca76e784ef89a7e0453d9b7ab187
-> 
-> Got it from there - thanks Steve!
+Yes.
 
-kernel.org should be back again. I'm talking with John about it, and he
-said he did some things that caused severe strain on the hard drives.
-The refreshes were happening, just verrrrry sloowly ;)
+>> +	atdma->dma_common.cap_mask = cap_mask;
+>> +	atdma->all_chan_mask = (1 << nr_channels) - 1;
+>> +	atdma->devtype = atdmatype;
+>>  
+>>  	size = resource_size(io);
+>>  	if (!request_mem_region(io->start, size, pdev->dev.driver->name)) {
+>> @@ -1268,7 +1295,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  
+>>  	/* initialize channels related values */
+>>  	INIT_LIST_HEAD(&atdma->dma_common.channels);
+>> -	for (i = 0; i < pdata->nr_channels; i++) {
+>> +	for (i = 0; i < nr_channels; i++) {
+>>  		struct at_dma_chan	*atchan = &atdma->chan[i];
+>>  
+>>  		atchan->chan_common.device = &atdma->dma_common;
+>> @@ -1313,7 +1340,7 @@ static int __init at_dma_probe(struct platform_device *pdev)
+>>  	dev_info(&pdev->dev, "Atmel AHB DMA Controller ( %s%s), %d channels\n",
+>>  	  dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask) ? "cpy " : "",
+>>  	  dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)  ? "slave " : "",
+>> -	  pdata->nr_channels);
+>> +	  nr_channels);
+> indent?
 
-> 
-> Tests are also looking good so far.
+Well, this dev_info statement seems pretty well indented: if I use a
+tab, then I cross the 80 column rule, and I would like to keep the "?:"
+operator on one line... So I would like to keep it like this.
 
-Great! Thanks,
+>>  	dma_async_device_register(&atdma->dma_common);
+>>  
+>> @@ -1495,6 +1522,7 @@ static const struct dev_pm_ops at_dma_dev_pm_ops = {
+>>  static struct platform_driver at_dma_driver = {
+>>  	.remove		= __exit_p(at_dma_remove),
+>>  	.shutdown	= at_dma_shutdown,
+>> +	.id_table	= atdma_devtypes,
+>>  	.driver = {
+>>  		.name	= "at_hdmac",
+>>  		.pm	= &at_dma_dev_pm_ops,
+>> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+>> index aa4c9ae..d7d6737 100644
+>> --- a/drivers/dma/at_hdmac_regs.h
+>> +++ b/drivers/dma/at_hdmac_regs.h
+>> @@ -248,9 +248,16 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
+>>  
+>>  /*--  Controller  ------------------------------------------------------*/
+>>  
+>> +enum atdma_devtype {
+>> +	ATDMA_DEVTYPE_UNDEFINED = 0,
+>> +	ATDMA_DEVTYPE_SAM9RL,	/* compatible with SAM9RL DMA controller */
+>> +	ATDMA_DEVTYPE_SAM9G45,	/* compatible with SAM9G45 DMA controller */
+>> +};
+>> +
+>>  /**
+>>   * struct at_dma - internal representation of an Atmel HDMA Controller
+>>   * @chan_common: common dmaengine dma_device object members
+>> + * @atdma_devtype: identifier of DMA controller compatibility
+>>   * @ch_regs: memory mapped register base
+>>   * @clk: dma controller clock
+>>   * @save_imr: interrupt mask register that is saved on suspend/resume cycle
+>> @@ -260,6 +267,7 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
+>>   */
+>>  struct at_dma {
+>>  	struct dma_device	dma_common;
+>> +	enum atdma_devtype	devtype;
+>>  	void __iomem		*regs;
+>>  	struct clk		*clk;
+>>  	u32			save_imr;
+> Little confused at this, where is the remove of existing platfrom data
+> per the changelog?
 
--- Steve
+Well, yes, it is the use of platform data that is removed, not the
+structure it self. I change the log message in my v2 patch series.
 
-
+thanks, bye,
+-- 
+Nicolas Ferre
