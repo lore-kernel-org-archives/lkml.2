@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab1JLXjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 19:39:09 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45626 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab1JLXjH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 19:39:07 -0400
-Subject: [PATCH] ASoC: pxa: Remove redundant snd_soc_dapm_sync() calls from
- machine drivers
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Miao <eric.y.miao@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 Oct 2011 07:38:56 +0800
-Message-ID: <1318462736.17043.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1752821Ab1JLXky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:40:54 -0400
+Received: from claw.goop.org ([74.207.240.146]:46966 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab1JLXkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:40:53 -0400
+Message-ID: <4E962581.2000605@goop.org>
+Date: Wed, 12 Oct 2011 16:40:49 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@amd64.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E96198F.4030906@zytor.com>
+In-Reply-To: <4E96198F.4030906@zytor.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core will sync DAPM as part of the card initialization, there is no
-need for machine drivers to do so during their setup.
+On 10/12/2011 03:49 PM, H. Peter Anvin wrote:
+> The stickiest part of all of this is where to leave the microcode so
+> the kernel can get to it way early.  We could use the linked list, but
+> that would mean bootloader enabling; another idea was to stick it as a
+> prefix to the initramfs identified by a signature.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/pxa/poodle.c |    1 -
- sound/soc/pxa/spitz.c  |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+I think it would be easiest for the multiboot case if it were a separate
+file, but I don't feel I'm really up on all the details.
 
-diff --git a/sound/soc/pxa/poodle.c b/sound/soc/pxa/poodle.c
-index da3ae43..4c29bc1 100644
---- a/sound/soc/pxa/poodle.c
-+++ b/sound/soc/pxa/poodle.c
-@@ -265,7 +265,6 @@ static int poodle_wm8731_init(struct snd_soc_pcm_runtime *rtd)
- 	/* Set up poodle specific audio path audio_map */
- 	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
- 
--	snd_soc_dapm_sync(dapm);
- 	return 0;
- }
- 
-diff --git a/sound/soc/pxa/spitz.c b/sound/soc/pxa/spitz.c
-index ce920e3..c2d6ff9 100644
---- a/sound/soc/pxa/spitz.c
-+++ b/sound/soc/pxa/spitz.c
-@@ -301,7 +301,6 @@ static int spitz_wm8750_init(struct snd_soc_pcm_runtime *rtd)
- 	/* Set up spitz specific audio paths */
- 	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
- 
--	snd_soc_dapm_sync(dapm);
- 	return 0;
- }
- 
--- 
-1.7.4.1
-
-
-
+    J
