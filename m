@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab1JLGad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 02:30:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43052 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1JLGa3 (ORCPT
+	id S1752557Ab1JLGam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 02:30:42 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:58839 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1JLGak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 02:30:29 -0400
+	Wed, 12 Oct 2011 02:30:40 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: <pavel@ucw.cz>
+CC: <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>, <workgroup.linux@csr.com>,
+        <linux-pm@lists.linux-foundation.org>,
+        Barry Song <Baohua.Song@csr.com>, Borislav Petkov <bp@alien8.de>
+Subject: [PATCH] PM: HIBERNATION: do not initialise statics and externals to 0 or NULL
+Date: Tue, 11 Oct 2011 23:29:18 -0700
+Message-ID: <1318400958-21481-1-git-send-email-Barry.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-In-Reply-To: <1318400368.1546.372.camel@vkoul-udesk3>
-References: <1317191992-3635-1-git-send-email-jaswinder.singh@linaro.org>
-	<1317200618.1573.1765.camel@vkoul-udesk3>
-	<CAJe_ZhfDk7O_O7LDh7GrpcaPMzQuzs9nBA8BeN0VxG8_Oe93wg@mail.gmail.com>
-	<1317295068.1573.1780.camel@vkoul-udesk3>
-	<CAGsJ_4y+ageAqg1DQtQJ-g2j6im_e3KdvkcBaDFLz8fUniJpuA@mail.gmail.com>
-	<CAJe_ZhfyTBgH7wqB1HWtkjDNusecTOTZrqyYKF=Lwb9xQAXA3w@mail.gmail.com>
-	<CAGsJ_4x=F41Fbsw9gB3y=Vzyhf8a9yXB=sd6xbxSNUbTAYdjOA@mail.gmail.com>
-	<CAJe_Zhd86uqhzRHaA8ci2GHQgz6TadPR5hTuuUKqCWOFJwn6qg@mail.gmail.com>
-	<CAGsJ_4zOUFUkGv_-BB5sqjVZF1gBe-MVJS3Vxmi9Jo4sqYCLAg@mail.gmail.com>
-	<CAJe_Zhc8zdZzse+jutYERec5bKBPqWmq9v0xYrou0x1BSKyCLQ@mail.gmail.com>
-	<20111003161349.GB28287@flint.arm.linux.org.uk>
-	<CAJe_ZhfS=4vSS0OiSuNx3S+fW8R4-=khrHtt8suLeHjTFYBVeA@mail.gmail.com>
-	<CABE8wwsQKF9eTTU_N305hR=G5qW4Rzb7Lo-nHbc9RVYwSJVSVA@mail.gmail.com>
-	<1317966346.1573.2252.camel@vkoul-udesk3>
-	<CAJe_ZhdFA641AzmEmYaz++iRNYQmrHDFmAWOkrwmR_h2ie176g@mail.gmail.com>
-	<1317997177.1573.2275.camel@vkoul-udesk3>
-	<CAJe_ZhdSRmQmHOyOSvzyduu1pxR5K3aSd+1fCW2TB36=1ZwUUg@mail.gmail.com>
-	<1318229592.1573.2298.camel@vkoul-udesk3>
-	<CAJe_ZhcWUjdh-LGuAaDAbSYNYrV5dzsrkpCGCeYo6y38pNac4g@mail.gmail.com>
-	<1318238296.1546.3.camel@vkoul-udesk3>
-	<CAJe_ZheDWAeisyOxFVmhWgZCi5qx8QL1_L+YttFrzWxSHyceug@mail.gmail.com>
-	<1318243501.1546.12.camel@vkoul-udesk3>
-	<CAJe_Zhd0xVULcEd2t5DwofmjPNrxOi3bUjMVDRF5N4+47kUiJw@mail.gmail.com>
-	<1318262559.1546.31.camel@vkoul-udesk3>
-	<CAJe_ZhcYiu1ZAWBGww2tysP5K_QwmoRNtfMZ9t2erRXhHY5W0A@mail.gmail.com>
-	<CAGsJ_4zzN1erduhV_hwWpPgTQ-YFowoPpmC_CKaT_C2=63OtZg@mail.gmail.com>
-	<1318400368.1546.372.camel@vkoul-udesk3>
-Date: Wed, 12 Oct 2011 12:00:27 +0530
-Message-ID: <CAJe_Zhc5_zW3_mH4zwW7jiVNziZZF0OzzmHz93J5GBu=OGqtvg@mail.gmail.com>
-Subject: Re: [PATCHv4] DMAEngine: Define interleaved transfer request api
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Barry Song <21cnbao@gmail.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.62]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2011 11:49, Vinod Koul <vinod.koul@intel.com> wrote:
->
-> @Jassi: I have started doing this change for dmaengine and dmacs, and I
-> took the liberty to name this enum as dma_transfer_direction, hope you
-> are okay with that
->
-OK. Thanks.
+From: Barry Song <Baohua.Song@csr.com>
+
+Cc: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+---
+ This patch depends on Barry Song's
+ PM: HIBERNATION: add resume_wait param to support MMC-like devices as resume file;
+ http://www.spinics.net/lists/linux-mmc/msg10282.html
+ PM: HIBERNATION: add resume_delay kernel param;
+ http://www.spinics.net/lists/linux-mmc/msg10478.html
+
+ kernel/power/hibernate.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index f73a00e..19d443b 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -30,14 +30,14 @@
+ #include "power.h"
+ 
+ 
+-static int nocompress = 0;
+-static int noresume = 0;
+-static int resume_wait = 0;
+-static int resume_delay = 0;
++static int nocompress;
++static int noresume;
++static int resume_wait;
++static int resume_delay;
+ static char resume_file[256] = CONFIG_PM_STD_PARTITION;
+ dev_t swsusp_resume_device;
+ sector_t swsusp_resume_block;
+-int in_suspend __nosavedata = 0;
++int in_suspend __nosavedata;
+ 
+ enum {
+ 	HIBERNATION_INVALID,
+-- 
+1.7.1
+
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
