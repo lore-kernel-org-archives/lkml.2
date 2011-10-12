@@ -1,105 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246Ab1JLCgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 22:36:10 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:45227 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1JLCgI (ORCPT
+	id S1752269Ab1JLCh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 22:37:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36473 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1JLCh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 22:36:08 -0400
-Date: Wed, 12 Oct 2011 13:36:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Arend van Spriel <arend@broadcom.com>
-Subject: linux-next: build failure after merge of the wireless tree
-Message-Id: <20111012133600.256fea364b17e6bf96ee1081@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o"
+	Tue, 11 Oct 2011 22:37:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHj3AVnRzOQEVJu6sfE-pZt9QN_q75Pf6LEeGfdKm-NdxjFC_Q@mail.gmail.com>
+References: <1318260152-2786-1-git-send-email-mark.einon@gmail.com>
+	<CAP2e6W9oQWLxe7pJxk=Awn1HTueeu41ZV7TFF+V9tHF07_Mxag@mail.gmail.com>
+	<20111011161153.GA6697@suse.de>
+	<CANK3SE1tdJm93BK+U01Ep7Q2B=+aUJmgxkrQ537oPrqB2YZ4nA@mail.gmail.com>
+	<CAP2e6W9BCV5Wg5rTLrDLaU45NCt9PaSV5zZHT5OA88hqNvounw@mail.gmail.com>
+	<CAHj3AVnRzOQEVJu6sfE-pZt9QN_q75Pf6LEeGfdKm-NdxjFC_Q@mail.gmail.com>
+Date: Tue, 11 Oct 2011 19:37:55 -0700
+Message-ID: <CAP2e6W-sSQP-5Xb_-38=j17pX8jJeTzuA2VCaCu3b6ERrCMQhw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] staging: et131x: Update TODO list
+From: Ramesh R <rshlinux@gmail.com>
+To: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Mark Einon <mark.einon@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 11, 2011 at 11:40 AM, Denis Kirjanov <kirjanov@gmail.com> wrote:
+> If you look at the patch once again then you find some
+>
+> On Tue, Oct 11, 2011 at 9:25 PM, Ramesh R <rshlinux@gmail.com> wrote:
+>> Thanks Mark,
+>>
+>> Are there any open items left in the TODO list for this driver at this point?
+>>
+>> Regards
+>> Ramesh
+>>
+>> On Tue, Oct 11, 2011 at 9:25 AM, Mark Einon <mark.einon@gmail.com> wrote:
+>>> On 11 October 2011 17:11, Greg KH <gregkh@suse.de> wrote:
+>>>> On Tue, Oct 11, 2011 at 09:00:35AM -0700, Ramesh R wrote:
+>>>>> Hi Mark,
+>>>>>
+>>>>> I wish to contribute to this project - From the latest TODO list in
+>>>>> the README document
+>>>>>
+>>>>> drivers/staging/et131x/README
+>>>>>
+>>>>> If I were to start with the coding style cleanups, is there a coding
+>>>>> standard available for reference? Please advice.
+>>>>
+>>>> Documentation/CodingStyle
+>>>>
+>>> Ramesh,
+>>>
+>>> There are no significant coding style issues with this particular
+>>> driver at this time, as far as I (and the checkpatch script) are aware
+>>> of.
+>>> I suggest you check other staging/ drivers for these sorts of issues.
+>>>
+>>> Cheers,
+>>>
+>>> Mark
+>>>
+>> _______________________________________________
+>> devel mailing list
+>> devel@linuxdriverproject.org
+>> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+>>
 
-Hi John,
+Thank you, got a few items.
 
-After merging the wireless tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+I could work on item #1,
+==
+ TODO:
++       - Put the driver into a single file, with a .h for the registers layout.
++       - rx_ring.fbr{0, 1} can probably share a common structure
++       - Use of kmem_cache seems a bit unusual
++       - Use dma_alloc_... in place of pci_alloc_...
++       - It's too late stopping the tx queue when there is no room
+for the current packet. The condition should be detected for the next
+packet.
++       - PCI_VDEVICE ?
 
-drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1131:2: error: unknown =
-field 'ndo_set_multicast_list' specified in initializer
-drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1132:1: warning: initia=
-lization from incompatible pointer type [enabled by default]
-drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1132:1: warning: (near =
-initialization for 'brcmf_netdev_ops_pri.ndo_validate_addr') [enabled by de=
-fault]
+==
 
-Caused by commit 5b435de0d786 ("net: wireless: add brcm80211 drivers")
-interacting with commit b81693d9149c ("net: remove ndo_set_multicast_list
-callback") from the net-next tree.
+I looked up for ET 1310 on ebay, amazon & few other sites like digikey
+- I couldnt find the device. Can you please let me know where I can
+buy the hardware?
 
-I have applied the following merge fixup patch for today.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 12 Oct 2011 13:33:10 +1100
-Subject: [PATCH] net: wireless: brcm80211: replace ndo_set_multicast_list  =
-with ndo_set_rx_mode
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c b/drivers/=
-net/wireless/brcm80211/brcmfmac/dhd_linux.c
-index 99ba5e3..03607ca 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c
-@@ -1128,7 +1128,7 @@ static struct net_device_ops brcmf_netdev_ops_pri =3D=
- {
- 	.ndo_do_ioctl =3D brcmf_netdev_ioctl_entry,
- 	.ndo_start_xmit =3D brcmf_netdev_start_xmit,
- 	.ndo_set_mac_address =3D brcmf_netdev_set_mac_address,
--	.ndo_set_multicast_list =3D brcmf_netdev_set_multicast_list
-+	.ndo_set_rx_mode =3D brcmf_netdev_set_multicast_list
- };
-=20
- int brcmf_net_attach(struct brcmf_pub *drvr, int ifidx)
---=20
-1.7.6.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOlP0QAAoJEECxmPOUX5FEl2kQAJwjZtVfV425wQdg+0+R7rf0
-BdjfSf0LZnC64bPRx9Fnlh4AKjFf7T641Tr6yZrLMNbJh4pYeEojwzIg7v5jn6UO
-E/pVdZV3ra7wtvxusg0vQlOECw9/XV+XiSa2vgRIcpSKEO71ifqW5/9UJ0LhtgKN
-lc9MnkcZqPRQZwpXRvU71M2y2JvWBQnP0Aa23gBH3aaFyz//2x4bUTw+VpLlpNo9
-JX3xmYtZHhiPcrjbGRWlEJXmHfp9DVJXPSSpuu+ZIrKbBFGfNIsmmGiMgCVNGwh7
-UGKA8inAbpIzIm5vWgFJiejYUJSLm1fDB9le4rhEnNG4bQ3P7jOejK+0Af2Km6Ka
-6qht0FwBqVUx/aVbbAi81kV1kQRHe/Mm0C0u2UfIrW1BkSlTzjg2ZEerJ4h0zjj/
-5ay0/154olSQgqvdSBpvBQu7TFy6k0VpkCNSrkgl7C86sEJMSoSGZR1HChic7u74
-CV+IH4KosQcJeCoYesNzdtC+Tosw0Z2cge+WKuuQDT3fDwoYqjkNldHkjgtuIYto
-ZqRDVNH9c/G8+jnPoXlMdQG1eoVI1p7APpsjLlimWbdlBf9+m+ZXYRIe/pSyt0A1
-PXiPdoTEIDZg56GrBa3SKCuvrY3GouGol7PSFxjhl4EJleD54dq0I9N71gJf9FQc
-NaZ4wv7b9j5Wz9eXzREu
-=b85/
------END PGP SIGNATURE-----
-
---Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o--
+/Ramesh
