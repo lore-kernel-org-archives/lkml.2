@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1JLMzK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 08:55:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab1JLMzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 08:55:08 -0400
-Date: Wed, 12 Oct 2011 08:54:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com
-Subject: Re: [PATCH 1/3] x86, reboot:  Use NMI instead of REBOOT_VECTOR to
- stop cpus
-Message-ID: <20111012125442.GJ5795@redhat.com>
-References: <1318346686-12349-1-git-send-email-dzickus@redhat.com>
- <1318346686-12349-2-git-send-email-dzickus@redhat.com>
- <20111012073025.GI18618@elte.hu>
+	id S1753256Ab1JLM7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 08:59:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57551 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab1JLM7G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 08:59:06 -0400
+Date: Wed, 12 Oct 2011 14:59:00 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
+        jbottomley@parallels.com
+Subject: Re: [PATCH 05/10] Make total_forks per-cgroup
+Message-ID: <20111012125857.GE14968@somewhere>
+References: <1317583287-18300-1-git-send-email-glommer@parallels.com>
+ <1317583287-18300-6-git-send-email-glommer@parallels.com>
+ <1317805535.6766.6.camel@twins>
+ <4E8C4990.1050704@parallels.com>
+ <20111011234548.GB14968@somewhere>
+ <4E954356.2000409@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111012073025.GI18618@elte.hu>
+In-Reply-To: <4E954356.2000409@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 09:30:25AM +0200, Ingo Molnar wrote:
+On Wed, Oct 12, 2011 at 11:35:50AM +0400, Glauber Costa wrote:
+> On 10/12/2011 03:45 AM, Frederic Weisbecker wrote:
+> >On Wed, Oct 05, 2011 at 04:12:00PM +0400, Glauber Costa wrote:
+> >>On 10/05/2011 01:05 PM, Peter Zijlstra wrote:
+> >>>On Sun, 2011-10-02 at 23:21 +0400, Glauber Costa wrote:
+> >>>>This patch counts the total number of forks per-cgroup.
+> >>>>The information is propagated to the parent, so the total
+> >>>>number of forks in the system, is the parent cgroup's one.
+> >>>>
+> >>>>To achieve that, total_forks is made per-cpu. There is no
+> >>>>particular reason to do that, but by doing this, we are
+> >>>>able to bundle it inside the cpustat structure already
+> >>>>present.
+> >>>
+> >>>I think fweisbec is also doing something with forks and cgroups.
+> >>
+> >>I am all ears...
+> >>
+> >>Frederic, does it conflict with what you're doing ?
+> >
+> >I don't know if that really conflicts but I'm working
+> >on a cgroup subsystem that is able to control the number
+> >of tasks running in a subsystem.
+> >
+> >It consists in two new files added:
+> >
+> >* tasks.usage
+> >* tasks.limit
+> >
+> >The subsystem rejects any new fork or migration into the
+> >cgroup when tasks.usage>  tasks.limit
+> >
+> >So tasks.usage can inform you about the number of tasks
+> >running into the cgroup. It's not strictly the number
+> >of forks because it also counts the tasks that have been
+> >attached to the cgroup.
+> >
+> >But something like a tasks.fork file could be implemented
+> >in that subsystem as well.
+> >
+> >It depends on what you need.
 > 
-> * Don Zickus <dzickus@redhat.com> wrote:
+> So the specific piece I am working on, is to display /proc/stat
+> information per-cgroup. One of the many fields it has, is
+> total_forks.
+> (it is actually just a small part of the series)
+> So instead of tracking how many forks the system has in total, I'll
+> track it per-cpucgroup.
 > 
-> > +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> > +					 NMI_FLAG_FIRST, "smp_stop"))
-> > +			return;		/* return what? */
-> 
-> That comment looks a bit odd.
+> So I don't think we conflict at all. At the very least, IIUC, you
+> are planning to account and check *before* a fork happens, right?
+> This particular stat is incremented after it already succeeded.
 
-Yeah, I copied it from the kdump code because it seemed relevant.  The
-point was to express the paranoid concern, if we can't register the NMI
-handler for whatever reason, what happens!?.  How do we explain to anyone
-we failed to shut down the other cpus?
+That doesn't make much difference since the accounting is cancelled
+in case the fork is finally rejected.
 
-I can expand the comment to be more specific in the paranoia.  I just
-wasn't sure the right way to handle that failure case.
+But probably having a simple accouting like you do involves less
+overhead than the whole task counter subsystem.
 
-Thanks for your comments in the other patches, I'll work on those.
-
-Cheers,
-Don
+Is your counting propagated to the parents in a hierarchy?
+For example if A is parent cgroup of B and C, does A account the
+forks happening in B and C?
