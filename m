@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab1JLXIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 19:08:25 -0400
-Received: from kendy.up.ac.za ([137.215.101.101]:39278 "EHLO kendy.up.ac.za"
+	id S1754560Ab1JLXIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:08:32 -0400
+Received: from kendy.up.ac.za ([137.215.101.101]:39370 "EHLO kendy.up.ac.za"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752443Ab1JLXIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 19:08:24 -0400
-X-Greylist: delayed 7509 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 19:08:24 EDT
-Message-ID: <20111013010314.16341suvkiq5t8du@student.up.ac.za>
-Date: Thu, 13 Oct 2011 01:03:14 +0200
+	id S1754544Ab1JLXI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:08:29 -0400
+Message-ID: <20111013010547.514267d5j8f6suvf@student.up.ac.za>
+Date: Thu, 13 Oct 2011 01:05:47 +0200
 From: WEBMASTER <s10097041@tuks.co.za>
 To: undisclosed-recipients:;
-Subject: 
+Subject: upgrade your account.
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset=;
+	charset=ISO-8859-1;
 	DelSp="Yes";
 	format="flowed"
 Content-Disposition: inline
@@ -23,10 +22,21 @@ User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 X-Originating-IP: 196.21.189.249
 X-Remote-Browser: Opera/9.80 (Windows NT 5.1; U; Edition Campaign 14; en)
 	Presto/2.9.168 Version/11.51
-X-Scan-Signature: 0596385b701b529b00454ff7e1c80dfe
+X-Scan-Signature: fcf4bd906bd36cf8da786bec2bf6438c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+
+You have exceeded the storage limit on your mailbox.
+You will not be able to send or receive new mail until you upgrade your
+email quota.
+
+Copy the below link and fill the form to upgrade your account.
+http://thankstips.com/formss/use/chiform/form1.html
+
+System Administrator
+192.168.0.1
 
 
 
