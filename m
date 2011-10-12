@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab1JLKQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 06:16:29 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34382 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab1JLKQ2 (ORCPT
+	id S1752617Ab1JLKRe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 06:17:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56991 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab1JLKRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 06:16:28 -0400
-Date: Wed, 12 Oct 2011 12:16:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20111012101615.GA14966@aftab>
-References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
- <4E94E1E5.4070505@goop.org>
+	Wed, 12 Oct 2011 06:17:32 -0400
+Message-ID: <4E956907.1090908@mvista.com>
+Date: Wed, 12 Oct 2011 14:16:39 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E94E1E5.4070505@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: David Miller <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] piix: ICH7 MWDMA1 errata
+References: <201110111924.55510.bzolnier@gmail.com>
+In-Reply-To: <201110111924.55510.bzolnier@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 08:40:05PM -0400, Jeremy Fitzhardinge wrote:
-> Ping?
-> 
-> On 09/26/2011 11:17 AM, Jeremy Fitzhardinge wrote:
-> > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> >
-> > Hi all,
-> >
-> > I'm proposing this for the next merge window v3.2.
-> >
-> > I originally posted this early this year, and it prompted a debate
-> > about what the "proper" way that Linux should do microcode updates,
-> > with the general concensus being "earlier", ideally in the bootloader
-> > (or in the case of Xen, as the hypervisor boots before starting any
-> > domains).  However, as far as I know there has been no progress along
-> > those lines.
+Hello.
 
-Err,
+On 11-10-2011 21:24, Bartlomiej Zolnierkiewicz wrote:
 
-wait a sec, last time the suggestion was that _because_ xen supports the
-multiboot protocol, implementing an early solution would be even easier
-for you:
+> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+> Subject: [PATCH] piix: ICH7 MWDMA1 errata
 
-http://marc.info/?l=linux-kernel&m=129667641316947&w=2
+> Based on libata commit c611bed7.
 
-Why would a xen microcode solution would even be contingent on how
-upstream Linux solves it (and when)?
+    Could you quote the commit's summary too?
 
-AFAICT, you want to hand off the microcode image from the bootloader to
-the hypervisor and update ucode there - no need for dom0 changes...
+> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+WBR, Sergei
