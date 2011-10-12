@@ -1,134 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1JLToF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:44:05 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:16462 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab1JLToD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:44:03 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=1h8qd3w5pbyJS47frJc7V6h9QwwiBhgsQMy9mbCO+wA= c=1 sm=1
- a=qsvkKbLjTbcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=ph9WmAjRBiTLtD7_lecA:9
- a=09wAv2yCzIBcrIkn0ckA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 11/28] ext4: Calculate and verify inode checksums
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com>
-Date: Wed, 12 Oct 2011 12:45:01 -0700
-Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1CCC75F1-41BE-49E9-8A03-372FC76E0202@dilger.ca>
-References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075456.20506.47319.stgit@elm3c44.beaverton.ibm.com>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1752422Ab1JLTpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:45:51 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:57705 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792Ab1JLTpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:45:50 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, rcj@linux.vnet.ibm.com, brking@linux.vnet.ibm.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH] staging: zcache: remove zcache_direct_reclaim_lock
+Date: Wed, 12 Oct 2011 14:41:00 -0500
+Message-Id: <1318448460-5930-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
+x-cbid: 11101219-6078-0000-0000-000001B36A17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-08, at 12:54 AM, Darrick J. Wong wrote:
-> This patch introduces to ext4 the ability to calculate and verify inode
-> checksums.  This requires the use of a new ro compatibility flag and some
-> accompanying e2fsprogs patches to provide the relevant features in tune2fs and
-> e2fsck.
-> 
-> +static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
-> +			      struct ext4_inode_info *ei)
-> +{
-> +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-> +	__u16 crc_lo;
-> +	__u16 crc_hi = 0;
-> +	__u32 crc;
-> +
-> +	crc_lo = raw->i_checksum_lo;
-> +	raw->i_checksum_lo = 0;
-> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
-> +		crc_hi = raw->i_checksum_hi;
-> +		raw->i_checksum_hi = 0;
-> +	}
-> +
-> +	crc = ext4_chksum(sbi, ei->i_uuid_inum_crc, (__u8 *)raw,
-> +			  EXT4_INODE_SIZE(inode->i_sb));
-> +
-> +	raw->i_checksum_lo = crc_lo;
-> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-> +		raw->i_checksum_hi = crc_hi;
-> +
-> +	return crc;
-> +}
+zcache_do_preload() currently does a spin_trylock() on the
+zcache_direct_reclaim_lock. Holding this lock intends to prevent
+shrink_zcache_memory() from evicting zbud pages as a result
+of a preload.
 
-This computes both the _lo and _hi parts of the checksum and overwrites what is in the inode...
+However, it also prevents two threads from
+executing zcache_do_preload() at the same time.  The first
+thread will obtain the lock and the second thread's spin_trylock()
+will fail (an aborted preload) causing the page to be either lost
+(cleancache) or pushed out to the swap device (frontswap). It
+also doesn't ensure that the call to shrink_zcache_memory() is
+on the same thread as the call to zcache_do_preload().
 
-> +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
-> +				  struct ext4_inode_info *ei)
-> +{
-> +	__u32 provided, calculated;
-> +
-> +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-> +	    cpu_to_le32(EXT4_OS_LINUX) ||
-> +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-> +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-> +		return 1;
-> +
-> +	provided = le16_to_cpu(raw->i_checksum_lo);
-> +	calculated = ext4_inode_csum(inode, raw, ei);
+Additional, there is no need for this mechanism because all
+zcache_do_preload() calls that come down from cleancache already
+have PF_MEMALLOC set in the process flags which prevents
+direct reclaim in the memory manager. If the zcache_do_preload()
+call is done from the frontswap path, we _want_ reclaim to be
+done (which it isn't right now).
 
-This only saves the _lo part of the checksum before computing the new
-checksum (which overwrites both _lo and _hi fields), so the _hi part
-of the checksum is never properly validated below.
+This patch removes the zcache_direct_reclaim_lock and related
+statistics in zcache.
 
-> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-> +		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
+Based on v3.1-rc8
 
-This should be moved up to save _hi before calling ext4_inode_csum().
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |   31 ++++---------------------------
+ 1 files changed, 4 insertions(+), 27 deletions(-)
 
-> +	else
-> +		calculated &= 0xFFFF;
-> +
-> +	return provided == calculated;
-> +}
-
-> +static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
-> +				struct ext4_inode_info *ei)
-> +{
-> +	__u32 crc;
-> +
-> +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-> +	    cpu_to_le32(EXT4_OS_LINUX) ||
-> +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-> +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-> +		return;
-> +
-> +	crc = ext4_inode_csum(inode, raw, ei);
-> +	raw->i_checksum_lo = cpu_to_le16(crc & 0xFFFF);
-> +	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-> +	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-> +		raw->i_checksum_hi = cpu_to_le16(crc >> 16);
-
-What is the point of storing the returned crc into raw->i_checksum_lo
-and raw->i_checksum_hi, if this is done internal to ext4_inode_csum()
-already?
-
-Also, would it be better to call the temporary variable "csum" instead
-of "crc", since we may use something other than crc32c as the hash
-function in the future.
-
-Cheers, Andreas
-
-
-
-
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 462fbc2..a61b267 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -962,15 +962,6 @@ out:
+ static unsigned long zcache_failed_get_free_pages;
+ static unsigned long zcache_failed_alloc;
+ static unsigned long zcache_put_to_flush;
+-static unsigned long zcache_aborted_preload;
+-static unsigned long zcache_aborted_shrink;
+-
+-/*
+- * Ensure that memory allocation requests in zcache don't result
+- * in direct reclaim requests via the shrinker, which would cause
+- * an infinite loop.  Maybe a GFP flag would be better?
+- */
+-static DEFINE_SPINLOCK(zcache_direct_reclaim_lock);
+ 
+ /*
+  * for now, used named slabs so can easily track usage; later can
+@@ -1009,10 +1000,6 @@ static int zcache_do_preload(struct tmem_pool *pool)
+ 		goto out;
+ 	if (unlikely(zcache_obj_cache == NULL))
+ 		goto out;
+-	if (!spin_trylock(&zcache_direct_reclaim_lock)) {
+-		zcache_aborted_preload++;
+-		goto out;
+-	}
+ 	preempt_disable();
+ 	kp = &__get_cpu_var(zcache_preloads);
+ 	while (kp->nr < ARRAY_SIZE(kp->objnodes)) {
+@@ -1021,7 +1008,7 @@ static int zcache_do_preload(struct tmem_pool *pool)
+ 				ZCACHE_GFP_MASK);
+ 		if (unlikely(objnode == NULL)) {
+ 			zcache_failed_alloc++;
+-			goto unlock_out;
++			goto out;
+ 		}
+ 		preempt_disable();
+ 		kp = &__get_cpu_var(zcache_preloads);
+@@ -1034,13 +1021,13 @@ static int zcache_do_preload(struct tmem_pool *pool)
+ 	obj = kmem_cache_alloc(zcache_obj_cache, ZCACHE_GFP_MASK);
+ 	if (unlikely(obj == NULL)) {
+ 		zcache_failed_alloc++;
+-		goto unlock_out;
++		goto out;
+ 	}
+ 	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
+ 	if (unlikely(page == NULL)) {
+ 		zcache_failed_get_free_pages++;
+ 		kmem_cache_free(zcache_obj_cache, obj);
+-		goto unlock_out;
++		goto out;
+ 	}
+ 	preempt_disable();
+ 	kp = &__get_cpu_var(zcache_preloads);
+@@ -1053,8 +1040,6 @@ static int zcache_do_preload(struct tmem_pool *pool)
+ 	else
+ 		free_page((unsigned long)page);
+ 	ret = 0;
+-unlock_out:
+-	spin_unlock(&zcache_direct_reclaim_lock);
+ out:
+ 	return ret;
+ }
+@@ -1423,8 +1408,6 @@ ZCACHE_SYSFS_RO(evicted_buddied_pages);
+ ZCACHE_SYSFS_RO(failed_get_free_pages);
+ ZCACHE_SYSFS_RO(failed_alloc);
+ ZCACHE_SYSFS_RO(put_to_flush);
+-ZCACHE_SYSFS_RO(aborted_preload);
+-ZCACHE_SYSFS_RO(aborted_shrink);
+ ZCACHE_SYSFS_RO(compress_poor);
+ ZCACHE_SYSFS_RO(mean_compress_poor);
+ ZCACHE_SYSFS_RO_ATOMIC(zbud_curr_raw_pages);
+@@ -1466,8 +1449,6 @@ static struct attribute *zcache_attrs[] = {
+ 	&zcache_failed_get_free_pages_attr.attr,
+ 	&zcache_failed_alloc_attr.attr,
+ 	&zcache_put_to_flush_attr.attr,
+-	&zcache_aborted_preload_attr.attr,
+-	&zcache_aborted_shrink_attr.attr,
+ 	&zcache_zbud_unbuddied_list_counts_attr.attr,
+ 	&zcache_zbud_cumul_chunk_counts_attr.attr,
+ 	&zcache_zv_curr_dist_counts_attr.attr,
+@@ -1507,11 +1488,7 @@ static int shrink_zcache_memory(struct shrinker *shrink,
+ 		if (!(gfp_mask & __GFP_FS))
+ 			/* does this case really need to be skipped? */
+ 			goto out;
+-		if (spin_trylock(&zcache_direct_reclaim_lock)) {
+-			zbud_evict_pages(nr);
+-			spin_unlock(&zcache_direct_reclaim_lock);
+-		} else
+-			zcache_aborted_shrink++;
++		zbud_evict_pages(nr);
+ 	}
+ 	ret = (int)atomic_read(&zcache_zbud_curr_raw_pages);
+ out:
+-- 
+1.7.4.1
 
