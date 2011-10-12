@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1JLNJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:09:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17603 "EHLO mx1.redhat.com"
+	id S1753304Ab1JLNOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:14:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab1JLNJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:09:29 -0400
-Message-ID: <4E95917D.3080507@redhat.com>
-Date: Wed, 12 Oct 2011 09:09:17 -0400
+	id S1753023Ab1JLNOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 09:14:05 -0400
+Message-ID: <4E959292.9060301@redhat.com>
+Date: Wed, 12 Oct 2011 09:13:54 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Satoru Moriya <satoru.moriya@hds.com>,
-        David Rientjes <rientjes@google.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Satoru Moriya <smoriya@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+To: David Rientjes <rientjes@google.com>
+CC: Satoru Moriya <satoru.moriya@hds.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "lwoodman@redhat.com" <lwoodman@redhat.com>,
         Seiji Aguchi <saguchi@redhat.com>,
-        "hughd@google.com" <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>
 Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <20111010153723.6397924f.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBC4@USINDEVS02.corp.hds.com> <20111011125419.2702b5dc.akpm@linux-foundation.org> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBFE@USINDEVS02.corp.hds.com> <20111011135445.f580749b.akpm@linux-foundation.org>
-In-Reply-To: <20111011135445.f580749b.akpm@linux-foundation.org>
+References: <20110901105208.3849a8ff@annuminas.surriel.com> <20110901100650.6d884589.rdunlap@xenotime.net> <20110901152650.7a63cb8b@annuminas.surriel.com> <alpine.DEB.2.00.1110072001070.13992@chino.kir.corp.google.com> <65795E11DBF1E645A09CEC7EAEE94B9CB516CBBC@USINDEVS02.corp.hds.com> <alpine.DEB.2.00.1110111343070.29761@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110111343070.29761@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2011 04:54 PM, Andrew Morton wrote:
-> On Tue, 11 Oct 2011 16:23:22 -0400
-> Satoru Moriya<satoru.moriya@hds.com>  wrote:
->
->> On 10/11/2011 03:55 PM, Andrew Morton wrote:
->>> On Tue, 11 Oct 2011 15:32:11 -0400
->>> Satoru Moriya<satoru.moriya@hds.com>  wrote:
->>>
->>>> On 10/10/2011 06:37 PM, Andrew Morton wrote:
->>>>> On Fri, 7 Oct 2011 20:08:19 -0700 (PDT) David Rientjes
->>>>> <rientjes@google.com>  wrote:
->>>>>
->>>>>> On Thu, 1 Sep 2011, Rik van Riel wrote:
->>>>
->>>> Actually page allocator decreases min watermark to 3/4 * min
->>>> watermark for rt-task. But in our case some applications create a lot
->>>> of processes and if all of them are rt-task, the amount of watermark
->>>> bonus(1/4 * min watermark) is not enough.
->>>>
->>>> If we can tune the amount of bonus, it may be fine. But that is
->>>> almost all same as extra free kbytes.
->>>
->>> This situation is detectable at runtime.  If realtime tasks are being
->>> stalled in the page allocator then start to increase the free-page
->>> reserves.  A little control system.
->>
->> Detecting at runtime is too late for some latency critical systems.
->> At that system, we must avoid a stall before it happens.
->
-> It's pretty darn obvious that the kernel can easily see the situation
-> developing before it happens.  By comparing a few integers.
+On 10/11/2011 05:04 PM, David Rientjes wrote:
 
-The problem is that we may be dealing with bursts, not steady
-states of allocations.  Without knowing the size of a burst,
-we have no idea when we should wake up kswapd to get enough
-memory freed ahead of the application's allocations.
+> In other words, I think it's a fine solution if you're running a single
+> application with very bursty memory allocations so you need to reclaim
+> more memory when low, but that solution is troublesome if it comes at
+> the penalty of other applications and that's a direct consequence of it
+> being a global tunable.  I'd much rather identify memory allocations in
+> the kernel that causing the pain here and mitigate it by (i) attempting to
+> sanely rate limit those allocations,
 
-> Look, please don't go bending over backwards like this to defend a bad
-> patch.  It's a bad patch!  It would be better not to have to merge it.
-> Let's do something better.
+Rate limiting just increases the problem from what it was
+before the patch was introduced, because the entire purpose
+is to reduce allocation latencies by tasks with low latency
+requirements.
 
-I would love it if we could come up with something better,
-and have thought about it a lot.
+> (ii) preallocate at least a partial
+> amount of those allocations ahead of time so avoid significant reclaim
+> all at one,
 
-However, so far we do not seem to have an alternative yet :(
+Unless I'm mistaken, isn't this functionally equivalent to
+increasing the size of the free memory pool?
+
+> or (iii) annotate memory allocations with such potential so
+> that the page allocator can add this reclaim bonus itself only in these
+> conditions.
+
+I am not sure what you are proposing here.
+
+How would this scheme work?
 
 -- 
 All rights reversed
