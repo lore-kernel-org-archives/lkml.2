@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab1JLNxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 09:53:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56435 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752329Ab1JLNxT (ORCPT
+	id S1753384Ab1JLN5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 09:57:19 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42514 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1JLN5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 09:53:19 -0400
-Date: Wed, 12 Oct 2011 14:51:53 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: monstr@monstr.eu
-Cc: linux-serial@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: Re: Using serial driver 16550A in poll mode without interrupt
- connected
-Message-ID: <20111012145153.5490b592@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E95902B.7080204@monstr.eu>
-References: <4E95902B.7080204@monstr.eu>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 12 Oct 2011 09:57:18 -0400
+Message-ID: <4E959C7C.40901@linaro.org>
+Date: Wed, 12 Oct 2011 21:56:12 +0800
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20111005 Icedove/3.1.15
+MIME-Version: 1.0
+To: ashish.jangam@kpitcummins.com
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linaro-dev@lists.linaro.org, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>
+Subject: Re: [Patch 5/11] Regulator: DA9052/53 regulator support v4
+References: <1317990038.5372.6.camel@L-0761.kpit.com>
+In-Reply-To: <1317990038.5372.6.camel@L-0761.kpit.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Driver is probed with no IRQ (NO_IRQ = -1 on Microblaze)
-> 83e00000.serial: ttyS0 at MMIO 0x83e01003 (irq = -1) is a 16550A
+(2011年10月07日 20:20), ashishj3 wrote:
+> The Dialog PMIC has below featured regulators:-
+> DA9052-BC - 4 DVS Buck converters 0.5V - 3.6V upto 1Amp.
+> DA9053-AA/BX - 4 DVS Buck converters 0.5V - 2.5V upto 3Amp.
+> DA9052/53 - 10 Programmable LDO's High PSSR, 1% accuracy.
+> 
+> This patch support all the DA9052 and Da9053 regulators. The output voltages are
+> fully programmable via I2C or SPI interface. The platform data with regulation
+> constraints is passed down from the board to the regulator.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Zero means no IRQ. NO_IRQ is a legacy internal thing for the old IDE code
-so not something other code should be using. Setting the IRQ to -1 is
-bogus and will confuse the rest of the kernel.
+Tested-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
 
-> Is it possible to use serial driver without IRQ - or blocking IRQ, etc.?
+Hi,
 
-Within limits - it kills your power management and data rates because of
-the continual polling.
+I've reviewed the source code and tested this driver on imx53 QuickStart
+board. Works good.
 
-Alan
+There are some minor warnings and error by running checkpatch.pl on this
+patch.
+
+WARNING: please write a paragraph that describes the config symbol fully
+#50: FILE: drivers/regulator/Kconfig:173:
++	help
+
+ERROR: do not set execute permissions for source files
+#70: FILE: drivers/regulator/da9052-regulator.c
+
+WARNING: line over 80 characters
+#117: FILE: drivers/regulator/da9052-regulator.c:43:
++	{800000, 1000000, 1200000, 1500000}, /* DA9053-AA/Bx BUCK-PRO,MEM,PERI */
+
+Yours Sincerely,
+Paul
