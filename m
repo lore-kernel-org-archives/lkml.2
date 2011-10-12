@@ -1,117 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1JLEnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 00:43:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:47347 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab1JLEnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 00:43:37 -0400
-Date: Wed, 12 Oct 2011 15:43:17 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Barry <abarry@cray.com>, linux-mm <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Hastings <abh@cray.com>
-Subject: Re: [PATCH v2 1/1] hugepages: Fix race between hugetlbfs umount and
- quota update.
-Message-ID: <20111012044317.GA31436@drongo>
-References: <4E4EB603.8090305@cray.com>
- <20110819145109.dcd5dac6.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819145109.dcd5dac6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752295Ab1JLEpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 00:45:51 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48766 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1JLEpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 00:45:50 -0400
+From: Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        valdis.kletnieks@vt.edu,
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH v2 2/2] Staging: comedi: fix printk and line over 80 character
+Date: Wed, 12 Oct 2011 10:14:59 +0530
+Message-Id: <1318394699-2222-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <valdis.kletnieks@vt.edu>
+References: <valdis.kletnieks@vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 02:51:09PM -0700, Andrew Morton wrote:
-> 
-> OK.  This sounds screwed up.  If a device driver is currently using a
-> page from a hugetlbfs file then the unmount shouldn't have succeeded in
-> the first place!
-> 
-> Or is it the case that the device driver got a reference to the page by
-> other means, bypassing hugetlbfs?  And there's undesirable/incorrect
-> interaction between the non-hugetlbfs operation and hugetlbfs?
-> 
-> Or something else?
-> 
-> <starts reading the mailing list>
-> 
-> OK, important missing information from the above is that the driver got
-> at this page via get_user_pages() and happened to stumble across a
-> hugetlbfs page.  So it's indeed an incorrect interaction between a
-> non-hugetlbfs operation and hugetlbfs.
-> 
-> What's different about hugetlbfs?  Why don't other filesystems hit this?
+This patch fixes a  printk and line over 80 charcter found by the
+checkpatch.pl tool
 
-What's different about hugetlbfs, as I understand it, is that the
-"quota" mechanism is there to restrict memory usage, rather than disk
-usage.
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ v2: printk string changes for valdis.kletnieks
+ Coverted printks to pr_<level>.
 
-> <investigates further>
-> 
-> OK so the incorrect interaction happened in free_huge_page(), which is
-> called via the compound page destructor (this dtor is "what's different
-> about hugetlbfs").   What is incorrect about this is
-> 
-> a) that we're doing fs operations in response to a
->    get_user_pages()/put_page() operation which has *nothing* to do with
->    filesystems!
+ drivers/staging/comedi/drivers/cb_pcimdda.c |   42 ++++++++++++++++-----------
+ 1 files changed, 25 insertions(+), 17 deletions(-)
 
-The hugetlbfs quota thing is more like an RSS limit than a disk
-quota.  Perhaps the "quota" name is misleading.
+diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
+index 8c981a8..2a73ea9 100644
+--- a/drivers/staging/comedi/drivers/cb_pcimdda.c
++++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
+@@ -105,7 +105,10 @@ struct board_struct {
+ 	int ao_bits;
+ 	int dio_chans;
+ 	int dio_method;
+-	int dio_offset;		/* how many bytes into the BADR are the DIO ports */
++	int dio_offset;		/*
++				 * how many bytes into the BADR
++				 * are the DIO ports
++				 */
+ 	int regs_badrindex;	/* IO Region for the control, analog output,
+ 				   and DIO registers */
+ 	int reg_sz;		/* number of bytes of registers in io region */
+@@ -152,9 +155,12 @@ static DEFINE_PCI_DEVICE_TABLE(pci_table) = {
+ 
+ MODULE_DEVICE_TABLE(pci, pci_table);
+ 
+-/* this structure is for data unique to this hardware driver.  If
+-   several hardware drivers keep similar information in this structure,
+-   feel free to suggest moving the variable to the struct comedi_device struct.  */
++/*
++ * this structure is for data unique to this hardware driver.
++ * If several hardware drivers keep similar information in this
++ * structure, feel free to suggest moving the variable to the
++ * struct comedi_device struct.
++ */
+ struct board_private_struct {
+ 	unsigned long registers;	/* set by probe */
+ 	unsigned long dio_registers;
+@@ -300,7 +306,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return err;
+ 
+ /* Output some info */
+-	printk("comedi%d: %s: ", dev->minor, thisboard->name);
++	pr_debug("comedi%d: %s: attached\n", dev->minor, thisboard->name);
+ 
+ /*
+  * Initialize dev->board_name.  Note that we can use the "thisboard"
+@@ -335,13 +341,16 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (thisboard->dio_chans) {
+ 		switch (thisboard->dio_method) {
+ 		case DIO_8255:
+-			/* this is a straight 8255, so register us with the 8255 driver */
++			/*
++			 * this is a straight 8255, so register us
++			 * with the 8255 driver
++			 */
+ 			subdev_8255_init(dev, s, NULL, devpriv->dio_registers);
+ 			devpriv->attached_to_8255 = 1;
+ 			break;
+ 		case DIO_INTERNAL:
+ 		default:
+-			printk("DIO_INTERNAL not implemented yet!\n");
++			pr_warn("DIO_INTERNAL not implemented yet!\n");
+ 			return -ENXIO;
+ 			break;
+ 		}
+@@ -351,8 +360,6 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	devpriv->attached_successfully = 1;
+ 
+-	printk("attached\n");
+-
+ 	return 1;
+ }
+ 
+@@ -381,8 +388,8 @@ static int detach(struct comedi_device *dev)
+ 		}
+ 
+ 		if (devpriv->attached_successfully && thisboard)
+-			printk("comedi%d: %s: detached\n", dev->minor,
+-			       thisboard->name);
++			pr_debug("comedi%d: %s: detached\n", dev->minor,
++				 thisboard->name);
+ 
+ 	}
+ 
+@@ -436,8 +443,11 @@ static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ 
+ 	for (i = 0; i < insn->n; i++) {
+ 		inw(devpriv->registers + chan * 2);
+-		/* should I set data[i] to the result of the actual read on the register
+-		   or the cached unsigned int in devpriv->ao_readback[]? */
++		/*
++		 * should I set data[i] to the result of the actual read
++		 * on the register or the cached unsigned int in
++		 * devpriv->ao_readback[]?
++		 */
+ 		data[i] = devpriv->ao_readback[chan];
+ 	}
+ 
+@@ -489,8 +499,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+ 			devpriv->pci_dev = pcidev;
+ 			dev->board_ptr = boards + index;
+ 			if (comedi_pci_enable(pcidev, thisboard->name)) {
+-				printk
+-				    ("cb_pcimdda: Failed to enable PCI device and request regions\n");
++				pr_warn("cb_pcimdda: Failed to enable PCI device and request regions\n");
+ 				return -EIO;
+ 			}
+ 			registers =
+@@ -503,7 +512,6 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+ 		}
+ 	}
+ 
+-	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
+-	       "card found at the requested position\n");
++	pr_err("cb_pcimdda: No supported ComputerBoards/MeasurementComputing card found at the requested position\n");
+ 	return -ENODEV;
+ }
+-- 
+1.7.6.4
 
-I assume we update RSS counts for ordinary pages when allocating and
-freeing pages?
-
-> b) that we continue to try to do that fs operation against an fs
->    which was unmounted and freed three days ago. duh.
-> 
-> 
-> So I hereby pronounce that
-> 
-> a) It was wrong to manipulate hugetlbfs quotas within
->    free_huge_page().  Because free_huge_page() is a low-level
->    page-management function which shouldn't know about one of its
->    specific clients (in this case, hugetlbfs).
-> 
->    In fact it's wrong for there to be *any* mention of hugetlbfs
->    within hugetlb.c.
-> 
-> b) I shouldn't have merged that hugetlbfs quota code.  whodidthat. 
->    Mel, Adam, Dave, at least...
-> 
-> c) The proper fix here is to get that hugetlbfs quota code out of
->    free_huge_page() and do it all where it belongs: within hugetlbfs
->    code.
-
-That doesn't sound right to me, if we need to limit usage of huge
-memory pages in memory, rather than back out on the "filesystem".
-An ordinary filesystem doesn't worry about memory consumption, it
-worries about how its blocks of backing store are allocated.
-Hugetlbfs is unusual here in that the "backing store" and the memory
-pages that get mapped into userspace are one and the same thing.
-
-> Regular filesystems don't need to diddle quota counts within
-> page_cache_release().  Why should hugetlbfs need to?
-
-In a regular filesystem you can reclaim a block of backing store, and
-thus decrement a quota count, while there might still be a page of
-memory in use that contains its old contents.  That's problematic with
-hugetlbfs.
-
-In the meantime we have a user-triggerable kernel crash.  As far as I
-can see, if we did what you suggest, we would end up with a situation
-where we could run out of huge pages even though everyone was within
-quota.  Which is arguably better than a kernel crash, but still less
-than ideal.  What do you suggest?
-
-Paul.
