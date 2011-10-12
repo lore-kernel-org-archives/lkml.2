@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1JLW4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 18:56:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4737 "EHLO mga02.intel.com"
+	id S1754107Ab1JLXAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 19:00:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57952 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab1JLW4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 18:56:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="62376634"
-Subject: Re: [PATCH net-next 0/5] intel: Logging cleanups
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Joe Perches <joe@perches.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 12 Oct 2011 15:56:21 -0700
-In-Reply-To: <cover.1318436085.git.joe@perches.com>
-References: <cover.1318436085.git.joe@perches.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AcewzO/0y3crV2Fc/8tc"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1318460181.15319.11.camel@jtkirshe-mobl>
-Mime-Version: 1.0
+	id S1752275Ab1JLXAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 19:00:03 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+To: hjk@hansjkoch.de
+Cc: gregkh@suse.de, linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Kai Jiang <Kai.Jiang@freescale.com>
+Subject: [PATCH][v2] uio: Support 36-bit physical addresses on 32-bit systems
+Date: Wed, 12 Oct 2011 15:57:43 -0500
+Message-Id: <1318453063-17349-1-git-send-email-galak@kernel.crashing.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Kai Jiang <Kai.Jiang@freescale.com>
 
---=-AcewzO/0y3crV2Fc/8tc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
+extend the width of 'addr' in struct uio_mem.  Numerous platforms like
+embedded PPC, ARM, and X86 have support for systems with larger physical
+address than logical.
 
-On Wed, 2011-10-12 at 09:18 -0700, Joe Perches wrote:
-> Just some conversions of printks to pr_<level>
-> and some trivial defect corrections.
->=20
-> Joe Perches (5):
->   e1000e: Convert printks to pr_<level>
->   ixgbevf: Convert printks to pr_<level>
->   igbvf: Convert printks to pr_<level>
->   igb: Convert printks to pr_<level>
->   igb: Convert bare printk to pr_notice
->=20
->  drivers/net/ethernet/intel/e1000e/netdev.c        |  232 +++++++++------=
-------
->  drivers/net/ethernet/intel/igb/e1000_82575.c      |    5 +-
->  drivers/net/ethernet/intel/igb/igb_main.c         |  155 +++++++--------
->  drivers/net/ethernet/intel/igbvf/netdev.c         |   14 +-
->  drivers/net/ethernet/intel/ixgbevf/ethtool.c      |    6 +-
->  drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   26 ++--
->  6 files changed, 201 insertions(+), 237 deletions(-)
->=20
+Since 'addr' may contain a physical, logical, or virtual address the
+easiest solution is to just change the type to 'unsigned long long'
+regardless of which type is utilized.
 
-Thanks Joe.  I will add these to my queue of patches.
+For physical address we can support up to a 44-bit physical address on a
+typical 32-bit system as we utilize remap_pfn_range() for the mapping of
+the memory region and pfn's are represnted by shifting the address by
+the page size (typically 4k).
 
---=-AcewzO/0y3crV2Fc/8tc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
+Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+---
+v2:
+* Use phys_addr_t instead of 'unsigned long long'
+* Updated DocBook detail in uio-howto.tmpl
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ Documentation/DocBook/uio-howto.tmpl |    2 +-
+ drivers/uio/uio.c                    |    8 ++++----
+ include/linux/uio_driver.h           |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-iQIcBAABCgAGBQJOlhsVAAoJEOVv75VaS+3OdFcP/1JkwHu8t9ckGDKtBgNeZLi0
-eCv2NUAdUg7EeSp9pmgQIZgEhv5hSMgmLpn/qZebkR11MEEeEwrfZiFKCn6Z91bK
-lOxQq8JIf8stasg1TadlOBg7b1JgxCpdqJng4MAeVubWBzkiGP7IGQ8pcZnvX5/u
-QzeeWtzDieCtpT5TSADZuZ5Yc7vuA0AvCX1q2CwyzS1HhKNUBhpUMwAFd9bSGTgj
-80XDluZ5IzYE/k8eQQgymzFYm2ZZ1q03RPEJcS2gsi9BJJAGabE6ppBi1chCqvmR
-Qy06k33gkhpiwNFPPi4jnFg7Uz0y1RYgfwzvhn6ZeuRpo4faPhgeMEBotvyOR5E6
-n6u+p9ckWVNprazC8LQ44FMsohFSvez2rBBEIlM22WYAby6Qw8f4N2Mhperf7Wcu
-ES9qO1LWuU0/jqhOlV3I+NLLoptzrC9HplOeiV5y+nG0PDss5CSh2xto1jQ76e3S
-p9VVz4ndWbxqtrnZRVgFLIFj5DSR+3YWeIA4Uj+W6s5Hd8EprYgerAa0gyTrFzcO
-8W0iEWcI7eDRp31QbeZxoXy6jiUVYg4OD7PkqV0eg/E2AT6STm6ttMz+12Nb6bdR
-Cm8kbhk7cshJNU87OfMxrX359IsCRPCroyHEc96V9qq8CvZSOucEc3ownp2kWB11
-ASPc3XUAzrSCyNcjUhro
-=GajS
------END PGP SIGNATURE-----
-
---=-AcewzO/0y3crV2Fc/8tc--
+diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+index 7c4b514d..54883de 100644
+--- a/Documentation/DocBook/uio-howto.tmpl
++++ b/Documentation/DocBook/uio-howto.tmpl
+@@ -529,7 +529,7 @@ memory (e.g. allocated with <function>kmalloc()</function>). There's also
+ </para></listitem>
+ 
+ <listitem><para>
+-<varname>unsigned long addr</varname>: Required if the mapping is used.
++<varname>phys_addr_t addr</varname>: Required if the mapping is used.
+ Fill in the address of your memory block. This address is the one that
+ appears in sysfs.
+ </para></listitem>
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 88f4444..43b7096 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -69,7 +69,7 @@ static ssize_t map_name_show(struct uio_mem *mem, char *buf)
+ 
+ static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
+ {
+-	return sprintf(buf, "0x%lx\n", mem->addr);
++	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr);
+ }
+ 
+ static ssize_t map_size_show(struct uio_mem *mem, char *buf)
+@@ -79,7 +79,7 @@ static ssize_t map_size_show(struct uio_mem *mem, char *buf)
+ 
+ static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
+ {
+-	return sprintf(buf, "0x%lx\n", mem->addr & ~PAGE_MASK);
++	return sprintf(buf, "0x%llx\n", (unsigned long long)mem->addr & ~PAGE_MASK);
+ }
+ 
+ struct map_sysfs_entry {
+@@ -634,8 +634,8 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	if (idev->info->mem[mi].memtype == UIO_MEM_LOGICAL)
+ 		page = virt_to_page(idev->info->mem[mi].addr + offset);
+ 	else
+-		page = vmalloc_to_page((void *)idev->info->mem[mi].addr
+-							+ offset);
++		page = vmalloc_to_page((void *)(unsigned long)
++				idev->info->mem[mi].addr + offset);
+ 	get_page(page);
+ 	vmf->page = page;
+ 	return 0;
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index 4c618cd..d9ce796 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -32,7 +32,7 @@ struct uio_map;
+  */
+ struct uio_mem {
+ 	const char		*name;
+-	unsigned long		addr;
++	phys_addr_t		addr;
+ 	unsigned long		size;
+ 	int			memtype;
+ 	void __iomem		*internal_addr;
+-- 
+1.7.3.4
 
