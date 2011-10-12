@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1JLWUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 18:20:42 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:36168 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751939Ab1JLWUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 18:20:41 -0400
-Date: Wed, 12 Oct 2011 18:20:39 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, anton@samba.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
-Subject: Re: Oprofile Regression Caused by commit
- e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25 on PPC
-Message-ID: <20111012222039.GC6158@mgebm.net>
-References: <20111007204247.GA5444@mgebm.net>
- <20111010233842.GC24583@mgebm.net>
- <1318319095.14400.54.camel@laptop>
- <20111012165154.GB6158@mgebm.net>
- <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
+	id S1753731Ab1JLWZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 18:25:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844Ab1JLWY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 18:24:59 -0400
+Date: Thu, 13 Oct 2011 00:24:54 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm/huge_memory: Clean up typo when copying user highpage
+Message-ID: <20111012222454.GA3218@redhat.com>
+References: <CAJd=RBBuwmcV8srUyPGnKUp=RPKvsSd+4BbLrh--aHFGC5s7+g@mail.gmail.com>
+ <20111012175148.GA27460@redhat.com>
+ <20111012134224.786191ac.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111012134224.786191ac.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 12, 2011 at 01:42:24PM -0700, Andrew Morton wrote:
+> On Wed, 12 Oct 2011 19:51:48 +0200
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
+> 
+> > On Wed, Oct 12, 2011 at 10:39:36PM +0800, Hillf Danton wrote:
+> > > Hi Andrea
+> > > 
+> > > When copying user highpage, the PAGE_SHIFT in the third parameter is a typo,
+> > > I think, and is replaced with PAGE_SIZE.
+> > 
+> > That looks correct. I wonder how it was not noticed yet. Because it
+> > can't go out of bound, it didn't risk to crash the kernel and it didn't
+> > not risk to expose random data to the cowing task. So it shouldn't
+> > have security implications as far as I can tell, but the app could
+> > malfunction and crash (userland corruption only).
+> 
+> Which architectures care about the copy_user_page() `vaddr' argument? 
+> mips, perhaps?  I suspect the intersection between those architectures
+> and archs-which-implement-hugepages is the empty set.
 
---wxDdMuZNg1r63Hyj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes it's not happening. debug_cow was specifically meant to trap this
+very case so there was little chance it could go unnoticed.
 
-On Wed, 12 Oct 2011, Stephane Eranian wrote:
-
-> Could be:
->    a8d757e perf events: Fix slow and broken cgroup context switch code
->=20
-
-Thanks for the pointer, I will have a look at that.
-
-Eric
-
---wxDdMuZNg1r63Hyj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOlhK3AAoJEKhG9nGc1bpJfb4P/2CMX52WAiCza5aIN4da/Ry7
-QEiX6Ff2Z66N3Zn4Llo4FXcdN2qJJfjIo4A35WCP5wNEs0t8gjFQlET6Yy8YCtVN
-cihwSc/aYHF1hrRKdJfwQj6v9hO0lSy7NxcmrRrtaDY5ClM7xl5+1dnwkVKWoE2Y
-zwkqmiYcfqW7uPvHjQdfylpDQDMhNWJ10iuQfiCRoo3RrS7CnhG8SxDD2SKHun5C
-OaeJEUgUhcAFwVzcE5ju2Y7mXlkIZ9U46hjxeeSyDVL3L0KjLrr+QHPvxwlcbN45
-BECIf5dF1HvPyWkCDhctSUQNxM88yf8tDtgWGRF8AJvjUCk1zv3QJ/GXJsQy6Yht
-4VJatKLzUr1Y3h93+O1fKgTB7O4opqD0RrvguMbS5EOzG6tgoMjm7/faS4qxZSIv
-QlnOyN1h/PCLi/LqVhgsv9slIlaMHpLKCtrWRiVbui5f7qSbpktedGeoLju3cAA0
-yGLZWwcbqbX5+UH7+j5mg62DuVmvk9jdqITvf4vQTcAdyyzv3SstiFqKL/EKDYKO
-FBkqBWGWcn6wZFPBUg3aRQp0jJHn0PIrGWyoI8yzbvj+rvPYRGNEPvUQTfrkaZOH
-MtUTFm6gekjkcAqaGJ696rz3ZELN8mL5pVwHeOhjTLUcmC9RuU7CxXn+dARtJoY+
-cwaDxZIqksg7AKE/aKnY
-=9jki
------END PGP SIGNATURE-----
-
---wxDdMuZNg1r63Hyj--
+Never mind.... still the patch is correct and good idea to apply as cleanup.
