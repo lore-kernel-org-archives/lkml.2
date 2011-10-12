@@ -1,48 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab1JLTP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:15:59 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:47745 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab1JLTP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:15:57 -0400
-Message-ID: <1318446934.2644.0.camel@edumazet-laptop>
-Subject: Re: [PATCH v4] net-netlink: Add a new attribute to expose TOS
- values via netlink
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Muraliraja Muniraju <muralira@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Wed, 12 Oct 2011 21:15:34 +0200
-In-Reply-To: <1318446035-10267-1-git-send-email-muralira@google.com>
-References: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
-	 <1318446035-10267-1-git-send-email-muralira@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1753390Ab1JLTR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:17:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36488 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002Ab1JLTRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:17:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] Documentation/power: Update docs about suspend and CPU hotplug
+Date: Wed, 12 Oct 2011 21:19:40 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc9+; KDE/4.6.0; x86_64; ; )
+Cc: rdunlap@xenotime.net, len.brown@intel.com, pavel@ucw.cz,
+        a.p.zijlstra@chello.nl, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20111011201958.10065.78949.stgit@srivatsabhat.in.ibm.com> <201110120002.49278.rjw@sisk.pl> <4E9514C5.8080907@linux.vnet.ibm.com>
+In-Reply-To: <4E9514C5.8080907@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110122119.41027.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 12 octobre 2011 à 12:00 -0700, Muraliraja Muniraju a écrit :
-> From: Murali Raja <muralira@google.com>
+On Wednesday, October 12, 2011, Srivatsa S. Bhat wrote:
+> On 10/12/2011 03:32 AM, Rafael J. Wysocki wrote:
+> > On Tuesday, October 11, 2011, Srivatsa S. Bhat wrote:
+> >> Update the documentation about the interaction between the suspend (S3) call
+> >> path and the CPU hotplug infrastructure.
+> >> This patch focusses only on the activities of the freezer, cpu hotplug and
+> >> the notifications involved. It outlines how regular CPU hotplug differs from
+> >> the way it is invoked during suspend and also tries to explain the locking
+> >> involved.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> >> ---
+> >>
+> >>  Documentation/power/00-INDEX                   |    2 
+> >>  Documentation/power/suspend-and-cpuhotplug.txt |  113 ++++++++++++++++++++++++
+> >>  2 files changed, 115 insertions(+), 0 deletions(-)
+> >>  create mode 100644 Documentation/power/suspend-and-cpuhotplug.txt
+> >>
+> >> diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+> >> index 45e9d4a..a4d682f 100644
+> >> --- a/Documentation/power/00-INDEX
+> >> +++ b/Documentation/power/00-INDEX
+> >> @@ -26,6 +26,8 @@ s2ram.txt
+> >>  	- How to get suspend to ram working (and debug it when it isn't)
+> >>  states.txt
+> >>  	- System power management states
+> >> +suspend-and-cpuhotplug.txt
+> >> +	- Explains the interaction between Suspend-to-RAM (S3) and CPU hotplug
+> >>  swsusp-and-swap-files.txt
+> >>  	- Using swap files with software suspend (to disk)
+> >>  swsusp-dmcrypt.txt
+> >> diff --git a/Documentation/power/suspend-and-cpuhotplug.txt b/Documentation/power/suspend-and-cpuhotplug.txt
+> >> new file mode 100644
+> >> index 0000000..d0ba411
+> >> --- /dev/null
+> >> +++ b/Documentation/power/suspend-and-cpuhotplug.txt
+> >> @@ -0,0 +1,113 @@
+> >> +Interaction of Suspend code (S3) with the CPU hotplug infrastructure
+> >> +   (C) 2011 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>, GPL
+> >> +
+> >> +
+> >> +I. How does the Suspend-to-RAM code interact with CPU hotplug infrastructure?
+> >> +
+> >> +Well, a picture speaks more than a thousand words... So ASCII art follows :-)
+> >> +
+> >> +[This depicts the current design in the kernel, and focusses only on the
+> >> +interactions between suspend call paths involving the freezer and cpu hotplug
+> >> +and also tries to explain the locking involved. It also outlines the
+> >> +notifications involved.]
+> >> +
+> >> +On a high level, the suspend-resume cycle goes like this:
+> >> +
+> >> +|Freeze| -> |Disable nonboot| -> |Do suspend| -> |Enable nonboot| -> |Thaw |
+> >> +|tasks |    |     cpus      |    |          |    |     cpus     |    |tasks|
+> >> +
+> >> +
+> >> +More details follow:
+> >> +
+> >> +Regular CPU hotplug                                   Suspend call path
+> >> +-------------------                              ---------------------------
+> >> +
+> >> +Write 0 (or 1) to                                     Write 'mem' to
+> >> +/sys/devices/system/cpu/cpu*/online                   /sys/power/state
+> >> +     sysfs file                                          syfs file
+> >> +         |                                                   |
+> >> +         |                                                   v
+> >> +         |                                         Acquire pm_mutex lock
+> >> +         |                                                   |
+> >> +         |                                                   v
+> >> +         |                                Send PM_SUSPEND_PREPARE notifications
+> >> +         |                                                   |
+> >> +         |                                                   v
+> >> +         |                                              Freeze tasks
+> > 
+> > OK, so something appears to be missing here.  Namely, the task writing to
+> > /sys/devices/system/cpu/cpu*/online should be frozen at this point or
+> > suspend should be aborted.  I suppose neither of these happens and I wonder
+> > why exactly.
+> > 
 > 
-> This patch exposes the tos value for the TCP sockets when the TOS flag
-> is requested in the ext_flags for the inet_diag request. This would mainly be
-> used to expose TOS values for both for TCP and UDP sockets. Currently it is
-> supported for TCP. When netlink support for UDP would be added the support
-> to expose the TOS values would alse be done. For IPV4 tos value is exposed
-> and for IPV6 tclass value is exposed.
-> 
-> Signed-off-by: Murali Raja <muralira@google.com>
-> ---
+> I have a couple of clarifications to make here:
+> * Firstly, this picture is not meant to represent what happens when regular
+>   cpu hotplug and suspend run together. That race condition has not been
+>   brought out here. What it does try to explain is, how the regular cpu
+>   hotplug path is different from suspend, and where they share common code.
+>   Please don't think about timing/race condition when reading it. Its just
+>   meant to explain the call path and locking involved.
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Well, I didn't understand this part.  And the question above is:
 
+> I. How does the Suspend-to-RAM code interact with CPU hotplug infrastructure?
 
+which kind of suggests something different from what you're saying.  Care to
+clarify that in the document?
+
+> * Secondly, this picture explains the *current* design, and *not* the mutual
+>   exclusion design I have proposed between regular cpu hotplug and suspend.
+>   The reason being, this doc was written to help everyone understand the
+>   current locking schemes, to help evaluate my proposal for a different
+>   scheme (mutual exclusion).
+
+I understand that.
+
+> Now, coming to your point, if that task writing to the sysfs file has not
+> been frozen, then the current kernel doesn't abort suspend, which is why we are
+> encountering problems, and which is exactly what my patchset tries to solve.
+> Link to my patchset:
+> http://thread.gmane.org/gmane.linux.documentation/3414/focus=3414
+
+This isn't my point, actually.  My point is that the task writing to
+/sys/devices/system/cpu/cpu*/online should be frozen by the freezer.
+If it is not frozen, then the freezer should fail.  If that doesn't
+happen, there's a bug that has to be fixed and it is _not_ the lack
+of mutual exclusion.  The bug is that, apparently, suspend continues
+even though there is an unfrozen user space process in the system.
+
+Do you have any idea why that happens?
+
+Rafael
