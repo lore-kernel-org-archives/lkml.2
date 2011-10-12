@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350Ab1JLIrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:47:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53202 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab1JLIrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 04:47:07 -0400
-Date: Wed, 12 Oct 2011 10:45:25 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v5
-Message-ID: <20111012084523.GB27853@elte.hu>
-References: <1317251993-5030-1-git-send-email-andi@firstfloor.org>
- <20111010070044.GM32173@elte.hu>
- <20111011152050.GE14482@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011152050.GE14482@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1751453Ab1JLI6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:58:13 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:54436 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750957Ab1JLI6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 04:58:11 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <samuel.ortiz@intel.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        alsa-devel@alsa-project.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: [PATCH v3 0/5] ASoC/MFD/Input: twl6040: Support for audio driven vibra
+Date: Wed, 12 Oct 2011 11:57:52 +0300
+Message-Id: <1318409877-21681-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Changes since v2:
+- Rebased on git://opensource.wolfsonmicro.com/linux-2.6-asoc, for-3.2 branch
+- Acked-by lines added to patches.
 
-> On Mon, Oct 10, 2011 at 09:00:44AM +0200, Ingo Molnar wrote:
-> > 
-> > Andi,
-> > 
-> > If you want me to apply these patches then they need to be reviewed 
-> > and signed off by someone else who i trust and who i'm taking patches 
-> > from.
-> 
-> Ingo,
-> 
-> There's noone else to sign off because noone else is writing the 
-> patches.
+Intro mail form v1:
+The following series adds support for the soc driver to route audio (PCM
+stream) to the vibra ports of the twl6040.
+We have ALSA controls for the vibra source selection (PDM, or Input/FF).
+The route can not be changed from Input/FF to PDM during ongoing effect coming
+from Input/FF.
+The Input/FF driver can not execute new effect, while the vibra source is
+configured to be PDM.
+TO get things working in legacy mode the omap-mcpdm, and twl6040 soc codec
+driver's channel count needed to be fixed.
 
-The typical way of how such maintainer requests are solved is that 
-you'll have to find someone who is willing and able to work with you 
-on this topic, and who is willing to forward your patches to me or to 
-the other x86 maintainers (or any of the submaintainers we pull 
-from). It's not hard, we get and accept a lot of indirect patches.
+To minimize the need for reads through the I2C bus, the MFD driver will cache
+the vibra control registers.
 
-Arguably i've already invested more time into this than i should 
-have, this direct approach clearly does not work and i cannot trust 
-you.
+With this series we can route PCM audio to drive the twl6040 vibra output.
+In order to that we need to play 5 channel audio, and place the vibra sample at
+the 5th channel. This will change with ABE support (change == simplified).
 
-Thanks,
+The series has been created on top of:
+git://opensource.wolfsonmicro.com/linux-2.6-asoc, for-3.2 branch
 
-	Ingo
+If there are no objections, it would be good if this series goes via audio.
+
+Regards,
+Peter
+---
+Peter Ujfalusi (5):
+  Input: twl6040: Simplify vibra regsiter definitions
+  MFD: twl6040: Cache the vibra control registers
+  MFD: twl6040: function to query the vibra status for clients
+  Input: twl6040-vibra: Check the selected path for vibra
+  ASoC: twl6040: Support for vibra output paths
+
+ drivers/input/misc/twl6040-vibra.c |   19 ++++++---
+ drivers/mfd/twl6040-core.c         |   31 +++++++++++++--
+ include/linux/mfd/twl6040.h        |   24 +++++------
+ sound/soc/codecs/twl6040.c         |   72 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 123 insertions(+), 23 deletions(-)
+
+-- 
+1.7.7
+
