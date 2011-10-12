@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1JLPBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 11:01:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54090 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752487Ab1JLPBH (ORCPT
+	id S1752818Ab1JLPDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 11:03:38 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33012
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752056Ab1JLPDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 11:01:07 -0400
-Date: Wed, 12 Oct 2011 16:01:02 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg@ti.com, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        kuninori.morimoto.gx@renesas.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH 6/9] ASoC: da7210: bugfix for head phone
- volume control
-Message-ID: <20111012150101.GS3647@opensource.wolfsonmicro.com>
-References: <1318431934.12107.421.camel@matrix>
+	Wed, 12 Oct 2011 11:03:37 -0400
+Date: Wed, 12 Oct 2011 11:03:32 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
+        akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com,
+        mszeredi@suse.cz
+Subject: Re: [PATCH 0/13] read-only remount race fix v7
+Message-ID: <20111012150332.GA25289@infradead.org>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1318431934.12107.421.camel@matrix>
-X-Cookie: You will be married within a year.
+In-Reply-To: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 08:35:34PM +0530, Ashish Chavan wrote:
-> This patch takes care of reserved bits of headphone volume
-> register by using correct volume range.
+On Wed, Oct 12, 2011 at 04:48:53PM +0200, Miklos Szeredi wrote:
+> Here's an update of the read-only remount race fixes.
+> 
+> It should now fix the races after unlink.  I haven't been able to
+> trigger the bad behavior with the test scripts provided by Toshiyuki
+> Okajima.
 
-This doesn't apply, which is pretty surprising given that there's no
-obvious overlap at all with the rest of the code.
+How does the test script look like?  Could we integrate it into xfstests
+so that we have a good regular run regression test for this?
 
-> Tested on Samsung SMDK6410 board with DA7210 evaluation board.
-
-This really isn't useful information in a changelog, apart from anything
-else this isn't going to be a system that it's easy for other people to
-reproduce.
