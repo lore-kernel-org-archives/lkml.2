@@ -1,117 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1JLQH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 12:07:27 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42668 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372Ab1JLQH0 convert rfc822-to-8bit (ORCPT
+	id S1753521Ab1JLQIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 12:08:13 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:18788 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab1JLQII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 12:07:26 -0400
-Subject: Re: [PATCH] uio: Support 36-bit physical addresses on 32-bit systems
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20111012153229.GB21852@local>
-Date: Wed, 12 Oct 2011 11:07:09 -0500
-Cc: gregkh@suse.de, linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Kai Jiang <Kai.Jiang@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AD39F4F8-E9C0-4090-9AEA-644F82DD328B@kernel.crashing.org>
-References: <1318430145-19898-1-git-send-email-galak@kernel.crashing.org> <20111012153229.GB21852@local>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-X-Mailer: Apple Mail (2.1244.3)
+	Wed, 12 Oct 2011 12:08:08 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, robherring2@gmail.com,
+        claudio@evidence.eu.com, jesper.nilsson@axis.com,
+        alan@lxorguk.ukuu.org.uk
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2 1/5] tty/serial: RS485 bindings for device tree
+Date: Wed, 12 Oct 2011 18:06:56 +0200
+Message-Id: <37a19e194d02144aecd24f284f5e43979643a3c3.1318433947.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1318435620-7481-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1318435620-7481-1-git-send-email-nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Generic bindings for RS485 feature included in some UARTs.
+Those bindings have to be used withing an UART device tree node.
+Documentation updated to link to the bindings definition.
 
-On Oct 12, 2011, at 10:32 AM, Hans J. Koch wrote:
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ Documentation/devicetree/bindings/serial/rs485.txt |   31 ++++++++++++++++++++
+ .../devicetree/bindings/tty/serial/atmel-usart.txt |   27 +++++++++++++++++
+ Documentation/serial/serial-rs485.txt              |    5 +++
+ 3 files changed, 63 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/serial/rs485.txt
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/atmel-usart.txt
 
-> On Wed, Oct 12, 2011 at 09:35:45AM -0500, Kumar Gala wrote:
->> From: Kai Jiang <Kai.Jiang@freescale.com>
->> 
->> To support >32-bit physical addresses for UIO_MEM_PHYS type we need to
->> extend the width of 'addr' in struct uio_mem.  Numerous platforms like
->> embedded PPC, ARM, and X86 have support for systems with larger physical
->> address than logical.
->> 
->> Since 'addr' may contain a physical, logical, or virtual address the
->> easiest solution is to just change the type to 'unsigned long long'
->> regardless of which type is utilized.
-> 
-> No. There's phys_addr_t for that purpose, defined in include/linux/types.h.
-> Please use that.
-
-Do we believe phys_addr_t is always greater than or equal to size need for logical & virtual addresses?
-
-- k
-
-
-> Thanks,
-> Hans
-> 
->> 
->> For physical address we can support up to a 44-bit physical address on a
->> typical 32-bit system as we utilize remap_pfn_range() for the mapping of
->> the memory region and pfn's are represnted by shifting the address by
->> the page size (typically 4k).
->> 
->> Signed-off-by: Kai Jiang <Kai.Jiang@freescale.com>
->> Signed-off-by: Minghuan Lian <Minghuan.Lian@freescale.com>
->> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
->> ---
->> drivers/uio/uio.c          |    8 ++++----
->> include/linux/uio_driver.h |    2 +-
->> 2 files changed, 5 insertions(+), 5 deletions(-)
->> 
->> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
->> index d2efe82..a927c51 100644
->> --- a/drivers/uio/uio.c
->> +++ b/drivers/uio/uio.c
->> @@ -69,7 +69,7 @@ static ssize_t map_name_show(struct uio_mem *mem, char *buf)
->> 
->> static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
->> {
->> -	return sprintf(buf, "0x%lx\n", mem->addr);
->> +	return sprintf(buf, "0x%llx\n", mem->addr);
->> }
->> 
->> static ssize_t map_size_show(struct uio_mem *mem, char *buf)
->> @@ -79,7 +79,7 @@ static ssize_t map_size_show(struct uio_mem *mem, char *buf)
->> 
->> static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
->> {
->> -	return sprintf(buf, "0x%lx\n", mem->addr & ~PAGE_MASK);
->> +	return sprintf(buf, "0x%llx\n", mem->addr & ~PAGE_MASK);
->> }
->> 
->> struct map_sysfs_entry {
->> @@ -634,8 +634,8 @@ static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->> 	if (idev->info->mem[mi].memtype == UIO_MEM_LOGICAL)
->> 		page = virt_to_page(idev->info->mem[mi].addr + offset);
->> 	else
->> -		page = vmalloc_to_page((void *)idev->info->mem[mi].addr
->> -							+ offset);
->> +		page = vmalloc_to_page((void *)(unsigned long)
->> +				idev->info->mem[mi].addr + offset);
->> 	get_page(page);
->> 	vmf->page = page;
->> 	return 0;
->> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
->> index 665517c..c1fdb19 100644
->> --- a/include/linux/uio_driver.h
->> +++ b/include/linux/uio_driver.h
->> @@ -31,7 +31,7 @@ struct uio_map;
->>  */
->> struct uio_mem {
->> 	const char		*name;
->> -	unsigned long		addr;
->> +	unsigned long long	addr;
->> 	unsigned long		size;
->> 	int			memtype;
->> 	void __iomem		*internal_addr;
->> -- 
->> 1.7.3.4
->> 
->> 
+diff --git a/Documentation/devicetree/bindings/serial/rs485.txt b/Documentation/devicetree/bindings/serial/rs485.txt
+new file mode 100644
+index 0000000..1e753c6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/rs485.txt
+@@ -0,0 +1,31 @@
++* RS485 serial communications
++
++The RTS signal is capable of automatically controlling line direction for
++the built-in half-duplex mode.
++The properties described hereafter shall be given to a half-duplex capable
++UART node.
++
++Required properties:
++- rs485-rts-delay: prop-encoded-array <a b> where:
++  * a is the delay beteween rts signal and beginning of data sent in milliseconds.
++      it corresponds to the delay before sending data.
++  * b is the delay between end of data sent and rts signal in milliseconds
++      it corresponds to the delay after sending data and actual release of the line.
++
++Optional properties:
++- linux,rs485-enabled-at-boot-time: empty property telling to enable the rs485
++  feature at boot time. It can be disabled later with proper ioctl.
++- rs485-rx-during-tx: empty property that enables the receiving of data even
++  whilst sending data.
++
++RS485 example for Atmel USART:
++	usart0: serial@fff8c000 {
++		compatible = "atmel,at91sam9260-usart";
++		reg = <0xfff8c000 0x4000>;
++		interrupts = <7>;
++		atmel,use-dma-rx;
++		atmel,use-dma-tx;
++		linux,rs485-enabled-at-boot-time;
++		rs485-rts-delay = <0 200>;		// in milliseconds
++	};
++
+diff --git a/Documentation/devicetree/bindings/tty/serial/atmel-usart.txt b/Documentation/devicetree/bindings/tty/serial/atmel-usart.txt
+new file mode 100644
+index 0000000..a49d9a1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/atmel-usart.txt
+@@ -0,0 +1,27 @@
++* Atmel Universal Synchronous Asynchronous Receiver/Transmitter (USART)
++
++Required properties:
++- compatible: Should be "atmel,<chip>-usart"
++  The compatible <chip> indicated will be the first SoC to support an
++  additional mode or an USART new feature.
++- reg: Should contain registers location and length
++- interrupts: Should contain interrupt
++
++Optional properties:
++- atmel,use-dma-rx: use of PDC or DMA for receiving data
++- atmel,use-dma-tx: use of PDC or DMA for transmitting data
++
++<chip> compatible description:
++- at91rm9200:  legacy USART support
++- at91sam9260: generic USART implementation for SAM9 SoCs
++
++Example:
++
++	usart0: serial@fff8c000 {
++		compatible = "atmel,at91sam9260-usart";
++		reg = <0xfff8c000 0x4000>;
++		interrupts = <7>;
++		atmel,use-dma-rx;
++		atmel,use-dma-tx;
++	};
++
+diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+index c8878f8..079cb3d 100644
+--- a/Documentation/serial/serial-rs485.txt
++++ b/Documentation/serial/serial-rs485.txt
+@@ -28,6 +28,10 @@
+    RS485 communications. This data structure is used to set and configure RS485
+    parameters in the platform data and in ioctls.
+ 
++   The device tree can also provide RS485 boot time parameters (see [2]
++   for bindings). The driver is in charge of filling this data structure from
++   the values given by the device tree.
++
+    Any driver for devices capable of working both as RS232 and RS485 should
+    provide at least the following ioctls:
+ 
+@@ -121,3 +125,4 @@
+ 5. REFERENCES
+ 
+  [1]	include/linux/serial.h
++ [2]	Documentation/devicetree/bindings/serial/rs485.txt
+-- 
+1.7.5.4
 
