@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab1JLW0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 18:26:40 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:58153 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab1JLW0i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 18:26:38 -0400
-Date: Thu, 13 Oct 2011 09:26:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 12
-Message-Id: <20111013092629.429358e7c3117ce18d12fd24@canb.auug.org.au>
-In-Reply-To: <4E95B18D.9070806@xenotime.net>
-References: <20111012175425.a2e3e6e6a92265e433aeca25@canb.auug.org.au>
-	<4E95B18D.9070806@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__13_Oct_2011_09_26_29_+1100_I=tEzV/xEmi3FQAY"
+	id S1753876Ab1JLW17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 18:27:59 -0400
+Received: from claw.goop.org ([74.207.240.146]:46809 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab1JLW16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 18:27:58 -0400
+Message-ID: <4E96146C.5070701@goop.org>
+Date: Wed, 12 Oct 2011 15:27:56 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com> <4E94E1E5.4070505@goop.org> <20111012101615.GA14966@aftab> <4E95D9E7.6090304@zytor.com> <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab>
+In-Reply-To: <20111012194543.GD14966@aftab>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__13_Oct_2011_09_26_29_+1100_I=tEzV/xEmi3FQAY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/12/2011 12:45 PM, Borislav Petkov wrote:
+> On Wed, Oct 12, 2011 at 03:18:22PM -0400, Jeremy Fitzhardinge wrote:
+>> While doing the whole boot time multiboot thing may offer some small
+>> hypothetical technical advantages, it has the significant cost of just
+>> complicating the whole deployment and use story.
+> You simply can't call the need to apply ucode as early as possible a
+> "hypothetical techical advantage."
 
-Hi all,
+The current scheme has worked pretty well so far; there doesn't seem to
+be a huge concern about it.  Have there been actual observed failures
+with the current mechanism, or is the drive to make it earlier driven by
+an aesthetic desire to make it "as it should be"?
 
-On Wed, 12 Oct 2011 08:26:05 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> eh?  I can't find it on github or kernel.org.  what gives?
+>  Other issues like how to handle ucode
+> images and how to put them together and how distros distribute them
+> and whether xen minimizes the amount of "specialness" or not are only
+> secondary.
 
-I was in a bit of a rush and forgot to push it to github, sorry about
-that.  On the other hand, it has finally appeared on git.kernel.org.  I
-have pushed it to github now as well.
+No, they're not.  If users end up with a broken setup then they get no
+microcode updates at all, which makes everything else moot.  It has to
+be deployed correctly for it to be worth anything at all.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+What is secondary, or rather, completely irrelevant is whether Xen is
+involved or not.
 
---Signature=_Thu__13_Oct_2011_09_26_29_+1100_I=tEzV/xEmi3FQAY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOlhQVAAoJEECxmPOUX5FE9TgP/0OpAyerACxJenT3yNla2GYB
-hPQklUyqpQz3UI5FMfihmN6abZPMcdgNIf+eSMLtxWS/tbCemzCWEa6d5VJBnXrs
-YatCMA2OceaZUmdKUC5VAjChayChhJmXGKBsn46t4CHz1Zc9J9J+dxRYhOn0eroN
-UL00pUN9FyN8Uoq5Nh8/Ff3/hPV7s/5gDr322ZDH+c8/zm0x3DpJpu30qHTgst3T
-tlg6Gx+NucfeW/7rljCVtwIAkMrtNsvSYRKsbRNUfYvXUp8s1Ug5wySrF5sjQGGK
-p5A1I9KsCcyfRz/q/f/bpKZ1RTx4/fXlz1kkQqpnMQlMsSOn3vWM5BPGibu01RI3
-zB96M9i2+DGA7ws6mKY1uYFs/17P3BJg+d0a3hWDk21QOwuQbZtyWDbgBYDDbah7
-S7U6YbMN612IBvJYhbn5BPnH+4bwEdfkZGW8+toBzmVa1glHshN2K2VVavTnivyq
-oEtRH7V6rpi6sXsvT3ZY79NKxR/iB8UlnYCxTmDU0fCLD5Y5QN6RKVcd8BZZzFQZ
-TyS/xNiUkeTiGng3pOFKroZe5lMJWVftV8LY2An0fZAqUeSj3PgWx7EHHyYRpC0N
-QKbSQ8QSG/JBGygWMtVettJVepr/2RSLZ3/94+0oqHUGJakhdHUkVbncxY/TYYpm
-HEUpSVoxwF7h6HzaT4T8
-=xmpv
------END PGP SIGNATURE-----
-
---Signature=_Thu__13_Oct_2011_09_26_29_+1100_I=tEzV/xEmi3FQAY--
+    J
