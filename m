@@ -1,56 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1JLEbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 00:31:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42594 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1JLEbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 00:31:15 -0400
-Message-ID: <1318393869.3686.26.camel@edumazet-laptop>
-Subject: Re: [PATCH v3] net-netlink: Add a new attribute to expose TOS
- values via netlink
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: MuraliRaja Muniraju <muralira@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Wed, 12 Oct 2011 06:31:09 +0200
-In-Reply-To: <CAP3iWTQXHwzw-qUYVfT--uNv4pNZnu0ROJnF7B1VLeZBbrfdqw@mail.gmail.com>
-References: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
-	 <1318382887-31824-1-git-send-email-muralira@google.com>
-	 <1318387734.3686.2.camel@edumazet-laptop>
-	 <CAP3iWTQXHwzw-qUYVfT--uNv4pNZnu0ROJnF7B1VLeZBbrfdqw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752213Ab1JLEnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 00:43:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:47347 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752064Ab1JLEnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 00:43:37 -0400
+Date: Wed, 12 Oct 2011 15:43:17 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrew Barry <abarry@cray.com>, linux-mm <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Hastings <abh@cray.com>
+Subject: Re: [PATCH v2 1/1] hugepages: Fix race between hugetlbfs umount and
+ quota update.
+Message-ID: <20111012044317.GA31436@drongo>
+References: <4E4EB603.8090305@cray.com>
+ <20110819145109.dcd5dac6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819145109.dcd5dac6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 11 octobre 2011 à 21:16 -0700, MuraliRaja Muniraju a écrit :
-> Eric,
->      I think it would be useful to expose the values this way.
->      I shall make the changes to add TCLASS for ipv6 in the description.
+On Fri, Aug 19, 2011 at 02:51:09PM -0700, Andrew Morton wrote:
 > 
->      Regarding the TIME_WAIT state, I think it would be better of not
-> exposing the values because there would hardly be anything to transmit
-> during this time.
+> OK.  This sounds screwed up.  If a device driver is currently using a
+> page from a hugetlbfs file then the unmount shouldn't have succeeded in
+> the first place!
 > 
+> Or is it the case that the device driver got a reference to the page by
+> other means, bypassing hugetlbfs?  And there's undesirable/incorrect
+> interaction between the non-hugetlbfs operation and hugetlbfs?
+> 
+> Or something else?
+> 
+> <starts reading the mailing list>
+> 
+> OK, important missing information from the above is that the driver got
+> at this page via get_user_pages() and happened to stumble across a
+> hugetlbfs page.  So it's indeed an incorrect interaction between a
+> non-hugetlbfs operation and hugetlbfs.
+> 
+> What's different about hugetlbfs?  Why don't other filesystems hit this?
 
-My remark had nothing to do with your patch actually :
+What's different about hugetlbfs, as I understand it, is that the
+"quota" mechanism is there to restrict memory usage, rather than disk
+usage.
 
-We dont store TOS/TCLASS on TIME_WAIT sockets, so you cannot report
-value in inet_diag.
+> <investigates further>
+> 
+> OK so the incorrect interaction happened in free_huge_page(), which is
+> called via the compound page destructor (this dtor is "what's different
+> about hugetlbfs").   What is incorrect about this is
+> 
+> a) that we're doing fs operations in response to a
+>    get_user_pages()/put_page() operation which has *nothing* to do with
+>    filesystems!
 
-But we do send packets on behalf of TIME_WAIT sockets ;)
+The hugetlbfs quota thing is more like an RSS limit than a disk
+quota.  Perhaps the "quota" name is misleading.
 
-Think about ACK messages. They probably are sent with a 0 TOS/TCLASS
-field... I am not sure its a problem or not.
+I assume we update RSS counts for ordinary pages when allocating and
+freeing pages?
 
+> b) that we continue to try to do that fs operation against an fs
+>    which was unmounted and freed three days ago. duh.
+> 
+> 
+> So I hereby pronounce that
+> 
+> a) It was wrong to manipulate hugetlbfs quotas within
+>    free_huge_page().  Because free_huge_page() is a low-level
+>    page-management function which shouldn't know about one of its
+>    specific clients (in this case, hugetlbfs).
+> 
+>    In fact it's wrong for there to be *any* mention of hugetlbfs
+>    within hugetlb.c.
+> 
+> b) I shouldn't have merged that hugetlbfs quota code.  whodidthat. 
+>    Mel, Adam, Dave, at least...
+> 
+> c) The proper fix here is to get that hugetlbfs quota code out of
+>    free_huge_page() and do it all where it belongs: within hugetlbfs
+>    code.
 
+That doesn't sound right to me, if we need to limit usage of huge
+memory pages in memory, rather than back out on the "filesystem".
+An ordinary filesystem doesn't worry about memory consumption, it
+worries about how its blocks of backing store are allocated.
+Hugetlbfs is unusual here in that the "backing store" and the memory
+pages that get mapped into userspace are one and the same thing.
 
+> Regular filesystems don't need to diddle quota counts within
+> page_cache_release().  Why should hugetlbfs need to?
+
+In a regular filesystem you can reclaim a block of backing store, and
+thus decrement a quota count, while there might still be a page of
+memory in use that contains its old contents.  That's problematic with
+hugetlbfs.
+
+In the meantime we have a user-triggerable kernel crash.  As far as I
+can see, if we did what you suggest, we would end up with a situation
+where we could run out of huge pages even though everyone was within
+quota.  Which is arguably better than a kernel crash, but still less
+than ideal.  What do you suggest?
+
+Paul.
