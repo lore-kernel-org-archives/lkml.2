@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1JLFHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 01:07:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62589 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab1JLFHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 01:07:14 -0400
-Message-ID: <4E95207C.90302@linaro.org>
-Date: Wed, 12 Oct 2011 13:07:08 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20111005 Icedove/3.1.15
+	id S1752474Ab1JLFL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 01:11:29 -0400
+Received: from mail.lang.hm ([64.81.33.126]:59550 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab1JLFL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 01:11:28 -0400
+Date: Tue, 11 Oct 2011 22:10:56 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Theodore Tso <tytso@MIT.EDU>, Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        Linux Containers <lxc-devel@lists.sourceforge.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+In-Reply-To: <m139eyg7if.fsf@fess.ebiederm.org>
+Message-ID: <alpine.DEB.2.02.1110112208230.12310@asgard.lang.hm>
+References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org>
+ <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org>
+ <alpine.DEB.2.02.1110111525450.28233@asgard.lang.hm> <m139eyg7if.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: ashish.jangam@kpitcummins.com
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dajun <dajun.chen@diasemi.com>, sameo@openedhand.com,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v6
-References: <1316435562.344.131.camel@L-0761.kpit.com>
-In-Reply-To: <1316435562.344.131.camel@L-0761.kpit.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011年09月19日 20:32), ashishj3 wrote:
-> --- /dev/null
-> +++ b/drivers/mfd/da9052-i2c.c
-> @@ -0,0 +1,142 @@
-> +/*
-> + * I2C access for DA9052 PMICs.
-> + *
-> + * Copyright(c) 2011 Dialog Semiconductor Ltd.
-> + *
-> + * Author: David Dajun Chen <dchen@diasemi.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/input.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/i2c.h>
-> +#include <linux/err.h>
-> +
-> +#include <linux/mfd/da9052/da9052.h>
-> +#include <linux/mfd/da9052/reg.h>
-> +
-> +static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
-> +{
-> +	int reg_val, ret;
-> +
-> +	ret = regmap_read(da9052->regmap, DA9052_CONTROL_B_REG, &reg_val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (reg_val & DA9052_CONTROL_B_WRITEMODE) {
-> +		reg_val = ~DA9052_CONTROL_B_WRITEMODE;
+On Tue, 11 Oct 2011, Eric W. Biederman wrote:
 
-Hi Ashish,
+> david@lang.hm writes:
+>
+>> On Tue, 11 Oct 2011, Eric W. Biederman wrote:
+>>
+>>> Theodore Tso <tytso@MIT.EDU> writes:
+>>>
+>>>> On Oct 11, 2011, at 2:42 AM, Eric W. Biederman wrote:
+>>>>
+>>> I admit for a lot of test cases that it makes sense not to use a full
+>>> set of userspace daemons.  At the same time there is not particularly
+>>> good reason to have a design that doesn't allow you to run a full
+>>> userspace.
+>>
+>> how do you share the display between all the different containers if they are
+>> trying to run the X server?
+>
+> Either X does not start because the hardware it needs is not present or
+> Xnest or similar gets started.
+>
+>> how do you avoid all the containers binding to the same port on the default IP
+>> address?
+>
+> Network namespaces.
+>
+>> how do you arbitrate dbus across the containers.
+>
+> Why should you?
 
-I think you should use reg_val &= ~DA9052_CONTROL_B_WRITEMODE; instead
-of just "=".
+because the containers are simulating different machines, and dbus doesn't 
+work arcross different machines.
 
-Regards,
-Paul
+>> when a new USB device gets plugged in, which container gets control of
+>> it?
+>
+> None of them.  Although today they may all get the uevent.  None of the
+> containers should have permission to call mknod to mess with it.
+
+why would the software inside a container not have the rights to do a 
+mknod inside the container?
+
+>> there are a LOT of hard questions when you start talking about running a full
+>> system inside a container that do not apply for other use of
+>> containers.
+>
+> Not really mostly the answer is that you say no.
+>
+> Eric
+>
+
+David Lang
