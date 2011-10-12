@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab1JLAfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 20:35:31 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36492 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750991Ab1JLAfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 20:35:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAHfflE55LabZ/2dsb2JhbABDqC2BBoFTAQEFOhwzCAMOCi4UJQMhARKtNJMGDoc+BKVb
-Date: Wed, 12 Oct 2011 11:35:26 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        aradford@gmail.com, xfs@oss.sgi.com
-Subject: Re: 2.6.38.8 kernel bug in XFS or megaraid driver with heavy I/O load
-Message-ID: <20111012003526.GI3159@dastard>
-References: <20111011091757.GA32589@otto.nzcorp.net>
- <20111011133448.GA10692@infradead.org>
- <20111011141338.GA11808@otto.nzcorp.net>
+	id S1751937Ab1JLAhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 20:37:45 -0400
+Received: from mail.cis.rv.ua ([193.108.129.50]:59071 "EHLO mail.cis.rv.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1JLAho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 20:37:44 -0400
+Message-ID: <51540.199.119.226.155.1318379698.squirrel@mail.cis.rv.ua>
+Date: Wed, 12 Oct 2011 03:34:58 +0300 (EEST)
+Subject: Funds Shipment.....[Help Needed.]
+From: "Capt. Jonathan C." <info@need.net>
+Reply-To: captjonathan1962@aol.com
+User-Agent: SquirrelMail/1.4.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111011141338.GA11808@otto.nzcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: info@need.net
+X-SA-Exim-Scanned: No (on mail.cis.rv.ua); SAEximRunCond expanded to false
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 04:13:38PM +0200, Anders Ossowicki wrote:
-> On Tue, Oct 11, 2011 at 03:34:48PM +0200, Christoph Hellwig wrote:
-> > This is core VM code, and operates purely on on-stack variables except
-> > for the page cache radix tree nodes / pages.  So this either could be a
-> > core VM bug that no one has noticed yet, or memory corruption.  Can you
-> > run memtest86 on the box?
-> 
-> Unfortunately not, as it is a production server. Pulling it out to memtest 256G
-> properly would take too long. But it seems unlikely to me that it should be
-> memory corruption.  The machine has been running with the same (ecc) memory for
-> more than a year and neither the service processor nor the kernel (according to
-> dmesg) has caught anything before this. It would be a rare (though I admit not
-> impossible) coincidence if we got catastrophic, undetected memory corruption a
-> week after attaching a new raid controller with a new disk array.
+Hello friend,
 
-Memory corruption can be caused by more than just a bad memory
-stick. You've got a brand new driver running your brand new
-controller and it may still have bugs - it might be scribbling over
-memory it doesn't own because of off-by-one index errors, etc. It's
-much more likely that that new hardware or driver code is the cause
-of your problem than an undetected ECC memory error or core VM
-problem.
+My Name is Capt. Jonathan Crow a military officer serving with the
+Artillery military unit of the United State Army in Baghdad Iraq. We
+discover some funds and we want it to be transfer out of Iraq and since we
+are working for the govt. we cannot keep this money. This money is legal
+and risk free. Once the funds get to you take your 30% out and keep our
+own 70%. Your own part of this deal is to find a safe place or any
+offshore account where the funds can be kept. Please get back to us for
+more details. Waiting for your urgent response via my private email:
+captjonathan1962@aol.com
 
-FWIW, if it's a repeatable problem, you might want to update the
-driver and controller firmware to something more recent and see if
-that solves the problem....
+Regards,
+Capt. Jonathan Crow.
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
