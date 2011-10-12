@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab1JLODV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:03:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59898 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1JLODU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:03:20 -0400
-Date: Wed, 12 Oct 2011 16:03:14 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
-        jbottomley@parallels.com
-Subject: Re: [PATCH 05/10] Make total_forks per-cgroup
-Message-ID: <20111012140310.GG14968@somewhere>
-References: <1317583287-18300-1-git-send-email-glommer@parallels.com>
- <1317583287-18300-6-git-send-email-glommer@parallels.com>
- <1317805535.6766.6.camel@twins>
- <4E8C4990.1050704@parallels.com>
- <20111011234548.GB14968@somewhere>
- <4E954356.2000409@parallels.com>
- <20111012125857.GE14968@somewhere>
- <4E958F1B.80605@parallels.com>
- <20111012130344.GF14968@somewhere>
- <4E959038.2090801@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E959038.2090801@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751217Ab1JLOHe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:07:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24740 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1JLOHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 10:07:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,334,1315206000"; 
+   d="scan'208";a="72736698"
+Subject: Re: [PATCH] Code clean up for percpu_xxx() functions
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+In-Reply-To: <1318382964.27949.782.camel@debian>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 12 Oct 2011 22:11:13 +0800
+Message-ID: <1318428673.29699.13.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 05:03:52PM +0400, Glauber Costa wrote:
-> On 10/12/2011 05:03 PM, Frederic Weisbecker wrote:
-> >On Wed, Oct 12, 2011 at 04:59:07PM +0400, Glauber Costa wrote:
-> >>On 10/12/2011 04:59 PM, Frederic Weisbecker wrote:
-> >>>On Wed, Oct 12, 2011 at 11:35:50AM +0400, Glauber Costa wrote:
-> >>>>On 10/12/2011 03:45 AM, Frederic Weisbecker wrote:
-> >>>Is your counting propagated to the parents in a hierarchy?
-> >>>For example if A is parent cgroup of B and C, does A account the
-> >>>forks happening in B and C?
-> >>
-> >>Yes.
-> >
-> >But only to the first parent or also all ancestors?
-> it keeps going until it reaches the root task group.
+> > Is this a revised patch? I do not see a use of the __this_cpu_xx ops.
+> 
+> I just changed where you pointed as below at the patch line 146: 
+> 
+>  #ifdef CONFIG_SMP
+>  #define __percpu_prefix                "%%"__stringify(__percpu_seg)":"
+> -#define __my_cpu_offset                percpu_read(this_cpu_off)
+> +#define __my_cpu_offset                __this_cpu_read(this_cpu_off)
+> 
+> I do not quite understand you here. Do you mean to change every possible
+> this_cpu_xxx() to __this_cpu_xxx()? 
 
-Using the task counter subsystem for that would involve
-a bit more complications like adding a new counter on it
-that would need to be incremented in parallel but differently.
-You would also need to bind this subsystem anytime you
-want this statistic.
+I thought again of this_cpu_xxx function, yes, some of them are better
+to be replaced by __this_cpu__xxx if preemption is safe on the scenario.
+But this change is better to be done in another patch. I did not
+finished all changed function check today.  May try again in next week.
+What's you pinion of this? 
 
-I don't think it's worth doing this. You would also get the
-overhead in the exit path because the subsystem also uncharge
-one of its counters across the whole hierarchy.
 
-OTOH, it's scary to see that new feature will walk
-the entire hierarchy on every fork when CONFIG_CGROUP_SCHED=y
-And I guess that today this config is easily selected by
-distros.
 
-IIUC that walk also happen on every timer interrupt for
-the user/system/idle cpu time accounting?
-
-May be this should reside in a seperate config, so that those
-that don't care about the per cgroup stats avoid that
-overhead?
