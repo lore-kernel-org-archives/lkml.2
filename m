@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab1JLKEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 06:04:37 -0400
-Received: from ixqw-mail-out.ixiacom.com ([74.217.148.5]:22207 "EHLO
-	ixqw-mail-out.ixiacom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750961Ab1JLKEf (ORCPT
+	id S1752331Ab1JLKHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 06:07:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60163 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370Ab1JLKHH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 06:04:35 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 06:04:35 EDT
-Subject: Re: [PATCH] dev: use ifindex hash for dev_seq_ops
-From: Mihai Maruseac <mmaruseac@ixiacom.com>
-To: Mihai Maruseac <mihai.maruseac@gmail.com>
-CC: <dbaluta@ixiacom.com>, <mmaruseac@ixiacom.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "mirq-linux@rere.qmqm.pl" <mirq-linux@rere.qmqm.pl>,
-        "therbert@google.com" <therbert@google.com>,
-        "jpirko@redhat.com" <jpirko@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com>
-References: <1318000849-2531-1-git-send-email-mmaruseac@ixiacom.com>
-	 <1318413446-22258-1-git-send-email-mmaruseac@ixiacom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 12 Oct 2011 12:59:23 +0300
-Message-ID: <1318413563.2231.1.camel@sirius>
+	Wed, 12 Oct 2011 06:07:07 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com>
+References: <CAOH1cHkTiitknOsjnu9n7B2Ax+pSgM-EFDFJodjDnamxt3RMCA@mail.gmail.com> <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com> <2150.1314882260@redhat.com> <CAOH1cHnLfLQzZ8022ivfFkbug=adU1AYZPJOqdTnrqh9vuAAxg@mail.gmail.com> <CAOH1cHm-hbC=KZJsT1H5ohVEJVzNvqaKatKVS+s2nKVkAMgX9w@mail.gmail.com> <5149.1317036720@redhat.com> <CAOH1cHn3QF0QtR7KKN9gk5CiUvLqxsni0yi9bgCmJ8f=N1v27Q@mail.gmail.com> <CAOH1cHmTWdCHAprmbH7cfmZCVakdayR3jd031da2X2N3FmjfPw@mail.gmail.com> <6324.1317308270@redhat.com> <CAOH1cHn0tc-_dFe1PovpKmTE5pnMp40ZXi5TR9+i=ozviTdinA@mail.gmail.com> <12748.1317313818@redhat.com> <CAOH1cHmFuXn3uZbyZy94-cBGCPDxLsJuskkYRteeBs75iLhssw@mail.gmail.com> <CAOH1cHn3_aeVYC73YO43zf5piKOO_=MJwbbVfhW8eAWnDahRrw@mail.gmail.com> <18003.1317336244@redhat.com> <CAOH1cHmeX56+dZEidR4AAwEkz2kr7-J12vky5G8s0vzfbO39yw@mail.gmail.com> <6261.1317385734@redhat.com> <CAOH1cHkVjTSBvqvaoWnxTB1V-dOtj1cCT_kMZpJdsyNNeUoBag@mail.gmail.com> <8905.1317984176@redhat.com> <CAOH1cHmpFF8!
+ vT8HVU3RL95p_s9ec2RJ1+o4K2TOrWX2QJrvwog@mail.gmail.com> <1448.1318338420@redhat.com> 
+To: Mark Moseley <moseleymark@gmail.com>
+Cc: dhowells@redhat.com,
+        Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 12 Oct 2011 11:05:55 +0100
+Message-ID: <9908.1318413955@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-12 at 02:57 -0700, Mihai Maruseac wrote:
-> Instead of using the dev->next chain and trying to resync at each call to
-> dev_seq_start, use the ifindex, keeping the last index in seq->private field.
+Mark Moseley <moseleymark@gmail.com> wrote:
 
-Please consider only my last patch email, the first one was missing
-Signed-off-by line.
+> > Hmmm...  An object is being added to the object list twice.  It may
+> > indicate a free before an object is finished with.  Do you have slab
+> > debugging turned on?
+> 
+> It's compiled in but not currently enabled. Should I do so? And
+> anything I should be looking for in it?
 
-Thanks,
-Mihai
+This raises another question: Which of CONFIG_SLAB/SLOB/SLUB are you actually
+using?
 
+David
