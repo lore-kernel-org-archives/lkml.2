@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab1JLI6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:58:24 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:59103 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118Ab1JLI6Q (ORCPT
+	id S1752102Ab1JLI6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:58:30 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:50415 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751436Ab1JLI61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 04:58:16 -0400
+	Wed, 12 Oct 2011 04:58:27 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Samuel Ortiz <samuel.ortiz@intel.com>,
         Dmitry Torokhov <dtor@mail.ru>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
         alsa-devel@alsa-project.org, Misael Lopez Cruz <misael.lopez@ti.com>
-Subject: [PATCH v3 3/5] MFD: twl6040: function to query the vibra status for clients
-Date: Wed, 12 Oct 2011 11:57:55 +0300
-Message-Id: <1318409877-21681-4-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 4/5] Input: twl6040-vibra: Check the selected path for vibra
+Date: Wed, 12 Oct 2011 11:57:56 +0300
+Message-Id: <1318409877-21681-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1318409877-21681-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1318409877-21681-1-git-send-email-peter.ujfalusi@ti.com>
@@ -23,60 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the client only interested, if any of the vibra channels enabled, or
-if any of the channels are set to receive audio data via PDM.
-
-This function targets mainly the vibra driver, so it can check if it is
-allowed to execute effects ot not.
+The VIBSELL/R bit in the VIBCTLL/R register tells the source of the data,
+which is going to be used to drive the attached motor(s).
+Do not allow effect execution if any of the channels are set to receive
+audio data.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Acked-by: Samuel Ortiz <samuel.ortiz@intel.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- drivers/mfd/twl6040-core.c  |   12 ++++++++++++
- include/linux/mfd/twl6040.h |    3 +++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/input/misc/twl6040-vibra.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 75987c8..268f80f 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -444,6 +444,18 @@ unsigned int twl6040_get_sysclk(struct twl6040 *twl6040)
- }
- EXPORT_SYMBOL(twl6040_get_sysclk);
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index cb74185..2a828e5 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -201,6 +201,13 @@ static int vibra_play(struct input_dev *input, void *data,
+ 	struct vibra_info *info = input_get_drvdata(input);
+ 	int ret;
  
-+/* Get the combined status of the vibra control register */
-+int twl6040_get_vibralr_status(struct twl6040 *twl6040)
-+{
-+	u8 status;
++	/* Do not allow effect, while the routing is set to use audio */
++	ret = twl6040_get_vibralr_status(info->twl6040);
++	if (ret & TWL6040_VIBSEL) {
++		dev_info(&input->dev, "Vibra is configured for audio\n");
++		return -EBUSY;
++	}
 +
-+	status = twl6040->vibra_ctrl_cache[0] | twl6040->vibra_ctrl_cache[1];
-+	status &= (TWL6040_VIBENA | TWL6040_VIBSEL);
-+
-+	return status;
-+}
-+EXPORT_SYMBOL(twl6040_get_vibralr_status);
-+
- static struct resource twl6040_vibra_rsrc[] = {
- 	{
- 		.flags = IORESOURCE_IRQ,
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index 2f8585a..87a4778 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -209,10 +209,13 @@ int twl6040_get_pll(struct twl6040 *twl6040);
- unsigned int twl6040_get_sysclk(struct twl6040 *twl6040);
- int twl6040_irq_init(struct twl6040 *twl6040);
- void twl6040_irq_exit(struct twl6040 *twl6040);
-+/* Get the combined status of the vibra control register */
-+int twl6040_get_vibralr_status(struct twl6040 *twl6040);
- 
- static inline int twl6040_get_revid(struct twl6040 *twl6040)
- {
- 	return twl6040->rev;
- }
- 
-+
- #endif  /* End of __TWL6040_CODEC_H__ */
+ 	info->weak_speed = effect->u.rumble.weak_magnitude;
+ 	info->strong_speed = effect->u.rumble.strong_magnitude;
+ 	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
 -- 
 1.7.7
 
