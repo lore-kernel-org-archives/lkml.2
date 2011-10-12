@@ -1,117 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab1JLSbY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 14:31:24 -0400
-Received: from mailout.selfhost.de ([82.98.82.25]:48743 "EHLO
-	mailout.selfhost.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab1JLSbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 14:31:23 -0400
-Message-ID: <4E95DCF7.5070003@afaics.de>
-Date: Wed, 12 Oct 2011 20:31:19 +0200
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	id S1753944Ab1JLSdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 14:33:06 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:60111 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752002Ab1JLSdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 14:33:04 -0400
+Date: Wed, 12 Oct 2011 18:33:13 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, richard@nod.at,
+        Andrew Morton <akpm@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
+        serge.hallyn@canonical.com
+Subject: [PATCH RFC] user namespace: make signal.c respect user namespaces
+ (v4)
+Message-ID: <20111012183313.GA22335@hallyn.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: sdcard autodetection enabled by running digikam somehow
-X-Enigmail-Version: 1.3.2
-X-Enigmail-Draft-Status: 513
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+ipc/mqueue.c: for __SI_MESQ, convert the uid being sent to recipient's
+user namespace. (new, thanks Oleg)  (XXX - Actually I don't think
+rcu_read_lock() is needed there)
 
-Hi folks,
+__send_signal: convert current's uid to the recipient's user namespace
+for any siginfo which is not SI_FROMKERNEL (patch from Oleg, thanks
+again :)
 
-Maybe its a stupid question, but why do I have to run
-digikam to make autodetection of sd cards work?
+do_notify_parent and do_notify_parent_cldstop: map task's uid to parent's
+user namespace
 
-Before running digikam nothing happens if I insert a sd
-card. After running digikam inserting and removing sd cards
-is handled as expected, even if I logout and use root to
-kill all jobs and agents that might be related to my
-previous session (dbus, gconfd-2, gvfsd, etc).
+ptrace_signal maps parent's uid into current's user namespace before
+including in signal to current.  IIUC Oleg has argued that this shouldn't
+matter as the debugger will play with it, but it seems like not converting
+the value currently being set is misleading.  (Oleg, if you really think
+it shouldn't be converted here, I'll drop it;  but I'm afraid it'll lead
+people to wondering why it isn't being converted and confusing them)
 
-This seems weird.
+Changelog:
+Sep 20: Inspired by Oleg's suggestion, define map_cred_ns() helper to
+	simplify callers and help make clear what we are translating
+        (which uid into which namespace).  Passing the target task would
+	make callers even easier to read, but we pass in user_ns because
+	current_user_ns() != task_cred_xxx(current, user_ns).
+Sep 20: As recommended by Oleg, also put task_pid_vnr() under rcu_read_lock
+	in ptrace_signal().
+Oct 12: Base on Oleg's fixup_uid() patch.  On top of that, handle all
+	SI_FROMKERNEL cases at callers, because we can't assume sender is
+	current in those cases.
 
-Of course I also checked lsmod: no additional modules have
-been loaded by running digikam.
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+---
+ ipc/mqueue.c    |    7 ++++++-
+ kernel/signal.c |   38 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 41 insertions(+), 4 deletions(-)
 
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index ed049ea..bdf57df 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -32,6 +32,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/pid.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/slab.h>
+ 
+ #include <net/sock.h>
+@@ -543,9 +544,13 @@ static void __do_notify(struct mqueue_inode_info *info)
+ 			sig_i.si_errno = 0;
+ 			sig_i.si_code = SI_MESGQ;
+ 			sig_i.si_value = info->notify.sigev_value;
++			/* map current pid/uid into info->owner's namespaces */
++			rcu_read_lock();
+ 			sig_i.si_pid = task_tgid_nr_ns(current,
+ 						ns_of_pid(info->notify_owner));
+-			sig_i.si_uid = current_uid();
++			sig_i.si_uid = user_ns_map_uid(info->user->user_ns,
++						current_cred(), current_uid());
++			rcu_read_lock();
+ 
+ 			kill_pid_info(info->notify.sigev_signo,
+ 				      &sig_i, info->notify_owner);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 291c970..025a042 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -28,6 +28,7 @@
+ #include <linux/freezer.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/nsproxy.h>
++#include <linux/user_namespace.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/signal.h>
+ 
+@@ -1019,6 +1020,29 @@ static inline int legacy_queue(struct sigpending *signals, int sig)
+ 	return (sig < SIGRTMIN) && sigismember(&signals->signal, sig);
+ }
+ 
++/*
++ * map the uid in struct cred into user namespace *ns
++ */
++static inline uid_t map_cred_ns(const struct cred *cred,
++				struct user_namespace *ns)
++{
++	return user_ns_map_uid(ns, cred, cred->uid);
++}
++
++static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
++{
++#ifdef CONFIG_USER_NS
++	if (current_user_ns() == task_cred_xxx(t, user_ns))
++#endif
++		return;
++
++	if (SI_FROMKERNEL(info))
++		return;
++
++	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
++					current_cred(), info->si_uid);
++}
++
+ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 			int group, int from_ancestor_ns)
+ {
+@@ -1088,6 +1112,9 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
+ 				q->info.si_pid = 0;
+ 			break;
+ 		}
++
++		fixup_uid(info, t);
++
+ 	} else if (!is_si_special(info)) {
+ 		if (sig >= SIGRTMIN && info->si_code != SI_USER) {
+ 			/*
+@@ -1618,7 +1645,8 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, tsk->parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++			task_cred_xxx(tsk->parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(cputime_add(tsk->utime,
+@@ -1703,7 +1731,8 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
+ 	 */
+ 	rcu_read_lock();
+ 	info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
+-	info.si_uid = __task_cred(tsk)->uid;
++	info.si_uid = map_cred_ns(__task_cred(tsk),
++			task_cred_xxx(parent, user_ns));
+ 	rcu_read_unlock();
+ 
+ 	info.si_utime = cputime_to_clock_t(tsk->utime);
+@@ -2121,8 +2150,11 @@ static int ptrace_signal(int signr, siginfo_t *info,
+ 		info->si_signo = signr;
+ 		info->si_errno = 0;
+ 		info->si_code = SI_USER;
++		rcu_read_lock();
+ 		info->si_pid = task_pid_vnr(current->parent);
+-		info->si_uid = task_uid(current->parent);
++		info->si_uid = map_cred_ns(__task_cred(current->parent),
++				current_user_ns());
++		rcu_read_unlock();
+ 	}
+ 
+ 	/* If the (new) signal is now blocked, requeue it.  */
+-- 
+1.7.0.4
 
-Kernel is 3.0.6. I am not running KDE or Gnome or any other
-fancy desktop gui, only X and fvwm2. No hal, either. lsusb
-of the card reader can be found below.
-
-
-Any helpful comment would be highly appreciated.
-
-Harri
-- --------------------------------------------------------------
-Bus 003 Device 006: ID 0424:2228 Standard Microsystems Corp. 9-in-2 Card Reader
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               2.00
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x0424 Standard Microsystems Corp.
-  idProduct          0x2228 9-in-2 Card Reader
-  bcdDevice            4.44
-  iManufacturer           1
-  iProduct                2
-  iSerial                 3
-  bNumConfigurations      1
-  Configuration Descriptor:
-    bLength                 9
-    bDescriptorType         2
-    wTotalLength           39
-    bNumInterfaces          1
-    bConfigurationValue     1
-    iConfiguration          0
-    bmAttributes         0xc0
-      Self Powered
-    MaxPower                2mA
-    Interface Descriptor:
-      bLength                 9
-      bDescriptorType         4
-      bInterfaceNumber        0
-      bAlternateSetting       0
-      bNumEndpoints           2
-      bInterfaceClass         8 Mass Storage
-      bInterfaceSubClass      6 SCSI
-      bInterfaceProtocol     80 Bulk (Zip)
-      iInterface              0
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x02  EP 2 OUT
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0200  1x 512 bytes
-        bInterval               1
-      Endpoint Descriptor:
-        bLength                 7
-        bDescriptorType         5
-        bEndpointAddress     0x82  EP 2 IN
-        bmAttributes            2
-          Transfer Type            Bulk
-          Synch Type               None
-          Usage Type               Data
-        wMaxPacketSize     0x0200  1x 512 bytes
-        bInterval               0
-        DEVICE CLASS:  07 21 07 e8 03 fe ff
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk6V3PEACgkQUTlbRTxpHjcwPgCgkvxiCL03+yppWQ3fXvi8L+Fe
-fPUAoIaeXRnSJNBm67nr2hp0xQA7WAqK
-=qR2g
------END PGP SIGNATURE-----
