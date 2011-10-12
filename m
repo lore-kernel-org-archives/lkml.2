@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab1JLO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 10:26:24 -0400
-Received: from 99-108-226-0.lightspeed.iplsin.sbcglobal.net ([99.108.226.0]:58452
-	"EHLO peff.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022Ab1JLO0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 10:26:22 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 10:26:22 EDT
-Date: Wed, 12 Oct 2011 10:19:39 -0400
-From: Jeff King <peff@peff.net>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Valdis.Kletnieks@vt.edu, git@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/20] [GIT PULL][v3.2] tracing: queued updates
-Message-ID: <20111012141939.GA25085@sigill.intra.peff.net>
-References: <20111010133852.829771373@goodmis.org>
- <20111011055017.GA32616@elte.hu>
- <20002.1318367320@turing-police.cc.vt.edu>
- <20111012080711.GM18618@elte.hu>
+	id S1751561Ab1JLOe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 10:34:57 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64303 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab1JLOez convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 10:34:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111012080711.GM18618@elte.hu>
+In-Reply-To: <CAF6AEGsK25wk28YmiwsZTenecKqCt6irx66nR-8nOFMo6Z=Dkw@mail.gmail.com>
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+	<1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+	<CAPM=9tzHOa5Dbe=SQz+AURMMbio4L7qoS8kUT3Ek0+HdtkrH4g@mail.gmail.com>
+	<CAF6AEGs6kkGp85NoNVuq5W9i=WE86V8wvAtKydX=D3bQOc+6Pw@mail.gmail.com>
+	<CAPM=9twft0eBEUoCD11a2gTZHwOaPzFmZvBfE032dfK10eQ27Q@mail.gmail.com>
+	<CAF6AEGuwMt6Snq=YSN4iddTv_Cu56aR_2BY1d3hjVvTdkom5MQ@mail.gmail.com>
+	<CAPM=9tyKjodxf9MKjG=5bBDZTuqOx4Nu31L5iNN9LrO9fsp+FA@mail.gmail.com>
+	<CAF6AEGsK25wk28YmiwsZTenecKqCt6irx66nR-8nOFMo6Z=Dkw@mail.gmail.com>
+Date: Wed, 12 Oct 2011 15:34:54 +0100
+Message-ID: <CAPM=9tyAiUZ9tNaer=_52WmiLKpJKG+3EXvZzotwGwvqkJFmOQ@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Dave Airlie <airlied@gmail.com>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 12, 2011 at 10:07:14AM +0200, Ingo Molnar wrote:
+On Wed, Oct 12, 2011 at 3:24 PM, Rob Clark <robdclark@gmail.com> wrote:
+> On Wed, Oct 12, 2011 at 9:01 AM, Dave Airlie <airlied@gmail.com> wrote:
+>>> But then we'd need a different set of accessors for every different
+>>> drm/v4l/etc driver, wouldn't we?
+>>
+>> Not any more different than you need for this, you just have a new
+>> interface that you request a sw object from,
+>> then mmap that object, and underneath it knows who owns it in the kernel.
+>
+> oh, ok, so you are talking about a kernel level interface, rather than
+> userspace..
+>
+> but I guess in this case I don't quite see the difference.  It amounts
+> to which fd you call mmap (or ioctl[*]) on..  If you use the dmabuf fd
+> directly then you don't have to pass around a 2nd fd.
+>
+> [*] there is nothing stopping defining some dmabuf ioctls (such as for
+> synchronization).. although the thinking was to keep it simple for
+> first version of dmabuf
+>
 
-> > On Tue, 11 Oct 2011 07:50:17 +0200, Ingo Molnar said:
-> > 
-> > >  $ git pull git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git tip/perf/core
-> > >  fatal: The remote end hung up unexpectedly
-> > 
-> > Is it possible to get 'git' to say something more informative than 
-> > "hung up unexpectedly"? "Tree not found, check URL" or similar 
-> > would be nice...
+Yes a separate kernel level interface.
 
-It's not possible for the client to say anything more. The server sees
-that the request isn't valid and hangs up without saying anything. So
-the server needs to be changed to output better responses.
+Well I'd like to keep it even simpler. dmabuf is a buffer sharing API,
+shoehorning in a sw mapping API isn't making it simpler.
 
-> Firstly, arguably, typoing something is not 'fatal' really - it's 
-> just a resource that was not found on the server.
-> 
-> Secondly, and more importantly, the reason for the failed pull is 
-> indeed important to know, if you want to resolve the problem with a 
-> minimum fuss:
-> 
->  - Was it the tree that didnt exist?
->  - Or the branch?
->  - Or was there some other problem [such as a truly unexpectedly 
->                                     closed transport socket]?
-> 
-> It's really useful for a painless UI flow to disambiguate failure 
-> messages into clearly actionable variants.
+The problem I have with implementing mmap on the sharing fd, is that
+nothing says this should be purely optional and userspace shouldn't
+rely on it.
 
-I agree. I think some people are concerned with leaking information
-about which repos exist and how they are configured. That is probably
-not a big problem for a public site like kernel.org, though.
+In the Intel GEM space alone you have two types of mapping, one direct
+to shmem one via GTT, the GTT could be even be a linear view. The
+intel guys initially did GEM mmaps direct to the shmem pages because
+it seemed simple, up until they
+had to do step two which was do mmaps on the GTT copy and ended up
+having two separate mmap methods. I think the problem here is it seems
+deceptively simple to add this to the API now because the API is
+simple, however I think in the future it'll become a burden that we'll
+have to workaround.
 
-You might find this thread interesting:
-
-  http://thread.gmane.org/gmane.comp.version-control.git/182529/focus=182642
-
-It seems to have resulted in a patch that will at least say "access
-denied" for every error. Which is a step up from "the remote end hung up
-unexpectedly", but I do think most users would appreciate it being more
-specific.
-
-Perhaps we just need a config option to turn on more verbose messages,
-if the site decides that there's no security implications to doing so.
-
--Peff
+Dave.
