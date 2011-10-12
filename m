@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab1JLGzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 02:55:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59004 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab1JLGzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 02:55:07 -0400
-Date: Wed, 12 Oct 2011 08:55:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Rientjes <rientjes@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <htejun@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] lguest: move process freezing before pending signals
- check
-Message-ID: <20111012065504.GC31570@tiehlicka.suse.cz>
-References: <cover.1317110948.git.mhocko@suse.cz>
- <e213ea00900cba783f228eb4234ad929a05d4359.1317110948.git.mhocko@suse.cz>
+	id S1752544Ab1JLHEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 03:04:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50106 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab1JLHEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 03:04:53 -0400
+X-AuditID: b753bd60-9e4a1ba000005c89-20-4e953c122061
+X-AuditID: b753bd60-9e4a1ba000005c89-20-4e953c122061
+Message-ID: <4E953C0C.9020107@hitachi.com>
+Date: Wed, 12 Oct 2011 16:04:44 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e213ea00900cba783f228eb4234ad929a05d4359.1317110948.git.mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH net 1/2] [BUGFIX] bonding: use local function pointer
+ of bond->recv_probe in bond_handle_frame
+References: <20111007124925.7089.27260.stgit@ltc219.sdl.hitachi.co.jp>  <20111007124954.7089.9776.stgit@ltc219.sdl.hitachi.co.jp>  <CAM_iQpXZmX2GPb99tF7xMEup52o8AfeUi+0awvHr7C9LVWTjEg@mail.gmail.com>  <4E943E53.6010601@hitachi.com> <1318339433.2538.25.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1318339433.2538.25.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
-what is the current state of this patch? Are you planning to push it for
-3.2?
+Hi Eric,
 
-Thanks
+Thank you for your comment.
 
-On Tue 27-09-11 08:56:03, Michal Hocko wrote:
-> run_guest tries to freeze the current process after it has handled
-> pending interrupts and before it calls lguest_arch_run_guest.
-> This doesn't work nicely if the task has been killed while being frozen
-> and when we want to handle that signal as soon as possible.
-> Let's move try_to_freeze before we check for pending signal so that we
-> can get out of the loop as soon as possible.
+(2011/10/11 22:23), Eric Dumazet wrote:
+> Le mardi 11 octobre 2011 à 22:02 +0900, HAYASAKA Mitsuo a écrit :
+>> Hi WANG Cong
+>>
+>> Thank you for your comments.
+>>
+>> (2011/10/07 22:24), Américo Wang wrote:
+>>> On Fri, Oct 7, 2011 at 8:49 PM, Mitsuo Hayasaka
+>>> <mitsuo.hayasaka.hu@hitachi.com> wrote:
+>>>> The bond->recv_probe is called in bond_handle_frame() when
+>>>> a packet is received, but bond_close() sets it to NULL. So,
+>>>> a panic occurs when both functions work in parallel.
+>>>>
+>>>> Why this happen:
+>>>> After null pointer check of bond->recv_probe, an sk_buff is
+>>>> duplicated and bond->recv_probe is called in bond_handle_frame.
+>>>> So, a panic occurs when bond_close() is called between the
+>>>> check and call of bond->recv_probe.
+>>>>
+>>>> Patch:
+>>>> This patch uses a local function pointer of bond->recv_probe
+>>>> in bond_handle_frame(). So, it can avoid the null pointer
+>>>> dereference.
+>>>>
+>>>
+>>> Hmm, I don't doubt it can fix the problem, I am wondering if
+>>> bond->recv_probe should be protected by bond->lock...
+>>
+>> Indeed, in general any resources should be protected from the asynchronous
+>> workers.
+>>
+>> At first, I thought it should be handled with lock protection, as well.
+>> However, I guess that using bond->lock on this kind of hot-path may
+>> introduces unnecessary overhead. In addition, this code works well
+>> without the strict lock protection. So, I think this change is the
+>> right way to fix it.
 > 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  drivers/lguest/core.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
+> Maybe, but then ACCESS_ONCE() is needed to prevent compiler to
+> 'optimize' the temporary variable.
 > 
-> diff --git a/drivers/lguest/core.c b/drivers/lguest/core.c
-> index 2535933..e7dda91 100644
-> --- a/drivers/lguest/core.c
-> +++ b/drivers/lguest/core.c
-> @@ -232,6 +232,13 @@ int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
->  			}
->  		}
->  
-> +		/*
-> +		 * All long-lived kernel loops need to check with this horrible
-> +		 * thing called the freezer.  If the Host is trying to suspend,
-> +		 * it stops us.
-> +		 */
-> +		try_to_freeze();
-> +
->  		/* Check for signals */
->  		if (signal_pending(current))
->  			return -ERESTARTSYS;
-> @@ -246,13 +253,6 @@ int run_guest(struct lg_cpu *cpu, unsigned long __user *user)
->  			try_deliver_interrupt(cpu, irq, more);
->  
->  		/*
-> -		 * All long-lived kernel loops need to check with this horrible
-> -		 * thing called the freezer.  If the Host is trying to suspend,
-> -		 * it stops us.
-> -		 */
-> -		try_to_freeze();
-> -
-> -		/*
->  		 * Just make absolutely sure the Guest is still alive.  One of
->  		 * those hypercalls could have been fatal, for example.
->  		 */
-> -- 
-> 1.7.5.4
+> Or use rcu_dereference() to make the whole thing really safe and self
+> documented.
 > 
+I agreed.
+I'd like to send the patch with ACCESS_ONCE(), again.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thanks.
