@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab1JLHgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 03:36:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56752 "EHLO mx2.mail.elte.hu"
+	id S1752683Ab1JLHg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 03:36:27 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:38376 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040Ab1JLHgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 03:36:12 -0400
-Date: Wed, 12 Oct 2011 09:34:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Daney <david.daney@cavium.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, Jason Baron <jbaron@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH RFC V3 2/8] stop_machine: make stop_machine safe and
- efficient to call early
-Message-ID: <20111012073402.GJ18618@elte.hu>
-References: <cover.1317755691.git.jeremy.fitzhardinge@citrix.com>
- <619c66d6da63aa086e2eac017e7aed216cc8ddc3.1317755691.git.jeremy.fitzhardinge@citrix.com>
- <8762k4grwy.fsf@rustcorp.com.au>
- <20111010073405.GC29035@elte.hu>
- <4E934F37.2020300@goop.org>
+	id S1751040Ab1JLHg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 03:36:26 -0400
+Message-ID: <4E954356.2000409@parallels.com>
+Date: Wed, 12 Oct 2011 11:35:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E934F37.2020300@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <jbottomley@parallels.com>
+Subject: Re: [PATCH 05/10] Make total_forks per-cgroup
+References: <1317583287-18300-1-git-send-email-glommer@parallels.com> <1317583287-18300-6-git-send-email-glommer@parallels.com> <1317805535.6766.6.camel@twins> <4E8C4990.1050704@parallels.com> <20111011234548.GB14968@somewhere>
+In-Reply-To: <20111011234548.GB14968@somewhere>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/12/2011 03:45 AM, Frederic Weisbecker wrote:
+> On Wed, Oct 05, 2011 at 04:12:00PM +0400, Glauber Costa wrote:
+>> On 10/05/2011 01:05 PM, Peter Zijlstra wrote:
+>>> On Sun, 2011-10-02 at 23:21 +0400, Glauber Costa wrote:
+>>>> This patch counts the total number of forks per-cgroup.
+>>>> The information is propagated to the parent, so the total
+>>>> number of forks in the system, is the parent cgroup's one.
+>>>>
+>>>> To achieve that, total_forks is made per-cpu. There is no
+>>>> particular reason to do that, but by doing this, we are
+>>>> able to bundle it inside the cpustat structure already
+>>>> present.
+>>>
+>>> I think fweisbec is also doing something with forks and cgroups.
+>>
+>> I am all ears...
+>>
+>> Frederic, does it conflict with what you're doing ?
+>
+> I don't know if that really conflicts but I'm working
+> on a cgroup subsystem that is able to control the number
+> of tasks running in a subsystem.
+>
+> It consists in two new files added:
+>
+> * tasks.usage
+> * tasks.limit
+>
+> The subsystem rejects any new fork or migration into the
+> cgroup when tasks.usage>  tasks.limit
+>
+> So tasks.usage can inform you about the number of tasks
+> running into the cgroup. It's not strictly the number
+> of forks because it also counts the tasks that have been
+> attached to the cgroup.
+>
+> But something like a tasks.fork file could be implemented
+> in that subsystem as well.
+>
+> It depends on what you need.
 
-* Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+So the specific piece I am working on, is to display /proc/stat 
+information per-cgroup. One of the many fields it has, is total_forks.
+(it is actually just a small part of the series)
+So instead of tracking how many forks the system has in total, I'll
+track it per-cpucgroup.
 
-> On 10/10/2011 12:34 AM, Ingo Molnar wrote:
-> > * Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >
-> >> On Tue,  4 Oct 2011 12:18:03 -0700, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> >>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> >>>
-> >>> Make stop_machine() safe to call early in boot, before stop_machine()
-> >>> has been set up, by simply calling the callback function directly if
-> >>> there's only one CPU online.
-> >> Not that you need this, since it's >90% Tejun's code now, but:
-> >>
-> >> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> > hey, extra review is always useful.
-> >
-> > Jeremy, Tejun, what's the expected merge path of these changes?
-> 
-> Andrew has already picked up the stop_machine patch, I think.  But it's
-> pretty settled now, so it shouldn't cause any problem if it gets via
-> multiple paths.
-> 
-> What about the jump-label stuff?  Has that been going via tip.git in the
-> past, or by some other path?
-
-If it has Jason's and PeterZ's ack then it can go via any other tree 
-in this cycle - we are not carrying jump label patches right now.
-
-But those acks are very much desired.
-
-Thanks,
-
-	Ingo
+So I don't think we conflict at all. At the very least, IIUC, you are 
+planning to account and check *before* a fork happens, right? This 
+particular stat is incremented after it already succeeded.
