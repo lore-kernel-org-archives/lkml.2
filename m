@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab1JLVkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:40:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50359 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab1JLVjG (ORCPT
+	id S1754454Ab1JLVka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:40:30 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51531 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342Ab1JLVk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:39:06 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 07/10] staging: et131x: move et131x_defs.h contents into et131x.c
-Date: Wed, 12 Oct 2011 22:36:39 +0100
-Message-Id: <1318455402-10596-8-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1318455402-10596-1-git-send-email-mark.einon@gmail.com>
-References: <1318455402-10596-1-git-send-email-mark.einon@gmail.com>
+	Wed, 12 Oct 2011 17:40:26 -0400
+Date: Wed, 12 Oct 2011 23:40:13 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
+ dom0
+Message-ID: <20111012214013.GD28723@aftab>
+References: <cover.1317060617.git.jeremy.fitzhardinge@citrix.com>
+ <4E94E1E5.4070505@goop.org>
+ <20111012101615.GA14966@aftab>
+ <4E95D9E7.6090304@zytor.com>
+ <4E95E7FE.6050302@goop.org>
+ <20111012194543.GD14966@aftab>
+ <20111012204048.GA22260@phenom.oracle.com>
+ <4E960746.90805@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E960746.90805@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move et131x_defs.h contents into et131x.c and delete et131x_defs.h
+On Wed, Oct 12, 2011 at 05:31:50PM -0400, H. Peter Anvin wrote:
+> On 10/12/2011 01:40 PM, Konrad Rzeszutek Wilk wrote:
+> > Why is it paramount to do it as early as possible? As in, even doing
+> > it before Linux kernel is invoked is preferred than during initrd runtime?
+> 
+> It is paramount to do it as early as possible *because the CPU is 
+> broken*.  That's why there is a microcode update at all.  It is 
+> *supposed* to be installed by BIOS, but for whatever reason it wasn't 
+> (including user doesn't want to update the BIOS), so the very fact that 
+> this is done in the OS at all is a bit of a fail.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c      |   66 +++++++++++++++++-
- drivers/staging/et131x/et131x_defs.h |  128 ----------------------------------
- 2 files changed, 64 insertions(+), 130 deletions(-)
- delete mode 100644 drivers/staging/et131x/et131x_defs.h
+Oh, that's easy: you know how OEMs support a platform for a while and
+then move on to something new and stop updating BIOSen, including ucode
+images contained in them?
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index e88c277..402ab7f 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -53,8 +53,6 @@
-  *
-  */
- 
--#include "et131x_defs.h"
--
- #include <linux/pci.h>
- #include <linux/init.h>
- #include <linux/module.h>
-@@ -124,6 +122,70 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- #define INT_MASK_ENABLE             0xfffebf17
- #define INT_MASK_ENABLE_NO_FLOW     0xfffebfd7
- 
-+/* General defines */
-+/* Packet and header sizes */
-+#define NIC_MIN_PACKET_SIZE	60
-+
-+/* Multicast list size */
-+#define NIC_MAX_MCAST_LIST	128
-+
-+/* Supported Filters */
-+#define ET131X_PACKET_TYPE_DIRECTED		0x0001
-+#define ET131X_PACKET_TYPE_MULTICAST		0x0002
-+#define ET131X_PACKET_TYPE_BROADCAST		0x0004
-+#define ET131X_PACKET_TYPE_PROMISCUOUS		0x0008
-+#define ET131X_PACKET_TYPE_ALL_MULTICAST	0x0010
-+
-+/* Tx Timeout */
-+#define ET131X_TX_TIMEOUT	(1 * HZ)
-+#define NIC_SEND_HANG_THRESHOLD	0
-+
-+/* MP_TCB flags */
-+#define fMP_DEST_MULTI			0x00000001
-+#define fMP_DEST_BROAD			0x00000002
-+
-+/* MP_ADAPTER flags */
-+#define fMP_ADAPTER_RECV_LOOKASIDE	0x00000004
-+#define fMP_ADAPTER_INTERRUPT_IN_USE	0x00000008
-+#define fMP_ADAPTER_SECONDARY		0x00000010
-+
-+/* MP_SHARED flags */
-+#define fMP_ADAPTER_SHUTDOWN		0x00100000
-+#define fMP_ADAPTER_LOWER_POWER		0x00200000
-+
-+#define fMP_ADAPTER_NON_RECOVER_ERROR	0x00800000
-+#define fMP_ADAPTER_RESET_IN_PROGRESS	0x01000000
-+#define fMP_ADAPTER_NO_CABLE		0x02000000
-+#define fMP_ADAPTER_HARDWARE_ERROR	0x04000000
-+#define fMP_ADAPTER_REMOVE_IN_PROGRESS	0x08000000
-+#define fMP_ADAPTER_HALT_IN_PROGRESS	0x10000000
-+
-+#define fMP_ADAPTER_FAIL_SEND_MASK	0x3ff00000
-+#define fMP_ADAPTER_NOT_READY_MASK	0x3ff00000
-+
-+/* Some offsets in PCI config space that are actually used. */
-+#define ET1310_PCI_MAX_PYLD		0x4C
-+#define ET1310_PCI_MAC_ADDRESS		0xA4
-+#define ET1310_PCI_EEPROM_STATUS	0xB2
-+#define ET1310_PCI_ACK_NACK		0xC0
-+#define ET1310_PCI_REPLAY		0xC2
-+#define ET1310_PCI_L0L1LATENCY		0xCF
-+
-+/* PCI Vendor/Product IDs */
-+#define ET131X_PCI_VENDOR_ID		0x11C1	/* Agere Systems */
-+#define ET131X_PCI_DEVICE_ID_GIG	0xED00	/* ET1310 1000 Base-T 8 */
-+#define ET131X_PCI_DEVICE_ID_FAST	0xED01	/* ET1310 100  Base-T */
-+
-+/* Define order of magnitude converter */
-+#define NANO_IN_A_MICRO	1000
-+
-+#define PARM_RX_NUM_BUFS_DEF    4
-+#define PARM_RX_TIME_INT_DEF    10
-+#define PARM_RX_MEM_END_DEF     0x2bc
-+#define PARM_TX_TIME_INT_DEF    40
-+#define PARM_TX_NUM_BUFS_DEF    4
-+#define PARM_DMA_CACHE_DEF      0
-+
- /* ADAPTER defines */
- /*
-  * Do not change these values: if changed, then change also in respective
-diff --git a/drivers/staging/et131x/et131x_defs.h b/drivers/staging/et131x/et131x_defs.h
-deleted file mode 100644
-index 872a5af..0000000
+Well, in that case, the OS is the last possible place where we want to
+be able to apply the ucode. And, we want to apply it as _early_ _as_
+_possible_. Bootloader doesn't cut it as hpa says below, so next comes
+SMP cores bootup code. That's it.
+
+> Doing it in the bootloader is messy because bootloaders typically
+> aren't SMP-aware (and really shouldn't need to be), which leaves the
+> OS. On native hardware it should ideally be done as early in the
+> processor bringup as possible.
+
+Yep.
+
 -- 
-1.7.6.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
