@@ -1,143 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab1JLCfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 22:35:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56422 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab1JLCfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 22:35:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="62007892"
-Message-ID: <4E94FCFE.4090300@linux.intel.com>
-Date: Wed, 12 Oct 2011 10:35:42 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>, seiji.aguchi@hds.com,
-        vgoyal@redhat.com, mjg@redhat.com, tony.luck@intel.com,
-        gong.chen@intel.com, satoru.moriya@hds.com, avi@redhat.com
-Subject: Re: [PATCH 1/3] x86, reboot:  Use NMI instead of REBOOT_VECTOR to
- stop cpus
-References: <1318346686-12349-1-git-send-email-dzickus@redhat.com> <1318346686-12349-2-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1318346686-12349-2-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752246Ab1JLCgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 22:36:10 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:45227 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab1JLCgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 22:36:08 -0400
+Date: Wed, 12 Oct 2011 13:36:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Arend van Spriel <arend@broadcom.com>
+Subject: linux-next: build failure after merge of the wireless tree
+Message-Id: <20111012133600.256fea364b17e6bf96ee1081@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/10/11 23:24, Don Zickus 写道:
-> A recent discussion started talking about the locking on the pstore fs
-> and how it relates to the kmsg infrastructure.  We noticed it was possible
-> for userspace to r/w to the pstore fs (grabbing the locks in the process)
-> and block the panic path from r/w to the same fs.
->
-> The reason was the cpu with the lock could be doing work while the crashing
-> cpu is panic'ing.  Busting those spinlocks might cause those cpus to step
-> on each other's data.  Fine, fair enough.
->
-> It was suggested it would be nice to serialize the panic path (ie stop
-> the other cpus) and have only one cpu running.  This would allow us to
-> bust the spinlocks and not worry about another cpu stepping on the data.
->
-> Of course, smp_send_stop() does this in the panic case.  kmsg_dump() would
-> have to be moved to be called after it.  Easy enough.
->
-> The only problem is on x86 the smp_send_stop() function calls the
-> REBOOT_VECTOR.  Any cpu with irqs disabled (which pstore and its backend
-> ERST would do), block this IPI and thus do not stop.  This makes it
-> difficult to reliably log data to the pstore fs.
->
-> The patch below switches from the REBOOT_VECTOR to NMI (and mimics what
-> kdump does).  Switching to NMI allows us to deliver the IPI when irqs are
-> disabled, increasing the reliability of this function.
->
-> However, Andi carefully noted that on some machines this approach does not
-> work because of broken BIOSes or whatever.
->
-> To help accomodate this, the next couple of patches will run a selftest and
-> provide a knob to disable.
->
-> V2:
->    uses atomic ops to serialize the cpu that shuts everyone down
->
-> Signed-off-by: Don Zickus<dzickus@redhat.com>
-> ---
->
-> [note] this patch sits on top of another NMI infrastructure change I have
-> submitted, so the nmi registeration might not apply cleanly without that patch.
-> ---
->   arch/x86/kernel/smp.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++-
->   1 files changed, 56 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-> index 013e7eb..7bdbf6a 100644
-> --- a/arch/x86/kernel/smp.c
-> +++ b/arch/x86/kernel/smp.c
-> @@ -28,6 +28,7 @@
->   #include<asm/mmu_context.h>
->   #include<asm/proto.h>
->   #include<asm/apic.h>
-> +#include<asm/nmi.h>
->   /*
->    *	Some notes on x86 processor bugs affecting SMP operation:
->    *
-> @@ -147,6 +148,59 @@ void native_send_call_func_ipi(const struct cpumask *mask)
->   	free_cpumask_var(allbutself);
->   }
->
-> +static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-> +
-> +static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-> +{
-> +	/* We are registered on stopping cpu too, avoid spurious NMI */
-> +	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
-> +		return NMI_HANDLED;
-> +
-> +	stop_this_cpu(NULL);
-> +
-> +	return NMI_HANDLED;
-> +}
-> +
-> +static void native_nmi_stop_other_cpus(int wait)
-> +{
-> +	unsigned long flags;
-> +	unsigned long timeout;
-> +
-> +	if (reboot_force)
-> +		return;
-> +
-> +	/*
-> +	 * Use an own vector here because smp_call_function
-> +	 * does lots of things not suitable in a panic situation.
-> +	 */
-> +	if (num_online_cpus()>  1) {
-> +		/* did someone beat us here? */
-> +		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id() != -1))
-> +			return;
-> +
-> +		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-> +					 NMI_FLAG_FIRST, "smp_stop"))
-> +			return;		/* return what? */
-> +
-> +		/* sync above data before sending NMI */
-> +		wmb();
-> +
-> +		apic->send_IPI_allbutself(NMI_VECTOR);
-> +
-> +		/*
-> +		 * Don't wait longer than a second if the caller
-> +		 * didn't ask us to wait.
-> +		 */
-> +		timeout = USEC_PER_SEC;
-> +		while (num_online_cpus()>  1&&  (wait || timeout--))
-> +			udelay(1);
+--Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In this patch and next patch, how about using the same logic in commit 74d91e3c6
+Hi John,
 
+After merging the wireless tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1131:2: error: unknown =
+field 'ndo_set_multicast_list' specified in initializer
+drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1132:1: warning: initia=
+lization from incompatible pointer type [enabled by default]
+drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c:1132:1: warning: (near =
+initialization for 'brcmf_netdev_ops_pri.ndo_validate_addr') [enabled by de=
+fault]
+
+Caused by commit 5b435de0d786 ("net: wireless: add brcm80211 drivers")
+interacting with commit b81693d9149c ("net: remove ndo_set_multicast_list
+callback") from the net-next tree.
+
+I have applied the following merge fixup patch for today.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 12 Oct 2011 13:33:10 +1100
+Subject: [PATCH] net: wireless: brcm80211: replace ndo_set_multicast_list  =
+with ndo_set_rx_mode
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ .../net/wireless/brcm80211/brcmfmac/dhd_linux.c    |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c b/drivers/=
+net/wireless/brcm80211/brcmfmac/dhd_linux.c
+index 99ba5e3..03607ca 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/dhd_linux.c
+@@ -1128,7 +1128,7 @@ static struct net_device_ops brcmf_netdev_ops_pri =3D=
+ {
+ 	.ndo_do_ioctl =3D brcmf_netdev_ioctl_entry,
+ 	.ndo_start_xmit =3D brcmf_netdev_start_xmit,
+ 	.ndo_set_mac_address =3D brcmf_netdev_set_mac_address,
+-	.ndo_set_multicast_list =3D brcmf_netdev_set_multicast_list
++	.ndo_set_rx_mode =3D brcmf_netdev_set_multicast_list
+ };
+=20
+ int brcmf_net_attach(struct brcmf_pub *drvr, int ifidx)
+--=20
+1.7.6.3
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOlP0QAAoJEECxmPOUX5FEl2kQAJwjZtVfV425wQdg+0+R7rf0
+BdjfSf0LZnC64bPRx9Fnlh4AKjFf7T641Tr6yZrLMNbJh4pYeEojwzIg7v5jn6UO
+E/pVdZV3ra7wtvxusg0vQlOECw9/XV+XiSa2vgRIcpSKEO71ifqW5/9UJ0LhtgKN
+lc9MnkcZqPRQZwpXRvU71M2y2JvWBQnP0Aa23gBH3aaFyz//2x4bUTw+VpLlpNo9
+JX3xmYtZHhiPcrjbGRWlEJXmHfp9DVJXPSSpuu+ZIrKbBFGfNIsmmGiMgCVNGwh7
+UGKA8inAbpIzIm5vWgFJiejYUJSLm1fDB9le4rhEnNG4bQ3P7jOejK+0Af2Km6Ka
+6qht0FwBqVUx/aVbbAi81kV1kQRHe/Mm0C0u2UfIrW1BkSlTzjg2ZEerJ4h0zjj/
+5ay0/154olSQgqvdSBpvBQu7TFy6k0VpkCNSrkgl7C86sEJMSoSGZR1HChic7u74
+CV+IH4KosQcJeCoYesNzdtC+Tosw0Z2cge+WKuuQDT3fDwoYqjkNldHkjgtuIYto
+ZqRDVNH9c/G8+jnPoXlMdQG1eoVI1p7APpsjLlimWbdlBf9+m+ZXYRIe/pSyt0A1
+PXiPdoTEIDZg56GrBa3SKCuvrY3GouGol7PSFxjhl4EJleD54dq0I9N71gJf9FQc
+NaZ4wv7b9j5Wz9eXzREu
+=b85/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__12_Oct_2011_13_36_00_+1100_qpLE67rUHAYjb+5o--
