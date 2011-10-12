@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab1JLAQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 20:16:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32988 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab1JLAQy (ORCPT
+	id S1751558Ab1JLAUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 20:20:39 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:49768 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab1JLAUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 20:16:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1484494934.58546.1318376933037.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-References: <CAKYAXd86Hvq5SEVvmf4M99smeXbDiUsS+ASXy9-U7xmrREGjvQ@mail.gmail.com>
-	<1484494934.58546.1318376933037.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Date: Wed, 12 Oct 2011 09:16:51 +0900
-Message-ID: <CAKYAXd_MJy_3TAoM_buCmP5g3j1e=Vh5vZPJP9O_nxDrWiHsAw@mail.gmail.com>
-Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree
- for Oct 11 (mmc))
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Andrei Warkentin <awarkentin@vmware.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 11 Oct 2011 20:20:38 -0400
+Date: Wed, 12 Oct 2011 02:20:32 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org, crash-utility@redhat.com,
+        kexec@lists.infradead.org, Andi Kleen <andi@firstfloor.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [Patch 1/4][kernel][slimdump] Add new elf-note of type NT_NOCOREDUMP to capture slimdump
+Message-ID: <20111012002032.GF14482@one.firstfloor.org>
+References: <20111003070735.GJ2223@in.ibm.com> <20111003073203.GA22694@in.ibm.com> <20111004140437.GA28306@redhat.com> <20111005071844.GB2235@in.ibm.com> <20111005152537.GB30146@redhat.com> <20111007161218.GA2297@in.ibm.com> <20111010070725.GB11577@liondog.tnic> <20111011184434.GB32316@in.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111011184434.GB32316@in.ibm.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/12 Andrei Warkentin <awarkentin@vmware.com>:
-> ----- Original Message -----
->> From: "NamJae Jeon" <linkinjeon@gmail.com>
->> To: "Randy Dunlap" <rdunlap@xenotime.net>, "Andrei Warkentin" <awarkentin@vmware.com>
->> Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org, "Chris Ball"
->> <cjb@laptop.org>, "Stephen Rothwell" <sfr@canb.auug.org.au>
->> Sent: Tuesday, October 11, 2011 7:20:48 PM
->> Subject: Re: mmc core broken dependency on CONFIG_BLOCK (Was: linux-next: Tree for Oct 11 (mmc))
->>
->> Hi Randy, Andrei.
->>
->> I suggest third option for this.
->> As you know, MMC like ATA Driver and SCSI Driver etc.. can not enable
->> without CONFIG_BLOCK
->> So I think that mmc should be depended from CONFIG_BLOCK like other
->> block device driver.
->> see the their Kconfig. How do you think ?
->
-> MMC core doesn't not imply MMC_BLOCK. You could well use SDIO devices via MMC without any flash storage whatsoever.
-> What I want to say is that MMC_BLOCK already depends on BLOCK. MMC, however, has no such functional dependence, as it
-> just (effectively) provides bus and device enumeration. So I think the better solution is wrapping all MMC partition
-> code within mmc/core/mmc.c and card.h with CONFIG_BLOCK.
-yes, you're right, I found it after sending mail. If so, should I wrap
-CONFIG_MMC_BLOCK instead of CONFIG_MMC ? After I add CONFIG_MMC_BLOCK
-in core/mmc.c, card.h, I can see compile is okay.
-Thanks.
->
-> A
->
+> So, in any case we may not be able to disable machine-check exceptions
+> (MCEs) only within the context of kexec'ed kernel. Let me know if I've
+> missed something here.
+
+You can disable signalling in the main machine check register,
+then you won't get any machine check interrupts. No need to mess
+with any CPU specific banks.
+
+See the old mce tree that kernel.org ate for a patch that just did that
+during the kcore copy.
+
+-Andi
