@@ -1,125 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1JLVjD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 17:39:03 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33310 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab1JLVjA (ORCPT
+	id S1754419Ab1JLVss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 17:48:48 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61309 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab1JLVsq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 17:39:00 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 03/10] staging: et131x: Move non-register defines from et131x.h to et131x.c
-Date: Wed, 12 Oct 2011 22:36:35 +0100
-Message-Id: <1318455402-10596-4-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1318455402-10596-1-git-send-email-mark.einon@gmail.com>
-References: <1318455402-10596-1-git-send-email-mark.einon@gmail.com>
+	Wed, 12 Oct 2011 17:48:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111012203337.GA14572@suse.de>
+References: <CA+O4pCKMiLK3Z94j1NjVA3Zu-32X=tC-6eZnwGZCQXUTbhiEwA@mail.gmail.com>
+	<20111012141724.GA17414@suse.de>
+	<CA+O4pCJ3rte3eHUy44JWsYo5BqVzRNXojLYLo6uOd8cRQGs=LQ@mail.gmail.com>
+	<20111012203337.GA14572@suse.de>
+Date: Wed, 12 Oct 2011 23:48:45 +0200
+Message-ID: <CA+O4pCKfem5nAQvpRWBZp21XsE6Z3Nn1iDW9yosuQ3fLqhtZ1A@mail.gmail.com>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Header file should only have register defines, moved non-register
-defines to et131x.c
+On Wed, Oct 12, 2011 at 10:33 PM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Oct 12, 2011 at 06:59:01PM +0200, Markus Rechberger wrote:
+>> On Wed, Oct 12, 2011 at 4:17 PM, Greg KH <gregkh@suse.de> wrote:
+>> > On Wed, Oct 12, 2011 at 02:36:59PM +0200, Markus Rechberger wrote:
+>> >> We have 2 products which can perform better with increased Bulk transfers
+>> >
+>> > I don't believe you :)
+>> >
+>> > As stated before, this patch is not acceptable.  Please work to figure
+>> > out the real reason for your device problems here, this is not the
+>> > correct solution at all.
+>> >
+>>
+>> OK no device support for linux then. Windows and MacOSX are fine.
+>
+> That is your choice, not ours, as you are the one writing the closed
+> source code.  Without usbmon dumps, showing that the problem really is
+> in the kernel code, we can't do anything for you here.
+>
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |   31 +++++++++++++++++++++++++++++++
- drivers/staging/et131x/et131x.h |   33 +--------------------------------
- 2 files changed, 32 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index a038a37..cad271b 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -96,6 +96,37 @@ MODULE_LICENSE("Dual BSD/GPL");
- MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver "
- 		   "for the ET1310 by Agere Systems");
- 
-+/* EEPROM defines */
-+#define MAX_NUM_REGISTER_POLLS          1000
-+#define MAX_NUM_WRITE_RETRIES           2
-+
-+/* MAC defines */
-+#define COUNTER_WRAP_16_BIT 0x10000
-+#define COUNTER_WRAP_12_BIT 0x1000
-+
-+/* PCI defines */
-+#define INTERNAL_MEM_SIZE       0x400	/* 1024 of internal memory */
-+#define INTERNAL_MEM_RX_OFFSET  0x1FF	/* 50%   Tx, 50%   Rx */
-+
-+/* ISR defines */
-+/*
-+ * For interrupts, normal running is:
-+ *       rxdma_xfr_done, phy_interrupt, mac_stat_interrupt,
-+ *       watchdog_interrupt & txdma_xfer_done
-+ *
-+ * In both cases, when flow control is enabled for either Tx or bi-direction,
-+ * we additional enable rx_fbr0_low and rx_fbr1_low, so we know when the
-+ * buffer rings are running low.
-+ */
-+#define INT_MASK_DISABLE            0xffffffff
-+
-+/* NOTE: Masking out MAC_STAT Interrupt for now...
-+ * #define INT_MASK_ENABLE             0xfff6bf17
-+ * #define INT_MASK_ENABLE_NO_FLOW     0xfff6bfd7
-+ */
-+#define INT_MASK_ENABLE             0xfffebf17
-+#define INT_MASK_ENABLE_NO_FLOW     0xfffebfd7
-+
- void et131x_error_timer_handler(unsigned long data);
- void et131x_enable_interrupts(struct et131x_adapter *adapter);
- void et131x_disable_interrupts(struct et131x_adapter *adapter);
-diff --git a/drivers/staging/et131x/et131x.h b/drivers/staging/et131x/et131x.h
-index 71fd7fe..115d307 100644
---- a/drivers/staging/et131x/et131x.h
-+++ b/drivers/staging/et131x/et131x.h
-@@ -49,7 +49,7 @@
- #define DRIVER_NAME "et131x"
- #define DRIVER_VERSION "v2.0"
- 
--/* EEPROM defines */
-+/* EEPROM registers */
- 
- /* LBCIF Register Groups (addressed via 32-bit offsets) */
- #define LBCIF_DWORD0_GROUP       0xAC
-@@ -77,34 +77,3 @@
- #define LBCIF_STATUS_CHECKSUM_ERROR     0x40
- #define LBCIF_STATUS_EEPROM_PRESENT     0x80
- 
--/* Miscellaneous Constraints */
--#define MAX_NUM_REGISTER_POLLS          1000
--#define MAX_NUM_WRITE_RETRIES           2
--
--/* MAC defines */
--#define COUNTER_WRAP_16_BIT 0x10000
--#define COUNTER_WRAP_12_BIT 0x1000
--
--/* PCI defines */
--#define INTERNAL_MEM_SIZE       0x400	/* 1024 of internal memory */
--#define INTERNAL_MEM_RX_OFFSET  0x1FF	/* 50%   Tx, 50%   Rx */
--
--/* ISR defines */
--/*
-- * For interrupts, normal running is:
-- *       rxdma_xfr_done, phy_interrupt, mac_stat_interrupt,
-- *       watchdog_interrupt & txdma_xfer_done
-- *
-- * In both cases, when flow control is enabled for either Tx or bi-direction,
-- * we additional enable rx_fbr0_low and rx_fbr1_low, so we know when the
-- * buffer rings are running low.
-- */
--#define INT_MASK_DISABLE            0xffffffff
--
--/* NOTE: Masking out MAC_STAT Interrupt for now...
-- * #define INT_MASK_ENABLE             0xfff6bf17
-- * #define INT_MASK_ENABLE_NO_FLOW     0xfff6bfd7
-- */
--#define INT_MASK_ENABLE             0xfffebf17
--#define INT_MASK_ENABLE_NO_FLOW     0xfffebfd7
--
--- 
-1.7.6.4
+here take your usbmon logs:
+http://sundtek.de/support/working.log
+http://sundtek.de/support/notworking.log (this is with your proposed
+split up of 22k).
 
+Isochronous already supports up to 190kb buffers which cause no
+trouble anywhere.
+Bulk is castrated to 15kb buffers and 50kb should be such a big issue
+while applications
+which do not request it are not affected at all.
+
+I'm very angry that you do not really focus on what I write and just
+try to write stories about
+bogus things like my patch might break other applications while I
+pointed out that this is not
+possible with legacy applications which use this interface. It is not
+even possible to read the
+maximum buffer value from the kernelspace.
+
+Your bogus message about 1Gig ram you can put it elsewhere, I checked
+multiple windows drivers
+in the past the buffer size varies between small and something around
+50k usually.
+I would fully like to avoid to patch this kernel to get those things
+work because I don't want to
+deal with people who just write around the actual issues.
+
+Alsi the fact that bigger buffers are already being used plus the HW
+specifications of our main device also points out to a certain
+buffersize near 50k. But of course you are the smart knowitall without
+the need of explanation why
+those things can be affected by HW and some HW chips have options to
+influence that buffer size.
+
+I'm certainly angry,
+Markus
+
+> Best of luck,
+>
+> greg k-h
+>
