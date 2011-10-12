@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1JLUhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 16:37:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55605 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab1JLUhn convert rfc822-to-8bit (ORCPT
+	id S1754092Ab1JLUl0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 16:41:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:57182 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab1JLUlZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 16:37:43 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:content-transfer-encoding;
-	b=jGYgzk3draI8O8/ObKTD0Qhn8u+Z/qiqLBA6mzoDQBCCq7uHTKleyJrEGEAjLiAWW
-	3vpkvxe/av0GHPXq7Rtpg==
+	Wed, 12 Oct 2011 16:41:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111012165154.GB6158@mgebm.net>
-References: <20111007204247.GA5444@mgebm.net>
-	<20111010233842.GC24583@mgebm.net>
-	<1318319095.14400.54.camel@laptop>
-	<20111012165154.GB6158@mgebm.net>
-Date: Wed, 12 Oct 2011 22:37:36 +0200
-Message-ID: <CABPqkBRHkiOYEW+5Yo9p43c_2Dy+aAdJRXj3tah5J1QsV4AXrw@mail.gmail.com>
-Subject: Re: Oprofile Regression Caused by commit e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25
- on PPC
-From: Stephane Eranian <eranian@google.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu, anton@samba.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hbabu@us.ibm.com
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <3e84809b-a45d-4980-b342-c2d671f87f79@default>
+Date: Wed, 12 Oct 2011 13:39:10 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de
+Cc: cascardo@holoscopio.com, rdunlap@xenotime.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        rcj@linux.vnet.ibm.com, brking@linux.vnet.ibm.com
+Subject: RE: [PATCH] staging: zcache: remove zcache_direct_reclaim_lock
+References: <1318448460-5930-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1318448460-5930-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4E95FAFB.00CF:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could be:
-   a8d757e perf events: Fix slow and broken cgroup context switch code
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: [PATCH] staging: zcache: remove zcache_direct_reclaim_lock
+> 
+> zcache_do_preload() currently does a spin_trylock() on the
+> zcache_direct_reclaim_lock. Holding this lock intends to prevent
+> shrink_zcache_memory() from evicting zbud pages as a result
+> of a preload.
+>
+> However, it also prevents two threads from
+> executing zcache_do_preload() at the same time.  The first
+> thread will obtain the lock and the second thread's spin_trylock()
+> will fail (an aborted preload) causing the page to be either lost
+> (cleancache) or pushed out to the swap device (frontswap). It
+> also doesn't ensure that the call to shrink_zcache_memory() is
+> on the same thread as the call to zcache_do_preload().
 
+Yes, this looks to be leftover code from early in kztmem/zcache
+development.  Good analysis.
+ 
+> Additional, there is no need for this mechanism because all
+> zcache_do_preload() calls that come down from cleancache already
+> have PF_MEMALLOC set in the process flags which prevents
+> direct reclaim in the memory manager. If the zcache_do_preload()
 
-On Wed, Oct 12, 2011 at 6:51 PM, Eric B Munson <emunson@mgebm.net> wrote:
-> On Tue, 11 Oct 2011, Peter Zijlstra wrote:
->
->> On Mon, 2011-10-10 at 19:38 -0400, Eric B Munson wrote:
->> > On Fri, 07 Oct 2011, Eric B Munson wrote:
->> >
->> > > This commit seems to have caused a regression with oprofile.  It is fairly easy
->> > > to trigger, simply run oprofile monitoring an event that will fire (something
->> > > frequent like CPU cycles) causes oprofile to fail saying that the PMU is in use.
->> > > If I disable CONFIG_CGROUP_PERF, everything goes back to working.  I suspect the
->> > > problem is that the PMU is being initialized without being reserved for perf.  I
->> > > am not yet sure of the right fix yet so if you have any suggestions I would
->> > > appreciate them.
->> > >
->> > > Eric
->> >
->> > This isn't the best description of the behavior we see, what happens is at some
->> > point in the profiling session the MMCR register is clobbered by
->> > perf_cgroup_switch() which calls perf_pmu_enable() without reserving the PMC
->> > hardware.  When this happens oprofile stops counting.  It doesn't happen each
->> > time so some runs show event counts that are reasonable, but it can also lead to
->> > event counts that are smaller than expected, or completely missing.
->>
->> What kernel are you testing?
->>
->
-> The problem seems to be fixed in 3.1-rc9 so I just need to identify the
-> patch(es) that fixed it.
->
-> Eric
->
+Might it be worthwhile to add a BUG/ASSERT for the presence
+of PF_MEMALLOC, or at least a comment in the code?
+
+> call is done from the frontswap path, we _want_ reclaim to be
+> done (which it isn't right now).
+> 
+> This patch removes the zcache_direct_reclaim_lock and related
+> statistics in zcache.
+> 
+> Based on v3.1-rc8
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Reviewed-by: Dave Hansen <dave@linux.vnet.ibm.com>
+
+With added code/comment per above...
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
