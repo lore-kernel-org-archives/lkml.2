@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab1JLTBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:01:22 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33283 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab1JLTBV (ORCPT
+	id S1751939Ab1JLTCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:02:12 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46216 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab1JLTCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:01:21 -0400
-Date: Wed, 12 Oct 2011 12:01:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] Reduce vm_stat cacheline contention in
- __vm_enough_memory
-Message-Id: <20111012120118.e948f40a.akpm@linux-foundation.org>
-In-Reply-To: <20111012160202.GA18666@sgi.com>
-References: <20111012160202.GA18666@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 12 Oct 2011 15:02:11 -0400
+Date: Wed, 12 Oct 2011 15:02:07 -0400 (EDT)
+Message-Id: <20111012.150207.1100668688848833225.davem@davemloft.net>
+To: bzolnier@gmail.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cy82c693: fix PCI device selection
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201110121652.10495.bzolnier@gmail.com>
+References: <201110111937.32501.bzolnier@gmail.com>
+	<20111011.152040.662786307819949300.davem@davemloft.net>
+	<201110121652.10495.bzolnier@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 12 Oct 2011 12:02:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 11:02:02 -0500
-Dimitri Sivanich <sivanich@sgi.com> wrote:
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Date: Wed, 12 Oct 2011 16:52:10 +0200
 
-> Tmpfs I/O throughput testing on UV systems has shown writeback contention
-> between multiple writer threads (even when each thread writes to a separate
-> tmpfs mount point).
+> David Miller wrote:
 > 
-> A large part of this is caused by cacheline contention reading the vm_stat
-> array in the __vm_enough_memory check.
+>> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+>> Date: Tue, 11 Oct 2011 19:37:32 +0200
+>> 
+>> > While at it remove redundant pci_get_slot() call as cy82c693_init_one()
+>> > already takes care of keeping the reference on the second port's PCI
+>> > device.
+>> 
+>> Please do not submit unrelated changes with a bug fix, and as IDE is
+>> in long-term maintainence I would not accept a risky refinement like
+>> this anyways.
 > 
-> The attached test patch illustrates a possible avenue for improvement in this
-> area.  By locally caching the values read from vm_stat (and refreshing the
-> values after 2 seconds), I was able to improve tmpfs writeback performance from
-> ~300 MB/sec to ~700 MB/sec with 120 threads writing data simultaneously to
-> files on separate tmpfs mount points (tested on 3.1.0-rc9).
+> Removed code is just bogus, we cannot fail in ->set_pio_mode method.
 > 
-> Note that this patch is simply to illustrate the gains that can be made here.
-> What I'm looking for is some guidance on an acceptable way to accomplish the
-> task of reducing contention in this area, either by caching these values in a
-> way similar to the attached patch, or by some other mechanism if this is
-> unacceptable.
+> Please take a look at the code:
+>  
+> -	/* select primary or secondary channel */
+> -	if (hwif->index > 0) {  /* drive is on the secondary channel */
+> -		dev = pci_get_slot(dev->bus, dev->devfn+1);
+> -		if (!dev) {
+> -			printk(KERN_ERR "%s: tune_drive: "
+> -				"Cannot find secondary interface!\n",
+> -				drive->name);
+> -			return;
+> -		}
+> -	}
+> 
+> Please apply the patch,
 
-Yes, the global vm_stat[] array is a problem - I'm surprised it's hung
-around for this long.  Altering the sysctl_overcommit_memory mode will
-hide the problem, but that's no good.
+Sorry, I will not do that, please respin the patch with the unrelated
+pieces removed.  I don't care how obvious it is to you.
 
-I think we've discussed switching vm_stat[] to a contention-avoiding
-counter scheme.  Simply using <percpu_counter.h> would be the simplest
-approach.  They'll introduce inaccuracies but hopefully any problems
-from that will be minor for the global page counters.
+The IDE layer is not a place for refinements or simplifications any
+longer, I'm sorry if that isn't clear to you.
 
-otoh, I think we've been round this loop before and I don't recall why
-nothing happened.
+
