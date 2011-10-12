@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab1JLC7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 22:59:20 -0400
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:57871 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab1JLC7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 22:59:20 -0400
-Date: Tue, 11 Oct 2011 22:59:18 -0400
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Slow write performance with mpt2sas
-Message-ID: <20111012025918.GA16695@animx.eu.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20111012002556.GA32495@animx.eu.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111012002556.GA32495@animx.eu.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752372Ab1JLDBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 23:01:09 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51152 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab1JLDBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 23:01:07 -0400
+From: hkang.sunysb@gmail.com
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Hui Kang <hkang.sunysb@gmail.com>
+Subject: [PATCH 1/1] sched_fair: Fix a typo in the comment describing update_sd_lb_stats
+Date: Tue, 11 Oct 2011 23:00:59 -0400
+Message-Id: <1318388459-4427-1-git-send-email-hkang.sunysb@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <hkang.sunysb>
+References: <hkang.sunysb>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wakko Warner wrote:
-> I've noticed that my SAS9212-4i4e is having write issues.  I have a raid5 of
-> 4 2tb seagate green drives and a raid5 of 3 300gb seagate 15k sas drives. 
-> Write performance on the green drives is fairly poor.  The riad4 of 4 disks
-> has a write performance of about 6-10mb/sec.  My onboard sas controller
-> (1068e chip IT mode) does not have this issue (I'm using raid6 on 8 of the
-> same model green drives).
-> 
-> Write performance on the 15k drives in raid 5 was 140mb/sec (4gb volume).
+From: Hui Kang <hkang.sunysb@gmail.com>
 
-Sorry, this appears to be a KVM issue.  I had forgotten that I was using
-this under KVM.  Adding cache=writeback fixed my problems (Also note, my
-load before this went to >35 when writing, now it's no higher than about 9)
+
+Signed-off-by: Hui Kang <hkang.sunysb@gmail.com>
+---
+ kernel/sched_fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index bc8ee99..6d49c82 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2854,7 +2854,7 @@ static bool update_sd_pick_busiest(struct sched_domain *sd,
+ }
+ 
+ /**
+- * update_sd_lb_stats - Update sched_group's statistics for load balancing.
++ * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @sd: sched_domain whose statistics are to be updated.
+  * @this_cpu: Cpu for which load balance is currently performed.
+  * @idle: Idle status of this_cpu
+-- 
+1.7.4.4
+
