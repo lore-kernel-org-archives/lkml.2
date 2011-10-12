@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab1JLTA3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:00:29 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:17414 "EHLO
+	id S1751790Ab1JLTBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:01:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59909 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1JLTA1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750956Ab1JLTBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:00:27 -0400
+	Wed, 12 Oct 2011 15:01:09 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:content-transfer-encoding;
-	b=Y5tBL1pod1MKXjjEgiVhEEHf4htwSqLj+idIGH518HRRS22ieRzv/oduL2w2i5Mm6
-	QPuZNfd4o1lTMtKgp3DHw==
-MIME-Version: 1.0
-In-Reply-To: <1318393869.3686.26.camel@edumazet-laptop>
-References: <20111010145206.6f7e9ee2@nehalam.linuxnetplumber.net>
-	<1318382887-31824-1-git-send-email-muralira@google.com>
-	<1318387734.3686.2.camel@edumazet-laptop>
-	<CAP3iWTQXHwzw-qUYVfT--uNv4pNZnu0ROJnF7B1VLeZBbrfdqw@mail.gmail.com>
-	<1318393869.3686.26.camel@edumazet-laptop>
-Date: Wed, 12 Oct 2011 12:00:23 -0700
-Message-ID: <CAP3iWTSkPinSDbi761EsUQ_ZX54e=yGioC7=c7qHRd+17-_xqw@mail.gmail.com>
-Subject: Re: [PATCH v3] net-netlink: Add a new attribute to expose TOS values
- via netlink
-From: MuraliRaja Muniraju <muralira@google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=ZUwpwJYVrkXjSU1mqDzkeyqkgjZ250NmSocfySEpkpb+1tvA7B9lY2w/1ZhI7HE54
+	KL+AFfwSmF+rRjijyo3rQ==
+From: Muraliraja Muniraju <muralira@google.com>
+To: "David S. Miller" <davem@davemloft.net>,
         Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
         James Morris <jmorris@namei.org>,
         Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Patrick McHardy <kaber@trash.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Murali Raja <muralira@google.com>
+Subject: [PATCH v4] net-netlink: Add a new attribute to expose TOS values via netlink
+Date: Wed, 12 Oct 2011 12:00:35 -0700
+Message-Id: <1318446035-10267-1-git-send-email-muralira@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
+References: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-     I am planning to not add code for the TIME_WAIT case as the tos
-values are zero as they are not saved. Please let me if this is OK.
-Thanks,
-Murali
+From: Murali Raja <muralira@google.com>
 
-On Tue, Oct 11, 2011 at 9:31 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mardi 11 octobre 2011 à 21:16 -0700, MuraliRaja Muniraju a écrit :
->> Eric,
->>      I think it would be useful to expose the values this way.
->>      I shall make the changes to add TCLASS for ipv6 in the description.
->>
->>      Regarding the TIME_WAIT state, I think it would be better of not
->> exposing the values because there would hardly be anything to transmit
->> during this time.
->>
->
-> My remark had nothing to do with your patch actually :
->
-> We dont store TOS/TCLASS on TIME_WAIT sockets, so you cannot report
-> value in inet_diag.
->
-> But we do send packets on behalf of TIME_WAIT sockets ;)
->
-> Think about ACK messages. They probably are sent with a 0 TOS/TCLASS
-> field... I am not sure its a problem or not.
->
->
->
->
+This patch exposes the tos value for the TCP sockets when the TOS flag
+is requested in the ext_flags for the inet_diag request. This would mainly be
+used to expose TOS values for both for TCP and UDP sockets. Currently it is
+supported for TCP. When netlink support for UDP would be added the support
+to expose the TOS values would alse be done. For IPV4 tos value is exposed
+and for IPV6 tclass value is exposed.
 
+Signed-off-by: Murali Raja <muralira@google.com>
+---
+Changelog since v3:
+- Removed the tos structure from the inet_diag.h
 
+Changelog since v2:
+- Added support for IPv6 and used better API.
 
+Changelog since v3:
+- Removed reserved fields.
+
+ include/linux/inet_diag.h |    3 ++-
+ net/ipv4/inet_diag.c      |    5 +++++
+ 2 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/inet_diag.h b/include/linux/inet_diag.h
+index bc8c490..80b480c 100644
+--- a/include/linux/inet_diag.h
++++ b/include/linux/inet_diag.h
+@@ -97,9 +97,10 @@ enum {
+ 	INET_DIAG_INFO,
+ 	INET_DIAG_VEGASINFO,
+ 	INET_DIAG_CONG,
++	INET_DIAG_TOS,
+ };
+ 
+-#define INET_DIAG_MAX INET_DIAG_CONG
++#define INET_DIAG_MAX INET_DIAG_TOS
+ 
+ 
+ /* INET_DIAG_MEM */
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 389a2e6..f5e2bda 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -108,6 +108,9 @@ static int inet_csk_diag_fill(struct sock *sk,
+ 		       icsk->icsk_ca_ops->name);
+ 	}
+ 
++	if ((ext & (1 << (INET_DIAG_TOS - 1))) && (sk->sk_family != AF_INET6))
++		RTA_PUT_U8(skb, INET_DIAG_TOS, inet->tos);
++
+ 	r->idiag_family = sk->sk_family;
+ 	r->idiag_state = sk->sk_state;
+ 	r->idiag_timer = 0;
+@@ -130,6 +133,8 @@ static int inet_csk_diag_fill(struct sock *sk,
+ 			       &np->rcv_saddr);
+ 		ipv6_addr_copy((struct in6_addr *)r->id.idiag_dst,
+ 			       &np->daddr);
++		if (ext & (1 << (INET_DIAG_TOS - 1)))
++			RTA_PUT_U8(skb, INET_DIAG_TOS, np->tclass);
+ 	}
+ #endif
+ 
 -- 
-Thanks,
-Murali
+1.7.3.1
+
