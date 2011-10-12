@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab1JLQSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 12:18:39 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44240 "EHLO
+	id S1753607Ab1JLQS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 12:18:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57871 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752967Ab1JLQSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 12:18:37 -0400
+	id S1753511Ab1JLQS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 12:18:57 -0400
 From: Joe Perches <joe@perches.com>
 To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -17,9 +17,9 @@ Cc: netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
         Alex Duyck <alexander.h.duyck@intel.com>,
         John Ronciak <john.ronciak@intel.com>,
         e1000-devel@lists.sourceforge.net
-Subject: [PATCH net-next 2/5] ixgbevf: Convert printks to pr_<level>
-Date: Wed, 12 Oct 2011 09:18:07 -0700
-Message-Id: <130402c3963706ad2f6ae443ad91aab20ebaa8a1.1318436085.git.joe@perches.com>
+Subject: [PATCH net-next 4/5] igb: Convert printks to pr_<level>
+Date: Wed, 12 Oct 2011 09:18:09 -0700
+Message-Id: <f798850b903a47383a0e39ea1ed9207ce9930f9d.1318436085.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1318436085.git.joe@perches.com>
 References: <cover.1318436085.git.joe@perches.com>
@@ -27,128 +27,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the current logging styles, prefix output with "ixgbevf: "
+Use the current logging styles.
 
-Add #define pr_fmt
-Coalesce formats.
+pr_<level> conversions are now prefixed with "igb: "
+
+Correct a defect where the trailing NTU may have been printed
+on a separate line because of an interleaving hex_dump.
+
+Remove unnecessary uses of KERN_CONT and use single pr_info()s
+to avoid any possible output interleaving from other modules.
+
+Coalesce formats as appropriate.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ethernet/intel/ixgbevf/ethtool.c      |    6 +++-
- drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |   26 ++++++++++----------
- 2 files changed, 17 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |  155 +++++++++++++---------------
+ 1 files changed, 72 insertions(+), 83 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ethtool.c b/drivers/net/ethernet/intel/ixgbevf/ethtool.c
-index e29ba45..c9c084b 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ethtool.c
-@@ -27,6 +27,8 @@
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 10670f9..37c0000 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -25,6 +25,8 @@
  
- /* ethtool support for ixgbevf */
+ *******************************************************************************/
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
- #include <linux/types.h>
  #include <linux/module.h>
- #include <linux/slab.h>
-@@ -549,8 +551,8 @@ static const u32 register_test_patterns[] = {
- 	writel((W & M), (adapter->hw.hw_addr + R));                           \
- 	val = readl(adapter->hw.hw_addr + R);                                 \
- 	if ((W & M) != (val & M)) {                                           \
--		printk(KERN_ERR "set/check reg %04X test failed: got 0x%08X " \
--				 "expected 0x%08X\n", R, (val & M), (W & M)); \
-+		pr_err("set/check reg %04X test failed: got 0x%08X expected 0x%08X\n", \
-+		       R, (val & M), (W & M));                                \
- 		*data = R;                                                    \
- 		writel(before, (adapter->hw.hw_addr + R));                    \
- 		return 1;                                                     \
-diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-index 4930c46..51e944d 100644
---- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
-@@ -29,6 +29,9 @@
- /******************************************************************************
-  Copyright (c)2006 - 2007 Myricom, Inc. for some LRO specific code
- ******************************************************************************/
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
  #include <linux/types.h>
- #include <linux/bitops.h>
- #include <linux/module.h>
-@@ -1437,7 +1440,7 @@ static int ixgbevf_write_uc_addr_list(struct net_device *netdev)
- 	int count = 0;
+ #include <linux/init.h>
+@@ -65,7 +67,7 @@ char igb_driver_name[] = "igb";
+ char igb_driver_version[] = DRV_VERSION;
+ static const char igb_driver_string[] =
+ 				"Intel(R) Gigabit Ethernet Network Driver";
+-static const char igb_copyright[] = "Copyright (c) 2007-2011 Intel Corporation.";
++static const char igb_copyright[] = "Copyright (c) 2007-2011 Intel Corporation";
  
- 	if ((netdev_uc_count(netdev)) > 10) {
--		printk(KERN_ERR "Too many unicast filters - No Space\n");
-+		pr_err("Too many unicast filters - No Space\n");
- 		return -ENOSPC;
+ static const struct e1000_info *igb_info_tbl[] = {
+ 	[board_82575] = &e1000_82575_info,
+@@ -318,16 +320,14 @@ static void igb_regdump(struct e1000_hw *hw, struct igb_reg_info *reginfo)
+ 			regs[n] = rd32(E1000_TXDCTL(n));
+ 		break;
+ 	default:
+-		printk(KERN_INFO "%-15s %08x\n",
++		pr_info("%-15s %08x\n",
+ 			reginfo->name, rd32(reginfo->ofs));
+ 		return;
  	}
  
-@@ -2135,7 +2138,7 @@ static int ixgbevf_init_interrupt_scheme(struct ixgbevf_adapter *adapter)
+ 	snprintf(rname, 16, "%s%s", reginfo->name, "[0-3]");
+-	printk(KERN_INFO "%-15s ", rname);
+-	for (n = 0; n < 4; n++)
+-		printk(KERN_CONT "%08x ", regs[n]);
+-	printk(KERN_CONT "\n");
++	pr_info("%-15s %08x %08x %08x %08x\n",
++		rname, regs[0], regs[1], regs[2], regs[3]);
+ }
  
- 	err = ixgbevf_alloc_queues(adapter);
- 	if (err) {
--		printk(KERN_ERR "Unable to allocate memory for queues\n");
-+		pr_err("Unable to allocate memory for queues\n");
- 		goto err_alloc_queues;
+ /*
+@@ -352,18 +352,17 @@ static void igb_dump(struct igb_adapter *adapter)
+ 	/* Print netdevice Info */
+ 	if (netdev) {
+ 		dev_info(&adapter->pdev->dev, "Net device Info\n");
+-		printk(KERN_INFO "Device Name     state            "
+-			"trans_start      last_rx\n");
+-		printk(KERN_INFO "%-15s %016lX %016lX %016lX\n",
+-		netdev->name,
+-		netdev->state,
+-		netdev->trans_start,
+-		netdev->last_rx);
++		pr_info("Device Name     state            trans_start      last_rx\n");
++		pr_info("%-15s %016lX %016lX %016lX\n",
++			netdev->name,
++			netdev->state,
++			netdev->trans_start,
++			netdev->last_rx);
  	}
  
-@@ -2189,7 +2192,7 @@ static int __devinit ixgbevf_sw_init(struct ixgbevf_adapter *adapter)
- 	} else {
- 		err = hw->mac.ops.init_hw(hw);
- 		if (err) {
--			printk(KERN_ERR "init_shared_code failed: %d\n", err);
-+			pr_err("init_shared_code failed: %d\n", err);
- 			goto out;
- 		}
+ 	/* Print Registers */
+ 	dev_info(&adapter->pdev->dev, "Register Dump\n");
+-	printk(KERN_INFO " Register Name   Value\n");
++	pr_info(" Register Name   Value\n");
+ 	for (reginfo = (struct igb_reg_info *)igb_reg_info_tbl;
+ 	     reginfo->name; reginfo++) {
+ 		igb_regdump(hw, reginfo);
+@@ -374,18 +373,17 @@ static void igb_dump(struct igb_adapter *adapter)
+ 		goto exit;
+ 
+ 	dev_info(&adapter->pdev->dev, "TX Rings Summary\n");
+-	printk(KERN_INFO "Queue [NTU] [NTC] [bi(ntc)->dma  ]"
+-		" leng ntw timestamp\n");
++	pr_info("Queue [NTU] [NTC] [bi(ntc)->dma  ] leng ntw timestamp\n");
+ 	for (n = 0; n < adapter->num_tx_queues; n++) {
+ 		struct igb_tx_buffer *buffer_info;
+ 		tx_ring = adapter->tx_ring[n];
+ 		buffer_info = &tx_ring->tx_buffer_info[tx_ring->next_to_clean];
+-		printk(KERN_INFO " %5d %5X %5X %016llX %04X %p %016llX\n",
+-			   n, tx_ring->next_to_use, tx_ring->next_to_clean,
+-			   (u64)buffer_info->dma,
+-			   buffer_info->length,
+-			   buffer_info->next_to_watch,
+-			   (u64)buffer_info->time_stamp);
++		pr_info(" %5d %5X %5X %016llX %04X %p %016llX\n",
++			n, tx_ring->next_to_use, tx_ring->next_to_clean,
++			(u64)buffer_info->dma,
++			buffer_info->length,
++			buffer_info->next_to_watch,
++			(u64)buffer_info->time_stamp);
  	}
-@@ -2630,8 +2633,7 @@ static int ixgbevf_open(struct net_device *netdev)
- 		 * the vf can't start. */
- 		if (hw->adapter_stopped) {
- 			err = IXGBE_ERR_MBX;
--			printk(KERN_ERR "Unable to start - perhaps the PF"
--			       " Driver isn't up yet\n");
-+			pr_err("Unable to start - perhaps the PF Driver isn't up yet\n");
- 			goto err_setup_reset;
- 		}
+ 
+ 	/* Print TX Rings */
+@@ -407,36 +405,37 @@ static void igb_dump(struct igb_adapter *adapter)
+ 
+ 	for (n = 0; n < adapter->num_tx_queues; n++) {
+ 		tx_ring = adapter->tx_ring[n];
+-		printk(KERN_INFO "------------------------------------\n");
+-		printk(KERN_INFO "TX QUEUE INDEX = %d\n", tx_ring->queue_index);
+-		printk(KERN_INFO "------------------------------------\n");
+-		printk(KERN_INFO "T [desc]     [address 63:0  ] "
+-			"[PlPOCIStDDM Ln] [bi->dma       ] "
+-			"leng  ntw timestamp        bi->skb\n");
++		pr_info("------------------------------------\n");
++		pr_info("TX QUEUE INDEX = %d\n", tx_ring->queue_index);
++		pr_info("------------------------------------\n");
++		pr_info("T [desc]     [address 63:0  ] [PlPOCIStDDM Ln] [bi->dma       ] leng  ntw timestamp        bi->skb\n");
+ 
+ 		for (i = 0; tx_ring->desc && (i < tx_ring->count); i++) {
++			const char *next_desc;
+ 			struct igb_tx_buffer *buffer_info;
+ 			tx_desc = IGB_TX_DESC(tx_ring, i);
+ 			buffer_info = &tx_ring->tx_buffer_info[i];
+ 			u0 = (struct my_u0 *)tx_desc;
+-			printk(KERN_INFO "T [0x%03X]    %016llX %016llX %016llX"
+-				" %04X  %p %016llX %p", i,
++			if (i == tx_ring->next_to_use &&
++			    i == tx_ring->next_to_clean)
++				next_desc = " NTC/U";
++			else if (i == tx_ring->next_to_use)
++				next_desc = " NTU";
++			else if (i == tx_ring->next_to_clean)
++				next_desc = " NTC";
++			else
++				next_desc = "";
++
++			pr_info("T [0x%03X]    %016llX %016llX %016llX"
++				" %04X  %p %016llX %p%s\n",
++				i,
+ 				le64_to_cpu(u0->a),
+ 				le64_to_cpu(u0->b),
+ 				(u64)buffer_info->dma,
+ 				buffer_info->length,
+ 				buffer_info->next_to_watch,
+ 				(u64)buffer_info->time_stamp,
+-				buffer_info->skb);
+-			if (i == tx_ring->next_to_use &&
+-				i == tx_ring->next_to_clean)
+-				printk(KERN_CONT " NTC/U\n");
+-			else if (i == tx_ring->next_to_use)
+-				printk(KERN_CONT " NTU\n");
+-			else if (i == tx_ring->next_to_clean)
+-				printk(KERN_CONT " NTC\n");
+-			else
+-				printk(KERN_CONT "\n");
++				buffer_info->skb, next_desc);
+ 
+ 			if (netif_msg_pktdata(adapter) && buffer_info->dma != 0)
+ 				print_hex_dump(KERN_INFO, "",
+@@ -449,11 +448,11 @@ static void igb_dump(struct igb_adapter *adapter)
+ 	/* Print RX Rings Summary */
+ rx_ring_summary:
+ 	dev_info(&adapter->pdev->dev, "RX Rings Summary\n");
+-	printk(KERN_INFO "Queue [NTU] [NTC]\n");
++	pr_info("Queue [NTU] [NTC]\n");
+ 	for (n = 0; n < adapter->num_rx_queues; n++) {
+ 		rx_ring = adapter->rx_ring[n];
+-		printk(KERN_INFO " %5d %5X %5X\n", n,
+-			   rx_ring->next_to_use, rx_ring->next_to_clean);
++		pr_info(" %5d %5X %5X\n",
++			n, rx_ring->next_to_use, rx_ring->next_to_clean);
  	}
-@@ -2842,10 +2844,8 @@ static bool ixgbevf_tx_csum(struct ixgbevf_adapter *adapter,
- 				break;
- 			default:
- 				if (unlikely(net_ratelimit())) {
--					printk(KERN_WARNING
--					       "partial checksum but "
--					       "proto=%x!\n",
--					       skb->protocol);
-+					pr_warn("partial checksum but proto=%x!\n",
-+						skb->protocol);
+ 
+ 	/* Print RX Rings */
+@@ -485,36 +484,41 @@ rx_ring_summary:
+ 
+ 	for (n = 0; n < adapter->num_rx_queues; n++) {
+ 		rx_ring = adapter->rx_ring[n];
+-		printk(KERN_INFO "------------------------------------\n");
+-		printk(KERN_INFO "RX QUEUE INDEX = %d\n", rx_ring->queue_index);
+-		printk(KERN_INFO "------------------------------------\n");
+-		printk(KERN_INFO "R  [desc]      [ PktBuf     A0] "
+-			"[  HeadBuf   DD] [bi->dma       ] [bi->skb] "
+-			"<-- Adv Rx Read format\n");
+-		printk(KERN_INFO "RWB[desc]      [PcsmIpSHl PtRs] "
+-			"[vl er S cks ln] ---------------- [bi->skb] "
+-			"<-- Adv Rx Write-Back format\n");
++		pr_info("------------------------------------\n");
++		pr_info("RX QUEUE INDEX = %d\n", rx_ring->queue_index);
++		pr_info("------------------------------------\n");
++		pr_info("R  [desc]      [ PktBuf     A0] [  HeadBuf   DD] [bi->dma       ] [bi->skb] <-- Adv Rx Read format\n");
++		pr_info("RWB[desc]      [PcsmIpSHl PtRs] [vl er S cks ln] ---------------- [bi->skb] <-- Adv Rx Write-Back format\n");
+ 
+ 		for (i = 0; i < rx_ring->count; i++) {
++			const char *next_desc;
+ 			struct igb_rx_buffer *buffer_info;
+ 			buffer_info = &rx_ring->rx_buffer_info[i];
+ 			rx_desc = IGB_RX_DESC(rx_ring, i);
+ 			u0 = (struct my_u0 *)rx_desc;
+ 			staterr = le32_to_cpu(rx_desc->wb.upper.status_error);
++
++			if (i == rx_ring->next_to_use)
++				next_desc = " NTU";
++			else if (i == rx_ring->next_to_clean)
++				next_desc = " NTC";
++			else
++				next_desc = "";
++
+ 			if (staterr & E1000_RXD_STAT_DD) {
+ 				/* Descriptor Done */
+-				printk(KERN_INFO "RWB[0x%03X]     %016llX "
+-					"%016llX ---------------- %p", i,
++				pr_info("%s[0x%03X]     %016llX %016llX ---------------- %p%s\n",
++					"RWB", i,
+ 					le64_to_cpu(u0->a),
+ 					le64_to_cpu(u0->b),
+-					buffer_info->skb);
++					buffer_info->skb, next_desc);
+ 			} else {
+-				printk(KERN_INFO "R  [0x%03X]     %016llX "
+-					"%016llX %016llX %p", i,
++				pr_info("%s[0x%03X]     %016llX %016llX %016llX %p%s\n",
++					"R  ", i,
+ 					le64_to_cpu(u0->a),
+ 					le64_to_cpu(u0->b),
+ 					(u64)buffer_info->dma,
+-					buffer_info->skb);
++					buffer_info->skb, next_desc);
+ 
+ 				if (netif_msg_pktdata(adapter)) {
+ 					print_hex_dump(KERN_INFO, "",
+@@ -531,14 +535,6 @@ rx_ring_summary:
+ 					  PAGE_SIZE/2, true);
  				}
- 				break;
  			}
-@@ -3414,7 +3414,7 @@ static int __devinit ixgbevf_probe(struct pci_dev *pdev,
- 	memcpy(netdev->perm_addr, adapter->hw.mac.addr, netdev->addr_len);
- 
- 	if (!is_valid_ether_addr(netdev->dev_addr)) {
--		printk(KERN_ERR "invalid MAC address\n");
-+		pr_err("invalid MAC address\n");
- 		err = -EIO;
- 		goto err_sw_init;
+-
+-			if (i == rx_ring->next_to_use)
+-				printk(KERN_CONT " NTU\n");
+-			else if (i == rx_ring->next_to_clean)
+-				printk(KERN_CONT " NTC\n");
+-			else
+-				printk(KERN_CONT "\n");
+-
+ 		}
  	}
-@@ -3535,10 +3535,10 @@ static struct pci_driver ixgbevf_driver = {
- static int __init ixgbevf_init_module(void)
+ 
+@@ -592,10 +588,10 @@ struct net_device *igb_get_hw_dev(struct e1000_hw *hw)
+ static int __init igb_init_module(void)
  {
  	int ret;
--	printk(KERN_INFO "ixgbevf: %s - version %s\n", ixgbevf_driver_string,
--	       ixgbevf_driver_version);
+-	printk(KERN_INFO "%s - version %s\n",
 +	pr_info("%s - version %s\n",
-+		ixgbevf_driver_string, ixgbevf_driver_version);
+ 	       igb_driver_string, igb_driver_version);
  
--	printk(KERN_INFO "%s\n", ixgbevf_copyright);
-+	pr_info("%s\n", ixgbevf_copyright);
+-	printk(KERN_INFO "%s\n", igb_copyright);
++	pr_info("%s\n", igb_copyright);
  
- 	ret = pci_register_driver(&ixgbevf_driver);
- 	return ret;
+ #ifdef CONFIG_IGB_DCA
+ 	dca_register_notify(&dca_notifier);
+@@ -3676,23 +3672,19 @@ static void igb_watchdog_task(struct work_struct *work)
+ 
+ 			ctrl = rd32(E1000_CTRL);
+ 			/* Links status message must follow this format */
+-			printk(KERN_INFO "igb: %s NIC Link is Up %d Mbps %s, "
+-				 "Flow Control: %s\n",
++			printk(KERN_INFO "igb: %s NIC Link is Up %d Mbps %s Duplex, Flow Control: %s\n",
+ 			       netdev->name,
+ 			       adapter->link_speed,
+ 			       adapter->link_duplex == FULL_DUPLEX ?
+-				 "Full Duplex" : "Half Duplex",
+-			       ((ctrl & E1000_CTRL_TFCE) &&
+-			        (ctrl & E1000_CTRL_RFCE)) ? "RX/TX" :
+-			       ((ctrl & E1000_CTRL_RFCE) ?  "RX" :
+-			       ((ctrl & E1000_CTRL_TFCE) ?  "TX" : "None")));
++			       "Full" : "Half",
++			       (ctrl & E1000_CTRL_TFCE) &&
++			       (ctrl & E1000_CTRL_RFCE) ? "RX/TX" :
++			       (ctrl & E1000_CTRL_RFCE) ?  "RX" :
++			       (ctrl & E1000_CTRL_TFCE) ?  "TX" : "None");
+ 
+ 			/* check for thermal sensor event */
+ 			if (igb_thermal_sensor_event(hw, E1000_THSTAT_LINK_THROTTLE)) {
+-				printk(KERN_INFO "igb: %s The network adapter "
+-						 "link speed was downshifted "
+-						 "because it overheated.\n",
+-						 netdev->name);
++				netdev_info(netdev, "The network adapter link speed was downshifted because it overheated\n");
+ 			}
+ 
+ 			/* adjust timeout factor according to speed/duplex */
+@@ -3723,10 +3715,7 @@ static void igb_watchdog_task(struct work_struct *work)
+ 
+ 			/* check for thermal sensor event */
+ 			if (igb_thermal_sensor_event(hw, E1000_THSTAT_PWR_DOWN)) {
+-				printk(KERN_ERR "igb: %s The network adapter "
+-						"was stopped because it "
+-						"overheated.\n",
+-						netdev->name);
++				netdev_err(netdev, "The network adapter was stopped because it overheated\n");
+ 			}
+ 
+ 			/* Links status message must follow this format */
 -- 
 1.7.6.405.gc1be0
 
