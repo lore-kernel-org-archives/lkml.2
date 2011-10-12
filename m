@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1JLDBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 11 Oct 2011 23:01:09 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:51152 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab1JLDBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 11 Oct 2011 23:01:07 -0400
-From: hkang.sunysb@gmail.com
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Hui Kang <hkang.sunysb@gmail.com>
-Subject: [PATCH 1/1] sched_fair: Fix a typo in the comment describing update_sd_lb_stats
-Date: Tue, 11 Oct 2011 23:00:59 -0400
-Message-Id: <1318388459-4427-1-git-send-email-hkang.sunysb@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <hkang.sunysb>
-References: <hkang.sunysb>
+	id S1752351Ab1JLDJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 11 Oct 2011 23:09:26 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:60000 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560Ab1JLDJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 11 Oct 2011 23:09:25 -0400
+Date: Tue, 11 Oct 2011 23:09:22 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        adilger.kernel@dilger.ca
+Subject: Re: [PATCH] ext4/xattr_security.c: local functions should be static
+Message-ID: <20111012030922.GD11548@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	H Hartley Sweeten <hartleys@visionengravers.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org, adilger.kernel@dilger.ca
+References: <201109231538.22933.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109231538.22933.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hui Kang <hkang.sunysb@gmail.com>
+On Fri, Sep 23, 2011 at 03:38:22PM -0700, H Hartley Sweeten wrote:
+> Quiets the sparse noise:
+> 
+> warning: symbol 'ext4_initxattrs' was not declared. Should it be static?
 
+What version of the kernel was this from?  I can't find
+ext4_initxattrs in any kernel version that I can find in git...
 
-Signed-off-by: Hui Kang <hkang.sunysb@gmail.com>
----
- kernel/sched_fair.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index bc8ee99..6d49c82 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2854,7 +2854,7 @@ static bool update_sd_pick_busiest(struct sched_domain *sd,
- }
- 
- /**
-- * update_sd_lb_stats - Update sched_group's statistics for load balancing.
-+ * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
-  * @sd: sched_domain whose statistics are to be updated.
-  * @this_cpu: Cpu for which load balance is currently performed.
-  * @idle: Idle status of this_cpu
--- 
-1.7.4.4
-
+		       	      	      	     - Ted
