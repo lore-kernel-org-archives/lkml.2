@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1JLTIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 15:08:49 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:47533 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751915Ab1JLTIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 15:08:48 -0400
-Date: Wed, 12 Oct 2011 12:08:44 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Muraliraja Muniraju <muralira@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4] net-netlink: Add a new attribute to expose TOS
- values via netlink
-Message-ID: <20111012120844.64568ff2@nehalam.linuxnetplumber.net>
-In-Reply-To: <1318446035-10267-1-git-send-email-muralira@google.com>
-References: <20111012085235.3b78729b@nehalam.linuxnetplumber.net>
-	<1318446035-10267-1-git-send-email-muralira@google.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752622Ab1JLTLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 15:11:10 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:49269 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab1JLTLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 Oct 2011 15:11:09 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Wed, 12 Oct 2011 15:11:08 EDT
+Date: Wed, 12 Oct 2011 21:04:55 +0200
+From: Nils Radtke <lkml@Think-Future.com>
+To: Linux Kernel-List <linux-kernel@vger.kernel.org>
+Subject: git checkout extraversion
+Message-ID: <20111012190455.GC29770@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.com>
+Mail-Followup-To: Nils Radtke <lkml@Think-Future.com>,
+	Linux Kernel-List <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011 12:00:35 -0700
-Muraliraja Muniraju <muralira@google.com> wrote:
+  Hi,
 
-> From: Murali Raja <muralira@google.com>
-> 
-> This patch exposes the tos value for the TCP sockets when the TOS flag
-> is requested in the ext_flags for the inet_diag request. This would mainly be
-> used to expose TOS values for both for TCP and UDP sockets. Currently it is
-> supported for TCP. When netlink support for UDP would be added the support
-> to expose the TOS values would alse be done. For IPV4 tos value is exposed
-> and for IPV6 tclass value is exposed.
-> 
-> Signed-off-by: Murali Raja <muralira@google.com>
-> ---
-> Changelog since v3:
-> - Removed the tos structure from the inet_diag.h
-> 
-> Changelog since v2:
-> - Added support for IPv6 and used better API.
-> 
-> Changelog since v3:
-> - Removed reserved fields.
+  Is it possible -- and if so: how? -- to checkout specific kernel extraversion?
 
+  Example:
 
-After this is accepted; it is trivial to add support to ss command.
+  git checkout -b my2.6.39.3 2.6.39.3
 
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+  This does not work as there's no such tag "2.6.39.3" (only "2.6.39").
+
+  I temporarily did it by manually patching 2.6.39 to .3.
+
+  ketchup didn't help (until I noticed -- browsing manually -- http is a
+  redirect to https for kernel.org).
+
+  Thanks and cheers
+
