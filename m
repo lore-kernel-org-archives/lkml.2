@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab1JLIHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 Oct 2011 04:07:42 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21513 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab1JLIHj (ORCPT
+	id S1752773Ab1JLIH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 Oct 2011 04:07:58 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:30586 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab1JLIHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 Oct 2011 04:07:39 -0400
-X-AuditID: cbfee61b-b7b7fae000005864-cb-4e954ac9a751
+	Wed, 12 Oct 2011 04:07:41 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-a0-4e954acb3143
 Reply-to: pullip.cho@samsung.com
 From: KyongHo Cho <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
@@ -17,87 +17,676 @@ Cc: "'Russell King'" <rmk+kernel@arm.linux.org.uk>, joerg.roedel@amd.com,
         "'Ohad Ben-Cohen'" <ohad@wizery.com>,
         "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
         younglak1004.kim@samsung.com, "'Kukjin Kim'" <kgene.kim@samsung.com>
-Subject: [PATCH v4 0/2] iommu/exynos: Add IOMMU and Enhance System MMU driver
- for Exynos4
-Date: Wed, 12 Oct 2011 17:07:37 +0900
+Subject: [PATCH v4 1/2] ARM: EXYNOS4: Change System MMU device definition
+Date: Wed, 12 Oct 2011 17:07:39 +0900
 Organization: Samsung Electronics Co., Ltd
-Message-id: <000101cc88b6$013d1ef0$03b75cd0$%cho@samsung.com>
+Message-id: <000201cc88b6$028137b0$0783a710$%cho@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcyItgEUOkjVbj2YTG2oCax9k74Udw==
+Thread-index: AcyItgJwmx/iKfjRTTWYKwG/9PwkKQ==
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+This patch contains a lot of changes of System MMU device definition.
 
-This is the firth try of submitting patches about IOMMU/System MMU
+1. Removed sysmmu_ips enumeration that are definitions of ID of System MMU
+   Instead, a System MMU device descriptor must be bound with a device
+   descriptor that needs System MMU in machine initialization.
+2. Removed MDMA that is included in LCD0 block because it is not used
+   anymore. Use MDMA in TOP block.
+3. Changed System MMU definitions of platform device. It is not an array
+   anymore.
 
-Patch Summary:
-[PATCH v4 1/2] ARM: EXYNOS4: Change System MMU device definition
-[PATCH v4 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
-
-The first patche enhances System MMU platform device definition:
- - Removed System MMU for MDMA0 in LCD block because it is not
-   used. Use MDMA2 in TOP block.
- - Removed System MMU ID. Instead a System MMU is bound to a device
-   That the System MMU is dedicated during machin initialization.
-   If a device driver wants to handle System MMU, it must bind its
-   device with System MMU with sysmmu_set_owner().
- - clkdev
-
-The last patch implements IOMMU API:
- - System MMU device driver is removed from arch/arm/plat-s5p
-   to move it to driver/iommu directory.
- - Implements IOMMU API and System MMU driver that is moved from
-   arch/arm/plat-s5p.
- - Implements fault handling that is suggested by Ohad.
- - Used bus_set_iommu instead of register_iommu that is suggested
-    by Joerg.
-
-
-Changes since v3:
-- Used DEFINE_RES_MEM and DEFINE_RES_IRQ macros
-   to define resources of System MMU (Russell King's comment)
-- Fixed removal of CONFIG_S5P_SLEEP definition
-  (Sylwester Nawrocki's comment)
-
-Changes since v2:
-- Add lock for System MMU private data.
- And fixes the following problems pointed by Joerg Rodel:
-- Fix wrong argument to kmalloc() and get_free_pages()
-- Merged patches into 2 due to bisectability
-
-Changes since v1:
-Fixes of the following problems pointed by Russell King.:
- - Missing unlocking a spinlock in exynos_iommu_attach_dev().
- - atomic_t -> int in sysmmu_drvdata.activations
- - sysmmu_platdata -> sysmmu_drvdata
- - Change in error messages in irq handler
- - Removed casting in format of error message
- - omap_iommu_ops -> exynos_iommu_ops in the last patch.
-
-Diffstat:
-
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
+---
  arch/arm/mach-exynos4/Kconfig               |    2 -
- arch/arm/mach-exynos4/clock.c               |   43 +-
- arch/arm/mach-exynos4/dev-sysmmu.c          |  260 ++------
+ arch/arm/mach-exynos4/clock.c               |   43 +++--
+ arch/arm/mach-exynos4/dev-sysmmu.c          |  260
++++++---------------------
  arch/arm/mach-exynos4/include/mach/irqs.h   |    1 -
  arch/arm/mach-exynos4/include/mach/map.h    |    1 -
- arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 ++-
- arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +-
- arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +-
- arch/arm/plat-s5p/Kconfig                   |    8 -
- arch/arm/plat-s5p/Makefile                  |    1 -
- arch/arm/plat-s5p/sysmmu.c                  |  312 ---------
- arch/arm/plat-samsung/include/plat/sysmmu.h |   95 ---
- drivers/iommu/Kconfig                       |   14 +
- drivers/iommu/Makefile                      |    1 +
- drivers/iommu/exynos_iommu.c                |  962
-+++++++++++++++++++++++++++
- 15 files changed, 1153 insertions(+), 684 deletions(-)
+ arch/arm/mach-exynos4/include/mach/sysmmu.h |   85 +++++----
+ arch/arm/mach-exynos4/mach-armlex4210.c     |   24 +++-
+ arch/arm/mach-exynos4/mach-smdkv310.c       |   28 +++-
+ 8 files changed, 176 insertions(+), 268 deletions(-)
+
+diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
+index dd660eb..2f4a032 100644
+--- a/arch/arm/mach-exynos4/Kconfig
++++ b/arch/arm/mach-exynos4/Kconfig
+@@ -157,7 +157,6 @@ config MACH_SMDKV310
+ 	select SAMSUNG_DEV_KEYPAD
+ 	select EXYNOS4_DEV_PD
+ 	select SAMSUNG_DEV_PWM
+-	select EXYNOS4_DEV_SYSMMU
+ 	select EXYNOS4_SETUP_FIMD0
+ 	select EXYNOS4_SETUP_I2C1
+ 	select EXYNOS4_SETUP_KEYPAD
+@@ -175,7 +174,6 @@ config MACH_ARMLEX4210
+ 	select S3C_DEV_HSMMC2
+ 	select S3C_DEV_HSMMC3
+ 	select EXYNOS4_DEV_AHCI
+-	select EXYNOS4_DEV_SYSMMU
+ 	select EXYNOS4_SETUP_SDHCI
+ 	help
+ 	  Machine support for Samsung ARMLEX4210 based on EXYNOS4210
+diff --git a/arch/arm/mach-exynos4/clock.c b/arch/arm/mach-exynos4/clock.c
+index db61691..1fc508c 100644
+--- a/arch/arm/mach-exynos4/clock.c
++++ b/arch/arm/mach-exynos4/clock.c
+@@ -691,59 +691,68 @@ static struct clk init_clocks_off[] = {
+ 		.enable		= exynos4_clk_ip_peril_ctrl,
+ 		.ctrlbit	= (1 << 14),
+ 	}, {
+-		.name		= "SYSMMU_MDMA",
+-		.enable		= exynos4_clk_ip_image_ctrl,
+-		.ctrlbit	= (1 << 5),
+-	}, {
+-		.name		= "SYSMMU_FIMC0",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimc0, 1),
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 7),
+ 	}, {
+-		.name		= "SYSMMU_FIMC1",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimc1, 2),
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 8),
+ 	}, {
+-		.name		= "SYSMMU_FIMC2",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimc2, 3),
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 9),
+ 	}, {
+-		.name		= "SYSMMU_FIMC3",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimc3, 4),
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 10),
+ 	}, {
+-		.name		= "SYSMMU_JPEG",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(jpeg, 5),
+ 		.enable		= exynos4_clk_ip_cam_ctrl,
+ 		.ctrlbit	= (1 << 11),
+ 	}, {
+-		.name		= "SYSMMU_FIMD0",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimd0, 6),
+ 		.enable		= exynos4_clk_ip_lcd0_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= "SYSMMU_FIMD1",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(fimd1, 7),
+ 		.enable		= exynos4_clk_ip_lcd1_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= "SYSMMU_PCIe",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(pcie, 8),
+ 		.enable		= exynos4_clk_ip_fsys_ctrl,
+ 		.ctrlbit	= (1 << 18),
+ 	}, {
+-		.name		= "SYSMMU_G2D",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(g2d, 9),
+ 		.enable		= exynos4_clk_ip_image_ctrl,
+ 		.ctrlbit	= (1 << 3),
+ 	}, {
+-		.name		= "SYSMMU_ROTATOR",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(rot, 10),
+ 		.enable		= exynos4_clk_ip_image_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= "SYSMMU_TV",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(tv, 12),
+ 		.enable		= exynos4_clk_ip_tv_ctrl,
+ 		.ctrlbit	= (1 << 4),
+ 	}, {
+-		.name		= "SYSMMU_MFC_L",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(mfc_l, 13),
+ 		.enable		= exynos4_clk_ip_mfc_ctrl,
+ 		.ctrlbit	= (1 << 1),
+ 	}, {
+-		.name		= "SYSMMU_MFC_R",
++		.name		= "sysmmu",
++		.devname	= SYSMMU_CLOCK_NAME(mfc_r, 14),
+ 		.enable		= exynos4_clk_ip_mfc_ctrl,
+ 		.ctrlbit	= (1 << 2),
+ 	}
+diff --git a/arch/arm/mach-exynos4/dev-sysmmu.c
+b/arch/arm/mach-exynos4/dev-sysmmu.c
+index 3b7cae0..8964f09 100644
+--- a/arch/arm/mach-exynos4/dev-sysmmu.c
++++ b/arch/arm/mach-exynos4/dev-sysmmu.c
+@@ -1,6 +1,6 @@
+ /* linux/arch/arm/mach-exynos4/dev-sysmmu.c
+  *
+- * Copyright (c) 2010 Samsung Electronics Co., Ltd.
++ * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
+  * EXYNOS4 - System MMU support
+@@ -16,217 +16,57 @@
+ #include <mach/map.h>
+ #include <mach/irqs.h>
+ #include <mach/sysmmu.h>
+-#include <plat/s5p-clock.h>
+ 
+-/* These names must be equal to the clock names in mach-exynos4/clock.c */
+-const char *sysmmu_ips_name[EXYNOS4_SYSMMU_TOTAL_IPNUM] = {
+-	"SYSMMU_MDMA"	,
+-	"SYSMMU_SSS"	,
+-	"SYSMMU_FIMC0"	,
+-	"SYSMMU_FIMC1"	,
+-	"SYSMMU_FIMC2"	,
+-	"SYSMMU_FIMC3"	,
+-	"SYSMMU_JPEG"	,
+-	"SYSMMU_FIMD0"	,
+-	"SYSMMU_FIMD1"	,
+-	"SYSMMU_PCIe"	,
+-	"SYSMMU_G2D"	,
+-	"SYSMMU_ROTATOR",
+-	"SYSMMU_MDMA2"	,
+-	"SYSMMU_TV"	,
+-	"SYSMMU_MFC_L"	,
+-	"SYSMMU_MFC_R"	,
+-};
+-
+-static struct resource exynos4_sysmmu_resource[] = {
+-	[0] = {
+-		.start	= EXYNOS4_PA_SYSMMU_MDMA,
+-		.end	= EXYNOS4_PA_SYSMMU_MDMA + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[1] = {
+-		.start	= IRQ_SYSMMU_MDMA0_0,
+-		.end	= IRQ_SYSMMU_MDMA0_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[2] = {
+-		.start	= EXYNOS4_PA_SYSMMU_SSS,
+-		.end	= EXYNOS4_PA_SYSMMU_SSS + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[3] = {
+-		.start	= IRQ_SYSMMU_SSS_0,
+-		.end	= IRQ_SYSMMU_SSS_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[4] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMC0,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMC0 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[5] = {
+-		.start	= IRQ_SYSMMU_FIMC0_0,
+-		.end	= IRQ_SYSMMU_FIMC0_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[6] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMC1,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMC1 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[7] = {
+-		.start	= IRQ_SYSMMU_FIMC1_0,
+-		.end	= IRQ_SYSMMU_FIMC1_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[8] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMC2,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMC2 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[9] = {
+-		.start	= IRQ_SYSMMU_FIMC2_0,
+-		.end	= IRQ_SYSMMU_FIMC2_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[10] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMC3,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMC3 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[11] = {
+-		.start	= IRQ_SYSMMU_FIMC3_0,
+-		.end	= IRQ_SYSMMU_FIMC3_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[12] = {
+-		.start	= EXYNOS4_PA_SYSMMU_JPEG,
+-		.end	= EXYNOS4_PA_SYSMMU_JPEG + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[13] = {
+-		.start	= IRQ_SYSMMU_JPEG_0,
+-		.end	= IRQ_SYSMMU_JPEG_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[14] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMD0,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMD0 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[15] = {
+-		.start	= IRQ_SYSMMU_LCD0_M0_0,
+-		.end	= IRQ_SYSMMU_LCD0_M0_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[16] = {
+-		.start	= EXYNOS4_PA_SYSMMU_FIMD1,
+-		.end	= EXYNOS4_PA_SYSMMU_FIMD1 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[17] = {
+-		.start	= IRQ_SYSMMU_LCD1_M1_0,
+-		.end	= IRQ_SYSMMU_LCD1_M1_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[18] = {
+-		.start	= EXYNOS4_PA_SYSMMU_PCIe,
+-		.end	= EXYNOS4_PA_SYSMMU_PCIe + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[19] = {
+-		.start	= IRQ_SYSMMU_PCIE_0,
+-		.end	= IRQ_SYSMMU_PCIE_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[20] = {
+-		.start	= EXYNOS4_PA_SYSMMU_G2D,
+-		.end	= EXYNOS4_PA_SYSMMU_G2D + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[21] = {
+-		.start	= IRQ_SYSMMU_2D_0,
+-		.end	= IRQ_SYSMMU_2D_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[22] = {
+-		.start	= EXYNOS4_PA_SYSMMU_ROTATOR,
+-		.end	= EXYNOS4_PA_SYSMMU_ROTATOR + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[23] = {
+-		.start	= IRQ_SYSMMU_ROTATOR_0,
+-		.end	= IRQ_SYSMMU_ROTATOR_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[24] = {
+-		.start	= EXYNOS4_PA_SYSMMU_MDMA2,
+-		.end	= EXYNOS4_PA_SYSMMU_MDMA2 + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[25] = {
+-		.start	= IRQ_SYSMMU_MDMA1_0,
+-		.end	= IRQ_SYSMMU_MDMA1_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[26] = {
+-		.start	= EXYNOS4_PA_SYSMMU_TV,
+-		.end	= EXYNOS4_PA_SYSMMU_TV + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[27] = {
+-		.start	= IRQ_SYSMMU_TV_M0_0,
+-		.end	= IRQ_SYSMMU_TV_M0_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[28] = {
+-		.start	= EXYNOS4_PA_SYSMMU_MFC_L,
+-		.end	= EXYNOS4_PA_SYSMMU_MFC_L + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[29] = {
+-		.start	= IRQ_SYSMMU_MFC_M0_0,
+-		.end	= IRQ_SYSMMU_MFC_M0_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	[30] = {
+-		.start	= EXYNOS4_PA_SYSMMU_MFC_R,
+-		.end	= EXYNOS4_PA_SYSMMU_MFC_R + SZ_64K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	[31] = {
+-		.start	= IRQ_SYSMMU_MFC_M1_0,
+-		.end	= IRQ_SYSMMU_MFC_M1_0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-};
+-
+-struct platform_device exynos4_device_sysmmu = {
+-	.name		= "s5p-sysmmu",
+-	.id		= 32,
+-	.num_resources	= ARRAY_SIZE(exynos4_sysmmu_resource),
+-	.resource	= exynos4_sysmmu_resource,
+-};
+-EXPORT_SYMBOL(exynos4_device_sysmmu);
+-
+-static struct clk *sysmmu_clk[S5P_SYSMMU_TOTAL_IPNUM];
+-void sysmmu_clk_init(struct device *dev, sysmmu_ips ips)
+-{
+-	sysmmu_clk[ips] = clk_get(dev, sysmmu_ips_name[ips]);
+-	if (IS_ERR(sysmmu_clk[ips]))
+-		sysmmu_clk[ips] = NULL;
+-	else
+-		clk_put(sysmmu_clk[ips]);
++#define SYSMMU_RESOURCE(ipname, base, irq) \
++static struct resource sysmmu_resource_##ipname[] =\
++{\
++	DEFINE_RES_MEM(EXYNOS_PA_SYSMMU_##base, SZ_4K),\
++	DEFINE_RES_IRQ(IRQ_SYSMMU_##irq##_0)\
+ }
+ 
+-void sysmmu_clk_enable(sysmmu_ips ips)
+-{
+-	if (sysmmu_clk[ips])
+-		clk_enable(sysmmu_clk[ips]);
++#define SYSMMU_PLATFORM_DEVICE(ipname, devid) \
++struct platform_device SYSMMU_PLATDEV(ipname) =\
++{\
++	.name		= SYSMMU_DEVNAME_BASE,\
++	.id		= devid,\
++	.num_resources	= ARRAY_SIZE(sysmmu_resource_##ipname),\
++	.resource	= sysmmu_resource_##ipname,\
++	.dev		= {\
++		.dma_mask		= &exynos_sysmmu_dma_mask,\
++		.coherent_dma_mask	= DMA_BIT_MASK(32),\
++	},\
+ }
+ 
+-void sysmmu_clk_disable(sysmmu_ips ips)
+-{
+-	if (sysmmu_clk[ips])
+-		clk_disable(sysmmu_clk[ips]);
+-}
++static u64 exynos_sysmmu_dma_mask = DMA_BIT_MASK(32);
++
++SYSMMU_RESOURCE(sss,	SSS,	SSS);
++SYSMMU_RESOURCE(fimc0,	FIMC0,	FIMC0);
++SYSMMU_RESOURCE(fimc1,	FIMC1,	FIMC1);
++SYSMMU_RESOURCE(fimc2,	FIMC2,	FIMC2);
++SYSMMU_RESOURCE(fimc3,	FIMC3,	FIMC3);
++SYSMMU_RESOURCE(jpeg,	JPEG,	JPEG);
++SYSMMU_RESOURCE(fimd0,	FIMD0,	LCD0_M0);
++SYSMMU_RESOURCE(fimd1,	FIMD1,	LCD1_M1);
++SYSMMU_RESOURCE(pcie,	PCIe,	PCIE);
++SYSMMU_RESOURCE(g2d,	G2D,	2D);
++SYSMMU_RESOURCE(rot,	ROTATOR, ROTATOR);
++SYSMMU_RESOURCE(mdma,	MDMA2,	MDMA1);
++SYSMMU_RESOURCE(tv,	TV,	TV_M0);
++SYSMMU_RESOURCE(mfc_l,	MFC_L,	MFC_M0);
++SYSMMU_RESOURCE(mfc_r,	MFC_R,	MFC_M1);
++
++SYSMMU_PLATFORM_DEVICE(sss,	0);
++SYSMMU_PLATFORM_DEVICE(fimc0,	1);
++SYSMMU_PLATFORM_DEVICE(fimc1,	2);
++SYSMMU_PLATFORM_DEVICE(fimc2,	3);
++SYSMMU_PLATFORM_DEVICE(fimc3,	4);
++SYSMMU_PLATFORM_DEVICE(jpeg,	5);
++SYSMMU_PLATFORM_DEVICE(fimd0,	6);
++SYSMMU_PLATFORM_DEVICE(fimd1,	7);
++SYSMMU_PLATFORM_DEVICE(pcie,	8);
++SYSMMU_PLATFORM_DEVICE(g2d,	9);
++SYSMMU_PLATFORM_DEVICE(rot,	10);
++SYSMMU_PLATFORM_DEVICE(mdma,	11);
++SYSMMU_PLATFORM_DEVICE(tv,	12);
++SYSMMU_PLATFORM_DEVICE(mfc_l,	13);
++SYSMMU_PLATFORM_DEVICE(mfc_r,	14);
+diff --git a/arch/arm/mach-exynos4/include/mach/irqs.h
+b/arch/arm/mach-exynos4/include/mach/irqs.h
+index dfd4b7e..a33fdd1 100644
+--- a/arch/arm/mach-exynos4/include/mach/irqs.h
++++ b/arch/arm/mach-exynos4/include/mach/irqs.h
+@@ -125,7 +125,6 @@
+ #define COMBINER_GROUP(x)	((x) * MAX_IRQ_IN_COMBINER + IRQ_SPI(128))
+ #define COMBINER_IRQ(x, y)	(COMBINER_GROUP(x) + y)
+ 
+-#define IRQ_SYSMMU_MDMA0_0	COMBINER_IRQ(4, 0)
+ #define IRQ_SYSMMU_SSS_0	COMBINER_IRQ(4, 1)
+ #define IRQ_SYSMMU_FIMC0_0	COMBINER_IRQ(4, 2)
+ #define IRQ_SYSMMU_FIMC1_0	COMBINER_IRQ(4, 3)
+diff --git a/arch/arm/mach-exynos4/include/mach/map.h
+b/arch/arm/mach-exynos4/include/mach/map.h
+index 918a979..aaf492c 100644
+--- a/arch/arm/mach-exynos4/include/mach/map.h
++++ b/arch/arm/mach-exynos4/include/mach/map.h
+@@ -71,7 +71,6 @@
+ #define EXYNOS4_PA_PDMA0		0x12680000
+ #define EXYNOS4_PA_PDMA1		0x12690000
+ 
+-#define EXYNOS4_PA_SYSMMU_MDMA		0x10A40000
+ #define EXYNOS4_PA_SYSMMU_SSS		0x10A50000
+ #define EXYNOS4_PA_SYSMMU_FIMC0		0x11A20000
+ #define EXYNOS4_PA_SYSMMU_FIMC1		0x11A30000
+diff --git a/arch/arm/mach-exynos4/include/mach/sysmmu.h
+b/arch/arm/mach-exynos4/include/mach/sysmmu.h
+index 6a5fbb5..1811c20 100644
+--- a/arch/arm/mach-exynos4/include/mach/sysmmu.h
++++ b/arch/arm/mach-exynos4/include/mach/sysmmu.h
+@@ -3,44 +3,59 @@
+  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
+- * Samsung sysmmu driver for EXYNOS4
++ * Exynos - System MMU Support
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+ */
+ 
+-#ifndef __ASM_ARM_ARCH_SYSMMU_H
+-#define __ASM_ARM_ARCH_SYSMMU_H __FILE__
+-
+-enum exynos4_sysmmu_ips {
+-	SYSMMU_MDMA,
+-	SYSMMU_SSS,
+-	SYSMMU_FIMC0,
+-	SYSMMU_FIMC1,
+-	SYSMMU_FIMC2,
+-	SYSMMU_FIMC3,
+-	SYSMMU_JPEG,
+-	SYSMMU_FIMD0,
+-	SYSMMU_FIMD1,
+-	SYSMMU_PCIe,
+-	SYSMMU_G2D,
+-	SYSMMU_ROTATOR,
+-	SYSMMU_MDMA2,
+-	SYSMMU_TV,
+-	SYSMMU_MFC_L,
+-	SYSMMU_MFC_R,
+-	EXYNOS4_SYSMMU_TOTAL_IPNUM,
+-};
+-
+-#define S5P_SYSMMU_TOTAL_IPNUM		EXYNOS4_SYSMMU_TOTAL_IPNUM
+-
+-extern const char *sysmmu_ips_name[EXYNOS4_SYSMMU_TOTAL_IPNUM];
+-
+-typedef enum exynos4_sysmmu_ips sysmmu_ips;
+-
+-void sysmmu_clk_init(struct device *dev, sysmmu_ips ips);
+-void sysmmu_clk_enable(sysmmu_ips ips);
+-void sysmmu_clk_disable(sysmmu_ips ips);
+-
+-#endif /* __ASM_ARM_ARCH_SYSMMU_H */
++#ifndef _ARM_MACH_EXYNOS_SYSMMU_H_
++#define _ARM_MACH_EXYNOS_SYSMMU_H_
++
++#include <linux/device.h>
++
++#define SYSMMU_DEVNAME_BASE "s5p-sysmmu"
++#define SYSMMU_CLOCK_NAME(ipname, id) SYSMMU_DEVNAME_BASE "." #id
++
++#ifdef CONFIG_EXYNOS4_DEV_SYSMMU
++
++#define SYSMMU_PLATDEV(ipname) exynos_device_sysmmu_##ipname
++
++#ifdef CONFIG_EXYNOS4_DEV_PD
++#define ASSIGN_SYSMMU_POWERDOMAIN(ipname, powerdomain) \
++		SYSMMU_PLATDEV(mfc_l).dev.parent = powerdomain
++#else
++#define ASSIGN_SYSMMU_POWERDOMAIN(ipname, powerdomain) do { } while (0)
++#endif
++
++extern struct platform_device SYSMMU_PLATDEV(sss);
++extern struct platform_device SYSMMU_PLATDEV(fimc0);
++extern struct platform_device SYSMMU_PLATDEV(fimc1);
++extern struct platform_device SYSMMU_PLATDEV(fimc2);
++extern struct platform_device SYSMMU_PLATDEV(fimc3);
++extern struct platform_device SYSMMU_PLATDEV(jpeg);
++extern struct platform_device SYSMMU_PLATDEV(fimd0);
++extern struct platform_device SYSMMU_PLATDEV(fimd1);
++extern struct platform_device SYSMMU_PLATDEV(pcie);
++extern struct platform_device SYSMMU_PLATDEV(g2d);
++extern struct platform_device SYSMMU_PLATDEV(rot);
++extern struct platform_device SYSMMU_PLATDEV(mdma);
++extern struct platform_device SYSMMU_PLATDEV(tv);
++extern struct platform_device SYSMMU_PLATDEV(mfc_l);
++extern struct platform_device SYSMMU_PLATDEV(mfc_r);
++extern struct platform_device SYSMMU_PLATDEV(g2d_acp);
++
++static inline void sysmmu_set_owner(struct device *sysmmu, struct device
+*owner)
++{
++	sysmmu->platform_data = owner;
++}
++
++#else /* CONFIG_EXYNOS4_DEV_SYSMMU */
++
++#define sysmmu_set_owner(sysmmu, owner) do { } while (0)
++#define ASSIGN_SYSMMU_POWERDOMAIN(ipname, powerdomain) do { } while (0)
++
++#endif /* CONFIG_EXYNOS4_DEV_SYSMMU */
++
++#endif /* _ARM_MACH_EXYNOS_SYSMMU_H_ */
+diff --git a/arch/arm/mach-exynos4/mach-armlex4210.c
+b/arch/arm/mach-exynos4/mach-armlex4210.c
+index b482c62..d7d2ff5 100644
+--- a/arch/arm/mach-exynos4/mach-armlex4210.c
++++ b/arch/arm/mach-exynos4/mach-armlex4210.c
+@@ -155,7 +155,23 @@ static struct platform_device *armlex4210_devices[]
+__initdata = {
+ 	&s3c_device_hsmmc3,
+ 	&s3c_device_rtc,
+ 	&s3c_device_wdt,
+-	&exynos4_device_sysmmu,
++#ifdef CONFIG_EXYNOS4_DEV_SYSMMU
++	&SYSMMU_PLATDEV(sss),
++	&SYSMMU_PLATDEV(fimc0),
++	&SYSMMU_PLATDEV(fimc1),
++	&SYSMMU_PLATDEV(fimc2),
++	&SYSMMU_PLATDEV(fimc3),
++	&SYSMMU_PLATDEV(jpeg),
++	&SYSMMU_PLATDEV(fimd0),
++	&SYSMMU_PLATDEV(fimd1),
++	&SYSMMU_PLATDEV(pcie),
++	&SYSMMU_PLATDEV(g2d),
++	&SYSMMU_PLATDEV(rot),
++	&SYSMMU_PLATDEV(mdma),
++	&SYSMMU_PLATDEV(tv),
++	&SYSMMU_PLATDEV(mfc_l),
++	&SYSMMU_PLATDEV(mfc_r),
++#endif
+ 	&samsung_asoc_dma,
+ 	&armlex4210_smsc911x,
+ 	&exynos4_device_ahci,
+@@ -193,6 +209,10 @@ static void __init armlex4210_map_io(void)
+ 			   ARRAY_SIZE(armlex4210_uartcfgs));
+ }
+ 
++static void __init sysmmu_init(void)
++{
++}
++
+ static void __init armlex4210_machine_init(void)
+ {
+ 	armlex4210_smsc911x_init();
+@@ -201,6 +221,8 @@ static void __init armlex4210_machine_init(void)
+ 
+ 	armlex4210_wlan_init();
+ 
++	sysmmu_init();
++
+ 	platform_add_devices(armlex4210_devices,
+ 			     ARRAY_SIZE(armlex4210_devices));
+ }
+diff --git a/arch/arm/mach-exynos4/mach-smdkv310.c
+b/arch/arm/mach-exynos4/mach-smdkv310.c
+index 35a763e..f7ad5f7 100644
+--- a/arch/arm/mach-exynos4/mach-smdkv310.c
++++ b/arch/arm/mach-exynos4/mach-smdkv310.c
+@@ -42,6 +42,7 @@
+ #include <plat/clock.h>
+ 
+ #include <mach/map.h>
++#include <mach/sysmmu.h>
+ 
+ /* Following are default values for UCON, ULCON and UFCON UART registers */
+ #define SMDKV310_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
+@@ -273,7 +274,23 @@ static struct platform_device *smdkv310_devices[]
+__initdata = {
+ 	&exynos4_device_pd[PD_TV],
+ 	&exynos4_device_pd[PD_GPS],
+ 	&exynos4_device_spdif,
+-	&exynos4_device_sysmmu,
++#ifdef CONFIG_S5P_SYSTEM_MMU
++	&SYSMMU_PLATDEV(sss),
++	&SYSMMU_PLATDEV(fimc0),
++	&SYSMMU_PLATDEV(fimc1),
++	&SYSMMU_PLATDEV(fimc2),
++	&SYSMMU_PLATDEV(fimc3),
++	&SYSMMU_PLATDEV(jpeg),
++	&SYSMMU_PLATDEV(fimd0),
++	&SYSMMU_PLATDEV(fimd1),
++	&SYSMMU_PLATDEV(pcie),
++	&SYSMMU_PLATDEV(g2d),
++	&SYSMMU_PLATDEV(rot),
++	&SYSMMU_PLATDEV(mdma),
++	&SYSMMU_PLATDEV(tv),
++	&SYSMMU_PLATDEV(mfc_l),
++	&SYSMMU_PLATDEV(mfc_r),
++#endif
+ 	&samsung_asoc_dma,
+ 	&samsung_asoc_idma,
+ 	&s5p_device_fimd0,
+@@ -342,6 +359,13 @@ static void __init smdkv310_reserve(void)
+ 	s5p_mfc_reserve_mem(0x43000000, 8 << 20, 0x51000000, 8 << 20);
+ }
+ 
++static void __init sysmmu_init(void)
++{
++	ASSIGN_SYSMMU_POWERDOMAIN(mfc, &exynos4_device_pd[PD_MFC].dev);
++	sysmmu_set_owner(&SYSMMU_PLATDEV(mfc_l).dev, &s5p_device_mfc.dev);
++	sysmmu_set_owner(&SYSMMU_PLATDEV(mfc_r).dev, &s5p_device_mfc.dev);
++}
++
+ static void __init smdkv310_machine_init(void)
+ {
+ 	s3c_i2c1_set_platdata(NULL);
+@@ -365,6 +389,8 @@ static void __init smdkv310_machine_init(void)
+ 	smdkv310_ehci_init();
+ 	clk_xusbxti.rate = 24000000;
+ 
++	sysmmu_init();
++
+ 	platform_add_devices(smdkv310_devices,
+ARRAY_SIZE(smdkv310_devices));
+ 	s5p_device_mfc.dev.parent = &exynos4_device_pd[PD_MFC].dev;
+ }
+-- 
+1.7.1
+
 
